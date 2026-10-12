@@ -33,7 +33,7 @@
   .tab.on{color:var(--text);border-color:var(--violet)}
   .tab:disabled{opacity:.4;cursor:not-allowed}
 
-  /* Buttons & Utilities */
+  /* Buttons & Layout */
   .btn{display:block;width:100%;text-align:left;margin-top:8px;padding:12px 14px;background:transparent;color:var(--text);font:inherit;border:1px solid var(--line);border-radius:10px;cursor:pointer;transition:border-color .15s,background .15s}
   .btn:hover:not(:disabled),.btn:focus-visible{border-color:var(--violet);background:#1a1a2b;outline:none}
   .btn.sel{border-color:var(--violet);background:#1a1a2b}
@@ -66,8 +66,8 @@
     <h1>Lifeline</h1>
     <p>You are six years old. School, family, work, and money are all ahead of you.</p>
     <input id="name-input" placeholder="Your name" maxlength="20" autocomplete="off">
-    <button class="btn" id="start-btn" style="text-align:center" onclick="startGame()">Begin life</button>
-    <button class="btn hidden" id="cont-btn" style="text-align:center" onclick="loadGame()">Continue saved life</button>
+    <button class="btn" id="start-btn" style="text-align:center">Begin life</button>
+    <button class="btn hidden" id="cont-btn" style="text-align:center">Continue saved life</button>
   </section>
 
   <!-- GAME SCREEN -->
@@ -89,7 +89,7 @@
 
 <script>
 /* =====================================================================
-   1. DATA TABLES
+   DATA & STATE
    ===================================================================== */
 const FAMILY = ['Modest','Comfortable','Wealthy'];
 
@@ -194,9 +194,6 @@ const EVENTS = [
     {label:'Refuse',fx:()=>{ S.housing=null; parents().forEach(m=>m.bond=clamp(m.bond-10)); return {happiness:-5,msg:'You were put out. Choose a new home in the Assets tab.'}; }}]}
 ];
 
-/* =====================================================================
-   2. STATE & HELPERS
-   ===================================================================== */
 let S, activeTab = 'life';
 
 function newGame(name){
@@ -321,7 +318,7 @@ const menuCard = () => `<section class="card"><h3>Menu</h3><p class="muted">${me
   <button class="btn" onclick="resetGame()">Reset game</button><button class="btn" onclick="toggleMenu()">Close</button></div></section>`;
 
 /* =====================================================================
-   3. RENDERING VIEWS
+   RENDERING VIEWS
    ===================================================================== */
 function render(){
   $('top').innerHTML = `
@@ -430,7 +427,7 @@ function viewActivities(){
 }
 
 /* =====================================================================
-   4. USER ACTIONS & GAME FLOW
+   USER ACTIONS & GAME FLOW
    ===================================================================== */
 function pickSchool(k){ const why=schoolBlock(k); if (why) return hint(why); S.school=k; if(!S.logRows.some(r=>r.t.startsWith('Enrolled'))) log(`Enrolled in ${SCHOOLS[k].name}.`); hint(); save(); render(); }
 function pickEffort(k){ S.effort=k; render(); }
@@ -525,7 +522,6 @@ function choose(i){
   checkDeath(); render();
 }
 
-/* Age Up Yearly Processing */
 function ageUp(){
   if (S.pending) return hint('Make your choice first.');
   if (S.age < 18 && !S.school){ go('school'); return hint('Select a school first.'); }
@@ -593,15 +589,18 @@ function checkDeath(){
 }
 
 function startGame(){
-  try { if (localStorage.getItem(SAVE_KEY) && !confirm('Starting a new life replaces your saved game. Continue?')) return; } catch(e){}
-  newGame($('name-input').value.trim());
-  $('start').classList.add('hidden');$('game').classList.remove('hidden');
+  try {
+    if (localStorage.getItem(SAVE_KEY) && !confirm('Starting a new life replaces your saved game. Continue?')) {
+      return;
+    }
+  } catch(e){}
+  newGame($('name-input').value.trim());$('start').classList.add('hidden');
+  $('gameover').classList.add('hidden');$('game').classList.remove('hidden');
   log('Life began at age 6.');
   S.ev={title:'Your story begins',text:`${S.name}, you are 6 years old and starting school. Open Education to review your school.`,choices:[]};
   render();
 }
 
-/* Auto-Check Save File on Page Load */
 function initStart(){
   let d=null; try { d=JSON.parse(localStorage.getItem(SAVE_KEY)); } catch(e){}
   const b=$('cont-btn');
@@ -613,7 +612,13 @@ function initStart(){
   }
 }
 
-initStart();
+/* Event Wiring */
+document.addEventListener('DOMContentLoaded', () => {
+  $('start-btn').onclick = startGame;
+  $('cont-btn').onclick = loadGame;
+  initStart();
+});
+
 window.addEventListener('pageshow', e => { if (e.persisted) initStart(); });
 window.addEventListener('beforeunload', () => save());
 $('name-input').addEventListener('keydown', e => { if (e.key==='Enter') startGame(); });
