@@ -68,6 +68,10 @@
   .sub-tabs{display:flex;gap:4px;margin-bottom:10px;overflow-x:auto}
   .sub-tab{padding:6px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;font-size:.75rem;color:var(--muted);cursor:pointer}
   .sub-tab.on{border-color:var(--cyan);color:var(--text)}
+  .cap{text-transform:capitalize}
+  .acts.acts3{grid-template-columns:1fr 1fr 1fr}
+  select,input[type=number]{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit;max-width:100%}
+  details{margin-top:8px} summary{cursor:pointer;color:var(--cyan);font-size:.9rem;padding:4px 0}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -207,7 +211,7 @@ const TRACKS = {
   }
 };
 
-/* --- Cost of Living & Housing Models --- */
+/* --- Cost of Living --- */
 const FOOD = {
   cheap:{name:'Cheap',    cost:2400, hp:-1, hap:0, desc:'Budget groceries and instant meals.'},
   mid:  {name:'Standard', cost:4200, hp:0,  hap:0, desc:'Balanced, everyday groceries.'},
@@ -221,7 +225,6 @@ const PHONE = 600;
 const INSURANCE = 1500;
 const PAYROLL = 0.06;
 const PROP_TAX = 0.01;
-const MATCH = 0.5;
 const RETIRE_MIN = 62, RETIRE_FORCED = 67;
 const BRACKETS = [[12000,0],[40000,.10],[90000,.20],[Infinity,.30]];
 const CHILD_COST = 3000;
@@ -230,7 +233,7 @@ const NAMES = ['Sam','Jordan','Taylor','Morgan','Casey','Riley','Jamie','Quinn',
 const rnd = n => Math.floor(Math.random()*n);
 const pick = a => a[rnd(a.length)];
 
-/* Catalog of Available Properties */
+/* Catalog of Available Properties (rent = per year, buy = price + yearly mortgage payment `pay`) */
 const HOUSING_CATALOG = [
   {id:'room',   kind:'rent', name:'Shared Room (1 BR)',        cost:5000,  util:900,  hap:-1, hp:-1, desc:'Cheap, small shared space.'},
   {id:'studio', kind:'rent', name:'Studio Apartment (1 BR)',   cost:8000,  util:1500, hap:0,  hp:0,  desc:'Private compact studio.'},
@@ -240,25 +243,88 @@ const HOUSING_CATALOG = [
   {id:'villa',  kind:'buy',  name:'Luxury Villa & Estate',     price:350000, pay:22000,util:8000, rentInc:38000, hap:5, hp:2, desc:'Gated luxury villa with pool.'}
 ];
 
-/* --- Real Store & Brand Shopping Items --- */
-const SHOP_ITEMS = [
-  // Tech & Electronics
-  {id:'p_basic', cat:'tech', store:'Apple Store', model:'iPhone SE (Basic)', cost:450, hap:2, hp:0, soc:1, life:4},
-  {id:'p_18', cat:'tech', store:'Apple Store', model:'iPhone 18', cost:999, hap:4, hp:0, soc:2, life:4},
-  {id:'p_18promax', cat:'tech', store:'Apple Store', model:'iPhone 18 Pro Max flagship', cost:1399, hap:6, hp:0, soc:4, life:4},
-  {id:'p_s26u', cat:'tech', store:'Samsung Store', model:'Samsung Galaxy S26 Ultra', cost:1299, hap:6, hp:0, soc:3, life:4},
-  {id:'l_macbook', cat:'tech', store:'Apple Store', model:'MacBook Pro M5 (16-inch)', cost:2499, hap:5, hp:0, soc:3, life:5},
-  {id:'tv_sony85', cat:'tech', store:'Electronics Mall', model:'Sony Bravia 85" 8K Smart TV', cost:3200, hap:5, hp:0, soc:2, life:6},
-  // Home Appliances
-  {id:'app_wash', cat:'home', store:'Home Appliances', model:'Bosch Series 8 Washing Machine', cost:1100, hap:2, hp:1, soc:0, life:7},
-  {id:'app_dryer', cat:'home', store:'Home Appliances', model:'Samsung Heat Pump Smart Dryer', cost:1250, hap:2, hp:1, soc:0, life:7},
-  {id:'app_robot', cat:'home', store:'Home Appliances', model:'Roborock S8 Robot Vacuum & Mop', cost:850, hap:3, hp:1, soc:0, life:5},
-  // Fashion & Brands
-  {id:'c_zara', cat:'fashion', store:'Zara / Retail', model:'Zara Everyday Casual Collection', cost:350, hap:2, hp:0, soc:1, life:2},
-  {id:'c_nike', cat:'fashion', store:'Nike Store', model:'Nike Tech Fleece & Air Max Set', cost:550, hap:3, hp:1, soc:2, life:2},
-  {id:'c_gucci', cat:'fashion', store:'Luxury Outlets', model:'Gucci Designer Suit & Accessories', cost:2800, hap:5, hp:0, soc:5, life:3},
-  {id:'c_lv', cat:'fashion', store:'Luxury Outlets', model:'Louis Vuitton Trunk & Apparel', cost:5400, hap:7, hp:0, soc:7, life:4}
+/* --- Shopping data --- */
+const PORTABLE = ['phone','laptop','tablet','fashion','watch'];   // these travel with you; everything else is installed in a home
+const STORAGE = [[128,0],[256,100],[512,300],[1024,550]];         // [GB, extra price]
+const PLANS = {inst:{years:3,rate:.15}, inst5:{years:5,rate:.30}}; // longer plan = more interest
+const PROMOS = [
+  {label:'Back-to-school tech sale',cats:['phone','laptop','tablet'],pct:.10},
+  {label:'Black Friday week',cats:['all'],pct:.15},
+  {label:'Home & living week',cats:['appliance','furn'],pct:.12},
+  {label:'Fashion clearance',cats:['fashion','watch'],pct:.25},
+  {label:'Phone trade-in event',cats:['phone'],pct:.08}
 ];
+/* Static items: [key, cat, store, model, price, happiness, social, life(yrs), specs] */
+const STATIC = [
+  ['lp_acer','laptop','Electronics Mall','Acer Aspire 5 15"',550,1,0,5,'Core i5, 8GB RAM, 512GB SSD'],
+  ['lp_hp','laptop','Electronics Mall','HP Pavilion 15',750,2,0,5,'Ryzen 7, 16GB RAM, 512GB SSD'],
+  ['lp_think','laptop','Lenovo Store','Lenovo ThinkPad E14',950,2,1,6,'Core Ultra 5, 16GB, 512GB, business keyboard'],
+  ['lp_air','laptop','Apple Store','MacBook Air 13" M5',1099,4,2,6,'M5 chip, 16GB, 256GB, 18h battery'],
+  ['lp_xps','laptop','Dell Store','Dell XPS 14',1700,4,2,6,'Core Ultra 7, 32GB, 14.5" OLED'],
+  ['lp_rog','laptop','ASUS Store','ASUS ROG Zephyrus G14',1900,5,2,5,'Ryzen AI 9, RTX 5070, 32GB, 1TB'],
+  ['l_macbook','laptop','Apple Store','MacBook Pro M5 (16-inch)',2499,5,3,6,'M5 Pro, 24GB, 1TB, mini-LED display'],
+  ['tb_a9','tablet','Samsung Store','Galaxy Tab A9+',220,1,0,5,'11" 90Hz, 64GB'],
+  ['tb_ipad','tablet','Apple Store','iPad (11-inch)',349,2,1,6,'A16 chip, 128GB'],
+  ['tb_air','tablet','Apple Store','iPad Air 11" M3',599,3,1,6,'M3 chip, 128GB'],
+  ['tb_s10','tablet','Samsung Store','Galaxy Tab S10 Ultra',1199,5,2,6,'14.6" AMOLED, S Pen'],
+  ['tb_pro','tablet','Apple Store','iPad Pro 13" M5',1299,5,3,7,'M5 chip, tandem OLED, 256GB'],
+  ['tv_s43','tv','Samsung Store','Samsung 43" Crystal 4K',320,2,1,7,'43", 4K, 60Hz'],
+  ['tv_tcl','tv','Electronics Mall','TCL 65" QLED 4K',550,3,1,7,'65", QLED, 120Hz'],
+  ['tv_lg55','tv','LG Store','LG 55" OLED B5',1100,4,2,8,'55", OLED, 120Hz, webOS'],
+  ['tv_c5','tv','LG Store','LG C5 65" OLED evo',1700,5,2,9,'65", OLED evo, Dolby Vision'],
+  ['tv_s95','tv','Samsung Store','Samsung S95 77" OLED',3500,6,3,9,'77", QD-OLED, 144Hz'],
+  ['tv_sony85','tv','Electronics Mall','Sony Bravia 85" 8K Smart TV',3200,5,2,6,'85", 8K, Google TV'],
+  ['cn_sw2','console','Nintendo Store','Nintendo Switch 2',450,4,3,6,'Handheld and docked, 256GB'],
+  ['cn_ps5','console','PlayStation Direct','PlayStation 5 Slim',500,4,3,7,'1TB SSD, 4K 120fps'],
+  ['cn_ps5p','console','PlayStation Direct','PlayStation 5 Pro',700,5,3,7,'2TB SSD, enhanced ray tracing'],
+  ['cn_xbox','console','Microsoft Store','Xbox Series X',500,4,3,7,'1TB SSD, 4K 120fps'],
+  ['c_uni','fashion','Uniqlo','Uniqlo Essentials Wardrobe',120,1,1,2,'Basics and layers'],
+  ['c_zara','fashion','Zara / Retail','Zara Everyday Casual Collection',350,2,1,2,'Trendy everyday outfits'],
+  ['c_nike','fashion','Nike Store','Nike Tech Fleece & Air Max Set',550,3,2,2,'Sportswear and sneakers'],
+  ['c_adidas','fashion','Adidas Store','Adidas Ultraboost & Tracksuit',320,3,2,3,'Running shoes and track set'],
+  ['c_gucci','fashion','Luxury Outlets','Gucci Designer Suit & Accessories',2800,5,5,3,'Tailored designer look'],
+  ['c_lv','fashion','Luxury Outlets','Louis Vuitton Trunk & Apparel',5400,7,7,4,'Luxury apparel and luggage'],
+  ['w_casio','watch','Watch Boutique','Casio G-Shock',110,1,1,6,'Shock resistant, 200m water resistance'],
+  ['w_aw','watch','Apple Store','Apple Watch Series 11',399,3,3,5,'Health sensors, always-on display'],
+  ['w_omega','watch','Watch Boutique','Omega Seamaster',6200,7,8,20,'Swiss automatic dive watch']
+];
+/* Appliances: [type, label, base life, big?, health-type?, [[model, price, specs] x3 = basic, good, excellent]] */
+const APPL = [
+  ['kettle','Kettle',4,0,0,[["Russell Hobbs Classic 1.7L",30,"1.7L, 2200W, auto shut-off"],["Breville Smart Kettle",90,"1.7L, variable temperature, keep-warm"],["Smeg Retro Kettle",180,"1.7L, 7 temperature presets, design icon"]]],
+  ['toaster','Toaster',5,0,0,[["Morphy Richards 2-slice",25,"2 slots, 6 browning levels"],["Breville Lift & Look 4-slice",80,"4 slots, lift-and-look"],["Smeg 4-slice Toaster",190,"4 slots, bagel and defrost modes"]]],
+  ['microwave','Microwave',8,0,0,[["Panasonic NN-ST25 20L",90,"20L, 800W, 5 power levels"],["Samsung MS23 Grill 23L",160,"23L, ceramic enamel, grill"],["Bosch Series 6 Built-in 25L",420,"25L, 900W, touch control, sensor cooking"]]],
+  ['oven','Oven',12,1,0,[["Beko Built-in Oven 65L",320,"65L, 6 functions"],["Bosch Series 4 Oven 71L",650,"71L, 3D hot air, EcoClean"],["Miele PureLine Oven",1600,"76L, pyrolytic self-cleaning, app control"]]],
+  ['coffee','Coffee machine',6,0,0,[["Nescafe Dolce Gusto Mini Me",70,"Pod machine, 15 bar"],["De'Longhi Magnifica Evo",450,"Bean-to-cup, automatic milk frother"],["Jura E8",1500,"Bean-to-cup, 15 specialty drinks, app"]]],
+  ['blender','Blender',5,0,0,[["NutriBullet 600",60,"600W personal blender"],["Vitamix E310",350,"2HP motor, 48oz container"],["Vitamix Ascent A3500",650,"Touchscreen, self-detect containers"]]],
+  ['airfryer','Air fryer',5,0,0,[["Ninja AF101 4L",90,"4L, 1550W"],["Philips Airfryer 5000 XL",200,"6.2L, rapid air"],["Ninja Foodi Dual Zone 9.5L",270,"Two baskets, sync-finish"]]],
+  ['fridge','Fridge-freezer',12,1,1,[["Beko 250L Fridge-Freezer",480,"250L, frost free"],["Samsung Bespoke 350L",1200,"350L, twin cooling"],["LG InstaView French Door 600L",2800,"600L, door-in-door, water dispenser"]]],
+  ['dishwasher','Dishwasher',9,1,1,[["Beko 12-place Dishwasher",380,"12 place settings, 5 programmes"],["Bosch Series 4 13-place",650,"13 place settings, quiet 44dB"],["Miele G7000 14-place",1500,"14 place settings, AutoDos, cutlery tray"]]],
+  ['washer','Washing machine',9,1,0,[["Beko 8kg Front Load",360,"8kg, 1400rpm"],["Bosch Series 8 Washing Machine",1100,"9kg, i-DOS, 1400rpm"],["Miele WWH860 9kg TwinDos",1900,"9kg, TwinDos, WiFi"]]],
+  ['dryer','Dryer',9,1,0,[["Beko 8kg Condenser Dryer",420,"8kg, condenser"],["Samsung Heat Pump Smart Dryer",1250,"9kg, heat pump, SmartThings"],["Miele T1 Heat-pump 9kg",1800,"9kg, heat pump, honeycomb drum"]]],
+  ['iron','Iron & steamer',6,0,0,[["Philips EasySpeed Iron",45,"2100W, steam"],["Tefal Ultimate Pure",130,"2800W, anti-scale"],["Rowenta Steam Station",280,"Pressurised steam station, 7.5 bar"]]],
+  ['vacuum','Vacuum cleaner',6,0,0,[["Shark Rocket Corded",130,"Corded upright, anti-hair-wrap"],["Dyson V12 Detect Slim",550,"Cordless, laser dust detection"],["Dyson V15 Detect",750,"Cordless, piezo sensor, 60 min runtime"]]],
+  ['robovac','Robot vacuum',5,0,0,[["Eufy RoboVac 11S",180,"Slim, 100 min runtime"],["Roborock S8 Robot Vacuum & Mop",850,"6000Pa suction, mopping"],["Roborock S8 MaxV Ultra",1600,"Auto-empty, self-wash dock, AI obstacle avoidance"]]],
+  ['airpure','Air purifier',7,0,1,[["Levoit Core 300",100,"HEPA, rooms up to 40 sqm"],["Dyson Purifier Cool",450,"HEPA + carbon, fan, app"],["Blueair Pro XL",900,"HEPA, rooms up to 80 sqm"]]],
+  ['water','Water filter',6,0,1,[["Brita Maxtra Jug",25,"Jug filter, 2.4L"],["Philips Under-sink Filter",140,"Under-sink, 3000L cartridge"],["Zip HydroTap",900,"Boiling, chilled and sparkling tap"]]]
+];
+
+/* Furnishing: category -> [label, [[name, price, happiness, health, smarts, value-added fraction] x options]] */
+const FURN_RAW = {
+  sofa:['Sofa & living room',[['Basic fabric sofa',350,1,0,0,0],['Leather sectional',1400,2,0,0,0],['Designer modular sofa set',4200,3,0,0,0]]],
+  bed:['Bed & mattress',[['Standard mattress & frame',400,1,1,0,0],['Orthopedic queen bed',1100,1,2,0,0],['Luxury king bed (memory foam)',2800,2,3,0,0]]],
+  ac:['Air conditioning',[['Window AC unit',450,1,0,0,.3],['Inverter split AC',1300,2,1,0,.5],['Smart multi-room AC system',3600,3,1,0,.6]]],
+  floor:['Flooring',[['Vinyl planks',1500,0,0,0,.5],['Laminate',3000,1,0,0,.6],['Hardwood',7000,2,0,0,.8],['Italian marble',12000,3,0,0,.8]]],
+  rug:['Rugs',[['Cotton rug',120,0,0,0,0],['Wool area rug',600,1,0,0,0],['Hand-knotted Persian rug',2400,2,0,0,0]]],
+  curtains:['Curtains & blinds',[['Basic blinds',100,0,0,0,0],['Blackout curtains',420,1,1,0,0],['Motorized smart blinds',1500,2,0,0,0]]],
+  light:['Lighting',[['LED bulbs & lamps',90,0,0,0,0],['Designer light fixtures',450,1,0,0,0],['Smart lighting system',1500,2,0,0,0]]],
+  desk:['Desk & workspace',[['Simple desk & chair',220,0,0,1,0],['Ergonomic desk setup',800,0,1,1,0],['Executive standing desk set',1900,1,1,2,0]]],
+  dining:['Dining set',[['Folding table & chairs',250,0,0,0,0],['Wooden 4-seat set',950,1,0,0,0],['Marble 8-seat set',3200,2,0,0,0]]],
+  wardrobe:['Wardrobe & storage',[['Basic wardrobe',260,0,0,0,0],['Sliding-door wardrobe',900,1,0,0,0],['Walk-in closet system',2600,1,0,0,0]]]
+};
+const FURN = Object.fromEntries(Object.entries(FURN_RAW).map(([k,v])=>[k,{label:v[0],opts:v[1].map((o,i)=>({id:k+i,n:o[0],cost:o[1],hap:o[2],hp:o[3],sm:o[4],val:o[5]}))}]));
+
+/* Property renovations: cost, condition gained, value added */
+const RENOS = {repair:{n:'Repairs',cost:3000,cond:25,val:.08}, kitchen:{n:'Kitchen remodel',cost:8000,cond:10,val:.06}, bath:{n:'Bathroom remodel',cost:5000,cond:5,val:.04}};
 
 const ACTIVITIES = [
   {label:'Hit the gym',      cost:120, fx:{health:6, happiness:1},   msg:'You spent the year getting fitter.'},
@@ -271,6 +337,7 @@ const TONES = ['\u{1F3FB}','\u{1F3FD}','\u{1F3FF}'];
 const FACES = {f:['👧','👩','👵'], m:['👦','👨','👴'], n:['🧒','🧑','🧓']};
 const face = (g,t,age) => age<3 ? '👶'+TONES[t||0] : FACES[g||'n'][age<13?0:age<65?1:2] + TONES[t||0];
 
+/* Random events. cost (number or function) is checked against your cash; a cost of 0 is always free. */
 const EVENTS = [
   {id:'exam',min:6,max:18,title:'Big exam tomorrow',text:'A major exam is tomorrow and you are not ready.',choices:[
     {label:'Study all night',fx:{smarts:6,health:-3,happiness:-3},result:'You studied late and did well, but you were tired.'},
@@ -280,23 +347,24 @@ const EVENTS = [
     {label:'Stand up to them',fx:{health:-6,happiness:4,social:2},result:'You took a bruise, but they backed off.'},
     {label:'Tell a teacher',fx:{happiness:2,social:1},result:'The teacher stepped in and it stopped.'},
     {label:'Keep quiet',fx:{happiness:-7,social:-2},result:'You stayed quiet and it kept happening.'}]},
-  {id:'parent_plan',min:18,max:19,ok:()=>parents().length>0 && !S.uni && !S.degree,title:'Your parents have a plan',text:'Your parents want you to study Law at a national university, and they offer to pay the tuition.',choices:[
-    {label:'Agree',cost:0,fx:()=>{ S.uni={type:'national',major:'law',year:0,pay:'parents',scholar:false}; return {happiness:5,social:3,msg:'Enrolled in Law at National University with parents paying tuition.'}; }},
-    {label:'Refuse',cost:0,fx:()=>{ parents().forEach(m=>m.bond=clamp(m.bond-5)); return {happiness:2,msg:'You refused your parents\' plan to pursue your own path.'}; }}
-  ]},
+  /* FIXED: both options are free, and it only appears if you hold a diploma. University is optional. */
+  {id:'parent_plan',min:18,max:19,ok:()=>parents().length>0 && S.diploma && !S.uni && !S.degree,title:'Your parents have a plan',
+    text:'Your parents would like you to study Law at a national university, and they offer to pay the tuition. You can also skip university and work with your high school diploma.',choices:[
+    {label:'Accept their offer (Law, tuition paid)',fx:()=>{ S.uni={type:'national',major:'law',year:0,pay:'parents',scholar:false}; return {happiness:5,social:3,msg:'You enrolled in Law at a national university. Your parents pay the tuition.'}; }},
+    {label:'No thanks, I will stick with my diploma',fx:()=>{ parents().forEach(m=>m.bond=clamp(m.bond-2)); return {happiness:2,msg:'You politely declined and kept your high school diploma. Careers are open in the Career tab.'}; }}]},
   {id:'medical',min:18,max:100,title:'Medical bill',
     text:()=>S.insured?'An unexpected illness leads to a bill. Your insurance covers most of it and you owe $180.':'An unexpected illness leads to a $900 medical bill. You have no health insurance.',choices:[
     {label:'Pay for treatment',cost:()=>S.insured?180:900,fx:()=>{ const c=S.insured?180:900; return {wealth:-c,health:3,msg:`You paid ${money(c)} and recovered.`}; }},
-    {label:'Skip treatment',cost:0,fx:{health:-10,happiness:-3},result:'You skipped treatment and it hit your health.'}]},
+    {label:'Skip treatment',fx:{health:-10,happiness:-3},result:'You skipped treatment and it hit your health.'}]},
   {id:'date',min:18,max:45,ok:()=>!partner(),title:'Someone special',text:'You keep running into someone you like.',choices:[
-    {label:'Ask them out',cost:0,fx:()=>{ if(Math.random()<.6){ addMember('Partner',S.age+rnd(5)-2,60); return {happiness:8,social:4,msg:'You started dating.'}; } return {happiness:-4,msg:'They politely said no.'}; }},
-    {label:'Stay friends',cost:0,fx:{social:2},result:'You kept it casual.'}]},
+    {label:'Ask them out',fx:()=>{ if(Math.random()<.6){ addMember('Partner',S.age+rnd(5)-2,60); return {happiness:8,social:4,msg:'You started dating.'}; } return {happiness:-4,msg:'They politely said no.'}; }},
+    {label:'Stay friends',fx:{social:2},result:'You kept it casual.'}]},
   {id:'proposal',min:22,max:60,ok:()=>{const p=partner(); return p&&p.role==='Partner'&&p.bond>=70;},title:'Marriage',text:'Your relationship is strong. A wedding would cost $2,000.',choices:[
     {label:'Propose',cost:2000,fx:()=>{ partner().role='Spouse'; return {wealth:-2000,happiness:8,social:4,msg:'You got married. The wedding cost $2,000.'}; }},
-    {label:'Not yet',cost:0,fx:{},result:'You decided to wait.'}]},
+    {label:'Not yet',fx:{},result:'You decided to wait.'}]},
   {id:'baby',min:22,max:42,ok:()=>{const p=partner(); return p&&p.role==='Spouse'&&kids().length<3;},title:'Starting a family',text:'You and your spouse talk about having a child. A child costs about $3,000 a year until 18.',choices:[
-    {label:'Have a child',cost:0,fx:()=>{ addMember('Child',0,85); return {happiness:8,health:-2,msg:'You welcomed a child.'}; }},
-    {label:'Not now',cost:0,fx:{},result:'You decided to wait.'}]}
+    {label:'Have a child',fx:()=>{ addMember('Child',0,85); return {happiness:8,health:-2,msg:'You welcomed a child.'}; }},
+    {label:'Not now',fx:{},result:'You decided to wait.'}]}
 ];
 
 /* =====================================================================
@@ -319,8 +387,8 @@ function newGame(name, g, t){
     payPref: 'self', askedAge:-1,
     loans: [], food:'mid', transport:'bus', insured:false,
     contrib:0, nest:0, retired:false, pension:0, lastSalary:0,
-    inventory: [],
-    shopLoans: []
+    inventory: [], shopLoans: [],
+    rentIndex:1, promo:null, shopHome:null, furn:{}, uidN:1   // Phase 7: rent inflation, sales, install location, furnishing, item ids
   };
   addMember('Mother',28+rnd(10),55+rnd(35));
   addMember('Father',28+rnd(10),55+rnd(35));
@@ -336,12 +404,13 @@ function log(t){ S.logRows.unshift({age:S.age, t}); }
 function fx(o){
   for (const k of ['health','happiness','smarts','social']) if (o[k]) S[k] = clamp(S[k]+o[k]);
   if (o.wealth) S.wealth += o.wealth;
-  if (S.age<18) S.wealth = Math.max(0,S.wealth);
+  if (S.age<18) S.wealth = Math.max(0,S.wealth);   // minors cannot hold debt
 }
 const bar = (l,v,c) => `<div><div class="stat-top"><span>${l}</span><b class="mono">${v}%</b></div><div class="bar"><div class="fill" style="width:${v}%;background:${c}"></div></div></div>`;
 function go(t){ activeTab=t; render(); }
 const evText = e => typeof e.text==='function' ? e.text() : e.text;
-const costOf = c => typeof c.cost==='function' ? c.cost() : (c.cost||0);
+const costOf = c => { const v = typeof c.cost==='function' ? c.cost() : c.cost; return Number(v)||0; };
+const unaffordable = c => costOf(c)>0 && S.wealth<costOf(c);
 
 const partner = () => S.family.find(m => (m.role==='Partner'||m.role==='Spouse') && m.alive);
 const kids = () => S.family.filter(m => m.role==='Child');
@@ -358,6 +427,67 @@ const netWorth = () => S.wealth + propertyValueTotal() + S.nest - S.loan - bankD
 const studying = () => S.age<18 || !!S.uni;
 const myFace = () => face(S.av.g, S.av.t, S.age);
 const memFace = m => face(m.g, m.t, m.age);
+
+/* Where do you live? Returns {cat, own?} for rentals/owned homes, null for the family home */
+function homeInfo(){
+  if (S.housing==='parents' || !S.housing) return null;
+  const own = S.ownedHomes.find(h=>h.id===S.housing);
+  if (own) return {own, cat:HOUSING_CATALOG.find(c=>c.id===own.catId)};
+  const cat = HOUSING_CATALOG.find(c=>c.id===S.housing && c.kind==='rent');
+  return cat ? {cat} : null;
+}
+
+/* ---------- Phase 7 helpers: calendar, rent, homes, comfort, shop catalog ---------- */
+let activeAppType = 'kettle';
+const gameYear = () => 2020 + S.age;                       // you were born in 2020
+const rentCost = h => Math.round(h.cost*S.rentIndex);       // rent rises every year
+function homeName(id){
+  if (id==='parents') return "Parents' home";
+  const o=S.ownedHomes.find(h=>h.id===id); if (o) return o.name+' (owned)';
+  const c=HOUSING_CATALOG.find(x=>x.id===id); return c ? c.name+' (rented)' : 'Unknown home';
+}
+function homeChoices(){   // homes where things can be installed
+  const ids=[];
+  if (S.housing==='parents') ids.push('parents');
+  if (S.housing && S.housing!=='parents' && !S.ownedHomes.find(h=>h.id===S.housing)) ids.push(S.housing);
+  S.ownedHomes.forEach(h=>ids.push(h.id));
+  return ids;
+}
+function targetHome(){ const ids=homeChoices(); return ids.includes(S.shopHome) ? S.shopHome : (ids.includes(S.housing) ? S.housing : (ids[0]||null)); }
+function setShopHome(id){ S.shopHome=id; render(); }
+function comfort(id){   // yearly bonus from furnishing, capped
+  const f=(S.furn||{})[id]||{}; let hap=0,hp=0,sm=0;
+  for (const c in f){ const o=FURN[c] && FURN[c].opts.find(x=>x.id===f[c]); if (o){ hap+=o.hap; hp+=o.hp; sm+=o.sm; } }
+  return {hap:Math.min(8,hap), hp:Math.min(3,hp), sm:Math.min(2,sm)};
+}
+const promoPct = cat => S.promo && (S.promo.cats.includes('all') || S.promo.cats.includes(cat)) ? S.promo.pct : 0;
+const shopPrice = (it,add=0) => Math.round((it.cost+add)*(1-promoPct(it.cat)));
+
+/* Builds this year's catalog. Phones get a new generation every year and older ones get cheaper. */
+function catalog(){
+  const y=gameYear(), infl=Math.pow(1.03,Math.max(0,y-2026)), out=[];
+  const phone=(o)=>{ const d=o.d||0, f=Math.max(.4,1-.2*d);
+    out.push({...o, cat:'phone', d, hp:0, hap:Math.max(1,Math.round(o.hap*(1-.12*d))), soc:Math.round(o.soc*(1-.12*d)),
+      cost:Math.round(o.base*f*infl), spec:(d>=2?'Refurbished. ':'')+o.spec}); };
+  const ap=[['',799,3,2,0,'6.1" OLED, 48MP dual camera, 22h battery'],['Plus',899,3,2,0,'6.7" OLED, 48MP dual camera, 28h battery'],
+            ['Pro',1099,5,4,1,'6.3" ProMotion OLED, 48MP triple + 5x zoom, 26h battery'],['Pro Max',1199,6,5,1,'6.9" ProMotion OLED, 48MP triple + 5x zoom, 33h battery']];
+  for (let d=0; d<5; d++){ const n=y-2008-d;
+    ap.forEach(a=>phone({key:`ip${n}${a[0]}`,grp:'apple',store:'Apple Store',model:`iPhone ${n}${a[0]?' '+a[0]:''}`,base:a[1],d,hap:a[2],soc:a[3],minSt:a[4],spec:a[5],life:6})); }
+  phone({key:'ipse',grp:'apple',store:'Apple Store',model:'iPhone SE (budget)',base:429,d:0,hap:1,soc:1,minSt:0,spec:'4.7" LCD, 12MP camera, 15h battery',life:5});
+  const ss=[['',799,3,2,0,'6.2" AMOLED 120Hz, 50MP triple camera, 24h battery'],['+',999,4,3,0,'6.7" AMOLED 120Hz, 50MP triple camera, 28h battery'],['Ultra',1299,6,4,1,'6.9" AMOLED, 200MP quad camera + 5x zoom, S Pen, 32h battery']];
+  for (let d=0; d<5; d++){ const n=y-2000-d;
+    ss.forEach(a=>phone({key:`gs${n}${a[0]}`,grp:'samsung',store:'Samsung Store',model:`Galaxy S${n}${a[0]==='+'?'+':(a[0]?' '+a[0]:'')}`,base:a[1],d,hap:a[2],soc:a[3],minSt:a[4],spec:a[5],life:5})); }
+  for (let d=0; d<3; d++){ const m=y-2018-d;
+    phone({key:`zf${m}`,grp:'samsung',store:'Samsung Store',model:`Galaxy Z Flip${m}`,base:1099,d,hap:5,soc:5,minSt:0,spec:'6.7" foldable AMOLED, 50MP dual camera, flip design',life:5});
+    phone({key:`zo${m}`,grp:'samsung',store:'Samsung Store',model:`Galaxy Z Fold${m}`,base:1899,d,hap:6,soc:6,minSt:1,spec:'7.6" foldable AMOLED, triple camera, tablet-size screen',life:5});
+    phone({key:`ga${m}`,grp:'samsung',store:'Samsung Store',model:`Galaxy A${y-2000+31-d}`,base:449,d,hap:2,soc:1,minSt:0,spec:'6.6" AMOLED, 50MP camera, 2-day battery',life:5}); }
+  phone({key:'ga1x',grp:'samsung',store:'Samsung Store',model:'Galaxy A1x (entry-level)',base:199,d:0,hap:1,soc:0,minSt:0,spec:'6.7" LCD, 50MP camera, big battery',life:4});
+  phone({key:'feat',grp:'samsung',store:'Electronics Mall',model:'Basic feature phone',base:60,d:0,hap:0,soc:0,minSt:0,spec:'Calls, texts and a week-long battery',life:6});
+  STATIC.forEach(r=>out.push({key:r[0],cat:r[1],store:r[2],model:r[3],cost:r[4],hap:r[5],soc:r[6],hp:0,life:r[7],spec:r[8],d:0}));
+  APPL.forEach(r=>r[5].forEach((m,i)=>out.push({key:`ap_${r[0]}_${i}`,cat:'appliance',type:r[0],tier:i,store:'Home Appliances',model:m[0],cost:m[1],spec:m[2],
+    hap:r[3]?[2,3,5][i]:[1,1,2][i], hp:r[4]?[0,1,2][i]:0, soc:0, life:Math.round(r[2]*[.8,1,1.3][i]), d:0})));
+  return out;
+}
 
 function schoolBlock(k){
   const s=SCHOOLS[k]; if (S.age>=18) return '';
@@ -388,7 +518,7 @@ function uniYear(notes,bill){
   fx({smarts:Math.round(ef.smarts>0?ef.smarts*un.mult:ef.smarts), happiness:ef.happiness, social:ef.social});
   if (f.cash) bill.tuition=f.cash;
   S.loan+=f.loan; u.year++;
-  notes.push(`uni year ${u.year}/${mj.years}, tuition ${money(t)}`);
+  notes.push(`university year ${u.year}/${mj.years}, tuition ${money(t)}`);
   if (u.year>=mj.years){ S.degree=u.major; S.uni=null; fx({happiness:8,social:3}); log(`Graduated with a degree in ${mj.name}!`); }
 }
 
@@ -407,19 +537,30 @@ function retireNow(forced){
   const base = S.job ? S.job.salary : S.lastSalary;
   S.pension = Math.max(6000, Math.round(base*.4));
   S.retired = true; S.job = null; S.part = null;
-  log(`${forced?'Forced mandatory retirement':'Retired'}. Pension: ${money(S.pension)}/yr.`);
+  log(`${forced?'Mandatory retirement':'You retired'}. Pension: ${money(S.pension)}/yr.`);
 }
+function retireClick(){ retireNow(false); render(); }
 
+/* Fills in fields older saves are missing so they load cleanly */
 function migrate(o){
   const base={
     famWealth:1,uni:null,degree:null,loan:0,part:null,housing:'parents',ownedHomes:[],
     family:[],evId:null,logRows:[],dead:false,social:50,av:{g:'n',t:0},payPref:'self',
     askedAge:-1,loans:[],food:'mid',transport:'bus',insured:false,contrib:0,nest:0,
-    retired:false,pension:0,lastSalary:0,bill:{},inventory:[],shopLoans:[],schedule:'norm'
+    retired:false,pension:0,lastSalary:0,bill:{},inventory:[],shopLoans:[],schedule:'norm',rentIndex:1,promo:null,shopHome:null,furn:{},uidN:1
   };
   for (const k in base) if (!(k in o)) o[k]=base[k];
   if (o.school==='public'||o.school==='home') o.school='national';
   if (o.uni && !o.uni.pay) o.uni.pay='self';
+  if (o.housing==='apt') o.housing='apt2';
+  if (o.home){   // old single-home format becomes an owned property
+    const c=HOUSING_CATALOG.find(x=>x.id===o.housing);
+    if (c && c.kind==='buy'){ o.ownedHomes.push({id:'h_old',catId:c.id,name:c.name,value:o.home.value,balance:o.home.balance,cond:100,rentInc:c.rentInc,status:'live'}); o.housing='h_old'; }
+    delete o.home;
+  }
+  if (o.job && !o.job.trackId) o.job=null;   // old job format has no career track
+  o.inventory = o.inventory.map((i,n)=> i.uid ? i : {uid:'u'+(n+1),key:i.itemId||'old',cat:'watch',type:'old',model:i.model,price:0,age:i.age||0,life:i.life||4,hap:i.hap||0,hp:i.hp||0,soc:i.soc||0,tier:1,homeId:null,broken:false,insured:false,portable:true});
+  o.uidN = Math.max(o.uidN||1, o.inventory.length+1);
   o.family.forEach(m=>{ if(!m.g) m.g = m.role==='Mother'?'f':m.role==='Father'?'m':'n'; if(m.t==null) m.t=o.av.t; });
   return o;
 }
@@ -437,7 +578,7 @@ function familyYear(){
     m.age++; m.done=false; m.bond=clamp(m.bond-2);
     if (m.age>=75 && Math.random()<(m.age-74)*.04){ m.alive=false; fx({happiness:-10}); log(`${m.name} (${m.role.toLowerCase()}) passed away at ${m.age}.`); }
   });
-  if (S.age>=18 && S.housing==='parents' && !parents().length){ S.housing=null; log('Your family home is no longer available.'); }
+  if (S.age>=18 && S.housing==='parents' && !parents().length){ S.housing=null; log('Your family home is no longer available. Choose housing in Real Estate.'); }
   return kids().filter(k=>k.alive && k.age<18).length*CHILD_COST;
 }
 
@@ -454,19 +595,17 @@ function loadGame(){
   S = migrate(d.S); activeTab = d.activeTab || 'life'; menuOpen=false; hint();
   if (S.pending && S.evId) S.ev = EVENTS.find(e=>e.id===S.evId) || null;
   if (S.pending && !S.ev) S.pending=false;
-  $('start').classList.add('hidden'); $('gameover').classList.add('hidden');$('game').classList.remove('hidden');
+  $('start').classList.add('hidden'); $('gameover').classList.add('hidden'); $('game').classList.remove('hidden');
   menuMsg='Game loaded.'; render();
 }
 function manualSave(){ menuMsg = save() ? 'Game saved.' : 'Could not save.'; render(); }
 
-/* Restart Life Function */
 function restartLifeAtSix(){
   if (!confirm('Are you sure you want to restart life at Age 6? Current progress will be lost.')) return;
   const name = S.name, g = S.av.g, t = S.av.t;
   newGame(name, g, t);
   activeTab = 'life'; menuOpen = false;
-  save();
-  $('start').classList.add('hidden'); $('gameover').classList.add('hidden');$('game').classList.remove('hidden');
+  $('start').classList.add('hidden'); $('gameover').classList.add('hidden'); $('game').classList.remove('hidden');
   log('Life restarted at Age 6.');
   render();
 }
@@ -491,11 +630,16 @@ const menuCard = () => `<section class="card"><h3>Menu</h3><p class="muted">${me
    3. RENDERING VIEWS
    ===================================================================== */
 function render(){
+  /* Safety net: if a pending event has no choice you can afford, let the moment pass so the game never locks */
+  if (S.pending && S.ev && S.ev.choices && S.ev.choices.length && S.ev.choices.every(unaffordable)){
+    log(`${S.ev.title}: you could not afford any option, so the moment passed.`);
+    S.ev={title:S.ev.title,text:'You could not afford any option, so the moment passed.',choices:[]}; S.pending=false; S.evId=null;
+  }
   $('top').innerHTML = `
     <div class="prof"><div class="who"><span class="avatar">${myFace()}</span><b>${S.name}</b></div><button class="menu-btn" onclick="toggleMenu()">Menu</button><div class="age">${S.age}<small>years old</small></div></div>
     <div class="stats">${bar('Health',S.health,'var(--rose)')}${bar('Happiness',S.happiness,'var(--amber)')}${bar('Smarts',S.smarts,'var(--cyan)')}${bar('Social',S.social,'var(--violet)')}</div>
     <div class="wealth"><span>Wealth</span><b class="mono" style="color:${S.wealth<0?'var(--rose)':'var(--mint)'}">${money(S.wealth)}</b></div>`;
-  
+
   const tabs = [
     ['life','Life',true,''],
     ['school','Education',true,''],
@@ -510,7 +654,7 @@ function render(){
   ];
   const cur = tabs.find(t=>t[0]===activeTab); if (!cur || !cur[2]) activeTab='life';
   $('tabs').innerHTML = tabs.map(([id,l,ok,why]) => `<button class="tab ${activeTab===id?'on':''}" ${ok?'':`disabled title="${why}"`} onclick="go('${id}')">${l}</button>`).join('');
-  
+
   $('age-btn').disabled = S.pending;
   $('view').innerHTML = (menuOpen?menuCard():'') + ({
     life:viewLife, school:viewSchool, part:viewPart, career:viewCareer, family:viewFamily,
@@ -522,36 +666,35 @@ function render(){
 function viewLife(){
   const e = S.ev;
   const household = `<section class="card"><div class="famrow"><div><span>${myFace()}</span>You</div>${S.family.filter(m=>m.alive).map(m=>`<div><span>${memFace(m)}</span>${m.name}</div>`).join('')}</div></section>`;
-  
+
   const eventCard = e
-    ? `<section class="card"><h3>${e.title}</h3><p class="muted">${evText(e)}</p>${(e.choices||[]).map((c,i)=>{ 
-        const cCost = costOf(c);
-        const no = cCost > 0 && S.wealth < cCost; 
-        return `<button class="btn" ${no?'disabled':''} onclick="choose(${i})">${c.label}${no?'<small>Not enough cash</small>':''}</button>`; 
+    ? `<section class="card"><h3>${e.title}</h3><p class="muted">${evText(e)}</p>${(e.choices||[]).map((c,i)=>{
+        const no = unaffordable(c);
+        return `<button class="btn" ${no?'disabled':''} onclick="choose(${i})">${c.label}${no?'<small>Not enough cash</small>':''}</button>`;
       }).join('')}</section>`
     : `<section class="card"><h3>Your story</h3><p class="muted">Press Age up to continue.</p></section>`;
-    
+
   return household + eventCard + `<section class="card"><h3>Life log</h3><div id="log">${S.logRows.map(r=>`<div class="log-row"><b>Age ${r.age}</b>${r.t}</div>`).join('')}</div></section>`;
 }
 
 function viewSchool(){
   const efforts = Object.entries(EFFORT).map(([k,e]) => `<button class="btn ${S.effort===k?'sel':''}" onclick="pickEffort('${k}')">${e.label}</button>`).join('');
   const effortCard = `<section class="card"><h3>Effort this year</h3><p class="muted">Applied when you age up.${S.age<18?' Years skipped: '+S.skips+'.':''}</p>${efforts}</section>`;
-  
+
   if (S.age<18){
     const schools = Object.entries(SCHOOLS).map(([k,s]) => { const why=schoolBlock(k);
       return `<button class="btn ${S.school===k?'sel':''}" ${why?'disabled':''} onclick="pickSchool('${k}')">${s.name} · ${s.cost?money(s.cost)+'/yr, paid by parents':'Free'}<small>${why||s.desc}</small></button>`; }).join('');
-    return `<section class="card"><h3>School</h3><p class="muted">Family status: <b>${FAMILY[S.famWealth]}</b>.</p>${schools}</section>` + effortCard;
+    return `<section class="card"><h3>School</h3><p class="muted">Family status: <b>${FAMILY[S.famWealth]}</b>. Pick a school before you age up.</p>${schools}</section>` + effortCard + '';
   }
-  
+
   if (S.uni){
     const u=S.uni, un=UNIS[u.type], mj=MAJORS[u.major];
     return `<section class="card"><h3>${mj.name} · ${un.name}</h3><p class="muted">Year ${u.year} of ${mj.years}. Tuition ${money(tuitionFor(u))}/yr. Student loan: ${money(S.loan)}.</p><button class="btn" onclick="dropOut()">Drop out</button></section>` + effortCard;
   }
-  
+
   if (S.degree) return `<section class="card"><h3>Graduate</h3><p class="muted">Degree: <b>${MAJORS[S.degree].name}</b>. Higher career levels unlocked!</p></section>`;
   if (!S.diploma) return `<section class="card"><h3>No diploma</h3><p class="muted">You left school without a diploma.</p></section>`;
-  
+
   const skipUniCard = `<section class="card" style="border:1px solid var(--cyan)">
     <h3>Skip University</h3>
     <p class="muted">University is completely optional. You can stick with your High School Diploma and enter the workforce directly.</p>
@@ -561,7 +704,7 @@ function viewSchool(){
   const payBtns = Object.entries(PAYERS).map(([k,p]) => `<button class="btn ${S.payPref===k?'sel':''}" onclick="setPay('${k}')">${p.label}<small>${p.desc}</small></button>`).join('');
   const majors = Object.entries(MAJORS).map(([k,m]) => `<div style="margin-top:12px"><b>${m.name}</b> <span class="muted">· ${m.years} yrs · Req Smarts ${m.min}%</span>
     <div class="acts" style="margin-top:6px"><button class="btn" onclick="enrollUni('national','${k}')">National · ${money(UNIS.national.tuition)}/yr</button><button class="btn" onclick="enrollUni('private','${k}')">Private · ${money(UNIS.private.tuition)}/yr</button></div></div>`).join('');
-  
+
   return skipUniCard + `<section class="card"><h3>Who pays tuition?</h3>${payBtns}</section><section class="card"><h3>University Options</h3>${majors}</section>`;
 }
 
@@ -572,16 +715,16 @@ function viewPart(){
   return `<section class="card"><h3>Part-time work</h3><p class="muted">${cur?`Working as a ${cur.title.toLowerCase()}.`:'Side job for students.'}</p>${list}${cur?'<button class="btn" onclick="quitPart()">Quit job</button>':''}</section>`;
 }
 
-/* CAREER TAB: Multi-Tiered Ranks, Work Schedules, Overtime */
+/* CAREER TAB: multi-tier ranks, work schedules, overtime, retirement */
 function viewCareer(){
-  const b=S.bill||{}, net = S.income - S.expenses;
+  const net = S.income - S.expenses;
   const fin = `<section class="card"><h3>Finances (last year)</h3>
     <div class="row"><span>Gross income</span><b class="mono" style="color:var(--mint)">${money(S.income)}</b></div>
     <div class="row"><span>Net change</span><b class="mono">${money(net)}</b></div>
     <div class="row"><span>Net worth</span><b class="mono">${money(netWorth())}</b></div></section>`;
-    
+
   if (S.retired) return fin + `<section class="card"><h3>Retired</h3><p class="muted">Pension ${money(S.pension)}/yr.</p></section>`;
-  
+
   if (S.job){
     const j = S.job;
     const schedText = S.schedule==='over' ? 'Long Hours (50 hrs/wk, +Perf, +Stress)' : S.schedule==='crunch' ? 'Crunch Mode (60 hrs/wk, ++Perf, ++Stress)' : 'Standard (40 hrs/wk)';
@@ -590,7 +733,7 @@ function viewCareer(){
       <p class="muted">Track: ${TRACKS[j.trackId].name} (Level ${j.level+1}/5)</p>
       <p class="muted">Salary ${money(j.salary)}/yr · Tenure: ${j.years} year(s)</p>
       <div style="margin:10px 0">${bar('Performance',j.perf,'var(--cyan)')}</div>
-      
+
       <p class="muted" style="margin-top:8px;font-size:.85rem">Work Schedule: <b>${schedText}</b></p>
       <div class="acts" style="margin-top:6px">
         <button class="btn ${S.schedule==='norm'?'sel':''}" onclick="setSchedule('norm')">40 hrs/wk</button>
@@ -600,25 +743,25 @@ function viewCareer(){
 
       <button class="btn" ${S.worked?'disabled':''} onclick="workHarder()">Work Overtime / Harder<small>Boost performance once this year.</small></button>
       <button class="btn" ${S.promoTried?'disabled':''} onclick="askPromotion()">Request Rank Promotion<small>Advance to the next career level if qualified.</small></button>
+      ${S.age>=RETIRE_MIN?'<button class="btn" onclick="retireClick()">Retire<small>Pension of about 40% of your salary.</small></button>':''}
       <button class="btn" onclick="quitJob()">Resign / Quit</button>
     </section>`;
   }
 
-  // Job Market
   let html = fin + `<section class="card"><h3>Career Market Tracks</h3><p class="muted">${S.uni?'Finish university to unlock full-time careers.':'Apply for entry level or degree positions:'}</p>`;
-  
+
   Object.entries(TRACKS).forEach(([trackId, track]) => {
     const entryJob = track.levels[0];
     const canDegree = !track.degree || S.degree === track.degree;
-    const blockWhy = (S.uni?'Finish university first. ':'') + (!canDegree ? `Requires ${MAJORS[track.degree].name} degree. ` : '') + (S.smarts < entryJob.reqSmarts ? `Requires ${entryJob.reqSmarts}% Smarts.` : '');
-    
+    const blockWhy = (S.uni?'Finish university first. ':'') + (!canDegree ? `Requires ${MAJORS[track.degree].name} degree. ` : '') + (S.smarts < entryJob.reqSmarts ? `Requires ${entryJob.reqSmarts}% Smarts.` : '') + (entryJob.diploma&&!S.diploma?'Requires a diploma. ':'');
+
     html += `<div style="margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:8px">
       <b>${track.name}</b><br>
       <span class="muted" style="font-size:.85rem">Level 1: ${entryJob.title} (${money(entryJob.salary)}/yr)</span>
-      <button class="btn" ${blockWhy||S.uni?'disabled':''} onclick="applyTrack('${trackId}')">${blockWhy ? blockWhy : 'Apply for Entry Position'}</button>
+      <button class="btn" ${blockWhy?'disabled':''} onclick="applyTrack('${trackId}')">${blockWhy ? blockWhy : 'Apply for Entry Position'}</button>
     </div>`;
   });
-  
+
   html += `</section>`;
   return html;
 }
@@ -627,33 +770,42 @@ function viewFamily(){
   const acts = m => m.alive ? `<div class="acts">
     <button class="btn" ${m.done?'disabled':''} onclick="famAct('${m.id}','time')">Spend time</button>
     <button class="btn" ${m.done?'disabled':''} onclick="famAct('${m.id}','compliment')">Compliment</button>
-    ${(m.role==='Mother'||m.role==='Father') ? `<button class="btn" ${m.done \vert{}\vert{} S.age>=25?'disabled':''} onclick="famAct('${m.id}','money')">Ask money</button>` : ''}
+    ${(m.role==='Mother'||m.role==='Father') ? `<button class="btn" ${m.done || S.age>=25?'disabled':''} onclick="famAct('${m.id}','money')">Ask money</button>` : ''}
     <button class="btn" ${m.done?'disabled':''} onclick="famAct('${m.id}','argue')">Argue</button></div>` : '<p class="muted">Passed away.</p>';
-  return `<section class="card"><h3>Family & Relationships</h3></section>`
+  return `<section class="card"><h3>Family & Relationships</h3><p class="muted">One interaction per person each year. You can ask parents for money until 25.</p></section>`
     + S.family.map(m => `<section class="card"><div style="margin-bottom:8px;display:flex;align-items:center;gap:10px"><span style="font-size:2rem">${m.alive?memFace(m):'🕊️'}</span><div><b>${m.name}</b> <span class="muted">· ${m.role}, ${m.age}</span></div></div>${m.alive?bar('Bond',m.bond,'var(--violet)'):''}<div style="margin-top:8px">${acts(m)}</div></section>`).join('');
 }
 
-/* REAL ESTATE TAB: Ownership, Renting, Renovating, Living */
+/* REAL ESTATE TAB: own, rent out, renovate, furnish, pay down mortgages */
 function viewAssets(){
   if (S.age<18) return `<section class="card"><h3>Real Estate</h3><p class="muted">You live with your parents. Unlocks at Age 18.</p></section>`;
 
-  let html = `<section class="card"><h3>Real Estate Portfolio</h3><p class="muted">Total Equity: <b>${money(propertyValueTotal())}</b></p></section>`;
+  let html = `<section class="card"><h3>Real Estate Portfolio</h3><p class="muted">Total Equity: <b>${money(propertyValueTotal())}</b>. Rents are ${Math.round((S.rentIndex-1)*100)}% higher than when you started and rise every year.</p></section>`;
 
-  // Owned Properties
+  const rented = HOUSING_CATALOG.find(c=>c.id===S.housing && c.kind==='rent');
+  if (rented){
+    const cf=comfort(rented.id);
+    html += `<section class="card"><h3>Your Rental</h3><p class="muted">${rented.name} · rent ${money(rentCost(rented))}/yr. Comfort: Happiness +${cf.hap}, Health +${cf.hp}. Furniture stays behind if you move.</p>
+      <button class="btn" onclick="furnishHome('${rented.id}')">Furnish this home</button></section>`;
+  }
+
   if (S.ownedHomes.length > 0){
     html += `<section class="card"><h3>Your Owned Properties</h3>`;
     S.ownedHomes.forEach((h, idx) => {
-      const isLive = S.housing === h.id;
-      const isRent = h.status === 'rent';
+      const isLive = S.housing === h.id, isRent = h.status === 'rent', cf = comfort(h.id);
       html += `<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
         <b>${h.name}</b> (${h.cond}% condition)<br>
         <span class="muted" style="font-size:.85rem">Market Value: ${money(h.value)} | Mortgage Left: ${money(h.balance)}</span><br>
-        <span class="muted" style="font-size:.85rem">Status: <b>${isLive ? 'Living Here' : isRent ? 'Rented Out ('+money(h.rentInc)+'/yr income)' : 'Vacant'}</b></span>
-        
+        <span class="muted" style="font-size:.85rem">Status: <b>${isLive ? 'Living Here' : isRent ? 'Rented Out ('+money(Math.round(h.rentInc*S.rentIndex))+'/yr income)' : 'Vacant'}</b> · Comfort: Happiness +${cf.hap}, Health +${cf.hp}</span>
+        ${h.balance>0 ? `<div style="margin-top:8px"><span class="muted" style="font-size:.85rem">Extra mortgage payment (any amount)</span>
+          <div style="display:flex;gap:6px;margin-top:4px"><input type="number" id="mp${idx}" min="0" placeholder="Amount" style="flex:1;min-width:0">
+          <button class="btn" style="width:auto;margin:0" onclick="payMortgage(${idx},false)">Pay</button>
+          <button class="btn" style="width:auto;margin:0" ${S.wealth<h.balance?'disabled':''} onclick="payMortgage(${idx},true)">Pay off ${money(h.balance)}</button></div></div>` : ''}
         <div class="acts" style="margin-top:8px">
           ${!isLive ? `<button class="btn" onclick="setLiveProperty(${idx})">Move In</button>` : ''}
           ${!isRent && !isLive ? `<button class="btn" onclick="setRentProperty(${idx})">Rent Out</button>` : ''}
-          <button class="btn" ${S.wealth < 3000 ? 'disabled':''} onclick="renovateProperty(${idx})">Renovate ($3,000)</button>
+          ${Object.entries(RENOS).map(([k,r])=>`<button class="btn" ${S.wealth<r.cost?'disabled':''} onclick="renovateProperty(${idx},'${k}')">${r.n} (${money(r.cost)})</button>`).join('')}
+          <button class="btn" onclick="furnishHome('${h.id}')">Furnish</button>
           <button class="btn" onclick="sellOwnedProperty(${idx})">Sell Property</button>
         </div>
       </div>`;
@@ -661,20 +813,17 @@ function viewAssets(){
     html += `</section>`;
   }
 
-  // Primary Residence Setup
-  const stayFamily = `<button class="btn ${S.housing==='parents'?'sel':''}" onclick="stayHome()">Stay with parents<small>${S.famWealth>=1?'Free':'$1,500/yr contribution'}</small></button>`;
-  
-  // Rentals Catalog
-  const rents = HOUSING_CATALOG.filter(h=>h.kind==='rent').map(h => 
-    `<button class="btn ${S.housing===h.id?'sel':''}" onclick="rentHome('${h.id}')">${h.name} · ${money(h.cost)}/yr<small>${h.desc}</small></button>`
+  const stayFamily = `<button class="btn ${S.housing==='parents'?'sel':''}" onclick="stayHome()">Stay with parents<small>${S.famWealth>=1?'Free':'$1,500/yr contribution'}. Needs a living parent with a good bond.</small></button>`;
+
+  const rents = HOUSING_CATALOG.filter(h=>h.kind==='rent').map(h =>
+    `<button class="btn ${S.housing===h.id?'sel':''}" ${h.id!=='room'&&S.wealth<Math.round(rentCost(h)/12)?'disabled':''} onclick="rentHome('${h.id}')">${h.name} · ${money(rentCost(h))}/yr + ${money(h.util)} utilities<small>${h.desc} Happiness ${h.hap>=0?'+':''}${h.hap}, Health ${h.hp>=0?'+':''}${h.hp} per year.</small></button>`
   ).join('');
 
-  // Purchase Market Catalog
   const buys = HOUSING_CATALOG.filter(h=>h.kind==='buy').map(h => {
     const down = h.price * 0.20;
     return `<div style="margin-top:10px">
       <b>${h.name}</b> · ${money(h.price)}
-      <p class="muted" style="font-size:.85rem">${h.desc} | Rental Income potential: ${money(h.rentInc)}/yr</p>
+      <p class="muted" style="font-size:.85rem">${h.desc} Mortgage ${money(h.pay)}/yr (5% interest). Rental income potential: ${money(Math.round(h.rentInc*S.rentIndex))}/yr</p>
       <div class="acts" style="margin-top:6px">
         <button class="btn" ${S.wealth<h.price?'disabled':''} onclick="buyProperty('${h.id}', true)">Cash ${money(h.price)}</button>
         <button class="btn" ${S.wealth<down?'disabled':''} onclick="buyProperty('${h.id}', false)">Down ${money(down)}</button>
@@ -683,49 +832,78 @@ function viewAssets(){
   }).join('');
 
   return html + `<section class="card"><h3>Living Options</h3>${stayFamily}</section>
-    <section class="card"><h3>Rent an Apartment</h3>${rents}</section>
+    <section class="card"><h3>Rent an Apartment</h3><p class="muted">You need the first month of rent in cash (except the shared room). Rent goes up each year.</p>${rents}</section>
     <section class="card"><h3>Buy Real Estate</h3>${buys}</section>`;
 }
 
-/* SHOPPING TAB: Stores, Models, Brands & Installments */
-function viewShop(){
-  const subTabs = [
-    ['tech', 'Tech & Apple Store'],
-    ['home', 'Home Appliances'],
-    ['fashion', 'Fashion Brands']
-  ];
-  
-  let nav = `<div class="sub-tabs">` + subTabs.map(([id, label]) => 
-    `<button class="sub-tab ${activeShopTab===id?'on':''}" onclick="activeShopTab='${id}';render();">${label}</button>`
-  ).join('') + `</div>`;
-
-  const filteredItems = SHOP_ITEMS.filter(i => i.cat === activeShopTab);
-  
-  let itemsHtml = filteredItems.map(item => {
-    const instPmt = Math.round((item.cost * 1.15) / 3);
-    const canAffordCash = S.wealth >= item.cost;
-    const canAffordInst = creditLimit() >= instPmt;
-
-    return `<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
-      <b>${item.model}</b> <span class="muted">(${item.store})</span><br>
-      <span class="muted" style="font-size:.85rem">Price: ${money(item.cost)} | Duration: ${item.life} years boost</span><br>
+/* SHOPPING TAB: phones, laptops, TVs, appliances (installed in a home), furnishing, fashion, owned items */
+function placeSelector(){
+  const ids=homeChoices();
+  if (!ids.length) return '<p class="muted">You need a home to install things in. Rent or buy one in Real Estate.</p>';
+  const t=targetHome();
+  return `<p class="muted" style="font-size:.85rem;margin:8px 0 4px">Install in:</p><div class="sub-tabs" style="flex-wrap:wrap">${ids.map(id=>`<button class="sub-tab ${t===id?'on':''}" onclick="setShopHome('${id}')">${homeName(id)}</button>`).join('')}</div>`;
+}
+function itemCard(it){
+  const adult=S.age>=18, insurable=it.cat!=='fashion', p=shopPrice(it,0);
+  const sel = it.cat==='phone' ? `<select id="st_${it.key}" style="margin-top:6px;width:100%">${STORAGE.slice(it.minSt).map(([gb,add],j)=>`<option value="${it.minSt+j}">${gb>=1024?'1 TB':gb+' GB'} · ${money(shopPrice(it,add))}</option>`).join('')}</select>` : '';
+  return `<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
+    <b>${it.model}</b> <span class="muted">(${it.store})</span><br>
+    <span class="muted" style="font-size:.82rem">${it.spec}</span><br>
+    <span style="font-size:.88rem">${p<it.cost?`<s class="muted">${money(it.cost)}</s> `:''}<b>${it.cat==='phone'?'from ':''}${money(p)}</b></span>
+    <span class="muted" style="font-size:.8rem"> · lasts about ${it.life} yrs · Happiness +${it.hap}${it.soc?', Social +'+it.soc:''}${it.hp?', Health +'+it.hp:''}${it.d?' · '+it.d+'-year-old model':''}</span>
+    ${sel}
+    ${insurable?`<label class="muted" style="display:block;font-size:.8rem;margin-top:6px"><input type="checkbox" id="in_${it.key}"> Insurance (about ${money(p*.07)}/yr, cheap repairs)</label>`:''}
+    <div class="acts acts3" style="margin-top:6px">
+      <button class="btn" onclick="buyItem('${it.key}','cash')">Pay cash</button>
+      <button class="btn" ${adult?'':'disabled'} onclick="buyItem('${it.key}','inst')">3 yrs +15%</button>
+      <button class="btn" ${adult?'':'disabled'} onclick="buyItem('${it.key}','inst5')">5 yrs +30%</button></div></div>`;
+}
+function viewFurnish(){
+  const homes=homeChoices();
+  if (!homes.length) return '<section class="card"><h3>Furnishing</h3><p class="muted">You need a home first. Rent or buy one in Real Estate.</p></section>';
+  const h=targetHome(), f=S.furn[h]||{}, cf=comfort(h), own=S.ownedHomes.find(x=>x.id===h);
+  const cats=Object.entries(FURN).map(([k,c])=>`<div style="margin-top:12px"><b>${c.label}</b> <span class="muted" style="font-size:.85rem">${f[k]?'· '+c.opts.find(o=>o.id===f[k]).n:'· nothing yet'}</span>
+    ${c.opts.map(o=>{ const pr=Math.round(o.cost*(1-promoPct('furn')));
+      return `<button class="btn ${f[k]===o.id?'sel':''}" ${f[k]===o.id||S.wealth<pr?'disabled':''} onclick="buyFurn('${k}','${o.id}')">${o.n} · ${money(pr)}<small>Happiness +${o.hap}${o.hp?', Health +'+o.hp:''}${o.sm?', Smarts +'+o.sm:''}${o.val&&own?', adds value to your property':''}</small></button>`; }).join('')}</div>`).join('');
+  return `<section class="card"><h3>Furnish & Decorate</h3><p class="muted">Comfort here: Happiness +${cf.hap}, Health +${cf.hp}${cf.sm?', Smarts +'+cf.sm:''} per year while you live in it. ${own?'Flooring and AC add to the property value.':'Furniture in a rental stays behind if you move.'}</p>${placeSelector()}${cats}</section>`;
+}
+function viewMine(){
+  if (!S.inventory.length) return '<section class="card"><h3>My Items</h3><p class="muted">You do not own anything yet.</p></section>';
+  const rows=S.inventory.map(i=>{
+    const worn=i.age>=i.life, outd=!i.broken && i.age>=Math.ceil(i.life*.75);
+    const st=i.broken?(worn?'Worn out, beyond repair':'Broken'):outd?'Outdated: effects halved':'Working';
+    const col=i.broken?'var(--rose)':outd?'var(--amber)':'var(--mint)';
+    const fix=i.insured?Math.max(30,Math.round(i.price*.08)):Math.max(50,Math.round(i.price*.3));
+    return `<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px"><b>${i.model}${i.storage?' · '+(i.storage>=1024?'1 TB':i.storage+' GB'):''}</b><br>
+      <span class="muted" style="font-size:.82rem">${i.portable?'With you':homeName(i.homeId)} · age ${i.age}/${i.life} yrs · ${i.insured?'Insured':'Not insured'}</span><br><span style="font-size:.85rem;color:${col}">${st}</span>
       <div class="acts" style="margin-top:6px">
-        <button class="btn" ${!canAffordCash?'disabled':''} onclick="buyShopItem('${item.id}', 'cash')">Pay Cash (${money(item.cost)})</button>
-        <button class="btn" ${!canAffordInst?'disabled':''} onclick="buyShopItem('${item.id}', 'inst')">3-Yr Installment (${money(instPmt)}/yr)</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  // Owned Inventory
-  let invHtml = '';
-  if (S.inventory.length > 0){
-    invHtml = `<section class="card"><h3>Your Purchased Items</h3>` + S.inventory.map(i => 
-      `<div class="row"><span>${i.model}</span><b class="mono">${i.life - i.age} yrs left</b></div>`
-    ).join('') + `</section>`;
+        ${i.broken&&!worn?`<button class="btn" onclick="repairItem('${i.uid}')">Repair ${money(fix)}</button>`:''}
+        ${i.broken&&i.price?`<button class="btn" onclick="replaceItem('${i.uid}')">Buy new ${money(i.price)}</button>`:''}
+        ${!i.broken&&i.cat!=='fashion'?`<button class="btn" onclick="toggleInsure('${i.uid}')">${i.insured?'Cancel insurance':'Add insurance'}</button>`:''}
+        <button class="btn" onclick="discardItem('${i.uid}')">Discard</button></div></div>`; }).join('');
+  return `<section class="card"><h3>My Items</h3><p class="muted">Items break and wear out with age. Insured items are cheap to repair. Items in a home only help while you live there.</p>${rows}</section>`;
+}
+function viewShop(){
+  const subs=[['apple','Apple'],['samsung','Samsung'],['laptop','Laptops & Tablets'],['tv','TV & Gaming'],['appliance','Appliances'],['furnish','Furnishing'],['fashion','Fashion'],['mine','My Items']];
+  if (!subs.some(x=>x[0]===activeShopTab)) activeShopTab='apple';
+  const nav=`<div class="sub-tabs">${subs.map(([id,l])=>`<button class="sub-tab ${activeShopTab===id?'on':''}" onclick="activeShopTab='${id}';render();">${l}</button>`).join('')}</div>`;
+  const pr=S.promo?`<p style="color:var(--amber);font-size:.85rem;margin-bottom:6px">${S.promo.label}: ${Math.round(S.promo.pct*100)}% off ${S.promo.cats[0]==='all'?'everything':'selected items'} this year.</p>`:'';
+  const head=`<section class="card"><h3>Shopping Mall & Stores</h3><p class="muted" style="font-size:.85rem;margin-bottom:6px">It is ${gameYear()}. New phone models arrive every year.</p>${pr}${nav}</section>`;
+  if (activeShopTab==='furnish') return head+viewFurnish();
+  if (activeShopTab==='mine') return head+viewMine();
+  const all=catalog(); let body='';
+  if (activeShopTab==='apple' || activeShopTab==='samsung'){
+    const ph=all.filter(i=>i.cat==='phone' && i.grp===activeShopTab);
+    for (let d=0; d<5; d++){ const list=ph.filter(i=>i.d===d); if (!list.length) continue;
+      body+=`<details ${d===0?'open':''}><summary>${d===0?'Newest generation':d+(d===1?' year old':' years old')+', discounted'}</summary>${list.map(itemCard).join('')}</details>`; }
+  } else if (activeShopTab==='laptop') body=all.filter(i=>i.cat==='laptop'||i.cat==='tablet').map(itemCard).join('');
+  else if (activeShopTab==='tv') body=placeSelector()+all.filter(i=>i.cat==='tv'||i.cat==='console').map(itemCard).join('');
+  else if (activeShopTab==='fashion') body=all.filter(i=>i.cat==='fashion'||i.cat==='watch').map(itemCard).join('');
+  else {
+    const chips=`<div class="sub-tabs">${APPL.map(r=>`<button class="sub-tab ${activeAppType===r[0]?'on':''}" onclick="activeAppType='${r[0]}';render();">${r[1]}</button>`).join('')}</div>`;
+    body=chips+placeSelector()+all.filter(i=>i.cat==='appliance'&&i.type===activeAppType).map(itemCard).join('');
   }
-
-  return `<section class="card"><h3>Shopping Mall & Stores</h3>${nav}</section>` +
-    `<section class="card">${itemsHtml}</section>` + invHtml;
+  return head+`<section class="card">${body}</section>`;
 }
 
 function viewMoney(){
@@ -733,13 +911,13 @@ function viewMoney(){
   const food = Object.entries(FOOD).map(([k,f])=>`<button class="btn ${sel(S.food===k)}" onclick="setFood('${k}')">${f.name} · ${money(f.cost)}/yr<small>${f.desc}</small></button>`).join('');
   const trans = Object.entries(TRANSPORT).map(([k,t])=>`<button class="btn ${sel(S.transport===k)}" onclick="setTransport('${k}')">${t.name} · ${money(t.cost)}/yr<small>${t.desc}</small></button>`).join('');
   const ins = `<button class="btn ${sel(S.insured)}" onclick="toggleInsurance()">Insurance: ${S.insured?'ON':'OFF'} · ${money(INSURANCE)}/yr</button>`;
-  
-  const b=S.bill||{}, rows=Object.entries(b).filter(([k,v])=>v>0).map(([k,v])=>`<div class="row"><span>${k}</span><b class="mono">${money(-v)}</b></div>`).join('');
-  
+
+  const b=S.bill||{}, rows=Object.entries(b).filter(([k,v])=>v>0).map(([k,v])=>`<div class="row"><span class="cap">${k.replace(/([A-Z])/g,' $1')}</span><b class="mono">${money(-v)}</b></div>`).join('');
+
   return `<section class="card"><h3>Financial Overview</h3>
     <div class="row"><span>Cash</span><b class="mono">${money(S.wealth)}</b></div>
     <div class="row"><span>Real Estate Equity</span><b class="mono">${money(propertyValueTotal())}</b></div>
-    <div class="row"><span>Total Debts</span><b class="mono" style="color:var(--rose)">${money(-bankDebt())}</b></div>
+    <div class="row"><span>Total Debts</span><b class="mono" style="color:var(--rose)">${money(-(bankDebt()+S.loan))}</b></div>
     <div class="row"><span>Net Worth</span><b class="mono">${money(netWorth())}</b></div>
   </section>` +
   `<section class="card"><h3>Lifestyle & Spending</h3>${food}<h3 style="margin-top:10px">Transport</h3>${trans}<h3 style="margin-top:10px">Insurance</h3>${ins}</section>` +
@@ -752,19 +930,19 @@ function viewBank(){
     const r=a<=5000?.08:.10, pmt=Math.round(a*r/(1-Math.pow(1+r,-5)));
     return `<button class="btn" ${a>lim?'disabled':''} onclick="takeLoan(${a})">Borrow ${money(a)}<small>${Math.round(r*100)}% interest, ${money(pmt)}/yr for 5 yrs</small></button>`;
   }).join('');
-  
-  const bankLoansHtml = S.loans.map((l,i)=>`<div style="margin-top:10px"><b>Bank Loan</b> · Owed ${money(l.bal)}
+
+  const bankLoansHtml = S.loans.map((l,i)=>`<div style="margin-top:10px"><b>Bank Loan</b> · Owed ${money(l.bal)} (${money(l.pmt)}/yr)
     <button class="btn" ${S.wealth<l.bal?'disabled':''} onclick="payBank(${i},'all')">Pay off ${money(l.bal)}</button></div>`).join('');
-    
-  const shopLoansHtml = S.shopLoans.map((l,i)=>`<div style="margin-top:10px"><b>Installment: ${l.item}</b> · Owed ${money(l.bal)} (${money(l.pmt)}/yr)</div>`).join('');
+
+  const shopLoansHtml = S.shopLoans.map(l=>`<div style="margin-top:10px"><b>Installment: ${l.item}</b> · Owed ${money(l.bal)} (${money(l.pmt)}/yr)</div>`).join('');
 
   return `<section class="card"><h3>Bank Credit & Loans</h3><p class="muted">Credit Limit: <b>${money(lim)}</b></p>${offers}</section>
     <section class="card"><h3>Active Debt Contracts</h3>${bankLoansHtml||shopLoansHtml?bankLoansHtml+shopLoansHtml:'<p class="muted">No bank debt.</p>'}</section>`;
 }
 
 function viewActivities(){
-  const list = ACTIVITIES.map((a,i) => `<button class="btn" ${S.actions<1||(a.cost>0&&a.cost>S.wealth)?'disabled':''} onclick="doActivity(${i})">${a.label}<small>${a.cost&&S.age>=18?money(a.cost):'Free'}</small></button>`).join('');
-  return `<section class="card"><h3>Activities & Lifestyle</h3><p class="muted">Actions left: <b>${S.actions}</b></p>${list}</section>`;
+  const list = ACTIVITIES.map((a,i) => `<button class="btn" ${S.age>=18&&a.cost>S.wealth?'disabled':''} onclick="doActivity(${i})">${a.label}<small>${a.cost&&S.age>=18?money(a.cost):'Free'}</small></button>`).join('');
+  return `<section class="card"><h3>Activities & Lifestyle</h3><p class="muted">Do as many activities as you like. There is no limit.</p>${list}</section>`;
 }
 
 /* =====================================================================
@@ -776,17 +954,17 @@ function setPay(k){ S.payPref=k; hint(); render(); }
 
 function enrollUni(type, major){
   const un=UNIS[type], mj=MAJORS[major];
-  if (S.job) return hint('Quit job before enrolling.');
+  if (S.job) return hint('Quit your job before enrolling.');
   if (S.smarts<mj.min+un.minOff) return hint(`Requires ${mj.min+un.minOff}% Smarts.`);
-  
+
   const u={type, major, year:0, pay:S.payPref, scholar:false};
   if (u.pay==='parents'){
-    if (S.askedAge===S.age) return hint('Already asked parents this year.');
+    if (S.askedAge===S.age) return hint('You already asked your parents this year.');
     S.askedAge=S.age;
     if (!parentsAgree(type)){
       parents().forEach(m=>m.bond=clamp(m.bond-3));
-      log(`Parents refused to pay for ${mj.name}.`); render();
-      return hint('Parents refused.');
+      log(`Your parents refused to pay for ${mj.name}.`); render();
+      return hint('Your parents refused.');
     }
   }
 
@@ -797,22 +975,14 @@ function enrollUni(type, major){
 }
 
 function dropOut(){ log('Dropped out of university.'); S.uni=null; render(); }
-function takePart(id){ const p=PART_JOBS.find(x=>x.id===id); S.part={id:p.id,title:p.title,pay:p.pay,stress:p.stress}; log(`Started part-time job as ${p.title}.`); render(); }
+function takePart(id){ const p=PART_JOBS.find(x=>x.id===id); S.part={id:p.id,title:p.title,pay:p.pay,stress:p.stress}; log(`Started a part-time job as ${p.title}.`); render(); }
 function quitPart(){ log('Quit part-time job.'); S.part=null; render(); }
 
-/* Career Logic */
 function applyTrack(trackId){
-  const track = TRACKS[trackId];
-  const level0 = track.levels[0];
-  S.job = {
-    trackId: trackId,
-    level: 0,
-    title: level0.title,
-    salary: level0.salary,
-    perf: 50,
-    years: 0
-  };
-  log(`Started new career track: ${track.name} as ${level0.title} (${money(level0.salary)}/yr)!`);
+  const track = TRACKS[trackId], level0 = track.levels[0];
+  if (S.uni) return hint('Finish university first.');
+  S.job = {trackId, level:0, title:level0.title, salary:level0.salary, perf:50, years:0};
+  log(`Started a new career: ${track.name} as ${level0.title} (${money(level0.salary)}/yr)!`);
   render();
 }
 
@@ -828,20 +998,14 @@ function workHarder(){
 
 function askPromotion(){
   S.promoTried = true;
-  const j = S.job;
-  const track = TRACKS[j.trackId];
+  const j = S.job, track = TRACKS[j.trackId];
   if (j.level >= track.levels.length - 1){
-    return hint('You have reached the highest executive rank in this career!');
+    render(); return hint('You have reached the highest rank in this career!');
   }
   const nextLevel = track.levels[j.level + 1];
-  
   const successChance = (j.perf * 0.5 + S.smarts * 0.3 + Math.min(j.years, 5) * 4) / 100;
   if (Math.random() < successChance && S.smarts >= nextLevel.reqSmarts){
-    j.level++;
-    j.title = nextLevel.title;
-    j.salary = nextLevel.salary;
-    j.perf = 50;
-    j.years = 0;
+    j.level++; j.title = nextLevel.title; j.salary = nextLevel.salary; j.perf = 50; j.years = 0;
     fx({happiness:10});
     log(`PROMOTED! You are now a ${j.title} earning ${money(j.salary)}/yr!`);
   } else {
@@ -852,31 +1016,31 @@ function askPromotion(){
   render();
 }
 
-function quitJob(){ log(`Quit job as ${S.job.title}.`); S.job=null; render(); }
+function quitJob(){ log(`Quit job as ${S.job.title}.`); S.lastSalary=S.job.salary; S.job=null; render(); }
 
-/* Property Management Actions */
-function stayHome(){ S.housing='parents'; log('Living with parents.'); render(); }
-function rentHome(id){ S.housing=id; log('Rented an apartment.'); render(); }
+/* Property management */
+function stayHome(){
+  if (!parents().length || bestBond()<30) return hint('Your parents will not take you in. Improve your bond first.');
+  S.housing='parents'; log('Living with parents.'); hint(); render();
+}
+function rentHome(id){
+  const h=HOUSING_CATALOG.find(x=>x.id===id);
+  if (id!=='room' && S.wealth<Math.round(rentCost(h)/12)) return hint('You cannot cover the first month of rent.');
+  S.housing=id; log(`Rented a ${h.name.toLowerCase()}.`); hint(); render();
+}
 
 function buyProperty(catId, isCash){
   const cat = HOUSING_CATALOG.find(c => c.id === catId);
   const cost = isCash ? cat.price : cat.price * 0.20;
-  if (S.wealth < cost) return hint('Not enough cash.');
-  
+  if (S.wealth < 0 || S.wealth < cost) return hint('Not enough cash.');
+
   S.wealth -= cost;
-  const newHome = {
-    id: 'h_' + Math.random().toString(36).slice(2,7),
-    catId: catId,
-    name: cat.name,
-    value: cat.price,
-    balance: isCash ? 0 : cat.price - cost,
-    cond: 100,
-    rentInc: cat.rentInc || 0,
-    status: 'vacant'
-  };
-  S.ownedHomes.push(newHome);
-  log(`Bought property: ${cat.name}!`);
-  render();
+  S.ownedHomes.push({
+    id: 'h_' + Math.random().toString(36).slice(2,7), catId, name: cat.name, value: cat.price,
+    balance: isCash ? 0 : cat.price - cost, cond: 100, rentInc: cat.rentInc || 0, status: 'vacant'
+  });
+  log(`Bought a property: ${cat.name}!`);
+  hint(); render();
 }
 
 function setLiveProperty(idx){
@@ -887,49 +1051,115 @@ function setLiveProperty(idx){
   render();
 }
 
+const fallbackHome = () => parents().length ? 'parents' : null;
 function setRentProperty(idx){
   S.ownedHomes[idx].status = 'rent';
-  if (S.housing === S.ownedHomes[idx].id) S.housing = 'parents';
+  if (S.housing === S.ownedHomes[idx].id) S.housing = fallbackHome();
   log(`Rented out ${S.ownedHomes[idx].name} to tenants.`);
   render();
 }
 
-function renovateProperty(idx){
-  if (S.wealth < 3000) return hint('Renovation costs $3,000.');
-  S.wealth -= 3000;
-  S.ownedHomes[idx].cond = clamp(S.ownedHomes[idx].cond + 25);
-  S.ownedHomes[idx].value = Math.round(S.ownedHomes[idx].value * 1.08);
-  log(`Renovated ${S.ownedHomes[idx].name}! Property value increased.`);
+function renovateProperty(idx, kind='repair'){
+  const r=RENOS[kind], h=S.ownedHomes[idx];
+  if (S.wealth < r.cost) return hint(`${r.n} costs ${money(r.cost)}.`);
+  S.wealth -= r.cost;
+  h.cond = clamp(h.cond + r.cond);
+  h.value = Math.round(h.value * (1+r.val));
+  log(`${r.n} done on ${h.name}. Its value went up.`);
   render();
 }
 
+/* Pay extra toward a mortgage: any amount, or close it completely */
+function payMortgage(idx, all){
+  const h=S.ownedHomes[idx]; const el=$('mp'+idx);
+  let amt = all ? h.balance : Math.floor(Number(el&&el.value)||0);
+  if (amt<=0) return hint('Enter an amount to pay.');
+  amt=Math.min(amt,h.balance);
+  if (S.wealth<amt) return hint('Not enough cash.');
+  S.wealth-=amt; h.balance-=amt;
+  log(h.balance===0?`You paid off the mortgage on ${h.name}!`:`You paid ${money(amt)} extra toward the mortgage on ${h.name}.`);
+  hint(); render();
+}
+function furnishHome(id){ S.shopHome=id; activeShopTab='furnish'; go('shop'); }
+function buyFurn(cat, optId){
+  const h=targetHome(), o=FURN[cat].opts.find(x=>x.id===optId), pr=Math.round(o.cost*(1-promoPct('furn')));
+  if (!h) return hint('You need a home first.');
+  if (S.wealth<0 || S.wealth<pr) return hint('Not enough cash.');
+  S.wealth-=pr; (S.furn[h]=S.furn[h]||{})[cat]=optId;
+  const own=S.ownedHomes.find(x=>x.id===h); if (own && o.val) own.value+=Math.round(pr*o.val);
+  log(`Bought ${o.n} for ${homeName(h)}.`); hint(); render();
+}
+
 function sellOwnedProperty(idx){
-  const h = S.ownedHomes[idx];
-  const equity = h.value - h.balance;
+  const h = S.ownedHomes[idx], equity = h.value - h.balance;
   S.wealth += equity;
-  if (S.housing === h.id) S.housing = 'parents';
+  if (S.housing === h.id) S.housing = fallbackHome();
   log(`Sold ${h.name} for ${money(equity)} net equity.`);
+  delete S.furn[h.id]; S.inventory=S.inventory.filter(i=>i.homeId!==h.id);   // fittings and installed items go with the sale
   S.ownedHomes.splice(idx, 1);
   render();
 }
 
-/* Shopping Actions */
-function buyShopItem(itemId, method){
-  const item = SHOP_ITEMS.find(i => i.id === itemId);
-  if (method === 'cash'){
-    if (S.wealth < item.cost) return hint('Not enough cash.');
-    S.wealth -= item.cost;
-    S.inventory.push({itemId: item.id, model: item.model, age:0, life: item.life, hap: item.hap, hp: item.hp, soc: item.soc});
-    fx({happiness: item.hap * 2, social: item.soc * 2});
-    log(`Purchased ${item.model} from ${item.store}!`);
+/* Shopping */
+function buyItem(key, method){
+  const it=catalog().find(x=>x.key===key); if (!it) return hint('That model is no longer sold.');
+  const portable=PORTABLE.includes(it.cat);
+  let add=0, st=null;
+  if (it.cat==='phone'){ const sel=$('st_'+key); const i=sel?Number(sel.value):it.minSt; add=STORAGE[i][1]; st=STORAGE[i][0]; }
+  const total=shopPrice(it,add);
+  const home=portable?null:targetHome();
+  if (!portable && !home) return hint('You need a home to install this in.');
+  if (method==='cash'){
+    if (S.wealth<0 || S.wealth<total) return hint('Not enough cash.');
+    S.wealth-=total; log(`Bought ${it.model} for ${money(total)}.`);
   } else {
-    const instPmt = Math.round((item.cost * 1.15) / 3);
-    if (creditLimit() < instPmt) return hint('Bank declined installment credit.');
-    S.shopLoans.push({item: item.model, bal: item.cost * 1.15, pmt: instPmt});
-    S.inventory.push({itemId: item.id, model: item.model, age:0, life: item.life, hap: item.hap, hp: item.hp, soc: item.soc});
-    log(`Financed ${item.model} on 3-year installment plan.`);
+    const pl=PLANS[method];
+    if (S.age<18) return hint('Installment plans need adult credit.');
+    const bal=Math.round(total*(1+pl.rate)), pmt=Math.ceil(bal/pl.years);
+    if (creditLimit()<pmt) return hint('The bank declined installment credit.');
+    S.shopLoans.push({item:it.model,bal,pmt}); log(`Financed ${it.model} over ${pl.years} years (${money(pmt)}/yr).`);
   }
-  render();
+  const chk=$('in_'+key), insured=!!(chk&&chk.checked&&it.cat!=='fashion');
+  const e={uid:'u'+(S.uidN++),key:it.key,cat:it.cat,type:it.type||it.cat,model:it.model,price:total,age:it.d||0,life:it.life,hap:it.hap,hp:it.hp,soc:it.soc,tier:it.tier==null?1:it.tier,homeId:home,broken:false,insured,storage:st,portable};
+  S.inventory.push(e);
+  fx({happiness:it.hap*2, social:it.soc*2});
+  hint(); render();
+}
+const findItem = uid => S.inventory.find(i=>i.uid===uid);
+function repairItem(uid){
+  const i=findItem(uid); if (!i) return;
+  if (i.age>=i.life) return hint('It is too old to repair. Buy a new one.');
+  const c=i.insured?Math.max(30,Math.round(i.price*.08)):Math.max(50,Math.round(i.price*.3));
+  if (S.wealth<c) return hint('Not enough cash.');
+  S.wealth-=c; i.broken=false; log(`Repaired your ${i.model} for ${money(c)}.`); hint(); render();
+}
+function replaceItem(uid){
+  const i=findItem(uid); if (!i) return;
+  if (S.wealth<i.price) return hint('Not enough cash.');
+  S.wealth-=i.price; i.broken=false; i.age=0; log(`Bought a new ${i.model} for ${money(i.price)}.`); hint(); render();
+}
+function toggleInsure(uid){ const i=findItem(uid); if (!i) return; i.insured=!i.insured; log(`${i.insured?'Insured':'Cancelled insurance on'} your ${i.model}.`); render(); }
+function discardItem(uid){ const i=findItem(uid); if (!i) return; S.inventory=S.inventory.filter(x=>x.uid!==uid); log(`Threw away your ${i.model}.`); render(); }
+
+/* Yearly: aging, breakdowns, benefits, insurance premiums */
+function itemsYear(bill){
+  const keep=[];
+  S.inventory.forEach(inv=>{
+    inv.age++;
+    if (inv.cat==='fashion'){ if (inv.age>=inv.life){ log(`Your ${inv.model} wore out.`); return; } }
+    else if (!inv.broken){
+      const worn=inv.age>=inv.life;
+      const p=worn?1:0.02+Math.max(0,(inv.age-inv.life*.5)/inv.life)*.35+(inv.tier===0?.03:0);
+      if (Math.random()<p){ inv.broken=true; log(worn?`Your ${inv.model} is worn out for good. Time for a new one.`:`Your ${inv.model} broke.${inv.insured?' It is insured, so a repair is cheap.':' Repair it or buy a new one in My Items.'}`); }
+    }
+    if (!inv.broken && (inv.portable || inv.homeId===S.housing)){
+      const k=inv.age>=Math.ceil(inv.life*.75)?.5:1;   // outdated items give half the benefit
+      fx({happiness:Math.round(inv.hap*k), health:Math.round(inv.hp*k), social:Math.round(inv.soc*k)});
+    }
+    if (inv.insured) bill.deviceInsurance=(bill.deviceInsurance||0)+Math.round(inv.price*.07);
+    keep.push(inv);
+  });
+  S.inventory=keep;
 }
 
 function setFood(k){ S.food=k; render(); }
@@ -941,16 +1171,16 @@ function takeLoan(a){
   const r = a<=5000?.08:.10, pmt = Math.round(a*r/(1-Math.pow(1+r,-5)));
   S.loans.push({amt:a, bal:a, rate:r, pmt:pmt});
   S.wealth += a;
-  log(`Borrowed ${money(a)} from bank.`);
+  log(`Borrowed ${money(a)} from the bank.`);
   render();
 }
 
-function payBank(i, type){
+function payBank(i){
   const l = S.loans[i];
   if (S.wealth < l.bal) return hint('Not enough cash.');
   S.wealth -= l.bal;
   S.loans.splice(i, 1);
-  log('Paid off bank loan completely!');
+  log('Paid off a bank loan completely!');
   render();
 }
 
@@ -960,20 +1190,19 @@ function famAct(id, type){
   else if (type==='compliment'){ m.bond=clamp(m.bond+5); fx({social:1}); log(`Complimented ${m.name}.`); }
   else if (type==='argue'){ m.bond=clamp(m.bond-10); fx({happiness:3,social:-2}); log(`Argued with ${m.name}.`); }
   else if (Math.random()<m.bond/100*.9){ const amt=(S.age<18?50:300)+rnd(150); S.wealth+=amt; m.bond=clamp(m.bond-2); log(`${m.name} gave you ${money(amt)}.`); }
-  else { m.bond=clamp(m.bond-4); log(`${m.name} declined request.`); }
+  else { m.bond=clamp(m.bond-4); log(`${m.name} declined your request.`); }
   render();
 }
 
 function doActivity(i){
   const a=ACTIVITIES[i], cost = S.age>=18?a.cost:0;
-  if (cost > 0 && cost > S.wealth) return hint('Not enough cash.');
-  S.actions--; S.wealth-=cost; fx(a.fx); log(a.msg); render();
+  if (cost > S.wealth) return hint('Not enough cash.');
+  S.wealth-=cost; fx(a.fx); log(a.msg); render();   // no yearly limit on activities
 }
 
 function choose(i){
   const c = S.ev.choices[i];
-  const cCost = costOf(c);
-  if (cCost > 0 && S.wealth < cCost) return hint('Not enough cash.');
+  if (unaffordable(c)) return hint('Not enough cash.');
   const f = typeof c.fx==='function' ? c.fx() : c.fx;
   fx(f);
   const msg = f.msg || c.result;
@@ -988,14 +1217,20 @@ function choose(i){
    ===================================================================== */
 function ageUp(){
   if (S.pending) return hint('Make your choice first.');
-  if (S.age < 18 && !S.school){ go('school'); return hint('Pick school first.'); }
+  if (S.age < 18 && !S.school){ go('school'); return hint('Pick a school first.'); }
   if (S.age >= 18 && !S.housing){ go('assets'); return hint('Choose housing in Real Estate first.'); }
   hint();
-  
+
   S.age++; S.actions=2; S.worked=false; S.promoTried=false; S.income=0; S.expenses=0;
   const notes = [], bill = {};
   const wasStudying = S.age<=18 || !!S.uni;
+  if (S.age>=18){   // rents rise 2% to 7% every year
+    const rise=.02+Math.random()*.05; S.rentIndex*=1+rise;
+    if (S.housing && homeInfo() && !homeInfo().own) notes.push(`rent rose ${Math.round(rise*100)}%`);
+  }
+  S.promo = Math.random()<.6 ? pick(PROMOS) : null;   // this year's store sale
 
+  // School year (ages 7-18). Parents pay the fees, so nothing is charged to you.
   if (S.age <= 18){
     const sc=SCHOOLS[S.school]||SCHOOLS.national, ef=EFFORT[S.effort];
     fx({smarts:Math.round(ef.smarts>0?ef.smarts*sc.mult:ef.smarts), happiness:ef.happiness, social:ef.social+sc.social});
@@ -1003,83 +1238,84 @@ function ageUp(){
   }
   if (S.age===18){
     S.diploma = S.skips<5;
-    log(S.diploma?'Graduated high school!':'Left school without diploma.');
+    log(S.diploma?'Graduated high school! University is optional: you can also start working.':'Left school without a diploma.');
   }
 
   if (S.uni) uniYear(notes, bill);
 
+  // Part-time work
   if (S.part){
-    if (!wasStudying){ S.part=null; }
-    else { const st=S.part.stress+(S.effort==='hard'?2:0); S.income+=S.part.pay; fx({happiness:-st, health:-1}); }
+    if (!wasStudying){ S.part=null; log('Your part-time job ended with your studies.'); }
+    else { const st=S.part.stress+(S.effort==='hard'?2:0); S.income+=S.part.pay; fx({happiness:-st, health:-1, smarts:-1}); }
   }
 
-  // Job Progress & Salary
+  // Career: salary, schedule stress, performance, forced retirement
   if (S.job){
-    const track = TRACKS[S.job.trackId];
-    const lvlData = track.levels[S.job.level];
-    
-    // Work Schedule Stress/Bonus
+    const lvlData = TRACKS[S.job.trackId].levels[S.job.level];
     let extraPerf = 0, extraStress = 0;
     if (S.schedule === 'over'){ extraPerf = 8; extraStress = 4; }
     else if (S.schedule === 'crunch'){ extraPerf = 18; extraStress = 9; }
-    
+
     S.job.perf = clamp(S.job.perf + extraPerf - 2);
     fx({happiness: -(lvlData.stress + extraStress), health: extraStress > 5 ? -2 : 0});
-    
-    S.income += S.job.salary;
+    S.income += S.job.salary; S.lastSalary = S.job.salary;
     S.job.years++;
-    
+
     if (S.job.perf < 10){
       log(`Fired from ${S.job.title} due to poor performance!`);
-      S.lastSalary = S.job.salary;
       S.job = null;
-    }
+    } else if (S.age >= RETIRE_FORCED){ retireNow(true); }
   }
+  if (S.retired) S.income += S.pension;
 
-  // Owned Real Estate Portfolio Tick
+  // Owned properties: 3% appreciation, condition decay, mortgage (5% interest), tenants
   S.ownedHomes.forEach(h => {
+    const cat = HOUSING_CATALOG.find(c=>c.id===h.catId);
     h.cond = clamp(h.cond - 3);
-    h.value = Math.round(h.value * 1.03); // 3% annual appreciation
+    h.value = Math.round(h.value * 1.03);
     if (h.balance > 0){
-      const pmt = Math.min(h.balance, Math.round(h.value * 0.04));
+      h.balance = Math.round(h.balance * 1.05);
+      const pmt = Math.min(h.balance, cat ? cat.pay : Math.round(h.value*.04));
       h.balance -= pmt;
-      bill['mortgage_' + h.id] = pmt;
+      bill.mortgage = (bill.mortgage||0) + pmt;
     }
     if (h.status === 'rent'){
-      const rentCollected = Math.round(h.rentInc * (h.cond / 100));
+      const rentCollected = Math.round(h.rentInc * S.rentIndex * (h.cond / 100));
       S.income += rentCollected;
-      notes.push(`Collected ${money(rentCollected)} rent`);
+      notes.push(`tenants paid ${money(rentCollected)}`);
     }
   });
 
-  // Inventory Lifetime & Stat Boosts
-  S.inventory.forEach((inv, idx) => {
-    inv.age++;
-    fx({happiness: inv.hap, health: inv.hp, social: inv.soc});
-  });
-  S.inventory = S.inventory.filter(inv => inv.age < inv.life);
+  // Items you own: aging, breakdowns, yearly benefits, insurance
+  itemsYear(bill);
 
-  // Shop Installments Payment
-  S.shopLoans.forEach((l, idx) => {
-    const pmt = Math.min(l.bal, l.pmt);
-    l.bal -= pmt;
-    bill['installment_' + idx] = pmt;
-  });
+  // Shop installments and bank loans: interest, then the yearly payment
+  S.shopLoans.forEach(l => { const p=Math.min(l.bal,l.pmt); l.bal-=p; bill.installments=(bill.installments||0)+p; });
   S.shopLoans = S.shopLoans.filter(l => l.bal > 0);
+  S.loans.forEach(l => { l.bal=Math.round(l.bal*(1+l.rate)); const p=Math.min(l.bal,l.pmt); l.bal-=p; bill.bankLoans=(bill.bankLoans||0)+p; });
+  S.loans = S.loans.filter(l => l.bal > 0);
 
-  // Living Costs
+  // Living costs (adults)
   if (S.age>=18){
-    const withP = S.housing==='parents', fd=FOOD[S.food], tr=TRANSPORT[S.transport];
-    bill.groceries = Math.round(fd.cost*(withP?.4:1));
+    const hi = homeInfo(), fd=FOOD[S.food], tr=TRANSPORT[S.transport];
+    bill.groceries = Math.round(fd.cost*(S.housing==='parents'?.4:1));
     bill.phone = PHONE;
     bill.transport = tr.cost;
     if (S.insured) bill.insurance = INSURANCE;
     fx({health:fd.hp, happiness:fd.hap+tr.hap});
 
+    if (S.housing==='parents'){ if (S.famWealth<1) bill.familyContribution = 1500; }
+    else if (hi){
+      fx({happiness:hi.cat.hap, health:hi.cat.hp});
+      bill.utilities = hi.cat.util;
+      if (hi.own){ bill.propertyTax = Math.round(hi.own.value*PROP_TAX); if (hi.own.cond<40) fx({happiness:-2}); }
+      else bill.rent = rentCost(hi.cat);
+    }
+
     bill.payrollTax = Math.round(S.income * PAYROLL);
     bill.incomeTax = incomeTax(Math.max(0, S.income));
-    
-    if (S.loan>0){
+
+    if (S.loan>0){   // student loan: 5% interest, repay up to 10% of income
       S.loan = Math.round(S.loan * 1.05);
       const r = Math.min(S.loan, Math.round(S.income * .10));
       S.loan -= r;
@@ -1088,11 +1324,16 @@ function ageUp(){
   }
 
   bill.children = familyYear();
+  const cf = comfort(S.housing); if (cf.hap||cf.hp||cf.sm) fx({happiness:cf.hap, health:cf.hp, smarts:cf.sm});   // furnished home comfort
   S.expenses = Object.values(bill).reduce((a,b)=>a+b,0);
   S.bill = bill;
   S.wealth += S.income - S.expenses;
-  
-  if (S.age<18) S.wealth = Math.max(0, S.wealth);
+  if (S.age<18) S.wealth = Math.max(0, S.wealth);   // parents absorb any shortfall
+
+  if (S.age>=18) notes.push(`earned ${money(S.income)}, spent ${money(S.expenses)}`);
+  if (S.wealth<0 && S.age>=18){ fx({happiness:-3}); notes.push('debt is weighing on you'); }
+  if (S.age>50) fx({health:-Math.ceil((S.age-50)/8)});
+  if (notes.length) log(notes.join('; ')+'.');
 
   const pool = EVENTS.filter(e=>S.age>=e.min && S.age<=e.max && e.id!==S.lastEvent && (!e.ok || e.ok()));
   if (pool.length && Math.random()<.8){
@@ -1106,13 +1347,17 @@ function ageUp(){
 function checkDeath(){
   if (S.health>0) return;
   S.dead=true; try { localStorage.removeItem(SAVE_KEY); } catch(e){}
-  $('game').classList.add('hidden'); $('gameover').classList.remove('hidden');$('summary').textContent = `${S.name} lived to ${S.age}. Final net worth: ${money(netWorth())}. Smarts ${S.smarts}%, Happiness ${S.happiness}%, Social ${S.social}%.`;
+  $('game').classList.add('hidden'); $('gameover').classList.remove('hidden');
+  $('summary').textContent = `${S.name} lived to ${S.age}. Final net worth: ${money(netWorth())}. Smarts ${S.smarts}%, Happiness ${S.happiness}%, Social ${S.social}%.`;
 }
 
-/* Setup & Initialization */
+/* =====================================================================
+   6. SETUP & INITIALIZATION
+   ===================================================================== */
 let avG='n', avT=0;
 function renderPick(){
-  $('av-big').textContent = face(avG,avT,6);$('av-g').innerHTML = [['f','Girl'],['n','Neutral'],['m','Boy']].map(([g,l])=>`<button class="chip ${avG===g?'sel':''}" onclick="pickG('${g}')">${face(g,avT,20)}</button>`).join('');
+  $('av-big').textContent = face(avG,avT,6);
+  $('av-g').innerHTML = [['f','Girl'],['n','Neutral'],['m','Boy']].map(([g,l])=>`<button class="chip ${avG===g?'sel':''}" onclick="pickG('${g}')">${face(g,avT,20)}</button>`).join('');
   $('av-t').innerHTML = [0,1,2].map(t=>`<button class="chip ${avT===t?'sel':''}" onclick="pickT(${t})">🖐${TONES[t]}</button>`).join('');
 }
 function pickG(g){ avG=g; renderPick(); }
@@ -1124,9 +1369,9 @@ function startGame(){
   if (hasSave() && !newArmed){ newArmed=true; $('start-btn').textContent='Tap again to replace saved life'; return; }
   newGame($('name-input').value.trim(), avG, avT);
   activeTab='life'; menuOpen=false; newArmed=false;
-  $('start').classList.add('hidden');$('game').classList.remove('hidden');
+  $('start').classList.add('hidden'); $('game').classList.remove('hidden');
   log('Life began at age 6.');
-  S.ev={title:'Your story begins',text:`${S.name}, you are 6 years old and starting school. Open Education to choose your effort level.`,choices:[]};
+  S.ev={title:'Your story begins',text:`${S.name}, you are 6 years old and starting school. Open the Education tab and choose a school.`,choices:[]};
   render();
 }
 
@@ -1140,9 +1385,9 @@ function initStart(){
 renderPick();
 $('name-input').addEventListener('keydown', e => { if (e.key==='Enter') startGame(); });
 window.addEventListener('beforeunload', () => save());
-if (initStart()){
+if (initStart()){   // a save exists: restore it straight away
   try { loadGame(); }
-  catch(err){ S=null; $('game').classList.add('hidden');$('start').classList.remove('hidden'); }
+  catch(err){ S=null; $('game').classList.add('hidden'); $('start').classList.remove('hidden'); }
 }
 </script>
 </body>
