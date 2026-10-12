@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lifeline – Life Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  /* ---------- Design tokens: one place to change the whole look ---------- */
+  :root {
+    --bg: #0b0b12;
+    --card: #14141f;
+    --line: #25253a;
+    --text: #e8e8f2;
+    --muted: #8a8aa3;
+    --violet: #8b5cf6;
+    --cyan: #22d3ee;
+    --rose: #fb7185;
+    --mint: #34d399;
+    --amber: #fbbf24;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    min-height: 100vh; display: flex; justify-content: center; padding: 16px;
+  }
+  /* Single centered column = works on phones and desktops */
+  #app { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+
+  /* ---------- Profile / stats ---------- */
+  .profile { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 14px; }
+  .name { font-size: 1.15rem; font-weight: 700; }
+  .age { font-family: 'Bebas Neue', sans-serif; font-size: 2.6rem; line-height: .9; color: var(--violet); }
+  .age small { font-size: 1rem; color: var(--muted); margin-left: 4px; }
+  .stat { margin-bottom: 10px; }
+  .stat-top { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
+  .stat-top b { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--text); }
+  .bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .fill { height: 100%; width: 0; border-radius: 3px; transition: width .4s ease; }
+  .money { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); }
+  .money b { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--mint); }
+
+  /* ---------- Event area ---------- */
+  #event-title { font-weight: 700; margin-bottom: 6px; }
+  #event-text { color: var(--muted); line-height: 1.55; margin-bottom: 14px; }
+  .choice {
+    display: block; width: 100%; text-align: left; margin-top: 8px; padding: 12px 14px;
+    background: transparent; color: var(--text); font: inherit;
+    border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .choice:hover, .choice:focus-visible { border-color: var(--violet); background: #1a1a2b; outline: none; }
+
+  /* ---------- Age Up button ---------- */
+  #age-btn {
+    width: 100%; padding: 16px; border: 0; border-radius: 12px; cursor: pointer;
+    background: var(--violet); color: #fff; font: 700 1rem 'DM Sans', sans-serif;
+    transition: filter .15s, transform .1s;
+  }
+  #age-btn:hover { filter: brightness(1.12); }
+  #age-btn:active { transform: scale(.98); }
+  #age-btn:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; filter: none; }
+
+  /* ---------- Log ---------- */
+  #log { max-height: 220px; overflow-y: auto; font-size: .88rem; line-height: 1.5; }
+  .log-row { padding: 6px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
+  .log-row:last-child { border-bottom: 0; }
+  .log-row b { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--cyan); margin-right: 8px; }
+
+  /* ---------- Start & game-over screens ---------- */
+  .overlay { text-align: center; padding: 28px 16px; }
+  .overlay h1 { font-family: 'Bebas Neue', sans-serif; font-size: 3rem; font-weight: 400; color: var(--violet); }
+  .overlay p { color: var(--muted); margin: 8px 0 16px; line-height: 1.5; }
+  .overlay input {
+    width: 100%; padding: 12px; margin-bottom: 12px; background: var(--bg); color: var(--text);
+    border: 1px solid var(--line); border-radius: 10px; font: inherit; text-align: center;
+  }
+  .hidden { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- START SCREEN: shown once, asks for a name -->
+  <section id="start" class="card overlay">
+    <h1>Lifeline</h1>
+    <p>You are six years old. Every choice shapes the years ahead.</p>
+    <input id="name-input" placeholder="Your name" maxlength="20" autocomplete="off">
+    <button class="choice" id="start-btn" style="text-align:center">Begin life</button>
+  </section>
+
+  <!-- GAME SCREEN -->
+  <div id="game" class="hidden" style="display:flex;flex-direction:column;gap:12px">
+    <section class="card" id="profile"></section>
+    <section class="card">
+      <div id="event-title"></div>
+      <div id="event-text"></div>
+      <div id="choices"></div>
+    </section>
+    <button id="age-btn">Age up</button>
+    <section class="card">
+      <div class="stat-top" style="margin-bottom:6px">Life log</div>
+      <div id="log"></div>
+    </section>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <section id="gameover" class="card overlay hidden">
+    <h1>You passed away</h1>
+    <p id="summary"></p>
+    <button class="choice" id="restart-btn" style="text-align:center">Live another life</button>
+  </section>
+</div>
+
+<script>
+/* =====================================================================
+   1. GAME STATE
+   One object holds everything about the current life.
+   ===================================================================== */
+let state;
+
+function newGame(name) {
+  state = {
+    name: name || 'Alex',
+    age: 6,            // we start at school age
+    health: 100,       // 0-100, reaching 0 = death
+    happiness: 100,    // 0-100
+    smarts: 50,        // 0-100
+    wealth: 0,         // dollars, no upper limit
+    lastEvent: null,   // remembers the last event so it doesn't repeat back-to-back
+    pending: false     // true while the player still has to pick a choice
+  };
+}
+
+/* =====================================================================
+   2. EVENT POOL
+   Each event has:
+     minAge / maxAge – when it can appear
+     title, text     – what the player reads
+     choices         – 2-3 options; each has a label, a stat-change object
+                       (fx) and a result sentence added to the log
+   To add content, copy any block and edit it.
+   ===================================================================== */
+const EVENTS = [
+  { id: 'homework', minAge: 6, maxAge: 12, title: 'Homework night',
+    text: 'You have a big pile of homework, but your friends are outside playing.',
+    choices: [
+      { label: 'Do the homework',  fx: { smarts: +6, happiness: -3 }, result: 'You finished your homework and learned a lot.' },
+      { label: 'Go play outside',  fx: { smarts: -3, happiness: +6 }, result: 'You played until sunset. The homework stayed untouched.' } ] },
+
+  { id: 'bully', minAge: 7, maxAge: 14, title: 'The bully',
+    text: 'An older kid keeps taking your lunch money.',
+    choices: [
+      { label: 'Stand up to them', fx: { health: -8, happiness: +5 }, result: 'You got a bruise, but the bully backed off.' },
+      { label: 'Tell a teacher',   fx: { happiness: +2, smarts: +1 }, result: 'The teacher stepped in and the problem ended.' },
+      { label: 'Keep quiet',       fx: { happiness: -8, wealth: -5 }, result: 'You stayed quiet and lost more lunch money.' } ] },
+
+  { id: 'pet', minAge: 6, maxAge: 15, title: 'A stray dog',
+    text: 'A friendly stray dog follows you home from school.',
+    choices: [
+      { label: 'Adopt it',         fx: { happiness: +10, wealth: -20 }, result: 'You adopted the dog. Food costs money, but it is worth it.' },
+      { label: 'Give it water and move on', fx: { happiness: +1 }, result: 'You gave it water and waved goodbye.' } ] },
+
+  { id: 'exam', minAge: 10, maxAge: 18, title: 'Big exam tomorrow',
+    text: 'A major exam is tomorrow. You have not studied.',
+    choices: [
+      { label: 'Study all night',  fx: { smarts: +8, health: -4, happiness: -4 }, result: 'You studied late and aced the exam, but you were exhausted.' },
+      { label: 'Wing it',          fx: { smarts: -2, happiness: +2 }, result: 'You slept well and scraped a pass.' },
+      { label: 'Skip school',      fx: { smarts: -6, happiness: +6 }, result: 'You skipped the exam and had a great day. The consequences came later.' } ] },
+
+  { id: 'sport', minAge: 8, maxAge: 40, title: 'Team tryouts',
+    text: 'Your local sports team is holding open tryouts.',
+    choices: [
+      { label: 'Try out',          fx: { health: +8, happiness: +4 }, result: 'You made the team and got fitter.' },
+      { label: 'Stay home and game', fx: { health: -3, happiness: +5 }, result: 'You stayed in and had fun on the couch.' } ] },
+
+  { id: 'job', minAge: 16, maxAge: 35, title: 'First job offer',
+    text: 'A local cafe offers you a part-time job.',
+    choices: [
+      { label: 'Take the job',     fx: { wealth: +900, happiness: -3, health: -1 }, result: 'You worked hard and earned some money.' },
+      { label: 'Decline',          fx: { happiness: +4 }, result: 'You enjoyed your free time instead.' } ] },
+
+  { id: 'party', minAge: 15, maxAge: 30, title: 'Wild party',
+    text: 'Friends invite you to a party that will go very late.',
+    choices: [
+      { label: 'Go and enjoy it',  fx: { happiness: +9, health: -6, smarts: -2 }, result: 'It was an unforgettable night, and a rough morning.' },
+      { label: 'Stay home',        fx: { happiness: -3, health: +2 }, result: 'You rested but felt a little left out.' } ] },
+
+  { id: 'college', minAge: 18, maxAge: 22, title: 'University offer',
+    text: 'You received an acceptance letter from a good university.',
+    choices: [
+      { label: 'Enroll',           fx: { smarts: +12, wealth: -1500, happiness: -2 }, result: 'You enrolled. Tuition hurts, but your mind grows.' },
+      { label: 'Start working',    fx: { wealth: +2500, smarts: -1 }, result: 'You went straight to work and started saving.' },
+      { label: 'Travel the world', fx: { happiness: +12, wealth: -800 }, result: 'You backpacked for a year and came back changed.' } ] },
+
+  { id: 'investment', minAge: 22, maxAge: 70, title: 'Investment tip',
+    text: 'A colleague tells you about a risky investment with big potential.',
+    choices: [
+      { label: 'Invest $1,000',    fx: () => Math.random() < 0.5 ? { wealth: +2500, happiness: +6 } : { wealth: -1000, happiness: -6 },
+        result: null }, /* result text is built from the outcome, see applyChoice() */
+      { label: 'Play it safe',     fx: { wealth: +100, happiness: +1 }, result: 'You put a little in savings instead.' } ] },
+
+  { id: 'checkup', minAge: 35, maxAge: 100, title: 'Doctor visit',
+    text: 'Your doctor recommends lifestyle changes.',
+    choices: [
+      { label: 'Follow the advice', fx: { health: +8, happiness: -2 }, result: 'You changed your habits and feel better.' },
+      { label: 'Ignore it',         fx: { health: -8, happiness: +2 }, result: 'You ignored the advice. Your body noticed.' } ] },
+
+  { id: 'promotion', minAge: 25, maxAge: 60, title: 'Promotion chance',
+    text: 'Your boss offers you a promotion with longer hours.',
+    choices: [
+      { label: 'Accept',           fx: { wealth: +4000, happiness: -5, health: -3 }, result: 'You got the raise, along with the stress.' },
+      { label: 'Decline',          fx: { happiness: +4, health: +2 }, result: 'You kept a balanced life.' } ] }
+];
+
+/* =====================================================================
+   3. HELPERS
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const clamp = n => Math.max(0, Math.min(100, n));
+const money = n => (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString();
+
+/* Adds one line to the life log (newest on top). */
+function log(text) {
+  const row = document.createElement('div');
+  row.className = 'log-row';
+  row.innerHTML = `<b>Age ${state.age}</b>`;
+  row.append(text);
+  $('log').prepend(row);
+}
+
+/* Redraws the stats card from the current state. */
+function renderProfile() {
+  const bars = [
+    ['Health', state.health, 'var(--rose)'],
+    ['Happiness', state.happiness, 'var(--amber)'],
+    ['Smarts', state.smarts, 'var(--cyan)']
+  ].map(([label, v, color]) => `
+    <div class="stat">
+      <div class="stat-top"><span>${label}</span><b>${v}%</b></div>
+      <div class="bar"><div class="fill" style="width:${v}%;background:${color}"></div></div>
+    </div>`).join('');
+
+  $('profile').innerHTML = `
+    <div class="profile">
+      <div class="name">${state.name}</div>
+      <div class="age">${state.age}<small>years old</small></div>
+    </div>
+    ${bars}
+    <div class="money"><span>Wealth</span><b>${money(state.wealth)}</b></div>`;
+}
+
+/* Applies a stat-change object like {health:-5, wealth:+100}. */
+function applyFx(fx) {
+  state.health    = clamp(state.health    + (fx.health    || 0));
+  state.happiness = clamp(state.happiness + (fx.happiness || 0));
+  state.smarts    = clamp(state.smarts    + (fx.smarts    || 0));
+  state.wealth   += (fx.wealth || 0);   // wealth is uncapped and can go negative
+}
+
+/* =====================================================================
+   4. GAME FLOW
+   ===================================================================== */
+
+/* Called when the player clicks "Age up". */
+function ageUp() {
+  if (state.pending) return;          // must choose first
+  state.age++;
+
+  /* Slow natural decline in health after 50, so every life eventually ends. */
+  if (state.age > 50) state.health = clamp(state.health - Math.ceil((state.age - 50) / 8));
+
+  /* Pick a random event that fits this age and isn't the same as last year's. */
+  const options = EVENTS.filter(e => state.age >= e.minAge && state.age <= e.maxAge && e.id !== state.lastEvent);
+
+  if (options.length && Math.random() < 0.85) {
+    const ev = options[Math.floor(Math.random() * options.length)];
+    state.lastEvent = ev.id;
+    showEvent(ev);
+  } else {
+    /* Quiet year: no choice needed. */
+    $('event-title').textContent = 'A quiet year';
+    $('event-text').textContent = 'Nothing major happened. Life went on.';
+    $('choices').innerHTML = '';
+    log('A quiet year.');
+  }
+  renderProfile();
+  checkDeath();
+}
+
+/* Shows an event and builds one button per choice. */
+function showEvent(ev) {
+  state.pending = true;
+  $('age-btn').disabled = true;
+  $('event-title').textContent = ev.title;
+  $('event-text').textContent = ev.text;
+  $('choices').innerHTML = '';
+  ev.choices.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.textContent = c.label;
+    btn.onclick = () => applyChoice(ev, c);
+    $('choices').append(btn);
+  });
+}
+
+/* Applies the chosen option, logs it, and unlocks Age up. */
+function applyChoice(ev, choice) {
+  /* fx can be a plain object, or a function for random outcomes. */
+  const fx = typeof choice.fx === 'function' ? choice.fx() : choice.fx;
+  applyFx(fx);
+
+  const result = choice.result || (fx.wealth > 0 ? 'The investment paid off.' : 'The investment failed. You lost your money.');
+  log(`${ev.title}: ${result}`);
+
+  $('event-text').textContent = result;
+  $('choices').innerHTML = '';
+  state.pending = false;
+  $('age-btn').disabled = false;
+  renderProfile();
+  checkDeath();
+}
+
+/* Death check: Health at 0 ends the game. */
+function checkDeath() {
+  if (state.health > 0) return;
+  $('game').classList.add('hidden');
+  $('gameover').classList.remove('hidden');
+  $('summary').textContent =
+    `${state.name} lived to ${state.age} (${state.age - 6} years played). ` +
+    `Final wealth: ${money(state.wealth)}. Smarts: ${state.smarts}%. Happiness: ${state.happiness}%.`;
+}
+
+/* =====================================================================
+   5. START / RESTART WIRING
+   ===================================================================== */
+function startGame() {
+  newGame($('name-input').value.trim());
+  $('log').innerHTML = '';
+  $('start').classList.add('hidden');
+  $('gameover').classList.add('hidden');
+  $('game').classList.remove('hidden');
+  $('age-btn').disabled = false;
+  $('event-title').textContent = 'Your story begins';
+  $('event-text').textContent = `${state.name}, you are 6 years old and starting school. Press Age up to continue.`;
+  $('choices').innerHTML = '';
+  log('Life began at age 6.');
+  renderProfile();
+}
+
+$('start-btn').onclick = startGame;
+$('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') startGame(); });
+$('age-btn').onclick = ageUp;
+$('restart-btn').onclick = () => { $('gameover').classList.add('hidden'); $('start').classList.remove('hidden'); };
+</script>
+</body>
+</html>
