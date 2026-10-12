@@ -523,7 +523,6 @@ function viewLife(){
   const e = S.ev;
   const household = `<section class="card"><div class="famrow"><div><span>${myFace()}</span>You</div>${S.family.filter(m=>m.alive).map(m=>`<div><span>${memFace(m)}</span>${m.name}</div>`).join('')}</div></section>`;
   
-  /* FIX: Checked strictly > 0 so 0-cost choices are NEVER blocked by negative wealth */
   const eventCard = e
     ? `<section class="card"><h3>${e.title}</h3><p class="muted">${evText(e)}</p>${(e.choices||[]).map((c,i)=>{ 
         const cCost = costOf(c);
@@ -553,7 +552,6 @@ function viewSchool(){
   if (S.degree) return `<section class="card"><h3>Graduate</h3><p class="muted">Degree: <b>${MAJORS[S.degree].name}</b>. Higher career levels unlocked!</p></section>`;
   if (!S.diploma) return `<section class="card"><h3>No diploma</h3><p class="muted">You left school without a diploma.</p></section>`;
   
-  /* Added Option to explicitly Skip University & pursue High School workforce */
   const skipUniCard = `<section class="card" style="border:1px solid var(--cyan)">
     <h3>Skip University</h3>
     <p class="muted">University is completely optional. You can stick with your High School Diploma and enter the workforce directly.</p>
