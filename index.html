@@ -280,19 +280,23 @@ const EVENTS = [
     {label:'Stand up to them',fx:{health:-6,happiness:4,social:2},result:'You took a bruise, but they backed off.'},
     {label:'Tell a teacher',fx:{happiness:2,social:1},result:'The teacher stepped in and it stopped.'},
     {label:'Keep quiet',fx:{happiness:-7,social:-2},result:'You stayed quiet and it kept happening.'}]},
+  {id:'parent_plan',min:18,max:19,ok:()=>parents().length>0 && !S.uni && !S.degree,title:'Your parents have a plan',text:'Your parents want you to study Law at a national university, and they offer to pay the tuition.',choices:[
+    {label:'Agree',cost:0,fx:()=>{ S.uni={type:'national',major:'law',year:0,pay:'parents',scholar:false}; return {happiness:5,social:3,msg:'Enrolled in Law at National University with parents paying tuition.'}; }},
+    {label:'Refuse',cost:0,fx:()=>{ parents().forEach(m=>m.bond=clamp(m.bond-5)); return {happiness:2,msg:'You refused your parents\' plan to pursue your own path.'}; }}
+  ]},
   {id:'medical',min:18,max:100,title:'Medical bill',
     text:()=>S.insured?'An unexpected illness leads to a bill. Your insurance covers most of it and you owe $180.':'An unexpected illness leads to a $900 medical bill. You have no health insurance.',choices:[
     {label:'Pay for treatment',cost:()=>S.insured?180:900,fx:()=>{ const c=S.insured?180:900; return {wealth:-c,health:3,msg:`You paid ${money(c)} and recovered.`}; }},
-    {label:'Skip treatment',fx:{health:-10,happiness:-3},result:'You skipped treatment and it hit your health.'}]},
+    {label:'Skip treatment',cost:0,fx:{health:-10,happiness:-3},result:'You skipped treatment and it hit your health.'}]},
   {id:'date',min:18,max:45,ok:()=>!partner(),title:'Someone special',text:'You keep running into someone you like.',choices:[
-    {label:'Ask them out',fx:()=>{ if(Math.random()<.6){ addMember('Partner',S.age+rnd(5)-2,60); return {happiness:8,social:4,msg:'You started dating.'}; } return {happiness:-4,msg:'They politely said no.'}; }},
-    {label:'Stay friends',fx:{social:2},result:'You kept it casual.'}]},
+    {label:'Ask them out',cost:0,fx:()=>{ if(Math.random()<.6){ addMember('Partner',S.age+rnd(5)-2,60); return {happiness:8,social:4,msg:'You started dating.'}; } return {happiness:-4,msg:'They politely said no.'}; }},
+    {label:'Stay friends',cost:0,fx:{social:2},result:'You kept it casual.'}]},
   {id:'proposal',min:22,max:60,ok:()=>{const p=partner(); return p&&p.role==='Partner'&&p.bond>=70;},title:'Marriage',text:'Your relationship is strong. A wedding would cost $2,000.',choices:[
     {label:'Propose',cost:2000,fx:()=>{ partner().role='Spouse'; return {wealth:-2000,happiness:8,social:4,msg:'You got married. The wedding cost $2,000.'}; }},
-    {label:'Not yet',fx:{},result:'You decided to wait.'}]},
+    {label:'Not yet',cost:0,fx:{},result:'You decided to wait.'}]},
   {id:'baby',min:22,max:42,ok:()=>{const p=partner(); return p&&p.role==='Spouse'&&kids().length<3;},title:'Starting a family',text:'You and your spouse talk about having a child. A child costs about $3,000 a year until 18.',choices:[
-    {label:'Have a child',fx:()=>{ addMember('Child',0,85); return {happiness:8,health:-2,msg:'You welcomed a child.'}; }},
-    {label:'Not now',fx:{},result:'You decided to wait.'}]}
+    {label:'Have a child',cost:0,fx:()=>{ addMember('Child',0,85); return {happiness:8,health:-2,msg:'You welcomed a child.'}; }},
+    {label:'Not now',cost:0,fx:{},result:'You decided to wait.'}]}
 ];
 
 /* =====================================================================
@@ -518,37 +522,56 @@ function render(){
 function viewLife(){
   const e = S.ev;
   const household = `<section class="card"><div class="famrow"><div><span>${myFace()}</span>You</div>${S.family.filter(m=>m.alive).map(m=>`<div><span>${memFace(m)}</span>${m.name}</div>`).join('')}</div></section>`;
+  
+  /* FIX: Checked strictly > 0 so 0-cost choices are NEVER blocked by negative wealth */
   const eventCard = e
-    ? `<section class="card"><h3>${e.title}</h3><p class="muted">${evText(e)}</p>${(e.choices||[]).map((c,i)=>{ const no=costOf(c)>S.wealth; return `<button class="btn" ${no?'disabled':''} onclick="choose(${i})">${c.label}${no?'<small>Not enough cash</small>':''}</button>`; }).join('')}</section>`
+    ? `<section class="card"><h3>${e.title}</h3><p class="muted">${evText(e)}</p>${(e.choices||[]).map((c,i)=>{ 
+        const cCost = costOf(c);
+        const no = cCost > 0 && S.wealth < cCost; 
+        return `<button class="btn" ${no?'disabled':''} onclick="choose(${i})">${c.label}${no?'<small>Not enough cash</small>':''}</button>`; 
+      }).join('')}</section>`
     : `<section class="card"><h3>Your story</h3><p class="muted">Press Age up to continue.</p></section>`;
+    
   return household + eventCard + `<section class="card"><h3>Life log</h3><div id="log">${S.logRows.map(r=>`<div class="log-row"><b>Age ${r.age}</b>${r.t}</div>`).join('')}</div></section>`;
 }
 
 function viewSchool(){
   const efforts = Object.entries(EFFORT).map(([k,e]) => `<button class="btn ${S.effort===k?'sel':''}" onclick="pickEffort('${k}')">${e.label}</button>`).join('');
   const effortCard = `<section class="card"><h3>Effort this year</h3><p class="muted">Applied when you age up.${S.age<18?' Years skipped: '+S.skips+'.':''}</p>${efforts}</section>`;
+  
   if (S.age<18){
     const schools = Object.entries(SCHOOLS).map(([k,s]) => { const why=schoolBlock(k);
       return `<button class="btn ${S.school===k?'sel':''}" ${why?'disabled':''} onclick="pickSchool('${k}')">${s.name} · ${s.cost?money(s.cost)+'/yr, paid by parents':'Free'}<small>${why||s.desc}</small></button>`; }).join('');
     return `<section class="card"><h3>School</h3><p class="muted">Family status: <b>${FAMILY[S.famWealth]}</b>.</p>${schools}</section>` + effortCard;
   }
+  
   if (S.uni){
     const u=S.uni, un=UNIS[u.type], mj=MAJORS[u.major];
     return `<section class="card"><h3>${mj.name} · ${un.name}</h3><p class="muted">Year ${u.year} of ${mj.years}. Tuition ${money(tuitionFor(u))}/yr. Student loan: ${money(S.loan)}.</p><button class="btn" onclick="dropOut()">Drop out</button></section>` + effortCard;
   }
+  
   if (S.degree) return `<section class="card"><h3>Graduate</h3><p class="muted">Degree: <b>${MAJORS[S.degree].name}</b>. Higher career levels unlocked!</p></section>`;
   if (!S.diploma) return `<section class="card"><h3>No diploma</h3><p class="muted">You left school without a diploma.</p></section>`;
+  
+  /* Added Option to explicitly Skip University & pursue High School workforce */
+  const skipUniCard = `<section class="card" style="border:1px solid var(--cyan)">
+    <h3>Skip University</h3>
+    <p class="muted">University is completely optional. You can stick with your High School Diploma and enter the workforce directly.</p>
+    <button class="btn" style="text-align:center;background:var(--violet);color:#fff;font-weight:700;margin-top:8px" onclick="go('career')">Skip University & View Jobs</button>
+  </section>`;
+
   const payBtns = Object.entries(PAYERS).map(([k,p]) => `<button class="btn ${S.payPref===k?'sel':''}" onclick="setPay('${k}')">${p.label}<small>${p.desc}</small></button>`).join('');
   const majors = Object.entries(MAJORS).map(([k,m]) => `<div style="margin-top:12px"><b>${m.name}</b> <span class="muted">· ${m.years} yrs · Req Smarts ${m.min}%</span>
     <div class="acts" style="margin-top:6px"><button class="btn" onclick="enrollUni('national','${k}')">National · ${money(UNIS.national.tuition)}/yr</button><button class="btn" onclick="enrollUni('private','${k}')">Private · ${money(UNIS.private.tuition)}/yr</button></div></div>`).join('');
-  return `<section class="card"><h3>Who pays tuition?</h3>${payBtns}</section><section class="card"><h3>University</h3>${majors}</section>`;
+  
+  return skipUniCard + `<section class="card"><h3>Who pays tuition?</h3>${payBtns}</section><section class="card"><h3>University Options</h3>${majors}</section>`;
 }
 
 function viewPart(){
   const cur=S.part;
   const list = PART_JOBS.map(p => { const why=(S.age<p.minAge?`From age ${p.minAge}. `:'')+(S.smarts<p.smarts?`Needs ${p.smarts}% Smarts.`:'');
     return `<button class="btn ${cur&&cur.id===p.id?'sel':''}" ${why?'disabled':''} onclick="takePart('${p.id}')">${p.title} · ${money(p.pay)}/yr<small>${why||'Stress '+p.stress+'/yr.'}</small></button>`; }).join('');
-  return `<section class="card"><h3>Part-time work</h3><p class="muted">${cur?`Working as a ${cur.title.toLowerCase()}.`:'Side job for students.'}</p>${list}${cur?'<button class="btn" onclick="quitJob()">Quit job</button>':''}</section>`;
+  return `<section class="card"><h3>Part-time work</h3><p class="muted">${cur?`Working as a ${cur.title.toLowerCase()}.`:'Side job for students.'}</p>${list}${cur?'<button class="btn" onclick="quitPart()">Quit job</button>':''}</section>`;
 }
 
 /* CAREER TAB: Multi-Tiered Ranks, Work Schedules, Overtime */
@@ -742,7 +765,7 @@ function viewBank(){
 }
 
 function viewActivities(){
-  const list = ACTIVITIES.map((a,i) => `<button class="btn" ${S.actions<1||(S.age>=18&&a.cost>S.wealth)?'disabled':''} onclick="doActivity(${i})">${a.label}<small>${a.cost&&S.age>=18?money(a.cost):'Free'}</small></button>`).join('');
+  const list = ACTIVITIES.map((a,i) => `<button class="btn" ${S.actions<1||(a.cost>0&&a.cost>S.wealth)?'disabled':''} onclick="doActivity(${i})">${a.label}<small>${a.cost&&S.age>=18?money(a.cost):'Free'}</small></button>`).join('');
   return `<section class="card"><h3>Activities & Lifestyle</h3><p class="muted">Actions left: <b>${S.actions}</b></p>${list}</section>`;
 }
 
@@ -753,7 +776,6 @@ function pickSchool(k){ const why=schoolBlock(k); if (why) return hint(why); S.s
 function pickEffort(k){ S.effort=k; render(); }
 function setPay(k){ S.payPref=k; hint(); render(); }
 
-/* FIX: University enrollment no longer blocks you for negative cash if funding via parents or loan */
 function enrollUni(type, major){
   const un=UNIS[type], mj=MAJORS[major];
   if (S.job) return hint('Quit job before enrolling.');
@@ -946,13 +968,14 @@ function famAct(id, type){
 
 function doActivity(i){
   const a=ACTIVITIES[i], cost = S.age>=18?a.cost:0;
-  if (cost>S.wealth) return hint('Not enough cash.');
+  if (cost > 0 && cost > S.wealth) return hint('Not enough cash.');
   S.actions--; S.wealth-=cost; fx(a.fx); log(a.msg); render();
 }
 
 function choose(i){
   const c = S.ev.choices[i];
-  if (costOf(c)>S.wealth) return hint('Not enough cash.');
+  const cCost = costOf(c);
+  if (cCost > 0 && S.wealth < cCost) return hint('Not enough cash.');
   const f = typeof c.fx==='function' ? c.fx() : c.fx;
   fx(f);
   const msg = f.msg || c.result;
