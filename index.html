@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lifeline – Phase 6 Expansion</title>
+<title>Lifeline – Real Life Pack</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -423,7 +423,7 @@ function propertyValueTotal(){
   S.ownedHomes.forEach(h => tot += (h.value - h.balance));
   return tot;
 }
-const netWorth = () => S.wealth + propertyValueTotal() + S.nest - S.loan - bankDebt();
+var netWorth = () => S.wealth + propertyValueTotal() + S.nest - S.loan - bankDebt();
 const studying = () => S.age<18 || !!S.uni;
 const myFace = () => face(S.av.g, S.av.t, S.age);
 const memFace = m => face(m.g, m.t, m.age);
@@ -1381,6 +1381,312 @@ function initStart(){
   if (d && d.S && !d.S.dead){ b.textContent=`Continue saved life: ${d.S.name}, age ${d.S.age}`; b.classList.remove('hidden'); return true; }
   b.classList.add('hidden'); return false;
 }
+
+
+/* =====================================================================
+   7. REAL LIFE PACK (Phase 8)
+   ===================================================================== */
+
+/* ---------- 0. Setup, save migration, small bug fixes ---------- */
+function packInit(o){
+  const b={cpi:1,inflRate:.025,econ:'normal',econYrs:0,mret:.07,savings:0,invest:0,credit:650,gpa:0,gpaN:0,retPct:0,didYear:{}};
+  for (const k in b) if (!(k in o)) o[k]=b[k];
+  return o;
+}
+const _migrate = migrate;
+migrate = function(o){ return packInit(_migrate(o)); };
+const _newGame = newGame;
+newGame = function(n,g,t){ _newGame(n,g,t); packInit(S); };
+
+try { netWorth = () => S.wealth + propertyValueTotal() + S.nest + (S.savings||0) + (S.invest||0) - S.loan - bankDebt(); } catch(e){ console.warn('Change "const netWorth" to "var netWorth" so savings count in net worth.'); }
+
+/* BUG FIX: moving out of an owned home left it marked "Living Here" */
+function packLeaveHome(prev){
+  if (S.housing!==prev){ const o=S.ownedHomes.find(h=>h.id===prev && h.status==='live'); if (o) o.status='vacant'; }
+}
+const _rentHome = rentHome;  rentHome = function(id){ const p=S.housing; _rentHome(id); packLeaveHome(p); render(); };
+const _stayHome = stayHome;  stayHome = function(){ const p=S.housing; _stayHome(); packLeaveHome(p); render(); };
+
+/* ---------- 1. Vehicles ---------- */
+PORTABLE.push('car');
+STATIC.push(
+  ['car_used','car','Auto Dealer','Used Hatchback (8 years old)',6500,1,0,6,'1.6L, 90,000 miles, no frills'],
+  ['car_compact','car','Auto Dealer','Compact Sedan (new)',21000,2,1,10,'1.8L hybrid, 5 seats, 45 mpg'],
+  ['car_suv','car','Auto Dealer','Family SUV (new)',38000,3,2,11,'7 seats, AWD, safety suite'],
+  ['car_ev','car','Auto Dealer','Electric Crossover (new)',46000,4,3,12,'320-mile range, fast charging, autopilot'],
+  ['car_lux','car','Auto Dealer','Luxury Sedan (new)',82000,5,6,12,'V6 turbo, leather, premium audio']
+);
+const hasCar = () => S.inventory.some(i=>i.cat==='car' && !i.broken && i.age<i.life);
+
+/* Shop prices follow inflation (phones already scale on their own) */
+const _catalog = catalog;
+catalog = function(){ return _catalog().map(it => it.cat==='phone' ? it : {...it, cost:Math.round(it.cost*(S.cpi||1))}); };
+
+/* ---------- 2. Economy, inflation, housing market, raises, layoffs ---------- */
+const ECON = {normal:'Stable',boom:'Boom',recession:'Recession'};
+function econCard(){
+  const c = S.econ==='recession'?'var(--rose)':S.econ==='boom'?'var(--mint)':'var(--muted)';
+  return `<section class="card"><h3>The economy · <span style="color:${c}">${ECON[S.econ]||'Stable'}</span></h3>
+    <div class="row"><span>Inflation this year</span><b class="mono">${(S.inflRate*100).toFixed(1)}%</b></div>
+    <div class="row"><span>Prices vs. when you were 6</span><b class="mono">+${Math.round((S.cpi-1)*100)}%</b></div>
+    <div class="row"><span>Stock market last year</span><b class="mono" style="color:${S.mret<0?'var(--rose)':'var(--mint)'}">${(S.mret*100).toFixed(1)}%</b></div>
+    ${S.age>=18?`<div class="row"><span>Credit score</span><b class="mono">${S.credit}</b></div>`:''}</section>`;
+}
+const _viewLife = viewLife;
+viewLife = function(){ return econCard() + _viewLife(); };
+
+function packYear(){
+  const adult = S.age>=18, bill = S.bill || (S.bill={});
+  const ad = (k,v)=>{ v=Math.round(v); if (!v) return; bill[k]=(bill[k]||0)+v; S.expenses+=v; S.wealth-=v; };
+
+  /* economic cycle */
+  const prev = S.econ;
+  if (S.econ==='recession'){ S.econYrs--; if (S.econYrs<=0) S.econ='normal'; }
+  else { const r=Math.random(); S.econ = r<.08?'recession' : r<.2?'boom' : 'normal'; if (S.econ==='recession') S.econYrs=1+rnd(2); }
+  const E=S.econ;
+  const infl = {normal:.025,boom:.04,recession:.012}[E] + (Math.random()*.01-.005);
+  const mret = E==='recession' ? -.22+Math.random()*.14 : E==='boom' ? .10+Math.random()*.15 : -.02+Math.random()*.2;
+  const hg   = E==='recession' ? -.07+Math.random()*.04 : E==='boom' ? .06+Math.random()*.03 : .01+Math.random()*.04;
+  S.cpi*=1+infl; S.inflRate=infl; S.mret=mret;
+  if (E!==prev) log(E==='recession' ? 'The economy slipped into a recession. Layoffs are more likely and markets are falling.' : E==='boom' ? 'The economy is booming. Markets and house prices are climbing.' : 'The economy has stabilised.');
+
+  /* school grades (ages 7-18) */
+  if (S.age>=7 && S.age<=18){
+    const y=Math.max(0,Math.min(4, S.smarts/100*3.2 + {hard:.6,coast:0,skip:-.9}[S.effort] + (Math.random()*.4-.2)));
+    S.gpa=(S.gpa*S.gpaN+y)/(S.gpaN+1); S.gpaN++;
+  }
+
+  /* natural death in old age */
+  if (S.age>=80 && Math.random()<(S.age-79)*.025){ S.health=0; log('You passed away peacefully in your sleep.'); }
+
+  if (!adult) return;
+
+  /* inflation on living costs, car costs, home upkeep */
+  const living=(bill.groceries||0)+(bill.phone||0)+(bill.transport||0)+(bill.utilities||0)+(bill.insurance||0);
+  ad('inflation', (S.cpi-1)*living);
+  if (hasCar()){
+    if (S.transport==='car') ad('transport', -1700);   // you already own the car: only fuel and parking
+    else ad('carUpkeep', 900);                          // registration and insurance
+    fx({happiness:1});
+  }
+  S.ownedHomes.forEach(h=>{
+    ad('maintenance', h.value*.01);
+    h.value = Math.round(h.value*(1+hg)/1.03);          // replaces the flat 3% with the housing market
+  });
+
+  /* savings, investments, retirement */
+  if (S.wealth<0 && S.savings>0){ const t=Math.min(S.savings,-S.wealth); S.savings-=t; S.wealth+=t; log(`Your savings covered a ${money(t)} shortfall.`); }
+  const rate=Math.max(.005, infl-.005+(E==='boom'?.01:0));
+  const intr=Math.round(S.savings*rate); S.savings+=intr;
+  const gain=Math.round(S.invest*mret); S.invest+=gain;
+  if (intr||gain) log(`Savings earned ${money(intr)}. Investments ${gain>=0?'gained':'lost'} ${money(Math.abs(gain))} (${(mret*100).toFixed(1)}%).`);
+
+  if (S.job && S.retPct>0){
+    const c=Math.round(S.job.salary*S.retPct/100), m=Math.round(S.job.salary*Math.min(S.retPct,5)/200);
+    ad('retirementContribution', c); S.nest+=c+m; log(`You put ${money(c)} into retirement and your employer added ${money(m)}.`);
+  }
+  S.nest=Math.round(S.nest*(1+Math.max(-.12, mret*.6+.01)));
+  if (S.retired && S.nest>0){ const d=Math.round(S.nest*.05); S.nest-=d; S.wealth+=d; S.income+=d; }
+
+  /* raises and layoffs */
+  if (S.job){
+    const raise = S.job.perf>=60 ? infl+.01+Math.random()*.02 : S.job.perf>=35 ? infl : 0;
+    if (raise>0) S.job.salary=Math.round(S.job.salary*(1+raise));
+    let p = E==='recession'?.07:.015; if (S.job.perf<40) p+=.04;
+    if (Math.random()<p){
+      const sev=Math.round(S.job.salary*.25); S.wealth+=sev; S.lastSalary=S.job.salary;
+      log(`You were laid off from ${S.job.title}${E==='recession'?' as the recession hit':''}. Severance: ${money(sev)}.`);
+      S.job=null; fx({happiness:-10});
+    }
+  }
+
+  /* overdraft interest and credit score */
+  if (S.wealth<0){
+    const i=Math.round(-S.wealth*.18); S.wealth-=i; bill.overdraftInterest=(bill.overdraftInterest||0)+i; S.expenses+=i;
+    S.credit=Math.max(300,S.credit-25); log(`Overdraft interest: ${money(i)}. Your credit score dropped.`);
+  } else S.credit=Math.min(850,S.credit+(S.loans.length||S.shopLoans.length?3:8));
+}
+const _ageUp = ageUp;
+ageUp = function(){
+  const a0=S.age; _ageUp();
+  if (!S || S.dead || S.age===a0) return;
+  try { packYear(); } catch(e){ console.error(e); }
+  checkDeath(); if (!S.dead) render();
+};
+
+/* promotions keep your raises */
+const _askPromotion = askPromotion;
+askPromotion = function(){
+  const l0=S.job.level; _askPromotion();
+  if (S.job && S.job.level>l0){ const t=TRACKS[S.job.trackId].levels[S.job.level].salary; S.job.salary=Math.round(Math.max(S.job.salary*1.1, t*S.cpi)); render(); }
+};
+
+/* inheritance when a parent dies */
+const _familyYear = familyYear;
+familyYear = function(){
+  const before=parents().map(m=>m.id);
+  const r=_familyYear();
+  if (S.age>=18) before.forEach(id=>{ const m=S.family.find(x=>x.id===id);
+    if (m && !m.alive){ const amt=Math.round([1500,12000,60000][S.famWealth]*(.5+Math.random())); S.wealth+=amt; log(`You inherited ${money(amt)} from ${m.name}.`); } });
+  return r;
+};
+
+/* ---------- 3. Education: GPA and scholarships ---------- */
+const _viewSchool = viewSchool;
+viewSchool = function(){
+  const g = S.gpaN ? `<section class="card"><h3>Grades</h3><div class="row"><span>GPA (out of 4.0)</span><b class="mono">${S.gpa.toFixed(2)}</b></div>
+    <p class="muted" style="font-size:.85rem">A GPA of 3.5 or more earns a 50% scholarship when you enrol at university.</p></section>` : '';
+  return g + _viewSchool();
+};
+const _enrollUni = enrollUni;
+enrollUni = function(type,major){
+  const had=S.uni; _enrollUni(type,major);
+  if (!had && S.uni && S.gpa>=3.5 && !S.uni.scholar){ S.uni.scholar=true; log(`Your grades earned a scholarship: tuition is halved (GPA ${S.gpa.toFixed(2)}).`); render(); }
+};
+
+/* ---------- 4. Money tab: inflation-aware costs + retirement plan ---------- */
+function setRet(p){ S.retPct=p; render(); }
+function viewMoney(){
+  const sel=c=>c?'sel':'', k=S.cpi;
+  const food=Object.entries(FOOD).map(([id,f])=>`<button class="btn ${sel(S.food===id)}" onclick="setFood('${id}')">${f.name} · ${money(f.cost*k)}/yr<small>${f.desc}</small></button>`).join('');
+  const trans=Object.entries(TRANSPORT).map(([id,t])=>`<button class="btn ${sel(S.transport===id)}" onclick="setTransport('${id}')">${t.name} · ${money((id==='car'&&hasCar()?1800:t.cost)*k)}/yr<small>${t.desc}${id==='car'&&hasCar()?' You own a car, so only fuel and parking.':''}</small></button>`).join('');
+  const ins=`<button class="btn ${sel(S.insured)}" onclick="toggleInsurance()">Health insurance: ${S.insured?'ON':'OFF'} · ${money(INSURANCE*k)}/yr</button>`;
+  const ret=`<section class="card"><h3>Retirement plan</h3><p class="muted">Contribute a share of your salary each year. Your employer matches half of it, up to 5%. Savings grow with the market and pay out 5% a year once you retire.</p>
+    <div class="acts acts3" style="grid-template-columns:repeat(4,1fr)">${[0,5,10,15].map(p=>`<button class="btn ${sel(S.retPct===p)}" onclick="setRet(${p})">${p}%</button>`).join('')}</div>
+    <div class="row" style="margin-top:8px"><span>Retirement pot</span><b class="mono">${money(S.nest)}</b></div></section>`;
+  const rows=Object.entries(S.bill||{}).filter(([k2,v])=>v>0).map(([k2,v])=>`<div class="row"><span class="cap">${k2.replace(/([A-Z])/g,' $1')}</span><b class="mono">${money(-v)}</b></div>`).join('');
+  return `<section class="card"><h3>Financial Overview</h3>
+    <div class="row"><span>Cash</span><b class="mono">${money(S.wealth)}</b></div>
+    <div class="row"><span>Savings</span><b class="mono">${money(S.savings)}</b></div>
+    <div class="row"><span>Investments</span><b class="mono">${money(S.invest)}</b></div>
+    <div class="row"><span>Retirement pot</span><b class="mono">${money(S.nest)}</b></div>
+    <div class="row"><span>Real Estate Equity</span><b class="mono">${money(propertyValueTotal())}</b></div>
+    <div class="row"><span>Total Debts</span><b class="mono" style="color:var(--rose)">${money(-(bankDebt()+S.loan))}</b></div>
+    <div class="row"><span>Net Worth</span><b class="mono">${money(netWorth())}</b></div></section>`
+  + econCard() + ret
+  + `<section class="card"><h3>Lifestyle & Spending</h3>${food}<h3 style="margin-top:10px">Transport</h3>${trans}<h3 style="margin-top:10px">Insurance</h3>${ins}</section>`
+  + `<section class="card"><h3>Last Year Expense Breakdown</h3>${rows||'<p class="muted">No bills recorded yet.</p>'}</section>`;
+}
+
+/* ---------- 5. Bank: credit score, savings, investing ---------- */
+const packRate = a => (a<=5000?.08:.10) + (S.credit>=780?-.02:S.credit>=700?-.01:S.credit<580?.05:S.credit<650?.02:0);
+function takeLoan(a){
+  if (a>creditLimit()) return hint('Credit limit exceeded.');
+  const r=packRate(a), pmt=Math.round(a*r/(1-Math.pow(1+r,-5)));
+  S.loans.push({amt:a,bal:a,rate:r,pmt}); S.wealth+=a; log(`Borrowed ${money(a)} from the bank at ${(r*100).toFixed(0)}%.`); render();
+}
+function packMove(kind){
+  const el=$('pk_amt'); let amt=Math.floor(Number(el&&el.value)||0);
+  if (amt<=0) return hint('Enter an amount.');
+  if (kind==='dep'||kind==='inv'){
+    if (S.wealth<amt) return hint('Not enough cash.');
+    S.wealth-=amt; if (kind==='dep') S.savings+=amt; else S.invest+=amt;
+  } else {
+    const pool=kind==='wd'?'savings':'invest'; amt=Math.min(amt,S[pool]);
+    if (amt<=0) return hint('Nothing to take out.');
+    S[pool]-=amt; S.wealth+=amt;
+  }
+  hint(); render();
+}
+function viewBank(){
+  const lim=creditLimit();
+  const offers=[2000,5000,10000,25000,50000].map(a=>{ const r=packRate(a), pmt=Math.round(a*r/(1-Math.pow(1+r,-5)));
+    return `<button class="btn" ${a>lim?'disabled':''} onclick="takeLoan(${a})">Borrow ${money(a)}<small>${(r*100).toFixed(0)}% interest, ${money(pmt)}/yr for 5 yrs</small></button>`; }).join('');
+  const bl=S.loans.map((l,i)=>`<div style="margin-top:10px"><b>Bank Loan</b> · Owed ${money(l.bal)} (${money(l.pmt)}/yr)
+    <button class="btn" ${S.wealth<l.bal?'disabled':''} onclick="payBank(${i},'all')">Pay off ${money(l.bal)}</button></div>`).join('');
+  const sl=S.shopLoans.map(l=>`<div style="margin-top:10px"><b>Installment: ${l.item}</b> · Owed ${money(l.bal)} (${money(l.pmt)}/yr)</div>`).join('');
+  const rate=Math.max(.005,S.inflRate-.005);
+  return `<section class="card"><h3>Credit score</h3><div class="row"><span>Score (300 to 850)</span><b class="mono">${S.credit}</b></div>
+    <p class="muted" style="font-size:.85rem">Pay on time and stay out of the red to raise it. A higher score means cheaper loans. Negative cash costs 18% interest a year.</p></section>
+  <section class="card"><h3>Savings & Investing</h3>
+    <div class="row"><span>Savings (about ${(rate*100).toFixed(1)}%/yr, safe)</span><b class="mono">${money(S.savings)}</b></div>
+    <div class="row"><span>Index fund (risky, averages ~8%)</span><b class="mono">${money(S.invest)}</b></div>
+    <input type="number" id="pk_amt" min="0" placeholder="Amount" style="width:100%;margin-top:8px">
+    <div class="acts" style="margin-top:6px"><button class="btn" onclick="packMove('dep')">Save</button><button class="btn" onclick="packMove('wd')">Withdraw savings</button>
+    <button class="btn" onclick="packMove('inv')">Invest</button><button class="btn" onclick="packMove('sell')">Sell investments</button></div></section>
+  <section class="card"><h3>Bank Credit & Loans</h3><p class="muted">Credit Limit: <b>${money(lim)}</b></p>${offers}</section>
+  <section class="card"><h3>Active Debt Contracts</h3>${bl||sl?bl+sl:'<p class="muted">No bank debt.</p>'}</section>`;
+}
+
+/* ---------- 6. Activities ---------- */
+ACTIVITIES.push(
+  {label:'Annual health check-up',cost:150,minAge:18,once:true,fx:{health:4},msg:'A check-up caught small problems early.'},
+  {label:'Take a holiday abroad',cost:2500,minAge:18,once:true,fx:{happiness:12,social:3,health:2},msg:'You came back rested and full of stories.'},
+  {label:'Therapy sessions',cost:900,minAge:18,fx:{happiness:6,health:1},msg:'Talking things through lifted a weight.'},
+  {label:'Online course',cost:600,minAge:16,fx:{smarts:4},msg:'You picked up a valuable new skill.'},
+  {label:'Hobby class (art, music, sport)',cost:350,minAge:12,fx:{happiness:4,social:3,smarts:1},msg:'You found a hobby you love.'},
+  {label:'Donate to charity',cost:500,minAge:18,fx:{happiness:3,social:2},msg:'Giving back felt good.'}
+);
+function viewActivities(){
+  const list=ACTIVITIES.map((a,i)=>({a,i})).filter(x=>S.age>=(x.a.minAge||0)).map(({a,i})=>{
+    const done=a.once && (S.didYear||{})[a.label]===S.age, cost=S.age>=18?a.cost:0;
+    return `<button class="btn" ${done||cost>S.wealth?'disabled':''} onclick="doActivity(${i})">${a.label}<small>${done?'Already done this year':cost?money(Math.round(cost*S.cpi)):'Free'}</small></button>`; }).join('');
+  return `<section class="card"><h3>Activities & Lifestyle</h3><p class="muted">Do as many as you can afford. Holidays and check-ups are once a year.</p>${list}</section>`;
+}
+function doActivity(i){
+  const a=ACTIVITIES[i], cost=S.age>=18?Math.round(a.cost*S.cpi):0;
+  if (S.age<(a.minAge||0)) return hint('You are too young for that.');
+  if (a.once && (S.didYear||(S.didYear={}))[a.label]===S.age) return hint('You already did that this year.');
+  if (cost>S.wealth) return hint('Not enough cash.');
+  S.wealth-=cost; fx(a.fx); if (a.once) S.didYear[a.label]=S.age; log(a.msg); render();
+}
+
+/* ---------- 7. Shop tab (adds Vehicles) ---------- */
+function viewShop(){
+  const subs=[['apple','Apple'],['samsung','Samsung'],['laptop','Laptops & Tablets'],['tv','TV & Gaming'],['appliance','Appliances'],['furnish','Furnishing'],['cars','Vehicles'],['fashion','Fashion'],['mine','My Items']];
+  if (!subs.some(x=>x[0]===activeShopTab)) activeShopTab='apple';
+  const nav=`<div class="sub-tabs">${subs.map(([id,l])=>`<button class="sub-tab ${activeShopTab===id?'on':''}" onclick="activeShopTab='${id}';render();">${l}</button>`).join('')}</div>`;
+  const pr=S.promo?`<p style="color:var(--amber);font-size:.85rem;margin-bottom:6px">${S.promo.label}: ${Math.round(S.promo.pct*100)}% off ${S.promo.cats[0]==='all'?'everything':'selected items'} this year.</p>`:'';
+  const head=`<section class="card"><h3>Shopping Mall & Stores</h3><p class="muted" style="font-size:.85rem;margin-bottom:6px">It is ${gameYear()}. Prices are ${Math.round((S.cpi-1)*100)}% higher than when you were 6. New phone models arrive every year.</p>${pr}${nav}</section>`;
+  if (activeShopTab==='furnish') return head+viewFurnish();
+  if (activeShopTab==='mine') return head+viewMine();
+  const all=catalog(); let body='';
+  if (activeShopTab==='apple'||activeShopTab==='samsung'){
+    const ph=all.filter(i=>i.cat==='phone'&&i.grp===activeShopTab);
+    for (let d=0; d<5; d++){ const list=ph.filter(i=>i.d===d); if (!list.length) continue;
+      body+=`<details ${d===0?'open':''}><summary>${d===0?'Newest generation':d+(d===1?' year old':' years old')+', discounted'}</summary>${list.map(itemCard).join('')}</details>`; }
+  } else if (activeShopTab==='laptop') body=all.filter(i=>i.cat==='laptop'||i.cat==='tablet').map(itemCard).join('');
+  else if (activeShopTab==='tv') body=placeSelector()+all.filter(i=>i.cat==='tv'||i.cat==='console').map(itemCard).join('');
+  else if (activeShopTab==='cars') body='<p class="muted" style="font-size:.85rem">A car travels with you. Switch Transport to "Own a car" in Money to cut running costs to fuel and parking. Insure it: repairs are expensive.</p>'+all.filter(i=>i.cat==='car').map(itemCard).join('');
+  else if (activeShopTab==='fashion') body=all.filter(i=>i.cat==='fashion'||i.cat==='watch').map(itemCard).join('');
+  else {
+    const chips=`<div class="sub-tabs">${APPL.map(r=>`<button class="sub-tab ${activeAppType===r[0]?'on':''}" onclick="activeAppType='${r[0]}';render();">${r[1]}</button>`).join('')}</div>`;
+    body=chips+placeSelector()+all.filter(i=>i.cat==='appliance'&&i.type===activeAppType).map(itemCard).join('');
+  }
+  return head+`<section class="card">${body}</section>`;
+}
+
+/* ---------- 8. New life events ---------- */
+EVENTS.push(
+  {id:'crash',min:18,max:90,ok:()=>hasCar(),title:'Car accident',text:'Someone clipped your car at a junction. Nobody is hurt, but it is damaged.',choices:[
+    {label:'Fix it properly',cost:1800,fx:{wealth:-1800,happiness:-2,msg:'You paid $1,800 for a full repair.'}},
+    {label:'Patch it up cheaply',cost:400,fx:{wealth:-400,happiness:-4,msg:'A cheap patch job held for now.'}},
+    {label:'Scrap the car',fx:()=>{ const c=S.inventory.find(i=>i.cat==='car'); if(c) S.inventory=S.inventory.filter(i=>i!==c); return {happiness:-5,msg:'You scrapped the car.'}; }}]},
+  {id:'burglary',min:18,max:90,ok:()=>S.housing!=='parents',title:'Burglary',text:'You came home to a broken window and missing valuables.',choices:[
+    {label:'File a report and replace what you can',fx:{wealth:-400,happiness:-4,msg:'You lost about $400 of belongings.'}},
+    {label:'Install an alarm',cost:600,fx:{wealth:-600,happiness:2,msg:'You paid $600 for an alarm and feel safer.'}}]},
+  {id:'lottery',min:18,max:90,title:'Lottery ticket',text:'A $20 ticket tempts you at the corner shop.',choices:[
+    {label:'Buy a ticket',cost:20,fx:()=>Math.random()<.01?{wealth:49980,happiness:15,msg:'You won $50,000!'}:{wealth:-20,happiness:-1,msg:'Not a winner.'}},
+    {label:'Walk past',fx:{},result:'You kept your money.'}]},
+  {id:'headhunter',min:22,max:58,ok:()=>S.job&&S.job.perf>=60,title:'A recruiter calls',text:'A rival firm offers you a 20% higher salary.',choices:[
+    {label:'Accept the offer',fx:()=>{ S.job.salary=Math.round(S.job.salary*1.2); S.job.perf=50; S.job.years=0; return {happiness:3,social:-1,msg:'You switched employers for a 20% raise.'}; }},
+    {label:'Stay where you are',fx:()=>{ S.job.perf=clamp(S.job.perf+5); return {happiness:1,msg:'Your loyalty was noticed.'}; }}]},
+  {id:'divorce',min:25,max:70,ok:()=>{const p=partner(); return p&&p.role==='Spouse'&&p.bond<40;},title:'Marriage in trouble',text:'You and your spouse keep drifting apart.',choices:[
+    {label:'Try couples counselling',cost:1200,fx:()=>{ partner().bond=clamp(partner().bond+25); return {wealth:-1200,happiness:2,msg:'Counselling helped you reconnect.'}; }},
+    {label:'Divorce',cost:3000,fx:()=>{ const p=partner(), half=Math.max(0,Math.round(S.wealth*.3)); S.family=S.family.filter(m=>m!==p); return {wealth:-(3000+half),happiness:-8,social:-3,msg:`You divorced. Legal fees and the settlement cost ${money(3000+half)}.`}; }}]},
+  {id:'wedding',min:22,max:50,title:'A friend is getting married',text:'You are invited to a friend\'s wedding abroad.',choices:[
+    {label:'Go and bring a gift',cost:300,fx:{wealth:-300,social:5,happiness:3,msg:'You had a wonderful time.'}},
+    {label:'Send your regrets',fx:{social:-2,msg:'You sent a card.'}}]},
+  {id:'scare',min:40,max:100,title:'Health scare',text:'A strange symptom keeps coming back.',choices:[
+    {label:'Get a full screening',cost:400,fx:{wealth:-400,health:5,happiness:-1,msg:'The screening found it early.'}},
+    {label:'Ignore it',fx:()=>Math.random()<.25?{health:-15,happiness:-4,msg:'It got worse.'}:{msg:'It went away on its own.'}}]},
+  {id:'audit',min:25,max:90,ok:()=>S.income>40000,title:'Tax audit',text:'The tax office wants to review your returns.',choices:[
+    {label:'Hire an accountant',cost:700,fx:{wealth:-700,msg:'Your accountant cleared it up.'}},
+    {label:'Handle it yourself',fx:()=>Math.random()<.4?{wealth:-2500,happiness:-4,msg:'You made mistakes and paid a $2,500 penalty.'}:{happiness:-1,msg:'It turned out fine.'}}]},
+  {id:'tip',min:21,max:80,ok:()=>S.wealth>5000,title:'A hot stock tip',text:'A coworker swears a small company is about to take off.',choices:[
+    {label:'Put $2,000 in',cost:2000,fx:()=>Math.random()<.45?{wealth:1200,happiness:4,msg:'The stock jumped 60%.'}:{wealth:-1000,happiness:-4,msg:'The stock fell 50%.'}},
+    {label:'Pass',fx:{},result:'You stayed away from gambling.'}]}
+);
 
 renderPick();
 $('name-input').addEventListener('keydown', e => { if (e.key==='Enter') startGame(); });
