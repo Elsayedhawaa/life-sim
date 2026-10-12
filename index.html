@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lifeline – Phase 2</title>
+<title>Lifeline – Life Simulator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-  /* ---------- Design tokens ---------- */
   :root{--bg:#0b0b12;--card:#14141f;--line:#25253a;--text:#e8e8f2;--muted:#8a8aa3;
         --violet:#8b5cf6;--cyan:#22d3ee;--rose:#fb7185;--mint:#34d399;--amber:#fbbf24}
   *{box-sizing:border-box;margin:0}
@@ -18,7 +17,7 @@
   .muted{color:var(--muted)} h3{font-size:1rem;margin-bottom:6px}
   p{line-height:1.5}
 
-  /* ---------- Sticky header: status bar + tabs always visible ---------- */
+  /* Header & Navigation */
   #head{position:sticky;top:0;z-index:10;background:var(--bg);padding-top:16px;display:flex;flex-direction:column;gap:8px}
   .prof{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px}
   .age{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;line-height:.9;color:var(--violet)}
@@ -29,12 +28,12 @@
   .bar{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
   .fill{height:100%;border-radius:3px;transition:width .4s}
   .wealth{display:flex;justify-content:space-between;margin-top:10px;font-size:.85rem;color:var(--muted)}
-  .tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}  /* 6 tabs scroll sideways on phones */
+  .tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
   .tab{flex:0 0 auto;padding:9px 14px;background:var(--card);color:var(--muted);border:1px solid var(--line);border-radius:10px;font:500 .85rem 'DM Sans';cursor:pointer}
   .tab.on{color:var(--text);border-color:var(--violet)}
   .tab:disabled{opacity:.4;cursor:not-allowed}
 
-  /* ---------- Buttons ---------- */
+  /* Buttons & Utilities */
   .btn{display:block;width:100%;text-align:left;margin-top:8px;padding:12px 14px;background:transparent;color:var(--text);font:inherit;border:1px solid var(--line);border-radius:10px;cursor:pointer;transition:border-color .15s,background .15s}
   .btn:hover:not(:disabled),.btn:focus-visible{border-color:var(--violet);background:#1a1a2b;outline:none}
   .btn.sel{border-color:var(--violet);background:#1a1a2b}
@@ -65,13 +64,13 @@
   <!-- START SCREEN -->
   <section id="start" class="card overlay">
     <h1>Lifeline</h1>
-    <p>You are six years old. School, work and money are all ahead of you.</p>
+    <p>You are six years old. School, family, work, and money are all ahead of you.</p>
     <input id="name-input" placeholder="Your name" maxlength="20" autocomplete="off">
     <button class="btn" id="start-btn" style="text-align:center" onclick="startGame()">Begin life</button>
     <button class="btn hidden" id="cont-btn" style="text-align:center" onclick="loadGame()">Continue saved life</button>
   </section>
 
-  <!-- GAME SCREEN: sticky header, swappable tab view, sticky Age Up button -->
+  <!-- GAME SCREEN -->
   <div id="game" class="hidden" style="display:flex;flex-direction:column;gap:12px">
     <header id="head">
       <section class="card" id="top"></section>
@@ -90,50 +89,78 @@
 
 <script>
 /* =====================================================================
-   1. DATA TABLES – edit these to rebalance or add content
+   1. DATA TABLES
    ===================================================================== */
-// School types: cost per year (billed to the player's wealth), Smarts multiplier, social modifier
+const FAMILY = ['Modest','Comfortable','Wealthy'];
+
 const SCHOOLS = {
-  public:  {name:'Public school',  cost:0,    mult:1,   social:0,  desc:'Free. Steady learning, plenty of classmates.'},
-  private: {name:'Private school', cost:2500, mult:1.5, social:0,  desc:'$2,500/yr. Biggest Smarts gains.'},
-  home:    {name:'Homeschool',     cost:300,  mult:1.2, social:-1, desc:'$300/yr. Flexible, but fewer friends.'}
+  national:      {name:'National school',      cost:0,    mult:1,   social:0, need:0, approve:0,  desc:'State-funded and free. Solid basics, large classes.'},
+  private:       {name:'Private school',       cost:2500, mult:1.4, social:0, need:1, approve:40, desc:'Smaller classes and better results.'},
+  international: {name:'International school', cost:9000, mult:1.7, social:1, need:2, approve:55, desc:'Top teaching and a global network.'}
 };
-// Yearly effort levels (Smarts gain is scaled by school multiplier)
+
+const UNIS = {
+  national: {name:'National university', tuition:500,   mult:1,   minOff:0,   desc:'Almost free, competitive admission.'},
+  private:  {name:'Private university',  tuition:14000, mult:1.3, minOff:-10, desc:'Expensive. Family help, cash or a student loan.'}
+};
+
+const MAJORS = {
+  medicine:{name:'Medicine',min:75,years:6},
+  law:{name:'Law',min:65,years:4},
+  cs:{name:'Computer Science',min:60,years:4},
+  business:{name:'Business',min:50,years:4},
+  biology:{name:'Biology',min:55,years:4}
+};
+
+const LOAN_CAP = 60000;
+
+const PART_JOBS = [
+  {id:'baby',  title:'Babysitter',    pay:1200, stress:1, minAge:14, smarts:0},
+  {id:'cafe',  title:'Cafe barista',  pay:3500, stress:3, minAge:16, smarts:0},
+  {id:'tutor', title:'Private tutor', pay:4500, stress:2, minAge:16, smarts:65}
+];
+
 const EFFORT = {
   hard:  {label:'Study hard', smarts:4,  happiness:-3, social:-1},
   coast: {label:'Coast by',   smarts:1,  happiness:0,  social:0},
   skip:  {label:'Skip class', smarts:-3, happiness:4,  social:2}
 };
-// Entry-level jobs: diploma and minimum Smarts are the requirements
+
 const JOBS = [
-  {id:'fast',   title:'Fast Food Crew',       salary:14000, diploma:false, smarts:0},
-  {id:'retail', title:'Retail Associate',     salary:18000, diploma:true,  smarts:0},
-  {id:'intern', title:'Junior Office Intern', salary:23000, diploma:true,  smarts:55},
-  {id:'teller', title:'Bank Teller',          salary:30000, diploma:true,  smarts:65}
-];
-const LIVING_COST = 5000;   // yearly food and bills once you turn 18 (housing is charged separately)
-const CHILD_COST = 3000;    // yearly cost per child under 18
-const SAVE_KEY = 'lifeline_save_v3';
-const NAMES = ['Sam','Jordan','Taylor','Morgan','Casey','Riley','Jamie','Quinn','Avery','Dana','Noor','Layla','Omar','Youssef','Mona','Karim'];
-const rnd = n => Math.floor(Math.random()*n);       // random integer 0..n-1
-const pick = a => a[rnd(a.length)];
-// Housing: rent = yearly rent; buy = price, mortgage payment per year. hap/hp = yearly Happiness/Health effect.
-const HOUSING = [
-  {id:'room',  kind:'rent',name:'Shared room',     cost:5000,  hap:-1,hp:-1,desc:'Cheap, but cramped.'},
-  {id:'studio',kind:'rent',name:'Studio apartment',cost:8000,  hap:0, hp:0, desc:'Your own space.'},
-  {id:'apt',   kind:'rent',name:'Nice apartment',  cost:13000, hap:1, hp:1, desc:'Bright, quiet and well located.'},
-  {id:'condo', kind:'buy', name:'Condo',           price:50000,pay:3500,hap:2,hp:1,desc:'Small, but it is yours.'},
-  {id:'house', kind:'buy', name:'Family house',    price:90000,pay:6000,hap:3,hp:1,desc:'Garden, space and stability.'}
-];
-// Activities: each uses one of your 2 yearly action slots
-const ACTIVITIES = [
-  {label:'Hit the gym',     cost:120, fx:{health:6, happiness:1},  msg:'You spent the year getting fitter.'},
-  {label:'Read a book',     cost:0,   fx:{smarts:3},               msg:'You lost yourself in a good book.'},
-  {label:'Meet up with friends', cost:40, fx:{social:6, happiness:3}, msg:'You made time for friends.'},
-  {label:'Volunteer',       cost:0,   fx:{social:3, happiness:4},  msg:'Helping out felt great.'}
+  {id:'fast',    title:'Fast Food Crew',        salary:14000, diploma:false, smarts:0},
+  {id:'retail',  title:'Retail Associate',      salary:18000, diploma:true,  smarts:0},
+  {id:'intern',  title:'Junior Office Intern',  salary:23000, diploma:true,  smarts:55},
+  {id:'teller',  title:'Bank Teller',           salary:30000, diploma:true,  smarts:65},
+  {id:'dev',     title:'Junior Developer',      salary:48000, diploma:true, smarts:0, degree:'cs'},
+  {id:'analyst', title:'Business Analyst',      salary:42000, diploma:true, smarts:0, degree:'business'},
+  {id:'lab',     title:'Lab Technician',        salary:36000, diploma:true, smarts:0, degree:'biology'},
+  {id:'law',     title:'Junior Associate',      salary:55000, diploma:true, smarts:0, degree:'law'},
+  {id:'doctor',  title:'Resident Doctor',       salary:72000, diploma:true, smarts:0, degree:'medicine'}
 ];
 
-/* Random events. fx can be an object or a function (random outcomes); a function may add a `msg`. */
+const LIVING_COST = 5000;
+const CHILD_COST = 3000;
+const SAVE_KEY = 'lifeline_save_v3';
+const NAMES = ['Sam','Jordan','Taylor','Morgan','Casey','Riley','Jamie','Quinn','Avery','Dana','Noor','Layla','Omar','Youssef','Mona','Karim'];
+const rnd = n => Math.floor(Math.random()*n);
+const pick = a => a[rnd(a.length)];
+
+const HOUSING = [
+  {id:'parents',kind:'family',name:'Family home',hap:0,hp:0,desc:'Stay with your parents.'},
+  {id:'room',   kind:'rent',name:'Shared room',     cost:5000,  hap:-1,hp:-1,desc:'Cheap, but cramped.'},
+  {id:'studio', kind:'rent',name:'Studio apartment',cost:8000,  hap:0, hp:0, desc:'Your own space.'},
+  {id:'apt',    kind:'rent',name:'Nice apartment',  cost:13000, hap:1, hp:1, desc:'Bright, quiet and well located.'},
+  {id:'condo',  kind:'buy', name:'Condo',           price:50000,pay:3500,hap:2,hp:1,desc:'Small, but it is yours.'},
+  {id:'house',  kind:'buy', name:'Family house',    price:90000,pay:6000,hap:3,hp:1,desc:'Garden, space and stability.'}
+];
+
+const ACTIVITIES = [
+  {label:'Hit the gym',      cost:120, fx:{health:6, happiness:1},   msg:'You spent the year getting fitter.'},
+  {label:'Read a book',      cost:0,   fx:{smarts:3},                msg:'You lost yourself in a good book.'},
+  {label:'Meet up with friends', cost:40, fx:{social:6, happiness:3}, msg:'You made time for friends.'},
+  {label:'Volunteer',        cost:0,   fx:{social:3, happiness:4},   msg:'Helping out felt great.'}
+];
+
 const EVENTS = [
   {id:'exam',min:6,max:18,title:'Big exam tomorrow',text:'A major exam is tomorrow and you are not ready.',choices:[
     {label:'Study all night',fx:{smarts:6,health:-3,happiness:-3},result:'You studied late and did well, but you were tired.'},
@@ -143,131 +170,158 @@ const EVENTS = [
     {label:'Stand up to them',fx:{health:-6,happiness:4,social:2},result:'You took a bruise, but they backed off.'},
     {label:'Tell a teacher',fx:{happiness:2,social:1},result:'The teacher stepped in and it stopped.'},
     {label:'Keep quiet',fx:{happiness:-7,social:-2},result:'You stayed quiet and it kept happening.'}]},
-  {id:'teacher',min:8,max:18,title:'Teacher interaction',text:'Your teacher notices you struggling and offers extra help after class.',choices:[
-    {label:'Accept the help',fx:{smarts:5,social:2,happiness:-1},result:'The extra lessons paid off.'},
-    {label:'Politely decline',fx:{happiness:1},result:'You kept your afternoons free.'},
-    {label:'Argue about the grade',fx:{social:-2,happiness:-2},result:'The argument went nowhere.'}]},
-  {id:'club',min:8,max:18,title:'Join a club?',text:'Sign-up week is here. The sports team and student council are recruiting.',choices:[
-    {label:'Join the sports team',fx:{health:6,social:4,happiness:2},result:'You made the team and got fitter.'},
-    {label:'Run for student council',fx:{smarts:3,social:4,happiness:-1},result:'You joined student council and learned how to lead.'},
-    {label:'No clubs this year',fx:{happiness:1},result:'You kept things simple.'}]},
   {id:'gift',min:6,max:17,title:'Birthday money',text:'Relatives send you $100 for your birthday.',choices:[
     {label:'Save it',fx:{wealth:100,happiness:1},result:'You tucked the money away.'},
     {label:'Spend it on fun',fx:{happiness:5,social:1},result:'You treated yourself and your friends.'}]},
-  {id:'party',min:15,max:30,title:'Late party',text:'Friends invite you to a party that will go very late.',choices:[
-    {label:'Go',fx:{happiness:8,social:3,health:-5},result:'Great night, rough morning.'},
-    {label:'Stay home',fx:{happiness:-2,social:-2,health:2},result:'You rested, but felt left out.'}]},
   {id:'medical',min:18,max:100,title:'Medical bill',text:'An unexpected illness leads to a $900 medical bill.',choices:[
-    {label:'Pay for treatment',fx:{wealth:-900,health:3},result:'You paid $900 and recovered.'},
+    {label:'Pay for treatment',cost:900,fx:{wealth:-900,health:3},result:'You paid $900 and recovered.'},
     {label:'Skip treatment',fx:{health:-10,happiness:-3},result:'You skipped treatment and it hit your health.'}]},
   {id:'car',min:18,max:80,title:'Car trouble',text:'Your car breaks down. The mechanic quotes $700.',choices:[
-    {label:'Pay for the repair',fx:{wealth:-700},result:'You paid $700 and got back on the road.'},
+    {label:'Pay for the repair',cost:700,fx:{wealth:-700},result:'You paid $700 and got back on the road.'},
     {label:'Use the bus instead',fx:{happiness:-4,social:-1},result:'Commuting by bus was a daily hassle.'}]},
-  {id:'checkup',min:35,max:100,title:'Doctor visit',text:'Your doctor recommends lifestyle changes.',choices:[
-    {label:'Follow the advice',fx:{health:8,happiness:-2},result:'You changed your habits and feel better.'},
-    {label:'Ignore it',fx:{health:-8,happiness:2},result:'You ignored it. Your body noticed.'}]},
-  /* Phase 3 relationship events. `ok` decides whether the event can appear. */
   {id:'date',min:18,max:45,ok:()=>!partner(),title:'Someone special',text:'You keep running into someone you like.',choices:[
     {label:'Ask them out',fx:()=>{ if(Math.random()<.6){ addMember('Partner',S.age+rnd(5)-2,60); return {happiness:8,social:4,msg:'You started dating.'}; } return {happiness:-4,msg:'They politely said no.'}; }},
     {label:'Stay friends',fx:{social:2},result:'You kept it casual.'}]},
   {id:'proposal',min:22,max:60,ok:()=>{const p=partner(); return p&&p.role==='Partner'&&p.bond>=70;},title:'Marriage',text:'Your relationship is strong. A wedding would cost $2,000.',choices:[
-    {label:'Propose',fx:()=>{ partner().role='Spouse'; return {wealth:-2000,happiness:8,social:4,msg:'You got married. The wedding cost $2,000.'}; }},
+    {label:'Propose',cost:2000,fx:()=>{ partner().role='Spouse'; return {wealth:-2000,happiness:8,social:4,msg:'You got married. The wedding cost $2,000.'}; }},
     {label:'Not yet',fx:{},result:'You decided to wait.'}]},
   {id:'baby',min:22,max:42,ok:()=>{const p=partner(); return p&&p.role==='Spouse'&&kids().length<3;},title:'Starting a family',text:'You and your spouse talk about having a child. A child costs about $3,000 a year until 18.',choices:[
     {label:'Have a child',fx:()=>{ addMember('Child',0,85); return {happiness:8,health:-2,msg:'You welcomed a child.'}; }},
-    {label:'Not now',fx:{},result:'You decided to wait.'}]}
+    {label:'Not now',fx:{},result:'You decided to wait.'}]},
+  {id:'moveout',min:21,max:35,ok:()=>S.housing==='parents',title:'Time to move out',text:'Your parents tell you it is time to have a place of your own.',choices:[
+    {label:'Agree and move out',fx:()=>{ S.housing=null; return {happiness:2,msg:'You agreed. Choose a new home in the Assets tab.'}; }},
+    {label:'Ask for more time',fx:()=>{ if(Math.random()<bestBond()/100) return {msg:'They let you stay a little longer.'}; S.housing=null; parents().forEach(m=>m.bond=clamp(m.bond-5)); return {happiness:-4,msg:'They insisted. Choose a new home in the Assets tab.'}; }},
+    {label:'Refuse',fx:()=>{ S.housing=null; parents().forEach(m=>m.bond=clamp(m.bond-10)); return {happiness:-5,msg:'You were put out. Choose a new home in the Assets tab.'}; }}]}
 ];
 
 /* =====================================================================
-   2. STATE
+   2. STATE & HELPERS
    ===================================================================== */
 let S, activeTab = 'life';
 
 function newGame(name){
   S = {name:name||'Alex', age:6, health:100, happiness:100, smarts:50, social:50, wealth:0,
-       school:null, effort:'coast', skips:0, diploma:false,    // education
-       job:null,                                               // {title,salary,perf,years,level}
-       income:0, expenses:0,                                   // last year's finances
-       actions:2, worked:false, promoTried:false,              // per-year limits
-       pending:false, lastEvent:null, ev:null, evId:null, logRows:[],   // event + log
-       housing:'parents', home:null, family:[], dead:false};   // Phase 3: housing id, owned-home {value,balance}, relatives
+       school:'national', effort:'coast', skips:0, diploma:false,
+       job:null, income:0, expenses:0,
+       actions:2, worked:false, promoTried:false,
+       pending:false, lastEvent:null, ev:null, evId:null, logRows:[],
+       housing:'parents', home:null, family:[], dead:false,
+       famWealth:rnd(3), uni:null, degree:null, loan:0, part:null};
   addMember('Mother',28+rnd(10),55+rnd(35)); addMember('Father',28+rnd(10),55+rnd(35));
   for (let i=rnd(3); i>0; i--) addMember('Sibling',Math.max(1,3+rnd(7)),50+rnd(40));
 }
 
-/* =====================================================================
-   3. HELPERS
-   ===================================================================== */
 const $ = id => document.getElementById(id);
 const clamp = n => Math.max(0, Math.min(100, Math.round(n)));
 const money = n => (n<0?'-$':'$') + Math.abs(Math.round(n)).toLocaleString();
 const hint = t => { $('hint').textContent = t||''; };
 function log(t){ S.logRows.unshift({age:S.age, t}); }
 
-/* Applies a stat-change object; wealth is uncapped, other stats clamp to 0-100 */
 function fx(o){
   for (const k of ['health','happiness','smarts','social']) if (o[k]) S[k] = clamp(S[k]+o[k]);
   if (o.wealth) S.wealth += o.wealth;
+  if (S.age<18) S.wealth = Math.max(0, S.wealth);
 }
+
 const bar = (l,v,c) => `<div><div class="stat-top"><span>${l}</span><b class="mono">${v}%</b></div><div class="bar"><div class="fill" style="width:${v}%;background:${c}"></div></div></div>`;
 function go(t){ activeTab=t; render(); }
 
-/* ---------- Phase 3 helpers ---------- */
 const partner = () => S.family.find(m => (m.role==='Partner'||m.role==='Spouse') && m.alive);
 const kids = () => S.family.filter(m => m.role==='Child');
 const homeInfo = () => HOUSING.find(h => h.id===S.housing);
-const netWorth = () => S.wealth + (S.home ? S.home.value - S.home.balance : 0);
+const netWorth = () => S.wealth + (S.home ? S.home.value - S.home.balance : 0) - S.loan;
+const parents = () => S.family.filter(m => (m.role==='Mother'||m.role==='Father') && m.alive);
+const bestBond = () => Math.max(0, ...parents().map(m=>m.bond));
+const studying = () => S.age<18 || !!S.uni;
+const jobSalary = j => Math.round(j.salary*(S.degree&&!j.degree?1.15:1));
+
+function jobBlock(j){
+  return (S.uni?'Finish or leave your studies first. ':'') + (j.diploma&&!S.diploma?'Needs a diploma. ':'')
+    + (j.degree&&S.degree!==j.degree?`Needs a ${MAJORS[j.degree].name} degree. `:'') + (S.smarts<j.smarts?`Needs ${j.smarts}% Smarts.`:'');
+}
+
+function schoolBlock(k){
+  const s=SCHOOLS[k]; if (S.age>=18) return '';
+  if (S.famWealth<s.need) return `Your family cannot afford this (needs a ${FAMILY[s.need].toLowerCase()} family).`;
+  if (bestBond()<s.approve) return 'Your parents do not approve yet. Improve your bond with them.';
+  return '';
+}
+
+function fundUni(un){
+  const help = parents().length && bestBond()>=40 ? Math.round(un.tuition*[0,.5,1][S.famWealth]) : 0;
+  const owed = un.tuition-help, cash = Math.min(owed, Math.max(0,S.wealth));
+  return {help, cash, loan:owed-cash};
+}
+
+function uniYear(notes){
+  const u=S.uni, un=UNIS[u.type], ef=EFFORT[S.effort], f=fundUni(un), mj=MAJORS[u.major];
+  fx({smarts:Math.round(ef.smarts>0?ef.smarts*un.mult:ef.smarts), happiness:ef.happiness, social:ef.social});
+  S.expenses+=f.cash; S.loan+=f.loan; u.year++;
+  notes.push(`university year ${u.year}/${mj.years}, tuition ${money(un.tuition)} (family ${money(f.help)}, cash ${money(f.cash)}, loan ${money(f.loan)})`);
+  if (u.year>=mj.years){ S.degree=u.major; S.uni=null; fx({happiness:8,social:3}); log(`You graduated with a degree in ${mj.name}.`); }
+}
+
 function addMember(role, age, bond){
   const m = {id:'m'+Math.random().toString(36).slice(2,8), name:pick(NAMES), role, age, bond:clamp(bond), alive:true, done:false};
   S.family.push(m); return m;
 }
-/* Yearly housing: applies Happiness/Health effect, pays rent or mortgage, grows home value 3%. Returns the cost. */
+
 function yearHousing(){
   const h = homeInfo(); if (!h) return 0;
   fx({happiness:h.hap, health:h.hp});
+  if (h.kind==='family') return S.famWealth>=1 ? 0 : 1500;
   if (h.kind==='rent') return h.cost;
   const pay = Math.min(h.pay, S.home.balance); S.home.balance -= pay;
   S.home.value = Math.round(S.home.value*1.03); return pay;
 }
-/* Yearly family tick: relatives age, bonds fade, older relatives may die. Returns the cost of raising children. */
+
 function familyYear(){
   S.family.forEach(m => {
     if (!m.alive) return;
     m.age++; m.done=false; m.bond=clamp(m.bond-2);
     if (m.age>=75 && Math.random()<(m.age-74)*.04){ m.alive=false; fx({happiness:-10}); log(`${m.name} (${m.role.toLowerCase()}) passed away at ${m.age}.`); }
   });
+  if (S.age>=18 && S.housing==='parents' && !parents().length){ S.housing=null; log('Your family home is gone. Choose a new home in the Assets tab.'); }
   return kids().filter(k=>k.alive && k.age<18).length*CHILD_COST;
 }
 
-/* ---------- Save / load (localStorage). Functions are dropped by JSON, so a pending event is restored by id. ---------- */
+/* Save / Restore System */
 let menuOpen=false, menuMsg='';
 function save(){
   if (!S || S.dead) return false;
   try { localStorage.setItem(SAVE_KEY, JSON.stringify({S, activeTab})); return true; } catch(e){ return false; }
 }
-function loadGame(){
-  try {
-    const d = JSON.parse(localStorage.getItem(SAVE_KEY)); if (!d) throw 0;
-    S = d.S; activeTab = d.activeTab || 'life';
-    if (S.pending && S.evId) S.ev = EVENTS.find(e=>e.id===S.evId);
-    $('start').classList.add('hidden'); $('gameover').classList.add('hidden'); $('game').classList.remove('hidden');
-    menuMsg = 'Game loaded.';
-  } catch(e){ menuMsg = 'No saved game found.'; }
-  render();
+
+function migrate(o){
+  const base={famWealth:1,uni:null,degree:null,loan:0,part:null,housing:'parents',home:null,family:[],evId:null,logRows:[],dead:false};
+  for (const k in base) if (!(k in o)) o[k]=base[k];
+  if (o.school==='public'||o.school==='home') o.school='national';
+  return o;
 }
-function manualSave(){ menuMsg = save() ? 'Game saved.' : 'Could not save (storage unavailable).'; render(); }
+
+function loadGame(){
+  let d=null;
+  try { d=JSON.parse(localStorage.getItem(SAVE_KEY)); } catch(e){}
+  if (!d || !d.S || d.S.dead){ menuMsg='No saved game found.'; if (S) render(); return; }
+  S = migrate(d.S); activeTab = d.activeTab || 'life'; menuOpen=false; hint();
+  if (S.pending && S.evId) S.ev = EVENTS.find(e=>e.id===S.evId) || null;
+  $('start').classList.add('hidden'); $('gameover').classList.add('hidden');$('game').classList.remove('hidden');
+  menuMsg='Game loaded.'; render();
+}
+
+function manualSave(){ menuMsg = save() ? 'Game saved.' : 'Could not save.'; render(); }
 function resetGame(){
   if (!confirm('Delete your save and start a new life?')) return;
   try { localStorage.removeItem(SAVE_KEY); } catch(e){}
   location.reload();
 }
 function toggleMenu(){ menuOpen=!menuOpen; menuMsg=''; render(); }
-const menuCard = () => `<section class="card"><h3>Menu</h3><p class="muted">${menuMsg||'Your game saves each year and after major choices.'}</p>
+const menuCard = () => `<section class="card"><h3>Menu</h3><p class="muted">${menuMsg||'Your game saves automatically every year.'}</p>
   <div class="acts"><button class="btn" onclick="manualSave()">Save game</button><button class="btn" onclick="loadGame()">Load game</button>
   <button class="btn" onclick="resetGame()">Reset game</button><button class="btn" onclick="toggleMenu()">Close</button></div></section>`;
 
 /* =====================================================================
-   4. RENDERING – header is always shown; only #view changes per tab
+   3. RENDERING VIEWS
    ===================================================================== */
 function render(){
   $('top').innerHTML = `
@@ -275,223 +329,293 @@ function render(){
     <div class="stats">${bar('Health',S.health,'var(--rose)')}${bar('Happiness',S.happiness,'var(--amber)')}${bar('Smarts',S.smarts,'var(--cyan)')}${bar('Social',S.social,'var(--violet)')}</div>
     <div class="wealth"><span>Wealth</span><b class="mono" style="color:${S.wealth<0?'var(--rose)':'var(--mint)'}">${money(S.wealth)}</b></div>`;
   const locked = S.age < 18;
-  $('tabs').innerHTML = [['life','Life'],['school','School'],['career','Career'],['family','Relationships'],['assets','Assets'],['act','Activities']].map(([id,l]) =>
+  $('tabs').innerHTML = [['life','Life'],['school','Education'],['career','Career'],['family','Relationships'],['assets','Assets'],['act','Activities']].map(([id,l]) =>
     `<button class="tab ${activeTab===id?'on':''}" ${id==='career'&&locked?'disabled title="Unlocks at 18"':''} onclick="go('${id}')">${l}</button>`).join('');
   $('age-btn').disabled = S.pending;
   $('view').innerHTML = (menuOpen?menuCard():'') + ({life:viewLife, school:viewSchool, career:viewCareer, family:viewFamily, assets:viewAssets, act:viewActivities})[activeTab]();
+  save();
 }
 
-/* LIFE TAB: current event + history log */
 function viewLife(){
   const e = S.ev;
   const eventCard = e
-    ? `<section class="card"><h3>${e.title}</h3><p class="muted">${e.text}</p>${(e.choices||[]).map((c,i)=>`<button class="btn" onclick="choose(${i})">${c.label}</button>`).join('')}</section>`
+    ? `<section class="card"><h3>${e.title}</h3><p class="muted">${e.text}</p>${(e.choices||[]).map((c,i)=>{ const no=c.cost&&c.cost>S.wealth; return `<button class="btn" ${no?'disabled':''} onclick="choose(${i})">${c.label}${no?'<small>Not enough cash</small>':''}</button>`; }).join('')}</section>`
     : `<section class="card"><h3>Your story</h3><p class="muted">Press Age up to continue.</p></section>`;
   return eventCard + `<section class="card"><h3>Life log</h3><div id="log">${S.logRows.map(r=>`<div class="log-row"><b>Age ${r.age}</b>${r.t}</div>`).join('')}</div></section>`;
 }
 
-/* SCHOOL TAB: pick school type + yearly effort */
 function viewSchool(){
-  if (S.age > 18) return `<section class="card"><h3>Graduated</h3><p class="muted">You left school at 18. High school diploma: <b>${S.diploma?'yes':'no (too many skipped years)'}</b>.</p></section>`;
-  const schools = Object.entries(SCHOOLS).map(([k,s]) => `<button class="btn ${S.school===k?'sel':''}" onclick="pickSchool('${k}')">${s.name}<small>${s.desc}</small></button>`).join('');
   const efforts = Object.entries(EFFORT).map(([k,e]) => `<button class="btn ${S.effort===k?'sel':''}" onclick="pickEffort('${k}')">${e.label}</button>`).join('');
-  return `<section class="card"><h3>Education</h3><p class="muted">Choose where you study. You can switch at any time.</p>${schools}</section>
-    <section class="card"><h3>Effort this year</h3><p class="muted">Applied when you age up. Studying raises Smarts, skipping lifts mood and friendships. Years skipped: ${S.skips}.</p>${efforts}</section>`;
+  const effortCard = `<section class="card"><h3>Effort this year</h3><p class="muted">Studying raises Smarts, skipping lifts mood and friendships.${S.age<18?' Years skipped: '+S.skips+'.':''}</p>${efforts}</section>`;
+  
+  if (S.age<18){
+    const schools = Object.entries(SCHOOLS).map(([k,s]) => { const why=schoolBlock(k);
+      return `<button class="btn ${S.school===k?'sel':''}" ${why?'disabled':''} onclick="pickSchool('${k}')">${s.name} · ${s.cost?money(s.cost)+'/yr, paid by parents':'Free'}<small>${why||s.desc}</small></button>`; }).join('');
+    return `<section class="card"><h3>School</h3><p class="muted">Family status: <b>${FAMILY[S.famWealth]}</b>. Parents pay all fees during your minor years.</p>${schools}</section>` + effortCard + viewPart();
+  }
+  if (S.uni){
+    const u=S.uni, un=UNIS[u.type], mj=MAJORS[u.major];
+    return `<section class="card"><h3>${mj.name} · ${un.name}</h3><p class="muted">Year ${u.year} of ${mj.years}. Tuition ${money(un.tuition)}/yr. Student loan balance: ${money(S.loan)}.</p><button class="btn" onclick="dropOut()">Drop out</button></section>` + effortCard + viewPart();
+  }
+  if (S.degree) return `<section class="card"><h3>Graduate</h3><p class="muted">Degree: <b>${MAJORS[S.degree].name}</b>. Specialized degree jobs are unlocked in Career.</p></section>`;
+  if (!S.diploma) return `<section class="card"><h3>No diploma</h3><p class="muted">You left school without a diploma.</p></section>`;
+  
+  const majors = Object.entries(MAJORS).map(([k,m]) => `<div style="margin-top:12px"><b>${m.name}</b> <span class="muted">· ${m.years} years · Smarts ${m.min}%</span>
+    <div class="acts" style="margin-top:6px"><button class="btn" onclick="enrollUni('national','${k}')">National · ${money(UNIS.national.tuition)}/yr</button><button class="btn" onclick="enrollUni('private','${k}')">Private · ${money(UNIS.private.tuition)}/yr</button></div></div>`).join('');
+  return `<section class="card"><h3>University</h3><p class="muted">Select a major and university. Max loan limit: ${money(LOAN_CAP)}.</p>${majors}</section>`;
 }
 
-/* CAREER TAB: finances, current job, job market */
+function viewPart(){
+  if (S.age<14 || !studying()) return '';
+  const cur=S.part;
+  const list = PART_JOBS.map(p => { const why=(S.age<p.minAge?`From age ${p.minAge}. `:'')+(S.smarts<p.smarts?`Needs ${p.smarts}% Smarts.`:'');
+    return `<button class="btn ${cur&&cur.id===p.id?'sel':''}" ${why?'disabled':''} onclick="takePart('${p.id}')">${p.title} · ${money(p.pay)}/yr<small>${why||'Stress level: '+p.stress}</small></button>`; }).join('');
+  return `<section class="card"><h3>Part-time work</h3><p class="muted">${cur?`Working as a ${cur.title.toLowerCase()}.`:'Side work available for students.'}</p>${list}${cur?'<button class="btn" onclick="quitPart()">Quit part-time job</button>':''}</section>`;
+}
+
 function viewCareer(){
   const net = S.income - S.expenses;
   const fin = `<section class="card"><h3>Finances (last year)</h3>
     <div class="row"><span>Annual income</span><b class="mono" style="color:var(--mint)">${money(S.income)}</b></div>
     <div class="row"><span>Expenses</span><b class="mono" style="color:var(--rose)">${money(-S.expenses)}</b></div>
     <div class="row"><span>Net change</span><b class="mono">${money(net)}</b></div>
+    ${S.loan>0?`<div class="row"><span>Student loan</span><b class="mono" style="color:var(--rose)">${money(-S.loan)}</b></div>`:''}
     <div class="row"><span>Net worth</span><b class="mono">${money(netWorth())}</b></div>
-    <p class="muted" style="margin-top:6px;font-size:.8rem">Food and bills: ${money(LIVING_COST)}/yr plus housing, from age 18.</p></section>`;
+    <p class="muted" style="margin-top:6px;font-size:.8rem">Living costs: ${money(LIVING_COST)}/yr + housing expenses.</p></section>`;
   if (S.job){
     const j = S.job;
-    return fin + `<section class="card"><h3>${j.title}</h3><p class="muted">Salary ${money(j.salary)}/yr · ${j.years} year(s) here</p>
+    return fin + `<section class="card"><h3>${j.title}</h3><p class="muted">Salary ${money(j.salary)}/yr · ${j.years} year(s)</p>
       <div style="margin:10px 0">${bar('Performance',j.perf,'var(--cyan)')}</div>
-      <button class="btn" ${S.worked?'disabled':''} onclick="workHarder()">Work harder<small>Performance up, a little tired. Once a year.</small></button>
-      <button class="btn" ${S.promoTried?'disabled':''} onclick="askPromotion()">Ask for a promotion<small>Odds depend on performance, Smarts and tenure. Once a year.</small></button>
+      <button class="btn" ${S.worked?'disabled':''} onclick="workHarder()">Work harder</button>
+      <button class="btn" ${S.promoTried?'disabled':''} onclick="askPromotion()">Ask for promotion</button>
       <button class="btn" onclick="quitJob()">Quit / resign</button></section>`;
   }
   const list = JOBS.map(j => {
-    const why = (j.diploma&&!S.diploma?'Needs a diploma. ':'') + (S.smarts<j.smarts?`Needs ${j.smarts}% Smarts.`:'');
-    return `<button class="btn" ${why?'disabled':''} onclick="applyJob('${j.id}')">${j.title} · ${money(j.salary)}/yr<small>${why||'You qualify.'}</small></button>`;
+    const why = jobBlock(j);
+    return `<button class="btn" ${why?'disabled':''} onclick="applyJob('${j.id}')">${j.title} · ${money(jobSalary(j))}/yr<small>${why||'You qualify.'}</small></button>`;
   }).join('');
-  return fin + `<section class="card"><h3>Job market</h3><p class="muted">You are unemployed. Apply to an entry-level job.</p>${list}</section>`;
+  return fin + `<section class="card"><h3>Job market</h3><p class="muted">Choose an available career path.</p>${list}</section>`;
 }
 
-/* RELATIONSHIPS TAB: bond bar + actions for each family member (one interaction per person per year) */
 function viewFamily(){
   const acts = m => m.alive ? `<div class="acts">
     <button class="btn" ${m.done?'disabled':''} onclick="famAct('${m.id}','time')">Spend time</button>
     <button class="btn" ${m.done?'disabled':''} onclick="famAct('${m.id}','compliment')">Compliment</button>
-    ${(m.role==='Mother'||m.role==='Father') ? `<button class="btn" ${m.done||S.age>=25?'disabled':''} onclick="famAct('${m.id}','money')">Ask for money</button>` : ''}
+    ${(m.role==='Mother'||m.role==='Father') ? `<button class="btn" ${m.done\vert{}\vert{}S.age>=25?'disabled':''} onclick="famAct('${m.id}','money')">Ask for money</button>` : ''}
     <button class="btn" ${m.done?'disabled':''} onclick="famAct('${m.id}','argue')">Argue</button></div>` : '<p class="muted">Passed away.</p>';
-  return `<section class="card"><h3>Family</h3><p class="muted">One interaction per person each year. Bonds fade a little every year if you neglect them. You can ask parents for money until 25.</p></section>`
-    + S.family.map(m => `<section class="card"><div style="margin-bottom:8px"><b>${m.name}</b> <span class="muted">· ${m.role}, ${m.age}</span></div>${m.alive?bar('Bond',m.bond,'var(--violet)'):''}<div style="margin-top:8px">${acts(m)}</div></section>`).join('');
+  return `<section class="card"><h3>Relationships</h3><p class="muted">Interact with relatives once per year.</p></section>`
+    + S.family.map(m => `<section class="card"><div style="margin-bottom:8px"><b>${m.name}</b> <span class="muted">· ${m.role}, age ${m.age}</span></div>${m.alive?bar('Bond',m.bond,'var(--violet)'):''}<div style="margin-top:8px">${acts(m)}</div></section>`).join('');
 }
 
-/* ASSETS TAB: housing (live with parents, rent, or buy) */
 function viewAssets(){
-  if (S.age<18) return `<section class="card"><h3>Housing</h3><p class="muted">You live with your parents, who cover the housing costs. You choose your own home at 18.</p></section>`;
-  const cur = homeInfo();
-  const curCard = `<section class="card"><h3>Current home</h3>${cur
-    ? `<p class="muted">${cur.name} · ${cur.kind==='rent' ? 'rent '+money(cur.cost)+'/yr' : 'value '+money(S.home.value)+' · mortgage left '+money(S.home.balance)}</p>${cur.kind==='buy' ? '<button class="btn" onclick="sellHome()">Sell home<small>Proceeds after the mortgage go to your Wealth.</small></button>' : ''}`
-    : '<p class="muted">You have no home yet. Choose one below to keep going.</p>'}
+  if (S.age<18) return `<section class="card"><h3>Housing</h3><p class="muted">Living with parents during minor years.</p></section>`;
+  const cur=homeInfo(), sign=n=>(n>=0?'+':'')+n;
+  const desc = !cur ? 'No home currently chosen.'
+    : cur.kind==='family' ? `Living with family · ${S.famWealth>=1?'free':'contributing '+money(1500)+'/yr'}`
+    : cur.kind==='rent' ? `${cur.name} · rent ${money(cur.cost)}/yr`
+    : `${cur.name} · value ${money(S.home.value)} · mortgage ${money(S.home.balance)}`;
+  const curCard = `<section class="card"><h3>Current home</h3><p class="muted">${desc}</p>${cur&&cur.kind==='buy'?'<button class="btn" onclick="sellHome()">Sell home</button>':''}
+    ${S.loan>0?`<div class="row" style="margin-top:8px"><span>Student loan</span><b class="mono" style="color:var(--rose)">${money(-S.loan)}</b></div>`:''}
     <div class="row" style="margin-top:8px"><span>Total net worth</span><b class="mono">${money(netWorth())}</b></div></section>`;
-  const sign = n => (n>=0?'+':'')+n;
-  const rents = HOUSING.filter(h=>h.kind==='rent').map(h => `<button class="btn ${S.housing===h.id?'sel':''}" onclick="rentHome('${h.id}')">${h.name} · ${money(h.cost)}/yr<small>${h.desc} Happiness ${sign(h.hap)}, Health ${sign(h.hp)} per year.</small></button>`).join('');
-  const buys = HOUSING.filter(h=>h.kind==='buy').map(h => { const down=h.price*.2; return `<div style="margin-top:10px"><b>${h.name}</b> · ${money(h.price)}<p class="muted" style="font-size:.85rem">${h.desc} Happiness ${sign(h.hap)}, Health ${sign(h.hp)} per year. Mortgage ${money(h.pay)}/yr.</p>
-    <div class="acts" style="margin-top:6px"><button class="btn" ${S.wealth<h.price?'disabled':''} onclick="buyHome('${h.id}',1)">Pay cash</button><button class="btn" ${S.wealth<down?'disabled':''} onclick="buyHome('${h.id}',0)">Down ${money(down)}</button></div></div>`; }).join('');
-  return curCard + `<section class="card"><h3>Rent an apartment</h3>${rents}</section><section class="card"><h3>Buy a home</h3>${buys}</section>`;
+  const stay = `<button class="btn ${S.housing==='parents'?'sel':''}" onclick="stayHome()">Stay with parents<small>${S.famWealth>=1?'Free.':money(1500)+'/yr contribution.'}</small></button>`;
+  const rents = HOUSING.filter(h=>h.kind==='rent').map(h => `<button class="btn ${S.housing===h.id?'sel':''}" ${h.id!=='room'&&S.wealth<Math.round(h.cost/12)?'disabled':''} onclick="rentHome('${h.id}')">${h.name} · ${money(h.cost)}/yr<small>${h.desc}</small></button>`).join('');
+  const buys = HOUSING.filter(h=>h.kind==='buy').map(h => { const down=h.price*.2; return `<div style="margin-top:10px"><b>${h.name}</b> · ${money(h.price)}
+    <div class="acts" style="margin-top:6px"><button class="btn" ${S.wealth<h.price?'disabled':''} onclick="buyHome('${h.id}',1)">Pay cash</button><button class="btn" ${S.wealth<down?'disabled':''} onclick="buyHome('${h.id}',0)">Down payment ${money(down)}</button></div></div>`; }).join('');
+  return curCard + `<section class="card"><h3>Family housing</h3>${stay}</section><section class="card"><h3>Rent</h3>${rents}</section><section class="card"><h3>Buy</h3>${buys}</section>`;
 }
 
-/* ACTIVITIES TAB: 2 actions per year */
 function viewActivities(){
-  const list = ACTIVITIES.map((a,i) => `<button class="btn" ${S.actions<1?'disabled':''} onclick="doActivity(${i})">${a.label}<small>${a.cost&&S.age>=18?money(a.cost):'Free'}</small></button>`).join('');
-  return `<section class="card"><h3>Activities</h3><p class="muted">Actions left this year: <b>${S.actions}</b></p>${list}</section>`;
+  const list = ACTIVITIES.map((a,i) => `<button class="btn" ${S.actions<1||(S.age>=18&&a.cost>S.wealth)?'disabled':''} onclick="doActivity(${i})">${a.label}<small>${a.cost&&S.age>=18?money(a.cost):'Free'}</small></button>`).join('');
+  return `<section class="card"><h3>Activities</h3><p class="muted">Actions left: <b>${S.actions}</b></p>${list}</section>`;
 }
 
 /* =====================================================================
-   5. PLAYER ACTIONS
+   4. USER ACTIONS & GAME FLOW
    ===================================================================== */
-function pickSchool(k){ S.school=k; if(!S.logRows.some(r=>r.t.startsWith('Enrolled'))) log(`Enrolled in ${SCHOOLS[k].name}.`); hint(); save(); render(); }
+function pickSchool(k){ const why=schoolBlock(k); if (why) return hint(why); S.school=k; if(!S.logRows.some(r=>r.t.startsWith('Enrolled'))) log(`Enrolled in ${SCHOOLS[k].name}.`); hint(); save(); render(); }
 function pickEffort(k){ S.effort=k; render(); }
 
-/* Relationship actions: each person can be targeted once per year */
+function enrollUni(type, major){
+  const un=UNIS[type], mj=MAJORS[major];
+  if (S.job) return hint('Quit your full-time job before enrolling.');
+  if (S.wealth<0) return hint('Clear your negative cash balance first.');
+  if (S.smarts<mj.min+un.minOff) return hint(`Requires ${mj.min+un.minOff}% Smarts.`);
+  if (S.loan+fundUni(un).loan>LOAN_CAP) return hint('Student loan limit would be exceeded.');
+  S.uni={type, major, year:0}; log(`Enrolled in ${mj.name} at a ${un.name.toLowerCase()}.`); hint(); save(); render();
+}
+function dropOut(){ log('Dropped out of university.'); S.uni=null; save(); render(); }
+
+function takePart(id){ const p=PART_JOBS.find(x=>x.id===id); S.part={id:p.id,title:p.title,pay:p.pay,stress:p.stress}; log(`Started working part-time as a ${p.title.toLowerCase()}.`); save(); render(); }
+function quitPart(){ log('Quit part-time job.'); S.part=null; save(); render(); }
+
+function stayHome(){
+  if (S.home) return hint('Sell your home first.');
+  if (!parents().length || bestBond()<30) return hint('Parents will not take you in.');
+  S.housing='parents'; log('Living with parents.'); hint(); save(); render();
+}
+
 function famAct(id, type){
   const m = S.family.find(x=>x.id===id); m.done=true;
-  if (type==='time'){ m.bond=clamp(m.bond+8); fx({happiness:2,social:2}); log(`You spent time with ${m.name}.`); }
-  else if (type==='compliment'){ m.bond=clamp(m.bond+5); fx({social:1}); log(`You complimented ${m.name}.`); }
-  else if (type==='argue'){ m.bond=clamp(m.bond-10); fx({happiness:3,social:-2}); log(`You argued with ${m.name} and blew off steam.`); }
+  if (type==='time'){ m.bond=clamp(m.bond+8); fx({happiness:2,social:2}); log(`Spent time with ${m.name}.`); }
+  else if (type==='compliment'){ m.bond=clamp(m.bond+5); fx({social:1}); log(`Complimented ${m.name}.`); }
+  else if (type==='argue'){ m.bond=clamp(m.bond-10); fx({happiness:3,social:-2}); log(`Argued with ${m.name}.`); }
   else if (Math.random()<m.bond/100*.9){ const amt=(S.age<18?50:300)+rnd(150); S.wealth+=amt; m.bond=clamp(m.bond-2); log(`${m.name} gave you ${money(amt)}.`); }
-  else { m.bond=clamp(m.bond-4); log(`${m.name} said no to your request for money.`); }
+  else { m.bond=clamp(m.bond-4); log(`${m.name} declined to give you money.`); }
   render();
 }
 
-/* Housing actions */
 function rentHome(id){
   if (S.home) return hint('Sell your home first.');
-  S.housing=id; log(`You rented a ${HOUSING.find(h=>h.id===id).name.toLowerCase()}.`); hint(); save(); render();
+  const hh=HOUSING.find(h=>h.id===id);
+  if (id!=='room' && S.wealth<Math.round(hh.cost/12)) return hint('Cannot cover first month rent.');
+  S.housing=id; log(`Rented ${hh.name.toLowerCase()}.`); hint(); save(); render();
 }
+
 function buyHome(id, cash){
   const h=HOUSING.find(x=>x.id===id), paid=cash?h.price:h.price*.2;
   if (S.home) return hint('Sell your current home first.');
+  if (S.wealth<0 || S.wealth<paid) return hint('Not enough cash.');
   S.wealth-=paid; S.home={value:h.price, balance:cash?0:h.price-paid}; S.housing=id;
-  log(`You bought a ${h.name.toLowerCase()} ${cash?'with cash':'with a '+money(paid)+' down payment'}.`); hint(); save(); render();
+  log(`Bought ${h.name.toLowerCase()}.`); hint(); save(); render();
 }
+
 function sellHome(){
   const gain=S.home.value-S.home.balance; S.wealth+=gain; S.home=null; S.housing=null;
-  log(`You sold your home and received ${money(gain)}.`); save(); render();
+  log(`Sold home for ${money(gain)}.`); save(); render();
 }
 
 function applyJob(id){
   const j = JOBS.find(x=>x.id===id);
-  S.job = {title:j.title, salary:j.salary, perf:50, years:0, level:1};
-  log(`Hired as ${j.title} (${money(j.salary)}/yr).`); save(); render();
+  const why = jobBlock(j); if (why) return hint(why);
+  S.job = {title:j.title, salary:jobSalary(j), perf:50, years:0, level:1};
+  log(`Hired as ${j.title} (${money(jobSalary(j))}/yr).`); save(); render();
 }
+
 function workHarder(){
   S.worked=true; S.job.perf=clamp(S.job.perf+12); fx({health:-3,happiness:-3});
-  log('You put in extra hours at work.'); render();
+  log('Worked extra hours.'); render();
 }
+
 function askPromotion(){
   S.promoTried=true; const j=S.job;
-  const p = (j.perf*.6 + S.smarts*.3 + Math.min(j.years,5)*3)/100;   // success probability
+  const p = (j.perf*.6 + S.smarts*.3 + Math.min(j.years,5)*3)/100;
   if (Math.random()<p){
     j.salary=Math.round(j.salary*1.2); j.level++; fx({happiness:6});
-    log(`Promoted! ${j.title} level ${j.level}, now ${money(j.salary)}/yr.`);
-  } else { j.perf=clamp(j.perf-5); fx({happiness:-4}); log('Your promotion request was turned down.'); }
+    log(`Promoted! Salary now ${money(j.salary)}/yr.`);
+  } else { j.perf=clamp(j.perf-5); fx({happiness:-4}); log('Promotion denied.'); }
   render();
 }
-function quitJob(){ log(`You quit your job as ${S.job.title}.`); S.job=null; save(); render(); }
+
+function quitJob(){ log(`Quit job as ${S.job.title}.`); S.job=null; save(); render(); }
+
 function doActivity(i){
   const a=ACTIVITIES[i], cost = S.age>=18?a.cost:0;
+  if (cost>S.wealth) return hint('Not enough cash.');
   S.actions--; S.wealth-=cost; fx(a.fx); log(a.msg); render();
 }
 
-/* =====================================================================
-   6. EVENTS
-   ===================================================================== */
 function choose(i){
   const c = S.ev.choices[i];
   const f = typeof c.fx==='function' ? c.fx() : c.fx;
   fx(f);
   const msg = f.msg || c.result;
   log(`${S.ev.title}: ${msg}`);
-  S.ev = {title:S.ev.title, text:msg, choices:[]};   // show the outcome, no more buttons
+  S.ev = {title:S.ev.title, text:msg, choices:[]};
   S.pending = false; S.evId = null; save();
   checkDeath(); render();
 }
 
-/* =====================================================================
-   7. THE YEARLY TICK
-   ===================================================================== */
+/* Age Up Yearly Processing */
 function ageUp(){
   if (S.pending) return hint('Make your choice first.');
-  if (S.age < 18 && !S.school){ go('school'); return hint('Pick a school type first.'); }
-  if (S.age >= 18 && !S.housing){ go('assets'); return hint('Choose where to live first.'); }
+  if (S.age < 18 && !S.school){ go('school'); return hint('Select a school first.'); }
+  if (S.age >= 18 && !S.housing){ go('assets'); return hint('Choose housing first.'); }
   hint();
   S.age++; S.actions=2; S.worked=false; S.promoTried=false; S.income=0; S.expenses=0;
   const notes = [];
 
-  // --- School year just completed (ages 7-18) ---
   if (S.age <= 18){
     const sc=SCHOOLS[S.school], ef=EFFORT[S.effort];
-    S.expenses += sc.cost;
     fx({smarts:Math.round(ef.smarts>0?ef.smarts*sc.mult:ef.smarts), happiness:ef.happiness, social:ef.social+sc.social});
     if (S.effort==='skip') S.skips++;
     notes.push(`${ef.label.toLowerCase()} at ${sc.name.toLowerCase()}`);
   }
-  if (S.age===18){ S.housing=null; log('You moved out of the family home. Choose where to live in the Assets tab.'); S.diploma = S.skips<5; log(S.diploma?'You graduated with a high school diploma. The Career tab is unlocked.':'You left school without a diploma. The Career tab is unlocked.'); }
+  if (S.age===18){
+    S.diploma = S.skips<5;
+    log(S.diploma ? 'Graduated with high school diploma.' : 'Left school without a diploma.');
+    log('You are 18 now. Choose whether to stay with parents or move out in Assets.');
+  }
 
-  // --- Money (adults pay living costs, employed adults earn salary) ---
+  if (S.uni) uniYear(notes);
+
+  if (S.part){
+    if (!studying()){ log('Part-time job ended.'); S.part=null; }
+    else { const st=S.part.stress+(S.effort==='hard'?2:0); S.income+=S.part.pay; fx({happiness:-st, health:st>=4?-2:-1, smarts:-1}); notes.push(`part-time pay ${money(S.part.pay)}`); }
+  }
+
   if (S.age>=18){
     S.expenses += LIVING_COST + yearHousing();
     if (S.job){
-      S.income = S.job.salary; S.job.years++; S.job.perf = clamp(S.job.perf-2);
-      if (S.job.perf<10){ log(`You were fired from ${S.job.title} for poor performance.`); S.job=null; S.income=0; }
+      S.income += S.job.salary; S.job.years++; S.job.perf = clamp(S.job.perf-2);
+      if (S.job.perf<10){ log(`Fired from ${S.job.title}.`); S.income-=S.job.salary; S.job=null; }
     }
   }
+
+  if (S.age>=18 && S.loan>0){
+    S.loan=Math.round(S.loan*1.05);
+    const r=Math.min(S.loan, Math.round(S.income*.1));
+    S.loan-=r; S.expenses+=r;
+  }
+
   S.expenses += familyYear();
   S.wealth += S.income - S.expenses;
+  if (S.age<18) S.wealth = Math.max(0, S.wealth);
+
   if (S.age>=18) notes.push(`earned ${money(S.income)}, spent ${money(S.expenses)}`);
   if (S.wealth<0 && S.age>=18){ fx({happiness:-3}); notes.push('debt is weighing on you'); }
 
-  // --- Natural decline after 50 ---
   if (S.age>50) fx({health:-Math.ceil((S.age-50)/8)});
   if (notes.length) log(notes.join('; ')+'.');
 
-  // --- Random event ---
   const pool = EVENTS.filter(e=>S.age>=e.min && S.age<=e.max && e.id!==S.lastEvent && (!e.ok || e.ok()));
   if (pool.length && Math.random()<.8){
     const e = pool[Math.floor(Math.random()*pool.length)];
     S.lastEvent=e.id; S.ev=e; S.evId=e.id; S.pending=true; activeTab='life';
   } else S.ev={title:'A quiet year',text:'Nothing major happened. Life went on.',choices:[]};
 
-  checkDeath(); save(); render();   // autosave every year (skipped if you died)
+  checkDeath(); save(); render();
 }
 
 function checkDeath(){
   if (S.health>0) return;
   S.dead=true; try { localStorage.removeItem(SAVE_KEY); } catch(e){}
-  $('game').classList.add('hidden'); $('gameover').classList.remove('hidden');
-  $('summary').textContent = `${S.name} lived to ${S.age}. Final wealth: ${money(S.wealth)}. Smarts ${S.smarts}%, Happiness ${S.happiness}%, Social ${S.social}%.`;
+  $('game').classList.add('hidden'); $('gameover').classList.remove('hidden');$('summary').textContent = `${S.name} lived to ${S.age}. Final wealth: ${money(S.wealth)}. Smarts ${S.smarts}%, Happiness ${S.happiness}%, Social ${S.social}%.`;
 }
 
-/* =====================================================================
-   8. START
-   ===================================================================== */
 function startGame(){
+  try { if (localStorage.getItem(SAVE_KEY) && !confirm('Starting a new life replaces your saved game. Continue?')) return; } catch(e){}
   newGame($('name-input').value.trim());
-  $('start').classList.add('hidden'); $('game').classList.remove('hidden');
-  log('Life began at age 6. Pick a school in the School tab.');
-  S.ev={title:'Your story begins',text:`${S.name}, you are 6 and about to start school. Open the School tab and choose where to study.`,choices:[]};
+  $('start').classList.add('hidden');$('game').classList.remove('hidden');
+  log('Life began at age 6.');
+  S.ev={title:'Your story begins',text:`${S.name}, you are 6 years old and starting school. Open Education to review your school.`,choices:[]};
   render();
 }
-try { if (localStorage.getItem(SAVE_KEY)) $('cont-btn').classList.remove('hidden'); } catch(e){}   // offer to continue a saved life
+
+/* Auto-Check Save File on Page Load */
+function initStart(){
+  let d=null; try { d=JSON.parse(localStorage.getItem(SAVE_KEY)); } catch(e){}
+  const b=$('cont-btn');
+  if (d && d.S && !d.S.dead){
+    b.textContent=`Continue saved life: ${d.S.name}, age ${d.S.age}`;
+    b.classList.remove('hidden');
+  } else {
+    b.classList.add('hidden');
+  }
+}
+
+initStart();
+window.addEventListener('pageshow', e => { if (e.persisted) initStart(); });
+window.addEventListener('beforeunload', () => save());
 $('name-input').addEventListener('keydown', e => { if (e.key==='Enter') startGame(); });
 </script>
 </body>
