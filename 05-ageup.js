@@ -175,7 +175,3 @@ function checkFamilyEvents() {
     }
   }
 }
-
-
-}
-
