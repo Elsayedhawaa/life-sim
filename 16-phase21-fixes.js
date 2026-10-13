@@ -185,3 +185,39 @@ if (initStart()){   // a save exists: restore it straight away
   try { loadGame(); }
   catch(err){ S=null; $('game').classList.add('hidden'); $('start').classList.remove('hidden'); }
 }
+/* ==========================================
+   MASTER UNBLOCK FIX FOR AGE 6 EVENT LOOP
+   ========================================== */
+
+// 1. Force choices to clear pending events completely
+if (typeof choose === 'function') {
+  const _origChoose = choose;
+  choose = function(i) {
+    _origChoose(i);
+    S.pending = false;
+    S.ev = null;
+    if (typeof render === 'function') render();
+  };
+}
+
+// 2. Prevent ageUp from getting stuck on repeating milestone events
+if (typeof ageUp === 'function') {
+  const _origAgeUp = ageUp;
+  ageUp = function() {
+    // Clear stuck event state before aging up
+    S.pending = false;
+    S.ev = null;
+    
+    // Increment age if it failed to advance
+    const currentAge = S.age;
+    _origAgeUp();
+    
+    // Safety check: if age didn't increase, force it forward
+    if (S.age === currentAge) {
+      S.age++;
+      S.year = (S.year || 2007) + 1;
+      if (typeof log === 'function') log(`Advanced to Age ${S.age}.`);
+      if (typeof render === 'function') render();
+    }
+  };
+}
