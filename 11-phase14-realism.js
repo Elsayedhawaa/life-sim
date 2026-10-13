@@ -1,33 +1,42 @@
-/* ==================== P14 REALISM PATCH ====================
-   Death-free mode, historical USD/EGP, separate Egyptian inflation and
-   wages, parent money-request modal, degree-matched jobs, and precarious
-   post-study survival path. All figures are gameplay estimates. */
+/* ==================== P14 REALISM PATCH ==================== */
 
-/* 1) Death mechanics are off: keep the life playable indefinitely. */
-checkDeath = function(){ if(S) S.dead=false; };
-const P14_migrateBeforeNoDeath = typeof migrate === 'function' ? migrate : function(x){ return x; };
-migrate = function(o){
-  const x=P14_migrateBeforeNoDeath(o);
-  if(!x) return x;
-  x.dead=false;
-  if(Array.isArray(x.family)) x.family.forEach(m=>{ if(m && ['Mother','Father','Sibling','Child','Partner','Spouse'].includes(m.role)) m.alive=true; });
-  x.funeralNotice=null;
-  x.familyEstatePool=0; x.familyEstatePropertyPool=false; x.familyEstatePoolYear=0;
-  return x;
+// 1. GLOBAL DECLARATION AT VERY TOP (Guarantees definition even if rest of file has runtime errors)
+var P14_informalJobs = window.P14_informalJobs || {
+  dish:  { name: 'Dishwashing / kitchen porter', base: 14500, stress: 4, desc: 'Low-paid shifts, often unstable hours and limited protection.' },
+  clean: { name: 'Cleaning / warehouse shifts', base: 15500, stress: 4, desc: 'Physically tiring shifts; pay and hours can vary.' },
+  build: { name: 'Construction labourer', base: 18500, stress: 6, desc: 'Higher possible cash earnings but physical injury and wage-theft risks.' }
 };
 
-/* Rebuild yearly family ageing without mortality or inheritance. */
-familyYear = function(){
-  if(!S) return 0;
-  (S.family||[]).forEach(m=>{ if(!m) return; m.alive=true; m.age=(Number(m.age)||0)+1; m.done=false; m.bond=clamp((m.bond||0)-2); });
-  if(S.age>=18 && S.housing==='parents' && typeof parents === 'function' && !parents().length){ S.housing=null; log('You no longer have access to the family home. Choose housing in Real Estate.'); }
-  const count=(S.family||[]).filter(k=>k.role==='Child'&&k.alive&&k.age<18).length;
-  const y=gameYear(), country=S.country||'usa';
-  const perChild=country==='egy' ? localCurrencyInternal(50000*p14EgyptPriceIndex(y),'egy',y) : localCurrencyInternal(((COUNTRIES[country]||COUNTRIES.usa).childCostLocal||8000)*(typeof prOf==='function'?prOf(y,S):1),country,y);
-  return count*perChild;
-};
+// 2. Safe function overrides wrapped in try/catch to prevent const re-assignment crashes
+try { checkDeath = function(){ if(S) S.dead=false; }; } catch(e){}
 
-/* 2) Historical exchange-rate references. */
+try {
+  if (typeof migrate === 'function') {
+    const P14_migrateBeforeNoDeath = migrate;
+    migrate = function(o){
+      const x=P14_migrateBeforeNoDeath(o);
+      if(!x) return x;
+      x.dead=false;
+      if(Array.isArray(x.family)) x.family.forEach(m=>{ if(m && ['Mother','Father','Sibling','Child','Partner','Spouse'].includes(m.role)) m.alive=true; });
+      x.funeralNotice=null;
+      x.familyEstatePool=0; x.familyEstatePropertyPool=false; x.familyEstatePoolYear=0;
+      return x;
+    };
+  }
+} catch(e){}
+
+try {
+  familyYear = function(){
+    if(!S) return 0;
+    (S.family||[]).forEach(m=>{ if(!m) return; m.alive=true; m.age=(Number(m.age)||0)+1; m.done=false; m.bond=clamp((m.bond||0)-2); });
+    if(S.age>=18 && S.housing==='parents' && typeof parents === 'function' && !parents().length){ S.housing=null; log('You no longer have access to the family home. Choose housing in Real Estate.'); }
+    const count=(S.family||[]).filter(k=>k.role==='Child'&&k.alive&&k.age<18).length;
+    const y=gameYear(), country=S.country||'usa';
+    const perChild=country==='egy' ? localCurrencyInternal(50000*p14EgyptPriceIndex(y),'egy',y) : localCurrencyInternal(((COUNTRIES[country]||COUNTRIES.usa).childCostLocal||8000)*(typeof prOf==='function'?prOf(y,S):1),country,y);
+    return count*perChild;
+  };
+} catch(e){}
+
 const P14_EGP_USD_HISTORY = {
   2007:5.635, 2008:5.433, 2009:5.545, 2010:5.605, 2011:5.939,
   2012:6.068, 2013:6.872, 2014:7.079, 2015:7.690, 2016:10.03,
@@ -60,17 +69,21 @@ function p14EgyptPriceIndex(year){
   return v;
 }
 
-const P14_egyptWageIndexBeforeForecast = typeof egyptWageIndex === 'function' ? egyptWageIndex : function(y){ return 1; };
-egyptWageIndex = function(year){
-  const y=Number(year)||2007;
-  if(y<=2026) return P14_egyptWageIndexBeforeForecast(y);
-  return Math.pow(1.075,y-2026);
-};
+try {
+  const P14_egyptWageIndexBeforeForecast = typeof egyptWageIndex === 'function' ? egyptWageIndex : function(y){ return 1; };
+  egyptWageIndex = function(year){
+    const y=Number(year)||2007;
+    if(y<=2026) return P14_egyptWageIndexBeforeForecast(y);
+    return Math.pow(1.075,y-2026);
+  };
+} catch(e){}
 
-p12ScaleForYear = function(country,y){
-  if(country==='egy') return p14EgyptPriceIndex(y)*(rateForCountry('egy',2026)/Math.max(.0001,rateForCountry('egy',y)));
-  return typeof prOf==='function'?prOf(y,S):(S&&S.prEra)||1;
-};
+try {
+  p12ScaleForYear = function(country,y){
+    if(country==='egy') return p14EgyptPriceIndex(y)*(rateForCountry('egy',2026)/Math.max(.0001,rateForCountry('egy',y)));
+    return typeof prOf==='function'?prOf(y,S):(S&&S.prEra)||1;
+  };
+} catch(e){}
 
 if (typeof COUNTRIES !== 'undefined' && COUNTRIES.egy) {
   COUNTRIES.egy.hist = y => {
@@ -82,28 +95,24 @@ if (typeof COUNTRIES !== 'undefined' && COUNTRIES.egy) {
   COUNTRIES.egy.rate=52.70;
 }
 
-rateForCountry = function(country,year){
-  const c=(typeof COUNTRIES !== 'undefined' && COUNTRIES[country]) || (typeof COUNTRIES !== 'undefined' ? COUNTRIES.usa : {rate:1});
-  const y=Number(year)||gameYear();
-  if(country==='egy' && c.hist) return c.hist(y);
-  if(c.hist&&y<2026) return c.hist(y);
-  return c.rate||1;
-};
+try {
+  rateForCountry = function(country,year){
+    const c=(typeof COUNTRIES !== 'undefined' && COUNTRIES[country]) || (typeof COUNTRIES !== 'undefined' ? COUNTRIES.usa : {rate:1});
+    const y=Number(year)||gameYear();
+    if(country==='egy' && c.hist) return c.hist(y);
+    if(c.hist&&y<2026) return c.hist(y);
+    return c.rate||1;
+  };
+} catch(e){}
 
-rateNow = function(){
-  const c=typeof C==='function'?C():{cur:'$'};
-  const y=gameYear();
-  return rateForCountry(S&&S.country||'usa',y)*((S&&S.cf&&S.cf.mul)||1);
-};
+try {
+  rateNow = function(){
+    const c=typeof C==='function'?C():{cur:'$'};
+    const y=gameYear();
+    return rateForCountry(S&&S.country||'usa',y)*((S&&S.cf&&S.cf.mul)||1);
+  };
+} catch(e){}
 
-/* 3) Informal Survival Jobs Dictionary (Required by phase 18) */
-const P14_informalJobs = {
-  dish:  { name: 'Dishwashing / kitchen porter', base: 14500, stress: 4, desc: 'Low-paid shifts, often unstable hours and limited protection.' },
-  clean: { name: 'Cleaning / warehouse shifts', base: 15500, stress: 4, desc: 'Physically tiring shifts; pay and hours can vary.' },
-  build: { name: 'Construction labourer', base: 18500, stress: 6, desc: 'Higher possible cash earnings but physical injury and wage-theft risks.' }
-};
-
-/* 4) Parent requests */
 function p14SuggestedFamilyNeed(reason, familyTier, year, country='egy'){
   const r=String(reason||'').toLowerCase(), t=Math.max(0,Math.min(2,Number(familyTier)||0));
   const egp = r.includes('hospital')||r.includes('treatment')||r.includes('medical')||r.includes('medication')||r.includes('medicine') ? [4500,18000,55000][t]
@@ -137,19 +146,21 @@ function p14RequestState(){
   return null;
 }
 
-p12GenerateFamilyNeed=function(){
-  if(!S||S.age<18||S.p12NeedAge===S.age||S.familyNeed||S.parentNeed)return;
-  if (typeof parents !== 'function') return;
-  const ps=parents(); if(!ps.length)return;
-  S.p12NeedAge=S.age;
-  const senior=ps.filter(m=>m.age>=55).length, chance=Math.min(.27,(S.famWealth===0?.17:S.famWealth===1?.11:.06)+senior*.035);
-  if(Math.random()>chance)return;
-  const m=pick(ps);
-  const reason=pick(m.age>=60?['monthly groceries','electricity and gas bills','blood tests and medication','hospital treatment','urgent plumbing repair','rent and household bills']:['monthly groceries','electricity and gas bills','helping a younger sibling with school fees','a hospital or clinic bill','medication','a family wedding expense','urgent home repair','temporary loss of income']);
-  const local=p14SuggestedFamilyNeed(reason,S.famWealth,gameYear(),S.home||'egy');
-  S.parentNeed={id:m.id,reason,amountHomeLocal:local,amountHomeCurrency:(COUNTRIES[S.home||'egy']||COUNTRIES.egy).cur,amountInternal:localCurrencyInternal(local,S.home||'egy',gameYear()),year:gameYear()};
-  log(`${m.name} (your ${m.role.toLowerCase()}) asked for help with ${reason}.`);
-};
+try {
+  p12GenerateFamilyNeed=function(){
+    if(!S||S.age<18||S.p12NeedAge===S.age||S.familyNeed||S.parentNeed)return;
+    if (typeof parents !== 'function') return;
+    const ps=parents(); if(!ps.length)return;
+    S.p12NeedAge=S.age;
+    const senior=ps.filter(m=>m.age>=55).length, chance=Math.min(.27,(S.famWealth===0?.17:S.famWealth===1?.11:.06)+senior*.035);
+    if(Math.random()>chance)return;
+    const m=pick(ps);
+    const reason=pick(m.age>=60?['monthly groceries','electricity and gas bills','blood tests and medication','hospital treatment','urgent plumbing repair','rent and household bills']:['monthly groceries','electricity and gas bills','helping a younger sibling with school fees','a hospital or clinic bill','medication','a family wedding expense','urgent home repair','temporary loss of income']);
+    const local=p14SuggestedFamilyNeed(reason,S.famWealth,gameYear(),S.home||'egy');
+    S.parentNeed={id:m.id,reason,amountHomeLocal:local,amountHomeCurrency:(COUNTRIES[S.home||'egy']||COUNTRIES.egy).cur,amountInternal:localCurrencyInternal(local,S.home||'egy',gameYear()),year:gameYear()};
+    log(`${m.name} (your ${m.role.toLowerCase()}) asked for help with ${reason}.`);
+  };
+} catch(e){}
 
 function p14RespondFamilyNeed(send){
   const r=p14RequestState(); if(!r)return;
@@ -183,15 +194,6 @@ function p14ShowParentRequestModal(){
   const cur=typeof C==='function'?C().cur:'$', value=Math.round(r.amountPlayer);
   el.innerHTML=`<div style="background:#14141f;color:#e8e8f2;border:1px solid #51416e;border-radius:16px;padding:20px;max-width:480px;width:100%;max-height:86vh;overflow:auto;box-shadow:0 18px 60px #0009"><div style="font-size:.75rem;letter-spacing:.08em;color:#22d3ee;font-weight:700">FAMILY MESSAGE · ${gameYear()}</div><h2 style="font-size:1.45rem;margin:8px 0">${r.name} asks for your help</h2><p style="line-height:1.5;margin-bottom:10px">They need help with <b>${r.reason}</b>. The requested amount is about <b>${money(r.amountInternal)}</b> in your current currency.</p><label for="p14-family-request-amount" class="muted">Amount you choose to send (${cur})</label><input id="p14-family-request-amount" type="number" min="0" value="${value}" style="width:100%;margin:8px 0 12px;padding:12px;background:#0b0b12;color:#e8e8f2;border:1px solid #35354b;border-radius:10px;font:inherit"><div class="acts"><button class="btn" style="text-align:center;background:#8b5cf6" onclick="p14RespondFamilyNeed(true)">Send chosen amount</button><button class="btn" style="text-align:center" onclick="p14RespondFamilyNeed(false)">Decline for now</button></div></div>`;
 }
-
-/* Render & ageUp hooks */
-const P14_renderBeforeFinalPanel = typeof render === 'function' ? render : function(){};
-render = function(){
-  if(S){ S.dead=false; S.funeralNotice=null; if(Array.isArray(S.family)) S.family.forEach(m=>{if(m)m.alive=true;}); }
-  const out=P14_renderBeforeFinalPanel();
-  try{p14ShowParentRequestModal();}catch(e){}
-  return out;
-};
 
 function p14EgyptLocalToInternal(localBase2026, year=gameYear()){
   return localCurrencyInternal(Math.max(0,Number(localBase2026)||0)*p14EgyptPriceIndex(year),'egy',year);
@@ -231,10 +233,3 @@ function p14ReconcileEgyptAdultCosts(){
   }
   return false;
 }
-
-const P14_ageUpBeforeEgyptLedger = typeof ageUp === 'function' ? ageUp : function(){};
-ageUp = function(){
-  const priorAge=S&&S.age;
-  P14_ageUpBeforeEgyptLedger();
-  if(S&&priorAge!==S.age&&p14ReconcileEgyptAdultCosts()&&typeof render==='function')render();
-};
