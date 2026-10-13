@@ -430,3 +430,56 @@ function askRaise() {
   // Re-render the UI
   if (typeof render === 'function') render();
 }
+ /* ==========================================
+   TENURE-BASED JOB FILTER & DETAILED PROMOTIONS
+   ========================================== */
+
+// Experience filter for available vacancies
+function filterJobsByTenure(jobsList, trackId) {
+  const userTrackRecord = (S.careerRecords || {})[trackId];
+  const totalExpYears = userTrackRecord ? (userTrackRecord.years || 0) : 0;
+
+  return jobsList.filter(job => {
+    if (!job.minExp) return true; // Entry level always available
+    return totalExpYears >= job.minExp; // Requires minimum field experience
+  });
+}
+
+// Detailed promotion feedback
+function promotePlayerWithDetails() {
+  if (!S || !S.job) return;
+
+  const currentLevel = S.job.level || 0;
+  const track = TRACKS[S.job.trackId];
+
+  if (!track || currentLevel >= track.levels.length - 1) {
+    if (typeof hint === 'function') hint("You have reached the highest rank in this career track!");
+    return;
+  }
+
+  const oldTitle = S.job.title;
+  const oldSalary = S.job.salary;
+  
+  // Advance rank level
+  S.job.level = currentLevel + 1;
+  const newLevelData = track.levels[S.job.level];
+  
+  S.job.title = newLevelData.title;
+  const raisePercent = 0.12 + Math.random() * 0.08; // 12% to 20% promotion jump
+  const newSalary = Math.round(oldSalary * (1 + raisePercent));
+  const diff = newSalary - oldSalary;
+  const pctString = (raisePercent * 100).toFixed(1);
+
+  S.job.salary = newSalary;
+  S.promoTried = true;
+
+  const diffText = typeof money === 'function' ? money(diff) : diff;
+  const newSalaryText = typeof money === 'function' ? money(newSalary) : newSalary;
+
+  if (typeof log === 'function') {
+    log(`🎉 PROMOTION! Promoted from ${oldTitle} to ${S.job.title}! Salary increased by +${diffText}/yr (+${pctString}%). New Salary: ${newSalaryText}/yr.`);
+  }
+
+  if (typeof fx === 'function') fx({ happiness: 10, social: 5 });
+  if (typeof render === 'function') render();
+}
