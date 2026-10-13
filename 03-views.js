@@ -52,6 +52,13 @@ function viewLife(){
   return household + eventCard + `<section class="card"><h3>Life log</h3><div id="log">${S.logRows.map(r=>`<div class="log-row"><b>Age ${r.age}</b>${r.t}</div>`).join('')}</div></section>`;
 }
 
+/* Helper to calculate GED exam fee based on local economy */
+function gedExamCost() {
+  const baseUSD = 350;
+  const rate = S.country === 'egy' ? (typeof p14EgyptPriceIndex === 'function' ? p14EgyptPriceIndex(gameYear()) * 10 : 3500) : (S.pr || 1) * baseUSD;
+  return Math.round(rate);
+}
+
 function viewSchool(){
   const efforts = Object.entries(EFFORT).map(([k,e]) => `<button class="btn ${S.effort===k?'sel':''}" onclick="pickEffort('${k}')">${e.label}</button>`).join('');
   const effortCard = `<section class="card"><h3>Effort this year</h3><p class="muted">Applied when you age up.${S.age<18?' Years skipped: '+S.skips+'.':''}</p>${efforts}</section>`;
@@ -68,7 +75,29 @@ function viewSchool(){
   }
 
   if (S.degree) return `<section class="card"><h3>Graduate</h3><p class="muted">Degree: <b>${MAJORS[S.degree].name}</b>. Higher career levels unlocked!</p></section>`;
-  if (!S.diploma) return `<section class="card"><h3>No diploma</h3><p class="muted">You left school without a diploma.</p></section>`;
+
+  // IF NO DIPLOMA: Choose who pays for the GED Exam
+  if (!S.diploma) {
+    const cost = gedExamCost();
+    const formattedCost = typeof money === 'function' ? money(cost) : cost;
+    const canAfford = S.wealth >= cost;
+    const hasParents = typeof parents === 'function' && parents().length > 0;
+
+    return `<section class="card">
+      <h3>No High School Diploma</h3>
+      <p class="muted">You left school without a diploma. Take the High School Equivalency Exam (GED) for <b>${formattedCost}</b> to qualify for University.</p>
+      <div class="acts" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn" ${!canAfford ? 'disabled' : ''} onclick="getAdultDiploma('self')">
+          Pay Myself (${formattedCost})
+          <small>${!canAfford ? 'Need more cash' : 'Pay using your savings or income'}</small>
+        </button>
+        ${hasParents ? `<button class="btn" onclick="getAdultDiploma('parents')">
+          Ask Parents to Pay
+          <small>Depends on family wealth & relationship</small>
+        </button>` : ''}
+      </div>
+    </section>`;
+  }
 
   const skipUniCard = `<section class="card" style="border:1px solid var(--cyan)">
     <h3>Skip University</h3>
@@ -81,6 +110,38 @@ function viewSchool(){
     <div class="acts" style="margin-top:6px"><button class="btn" onclick="enrollUni('national','${k}')">National · ${money(UNIS.national.tuition)}/yr</button><button class="btn" onclick="enrollUni('private','${k}')">Private · ${money(UNIS.private.tuition)}/yr</button></div></div>`).join('');
 
   return skipUniCard + `<section class="card"><h3>Who pays tuition?</h3>${payBtns}</section><section class="card"><h3>University Options</h3>${majors}</section>`;
+}
+
+/* Handler for taking the GED exam with self-pay or parent support */
+function getAdultDiploma(payer) {
+  const cost = gedExamCost();
+  const formattedCost = typeof money === 'function' ? money(cost) : cost;
+
+  if (payer === 'self') {
+    if (S.wealth < cost) {
+      if (typeof hint === 'function') hint("You don't have enough money to register for the GED exam.");
+      return;
+    }
+    S.wealth -= cost;
+    S.diploma = true;
+    if (typeof log === 'function') log('You paid ' + formattedCost + ', passed the GED exam, and earned your High School Diploma!');
+    if (typeof fx === 'function') fx({ happiness: 5, smarts: 4 });
+  } else if (payer === 'parents') {
+    const wealth = Math.max(0, Math.min(2, S.famWealth || 0));
+    let chance = [0.30, 0.65, 0.90][wealth]; // Richer family = higher chance to pay
+    
+    if (Math.random() < chance) {
+      S.diploma = true;
+      if (typeof log === 'function') log('Your parents agreed to pay ' + formattedCost + ' for your GED exam. You passed and received your High School Diploma!');
+      if (typeof fx === 'function') fx({ happiness: 6, smarts: 4 });
+    } else {
+      if (typeof log === 'function') log('Your parents refused to pay for your GED exam. You will need to earn money and pay for it yourself.');
+      if (typeof hint === 'function') hint('Parents refused to pay.');
+      if (typeof fx === 'function') fx({ happiness: -2 });
+    }
+  }
+
+  if (typeof render === 'function') render();
 }
 
 function viewPart(){
