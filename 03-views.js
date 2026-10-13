@@ -117,6 +117,50 @@ function viewCareer(){
 
       <button class="btn" ${S.worked?'disabled':''} onclick="workHarder()">Work Overtime / Harder<small>Boost performance once this year.</small></button>
       <button class="btn" ${S.promoTried?'disabled':''} onclick="askPromotion()">Request Rank Promotion<small>Advance to the next career level if qualified.</small></button>
+      <button class="btn" onclick="askRaise()">Ask for Raise<small>Request a salary increase based on performance.</small></button>
+      ${S.age>=RETIRE_MIN?'<button class="btn" onclick="retireClick()">Retire<small>Pension of about 40% of your salary.</small></button>':''}
+      <button class="btn" onclick="quitJob()">Resign / Quit</button>
+    </section>`;
+  }
+
+  let html = fin + `<section class="card"><h3>Career Market Tracks</h3><p class="muted">${S.uni?'Finish university to unlock full-time careers.':'Apply for entry level or degree positions:'}</p>`;
+
+  Object.entries(TRACKS).forEach(([trackId, track]) => {
+    const entryJob = track.levels[0];
+    const canDegree = !track.degree || S.degree === track.degree;
+    const blockWhy = (S.uni?'Finish university first. ':'') + (!canDegree ? `Requires ${MAJORS[track.degree].name} degree. ` : '') + (S.smarts < entryJob.reqSmarts ? `Requires ${entryJob.reqSmarts}% Smarts.` : '') + (entryJob.diploma&&!S.diploma?'Requires a diploma. ':'');
+
+    html += `<div style="margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:8px">
+      <b>${track.name}</b><br>
+      <span class="muted" style="font-size:.85rem">Level 1: ${entryJob.title} (${money(entryJob.salary)}/yr)</span>
+      <button class="btn" ${blockWhy?'disabled':''} onclick="applyTrack('${trackId}')">${blockWhy ? blockWhy : 'Apply for Entry Position'}</button>
+    </div>`;
+  });
+
+  html += `</section>`;
+  return html;
+}
+
+  if (S.retired) return fin + `<section class="card"><h3>Retired</h3><p class="muted">Pension ${money(S.pension)}/yr.</p></section>`;
+
+  if (S.job){
+    const j = S.job;
+    const schedText = S.schedule==='over' ? 'Long Hours (50 hrs/wk, +Perf, +Stress)' : S.schedule==='crunch' ? 'Crunch Mode (60 hrs/wk, ++Perf, ++Stress)' : 'Standard (40 hrs/wk)';
+    return fin + `<section class="card">
+      <h3>${j.title}</h3>
+      <p class="muted">Track: ${TRACKS[j.trackId].name} (Level ${j.level+1}/5)</p>
+      <p class="muted">Salary ${money(j.salary)}/yr · Tenure: ${j.years} year(s)</p>
+      <div style="margin:10px 0">${bar('Performance',j.perf,'var(--cyan)')}</div>
+
+      <p class="muted" style="margin-top:8px;font-size:.85rem">Work Schedule: <b>${schedText}</b></p>
+      <div class="acts" style="margin-top:6px">
+        <button class="btn ${S.schedule==='norm'?'sel':''}" onclick="setSchedule('norm')">40 hrs/wk</button>
+        <button class="btn ${S.schedule==='over'?'sel':''}" onclick="setSchedule('over')">50 hrs/wk</button>
+        <button class="btn ${S.schedule==='crunch'?'sel':''}" onclick="setSchedule('crunch')">60 hrs/wk</button>
+      </div>
+
+      <button class="btn" ${S.worked?'disabled':''} onclick="workHarder()">Work Overtime / Harder<small>Boost performance once this year.</small></button>
+      <button class="btn" ${S.promoTried?'disabled':''} onclick="askPromotion()">Request Rank Promotion<small>Advance to the next career level if qualified.</small></button>
       <button class="btn" ${S.promoTried?'disabled':''} onclick="askPromotion()">Request Rank Promotion<small>Advance to the next career level if qualified.</small></button>
 <button class="btn" onclick="askRaise()">Ask for Raise<small>Request a salary increase based on performance.</small></button>
       ${S.age>=RETIRE_MIN?'<button class="btn" onclick="retireClick()">Retire<small>Pension of about 40% of your salary.</small></button>':''}
