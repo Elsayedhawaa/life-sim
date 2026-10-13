@@ -97,7 +97,17 @@ const TRACKS = {
       {title:'R&D Director', salary:130000, hrs:50, stress:6, reqSmarts:80, diploma:true},
       {title:'Chief Scientist', salary:195000, hrs:50, stress:7, reqSmarts:88, diploma:true}
     ]
-  }
+  },
+  bpo: {
+    name: 'BPO & English Call Center',
+    levels: [
+      {title:'Sutherland Junior Agent', salary:160000, hrs:40, stress:3, reqSmarts:25, diploma:true, eng:40},
+      {title:'Vodafone UK Support Specialist', salary:228000, hrs:40, stress:3, reqSmarts:35, diploma:true, eng:55},
+      {title:'Concentrix Senior Advisor', salary:312000, hrs:40, stress:4, reqSmarts:45, diploma:true, eng:65},
+      {title:'Operations Team Leader', salary:450000, hrs:45, stress:5, reqSmarts:60, diploma:true, eng:75},
+      {title:'BPO Operations Director', salary:720000, hrs:50, stress:7, reqSmarts:75, diploma:true, eng:85}
+    ]
+  },
 };
 
 const FOOD = {
@@ -492,7 +502,11 @@ const P12_ROLE_PROFILES = [
   {id:'lab',trackId:'bio',roleTitle:'Laboratory Technician',titles:['Lab Assistant','Laboratory Technician','Senior Lab Technician','Lab Manager','Research Operations Director'],degree:'biology',smarts:50,eng:35,minExp:0,factor:.92,medical:true,social:true,bonus:.03,leave:21,remote:'On-site',hours:40,stress:4,contract:'Permanent or research grant',desc:'Sample handling, safety records, tests and laboratory quality procedures.'},
   {id:'clinical',trackId:'medical',roleTitle:'Clinical / Healthcare Professional',titles:['Junior Clinical Role','Qualified Clinician','Senior Specialist','Department Lead','Clinical Director'],degree:'medicine',smarts:68,eng:35,minExp:0,factor:1.00,medical:true,social:true,bonus:.04,leave:21,remote:'On-site',hours:48,stress:8,contract:'Hospital or clinic contract',desc:'Patient care with licensing, training and local qualification requirements.'},
   {id:'auditdata',trackId:'finance',roleTitle:'Finance Data / Reporting Officer',titles:['Reporting Assistant','Finance Reporting Analyst','Senior Reporting Analyst','Reporting Manager','Head of Reporting'],degree:'business',smarts:50,eng:40,minExp:1,factor:1.02,medical:true,social:true,bonus:.05,leave:21,remote:'Hybrid',hours:42,stress:4,contract:'Permanent',desc:'Excel / BI reporting, reconciliations, finance data quality and recurring dashboards.'},
-  {id:'procurement',trackId:'entry',roleTitle:'Procurement Officer',titles:['Procurement Assistant','Procurement Officer','Senior Buyer','Procurement Manager','Head of Procurement'],degree:null,smarts:40,eng:32,minExp:0,factor:.93,medical:true,social:true,bonus:.03,leave:18,remote:'Mostly on-site',hours:42,stress:4,contract:'Permanent',desc:'Supplier quotations, purchase approvals, stock availability and price negotiations.'}
+  {id:'procurement',trackId:'entry',roleTitle:'Procurement Officer',titles:['Procurement Assistant','Procurement Officer','Senior Buyer','Procurement Manager','Head of Procurement'],degree:null,smarts:40,eng:32,minExp:0,factor:.93,medical:true,social:true,bonus:.03,leave:18,remote:'Mostly on-site',hours:42,stress:4,contract:'Permanent',desc:'Supplier quotations, purchase approvals, stock availability and price negotiations.'},
+  {id:'sutherland_agent',trackId:'bpo',roleTitle:'Customer Support Rep (Sutherland)',titles:['Junior Agent','Customer Support Rep','Senior Account Specialist','Team Leader','Account Manager'],degree:null,smarts:25,eng:40,minExp:0,factor:1.15,medical:true,social:true,bonus:.05,leave:21,remote:'Hybrid',hours:40,stress:3,contract:'Permanent BPO Contract',desc:'Handle customer support and account inquiries for international accounts in English with Sutherland.'},
+  {id:'vodafone_uk_spec',trackId:'bpo',roleTitle:'Vodafone UK Billing Specialist',titles:['Support Specialist','Billing Advisor','Tier-2 Escalations Lead','Operations Lead','Account Manager'],degree:null,smarts:35,eng:55,minExp:0,factor:1.45,medical:true,social:true,bonus:.08,leave:21,remote:'On-site / Door-to-door transport',hours:40,stress:3,contract:'Permanent UK Account',desc:'Provide English technical and billing assistance for UK mobile and broadband customers.'},
+  {id:'concentrix_sr_adv',trackId:'bpo',roleTitle:'Senior Advisor (Concentrix)',titles:['Technical Advisor','Senior Technical Advisor','Subject Matter Expert','Team Leader','Operations Manager'],degree:null,smarts:45,eng:65,minExp:1,factor:1.85,medical:true,social:true,bonus:.10,leave:21,remote:'Hybrid',hours:40,stress:4,contract:'Permanent Escalations Role',desc:'Solve complex tier-2 technical escalations for high-tier enterprise clients in English.'},
+  {id:'bpo_team_lead',trackId:'bpo',roleTitle:'BPO Team Leader',titles:['Shift Supervisor','Operations Team Leader hostilities','Senior Operations Manager','Site Operations Director'],degree:null,smarts:60,eng:75,minExp:2,factor:2.50,medical:true,social:true,bonus:.15,leave:24,remote:'Hybrid',hours:45,stress:5,contract:'Management Contract',desc:'Lead a squad of 15–20 customer experience agents, managing SLA compliance and quality assurance.'}
 ];
 
 const P12_EGY_BRANDS=['Nile Crest Packaging','Alexandria Commercial Bank','Fawry Digital Services','Sphinx FMCG Distribution','Mediterranean Pharma','Canal Business Services','Delta Audit & Tax','Pyramid Data Solutions','Red Sea Logistics','Cairo Business Process Services','Aman Retail Group','Blue Harbor Insurance','FirstGate Capital','NileCare Medical Network','Mansoura Industrial Group','Arabian Gulf Shared Services','Beacon Consumer Goods','Eastline Outsourcing','Atlas Business Systems','Harbour Medical Group','Pioneer Retail Egypt','Meridian Supply Chain'];
