@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lifeline – Realistic Life Simulation</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lifeline – Realistic Life Simulation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="app">
@@ -34,7 +34,8 @@
     <main id="view" style="display:flex;flex-direction:column;gap:12px"></main>
     <div id="age-wrap"><div id="hint"></div><button id="age-btn" onclick="ageUp()">Age up</button></div>
   </div>
-  <!-- Interactive phone, inspired by the supplied alternate version -->
+
+  <!-- Interactive phone modal -->
   <div id="life-phone-modal" class="p16-phone-backdrop hidden" role="dialog" aria-modal="true" aria-label="Your phone">
     <div class="p16-phone-shell">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -51,6 +52,8 @@
 function loadFail(m){var b=document.getElementById('load-error');b.style.display='block';b.textContent+=m+'\n';}
 window.addEventListener('error',function(e){if(e.target&&e.target.tagName==='SCRIPT')return;loadFail('Script error: '+e.message+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')');});
 </script>
+
+<!-- JS Modules loaded directly from root -->
 <script src="01-data.js" onerror="loadFail('MISSING FILE: 01-data.js')"></script>
 <script src="02-state.js" onerror="loadFail('MISSING FILE: 02-state.js')"></script>
 <script src="03-views.js" onerror="loadFail('MISSING FILE: 03-views.js')"></script>
