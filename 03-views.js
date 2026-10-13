@@ -38,16 +38,13 @@ function render(){
   save();
 }
 
-/* Helper to format log rows into a clean, categorized timeline feed */
 function renderTimelineRow(r) {
   const text = r.t || '';
 
-  // 1. Filter out internal system clutter
   if (text.startsWith('Advanced to Age') || text.startsWith('Decision before age')) {
     return '';
   }
 
-  // 2. Classify event type and assign icons & color themes
   let icon = '📜';
   let badge = 'Life';
   let badgeBg = 'rgba(255, 255, 255, 0.08)';
@@ -59,7 +56,6 @@ function renderTimelineRow(r) {
     badge = 'Career';
     badgeBg = 'rgba(6, 182, 212, 0.15)';
     badgeColor = 'var(--cyan)';
-    // Clean up awkward ALL-CAPS words
     cleanText = cleanText.replace(/^PROMOTED at/i, 'Promoted at');
   } else if (/financed|bought|tax|income|earned|spent|cost|pay|bank|loan/i.test(text)) {
     icon = '💳';
@@ -78,7 +74,6 @@ function renderTimelineRow(r) {
     badgeColor = 'var(--violet)';
   }
 
-  // Capitalize first letter cleanly
   cleanText = cleanText.charAt(0).toUpperCase() + cleanText.slice(1);
 
   return `
@@ -98,7 +93,6 @@ function renderTimelineRow(r) {
 function viewLife(){
   const e = S.ev;
 
-  // 1. ACTIVE EVENT CARD (Main Focus at the top)
   const eventCard = e
     ? `<section class="card" style="border: 1px solid var(--cyan); background: rgba(6, 182, 212, 0.04);">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
@@ -110,7 +104,8 @@ function viewLife(){
           ${(e.choices||[]).map((c,i)=>{
             const no = unaffordable(c);
             return `<button class="btn" ${no?'disabled':''} onclick="choose(${i})" style="text-align:left; padding:12px 14px;">
-              <b>${c.label}</b>${no?'<small style="display:block; color:var(--rose)">Not enough cash</small>':''}
+              <b>${c.label}</b>
+              ${no?'<small style="display:block; color:var(--rose)">Not enough cash</small>':''}
             </button>`;
           }).join('')}
         </div>
@@ -120,19 +115,16 @@ function viewLife(){
         <p class="muted">Press <b>Age up</b> at the bottom to advance to the next year of your life.</p>
       </section>`;
 
-  // 2. HOUSEHOLD & FAMILY ROW
   const household = `<section class="card">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
       <h3 style="margin:0; font-size:1rem;">Household & Family</h3>
       <span class="muted" style="font-size:.78rem;">${FAMILY[S.famWealth] || 'Family'}</span>
     </div>
     <div class="famrow">
-      <div><span>${myFace()}</span><b>You</b></div>
-      ${S.family.filter(m=>m.alive).map(m=>`<div><span>${memFace(m)}</span>${m.name} <small style="display:block;color:var(--muted);font-size:.7rem">${m.role||''}</small></div>`).join('')}
+      <div><span>${myFace()}</span><b>You</b></div>${S.family.filter(m=>m.alive).map(m=>`<div><span>${memFace(m)}</span>${m.name} <small style="display:block;color:var(--muted);font-size:.7rem">${m.role||''}</small></div>`).join('')}
     </div>
   </section>`;
 
-  // 3. CLEAN TIMELINE FEED
   const timelineHtml = (S.logRows || [])
     .map(renderTimelineRow)
     .filter(Boolean)
@@ -149,13 +141,9 @@ function viewLife(){
     </div>
   </section>`;
 
-  // Sequence: Active Choice -> Family -> Timeline Feed
   return eventCard + household + logCard;
 }
 
-}
-
-/* Helper to calculate GED exam fee based on local economy */
 function gedExamCost() {
   const baseUSD = 350;
   const rate = S.country === 'egy' ? (typeof p14EgyptPriceIndex === 'function' ? p14EgyptPriceIndex(gameYear()) * 10 : 3500) : (S.pr || 1) * baseUSD;
@@ -174,12 +162,11 @@ function viewSchool(){
 
   if (S.uni){
     const u=S.uni, un=UNIS[u.type], mj=MAJORS[u.major];
-    return `<section class="card"><h3>${mj.name} · ${un.name}</h3><p class="muted">Year ${u.year} of ${mj.years}. Tuition ${money(tuitionFor(u))}/yr. Student loan: ${money(S.loan)}.</p><button class="btn" onclick="dropOut()">Drop out</button></section>` + effortCard;
+    return `<section class="card"><h3>${mj.name} ·${un.name}</h3><p class="muted">Year ${u.year} of ${mj.years}. Tuition ${money(tuitionFor(u))}/yr. Student loan: ${money(S.loan)}.</p><button class="btn" onclick="dropOut()">Drop out</button></section>` + effortCard;
   }
 
   if (S.degree) return `<section class="card"><h3>Graduate</h3><p class="muted">Degree: <b>${MAJORS[S.degree].name}</b>. Higher career levels unlocked!</p></section>`;
 
-  // IF NO DIPLOMA: Choose who pays for the GED Exam
   if (!S.diploma) {
     const cost = gedExamCost();
     const formattedCost = typeof money === 'function' ? money(cost) : cost;
@@ -215,7 +202,6 @@ function viewSchool(){
   return skipUniCard + `<section class="card"><h3>Who pays tuition?</h3>${payBtns}</section><section class="card"><h3>University Options</h3>${majors}</section>`;
 }
 
-/* Handler for taking the GED exam with self-pay or parent support */
 function getAdultDiploma(payer) {
   const cost = gedExamCost();
   const formattedCost = typeof money === 'function' ? money(cost) : cost;
@@ -231,7 +217,7 @@ function getAdultDiploma(payer) {
     if (typeof fx === 'function') fx({ happiness: 5, smarts: 4 });
   } else if (payer === 'parents') {
     const wealth = Math.max(0, Math.min(2, S.famWealth || 0));
-    let chance = [0.30, 0.65, 0.90][wealth]; // Richer family = higher chance to pay
+    let chance = [0.30, 0.65, 0.90][wealth];
     
     if (Math.random() < chance) {
       S.diploma = true;
@@ -254,7 +240,6 @@ function viewPart(){
   return `<section class="card"><h3>Part-time work</h3><p class="muted">${cur?`Working as a ${cur.title.toLowerCase()}.`:'Side job for students.'}</p>${list}${cur?'<button class="btn" onclick="quitPart()">Quit job</button>':''}</section>`;
 }
 
-/* CAREER TAB: multi-tier ranks, work schedules, overtime, retirement */
 function viewCareer(){
   const net = S.income - S.expenses;
   const fin = `<section class="card"><h3>Finances (last year)</h3>
@@ -269,7 +254,7 @@ function viewCareer(){
     const schedText = S.schedule==='over' ? 'Long Hours (50 hrs/wk, +Perf, +Stress)' : S.schedule==='crunch' ? 'Crunch Mode (60 hrs/wk, ++Perf, ++Stress)' : 'Standard (40 hrs/wk)';
     return fin + `<section class="card">
       <h3>${j.title}</h3>
-      <p class="muted">Track: ${TRACKS[j.trackId].name} (Level ${j.level+1}/5)</p>
+      <p class="muted">Track: ${TRACKS[j.trackId].name} (Level${j.level+1}/5)</p>
       <p class="muted">Salary ${money(j.salary)}/yr · Tenure: ${j.years} year(s)</p>
       <div style="margin:10px 0">${bar('Performance',j.perf,'var(--cyan)')}</div>
 
@@ -306,7 +291,6 @@ function viewCareer(){
   return html;
 }
 
-/* REAL ESTATE TAB: own, rent out, renovate, furnish, pay down mortgages */
 function viewAssets(){
   if (S.age<18) return `<section class="card"><h3>Real Estate</h3><p class="muted">You live with your parents. Unlocks at Age 18.</p></section>`;
 
@@ -315,138 +299,4 @@ function viewAssets(){
   const rented = HOUSING_CATALOG.find(c=>c.id===S.housing && c.kind==='rent');
   if (rented){
     const cf=comfort(rented.id);
-    html += `<section class="card"><h3>Your Rental</h3><p class="muted">${rented.name} · rent ${money(rentCost(rented))}/yr. Comfort: Happiness +${cf.hap}, Health +${cf.hp}. Furniture stays behind if you move.</p>
-      <button class="btn" onclick="furnishHome('${rented.id}')">Furnish this home</button></section>`;
-  }
-
-  if (S.ownedHomes.length > 0){
-    html += `<section class="card"><h3>Your Owned Properties</h3>`;
-    S.ownedHomes.forEach((h, idx) => {
-      const isLive = S.housing === h.id, isRent = h.status === 'rent', cf = comfort(h.id);
-      html += `<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
-        <b>${h.name}</b> (${h.cond}% condition)<br>
-        <span class="muted" style="font-size:.85rem">Market Value: ${money(h.value)} | Mortgage Left: ${money(h.balance)}</span><br>
-        <span class="muted" style="font-size:.85rem">Status: <b>${isLive ? 'Living Here' : isRent ? 'Rented Out ('+money(Math.round(h.rentInc*S.rentIndex))+'/yr income)' : 'Vacant'}</b> · Comfort: Happiness +${cf.hap}, Health +${cf.hp}</span>
-        ${h.balance>0 ? `<div style="margin-top:8px"><span class="muted" style="font-size:.85rem">Extra mortgage payment (any amount)</span>
-          <div style="display:flex;gap:6px;margin-top:4px"><input type="number" id="mp${idx}" min="0" placeholder="Amount" style="flex:1;min-width:0">
-          <button class="btn" style="width:auto;margin:0" onclick="payMortgage(${idx},false)">Pay</button>
-          <button class="btn" style="width:auto;margin:0" ${S.wealth<h.balance?'disabled':''} onclick="payMortgage(${idx},true)">Pay off ${money(h.balance)}</button></div></div>` : ''}
-        <div class="acts" style="margin-top:8px">
-          ${!isLive ? `<button class="btn" onclick="setLiveProperty(${idx})">Move In</button>` : ''}
-          ${!isRent && !isLive ? `<button class="btn" onclick="setRentProperty(${idx})">Rent Out</button>` : ''}
-          ${Object.entries(RENOS).map(([k,r])=>`<button class="btn" ${S.wealth<rc(r)?'disabled':''} onclick="renovateProperty(${idx},'${k}')">${r.n} (${money(rc(r))})</button>`).join('')}
-          <button class="btn" onclick="furnishHome('${h.id}')">Furnish</button>
-          <button class="btn" onclick="sellOwnedProperty(${idx})">Sell Property</button>
-        </div>
-      </div>`;
-    });
-    html += `</section>`;
-  }
-
-  const stayFamily = `<button class="btn ${S.housing==='parents'?'sel':''}" onclick="stayHome()">Stay with parents<small>${S.famWealth>=1?'Free':money(1500*(S.pr||1))+'/yr contribution'}. Needs a living parent with a good bond.</small></button>`;
-
-  const rents = HOUSING_CATALOG.filter(h=>h.kind==='rent').map(h =>
-    `<button class="btn ${S.housing===h.id?'sel':''}" ${h.id!=='room'&&S.wealth<Math.round(rentCost(h)/12)?'disabled':''} onclick="rentHome('${h.id}')">${h.name} · ${money(rentCost(h))}/yr + ${money(S.country==='egy'&&typeof p14EgyptUtilityCost==='function'?p14EgyptUtilityCost(h):h.util)} utilities<small>${h.desc} Happiness ${h.hap>=0?'+':''}${h.hap}, Health ${h.hp>=0?'+':''}${h.hp} per year.</small></button>`
-  ).join('');
-
-  const buys = HOUSING_CATALOG.filter(h=>h.kind==='buy').map(h => {
-    const down = h.price * 0.20;
-    return `<div style="margin-top:10px">
-      <b>${h.name}</b> · ${money(h.price)}
-      <p class="muted" style="font-size:.85rem">${h.desc} Mortgage ${money(h.pay)}/yr (${((S.mortRate||.05)*100).toFixed(1)}% rate this year). Rental income potential: ${money(Math.round(h.rentInc*S.rentIndex))}/yr</p>
-      <div class="acts" style="margin-top:6px">
-        <button class="btn" ${S.wealth<h.price?'disabled':''} onclick="buyProperty('${h.id}', true)">Cash ${money(h.price)}</button>
-        <button class="btn" ${S.wealth<down?'disabled':''} onclick="buyProperty('${h.id}', false)">Down ${money(down)}</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  return html + `<section class="card"><h3>Living Options</h3>${stayFamily}</section>
-    <section class="card"><h3>Rent an Apartment</h3><p class="muted">You need the first month of rent in cash (except the shared room). Rent follows wages.</p>${rents}</section>
-    <section class="card"><h3>Buy Real Estate</h3>${buys}</section>`;
-}
-
-/* SHOPPING helpers */
-function placeSelector(){
-  const ids=homeChoices();
-  if (!ids.length) return '<p class="muted">You need a home to install things in. Rent or buy one in Real Estate.</p>';
-  const t=targetHome();
-  return `<p class="muted" style="font-size:.85rem;margin:8px 0 4px">Install in:</p><div class="sub-tabs" style="flex-wrap:wrap">${ids.map(id=>`<button class="sub-tab ${t===id?'on':''}" onclick="setShopHome('${id}')">${homeName(id)}</button>`).join('')}</div>`;
-}
-function viewFurnish(){
-  const homes=homeChoices();
-  if (!homes.length) return '<section class="card"><h3>Furnishing</h3><p class="muted">You need a home first. Rent or buy one in Real Estate.</p></section>';
-  const h=targetHome(), f=S.furn[h]||{}, cf=comfort(h), own=S.ownedHomes.find(x=>x.id===h);
-  const cats=Object.entries(FURN).map(([k,c])=>`<div style="margin-top:12px"><b>${c.label}</b> <span class="muted" style="font-size:.85rem">${f[k]?'· '+c.opts.find(o=>o.id===f[k]).n:'· nothing yet'}</span>
-    ${c.opts.filter(o=>{ const fr=FURN_FROM[o.id]; return !fr||gameYear()>=fr; }).map(o=>{ const pr=Math.round(o.cost*(S.pr||1)*(1-promoPct('furn')));
-      return `<button class="btn ${f[k]===o.id?'sel':''}" ${f[k]===o.id||S.wealth<pr?'disabled':''} onclick="buyFurn('${k}','${o.id}')">${o.n} ·${money(pr)}<small>Happiness +${o.hap}${o.hp?', Health +'+o.hp:''}${o.sm?', Smarts +'+o.sm:''}${o.val&&own?', adds value to your property':''}</small></button>`; }).join('')}</div>`).join('');
-  return `<section class="card"><h3>Furnish & Decorate</h3><p class="muted">Comfort here: Happiness +${cf.hap}, Health +${cf.hp}${cf.sm?', Smarts +'+cf.sm:''} per year while you live in it. ${own?'Flooring and AC add to the property value.':'Furniture in a rental stays behind if you move.'}</p>${placeSelector()}${cats}`;
-}
-function viewMine(){
-  if (!S.inventory.length) return '<section class="card"><h3>My Items</h3><p class="muted">You do not own anything yet.</p></section>';
-  const rows=S.inventory.map(i=>{
-    const worn=i.age>=i.life, outd=!i.broken && i.age>=Math.ceil(i.life*.75);
-    const st=i.broken?(worn?'Worn out, beyond repair':'Broken'):outd?'Outdated: effects halved':'Working';
-    const col=i.broken?'var(--rose)':outd?'var(--amber)':'var(--mint)';
-    const fix=i.insured?Math.max(30,Math.round(i.price*.08)):Math.max(50,Math.round(i.price*.3));
-    return `<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px"><b>${i.model}${i.storage?' · '+(i.storage>=1024?'1 TB':i.storage+' GB'):''}</b><br>
-      <span class="muted" style="font-size:.82rem">${i.portable?'With you':homeName(i.homeId)} · age ${i.age}/${i.life} yrs · ${i.insured?'Insured':'Not insured'}</span><br><span style="font-size:.85rem;color:${col}">${st}</span>
-      <div class="acts" style="margin-top:6px">
-        ${i.broken&&!worn?`<button class="btn" onclick="repairItem('${i.uid}')">Repair ${money(fix)}</button>`:''}
-        ${i.broken&&i.price?`<button class="btn" onclick="replaceItem('${i.uid}')">Buy new ${money(i.price)}</button>`:''}
-        ${!i.broken&&i.cat!=='fashion'?`<button class="btn" onclick="toggleInsure('${i.uid}')">${i.insured?'Cancel insurance':'Add insurance'}</button>`:''}
-        <button class="btn" onclick="discardItem('${i.uid}')">Discard</button></div></div>`; }).join('');
-  return `<section class="card"><h3>My Items</h3><p class="muted">Items break and wear out with age. Insured items are cheap to repair. Items in a home only help while you live there.</p>${rows}`;
-}
-
-/* REQUESTS TAB & RESOLUTION HANDLERS */
-function viewRequests() {
-  let html = `<section class="card"><h3>Pending Requests & Family Needs</h3><p class="muted">Requests from family or urgent events that require your decision.</p></section>`;
-  
-  if (!S.pendingRequests || S.pendingRequests.length === 0) {
-    return html + `<section class="card"><p class="muted">No pending requests right now.</p></section>`;
-  }
-
-  S.pendingRequests.forEach((req, index) => {
-    const costText = typeof money === 'function' ? money(req.cost) : req.cost;
-    html += `
-      <section class="card" style="border:1px solid var(--amber);">
-        <h3>${req.title}</h3>
-        <p>${req.description}</p>
-        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn" onclick="resolveRequest(${index}, 'PAY')">Pay Share (${costText})</button>
-          <button class="btn" onclick="resolveRequest(${index}, 'CARE')">Care Yourself (${req.timeCostHours} hrs/wk)</button>
-          <button class="btn" onclick="resolveRequest(${index}, 'DECLINE')">Decline</button>
-        </div>
-      </section>
-    `;
-  });
-
-  return html;
-}
-
-function resolveRequest(index, choice) {
-  if (!S.pendingRequests || !S.pendingRequests[index]) return;
-  const req = S.pendingRequests[index];
-
-  if (choice === 'PAY') {
-    if (S.wealth >= req.cost) {
-      S.wealth -= req.cost;
-      if (typeof log === 'function') log(`You paid ${typeof money === 'function' ? money(req.cost) : req.cost} towards your parents' care.`);
-      if (typeof fx === 'function') fx({ happiness: 3, social: 4 });
-    } else {
-      if (typeof hint === 'function') hint("Not enough cash!");
-      return;
-    }
-  } else if (choice === 'CARE') {
-    S.weeklyHoursUsed = (S.weeklyHoursUsed || 0) + req.timeCostHours;
-    if (typeof log === 'function') log(`You dedicated ${req.timeCostHours} hours/week to personally care for your parents.`);
-    if (typeof fx === 'function') fx({ happiness: 1, health: -2, social: 5 });
-  } else {
-    if (typeof log === 'function') log(`You declined to assist with the request.`);
-    if (typeof fx === 'function') fx({ happiness: -3, social: -5 });
-  }
-
-  S.pendingRequests.splice(index, 1);
-  if (typeof render === 'function') render();
-}
+    html += `<section class="card"><h3>Your Rental</h3><p class="muted">${rented.name} · rent ${money(rentCost(rented))}/yr. Comfort: Happiness +${cf.hap}, Health +${cf.hp}. Furniture stays behind if
