@@ -176,12 +176,6 @@ function checkFamilyEvents() {
   }
 }
 
-// Hook into ageUp logic automatically
-if (typeof p10Year === 'function') {
-  const oldP10Year = p10Year;
-  p10Year = function() {
-    oldP10Year();
-    checkFamilyEvents();
-  };
+
 }
 
