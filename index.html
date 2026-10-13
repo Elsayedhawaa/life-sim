@@ -46,21 +46,26 @@
   </div>
 </div>
 
-<script src="js/01-data.js"></script>
-<script src="js/02-state.js"></script>
-<script src="js/03-views.js"></script>
-<script src="js/04-actions.js"></script>
-<script src="js/05-ageup.js"></script>
-<script src="js/06-setup.js"></script>
-<script src="js/07-era-prices.js"></script>
-<script src="js/08-countries-money.js"></script>
-<script src="js/09-phase11-careers-education.js"></script>
-<script src="js/10-phase12-leave-property.js"></script>
-<script src="js/11-phase14-realism.js"></script>
-<script src="js/12-phase15-16-jobs.js"></script>
-<script src="js/13-phase17-family-travel.js"></script>
-<script src="js/14-phase18-careers-travel.js"></script>
-<script src="js/15-phase19-20-life.js"></script>
-<script src="js/16-phase21-fixes.js"></script>
+<div id="load-error" style="display:none;position:fixed;left:0;right:0;top:0;z-index:99999;background:#7f1d1d;color:#fff;padding:10px 14px;font:14px/1.4 system-ui;white-space:pre-wrap"></div>
+<script>
+function loadFail(m){var b=document.getElementById('load-error');b.style.display='block';b.textContent+=m+'\n';}
+window.addEventListener('error',function(e){if(e.target&&e.target.tagName==='SCRIPT')return;loadFail('Script error: '+e.message+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')');});
+</script>
+<script src="01-data.js" onerror="loadFail('MISSING FILE: 01-data.js')"></script>
+<script src="02-state.js" onerror="loadFail('MISSING FILE: 02-state.js')"></script>
+<script src="03-views.js" onerror="loadFail('MISSING FILE: 03-views.js')"></script>
+<script src="04-actions.js" onerror="loadFail('MISSING FILE: 04-actions.js')"></script>
+<script src="05-ageup.js" onerror="loadFail('MISSING FILE: 05-ageup.js')"></script>
+<script src="06-setup.js" onerror="loadFail('MISSING FILE: 06-setup.js')"></script>
+<script src="07-era-prices.js" onerror="loadFail('MISSING FILE: 07-era-prices.js')"></script>
+<script src="08-countries-money.js" onerror="loadFail('MISSING FILE: 08-countries-money.js')"></script>
+<script src="09-phase11-careers-education.js" onerror="loadFail('MISSING FILE: 09-phase11-careers-education.js')"></script>
+<script src="10-phase12-leave-property.js" onerror="loadFail('MISSING FILE: 10-phase12-leave-property.js')"></script>
+<script src="11-phase14-realism.js" onerror="loadFail('MISSING FILE: 11-phase14-realism.js')"></script>
+<script src="12-phase15-16-jobs.js" onerror="loadFail('MISSING FILE: 12-phase15-16-jobs.js')"></script>
+<script src="13-phase17-family-travel.js" onerror="loadFail('MISSING FILE: 13-phase17-family-travel.js')"></script>
+<script src="14-phase18-careers-travel.js" onerror="loadFail('MISSING FILE: 14-phase18-careers-travel.js')"></script>
+<script src="15-phase19-20-life.js" onerror="loadFail('MISSING FILE: 15-phase19-20-life.js')"></script>
+<script src="16-phase21-fixes.js" onerror="loadFail('MISSING FILE: 16-phase21-fixes.js')"></script>
 </body>
 </html>
