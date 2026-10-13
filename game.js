@@ -966,7 +966,17 @@ function ageUp(){
     h.cond = clamp(h.cond - 3);
     h.value = Math.round(h.value * 1.03);
     if (h.balance > 0){
-      h.balance = Math.round(h.balance * (1+(h.rate||.05)));
+    const mortgageRate =
+  h.rate == null || h.rate === '' || !Number.isFinite(Number(h.rate))
+    ? 0.05
+    : Number(h.rate);
+
+const mortgageRate =
+  h.rate == null || h.rate === '' || !Number.isFinite(Number(h.rate))
+    ? 0.05
+    : Number(h.rate);
+
+h.balance = Math.round(h.balance * (1 + mortgageRate));
       const pmt = Math.min(h.balance, h.pay || (cat ? cat.pay : Math.round(h.value*.04)));
       h.balance -= pmt;
       bill.mortgage = (bill.mortgage||0) + pmt;
