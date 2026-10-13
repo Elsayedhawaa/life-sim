@@ -117,6 +117,8 @@ function viewCareer(){
 
       <button class="btn" ${S.worked?'disabled':''} onclick="workHarder()">Work Overtime / Harder<small>Boost performance once this year.</small></button>
       <button class="btn" ${S.promoTried?'disabled':''} onclick="askPromotion()">Request Rank Promotion<small>Advance to the next career level if qualified.</small></button>
+      <button class="btn" ${S.promoTried?'disabled':''} onclick="askPromotion()">Request Rank Promotion<small>Advance to the next career level if qualified.</small></button>
+<button class="btn" onclick="askRaise()">Ask for Raise<small>Request a salary increase based on performance.</small></button>
       ${S.age>=RETIRE_MIN?'<button class="btn" onclick="retireClick()">Retire<small>Pension of about 40% of your salary.</small></button>':''}
       <button class="btn" onclick="quitJob()">Resign / Quit</button>
     </section>`;
