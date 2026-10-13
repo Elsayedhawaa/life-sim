@@ -23,6 +23,7 @@ function render(){
     ['assets','Real Estate',true,''],
     ['shop','Shopping',S.age>=12,'Unlocks at 12'],
     ['money','Money',S.age>=18,'Unlocks at 18'],
+     ['req','Requests',S.pendingRequests && S.pendingRequests.length > 0,'No pending requests'], // ADD THIS LINE
     ['bank','Bank',S.age>=18,'Unlocks at 18'],
     ['act','Activities',true,'']
   ];
