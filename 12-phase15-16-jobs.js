@@ -385,5 +385,48 @@ viewActivities=function(){
   const familyCount=(S.family||[]).filter(m=>m&&m.alive!==false&&['Mother','Father','Sibling','Child'].includes(m.role)).length;
   const outing=`<section class="card"><h3>Family time</h3><p class="muted">A low-key weekend outing can improve family relationships. Spending depends on how many people come and local prices; your parents may pay if you are young and the family can afford it.</p><button class="btn" ${S.p16FamilyWeekendYear===S.age?'disabled':''} onclick="p16FamilyWeekend()">${S.p16FamilyWeekendYear===S.age?'Already had a family outing this year':'Plan a family weekend outing'}<small>${familyCount+1} possible travellers · cost estimated on selection</small></button></section>`;
   return html+ageActivities+outing;
-};
+}
 
+/* ==========================================
+   REMOTE / USD CONTRACT RAISE FIX
+   ========================================== */
+function askRaise() {
+  if (!S || !S.job) {
+    if (typeof hint === 'function') hint("You don't currently have a job to ask for a raise.");
+    return;
+  }
+
+  // Calculate random raise between 5% and 15%
+  const raisePercent = 0.05 + Math.random() * 0.10;
+
+  // Check if current job is a remote contract paid in USD
+  if (S.job.isRemoteUSD || S.job.currency === 'USD' || S.job.usdSalary) {
+    const oldUsdSalary = S.job.usdSalary || S.job.salary;
+    const newUsdSalary = Math.round(oldUsdSalary * (1 + raisePercent));
+    const usdIncrease = newUsdSalary - oldUsdSalary;
+
+    // 1. Store updated USD contract rate
+    S.job.usdSalary = newUsdSalary;
+
+    // 2. Convert to local currency using current exchange rate
+    const rate = S.exchangeRate || (typeof p14EgyptPriceIndex === 'function' ? p14EgyptPriceIndex(gameYear()) : 1);
+    S.job.salary = Math.round(newUsdSalary * rate);
+
+    if (typeof log === 'function') {
+      log(`Your raise was approved! USD Salary increased by $${usdIncrease.toLocaleString()} USD (+${(raisePercent * 100).toFixed(1)}%).`);
+    }
+  } else {
+    // Standard local currency job
+    const oldSalary = S.job.salary;
+    const newSalary = Math.round(oldSalary * (1 + raisePercent));
+    const increase = newSalary - oldSalary;
+
+    S.job.salary = newSalary;
+    if (typeof log === 'function') {
+      log(`Your raise was approved! Salary increased by ${typeof money === 'function' ? money(increase) : increase} (+${(raisePercent * 100).toFixed(1)}%).`);
+    }
+  }
+
+  // Re-render the UI
+  if (typeof render === 'function') render();
+}
