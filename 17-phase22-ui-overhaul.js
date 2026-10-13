@@ -47,13 +47,13 @@ p20ApplyTeenJob = function(id, pay) {
   
   const job = P22_TEEN_JOBS.find(j => j.id === id);
   if (!job) return;
-  if (S.smarts < job.minSmarts) return hint(`Requires at least ${job.minSmarts}% Smarts.`);
+  if (S.smarts < job.minSmarts) return hint('Requires at least ' + job.minSmarts + '% Smarts.');
 
   const actualPay = typeof p20LocalCost === 'function' ? p20LocalCost(job.basePay) : job.basePay;
   S.p20TeenJob = { id: job.id, title: job.title, pay: actualPay };
-  log(`Started part-time work as ${job.title} (${money(actualPay)}/yr estimated).`);
+  log('Started part-time work as ' + job.title + ' (' + money(actualPay) + '/yr estimated).');
   if (typeof realismNotice === 'function') {
-    realismNotice('Part-time Job Accepted', `You took a job as ${job.title}. Annual earnings are estimated around ${money(actualPay)}.`);
+    realismNotice('Part-time Job Accepted', 'You took a job as ' + job.title + '. Annual earnings are estimated around ' + money(actualPay) + '.');
   }
   render();
 };
@@ -68,9 +68,9 @@ ageUp = function() {
     const earned = Math.round(base * (0.85 + Math.random() * 0.3)); // Realistic variation
     S.wealth = (S.wealth || 0) + earned;
     S.income = (S.income || 0) + earned;
-    log(`Part-time earnings: Made ${money(earned)} as ${S.p20TeenJob.title}.`);
+    log('Part-time earnings: Made ' + money(earned) + ' as ' + S.p20TeenJob.title + '.');
     if (S.age > 25) {
-      log(`Your student/part-time job as ${S.p20TeenJob.title} ended as you reached age 26.`);
+      log('Your student/part-time job as ' + S.p20TeenJob.title + ' ended as you reached age 26.');
       S.p20TeenJob = null;
     }
     render();
@@ -92,7 +92,7 @@ p17Relation = function(m, capital = false) {
   else if (m.role === 'Child') roleLabel = 'Child';
   else if (m.role === 'Friend') roleLabel = 'Friend';
   
-  const result = name ? `Your ${roleLabel} (${name})` : `Your ${roleLabel.toLowerCase()}`;
+  const result = name ? 'Your ' + roleLabel + ' (' + name + ')' : 'Your ' + roleLabel.toLowerCase();
   return capital ? result : result.toLowerCase();
 };
 
@@ -102,7 +102,7 @@ function p22RenderFamilyTransferHub() {
   const members = S.family.filter(m => m && m.alive !== false);
   if (!members.length) return '';
 
-  const options = members.map(m => `<option value="${m.id}">${p17Relation(m, true)}</option>`).join('');
+  const options = members.map(m => '<option value="' + m.id + '">' + p17Relation(m, true) + '</option>').join('');
 
   return `
     <section class="card" style="border-color:var(--violet)">
@@ -149,15 +149,15 @@ p22ExecuteFamilyTransfer = function() {
     m.bond = clamp((m.bond || 0) + (internalAmt > 500 ? 6 : 3));
     fx({ happiness: 2, social: 2 });
     
-    log(`Sent ${money(internalAmt)} to ${p17Relation(m, true)}.`);
-    realismNotice('Transfer Received', `${p17Relation(m, true)} sent a text: "Thank you so much! This makes a huge difference for our household this month."`);
+    log('Sent ' + money(internalAmt) + ' to ' + p17Relation(m, true) + '.');
+    realismNotice('Transfer Received', p17Relation(m, true) + ' sent a text: "Thank you so much! This makes a huge difference for our household this month."');
   } else {
     m.allowLocal = val;
     m.allowCurrency = S.country;
     m.allow = internalAmt;
     m.bond = clamp((m.bond || 0) + 4);
-    log(`Set ${p17Relation(m, true)}'s recurring allowance to ${money(internalAmt)}/year.`);
-    realismNotice('Allowance Updated', `${p17Relation(m, true)} expressed deep gratitude for your commitment to regular support.`);
+    log('Set ' + p17Relation(m, true) + "'s recurring allowance to " + money(internalAmt) + '/year.');
+    realismNotice('Allowance Updated', p17Relation(m, true) + ' expressed deep gratitude for your commitment to regular support.');
   }
   render();
 };
@@ -223,6 +223,13 @@ p17CareerSearchBoard = function() {
       ? (p.sponsorship ? '<span class="badge badge-mint">MAY SPONSOR VISA</span>' : '<span class="badge badge-amber">NO SPONSORSHIP</span>')
       : '';
 
+    const reqMsg = req ? PR('Not available: ' + req) : '';
+    const btnState = req ? 'disabled' : '';
+    const btnLabel = req ? 'Requirements Not Met' : ('Apply for ' + title);
+    const medCover = p.medical ? 'Medical Insurance Included' : 'No Employer Cover';
+    const remInfo = (p.remote || 'On-site') + ' (' + (p.hours || 40) + 'h/week)';
+    const leaveInfo = (p.leave || 14) + ' days/year';
+
     return `
       <details class="p17-posting" style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px">
         <summary>
@@ -230,30 +237,32 @@ p17CareerSearchBoard = function() {
         </summary>
         <div style="margin-top:8px">
           ${PR(p.desc || 'Standard employment role.')}
-          ${ROW('Annual Salary', `<strong style="color:var(--mint)">${money(pay)}</strong>`)}
-          ${ROW('Healthcare Cover', p.medical ? 'Medical Insurance Included' : 'No Employer Cover')}
-          ${ROW('Paid Annual Leave', `${p.leave || 14} days/year`)}
-          ${ROW('Work Arrangement', `${p.remote \vert{}\vert{} 'On-site'} (${p.hours || 40}h/week)`)}
-          ${req ? PR(`Not available: ${req}`) : ''}
-          <button class="btn btn-primary" onclick="applyCompany('${p.id}')" ${req ? 'disabled' : ''}>
-            ${req ? 'Requirements Not Met' : `Apply for ${title}`}
+          ${ROW('Annual Salary', '<strong style="color:var(--mint)">' + money(pay) + '</strong>')}
+          ${ROW('Healthcare Cover', medCover)}
+          ${ROW('Paid Annual Leave', leaveInfo)}
+          ${ROW('Work Arrangement', remInfo)}
+          ${reqMsg}
+          <button class="btn btn-primary" onclick="applyCompany('${p.id}')" ${btnState}>
+            ${btnLabel}
           </button>
         </div>
       </details>
     `;
   }).join('');
 
-  return SEC(`Job Market · ${C().n}`, filterBar + (cards || PR('No job vacancies match your filter.')));
+  return SEC('Job Market · ' + C().n, filterBar + (cards || PR('No job vacancies match your filter.')));
 };
 
 /* Expand Informal / Undocumented Work Options Abroad */
-Object.assign(P14_informalJobs, {
-  builder: { name: 'Construction Labourer / Site Helper', base: 18500, stress: 6, desc: 'Hard physical construction shifts; high injury risk but steady cash pay.' },
-  waiter: { name: 'Café Waiter / Bistro Shift', base: 13500, stress: 4, desc: 'Long hours on your feet, customer service, and tips.' },
-  housekeeping: { name: 'Hotel Housekeeping / Room Attendant', base: 14000, stress: 4, desc: 'Turnover cleaning in hotels; physically demanding with strict time targets.' },
-  valet: { name: 'Valet Parking & Luggage Host', base: 15000, stress: 4, desc: 'Event parking and luggage support with variable tip earnings.' },
-  warehouse: { name: 'Warehouse Picker & Packer', base: 16500, stress: 5, desc: 'Logistics shift work in sorting facilities.' }
-});
+if (typeof P14_informalJobs !== 'undefined') {
+  Object.assign(P14_informalJobs, {
+    builder: { name: 'Construction Labourer / Site Helper', base: 18500, stress: 6, desc: 'Hard physical construction shifts; high injury risk but steady cash pay.' },
+    waiter: { name: 'Café Waiter / Bistro Shift', base: 13500, stress: 4, desc: 'Long hours on your feet, customer service, and tips.' },
+    housekeeping: { name: 'Hotel Housekeeping / Room Attendant', base: 14000, stress: 4, desc: 'Turnover cleaning in hotels; physically demanding with strict time targets.' },
+    valet: { name: 'Valet Parking & Luggage Host', base: 15000, stress: 4, desc: 'Event parking and luggage support with variable tip earnings.' },
+    warehouse: { name: 'Warehouse Picker & Packer', base: 16500, stress: 5, desc: 'Logistics shift work in sorting facilities.' }
+  });
+}
 
 /* ---------------------------------------------------------------------
    6. CONDITIONAL PARENT CARE, HOME HELP & CLEAN TAB LAYOUTS
@@ -270,27 +279,31 @@ p20CareCard = function() {
     { id: 'caregiver', name: 'Part-Time Caregiver', usd: 950, desc: 'Assistance with daily living and mobility.' }
   ];
 
-  return SEC('Care for Ageing Parents', eligibleParents.map(m => {
-    const activeCare = S.elderCare[m.id] || 'none';
+  const parentRows = eligibleParents.map(m => {
+    const activeCare = (S.elderCare && S.elderCare[m.id]) || 'none';
+    const buttons = services.map(s => {
+      const cost = Math.round(p20LocalCost(s.usd) * 0.4);
+      return '<button class="btn" onclick="p20HireCare(\'' + m.id + '\',\'' + s.id + '\',' + cost + ')">Arrange ' + s.name + ' · ' + money(cost) + '/yr</button>';
+    }).join('');
+
     return `
       <div style="padding:8px 0;border-bottom:1px solid var(--line)">
         <b>${p17Relation(m, true)}</b> (Age ${m.age})
         <div class="muted">Active plan: ${activeCare}</div>
-        ${services.map(s => {
-          const cost = Math.round(p20LocalCost(s.usd) * 0.4);
-          return `<button class="btn" onclick="p20HireCare('${m.id}','${s.id}',${cost})">Arrange ${s.name} ·${money(cost)}/yr</button>`;
-        }).join('')}
+        ${buttons}
         <button class="btn" onclick="p20StopCare('${m.id}')">Stop Paid Care</button>
       </div>
     `;
-  }).join(''));
+  }).join('');
+
+  return SEC('Care for Ageing Parents', parentRows);
 };
 
 /* Relocate Home Help to Assets / Housing Tab */
 const P22_viewAssetsBefore = typeof viewAssets === 'function' ? viewAssets : function(){ return ''; };
 viewAssets = function() {
   let html = P22_viewAssetsBefore();
-  if (S && S.age >= 18) {
+  if (S && S.age >= 18 && typeof p20HomeHelpCard === 'function') {
     html += p20HomeHelpCard();
   }
   return html;
