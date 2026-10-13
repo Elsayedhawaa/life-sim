@@ -389,24 +389,23 @@ function viewPart(){
 
 function viewCareer() {
   const currentJob = S.job || null;
-  const userEdu = S.degree ? MAJORS[S.degree]?.name : (S.diploma ? "High School Diploma" : "None");
-  const expYears = S.exp || 0;
+  const userEdu = S.degree ? (MAJORS[S.degree]?.name || S.degree) : (S.diploma ? "High School Diploma" : "None");
   const userSmarts = S.smarts || 0;
   const userEng = S.eng || 0;
 
-  // Render Current Active Position Header
+  // Active Job Banner
   let currentHtml = "";
   if (currentJob) {
-    const annualPay = currentJob.salary || currentJob.baseSalary || 30000;
+    const annualPay = typeof jobSalaryForPost === 'function' ? jobSalaryForPost(currentJob) : (currentJob.salary || 30000);
     const monthlyNet = Math.round(annualPay / 12);
-    
+
     currentHtml = `
       <div class="card p24-job-card" open>
         <div class="p24-topline">
           <div class="p24-brand">${(currentJob.company || "CORP").slice(0, 3).toUpperCase()}</div>
           <div>
-            <h3>${currentJob.title || currentJob.roleTitle}</h3>
-            <div class="muted">${currentJob.company || "Corporate"} • ${currentJob.trackName || "General Service"}</div>
+            <h3>${currentJob.title || currentJob.roleTitle || "Active Position"}</h3>
+            <div class="muted">${currentJob.company || "Company"} • ${currentJob.trackName || "General"}</div>
           </div>
         </div>
         <div class="row" style="margin-top:8px">
@@ -417,16 +416,11 @@ function viewCareer() {
           <span>Annual Base Salary</span>
           <b>${money(annualPay)} / yr</b>
         </div>
-        <div class="row">
-          <span>Contract & Work Schedule</span>
-          <small>${currentJob.hours || 40} hrs/wk • ${currentJob.remote || "On-site"}</small>
-        </div>
         <div style="margin-top:10px">
           <small class="muted" style="display:block;margin-bottom:4px">Perks & Benefits:</small>
           <div>
-            <span class="p24-pill">✓ Health Insurance</span>
-            <span class="p24-pill">✓ Paid Leave (${currentJob.leave || 14} days)</span>
-            ${currentJob.bonus ? `<span class="p24-pill">✓ Annual Bonus (${Math.round(currentJob.bonus * 100)}%)</span>` : ''}
+            <span class="p24-pill">✓ Health Coverage</span>
+            <span class="p24-pill">✓ Paid Vacation</span>
           </div>
         </div>
         <button class="btn" onclick="resignJob()" style="margin-top:12px;border-color:var(--rose);color:var(--rose);text-align:center">Resign Position</button>
@@ -436,23 +430,22 @@ function viewCareer() {
     currentHtml = `
       <div class="card" style="text-align:center;padding:20px">
         <div class="muted">You are currently unemployed.</div>
-        <small style="display:block;margin-top:4px;color:var(--amber)">Browse available career opportunities below to start earning.</small>
+        <small style="display:block;margin-top:4px;color:var(--amber)">Apply to available roles below to start earning.</small>
       </div>
     `;
   }
 
-  // Sector Filter Navigation
   if (!S._careerFilter) S._careerFilter = "all";
 
   const tracks = [
     { id: 'all', name: 'All Sectors' },
-    { id: 'bpo', name: '📞 BPO & English Centers' },
-    { id: 'entry', name: '🛍️ General & Retail' },
-    { id: 'tech', name: '💻 Technology & CS' },
+    { id: 'bpo', name: '📞 BPO & Call Centers' },
+    { id: 'entry', name: '🛍️ General Service' },
+    { id: 'tech', name: '💻 Technology' },
     { id: 'finance', name: '📊 Finance & Business' },
-    { id: 'law', name: '⚖️ Legal Services' },
+    { id: 'law', name: '⚖️ Legal' },
     { id: 'medical', name: '🩺 Healthcare' },
-    { id: 'bio', name: '🔬 Science & Bio' }
+    { id: 'bio', name: '🔬 Science' }
   ];
 
   const filterTabs = tracks.map(t => `
@@ -461,28 +454,38 @@ function viewCareer() {
     </button>
   `).join("");
 
-  // Compile Jobs List based on selected filter
   let displayJobs = [];
 
   Object.keys(TRACKS).forEach(trackKey => {
     if (S._careerFilter !== "all" && S._careerFilter !== trackKey) return;
-    
+
     const track = TRACKS[trackKey];
+    if (!track || !track.levels) return;
+
     track.levels.forEach((lvl, idx) => {
+      let rawSalary = lvl.salary;
+      if (typeof salaryForTrack === 'function') {
+        try {
+          rawSalary = salaryForTrack(trackKey, idx);
+        } catch (e) {
+          rawSalary = lvl.salary || 30000;
+        }
+      }
+
       displayJobs.push({
         id: `${trackKey}_lvl_${idx}`,
         trackKey: trackKey,
+        levelIdx: idx,
         trackName: track.name,
         title: lvl.title,
         company: trackKey === 'bpo' ? (idx === 0 ? 'Sutherland' : idx === 1 ? 'Vodafone UK' : idx === 2 ? 'Concentrix' : 'BPO Global') : 'Corporate Client',
-        salary: lvl.salary,
-        hours: lvl.hrs,
-        stress: lvl.stress,
+        salary: rawSalary,
+        hours: lvl.hrs || 40,
+        stress: lvl.stress || 3,
         reqSmarts: lvl.reqSmarts || 0,
         reqEng: lvl.eng || 0,
         reqDiploma: lvl.diploma,
-        reqDegree: track.degree || null,
-        desc: `Level ${idx + 1} position in the ${track.name} sector.`
+        reqDegree: track.degree || null
       });
     });
   });
@@ -506,8 +509,7 @@ function viewCareer() {
           </div>
         </summary>
         <div style="padding-top:10px;border-top:1px solid var(--line);margin-top:8px">
-          <p class="muted" style="font-size:.84rem">${j.desc}</p>
-          <div class="row" style="margin-top:6px">
+          <div class="row">
             <span>Requirements</span>
             <small>
               ${j.reqDegree ? `Degree: <b class="${meetsDegree ? 'text-mint' : 'text-rose'}">${j.reqDegree.toUpperCase()}</b> | ` : ''}
@@ -546,7 +548,6 @@ function viewCareer() {
   `;
 }
 
-// Controller helper functions
 function setCareerFilter(cat) {
   S._careerFilter = cat;
   render();
@@ -554,21 +555,25 @@ function setCareerFilter(cat) {
 
 function applyJobById(jobId) {
   let selected = null;
-  
+
   Object.keys(TRACKS).forEach(trackKey => {
     const track = TRACKS[trackKey];
+    if (!track || !track.levels) return;
+
     track.levels.forEach((lvl, idx) => {
       if (`${trackKey}_lvl_${idx}` === jobId) {
+        let sal = lvl.salary;
+        if (typeof salaryForTrack === 'function') {
+          try { sal = salaryForTrack(trackKey, idx); } catch(e) {}
+        }
         selected = {
           id: jobId,
           title: lvl.title,
           company: trackKey === 'bpo' ? (idx === 0 ? 'Sutherland' : idx === 1 ? 'Vodafone UK' : idx === 2 ? 'Concentrix' : 'BPO Global') : 'Corporate Client',
-          salary: lvl.salary,
-          hours: lvl.hrs,
-          stress: lvl.stress,
+          salary: sal,
           trackName: track.name,
-          leave: 14 + (idx * 2),
-          bonus: 0.03 * (idx + 1)
+          hrs: lvl.hrs,
+          stress: lvl.stress
         };
       }
     });
@@ -577,7 +582,7 @@ function applyJobById(jobId) {
   if (!selected) return;
   S.job = selected;
   if (typeof addLog === "function") {
-    addLog(`Started working as ${selected.title} at ${selected.company}.`);
+    addLog(`Accepted position as ${selected.title} at ${selected.company}.`);
   }
   render();
 }
@@ -588,6 +593,7 @@ function resignJob() {
   }
   S.job = null;
   render();
+
 
 }
 
