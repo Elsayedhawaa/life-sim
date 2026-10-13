@@ -1,3 +1,6 @@
+/* =====================================================================
+   3. RENDERING VIEWS
+   ===================================================================== */
 function render(){
   /* Safety net: if a pending event has no choice you can afford, let the moment pass so the game never locks */
   if (S.pending && S.ev && S.ev.choices && S.ev.choices.length && S.ev.choices.every(unaffordable)){
@@ -34,16 +37,6 @@ function render(){
   })[activeTab]();
   save();
 }
-  const cur = tabs.find(t=>t[0]===activeTab); if (!cur || !cur[2]) activeTab='life';
-  $('tabs').innerHTML = tabs.map(([id,l,ok,why]) => `<button class="tab ${activeTab===id?'on':''}" ${ok?'':`disabled title="${why}"`} onclick="go('${id}')">${l}</button>`).join('');
-
-  $('age-btn').disabled = S.pending;
-  $('view').innerHTML = (menuOpen?menuCard():'') + ({
-    life:viewLife, school:viewSchool, part:viewPart, career:viewCareer, family:viewFamily, love:viewLove, world:viewWorld,
-    assets:viewAssets, shop:viewShop, money:viewMoney, bank:viewBank, act:viewActivities
-  })[activeTab]();
-  save();
-}
 
 function viewLife(){
   const e = S.ev;
@@ -66,7 +59,7 @@ function viewSchool(){
   if (S.age<18){
     const schools = Object.entries(SCHOOLS).map(([k,s]) => { const why=schoolBlock(k);
       return `<button class="btn ${S.school===k?'sel':''}" ${why?'disabled':''} onclick="pickSchool('${k}')">${s.name} · ${s.cost?money(s.cost)+'/yr, paid by parents':'Free'}<small>${why||s.desc}</small></button>`; }).join('');
-    return `<section class="card"><h3>School</h3><p class="muted">Family status: <b>${FAMILY[S.famWealth]}</b>. Pick a school before you age up.</p>${schools}</section>` + effortCard + '';
+    return `<section class="card"><h3>School</h3><p class="muted">Family status: <b>${FAMILY[S.famWealth]}</b>. Pick a school before you age up.</p>${schools}</section>` + effortCard;
   }
 
   if (S.uni){
@@ -126,51 +119,6 @@ function viewCareer(){
       <button class="btn" ${S.worked?'disabled':''} onclick="workHarder()">Work Overtime / Harder<small>Boost performance once this year.</small></button>
       <button class="btn" ${S.promoTried?'disabled':''} onclick="askPromotion()">Request Rank Promotion<small>Advance to the next career level if qualified.</small></button>
       <button class="btn" onclick="askRaise()">Ask for Raise<small>Request a salary increase based on performance.</small></button>
-      ${S.age>=RETIRE_MIN?'<button class="btn" onclick="retireClick()">Retire<small>Pension of about 40% of your salary.</small></button>':''}
-      <button class="btn" onclick="quitJob()">Resign / Quit</button>
-    </section>`;
-  }
-
-  let html = fin + `<section class="card"><h3>Career Market Tracks</h3><p class="muted">${S.uni?'Finish university to unlock full-time careers.':'Apply for entry level or degree positions:'}</p>`;
-
-  Object.entries(TRACKS).forEach(([trackId, track]) => {
-    const entryJob = track.levels[0];
-    const canDegree = !track.degree || S.degree === track.degree;
-    const blockWhy = (S.uni?'Finish university first. ':'') + (!canDegree ? `Requires ${MAJORS[track.degree].name} degree. ` : '') + (S.smarts < entryJob.reqSmarts ? `Requires ${entryJob.reqSmarts}% Smarts.` : '') + (entryJob.diploma&&!S.diploma?'Requires a diploma. ':'');
-
-    html += `<div style="margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:8px">
-      <b>${track.name}</b><br>
-      <span class="muted" style="font-size:.85rem">Level 1: ${entryJob.title} (${money(entryJob.salary)}/yr)</span>
-      <button class="btn" ${blockWhy?'disabled':''} onclick="applyTrack('${trackId}')">${blockWhy ? blockWhy : 'Apply for Entry Position'}</button>
-    </div>`;
-  });
-
-  html += `</section>`;
-  return html;
-}
-
-  if (S.retired) return fin + `<section class="card"><h3>Retired</h3><p class="muted">Pension ${money(S.pension)}/yr.</p></section>`;
-
-  if (S.job){
-    const j = S.job;
-    const schedText = S.schedule==='over' ? 'Long Hours (50 hrs/wk, +Perf, +Stress)' : S.schedule==='crunch' ? 'Crunch Mode (60 hrs/wk, ++Perf, ++Stress)' : 'Standard (40 hrs/wk)';
-    return fin + `<section class="card">
-      <h3>${j.title}</h3>
-      <p class="muted">Track: ${TRACKS[j.trackId].name} (Level ${j.level+1}/5)</p>
-      <p class="muted">Salary ${money(j.salary)}/yr · Tenure: ${j.years} year(s)</p>
-      <div style="margin:10px 0">${bar('Performance',j.perf,'var(--cyan)')}</div>
-
-      <p class="muted" style="margin-top:8px;font-size:.85rem">Work Schedule: <b>${schedText}</b></p>
-      <div class="acts" style="margin-top:6px">
-        <button class="btn ${S.schedule==='norm'?'sel':''}" onclick="setSchedule('norm')">40 hrs/wk</button>
-        <button class="btn ${S.schedule==='over'?'sel':''}" onclick="setSchedule('over')">50 hrs/wk</button>
-        <button class="btn ${S.schedule==='crunch'?'sel':''}" onclick="setSchedule('crunch')">60 hrs/wk</button>
-      </div>
-
-      <button class="btn" ${S.worked?'disabled':''} onclick="workHarder()">Work Overtime / Harder<small>Boost performance once this year.</small></button>
-      <button class="btn" ${S.promoTried?'disabled':''} onclick="askPromotion()">Request Rank Promotion<small>Advance to the next career level if qualified.</small></button>
-      <button class="btn" ${S.promoTried?'disabled':''} onclick="askPromotion()">Request Rank Promotion<small>Advance to the next career level if qualified.</small></button>
-<button class="btn" onclick="askRaise()">Ask for Raise<small>Request a salary increase based on performance.</small></button>
       ${S.age>=RETIRE_MIN?'<button class="btn" onclick="retireClick()">Retire<small>Pension of about 40% of your salary.</small></button>':''}
       <button class="btn" onclick="quitJob()">Resign / Quit</button>
     </section>`;
@@ -267,8 +215,8 @@ function viewFurnish(){
   const h=targetHome(), f=S.furn[h]||{}, cf=comfort(h), own=S.ownedHomes.find(x=>x.id===h);
   const cats=Object.entries(FURN).map(([k,c])=>`<div style="margin-top:12px"><b>${c.label}</b> <span class="muted" style="font-size:.85rem">${f[k]?'· '+c.opts.find(o=>o.id===f[k]).n:'· nothing yet'}</span>
     ${c.opts.filter(o=>{ const fr=FURN_FROM[o.id]; return !fr||gameYear()>=fr; }).map(o=>{ const pr=Math.round(o.cost*(S.pr||1)*(1-promoPct('furn')));
-      return `<button class="btn ${f[k]===o.id?'sel':''}" ${f[k]===o.id||S.wealth<pr?'disabled':''} onclick="buyFurn('${k}','${o.id}')">${o.n} · ${money(pr)}<small>Happiness +${o.hap}${o.hp?', Health +'+o.hp:''}${o.sm?', Smarts +'+o.sm:''}${o.val&&own?', adds value to your property':''}</small></button>`; }).join('')}</div>`).join('');
-  return `<section class="card"><h3>Furnish & Decorate</h3><p class="muted">Comfort here: Happiness +${cf.hap}, Health +${cf.hp}${cf.sm?', Smarts +'+cf.sm:''} per year while you live in it. ${own?'Flooring and AC add to the property value.':'Furniture in a rental stays behind if you move.'}</p>${placeSelector()}${cats}</section>`;
+      return `<button class="btn ${f[k]===o.id?'sel':''}" ${f[k]===o.id||S.wealth<pr?'disabled':''} onclick="buyFurn('${k}','${o.id}')">${o.n} ·${money(pr)}<small>Happiness +${o.hap}${o.hp?', Health +'+o.hp:''}${o.sm?', Smarts +'+o.sm:''}${o.val&&own?', adds value to your property':''}</small></button>`; }).join('')}</div>`).join('');
+  return `<section class="card"><h3>Furnish & Decorate</h3><p class="muted">Comfort here: Happiness +${cf.hap}, Health +${cf.hp}${cf.sm?', Smarts +'+cf.sm:''} per year while you live in it. ${own?'Flooring and AC add to the property value.':'Furniture in a rental stays behind if you move.'}</p>${placeSelector()}${cats}`;
 }
 function viewMine(){
   if (!S.inventory.length) return '<section class="card"><h3>My Items</h3><p class="muted">You do not own anything yet.</p></section>';
@@ -284,11 +232,10 @@ function viewMine(){
         ${i.broken&&i.price?`<button class="btn" onclick="replaceItem('${i.uid}')">Buy new ${money(i.price)}</button>`:''}
         ${!i.broken&&i.cat!=='fashion'?`<button class="btn" onclick="toggleInsure('${i.uid}')">${i.insured?'Cancel insurance':'Add insurance'}</button>`:''}
         <button class="btn" onclick="discardItem('${i.uid}')">Discard</button></div></div>`; }).join('');
-  return `<section class="card"><h3>My Items</h3><p class="muted">Items break and wear out with age. Insured items are cheap to repair. Items in a home only help while you live there.</p>${rows}</section>`;
+  return `<section class="card"><h3>My Items</h3><p class="muted">Items break and wear out with age. Insured items are cheap to repair. Items in a home only help while you live there.</p>${rows}`;
 }
-/* ==========================================
-   REQUESTS TAB & RESOLUTION HANDLERS
-   ========================================== */
+
+/* REQUESTS TAB & RESOLUTION HANDLERS */
 function viewRequests() {
   let html = `<section class="card"><h3>Pending Requests & Family Needs</h3><p class="muted">Requests from family or urgent events that require your decision.</p></section>`;
   
