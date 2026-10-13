@@ -654,7 +654,29 @@ viewCareer=function(){
     html+=SEC('Remote version of your current title',existing+B(S.job.isRemoteUSD?'Already remote in USD':'Search for the same title with a USD-paying employer','The chance is low; a successful offer replaces your current job, does not create a second full-time job, and does not provide immigration sponsorship.','searchCurrentRemoteOffer()',S.currentRemoteTryAge===S.age||S.job.isRemoteUSD||S.country!==S.home));
   }
   return html;
-};
+}
+/* ==========================================
+   AUTOMATED MARKET RENTING FOR OWNED PROPERTIES
+   ========================================== */
+function autoRentProperty(propertyIdx) {
+  if (!S || !S.ownedHomes || !S.ownedHomes[propertyIdx]) {
+    if (typeof hint === 'function') hint("Property not found.");
+    return;
+  }
 
+  const prop = S.ownedHomes[propertyIdx];
+  const marketTrend = S.rentIndex || 1.0; 
+  const annualYieldRate = 0.06; // 6% gross market yield
+  const estimatedAnnualRent = Math.round(prop.value * annualYieldRate * (marketTrend / (S.rent0 || 1)));
 
+  prop.status = 'rent';
+  prop.rentInc = Math.round(estimatedAnnualRent / (S.rentIndex || 1));
+
+  const formattedRent = typeof money === 'function' ? money(estimatedAnnualRent) : estimatedAnnualRent;
+  if (typeof log === 'function') {
+    log(`Tenant placed! Property leased out at current market rate of ${formattedRent}/yr.`);
+  }
+
+  if (typeof render === 'function') render();
+}
 
