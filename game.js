@@ -387,55 +387,208 @@ function viewPart(){
   return `<section class="card"><h3>Part-time work</h3><p class="muted">${cur?`Working as a ${cur.title.toLowerCase()}.`:'Side job for students.'}</p>${list}${cur?'<button class="btn" onclick="quitPart()">Quit job</button>':''}</section>`;
 }
 
-/* CAREER TAB: multi-tier ranks, work schedules, overtime, retirement */
-function viewCareer(){
-  const net = S.income - S.expenses;
-  const fin = `<section class="card"><h3>Finances (last year)</h3>
-    <div class="row"><span>Gross income</span><b class="mono" data-ui-style="ui-013">${money(S.income)}</b></div>
-    <div class="row"><span>Net change</span><b class="mono">${money(net)}</b></div>
-    <div class="row"><span>Net worth</span><b class="mono">${money(netWorth())}</b></div></section>`;
+function viewCareer() {
+  const currentJob = S.job || null;
+  const userEdu = S.degree ? MAJORS[S.degree]?.name : (S.diploma ? "High School Diploma" : "None");
+  const expYears = S.exp || 0;
+  const userSmarts = S.smarts || 0;
+  const userEng = S.eng || 0;
 
-  if (S.retired) return fin + `<section class="card"><h3>Retired</h3><p class="muted">Pension ${money(S.pension)}/yr.</p></section>`;
-
-  if (S.job){
-    const j = S.job;
-    const schedText = S.schedule==='over' ? 'Long Hours (50 hrs/wk, +Perf, +Stress)' : S.schedule==='crunch' ? 'Crunch Mode (60 hrs/wk, ++Perf, ++Stress)' : 'Standard (40 hrs/wk)';
-    return fin + `<section class="card">
-      <h3>${j.title}</h3>
-      <p class="muted">Track: ${TRACKS[j.trackId].name} (Level ${j.level+1}/5)</p>
-      <p class="muted">Salary ${money(j.salary)}/yr · Tenure: ${j.years} year(s)</p>
-      <div data-ui-style="ui-014">${bar('Performance',j.perf,'var(--cyan)')}</div>
-
-      <p class="muted" data-ui-style="ui-015">Work Schedule: <b>${schedText}</b></p>
-      <div class="acts" data-ui-style="ui-012">
-        <button class="btn ${S.schedule==='norm'?'sel':''}" onclick="setSchedule('norm')">40 hrs/wk</button>
-        <button class="btn ${S.schedule==='over'?'sel':''}" onclick="setSchedule('over')">50 hrs/wk</button>
-        <button class="btn ${S.schedule==='crunch'?'sel':''}" onclick="setSchedule('crunch')">60 hrs/wk</button>
+  // Render Current Active Position Header
+  let currentHtml = "";
+  if (currentJob) {
+    const annualPay = currentJob.salary || currentJob.baseSalary || 30000;
+    const monthlyNet = Math.round(annualPay / 12);
+    
+    currentHtml = `
+      <div class="card p24-job-card" open>
+        <div class="p24-topline">
+          <div class="p24-brand">${(currentJob.company || "CORP").slice(0, 3).toUpperCase()}</div>
+          <div>
+            <h3>${currentJob.title || currentJob.roleTitle}</h3>
+            <div class="muted">${currentJob.company || "Corporate"} • ${currentJob.trackName || "General Service"}</div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <span>Monthly Income</span>
+          <b class="text-mint">${money(monthlyNet)} / mo</b>
+        </div>
+        <div class="row">
+          <span>Annual Base Salary</span>
+          <b>${money(annualPay)} / yr</b>
+        </div>
+        <div class="row">
+          <span>Contract & Work Schedule</span>
+          <small>${currentJob.hours || 40} hrs/wk • ${currentJob.remote || "On-site"}</small>
+        </div>
+        <div style="margin-top:10px">
+          <small class="muted" style="display:block;margin-bottom:4px">Perks & Benefits:</small>
+          <div>
+            <span class="p24-pill">✓ Health Insurance</span>
+            <span class="p24-pill">✓ Paid Leave (${currentJob.leave || 14} days)</span>
+            ${currentJob.bonus ? `<span class="p24-pill">✓ Annual Bonus (${Math.round(currentJob.bonus * 100)}%)</span>` : ''}
+          </div>
+        </div>
+        <button class="btn" onclick="resignJob()" style="margin-top:12px;border-color:var(--rose);color:var(--rose);text-align:center">Resign Position</button>
       </div>
-
-      <button class="btn" ${S.worked?'disabled':''} onclick="workHarder()">Work Overtime / Harder<small>Boost performance once this year.</small></button>
-      <button class="btn" ${S.promoTried?'disabled':''} onclick="askPromotion()">Request Rank Promotion<small>Advance to the next career level if qualified.</small></button>
-      ${S.age>=RETIRE_MIN?'<button class="btn" onclick="retireClick()">Retire<small>Pension of about 40% of your salary.</small></button>':''}
-      <button class="btn" onclick="quitJob()">Resign / Quit</button>
-    </section>`;
+    `;
+  } else {
+    currentHtml = `
+      <div class="card" style="text-align:center;padding:20px">
+        <div class="muted">You are currently unemployed.</div>
+        <small style="display:block;margin-top:4px;color:var(--amber)">Browse available career opportunities below to start earning.</small>
+      </div>
+    `;
   }
 
-  let html = fin + `<section class="card"><h3>Career Market Tracks</h3><p class="muted">${S.uni?'Finish university to unlock full-time careers.':'Apply for entry level or degree positions:'}</p>`;
+  // Sector Filter Navigation
+  if (!S._careerFilter) S._careerFilter = "all";
 
-  Object.entries(TRACKS).forEach(([trackId, track]) => {
-    const entryJob = track.levels[0];
-    const canDegree = !track.degree || S.degree === track.degree;
-    const blockWhy = (S.uni?'Finish university first. ':'') + (!canDegree ? `Requires ${MAJORS[track.degree].name} degree. ` : '') + (S.smarts < entryJob.reqSmarts ? `Requires ${entryJob.reqSmarts}% Smarts.` : '') + (entryJob.diploma&&!S.diploma?'Requires a diploma. ':'');
+  const tracks = [
+    { id: 'all', name: 'All Sectors' },
+    { id: 'bpo', name: '📞 BPO & English Centers' },
+    { id: 'entry', name: '🛍️ General & Retail' },
+    { id: 'tech', name: '💻 Technology & CS' },
+    { id: 'finance', name: '📊 Finance & Business' },
+    { id: 'law', name: '⚖️ Legal Services' },
+    { id: 'medical', name: '🩺 Healthcare' },
+    { id: 'bio', name: '🔬 Science & Bio' }
+  ];
 
-    html += `<div data-ui-style="ui-016">
-      <b>${track.name}</b><br>
-      <span class="muted" data-ui-style="ui-017">Level 1: ${entryJob.title} (${money(entryJob.salary)}/yr)</span>
-      <button class="btn" ${blockWhy?'disabled':''} onclick="applyTrack('${trackId}')">${blockWhy ? blockWhy : 'Apply for Entry Position'}</button>
-    </div>`;
+  const filterTabs = tracks.map(t => `
+    <button class="sub-tab ${S._careerFilter === t.id ? 'on' : ''}" onclick="setCareerFilter('${t.id}')">
+      ${t.name}
+    </button>
+  `).join("");
+
+  // Compile Jobs List based on selected filter
+  let displayJobs = [];
+
+  Object.keys(TRACKS).forEach(trackKey => {
+    if (S._careerFilter !== "all" && S._careerFilter !== trackKey) return;
+    
+    const track = TRACKS[trackKey];
+    track.levels.forEach((lvl, idx) => {
+      displayJobs.push({
+        id: `${trackKey}_lvl_${idx}`,
+        trackKey: trackKey,
+        trackName: track.name,
+        title: lvl.title,
+        company: trackKey === 'bpo' ? (idx === 0 ? 'Sutherland' : idx === 1 ? 'Vodafone UK' : idx === 2 ? 'Concentrix' : 'BPO Global') : 'Corporate Client',
+        salary: lvl.salary,
+        hours: lvl.hrs,
+        stress: lvl.stress,
+        reqSmarts: lvl.reqSmarts || 0,
+        reqEng: lvl.eng || 0,
+        reqDiploma: lvl.diploma,
+        reqDegree: track.degree || null,
+        desc: `Level ${idx + 1} position in the ${track.name} sector.`
+      });
+    });
   });
 
-  html += `</section>`;
-  return html;
+  const jobListHtml = displayJobs.map(j => {
+    const isCurrent = currentJob && currentJob.id === j.id;
+    const meetsDiploma = !j.reqDiploma || S.diploma || S.degree;
+    const meetsDegree = !j.reqDegree || S.degree === j.reqDegree;
+    const meetsSmarts = userSmarts >= j.reqSmarts;
+    const meetsEng = userEng >= j.reqEng;
+    const canApply = meetsDiploma && meetsDegree && meetsSmarts && meetsEng && !isCurrent;
+
+    const monthlyPay = Math.round(j.salary / 12);
+
+    return `
+      <details class="p24-job-card" ${isCurrent ? 'open' : ''}>
+        <summary>
+          <div style="display:inline-flex;align-items:center;justify-content:space-between;width:calc(100% - 20px)">
+            <span><b>${j.title}</b> <small class="muted">at ${j.company}</small></span>
+            <b class="text-mint">${money(monthlyPay)}/mo</b>
+          </div>
+        </summary>
+        <div style="padding-top:10px;border-top:1px solid var(--line);margin-top:8px">
+          <p class="muted" style="font-size:.84rem">${j.desc}</p>
+          <div class="row" style="margin-top:6px">
+            <span>Requirements</span>
+            <small>
+              ${j.reqDegree ? `Degree: <b class="${meetsDegree ? 'text-mint' : 'text-rose'}">${j.reqDegree.toUpperCase()}</b> | ` : ''}
+              Smarts: <b class="${meetsSmarts ? 'text-mint' : 'text-rose'}">${j.reqSmarts}%</b>
+              ${j.reqEng ? ` | English: <b class="${meetsEng ? 'text-mint' : 'text-rose'}">${j.reqEng}%</b>` : ''}
+            </small>
+          </div>
+          <div style="margin-top:8px">
+            <span class="p24-pill">Hours: ${j.hours}h/wk</span>
+            <span class="p24-pill">Stress Level: ${j.stress}/10</span>
+          </div>
+          <button class="btn" 
+            ${!canApply ? 'disabled' : ''} 
+            onclick="applyJobById('${j.id}')" 
+            style="margin-top:10px;text-align:center">
+            ${isCurrent ? 'Current Position' : (canApply ? 'Submit Application' : 'Requirements Not Met')}
+          </button>
+        </div>
+      </details>
+    `;
+  }).join("");
+
+  return `
+    <div class="card">
+      <h3>Active Career Status</h3>
+      ${currentHtml}
+    </div>
+    
+    <div class="card" style="margin-top:12px">
+      <h3>Job Marketplace</h3>
+      <div class="sub-tabs" style="margin-top:8px">${filterTabs}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        ${jobListHtml}
+      </div>
+    </div>
+  `;
+}
+
+// Controller helper functions
+function setCareerFilter(cat) {
+  S._careerFilter = cat;
+  render();
+}
+
+function applyJobById(jobId) {
+  let selected = null;
+  
+  Object.keys(TRACKS).forEach(trackKey => {
+    const track = TRACKS[trackKey];
+    track.levels.forEach((lvl, idx) => {
+      if (`${trackKey}_lvl_${idx}` === jobId) {
+        selected = {
+          id: jobId,
+          title: lvl.title,
+          company: trackKey === 'bpo' ? (idx === 0 ? 'Sutherland' : idx === 1 ? 'Vodafone UK' : idx === 2 ? 'Concentrix' : 'BPO Global') : 'Corporate Client',
+          salary: lvl.salary,
+          hours: lvl.hrs,
+          stress: lvl.stress,
+          trackName: track.name,
+          leave: 14 + (idx * 2),
+          bonus: 0.03 * (idx + 1)
+        };
+      }
+    });
+  });
+
+  if (!selected) return;
+  S.job = selected;
+  if (typeof addLog === "function") {
+    addLog(`Started working as ${selected.title} at ${selected.company}.`);
+  }
+  render();
+}
+
+function resignJob() {
+  if (S.job && typeof addLog === "function") {
+    addLog(`Resigned from position as ${S.job.title}.`);
+  }
+  S.job = null;
+  render();
+
 }
 
 /* REAL ESTATE TAB: own, rent out, renovate, furnish, pay down mortgages */
