@@ -97,32 +97,61 @@ function renderTimelineRow(r) {
 
 function viewLife(){
   const e = S.ev;
-  const household = `<section class="card"><div class="famrow"><div><span>${myFace()}</span>You</div>${S.family.filter(m=>m.alive).map(m=>`<div><span>${memFace(m)}</span>${m.name}</div>`).join('')}</div></section>`;
 
+  // 1. ACTIVE EVENT CARD (Main Focus at the top)
   const eventCard = e
-    ? `<section class="card"><h3>${e.title}</h3><p class="muted">${evText(e)}</p>${(e.choices||[]).map((c,i)=>{
-        const no = unaffordable(c);
-        return `<button class="btn" ${no?'disabled':''} onclick="choose(${i})">${c.label}${no?'<small>Not enough cash</small>':''}</button>`;
-      }).join('')}</section>`
-    : `<section class="card"><h3>Your story</h3><p class="muted">Press Age up to continue.</p></section>`;
+    ? `<section class="card" style="border: 1px solid var(--cyan); background: rgba(6, 182, 212, 0.04);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <span style="font-size:.72rem; font-weight:700; color:var(--cyan); text-transform:uppercase; letter-spacing:0.5px;">Current Milestone · Age ${S.age}</span>
+        </div>
+        <h3 style="margin-top:0; font-size:1.25rem;">${e.title}</h3>
+        <p class="muted" style="line-height:1.5; font-size:.92rem;">${evText(e)}</p>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
+          ${(e.choices||[]).map((c,i)=>{
+            const no = unaffordable(c);
+            return `<button class="btn" ${no?'disabled':''} onclick="choose(${i})" style="text-align:left; padding:12px 14px;">
+              <b>${c.label}</b>${no?'<small style="display:block; color:var(--rose)">Not enough cash</small>':''}
+            </button>`;
+          }).join('')}
+        </div>
+      </section>`
+    : `<section class="card">
+        <h3>Your Story</h3>
+        <p class="muted">Press <b>Age up</b> at the bottom to advance to the next year of your life.</p>
+      </section>`;
 
+  // 2. HOUSEHOLD & FAMILY ROW
+  const household = `<section class="card">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+      <h3 style="margin:0; font-size:1rem;">Household & Family</h3>
+      <span class="muted" style="font-size:.78rem;">${FAMILY[S.famWealth] || 'Family'}</span>
+    </div>
+    <div class="famrow">
+      <div><span>${myFace()}</span><b>You</b></div>
+      ${S.family.filter(m=>m.alive).map(m=>`<div><span>${memFace(m)}</span>${m.name} <small style="display:block;color:var(--muted);font-size:.7rem">${m.role||''}</small></div>`).join('')}
+    </div>
+  </section>`;
+
+  // 3. CLEAN TIMELINE FEED
   const timelineHtml = (S.logRows || [])
     .map(renderTimelineRow)
     .filter(Boolean)
-    .reverse() // Shows newest life events at the top
+    .reverse()
     .join('');
 
   const logCard = `<section class="card">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-      <h3 style="margin:0;">Life Timeline</h3>
-      <span class="muted" style="font-size:.8rem;">${(S.logRows||[]).length} entries recorded</span>
+      <h3 style="margin:0; font-size:1rem;">Life Timeline</h3>
+      <span class="muted" style="font-size:.78rem;">${(S.logRows||[]).length} entries</span>
     </div>
-    <div id="log" style="display:flex; flex-direction:column; gap:2px;">
+    <div id="log" style="display:flex; flex-direction:column; gap:4px;">
       ${timelineHtml || '<p class="muted">Your story is just beginning...</p>'}
     </div>
   </section>`;
 
-  return household + eventCard + logCard;
+  // Sequence: Active Choice -> Family -> Timeline Feed
+  return eventCard + household + logCard;
+}
 
 }
 
