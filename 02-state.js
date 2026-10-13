@@ -229,5 +229,10 @@ const menuCard = () => `<section class="card"><h3>Menu</h3><p class="muted">${me
     <button class="btn" onclick="restartLifeAtSix()">Restart at Age 6</button>
     <button class="btn" onclick="resetGame()">${resetArmed?'Confirm Delete':'Reset Game'}</button>
     <button class="btn" onclick="toggleMenu()">Close</button>
-  </div></section>`;
-
+  </div></section>`
+/* ==========================================
+   STATE INITIALIZATION FOR PENDING REQUESTS
+   ========================================== */
+if (typeof S !== 'undefined') {
+  S.pendingRequests = S.pendingRequests || [];
+}
