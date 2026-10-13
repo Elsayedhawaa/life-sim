@@ -132,4 +132,56 @@ function ageUp(){
 }
 
 function checkDeath(){ if(S) S.dead=false; }
+/* ==========================================
+   FAMILY & CAREGIVING EVENTS GENERATOR
+   ========================================== */
+function checkFamilyEvents() {
+  if (!S || !S.family) return;
+
+  S.pendingRequests = S.pendingRequests || [];
+
+  // Find living parents older than 65
+  const elderlyParents = S.family.filter(m => m && m.alive !== false && (m.role === 'Mother' || m.role === 'Father') && m.age >= 65);
+  const siblings = S.family.filter(m => m && m.alive !== false && m.role === 'Sibling');
+
+  if (elderlyParents.length > 0) {
+    const chance = Math.random();
+    if (chance < 0.25) { // 25% chance per year
+      const nurseCost = Math.round((S.country === 'egy' ? 120000 : 12000) * (S.pr || 1));
+      const siblingAgrees = siblings.length > 0 && Math.random() > 0.4;
+      const shareCost = siblingAgrees ? Math.round(nurseCost / 2) : nurseCost;
+
+      // Prevent duplicate requests in the same year
+      const alreadyAsked = S.pendingRequests.some(r => r.type === 'PARENT_CARE');
+      if (!alreadyAsked) {
+        S.pendingRequests.push({
+          id: Date.now(),
+          type: 'PARENT_CARE',
+          title: 'Elderly Parents Care & Health',
+          description: `Your aging parent(s) require home care and medical support (${typeof money === 'function' ? money(nurseCost) : nurseCost}/yr). ${
+            siblings.length > 0 
+              ? (siblingAgrees ? 'Your sibling agreed to split the cost 50/50 with you.' : 'Your sibling refused to help pay.') 
+              : 'You have no siblings to share this expense with.'
+          }`,
+          cost: shareCost,
+          timeCostHours: 5,
+          siblingPaid: siblingAgrees
+        });
+
+        if (typeof log === 'function') {
+          log(`⚠️ Family Notice: Your parents need home care. Check the Requests section.`);
+        }
+      }
+    }
+  }
+}
+
+// Hook into ageUp logic automatically
+if (typeof p10Year === 'function') {
+  const oldP10Year = p10Year;
+  p10Year = function() {
+    oldP10Year();
+    checkFamilyEvents();
+  };
+}
 
