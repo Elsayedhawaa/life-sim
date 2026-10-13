@@ -279,4 +279,56 @@ function viewMine(){
         <button class="btn" onclick="discardItem('${i.uid}')">Discard</button></div></div>`; }).join('');
   return `<section class="card"><h3>My Items</h3><p class="muted">Items break and wear out with age. Insured items are cheap to repair. Items in a home only help while you live there.</p>${rows}</section>`;
 }
+/* ==========================================
+   REQUESTS TAB & RESOLUTION HANDLERS
+   ========================================== */
+function viewRequests() {
+  let html = `<section class="card"><h3>Pending Requests & Family Needs</h3><p class="muted">Requests from family or urgent events that require your decision.</p></section>`;
+  
+  if (!S.pendingRequests || S.pendingRequests.length === 0) {
+    return html + `<section class="card"><p class="muted">No pending requests right now.</p></section>`;
+  }
 
+  S.pendingRequests.forEach((req, index) => {
+    const costText = typeof money === 'function' ? money(req.cost) : req.cost;
+    html += `
+      <section class="card" style="border:1px solid var(--amber);">
+        <h3>${req.title}</h3>
+        <p>${req.description}</p>
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn" onclick="resolveRequest(${index}, 'PAY')">Pay Share (${costText})</button>
+          <button class="btn" onclick="resolveRequest(${index}, 'CARE')">Care Yourself (${req.timeCostHours} hrs/wk)</button>
+          <button class="btn" onclick="resolveRequest(${index}, 'DECLINE')">Decline</button>
+        </div>
+      </section>
+    `;
+  });
+
+  return html;
+}
+
+function resolveRequest(index, choice) {
+  if (!S.pendingRequests || !S.pendingRequests[index]) return;
+  const req = S.pendingRequests[index];
+
+  if (choice === 'PAY') {
+    if (S.wealth >= req.cost) {
+      S.wealth -= req.cost;
+      if (typeof log === 'function') log(`You paid ${typeof money === 'function' ? money(req.cost) : req.cost} towards your parents' care.`);
+      if (typeof fx === 'function') fx({ happiness: 3, social: 4 });
+    } else {
+      if (typeof hint === 'function') hint("Not enough cash!");
+      return;
+    }
+  } else if (choice === 'CARE') {
+    S.weeklyHoursUsed = (S.weeklyHoursUsed || 0) + req.timeCostHours;
+    if (typeof log === 'function') log(`You dedicated ${req.timeCostHours} hours/week to personally care for your parents.`);
+    if (typeof fx === 'function') fx({ happiness: 1, health: -2, social: 5 });
+  } else {
+    if (typeof log === 'function') log(`You declined to assist with the request.`);
+    if (typeof fx === 'function') fx({ happiness: -3, social: -5 });
+  }
+
+  S.pendingRequests.splice(index, 1);
+  if (typeof render === 'function') render();
+}
