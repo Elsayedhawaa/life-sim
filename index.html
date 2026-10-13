@@ -1,54 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lifeline – Realistic Life Simulation</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lifeline – Realistic Life Simulation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="app">
-  <!-- START SCREEN -->
-  <section id="start" class="card overlay">
-    <h1>Lifeline</h1>
-    <p>It is 2007. You are six years old. Every choice shapes the story ahead.</p>
-    <div class="bigav" id="av-big"></div>
-    <div class="picker" id="av-g"></div>
-    <div class="picker" id="av-t"></div>
-    <select id="country-sel" data-ui-style="ui-001"></select>
-    <div class="picker" id="like-p" data-ui-style="ui-002"></div>
-    <p class="muted" id="country-desc" data-ui-style="ui-003"></p>
-    <input id="name-input" placeholder="Your name" maxlength="20" autocomplete="off">
-    <button class="btn" id="start-btn" data-ui-style="ui-004" >Begin life</button>
-    <button class="btn hidden" id="cont-btn" data-ui-style="ui-004" >Continue saved life</button>
-  </section>
+  <div id="app">
+    <!-- START SCREEN -->
+    <section id="start" class="card overlay">
+      <h1>Lifeline</h1>
+      <p>It is 2007. You are six years old. Every choice shapes the story ahead.</p>
+      <div class="bigav" id="av-big"></div>
+      <div class="picker" id="av-g"></div>
+      <div class="picker" id="av-t"></div>
+      <select id="country-sel" data-ui-style="ui-001"></select>
+      <div class="picker" id="like-p" data-ui-style="ui-002"></div>
+      <p class="muted" id="country-desc" data-ui-style="ui-003"></p>
+      <input id="name-input" placeholder="Your name" maxlength="20" autocomplete="off">
+      <button class="btn" id="start-btn" data-ui-style="ui-004">Begin life</button>
+      <button class="btn hidden" id="cont-btn" data-ui-style="ui-004">Continue saved life</button>
+    </section>
 
-  <!-- GAME SCREEN -->
-  <div id="game" class="hidden" data-ui-style="ui-005">
-    <header id="head">
-      <section class="card" id="top"></section>
-      <nav class="tabs" id="tabs"></nav>
-    </header>
-    <main id="view" data-ui-style="ui-005"></main>
-    <div id="age-wrap"><div id="hint"></div><button id="age-btn" >Age up</button></div>
-  </div>
-  <!-- Interactive phone, inspired by the supplied alternate version -->
-  <div id="life-phone-modal" class="p16-phone-backdrop hidden" role="dialog" aria-modal="true" aria-label="Your phone">
-    <div class="p16-phone-shell">
-      <div data-ui-style="ui-006">
-        <div><div class="muted" data-ui-style="ui-007">LIFELINE DEVICE</div><h3 id="p16-phone-model" data-ui-style="ui-008">Your phone</h3></div>
-        <button class="menu-btn" id="p16-phone-close">Close</button>
+    <!-- GAME SCREEN -->
+    <div id="game" class="hidden" data-ui-style="ui-005">
+      <header id="head">
+        <section class="card" id="top"></section>
+        <nav class="tabs" id="tabs"></nav>
+      </header>
+      <main id="view" data-ui-style="ui-005"></main>
+      <div id="age-wrap">
+        <div id="hint"></div>
+        <button id="age-btn">Age up</button>
       </div>
-      <div id="p16-phone-screen" class="p16-phone-screen"></div>
+    </div>
+
+    <!-- Interactive phone modal -->
+    <div id="life-phone-modal" class="p16-phone-backdrop hidden" role="dialog" aria-modal="true" aria-label="Your phone">
+      <div class="p16-phone-shell">
+        <div data-ui-style="ui-006">
+          <div>
+            <div class="muted" data-ui-style="ui-007">LIFELINE DEVICE</div>
+            <h3 id="p16-phone-model" data-ui-style="ui-008">Your phone</h3>
+          </div>
+          <button class="menu-btn" id="p16-phone-close">Close</button>
+        </div>
+        <div id="p16-phone-screen" class="p16-phone-screen"></div>
+      </div>
     </div>
   </div>
-</div>
 
-
-
-<script src="data.js"></script>
-<script src="game.js"></script>
+  <script src="data.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>
