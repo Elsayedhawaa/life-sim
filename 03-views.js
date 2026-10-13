@@ -1,6 +1,3 @@
-/* =====================================================================
-   3. RENDERING VIEWS
-   ===================================================================== */
 function render(){
   /* Safety net: if a pending event has no choice you can afford, let the moment pass so the game never locks */
   if (S.pending && S.ev && S.ev.choices && S.ev.choices.length && S.ev.choices.every(unaffordable)){
@@ -18,15 +15,25 @@ function render(){
     ['part','Part-time',S.age>=14&&studying(),'Students age 14+'],
     ['career','Career',S.age>=18,'Unlocks at 18'],
     ['family','Relationships',true,''],
+    ['req','Requests',S.pendingRequests && S.pendingRequests.length > 0,'No pending requests'],
     ['love','Love',S.age>=16,'Unlocks at 16'],
     ['world','World',S.age>=12,'Unlocks at 12'],
     ['assets','Real Estate',true,''],
     ['shop','Shopping',S.age>=12,'Unlocks at 12'],
     ['money','Money',S.age>=18,'Unlocks at 18'],
-     ['req','Requests',S.pendingRequests && S.pendingRequests.length > 0,'No pending requests'], // ADD THIS LINE
     ['bank','Bank',S.age>=18,'Unlocks at 18'],
     ['act','Activities',true,'']
   ];
+  const cur = tabs.find(t=>t[0]===activeTab); if (!cur || !cur[2]) activeTab='life';
+  $('tabs').innerHTML = tabs.map(([id,l,ok,why]) => `<button class="tab ${activeTab===id?'on':''}" ${ok?'':`disabled title="${why}"`} onclick="go('${id}')">${l}</button>`).join('');
+
+  $('age-btn').disabled = S.pending;
+  $('view').innerHTML = (menuOpen?menuCard():'') + ({
+    life:viewLife, school:viewSchool, part:viewPart, career:viewCareer, family:viewFamily, req:viewRequests, love:viewLove, world:viewWorld,
+    assets:viewAssets, shop:viewShop, money:viewMoney, bank:viewBank, act:viewActivities
+  })[activeTab]();
+  save();
+}
   const cur = tabs.find(t=>t[0]===activeTab); if (!cur || !cur[2]) activeTab='life';
   $('tabs').innerHTML = tabs.map(([id,l,ok,why]) => `<button class="tab ${activeTab===id?'on':''}" ${ok?'':`disabled title="${why}"`} onclick="go('${id}')">${l}</button>`).join('');
 
