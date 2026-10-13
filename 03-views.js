@@ -38,6 +38,63 @@ function render(){
   save();
 }
 
+/* Helper to format log rows into a clean, categorized timeline feed */
+function renderTimelineRow(r) {
+  const text = r.t || '';
+
+  // 1. Filter out internal system clutter
+  if (text.startsWith('Advanced to Age') || text.startsWith('Decision before age')) {
+    return '';
+  }
+
+  // 2. Classify event type and assign icons & color themes
+  let icon = '📜';
+  let badge = 'Life';
+  let badgeBg = 'rgba(255, 255, 255, 0.08)';
+  let badgeColor = '#94a3b8';
+  let cleanText = text;
+
+  if (/promoted|job|salary|worked|career|fired|work/i.test(text)) {
+    icon = '💼';
+    badge = 'Career';
+    badgeBg = 'rgba(6, 182, 212, 0.15)';
+    badgeColor = 'var(--cyan)';
+    // Clean up awkward ALL-CAPS words
+    cleanText = cleanText.replace(/^PROMOTED at/i, 'Promoted at');
+  } else if (/financed|bought|tax|income|earned|spent|cost|pay|bank|loan/i.test(text)) {
+    icon = '💳';
+    badge = 'Finance';
+    badgeBg = 'rgba(16, 185, 129, 0.15)';
+    badgeColor = 'var(--mint)';
+  } else if (/parents|family|mother|father|sibling|disagreement|care/i.test(text)) {
+    icon = '👨‍👩‍👧';
+    badge = 'Family';
+    badgeBg = 'rgba(245, 158, 11, 0.15)';
+    badgeColor = 'var(--amber)';
+  } else if (/graduated|milestone|first day|degree|diploma/i.test(text)) {
+    icon = '🌟';
+    badge = 'Milestone';
+    badgeBg = 'rgba(139, 92, 246, 0.15)';
+    badgeColor = 'var(--violet)';
+  }
+
+  // Capitalize first letter cleanly
+  cleanText = cleanText.charAt(0).toUpperCase() + cleanText.slice(1);
+
+  return `
+    <div style="display:flex; align-items:flex-start; gap:10px; padding:10px 12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; margin-bottom:8px;">
+      <div style="font-size:1.1rem; line-height:1.2; padding-top:2px;">${icon}</div>
+      <div style="flex:1; min-width:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px;">
+          <span style="font-size:.78rem; font-weight:700; color:var(--cyan); letter-spacing:0.5px;">AGE ${r.age}</span>
+          <span style="font-size:.7rem; font-weight:600; background:${badgeBg}; color:${badgeColor}; padding:2px 8px; border-radius:12px; text-transform:uppercase;">${badge}</span>
+        </div>
+        <div style="font-size:.88rem; line-height:1.45; color:#e2e8f0;">${cleanText}</div>
+      </div>
+    </div>
+  `;
+}
+
 function viewLife(){
   const e = S.ev;
   const household = `<section class="card"><div class="famrow"><div><span>${myFace()}</span>You</div>${S.family.filter(m=>m.alive).map(m=>`<div><span>${memFace(m)}</span>${m.name}</div>`).join('')}</div></section>`;
@@ -49,7 +106,24 @@ function viewLife(){
       }).join('')}</section>`
     : `<section class="card"><h3>Your story</h3><p class="muted">Press Age up to continue.</p></section>`;
 
-  return household + eventCard + `<section class="card"><h3>Life log</h3><div id="log">${S.logRows.map(r=>`<div class="log-row"><b>Age ${r.age}</b>${r.t}</div>`).join('')}</div></section>`;
+  const timelineHtml = (S.logRows || [])
+    .map(renderTimelineRow)
+    .filter(Boolean)
+    .reverse() // Shows newest life events at the top
+    .join('');
+
+  const logCard = `<section class="card">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+      <h3 style="margin:0;">Life Timeline</h3>
+      <span class="muted" style="font-size:.8rem;">${(S.logRows||[]).length} entries recorded</span>
+    </div>
+    <div id="log" style="display:flex; flex-direction:column; gap:2px;">
+      ${timelineHtml || '<p class="muted">Your story is just beginning...</p>'}
+    </div>
+  </section>`;
+
+  return household + eventCard + logCard;
+
 }
 
 /* Helper to calculate GED exam fee based on local economy */
