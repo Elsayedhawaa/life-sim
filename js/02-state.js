@@ -101,7 +101,17 @@ function schoolBlock(k){
   return '';
 }
 
-function tuitionFor(u){ return Math.round(UNIS[u.type].tuition*(u.scholar?.5:1)); }
+function tuitionFor(u){
+  if (!u) return 0;
+  if (Number.isFinite(u.annualCostInternal)) {
+    return Math.round(u.annualCostInternal * (u.scholar ? 0.5 : 1));
+  }
+  const uni = UNIS[u.type];
+  if (uni && Number.isFinite(uni.tuition)) {
+    return Math.round(uni.tuition * (u.scholar ? 0.5 : 1));
+  }
+  return 0;
+}
 function fundUni(u){
   const t=tuitionFor(u);
   if (u.pay==='parents' && parents().length && bestBond()>=20) return {help:t,cash:0,loan:0};
