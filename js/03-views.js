@@ -84,11 +84,17 @@ function viewSchool(){
 }
 
 function viewPart(){
-  const cur=S.part;
-const list = PART_JOBS.filter(p => !p.isEgyptOnly || S.country === 'egy').map(p => {
-  const why = (S.age < p.minAge ? `From age ${p.minAge}. ` : '') + (S.smarts < p.smarts ? `Needs ${p.smarts}% Smarts.` : '');
-  ...    return `<button class="btn ${cur&&cur.id===p.id?'sel':''}" ${why?'disabled':''} onclick="takePart('${p.id}')">${p.title} · ${money(p.pay)}/yr<small>${why||'Stress '+p.stress+'/yr.'}</small></button>`; }).join('');
-  return `<section class="card"><h3>Part-time work</h3><p class="muted">${cur?`Working as a ${cur.title.toLowerCase()}.`:'Side job for students.'}</p>${list}${cur?'<button class="btn" onclick="quitPart()">Quit job</button>':''}</section>`;
+  const cur = S.part;
+  const list = PART_JOBS
+    .filter(p => !p.isEgyptOnly || S.country === 'egy')
+    .map(p => {
+      const why = (S.age < p.minAge ? `From age ${p.minAge}. ` : '') +
+                  (S.smarts < p.smarts ? `Needs ${p.smarts}% Smarts.` : '');
+      return `<button class="btn ${cur && cur.id === p.id ? 'sel' : ''}" ${why ? 'disabled' : ''} onclick="takePart('${p.id}')">${p.title} · ${money(p.pay)}/yr<small>${why || 'Stress ' + p.stress + '/yr.'}</small></button>`;
+    })
+    .join('');
+  return `<section class="card"><h3>Part-time work</h3><p class="muted">${cur ? `Working as a ${cur.title.toLowerCase()}.` : 'Side job for students.'}</p>${list}${cur ? '<button class="btn" onclick="quitPart()">Quit job</button>' : ''}</section>`;
+card"><h3>Part-time work</h3><p class="muted">${cur?`Working as a ${cur.title.toLowerCase()}.`:'Side job for students.'}</p>${list}${cur?'<button class="btn" onclick="quitPart()">Quit job</button>':''}</section>`;
 }
 
 /* CAREER TAB: multi-tier ranks, work schedules, overtime, retirement */
