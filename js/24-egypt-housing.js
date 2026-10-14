@@ -1,297 +1,317 @@
 /* =====================================================================
-   24. GLOBAL & EGYPT HOUSING — Local & Expat Developer Compounds
+   24. GLOBAL & EGYPT REAL ESTATE ENGINE — Structured Market & Management
    Connects ONLY through GameHooks (see 90-hooks.js).
    ===================================================================== */
 
-/* ---------- 1. INTERNATIONAL DEVELOPER ROSTERS ---------- */
-const INTL_DEVELOPER_ROSTERS = {
+/* ---------- 1. DATA CATALOGS ---------- */
+const COMPOUND_ROSTER = {
+  egy: [
+    { id: 'madinaty', dev: 'TMG', name: 'Madinaty', loc: 'New Cairo', ppm: 65000, hap: 3, hp: 1, tag: 'Fully serviced mega-city' },
+    { id: 'villette', dev: 'SODIC', name: 'Villette', loc: 'New Cairo', ppm: 105000, hap: 4, hp: 2, tag: 'Ultra-luxury green compound' },
+    { id: 'palmhills', dev: 'Palm Hills', name: 'Palm Hills New Cairo', loc: 'New Cairo', ppm: 95000, hap: 3, hp: 2, tag: 'Signature golf & residential community' },
+    { id: 'mivida', dev: 'Emaar Misr', name: 'Mivida', loc: 'New Cairo', ppm: 115000, hap: 4, hp: 2, tag: 'California-style eco community' },
+    { id: 'marassi', dev: 'Emaar Misr', name: 'Marassi', loc: 'North Coast', ppm: 150000, hap: 5, hp: 3, tag: 'Mediterranean coastal luxury resort' },
+    { id: 'sawary', dev: 'SED', name: 'Sawary', loc: 'Alexandria (Lake Mariout)', ppm: 60000, hap: 3, hp: 2, tag: 'Modern waterfront gated district' },
+    { id: 'alexwest', dev: 'Baron', name: 'Alex West', loc: 'Alexandria', ppm: 55000, hap: 2, hp: 2, tag: 'Gated community near King Mariout' },
+    { id: 'gouna', dev: 'Orascom', name: 'El Gouna Enclave', loc: 'Red Sea', ppm: 140000, hap: 5, hp: 2, tag: 'Red Sea private lagoon living' }
+  ],
   deu: [
-    { dev: 'Instone Real Estate', name: 'Bavaria Park Quartier', loc: 'Munich', ppm: 11500, hap: 3, hp: 2, tag: 'Modern Sustainable Living in Munich' },
-    { dev: 'Vonovia', name: 'Heidestrasse Terrassen', loc: 'Berlin', ppm: 8500, hap: 2, hp: 1, tag: 'Urban Comfort in the Heart of Berlin' },
-    { dev: 'CG Elementum', name: 'Frankfurt Central Heights', loc: 'Frankfurt', ppm: 9800, hap: 3, hp: 2, tag: 'Skyline Residences & Financial Hub' },
-    { dev: 'BUWOG', name: 'HafenCity Promenade', loc: 'Hamburg', ppm: 10200, hap: 4, hp: 2, tag: 'Waterfront Modern Apartments' }
+    { id: 'bavaria_park', dev: 'Instone Real Estate', name: 'Bavaria Park Quartier', loc: 'Munich', ppm: 11500, hap: 3, hp: 2, tag: 'Sustainable gated park living' },
+    { id: 'heidestrasse', dev: 'Vonovia', name: 'Heidestrasse Terrassen', loc: 'Berlin', ppm: 8500, hap: 2, hp: 1, tag: 'Modern city center residences' },
+    { id: 'frankfurt_sky', dev: 'CG Elementum', name: 'Frankfurt Central Heights', loc: 'Frankfurt', ppm: 9800, hap: 3, hp: 2, tag: 'Financial district luxury tower' }
   ],
   usa: [
-    { dev: 'Toll Brothers', name: 'The Estates at Westwood', loc: 'Texas / Austin', ppm: 4200, hap: 3, hp: 2, tag: 'Luxury Suburban Living' },
-    { dev: 'Lennar Homes', name: 'Sunnyvale Innovation Ridge', loc: 'California', ppm: 9500, hap: 4, hp: 2, tag: 'Silicon Valley Smart Homes' },
-    { dev: 'Related Group', name: 'Brickell Financial Towers', loc: 'Miami / Florida', ppm: 7800, hap: 4, hp: 3, tag: 'Coastal High-Rise Luxury' },
-    { dev: 'KB Home', name: 'Cedar Park Residences', loc: 'Seattle / WA', ppm: 6200, hap: 3, hp: 1, tag: 'Eco-Friendly Pacific Living' }
+    { id: 'austin_estates', dev: 'Toll Brothers', name: 'The Estates at Westwood', loc: 'Austin, Texas', ppm: 4200, hap: 3, hp: 2, tag: 'Suburban gated golf community' },
+    { id: 'sunnyvale_ridge', dev: 'Lennar Homes', name: 'Innovation Ridge', loc: 'California', ppm: 9500, hap: 4, hp: 2, tag: 'Silicon Valley smart residences' },
+    { id: 'brickell_towers', dev: 'Related Group', name: 'Brickell Financial Towers', loc: 'Miami, Florida', ppm: 7800, hap: 4, hp: 3, tag: 'Waterfront high-rise luxury' }
   ],
   gbr: [
-    { dev: 'Berkeley Group', name: 'Nine Elms Park', loc: 'London', ppm: 11000, hap: 4, hp: 2, tag: 'Prime Thames-Side Residences' },
-    { dev: 'Barratt Developments', name: 'Deansgate Square', loc: 'Manchester', ppm: 5400, hap: 3, hp: 1, tag: 'Modern High-Rise City Center' },
-    { dev: 'Ballymore', name: 'Canal Quays', loc: 'Birmingham', ppm: 4200, hap: 2, hp: 1, tag: 'Revitalized Waterfront Living' }
+    { id: 'nine_elms', dev: 'Berkeley Group', name: 'Nine Elms Park', loc: 'London', ppm: 11000, hap: 4, hp: 2, tag: 'Prime Thames-side park compound' },
+    { id: 'deansgate', dev: 'Barratt Developments', name: 'Deansgate Square', loc: 'Manchester', ppm: 5400, hap: 3, hp: 1, tag: 'High-rise modern urban living' }
   ],
   uae: [
-    { dev: 'Emaar Properties', name: 'Downtown Dubai Heights', loc: 'Dubai', ppm: 6800, hap: 5, hp: 3, tag: 'Iconic Boulevard Residences' },
-    { dev: 'DAMAC', name: 'Damac Lagoons', loc: 'Dubai', ppm: 5200, hap: 4, hp: 3, tag: 'Mediterranean-Inspired Waterfront Villas' },
-    { dev: 'Nakheel', name: 'Palm Jumeirah Villas', loc: 'Dubai', ppm: 9200, hap: 5, hp: 4, tag: 'World-Famous Luxury Waterfront' },
-    { dev: 'Aldar Properties', name: 'Yas Island Enclave', loc: 'Abu Dhabi', ppm: 5800, hap: 4, hp: 2, tag: 'Entertainment & Coastal Hub' }
+    { id: 'downtown_heights', dev: 'Emaar Properties', name: 'Downtown Heights', loc: 'Dubai', ppm: 6800, hap: 5, hp: 3, tag: 'Iconic Boulevard tower' },
+    { id: 'damac_lagoons', dev: 'DAMAC', name: 'Damac Lagoons', loc: 'Dubai', ppm: 5200, hap: 4, hp: 3, tag: 'Mediterranean villa community' }
   ]
 };
 
-/* ---------- 2. EGYPT DEVELOPER ROSTERS ---------- */
-const EGY_PROJECT_ROSTER = [
-  { dev: 'TMG', name: 'Madinaty', loc: 'New Cairo', ppm: 65000, hap: 2, hp: 1, tag: 'City of International Standards' },
-  { dev: 'SODIC', name: 'Villette', loc: 'New Cairo', ppm: 105000, hap: 4, hp: 2, tag: 'Signature Luxury Living' },
-  { dev: 'Palm Hills', name: 'Palm Hills New Cairo', loc: 'New Cairo', ppm: 95000, hap: 3, hp: 2, tag: 'Harmony of Nature and Architecture' },
-  { dev: 'Emaar Misr', name: 'Mivida', loc: 'New Cairo', ppm: 115000, hap: 4, hp: 2, tag: 'Eco-Friendly Luxury' },
-  { dev: 'Emaar Misr', name: 'Marassi', loc: 'North Coast', ppm: 150000, hap: 5, hp: 3, tag: 'World-Class Coastal Destination' },
-  { dev: 'SED', name: 'Sawary', loc: 'Alexandria', ppm: 60000, hap: 2, hp: 1, tag: 'New Alexandria Waterfront' },
-  { dev: 'Baron', name: 'Alex West', loc: 'Alexandria', ppm: 55000, hap: 2, hp: 2, tag: 'Where Alexandria Meets the Future' }
+const LOCAL_MARKET_ROSTER = {
+  egy: [
+    { id: 'smouha_local', name: 'Smouha Private Apartment', loc: 'Alexandria (Smouha)', ppm: 38000, hap: 1, hp: 0, tag: 'Central Alex, vibrant street life' },
+    { id: 'loran_local', name: 'Loran High-Floor Flat', loc: 'Alexandria (Loran)', ppm: 42000, hap: 1, hp: 0, tag: 'Close to Tram & Corniche' },
+    { id: 'gleem_local', name: 'Gleem Sea-View Unit', loc: 'Alexandria (Gleem)', ppm: 48000, hap: 2, hp: 1, tag: 'Direct sea view flat' },
+    { id: 'nasrcity_local', name: 'Nasr City Apartment', loc: 'Cairo (Nasr City)', ppm: 32000, hap: 1, hp: 0, tag: 'Established Cairo neighborhood' },
+    { id: 'maadi_local', name: 'Degla Maadi Low-Rise', loc: 'Cairo (Maadi)', ppm: 45000, hap: 2, hp: 1, tag: 'Quiet, green street flat' }
+  ],
+  deu: [
+    { id: 'berlin_altbau', name: 'Classic Altbau Flat', loc: 'Berlin (Neukölln)', ppm: 5800, hap: 1, hp: 0, tag: 'Traditional high-ceiling apartment' }
+  ],
+  usa: [
+    { id: 'suburban_house', name: 'Suburban Single-Family Home', loc: 'Houston, Texas', ppm: 2800, hap: 2, hp: 1, tag: 'Traditional local residential neighborhood' }
+  ]
+};
+
+const PROPERTY_UNITS = [
+  { id: 'studio', name: 'Studio', area: 60, mult: 1.08 },
+  { id: 'br1', name: '1-Bedroom Apartment', area: 85, mult: 1.04 },
+  { id: 'br2', name: '2-Bedroom Apartment', area: 130, mult: 1.00 },
+  { id: 'br3', name: '3-Bedroom Apartment', area: 175, mult: 0.98 },
+  { id: 'townhouse', name: 'Townhouse', area: 250, mult: 1.15 },
+  { id: 'villa', name: 'Standalone Villa', area: 450, mult: 1.30 }
 ];
 
-const EGY_EXPAT_ROSTER = [
-  { dev: 'TMG', name: 'Madinaty (Expat Phase)', loc: 'New Cairo', ppm: 72000, hap: 2, hp: 1, tag: 'Your Home Back Home' },
-  { dev: 'SODIC', name: 'Villette Global Residences', loc: 'New Cairo', ppm: 115000, hap: 4, hp: 2, tag: 'Premium Investment for the Diaspora' },
-  { dev: 'Emaar Misr', name: 'Marassi International', loc: 'North Coast', ppm: 160000, hap: 5, hp: 3, tag: 'World-Class Summer Destination' },
-  { dev: 'Palm Hills', name: 'Palm Hills Global', loc: 'Sheikh Zayed', ppm: 105000, hap: 3, hp: 2, tag: 'Elevated Homecoming' },
-  { dev: 'Orascom', name: 'El Gouna Diaspora Enclave', loc: 'Red Sea', ppm: 145000, hap: 5, hp: 2, tag: 'Global Community on the Red Sea' }
+const COMPOUND_PLANS = [
+  { id: 'cash', label: 'Cash Purchase', downPct: 1.0, years: 0, markup: 0.85, note: '15% Cash Discount' },
+  { id: 'p5', label: '5-Year Installments (0% Interest)', downPct: 0.10, years: 5, markup: 1.00, note: 'Standard Developer Plan' },
+  { id: 'p8', label: '8-Year Extended Installments', downPct: 0.05, years: 8, markup: 1.25, note: 'Lower annual burden' },
+  { id: 'p10', label: '10-Year Long Term Plan', downPct: 0.05, years: 10, markup: 1.45, note: 'Lowest yearly payment' }
 ];
 
-const DEV_UNITS = [
-  {id:'studio', typeId:'condo',     name:'Studio',          area:60,  f:1.08, w:3},
-  {id:'br1',    typeId:'condo',     name:'1-Bedroom',       area:85,  f:1.04, w:3},
-  {id:'br2',    typeId:'condo',     name:'2-Bedroom',       area:130, f:1.00, w:4},
-  {id:'br3',    typeId:'condo',     name:'3-Bedroom',       area:175, f:0.98, w:3},
-  {id:'town',   typeId:'townhouse', name:'Townhouse',       area:250, f:1.12, w:2},
-  {id:'villa',  typeId:'villa',     name:'Standalone Villa', area:450, f:1.25, w:1}
-];
+/* ---------- 2. HELPERS & STATE INIT ---------- */
+function housingOn() { return !!(S && S.age >= 18); }
 
-const DEV_PLANS = [
-  {id:'cash', label:'Cash',                        down:1,    years:0,  markup:.85, note:'15% Cash Discount applied'},
-  {id:'p5',   label:'5 years, 0% interest',        down:.10,  years:5,  markup:1.00, note:'Standard developer plan'},
-  {id:'p8',   label:'8 years, equal installments', down:.05,  years:8,  markup:1.25, note:'Extended payment plan'},
-  {id:'p10',  label:'10 years, low down payment',  down:.05,  years:10, markup:1.45, note:'Highest total cost, lowest yearly burden'}
-];
-
-/* ---------- HELPERS ---------- */
-function devOn(){ return !!(S && S.age >= 18); }
-function devInit(o){
+function housingInit(o) {
   if (!o) return;
-  if (!o.egyDev || typeof o.egyDev !== 'object') o.egyDev = {projects:[], year:0, contracts:[], seq:0};
-  if (!o.intlDev || typeof o.intlDev !== 'object') o.intlDev = {projects:[], year:0, contracts:[], seq:0};
-  o.egyDev.projects = Array.isArray(o.egyDev.projects) ? o.egyDev.projects : [];
-  o.egyDev.contracts = Array.isArray(o.egyDev.contracts) ? o.egyDev.contracts : [];
-  o.intlDev.projects = Array.isArray(o.intlDev.projects) ? o.intlDev.projects : [];
-  o.intlDev.contracts = Array.isArray(o.intlDev.contracts) ? o.intlDev.contracts : [];
-}
-
-function egyRate(year){ return Math.max(.0001, rateForCountry('egy', year || gameYear())); }
-function localRate(year){ return Math.max(.0001, rateForCountry(S.country, year || gameYear())); }
-function egpToLocal(egp, year){ return (Number(egp) || 0) / egyRate(year) * localRate(year); }
-function egpFmt(n){ return 'E£' + Math.round(Number(n) || 0).toLocaleString(); }
-
-function displayCost(egp, year){
-  if (S.country === 'egy') return egpFmt(egp);
-  const localCost = Math.round(egpToLocal(egp, year));
-  return `${typeof money === 'function' ? money(localCost) : localCost} (${egpFmt(egp)})`;
-}
-
-function devPick(list){ return list[Math.floor(Math.random() * list.length)]; }
-function devWeighted(list){ const t=list.reduce((a,x)=>a+x.w,0); let r=Math.random()*t; for(const x of list){ r-=x.w; if(r<=0) return x; } return list[0]; }
-
-/* ---------- GENERATION ---------- */
-function devGenerateProjects(isEgypt){
-  const y = gameYear(), out = [];
-  if (isEgypt) {
-    const idx = p14EgyptPriceIndex ? p14EgyptPriceIndex(y) : 1000;
-    const rosterSource = S.country === 'egy' ? EGY_PROJECT_ROSTER : EGY_EXPAT_ROSTER;
-    for (let i = 0; i < 4; i++){ 
-      const roster = devPick(rosterSource), unit = devWeighted(DEV_UNITS);
-      const size = Math.round(unit.area * (.9 + Math.random() * .2));
-      const ready = Math.random() < .30;
-      const listEGP = Math.round(size * roster.ppm * unit.f * (.85 + Math.random() * .25) * (ready ? 1.20 : 1) * idx / 1000) * 1000;
-      out.push({
-        id: 'egyp_' + y + '_' + i + '_' + Math.random().toString(36).slice(2,5),
-        developer: roster.dev, compound: roster.name, location: roster.loc, tag: roster.tag,
-        hap: roster.hap, hp: roster.hp, unitId: unit.id, unitName: unit.name, typeId: unit.typeId,
-        size, ready, listEGP, year: y, isEgypt: true
-      });
-    }
-  } else {
-    const rosterSource = INTL_DEVELOPER_ROSTERS[S.country] || [
-      { dev: 'Global Zenith Properties', name: 'Metropolitan Residences', loc: 'City Center', ppm: 7000, hap: 3, hp: 2, tag: 'Modern Living' }
-    ];
-    for (let i = 0; i < 3; i++){
-      const roster = devPick(rosterSource), unit = devWeighted(DEV_UNITS);
-      const size = Math.round(unit.area * (.9 + Math.random() * .2));
-      const ready = Math.random() < .35;
-      const listLocal = Math.round(size * roster.ppm * unit.f * (.9 + Math.random() * .2));
-      out.push({
-        id: 'intlp_' + y + '_' + i + '_' + Math.random().toString(36).slice(2,5),
-        developer: roster.dev, compound: roster.name, location: roster.loc, tag: roster.tag,
-        hap: roster.hap, hp: roster.hp, unitId: unit.id, unitName: unit.name, typeId: unit.typeId,
-        size, ready, listLocal, year: y, isEgypt: false
-      });
-    }
+  if (!o.housingStore || typeof o.housingStore !== 'object') {
+    o.housingStore = { selectedTab: 'compounds', selectedLoc: 'all', contracts: [] };
   }
-  return out;
 }
 
-function devMarket(isEgypt){
-  devInit(S);
-  const targetObj = isEgypt ? S.egyDev : S.intlDev;
-  if (targetObj.year !== gameYear() || !targetObj.projects.length){
-    targetObj.projects = devGenerateProjects(isEgypt);
-    targetObj.year = gameYear();
-  }
-  return targetObj.projects;
-}
+function egyRate(year) { return Math.max(0.0001, typeof rateForCountry === 'function' ? rateForCountry('egy', year || gameYear()) : 1); }
+function localRate(year) { return Math.max(0.0001, typeof rateForCountry === 'function' ? rateForCountry(S.country, year || gameYear()) : 1); }
+function egpToLocal(egp, year) { return (Number(egp) || 0) / egyRate(year) * localRate(year); }
+function egpFmt(n) { return 'E£' + Math.round(Number(n) || 0).toLocaleString(); }
 
-/* ---------- BUYING LOGIC ---------- */
-function devBuy(projectId, planId, isEgypt){
-  devInit(S);
-  const market = devMarket(isEgypt);
-  const proj = market.find(p => p.id === projectId), plan = DEV_PLANS.find(p => p.id === planId);
-  if (!proj || !plan) return hint('This offer has expired.');
-
+function displayCurrency(amountEGP, isEgypt) {
   const y = gameYear();
-  let price, down, annual, downPlayer;
+  if (isEgypt && S.country === 'egy') return egpFmt(amountEGP);
+  if (isEgypt && S.country !== 'egy') {
+    const localVal = Math.round(egpToLocal(amountEGP, y));
+    return `${typeof money === 'function' ? money(localVal) : localVal} (${egpFmt(amountEGP)})`;
+  }
+  return typeof money === 'function' ? money(amountEGP) : '$' + Math.round(amountEGP).toLocaleString();
+}
 
-  if (isEgypt) {
-    price = Math.round(proj.listEGP * plan.markup);
-    down = plan.years === 0 ? price : Math.round(price * plan.down);
-    annual = plan.years > 0 ? Math.round((price - down) / plan.years) : 0;
-    downPlayer = Math.round(egpToLocal(down, y));
-  } else {
-    price = Math.round(proj.listLocal * plan.markup);
-    down = plan.years === 0 ? price : Math.round(price * plan.down);
-    annual = plan.years > 0 ? Math.round((price - down) / plan.years) : 0;
-    downPlayer = down;
+/* ---------- 3. PURCHASE & PAYMENT LOGIC ---------- */
+function purchaseProperty(rosterId, unitId, planId, isCompound, isEgypt) {
+  housingInit(S);
+  const y = gameYear();
+  const catalog = isCompound 
+    ? (COMPOUND_ROSTER[isEgypt ? 'egy' : S.country] || COMPOUND_ROSTER.egy)
+    : (LOCAL_MARKET_ROSTER[isEgypt ? 'egy' : S.country] || LOCAL_MARKET_ROSTER.egy);
+
+  const prop = catalog.find(p => p.id === rosterId);
+  const unit = PROPERTY_UNITS.find(u => u.id === unitId);
+  const plan = isCompound ? COMPOUND_PLANS.find(p => p.id === planId) : { downPct: 1.0, years: 0, markup: 1.0 };
+
+  if (!prop || !unit) return hint('Selected property or unit is no longer available.');
+
+  // Calculate Base Price in native currency
+  const basePrice = Math.round(unit.area * prop.ppm * unit.mult * (p14EgyptPriceIndex ? p14EgyptPriceIndex(y) / 1000 : 1));
+  const finalPrice = Math.round(basePrice * plan.markup);
+  const downPaymentEGP = Math.round(finalPrice * plan.downPct);
+
+  // Convert required down payment to player's wallet currency
+  const requiredDownPlayer = (isEgypt && S.country !== 'egy') ? Math.round(egpToLocal(downPaymentEGP, y)) : downPaymentEGP;
+
+  // STRICT CASH CHECK
+  if (S.wealth < requiredDownPlayer) {
+    alert(`INSUFFICIENT FUNDS!\n\nRequired Down Payment: ${displayCurrency(downPaymentEGP, isEgypt)}\nYour Checking Balance: ${typeof money === 'function' ? money(S.wealth) : S.wealth}\n\nYou need ${displayCurrency(requiredDownPlayer - S.wealth, isEgypt)} more in cash to complete this transaction.`);
+    return hint(`Insufficient cash balance for down payment.`);
   }
 
-  if (S.wealth < downPlayer) return hint(`You need ${isEgypt ? displayCost(down, y) : money(down)} down payment.`);
-  S.wealth -= downPlayer;
+  // Deduct Down Payment
+  S.wealth -= requiredDownPlayer;
 
-  const targetObj = isEgypt ? S.egyDev : S.intlDev;
-  const c = {
-    id: (isEgypt ? 'egyc_' : 'intlc_') + (++targetObj.seq) + '_' + Math.random().toString(36).slice(2,5),
-    projectName: `${proj.unitName} at ${proj.compound}`, developer: proj.developer, location: proj.location,
-    typeId: proj.typeId, size: proj.size, planLabel: plan.label, hap: proj.hap, hp: proj.hp,
-    boughtYear: y, price, down, annual, paid: down, remaining: price - down, missed: 0,
-    deliveryYear: proj.ready ? y : y + 2 + Math.floor(Math.random() * 3), ready: !!proj.ready, delivered: false, homeId: null, status: 'active', isEgypt
+  // Build Internal Property Record for S.ownedHomes
+  const internalValue = (isEgypt ? finalPrice / egyRate(y) : finalPrice / localRate(y));
+  const homeId = 'h_' + Math.random().toString(36).slice(2, 8);
+
+  const newHome = {
+    id: homeId,
+    name: `${unit.name} - ${prop.name}`,
+    catId: 'custom_' + prop.id,
+    value: Math.round(internalValue),
+    balance: isCompound && plan.years > 0 ? Math.round(internalValue * (1 - plan.downPct)) : 0,
+    cond: 100,
+    rentInc: Math.round(internalValue * (isCompound ? 0.0045 : 0.0035) * 12),
+    status: 'vacant',
+    pay: 1,
+    rate: 0.0001,
+    features: isCompound ? ['24/7 Gated Security', 'Clubhouse & Pool', 'Private Parking', 'Landscaped Gardens'] : ['Local Neighborhood Access', 'Private Meter'],
+    location: prop.loc,
+    marketCountry: isEgypt ? 'egy' : S.country,
+    typeId: unit.id,
+    p12: true,
+    hapBuff: prop.hap,
+    hpBuff: prop.hp
   };
 
-  targetObj.contracts.push(c);
-  targetObj.projects = targetObj.projects.filter(p => p.id !== projectId);
-  
-  if (proj.ready) devDeliver(c);
-  
-  log(`Signed contract with ${c.developer} for ${c.projectName}. Paid ${isEgypt ? displayCost(down, y) : money(down)} down.`);
+  S.ownedHomes = S.ownedHomes || [];
+  S.ownedHomes.push(newHome);
+
+  // If installment plan exists, record active contract
+  if (isCompound && plan.years > 0) {
+    const annualInstallmentEGP = Math.round((finalPrice - downPaymentEGP) / plan.years);
+    S.housingStore.contracts.push({
+      id: 'c_' + homeId,
+      homeId: homeId,
+      name: newHome.name,
+      totalEGP: finalPrice,
+      remainingEGP: finalPrice - downPaymentEGP,
+      annualEGP: annualInstallmentEGP,
+      yearsLeft: plan.years,
+      isEgypt: isEgypt
+    });
+  }
+
+  log(`Successfully purchased ${newHome.name} in ${prop.loc}! Paid ${displayCurrency(downPaymentEGP, isEgypt)} down.`);
+  if (typeof realismNotice === 'function') {
+    realismNotice('Property Purchased', `You acquired ${newHome.name}. It is now listed under Real Estate where you can live in it, furnish it, or rent it out to tenants.`);
+  }
   render();
 }
 
-function devDeliver(c){
+/* ---------- 4. YEARLY CONTRACT PROCESSOR ---------- */
+function housingYear() {
+  if (!S || S.dead || S.age < 18) return;
+  housingInit(S);
   const y = gameYear();
-  const valueInternal = c.isEgypt ? (c.price / egyRate(y)) : (c.price / localRate(y));
-  
-  const listing = {
-    catId: (c.isEgypt ? 'egydev_' : 'intldev_') + c.id, typeId: c.typeId, name: c.projectName,
-    priceInternal: Math.round(valueInternal), condition: 100, features: ['Gated Community', '24/7 Security'], location: c.location, hap: c.hap, hp: c.hp
-  };
-  const cat = typeof p12EnsureListingCategory === 'function' ? p12EnsureListingCategory(listing) : { id: listing.catId };
-  
-  const home = {
-    id: 'h_dev_' + Math.random().toString(36).slice(2,8), catId: cat.id, name: c.projectName,
-    value: Math.round(valueInternal), balance: Math.round(c.isEgypt ? c.remaining / egyRate(y) : c.remaining / localRate(y)),
-    cond: 100, rentInc: Math.round(valueInternal * .004 * 12), status: 'vacant', pay: 1, rate: .0001,
-    features: listing.features, location: c.location, marketCountry: c.isEgypt ? 'egy' : S.country, typeId: c.typeId, p12: true, devContract: c.id
-  };
-  
-  S.ownedHomes.push(home);
-  c.delivered = true; c.homeId = home.id;
-  log(`Key Handover! You now own ${c.projectName} in ${c.location}. It has been added to your properties.`);
-}
 
-function devYear(){
-  if (!S || S.dead) return;
-  devInit(S);
-  const y = gameYear();
-  
-  [...S.egyDev.contracts, ...S.intlDev.contracts].forEach(c => {
-    if (c.status !== 'active') return;
-    if (c.remaining > 0){
-      const due = Math.min(c.annual, c.remaining);
-      const duePlayer = c.isEgypt ? Math.round(egpToLocal(due, y)) : due;
-      
-      if (S.wealth >= duePlayer){
-        S.wealth -= duePlayer;
-        c.remaining -= due; c.paid += due; c.missed = 0;
-      } else {
-        c.missed++;
-        if (c.missed >= 2){
-          c.status = 'cancelled';
-          log(`Contract Cancelled: Missed 2 installments for ${c.projectName}.`);
-          return;
-        }
+  S.housingStore.contracts.forEach(c => {
+    if (c.remainingEGP <= 0) return;
+
+    const dueEGP = Math.min(c.annualEGP, c.remainingEGP);
+    const duePlayer = (c.isEgypt && S.country !== 'egy') ? Math.round(egpToLocal(dueEGP, y)) : dueEGP;
+
+    if (S.wealth >= duePlayer) {
+      S.wealth -= duePlayer;
+      S.expenses = (S.expenses || 0) + duePlayer;
+      c.remainingEGP -= dueEGP;
+      c.yearsLeft--;
+
+      // Update balance on owned property
+      const home = S.ownedHomes.find(h => h.id === c.homeId);
+      if (home) {
+        home.balance = Math.max(0, Math.round(c.isEgypt ? c.remainingEGP / egyRate(y) : c.remainingEGP / localRate(y)));
       }
+      log(`Installment Paid: ${displayCurrency(dueEGP, c.isEgypt)} for ${c.name}. Remaining: ${displayCurrency(c.remainingEGP, c.isEgypt)}.`);
+    } else {
+      log(`MISSED INSTALLMENT on ${c.name}! Late fees applied.`);
+      c.remainingEGP = Math.round(c.remainingEGP * 1.05);
+      if (typeof fx === 'function') fx({ happiness: -5 });
     }
-    if (!c.delivered && y >= c.deliveryYear) devDeliver(c);
-    if (c.delivered && c.remaining <= 0) c.status = 'done';
   });
-  
-  S.egyDev.projects = [];
-  S.intlDev.projects = [];
 }
 
-/* ---------- UI PANEL RENDER ---------- */
-function devRenderPanel(){
-  const view = $('view'); if (!view || typeof activeTab === 'undefined' || activeTab !== 'assets' || !devOn()) return;
-  const old = $('dev-panel'); if (old) old.remove();
-  
-  devInit(S);
-  const sec = document.createElement('section'); sec.className = 'card'; sec.id = 'dev-panel';
-  let html = `<h3>Developer Real Estate Markets</h3>`;
+/* ---------- 5. UI PANEL RENDER ENGINE ---------- */
+function renderHousingUI() {
+  const view = $('view'); if (!view || typeof activeTab === 'undefined' || activeTab !== 'assets' || !housingOn()) return;
+  const old = $('housing-custom-panel'); if (old) old.remove();
 
-  // 1. LOCAL DEVELOPER MARKET (Germany, USA, UK, UAE, Egypt)
-  if (S.country !== 'egy' && INTL_DEVELOPER_ROSTERS[S.country]) {
-    const localMarket = devMarket(false);
-    html += `<h4 style="margin:16px 0 8px; color:var(--cyan);">Local Developers (${(COUNTRIES[S.country]||{}).name || S.country.toUpperCase()})</h4>
-             <p class="muted" style="font-size:0.85rem">New off-plan and ready-to-move compounds from local developers in your current country.</p>`;
-    html += renderMarketCards(localMarket, false);
+  housingInit(S);
+  const sec = document.createElement('section'); sec.className = 'card'; sec.id = 'housing-custom-panel';
+
+  const isExpat = S.country !== 'egy';
+  const currentTab = S.housingStore.selectedTab || 'compounds';
+
+  let html = `
+    <h3>Primary Real Estate Market</h3>
+    
+    <!-- Comparison Banner -->
+    <div style="background:var(--line); padding:12px; border-radius:8px; margin-bottom:14px; font-size:0.85rem;">
+      <b>Market Comparison & Guide:</b>
+      <div style="display:flex; gap:12px; margin-top:6px;">
+        <div style="flex:1;">
+          <b style="color:var(--cyan)">Gated Compounds</b>
+          <ul style="margin:4px 0; padding-left:16px;" class="muted">
+            <li>24/7 Security & High Privacy</li>
+            <li>Landscaped gardens, club, pool</li>
+            <li>Happiness (+2 to +5) & Health buffs</li>
+            <li>Flexible 5–10 yr installment plans</li>
+          </ul>
+        </div>
+        <div style="flex:1;">
+          <b style="color:var(--mint)">Local Standalone Area</b>
+          <ul style="margin:4px 0; padding-left:16px;" class="muted">
+            <li>30% - 50% cheaper per m²</li>
+            <li>Immediate move-in (No delivery delays)</li>
+            <li>Zero monthly compound fees</li>
+            <li>Full cash upfront required</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Sub-Tabs -->
+    <div class="sub-tabs" style="margin-bottom:12px;">
+      <button class="sub-tab ${currentTab === 'compounds' ? 'on' : ''}" onclick="S.housingStore.selectedTab='compounds'; render();">Gated Compounds</button>
+      <button class="sub-tab ${currentTab === 'local' ? 'on' : ''}" onclick="S.housingStore.selectedTab='local'; render();">Local Standalone Areas</button>
+      ${isExpat ? `<button class="sub-tab ${currentTab === 'egy_diaspora' ? 'on' : ''}" onclick="S.housingStore.selectedTab='egy_diaspora'; render();">Egypt Diaspora Investments</button>` : ''}
+    </div>
+  `;
+
+  // Determine Active Catalog Source
+  let isEgyptData = (currentTab === 'egy_diaspora') || (S.country === 'egy');
+  let activeCatalog = [];
+
+  if (currentTab === 'compounds' || currentTab === 'egy_diaspora') {
+    activeCatalog = COMPOUND_ROSTER[isEgyptData ? 'egy' : S.country] || COMPOUND_ROSTER.egy;
+  } else {
+    activeCatalog = LOCAL_MARKET_ROSTER[isEgyptData ? 'egy' : S.country] || LOCAL_MARKET_ROSTER.egy;
   }
 
-  // 2. EGYPTIAN DEVELOPER MARKET (Accessible locally or as Diaspora)
-  const egyMarketData = devMarket(true);
-  html += `<h4 style="margin:24px 0 8px; color:var(--amber);">${S.country === 'egy' ? 'Egyptian Developer Compounds' : 'Egyptian Diaspora Investment Market'}</h4>
-           <p class="muted" style="font-size:0.85rem">${S.country === 'egy' ? 'Top compounds in New Cairo, Zayed, Alexandria & North Coast.' : 'Invest in real estate back home in Egypt. Contracts are locked in EGP.'}</p>`;
-  html += renderMarketCards(egyMarketData, true);
+  // Render Interactive Property Menu
+  html += `<div style="display:flex; flex-direction:column; gap:12px;">`;
 
+  activeCatalog.forEach(prop => {
+    html += `
+      <div style="border:1px solid var(--line); border-radius:8px; padding:12px; background:var(--bg);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <b style="font-size:1.05rem;">${prop.name} ${prop.dev ? 'by ' + prop.dev : ''}</b>
+          <span style="font-size:0.8rem; background:var(--line); padding:2px 8px; border-radius:4px;">${prop.loc}</span>
+        </div>
+        <p class="muted" style="font-size:0.85rem; margin:4px 0 8px;"><i>"${prop.tag}"</i> · Happiness +${prop.hap}, Health +${prop.hp}</p>
+
+        <!-- Unit & Plan Selector Form -->
+        <details>
+          <summary style="cursor:pointer; color:var(--cyan); font-weight:bold;">Select Unit Type & Payment Terms</summary>
+          <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--line);">
+            ${PROPERTY_UNITS.map(unit => {
+              const baseEGP = Math.round(unit.area * prop.ppm * unit.mult);
+              return `
+                <div style="border:1px solid var(--line); border-radius:6px; padding:8px; margin-bottom:8px;">
+                  <b>${unit.name} (${unit.area} m²)</b><br>
+                  <span class="muted" style="font-size:0.85rem">Base Cash Price: ${displayCurrency(Math.round(baseEGP * 0.85), isEgyptData)}</span>
+                  
+                  <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">
+                    ${(currentTab === 'local' ? [{ id: 'cash', label: 'Cash Full Payment', downPct: 1.0, markup: 1.0 }] : COMPOUND_PLANS).map(plan => {
+                      const finalEGP = Math.round(baseEGP * plan.markup);
+                      const downEGP = Math.round(finalEGP * plan.downPct);
+                      return `
+                        <button class="btn" style="font-size:0.75rem; flex:1; min-width:140px; text-align:left;" onclick="purchaseProperty('${prop.id}', '${unit.id}', '${plan.id}', ${currentTab !== 'local'}, ${isEgyptData})">
+                          <b>${plan.label}</b><br>
+                          Down: ${displayCurrency(downEGP, isEgyptData)}
+                        </button>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </details>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
   sec.innerHTML = html;
   view.appendChild(sec);
 }
 
-function renderMarketCards(market, isEgypt){
-  return market.map(p => {
-    const y = gameYear();
-    return `
-    <div style="border: 1px solid var(--line); border-radius: 8px; margin-bottom: 12px; padding: 12px; background: var(--bg);">
-      <b style="font-size:1.05rem">${p.compound} by ${p.developer}</b><br>
-      <span class="muted" style="font-size:0.85rem"><i>"${p.tag}"</i></span><br>
-      <div style="margin: 8px 0; font-size:0.9rem;">
-        ${p.unitName} (${p.size} m²) in ${p.location}<br>
-        <span style="color:var(--mint)">Amenities: Happiness +${p.hap}, Health +${p.hp}</span><br>
-        <b>Base Cost: ${isEgypt ? displayCost(p.listEGP, y) : money(p.listLocal)}</b>
-      </div>
-      <details>
-        <summary style="cursor:pointer; color:var(--cyan); font-weight:bold;">View Installment Plans</summary>
-        <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
-          ${DEV_PLANS.map(plan => {
-            const price = Math.round((isEgypt ? p.listEGP : p.listLocal) * plan.markup);
-            const down = plan.years === 0 ? price : Math.round(price * plan.down);
-            const ann = plan.years > 0 ? Math.round((price - down) / plan.years) : 0;
-            return `<button class="btn" style="font-size:0.8rem; text-align:left;" onclick="devBuy('${p.id}', '${plan.id}',${isEgypt})">
-              <b>${plan.label}</b> — Down: ${isEgypt ? displayCost(down, y) : money(down)}${ann ? ' · ' + (isEgypt ? displayCost(ann, y) : money(ann)) + '/yr' : ''}
-            </button>`;
-          }).join('')}
-        </div>
-      </details>
-    </div>`;
-  }).join('');
-}
-
-GameHooks.on('migrate', devInit);
-GameHooks.on('newGame', devInit);
-GameHooks.on('year', devYear);
-GameHooks.on('render', devRenderPanel);
+/* ---------- 6. HOOK REGISTER ---------- */
+GameHooks.on('migrate', housingInit);
+GameHooks.on('newGame', housingInit);
+GameHooks.on('year', housingYear);
+GameHooks.on('render', renderHousingUI);
