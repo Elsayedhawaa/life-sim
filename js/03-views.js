@@ -94,9 +94,7 @@ function viewPart(){
     })
     .join('');
   return `<section class="card"><h3>Part-time work</h3><p class="muted">${cur ? `Working as a ${cur.title.toLowerCase()}.` : 'Side job for students.'}</p>${list}${cur ? '<button class="btn" onclick="quitPart()">Quit job</button>' : ''}</section>`;
-card"><h3>Part-time work</h3><p class="muted">${cur?`Working as a ${cur.title.toLowerCase()}.`:'Side job for students.'}</p>${list}${cur?'<button class="btn" onclick="quitPart()">Quit job</button>':''}</section>`;
 }
-
 /* CAREER TAB: multi-tier ranks, work schedules, overtime, retirement */
 function viewCareer(){
   const net = S.income - S.expenses;
