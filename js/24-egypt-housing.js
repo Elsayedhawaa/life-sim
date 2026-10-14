@@ -106,35 +106,33 @@ function purchaseProperty(rosterId, unitId, planId, isCompound, isEgypt) {
 
   if (!prop || !unit) return hint('Selected property or unit is no longer available.');
 
-  // Calculate Base Price in native currency
-  const basePrice = Math.round(unit.area * prop.ppm * unit.mult * (p14EgyptPriceIndex ? p14EgyptPriceIndex(y) / 1000 : 1));
+  // Calculate Base Price
+  const basePrice = Math.round(unit.area * prop.ppm * unit.mult * (typeof p14EgyptPriceIndex === 'function' ? p14EgyptPriceIndex(y) / 1000 : 1));
   const finalPrice = Math.round(basePrice * plan.markup);
   const downPaymentEGP = Math.round(finalPrice * plan.downPct);
 
-  // Convert required down payment to player's wallet currency
-  const requiredDownPlayer = (isEgypt && S.country !== 'egy') ? Math.round(egpToLocal(downPaymentEGP, y)) : downPaymentEGP;
+  // Convert required values to player's wallet currency
+  const localFinalPrice = (isEgypt && S.country !== 'egy') ? Math.round(egpToLocal(finalPrice, y)) : finalPrice;
+  const localDown = (isEgypt && S.country !== 'egy') ? Math.round(egpToLocal(downPaymentEGP, y)) : downPaymentEGP;
+  const localRemaining = localFinalPrice - localDown;
 
   // STRICT CASH CHECK
-  if (S.wealth < requiredDownPlayer) {
-    alert(`INSUFFICIENT FUNDS!\n\nRequired Down Payment: ${displayCurrency(downPaymentEGP, isEgypt)}\nYour Checking Balance: ${typeof money === 'function' ? money(S.wealth) : S.wealth}\n\nYou need ${displayCurrency(requiredDownPlayer - S.wealth, isEgypt)} more in cash to complete this transaction.`);
+  if (S.wealth < localDown) {
+    alert(`INSUFFICIENT FUNDS!\n\nRequired Down Payment: ${displayCurrency(downPaymentEGP, isEgypt)}\nYour Checking Balance: ${typeof money === 'function' ? money(S.wealth) : S.wealth}\n\nYou need ${displayCurrency(localDown - S.wealth, false)} more in cash to complete this transaction.`);
     return hint(`Insufficient cash balance for down payment.`);
   }
 
-  // Deduct Down Payment
-  S.wealth -= requiredDownPlayer;
-
-  // Build Internal Property Record for S.ownedHomes
-  const internalValue = (isEgypt ? finalPrice / egyRate(y) : finalPrice / localRate(y));
+  S.wealth -= localDown;
   const homeId = 'h_' + Math.random().toString(36).slice(2, 8);
 
   const newHome = {
     id: homeId,
     name: `${unit.name} - ${prop.name}`,
     catId: 'custom_' + prop.id,
-    value: Math.round(internalValue),
-    balance: isCompound && plan.years > 0 ? Math.round(internalValue * (1 - plan.downPct)) : 0,
+    value: localFinalPrice, // FIXED: Now stores the true un-divided value
+    balance: isCompound && plan.years > 0 ? localRemaining : 0,
     cond: 100,
-    rentInc: Math.round(internalValue * (isCompound ? 0.0045 : 0.0035) * 12),
+    rentInc: Math.round(localFinalPrice * (isCompound ? 0.0045 : 0.0035) * 12),
     status: 'vacant',
     pay: 1,
     rate: 0.0001,
@@ -150,7 +148,6 @@ function purchaseProperty(rosterId, unitId, planId, isCompound, isEgypt) {
   S.ownedHomes = S.ownedHomes || [];
   S.ownedHomes.push(newHome);
 
-  // If installment plan exists, record active contract
   if (isCompound && plan.years > 0) {
     const annualInstallmentEGP = Math.round((finalPrice - downPaymentEGP) / plan.years);
     S.housingStore.contracts.push({
@@ -167,7 +164,7 @@ function purchaseProperty(rosterId, unitId, planId, isCompound, isEgypt) {
 
   log(`Successfully purchased ${newHome.name} in ${prop.loc}! Paid ${displayCurrency(downPaymentEGP, isEgypt)} down.`);
   if (typeof realismNotice === 'function') {
-    realismNotice('Property Purchased', `You acquired ${newHome.name}. It is now listed under Real Estate where you can live in it, furnish it, or rent it out to tenants.`);
+    realismNotice('Property Purchased', `You acquired ${newHome.name}. It is now listed under Real Estate. The correct local market value has been applied.`);
   }
   render();
 }
@@ -190,10 +187,9 @@ function housingYear() {
       c.remainingEGP -= dueEGP;
       c.yearsLeft--;
 
-      // Update balance on owned property
       const home = S.ownedHomes.find(h => h.id === c.homeId);
       if (home) {
-        home.balance = Math.max(0, Math.round(c.isEgypt ? c.remainingEGP / egyRate(y) : c.remainingEGP / localRate(y)));
+        home.balance = (c.isEgypt && S.country !== 'egy') ? Math.round(egpToLocal(c.remainingEGP, y)) : c.remainingEGP;
       }
       log(`Installment Paid: ${displayCurrency(dueEGP, c.isEgypt)} for ${c.name}. Remaining: ${displayCurrency(c.remainingEGP, c.isEgypt)}.`);
     } else {
@@ -204,7 +200,42 @@ function housingYear() {
   });
 }
 
-/* ---------- 5. UI PANEL RENDER ENGINE ---------- */
+/* ---------- 5. INSTANT RENT OVERRIDE ---------- */
+const P24_setRentProperty = typeof setRentProperty === 'function' ? setRentProperty : function(){};
+setRentProperty = function(idx) {
+    const h = S.ownedHomes[idx];
+    if (h && h.p12 && h.status !== 'rent' && h.status !== 'p12-rented') {
+        const pct = prompt(`Enter annual rent increase percentage (e.g. 10 for 10%):`, "10");
+        if (pct !== null) {
+            // First call original to set it up
+            P24_setRentProperty(idx);
+            
+            // Instantly rent it out at market value with the agreed increase
+            const country = h.marketCountry || S.country;
+            const rate = Math.max(.0001, typeof rateForCountry==='function' ? rateForCountry(country, gameYear()) : 1);
+            const yieldRate = Math.max(.001, Number(h.marketRentRate || .0045)); // High yield for compounds
+            const localMonthly = Math.max(1, Math.round((Number(h.value)||1000) * yieldRate));
+            
+            h.rentLocalAmount = localMonthly;
+            h.rentAmount = localMonthly / rate;
+            h.rentInc = h.rentAmount * 12;
+            h.rentStepPct = Number(pct) || 0;
+            h.rentContractYears = 0;
+            h.p23AutoMarketRent = false;
+            h.tenant = true;
+            h.status = 'p12-rented';
+            h.tenantStartYear = gameYear();
+            
+            log(`You immediately rented out ${h.name} for ${localMonthly.toLocaleString()} per month with a ${h.rentStepPct}% annual increase.`);
+            if (typeof render === 'function') render();
+            return;
+        }
+    }
+    // Fallback to normal behavior if prompt is cancelled or it's a legacy property
+    P24_setRentProperty(idx);
+};
+
+/* ---------- 6. UI PANEL RENDER ENGINE ---------- */
 function renderHousingUI() {
   const view = $('view'); if (!view || typeof activeTab === 'undefined' || activeTab !== 'assets' || !housingOn()) return;
   const old = $('housing-custom-panel'); if (old) old.remove();
@@ -218,7 +249,6 @@ function renderHousingUI() {
   let html = `
     <h3>Primary Real Estate Market</h3>
     
-    <!-- Comparison Banner -->
     <div style="background:var(--line); padding:12px; border-radius:8px; margin-bottom:14px; font-size:0.85rem;">
       <b>Market Comparison & Guide:</b>
       <div style="display:flex; gap:12px; margin-top:6px;">
@@ -243,7 +273,6 @@ function renderHousingUI() {
       </div>
     </div>
 
-    <!-- Navigation Sub-Tabs -->
     <div class="sub-tabs" style="margin-bottom:12px;">
       <button class="sub-tab ${currentTab === 'compounds' ? 'on' : ''}" onclick="S.housingStore.selectedTab='compounds'; render();">Gated Compounds</button>
       <button class="sub-tab ${currentTab === 'local' ? 'on' : ''}" onclick="S.housingStore.selectedTab='local'; render();">Local Standalone Areas</button>
@@ -251,7 +280,6 @@ function renderHousingUI() {
     </div>
   `;
 
-  // Determine Active Catalog Source
   let isEgyptData = (currentTab === 'egy_diaspora') || (S.country === 'egy');
   let activeCatalog = [];
 
@@ -261,7 +289,6 @@ function renderHousingUI() {
     activeCatalog = LOCAL_MARKET_ROSTER[isEgyptData ? 'egy' : S.country] || LOCAL_MARKET_ROSTER.egy;
   }
 
-  // Render Interactive Property Menu
   html += `<div style="display:flex; flex-direction:column; gap:12px;">`;
 
   activeCatalog.forEach(prop => {
@@ -273,12 +300,11 @@ function renderHousingUI() {
         </div>
         <p class="muted" style="font-size:0.85rem; margin:4px 0 8px;"><i>"${prop.tag}"</i> · Happiness +${prop.hap}, Health +${prop.hp}</p>
 
-        <!-- Unit & Plan Selector Form -->
         <details>
           <summary style="cursor:pointer; color:var(--cyan); font-weight:bold;">Select Unit Type & Payment Terms</summary>
           <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--line);">
             ${PROPERTY_UNITS.map(unit => {
-              const baseEGP = Math.round(unit.area * prop.ppm * unit.mult);
+              const baseEGP = Math.round(unit.area * prop.ppm * unit.mult * (typeof p14EgyptPriceIndex === 'function' ? p14EgyptPriceIndex(gameYear()) / 1000 : 1));
               return `
                 <div style="border:1px solid var(--line); border-radius:6px; padding:8px; margin-bottom:8px;">
                   <b>${unit.name} (${unit.area} m²)</b><br>
@@ -310,7 +336,7 @@ function renderHousingUI() {
   view.appendChild(sec);
 }
 
-/* ---------- 6. HOOK REGISTER ---------- */
+/* ---------- 7. HOOK REGISTER ---------- */
 GameHooks.on('migrate', housingInit);
 GameHooks.on('newGame', housingInit);
 GameHooks.on('year', housingYear);
