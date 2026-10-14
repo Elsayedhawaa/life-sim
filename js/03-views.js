@@ -94,7 +94,8 @@ function viewPart(){
     .map(p => {
       const why = (S.age < p.minAge ? `From age ${p.minAge}. ` : '') +
                   (S.smarts < p.smarts ? `Needs ${p.smarts}% Smarts.` : '');
-      return `<button class="btn ${cur && cur.id === p.id ? 'sel' : ''}" ${why ? 'disabled' : ''} onclick="takePart('${p.id}')">${p.title} · ${money(p.pay)}/yr<small>${why || 'Stress ' + p.stress + '/yr.'}</small></button>`;
+      const note = why ? why : `Stress ${p.stress}/yr.`;
+      return `<button class="btn ${cur && cur.id === p.id ? 'sel' : ''}" ${why ? 'disabled' : ''} onclick="takePart('${p.id}')">${p.title} · ${money(p.pay)}/yr<small>${note}</small></button>`;
     })
     .join('');
   return `<section class="card"><h3>Part-time work</h3><p class="muted">${cur ? `Working as a ${cur.title.toLowerCase()}.` : 'Side job for students.'}</p>${list}${cur ? '<button class="btn" onclick="quitPart()">Quit job</button>' : ''}</section>`;
@@ -218,15 +219,17 @@ function placeSelector(){
   const t=targetHome();
   return `<p class="muted" style="font-size:.85rem;margin:8px 0 4px">Install in:</p><div class="sub-tabs" style="flex-wrap:wrap">${ids.map(id=>`<button class="sub-tab ${t===id?'on':''}" onclick="setShopHome('${id}')">${homeName(id)}</button>`).join('')}</div>`;
 }
+
 function viewFurnish(){
   const homes=homeChoices();
   if (!homes.length) return '<section class="card"><h3>Furnishing</h3><p class="muted">You need a home first. Rent or buy one in Real Estate.</p></section>';
   const h=targetHome(), f=S.furn[h]||{}, cf=comfort(h), own=S.ownedHomes.find(x=>x.id===h);
   const cats=Object.entries(FURN).map(([k,c])=>`<div style="margin-top:12px"><b>${c.label}</b> <span class="muted" style="font-size:.85rem">${f[k]?'· '+c.opts.find(o=>o.id===f[k]).n:'· nothing yet'}</span>
     ${c.opts.filter(o=>{ const fr=FURN_FROM[o.id]; return !fr||gameYear()>=fr; }).map(o=>{ const pr=Math.round(o.cost*(S.pr||1)*(1-promoPct('furn')));
-      return `<button class="btn ${f[k]===o.id?'sel':''}" ${f[k]===o.id||S.wealth<pr?'disabled':''} onclick="buyFurn('${k}','${o.id}')">${o.n} · ${money(pr)}<small>Happiness +${o.hap}${o.hp?', Health +'+o.hp:''}${o.sm?', Smarts +'+o.sm:''}${o.val&&own?', adds value to your property':''}</small></button>`; }).join('')}</div>`).join('');
+      return `<button class="btn ${f[k]===o.id?'sel':''}" ${f[k]===o.id||S.wealth<pr?'disabled':''} onclick="buyFurn('${k}','${o.id}')">${o.n} ·${money(pr)}<small>Happiness +${o.hap}${o.hp?', Health +'+o.hp:''}${o.sm?', Smarts +'+o.sm:''}${o.val&&own?', adds value to your property':''}</small></button>`; }).join('')}</div>`).join('');
   return `<section class="card"><h3>Furnish & Decorate</h3><p class="muted">Comfort here: Happiness +${cf.hap}, Health +${cf.hp}${cf.sm?', Smarts +'+cf.sm:''} per year while you live in it. ${own?'Flooring and AC add to the property value.':'Furniture in a rental stays behind if you move.'}</p>${placeSelector()}${cats}</section>`;
 }
+
 function viewMine(){
   if (!S.inventory.length) return '<section class="card"><h3>My Items</h3><p class="muted">You do not own anything yet.</p></section>';
   const rows=S.inventory.map(i=>{
