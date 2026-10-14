@@ -82,14 +82,14 @@ function localRate(year) { return Math.max(0.0001, typeof rateForCountry === 'fu
 function egpToLocal(egp, year) { return (Number(egp) || 0) / egyRate(year) * localRate(year); }
 function egpFmt(n) { return 'E£' + Math.round(Number(n) || 0).toLocaleString(); }
 
-function displayCurrency(amountEGP, isEgypt) {
+function displayCurrency(amountBase, isEgypt) {
   const y = gameYear();
-  if (isEgypt && S.country === 'egy') return egpFmt(amountEGP);
+  if (isEgypt && S.country === 'egy') return egpFmt(amountBase);
   if (isEgypt && S.country !== 'egy') {
-    const localVal = Math.round(egpToLocal(amountEGP, y));
-    return `${typeof money === 'function' ? money(localVal) : localVal} (${egpFmt(amountEGP)})`;
+    const localVal = Math.round(egpToLocal(amountBase, y));
+    return `${typeof money === 'function' ? money(localVal) : localVal} (${egpFmt(amountBase)})`;
   }
-  return typeof money === 'function' ? money(amountEGP) : '$' + Math.round(amountEGP).toLocaleString();
+  return typeof money === 'function' ? money(amountBase) : '$' + Math.round(amountBase).toLocaleString();
 }
 
 /* ---------- 3. PURCHASE & PAYMENT LOGIC ---------- */
@@ -106,38 +106,38 @@ function purchaseProperty(rosterId, unitId, planId, isCompound, isEgypt) {
 
   if (!prop || !unit) return hint('Selected property or unit is no longer available.');
 
-  // Calculate Base Price (properly restoring the * 1000 multiplier to prevent micro-pricing)
+  // Calculate True Market Price
   const idx = (isEgypt && typeof p14EgyptPriceIndex === 'function') ? p14EgyptPriceIndex(y) : 1;
   const rawPrice = unit.area * prop.ppm * unit.mult * idx;
-  const basePrice = Math.round(rawPrice / 1000) * 1000;
-  const finalPrice = Math.round(basePrice * plan.markup);
-  const downPaymentEGP = Math.round(finalPrice * plan.downPct);
+  const basePrice = isEgypt ? Math.round(rawPrice / 1000) * 1000 : Math.round(rawPrice);
+  
+  const finalPriceAmt = Math.round(basePrice * plan.markup);
+  const downPaymentAmt = Math.round(finalPriceAmt * plan.downPct);
 
-  // Convert required values to player's wallet currency
-  const localFinalPrice = (isEgypt && S.country !== 'egy') ? Math.round(egpToLocal(finalPrice, y)) : finalPrice;
-  const localDown = (isEgypt && S.country !== 'egy') ? Math.round(egpToLocal(downPaymentEGP, y)) : downPaymentEGP;
+  // CONVERT TO INTERNAL BASE CURRENCY SO IT MATCHES S.WEALTH
+  const internalFinalPrice = isEgypt ? (finalPriceAmt / egyRate(y)) : (finalPriceAmt / localRate(y));
+  const internalDownPayment = isEgypt ? (downPaymentAmt / egyRate(y)) : (downPaymentAmt / localRate(y));
+  const internalRemaining = internalFinalPrice - internalDownPayment;
 
-  // STRICT CASH CHECK
-  if (S.wealth < localDown) {
-    alert(`INSUFFICIENT FUNDS!\n\nRequired Down Payment: ${displayCurrency(downPaymentEGP, isEgypt)}\nYour Checking Balance: ${typeof money === 'function' ? money(S.wealth) : S.wealth}\n\nYou need ${displayCurrency((isEgypt && S.country !== 'egy' ? downPaymentEGP : localDown) - (isEgypt && S.country !== 'egy' ? (S.wealth / localRate(y) * egyRate(y)) : S.wealth), isEgypt)} more to complete this transaction.`);
+  // CASH CHECK using internal base currency
+  if (S.wealth < internalDownPayment) {
+    const missingInternal = internalDownPayment - S.wealth;
+    const missingDisplay = isEgypt ? missingInternal * egyRate(y) : missingInternal * localRate(y);
+    alert(`INSUFFICIENT FUNDS!\n\nRequired Down Payment: ${displayCurrency(downPaymentAmt, isEgypt)}\nYour Bank Balance: ${typeof money === 'function' ? money(S.wealth) : S.wealth}\n\nYou need ${displayCurrency(missingDisplay, isEgypt)} more to complete this transaction.`);
     return hint(`Insufficient cash balance for down payment.`);
   }
 
-  S.wealth -= localDown;
+  S.wealth -= internalDownPayment;
   const homeId = 'h_' + Math.random().toString(36).slice(2, 8);
-
-  // Generate internal game currency value so the inventory renders the local equivalent properly
-  const internalValue = isEgypt ? finalPrice / egyRate(y) : finalPrice / localRate(y);
-  const internalRemaining = isEgypt ? (finalPrice - downPaymentEGP) / egyRate(y) : (finalPrice - downPaymentEGP) / localRate(y);
 
   const newHome = {
     id: homeId,
     name: `${unit.name} - ${prop.name}`,
     catId: 'custom_' + prop.id,
-    value: Math.round(internalValue), 
+    value: Math.round(internalFinalPrice), 
     balance: isCompound && plan.years > 0 ? Math.round(internalRemaining) : 0,
     cond: 100,
-    rentInc: Math.round(internalValue * (isCompound ? 0.0045 : 0.0035) * 12),
+    rentInc: Math.round(internalFinalPrice * (isCompound ? 0.0045 : 0.0035) * 12),
     status: 'vacant',
     pay: 1,
     rate: 0.0001,
@@ -154,22 +154,22 @@ function purchaseProperty(rosterId, unitId, planId, isCompound, isEgypt) {
   S.ownedHomes.push(newHome);
 
   if (isCompound && plan.years > 0) {
-    const annualInstallmentEGP = Math.round((finalPrice - downPaymentEGP) / plan.years);
+    const annualInstallmentAmt = Math.round((finalPriceAmt - downPaymentAmt) / plan.years);
     S.housingStore.contracts.push({
       id: 'c_' + homeId,
       homeId: homeId,
       name: newHome.name,
-      totalEGP: finalPrice,
-      remainingEGP: finalPrice - downPaymentEGP,
-      annualEGP: annualInstallmentEGP,
+      totalAmt: finalPriceAmt,
+      remainingAmt: finalPriceAmt - downPaymentAmt,
+      annualAmt: annualInstallmentAmt,
       yearsLeft: plan.years,
       isEgypt: isEgypt
     });
   }
 
-  log(`Successfully purchased ${newHome.name} in ${prop.loc}! Paid ${displayCurrency(downPaymentEGP, isEgypt)} down.`);
+  log(`Successfully purchased ${newHome.name} in ${prop.loc}! Paid ${displayCurrency(downPaymentAmt, isEgypt)} down.`);
   if (typeof realismNotice === 'function') {
-    realismNotice('Property Purchased', `You acquired ${newHome.name}. The market valuation has been permanently corrected to its true multi-million figure.`);
+    realismNotice('Property Purchased', `You acquired ${newHome.name}. It is safely secured in your assets.`);
   }
   render();
 }
@@ -181,25 +181,25 @@ function housingYear() {
   const y = gameYear();
 
   S.housingStore.contracts.forEach(c => {
-    if (c.remainingEGP <= 0) return;
+    if (c.remainingAmt <= 0) return;
 
-    const dueEGP = Math.min(c.annualEGP, c.remainingEGP);
-    const duePlayer = (c.isEgypt && S.country !== 'egy') ? Math.round(egpToLocal(dueEGP, y)) : dueEGP;
+    const dueAmt = Math.min(c.annualAmt, c.remainingAmt);
+    const dueInternal = c.isEgypt ? (dueAmt / egyRate(y)) : (dueAmt / localRate(y));
 
-    if (S.wealth >= duePlayer) {
-      S.wealth -= duePlayer;
-      S.expenses = (S.expenses || 0) + duePlayer;
-      c.remainingEGP -= dueEGP;
+    if (S.wealth >= dueInternal) {
+      S.wealth -= dueInternal;
+      S.expenses = (S.expenses || 0) + dueInternal;
+      c.remainingAmt -= dueAmt;
       c.yearsLeft--;
 
       const home = S.ownedHomes.find(h => h.id === c.homeId);
       if (home) {
-        home.balance = Math.max(0, Math.round(c.isEgypt ? c.remainingEGP / egyRate(y) : c.remainingEGP / localRate(y)));
+        home.balance = Math.max(0, Math.round(c.isEgypt ? c.remainingAmt / egyRate(y) : c.remainingAmt / localRate(y)));
       }
-      log(`Installment Paid: ${displayCurrency(dueEGP, c.isEgypt)} for ${c.name}. Remaining: ${displayCurrency(c.remainingEGP, c.isEgypt)}.`);
+      log(`Installment Paid: ${displayCurrency(dueAmt, c.isEgypt)} for ${c.name}.`);
     } else {
       log(`MISSED INSTALLMENT on ${c.name}! Late fees applied.`);
-      c.remainingEGP = Math.round(c.remainingEGP * 1.05);
+      c.remainingAmt = Math.round(c.remainingAmt * 1.05);
       if (typeof fx === 'function') fx({ happiness: -5 });
     }
   });
@@ -218,7 +218,7 @@ setRentProperty = function(idx) {
             const rate = Math.max(.0001, typeof rateForCountry==='function' ? rateForCountry(country, gameYear()) : 1);
             const yieldRate = Math.max(.001, Number(h.marketRentRate || .0045));
             
-            // Fixed to convert internal base value into properly scaled local currency
+            // Value is internal. To get local rent, multiply internal value by yield, then by the local rate.
             const localMonthly = Math.max(1, Math.round((Number(h.value)||1000) * yieldRate * rate));
             
             h.rentLocalAmount = localMonthly;
@@ -309,24 +309,23 @@ function renderHousingUI() {
           <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--line);">
             ${PROPERTY_UNITS.map(unit => {
               
-              // Base price fix directly applied to the UI component to restore proper scaling
               const idx = (isEgyptData && typeof p14EgyptPriceIndex === 'function') ? p14EgyptPriceIndex(gameYear()) : 1;
               const rawPrice = unit.area * prop.ppm * unit.mult * idx;
-              const baseEGP = Math.round(rawPrice / 1000) * 1000;
+              const baseAmt = isEgyptData ? Math.round(rawPrice / 1000) * 1000 : Math.round(rawPrice);
               
               return `
                 <div style="border:1px solid var(--line); border-radius:6px; padding:8px; margin-bottom:8px;">
                   <b>${unit.name} (${unit.area} m²)</b><br>
-                  <span class="muted" style="font-size:0.85rem">Base Cash Price: ${displayCurrency(Math.round(baseEGP * 0.85), isEgyptData)}</span>
+                  <span class="muted" style="font-size:0.85rem">Base Cash Price: ${displayCurrency(Math.round(baseAmt * 0.85), isEgyptData)}</span>
                   
                   <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">
                     ${(currentTab === 'local' ? [{ id: 'cash', label: 'Cash Full Payment', downPct: 1.0, markup: 1.0 }] : COMPOUND_PLANS).map(plan => {
-                      const finalEGP = Math.round(baseEGP * plan.markup);
-                      const downEGP = Math.round(finalEGP * plan.downPct);
+                      const finalAmt = Math.round(baseAmt * plan.markup);
+                      const downAmt = Math.round(finalAmt * plan.downPct);
                       return `
                         <button class="btn" style="font-size:0.75rem; flex:1; min-width:140px; text-align:left;" onclick="purchaseProperty('${prop.id}', '${unit.id}', '${plan.id}', ${currentTab !== 'local'}, ${isEgyptData})">
                           <b>${plan.label}</b><br>
-                          Down: ${displayCurrency(downEGP, isEgyptData)}
+                          Down: ${displayCurrency(downAmt, isEgyptData)}
                         </button>
                       `;
                     }).join('')}
