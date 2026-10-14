@@ -1,15 +1,66 @@
-/* ================= PHASE 22 — HARD AGE-PROGRESSION FIX =================
-   Final controller: prevents older wrappers, orphaned events, or corrupt 
-   university data from trapping the player at one age.
+/* ================= PHASE 22 — HARD AGE-PROGRESSION & HOUSING FIX =================
+   Final controller: prevents older wrappers, orphaned events, corrupt 
+   university data, or custom housing IDs from trapping the player at one age.
 */
 
-/* ---------- SAFE UNIVERSTIY YEAR GUARD ---------- */
+/* ---------- 1. SAFE HOUSING & COMFORT GUARD ---------- */
+if (typeof HOUSING_CATALOG !== 'undefined' && Array.isArray(HOUSING_CATALOG)) {
+  const P22_rawCatalogFind = HOUSING_CATALOG.find;
+  HOUSING_CATALOG.find = function(predicate, thisArg) {
+    const found = P22_rawCatalogFind.call(this, predicate, thisArg);
+    if (found) return found;
+
+    // Check custom owned homes if not in standard catalog
+    if (S && Array.isArray(S.ownedHomes)) {
+      const owned = P22_rawCatalogFind.call(S.ownedHomes, predicate, thisArg);
+      if (owned) {
+        return {
+          id: owned.id,
+          name: owned.name,
+          hap: Number(owned.hapBuff) || 2,
+          hp: Number(owned.hpBuff) || 1,
+          sm: 0,
+          pay: 0,
+          util: 0,
+          price: owned.value || 0,
+          kind: 'buy'
+        };
+      }
+    }
+
+    // Safe dummy fallback object to prevent `.hap` / `.hp` reading crashes
+    return { id: 'fallback_home', name: 'Home', hap: 0, hp: 0, sm: 0, pay: 0, util: 0, price: 0, kind: 'rent' };
+  };
+}
+
+if (typeof comfort === 'function') {
+  const P22_rawComfort = comfort;
+  comfort = function(homeId) {
+    try {
+      const res = P22_rawComfort(homeId);
+      if (res && typeof res === 'object') {
+        return {
+          hap: Number(res.hap) || 0,
+          hp: Number(res.hp) || 0,
+          sm: Number(res.sm) || 0
+        };
+      }
+    } catch(e) {}
+
+    if (S && Array.isArray(S.ownedHomes)) {
+      const home = S.ownedHomes.find(x => x.id === homeId);
+      if (home) return { hap: Number(home.hapBuff) || 2, hp: Number(home.hpBuff) || 1, sm: 0 };
+    }
+    return { hap: 0, hp: 0, sm: 0 };
+  };
+}
+
+/* ---------- 2. SAFE UNIVERSITY YEAR GUARD ---------- */
 if (typeof uniYear === 'function') {
   const P22_rawUniYear = uniYear;
   uniYear = function() {
     if (!S || !S.uni) return;
 
-    // Safety fallback for missing effort settings
     if (!S.effort || typeof EFFORT === 'undefined' || !EFFORT[S.effort]) {
       S.effort = 'norm';
       if (typeof EFFORT !== 'undefined' && !EFFORT['norm']) {
@@ -17,7 +68,6 @@ if (typeof uniYear === 'function') {
       }
     }
 
-    // Safety fallback for unrecognized or custom university majors
     if (typeof MAJORS !== 'undefined') {
       const currentMajorKey = S.uni.major || 'general';
       if (!MAJORS[currentMajorKey]) {
@@ -31,7 +81,6 @@ if (typeof uniYear === 'function') {
       S.uni.major = currentMajorKey;
     }
 
-    // Execute progression safely
     try {
       P22_rawUniYear();
     } catch (err) {
@@ -42,14 +91,14 @@ if (typeof uniYear === 'function') {
         if (S.uni.year > maxYears) {
           S.degree = S.uni.major || 'degree';
           S.uni = null;
-          log('Graduated from university!');
+          if (typeof log === 'function') log('Graduated from university!');
         }
       }
     }
   };
 }
 
-/* ---------- AGE PROGRESSION CONTROLLER ---------- */
+/* ---------- 3. AGE PROGRESSION CONTROLLER ---------- */
 const P22_wrappedYearProgression = typeof P21_ageUpBeforeSetupGate === 'function' 
   ? P21_ageUpBeforeSetupGate 
   : (typeof ageUp === 'function' ? ageUp : function(){});
@@ -69,7 +118,7 @@ render = function(){
       }
     }
     S.evId = null;
-    log('Recovered an unfinished event with no choices, so the life simulation can continue.');
+    if (typeof log === 'function') log('Recovered an unfinished event with no choices, so the life simulation can continue.');
   }
   return P22_renderBeforeStaleEventRepair();
 };
@@ -78,10 +127,9 @@ ageUp = function(){
   if(!S) return;
   if(typeof p20Init === 'function') p20Init(S);
 
-  /* Setup requirements should guide the player, never silently consume a year. */
   if(S.pending){
     if(S.ev && Array.isArray(S.ev.choices) && S.ev.choices.length){
-      hint('Choose an option in the current event before advancing time.');
+      if (typeof hint === 'function') hint('Choose an option in the current event before advancing time.');
       return;
     }
     S.pending = false;
@@ -89,22 +137,22 @@ ageUp = function(){
   }
   if(S.age < 18 && !S.school){
     activeTab = 'school';
-    render();
-    hint('Choose a school in Education first. Then press Age up again.');
+    if (typeof render === 'function') render();
+    if (typeof hint === 'function') hint('Choose a school in Education first. Then press Age up again.');
     return;
   }
   if(S.age >= 18 && !S.housing){
     activeTab = 'assets';
-    render();
-    hint('Choose your housing in Real Estate first. Then press Age up again.');
+    if (typeof render === 'function') render();
+    if (typeof hint === 'function') hint('Choose your housing in Real Estate first. Then press Age up again.');
     return;
   }
 
   if(S.parentNeed || S.familyNeed){
     activeTab = 'life';
-    hint('Please answer the family money request first. You can send any amount or decline, then press Age up again.');
+    if (typeof hint === 'function') hint('Please answer the family money request first. You can send any amount or decline, then press Age up again.');
     if(typeof p14ShowParentRequestModal === 'function') p14ShowParentRequestModal();
-    else render();
+    else if (typeof render === 'function') render();
     return;
   }
 
@@ -116,7 +164,6 @@ ageUp = function(){
   const alreadyClosed = !!(story && S.ev && S.ev.title === story.title &&
     (!S.pending) && (!Array.isArray(S.ev.choices) || S.ev.choices.length === 0));
 
-  /* Show each age milestone once. */
   if(story && !done && !resolved && !alreadyClosed){
     if(typeof p20RunAgeStory === 'function') p20RunAgeStory();
     return;
@@ -134,7 +181,6 @@ ageUp = function(){
     console.error('Age progression wrapper failed; attempting safe legacy chain.', e);
   }
 
-  /* Fallback execution if age did not increment */
   if(S && S.age === previousAge && !S.pending && !S.yearPopup &&
      !(S.age < 18 && !S.school) && !(S.age >= 18 && !S.housing)){
     try {
@@ -143,7 +189,7 @@ ageUp = function(){
       if(typeof P20_ageUpBefore === 'function') P20_ageUpBefore();
     } catch(e) {
       console.error('Legacy age progression fallback failed.', e);
-      hint('Age progression encountered an error. Your save is preserved; try reloading the game.');
+      if (typeof hint === 'function') hint('Age progression encountered an error. Your save is preserved; try reloading the game.');
     }
   }
 
@@ -152,13 +198,13 @@ ageUp = function(){
     if((Number(S.homeComfort) || 0) >= 10 && typeof fx === 'function') fx({ happiness: 1 });
     if(typeof save === 'function') save();
   } else if(S && S.age === previousAge && !S.pending && !S.yearPopup){
-    hint(`The game could not complete the year at age ${previousAge}. Your save is preserved; use Age up again to retry.`);
+    if (typeof hint === 'function') hint(`The game could not complete the year at age ${previousAge}. Your save is preserved; use Age up again to retry.`);
     if(progressionError) console.error(progressionError);
   }
   if(S && !S.dead && typeof render === 'function') render();
 };
 
-/* Reconcile state on load */
+/* ---------- 4. STATE REPAIR ON LOAD ---------- */
 function p22RepairAgeState(){
   if(!S) return;
   if(typeof p20Init === 'function') p20Init(S);
