@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lifeline – Realistic Life Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <!-- START SCREEN -->
+  <section id="start" class="card overlay">
+    <h1>Lifeline</h1>
+    <p>It is 2007. You are six years old. Every choice shapes the story ahead.</p>
+    <div class="bigav" id="av-big"></div>
+    <div class="picker" id="av-g"></div>
+    <div class="picker" id="av-t"></div>
+    <select id="country-sel" style="width:100%;margin-bottom:10px"></select>
+    <div class="picker" id="like-p" style="gap:6px"></div>
+    <p class="muted" id="country-desc" style="font-size:.82rem;margin:0 0 12px"></p>
+    <input id="name-input" placeholder="Your name" maxlength="20" autocomplete="off">
+    <button class="btn" id="start-btn" style="text-align:center" onclick="startGame()">Begin life</button>
+    <button class="btn hidden" id="cont-btn" style="text-align:center" onclick="loadGame()">Continue saved life</button>
+  </section>
+
+  <!-- GAME SCREEN -->
+  <div id="game" class="hidden" style="display:flex;flex-direction:column;gap:12px">
+    <header id="head">
+      <section class="card" id="top"></section>
+      <nav class="tabs" id="tabs"></nav>
+    </header>
+    <main id="view" style="display:flex;flex-direction:column;gap:12px"></main>
+    <div id="age-wrap"><div id="hint"></div><button id="age-btn" onclick="ageUp()">Age up</button></div>
+  </div>
+  <!-- Interactive phone, inspired by the supplied alternate version -->
+  <div id="life-phone-modal" class="p16-phone-backdrop hidden" role="dialog" aria-modal="true" aria-label="Your phone">
+    <div class="p16-phone-shell">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div><div class="muted" style="font-size:.72rem">LIFELINE DEVICE</div><h3 id="p16-phone-model" style="margin-top:3px">Your phone</h3></div>
+        <button class="menu-btn" onclick="closeLifePhone()">Close</button>
+      </div>
+      <div id="p16-phone-screen" class="p16-phone-screen"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/01-data.js"></script>
+<script src="js/02-state.js"></script>
+<script src="js/03-views.js"></script>
+<script src="js/04-actions.js"></script>
+<script src="js/05-ageup.js"></script>
+<script src="js/06-setup.js"></script>
+<script src="js/07-era-pack.js"></script>
+<script src="js/08-countries-abroad-love.js"></script>
+<script src="js/09-realism-education-visas.js"></script>
+<script src="js/10-jobs-property-travel.js"></script>
+<script src="js/11-final-realism-flow.js"></script>
+<script src="js/12-p14-realism.js"></script>
+<script src="js/13-p15-jobmarket.js"></script>
+<script src="js/14-p16-phone.js"></script>
+<script src="js/15-p17-family-travel.js"></script>
+<script src="js/16-p18-career-width.js"></script>
+<script src="js/17-p19-career-market.js"></script>
+<script src="js/18-p20-family-milestones.js"></script>
+<script src="js/19-p21-bug-review.js"></script>
+<script src="js/20-p22-age-fix.js"></script>
+<script src="js/21-p23-pay-reviews.js"></script>
+<script src="js/22-p24-ui-cleanup.js"></script>
+<script src="js/23-p25-tab-lock.js"></script>
+<script src="js/99-boot.js"></script>
+</body>
+</html>
