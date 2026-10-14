@@ -545,4 +545,19 @@ render = function () {
     }
   }
   return P40_renderBeforeMedical.apply(this, arguments);
+} /* ============ JOB LOSS CLARITY ============ */
+const P40_fireBefore = workHarder;
+/* Actually the fire happens in packYear. Wrap packYear to log clearly. */
+const P40_packYearBefore = packYear;
+packYear = function () {
+  const jobBefore = S && S.job ? S.job.title : null;
+  const reasonBefore = S && S.job ? (S.job.perf || 0) : 0;
+  P40_packYearBefore.apply(this, arguments);
+  if (jobBefore && S && !S.job) {
+    /* Job was lost this tick — make it loud */
+    const reason = reasonBefore < 25 ? 'Performance fell too low (below 25%).' :
+                   S.econ === 'recession' ? 'The economy is in recession and the company cut staff.' :
+                   'Management decided to let you go.';
+    realismNotice('You lost your job', 'You were released from "' + jobBefore + '". ' + reason + ' Check the Career tab for new openings.');
+  }
 };
