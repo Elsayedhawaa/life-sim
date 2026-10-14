@@ -1,8 +1,36 @@
 /* =====================================================================
-   24. EGYPT HOUSING — Global Diaspora Market, Cross-Border Payments
+   24. GLOBAL & EGYPT HOUSING — Local & Expat Developer Compounds
    Connects ONLY through GameHooks (see 90-hooks.js).
    ===================================================================== */
 
+/* ---------- 1. INTERNATIONAL DEVELOPER ROSTERS ---------- */
+const INTL_DEVELOPER_ROSTERS = {
+  deu: [
+    { dev: 'Instone Real Estate', name: 'Bavaria Park Quartier', loc: 'Munich', ppm: 11500, hap: 3, hp: 2, tag: 'Modern Sustainable Living in Munich' },
+    { dev: 'Vonovia', name: 'Heidestrasse Terrassen', loc: 'Berlin', ppm: 8500, hap: 2, hp: 1, tag: 'Urban Comfort in the Heart of Berlin' },
+    { dev: 'CG Elementum', name: 'Frankfurt Central Heights', loc: 'Frankfurt', ppm: 9800, hap: 3, hp: 2, tag: 'Skyline Residences & Financial Hub' },
+    { dev: 'BUWOG', name: 'HafenCity Promenade', loc: 'Hamburg', ppm: 10200, hap: 4, hp: 2, tag: 'Waterfront Modern Apartments' }
+  ],
+  usa: [
+    { dev: 'Toll Brothers', name: 'The Estates at Westwood', loc: 'Texas / Austin', ppm: 4200, hap: 3, hp: 2, tag: 'Luxury Suburban Living' },
+    { dev: 'Lennar Homes', name: 'Sunnyvale Innovation Ridge', loc: 'California', ppm: 9500, hap: 4, hp: 2, tag: 'Silicon Valley Smart Homes' },
+    { dev: 'Related Group', name: 'Brickell Financial Towers', loc: 'Miami / Florida', ppm: 7800, hap: 4, hp: 3, tag: 'Coastal High-Rise Luxury' },
+    { dev: 'KB Home', name: 'Cedar Park Residences', loc: 'Seattle / WA', ppm: 6200, hap: 3, hp: 1, tag: 'Eco-Friendly Pacific Living' }
+  ],
+  gbr: [
+    { dev: 'Berkeley Group', name: 'Nine Elms Park', loc: 'London', ppm: 11000, hap: 4, hp: 2, tag: 'Prime Thames-Side Residences' },
+    { dev: 'Barratt Developments', name: 'Deansgate Square', loc: 'Manchester', ppm: 5400, hap: 3, hp: 1, tag: 'Modern High-Rise City Center' },
+    { dev: 'Ballymore', name: 'Canal Quays', loc: 'Birmingham', ppm: 4200, hap: 2, hp: 1, tag: 'Revitalized Waterfront Living' }
+  ],
+  uae: [
+    { dev: 'Emaar Properties', name: 'Downtown Dubai Heights', loc: 'Dubai', ppm: 6800, hap: 5, hp: 3, tag: 'Iconic Boulevard Residences' },
+    { dev: 'DAMAC', name: 'Damac Lagoons', loc: 'Dubai', ppm: 5200, hap: 4, hp: 3, tag: 'Mediterranean-Inspired Waterfront Villas' },
+    { dev: 'Nakheel', name: 'Palm Jumeirah Villas', loc: 'Dubai', ppm: 9200, hap: 5, hp: 4, tag: 'World-Famous Luxury Waterfront' },
+    { dev: 'Aldar Properties', name: 'Yas Island Enclave', loc: 'Abu Dhabi', ppm: 5800, hap: 4, hp: 2, tag: 'Entertainment & Coastal Hub' }
+  ]
+};
+
+/* ---------- 2. EGYPT DEVELOPER ROSTERS ---------- */
 const EGY_PROJECT_ROSTER = [
   { dev: 'TMG', name: 'Madinaty', loc: 'New Cairo', ppm: 65000, hap: 2, hp: 1, tag: 'City of International Standards' },
   { dev: 'SODIC', name: 'Villette', loc: 'New Cairo', ppm: 105000, hap: 4, hp: 2, tag: 'Signature Luxury Living' },
@@ -18,11 +46,10 @@ const EGY_EXPAT_ROSTER = [
   { dev: 'SODIC', name: 'Villette Global Residences', loc: 'New Cairo', ppm: 115000, hap: 4, hp: 2, tag: 'Premium Investment for the Diaspora' },
   { dev: 'Emaar Misr', name: 'Marassi International', loc: 'North Coast', ppm: 160000, hap: 5, hp: 3, tag: 'World-Class Summer Destination' },
   { dev: 'Palm Hills', name: 'Palm Hills Global', loc: 'Sheikh Zayed', ppm: 105000, hap: 3, hp: 2, tag: 'Elevated Homecoming' },
-  { dev: 'Orascom', name: 'El Gouna Diaspora Enclave', loc: 'Red Sea', ppm: 145000, hap: 5, hp: 2, tag: 'A Global Community on the Red Sea' },
-  { dev: 'City Edge', name: 'Alamein Diaspora Towers', loc: 'North Coast', ppm: 130000, hap: 4, hp: 2, tag: 'Mediterranean Horizon' }
+  { dev: 'Orascom', name: 'El Gouna Diaspora Enclave', loc: 'Red Sea', ppm: 145000, hap: 5, hp: 2, tag: 'Global Community on the Red Sea' }
 ];
 
-const EGY_UNITS = [
+const DEV_UNITS = [
   {id:'studio', typeId:'condo',     name:'Studio',          area:60,  f:1.08, w:3},
   {id:'br1',    typeId:'condo',     name:'1-Bedroom',       area:85,  f:1.04, w:3},
   {id:'br2',    typeId:'condo',     name:'2-Bedroom',       area:130, f:1.00, w:4},
@@ -31,28 +58,29 @@ const EGY_UNITS = [
   {id:'villa',  typeId:'villa',     name:'Standalone Villa', area:450, f:1.25, w:1}
 ];
 
-const EGY_PLANS = [
-  {id:'cash', label:'Cash',                        down:1,    years:0,  markup:.85, rate:0,   note:'15% Cash Discount applied'},
-  {id:'p5',   label:'5 years, 0% interest',        down:.10,  years:5,  markup:1.00, rate:0,   note:'Standard developer plan'},
-  {id:'p8',   label:'8 years, equal installments', down:.05,  years:8,  markup:1.25, rate:0,   note:'Extended payment plan'},
-  {id:'p10',  label:'10 years, low down payment',  down:.05,  years:10, markup:1.45, rate:0,   note:'Highest total cost, lowest yearly burden'}
+const DEV_PLANS = [
+  {id:'cash', label:'Cash',                        down:1,    years:0,  markup:.85, note:'15% Cash Discount applied'},
+  {id:'p5',   label:'5 years, 0% interest',        down:.10,  years:5,  markup:1.00, note:'Standard developer plan'},
+  {id:'p8',   label:'8 years, equal installments', down:.05,  years:8,  markup:1.25, note:'Extended payment plan'},
+  {id:'p10',  label:'10 years, low down payment',  down:.05,  years:10, markup:1.45, note:'Highest total cost, lowest yearly burden'}
 ];
-const EGY_FEES = {maintenance:.08, registration:.025, finishing:.12};
 
-/* ---------- cross-border maths ---------- */
-function egyOn(){ return !!(S && S.age>=18); }
-function egyInit(o){
+/* ---------- HELPERS ---------- */
+function devOn(){ return !!(S && S.age >= 18); }
+function devInit(o){
   if (!o) return;
-  if (!o.egyDev || typeof o.egyDev!=='object') o.egyDev = {projects:[], year:0, contracts:[], seq:0};
+  if (!o.egyDev || typeof o.egyDev !== 'object') o.egyDev = {projects:[], year:0, contracts:[], seq:0};
+  if (!o.intlDev || typeof o.intlDev !== 'object') o.intlDev = {projects:[], year:0, contracts:[], seq:0};
   o.egyDev.projects = Array.isArray(o.egyDev.projects) ? o.egyDev.projects : [];
   o.egyDev.contracts = Array.isArray(o.egyDev.contracts) ? o.egyDev.contracts : [];
-  o.egyDev.seq = Number(o.egyDev.seq)||0;
+  o.intlDev.projects = Array.isArray(o.intlDev.projects) ? o.intlDev.projects : [];
+  o.intlDev.contracts = Array.isArray(o.intlDev.contracts) ? o.intlDev.contracts : [];
 }
-function egyRate(year){ return Math.max(.0001, rateForCountry('egy', year||gameYear())); }
-function localRate(year){ return Math.max(.0001, rateForCountry(S.country, year||gameYear())); }
-function egyToInternal(egp, year){ return (Number(egp)||0) / egyRate(year); }
-function egpToLocal(egp, year){ return egyToInternal(egp, year) * localRate(year); }
-function egpFmt(n){ return 'E£' + Math.round(Number(n)||0).toLocaleString(); }
+
+function egyRate(year){ return Math.max(.0001, rateForCountry('egy', year || gameYear())); }
+function localRate(year){ return Math.max(.0001, rateForCountry(S.country, year || gameYear())); }
+function egpToLocal(egp, year){ return (Number(egp) || 0) / egyRate(year) * localRate(year); }
+function egpFmt(n){ return 'E£' + Math.round(Number(n) || 0).toLocaleString(); }
 
 function displayCost(egp, year){
   if (S.country === 'egy') return egpFmt(egp);
@@ -60,218 +88,210 @@ function displayCost(egp, year){
   return `${typeof money === 'function' ? money(localCost) : localCost} (${egpFmt(egp)})`;
 }
 
-function egyPick(list){ return list[Math.floor(Math.random()*list.length)]; }
-function egyWeighted(list){ const t=list.reduce((a,x)=>a+x.w,0); let r=Math.random()*t; for(const x of list){ r-=x.w; if(r<=0) return x; } return list[0]; }
+function devPick(list){ return list[Math.floor(Math.random() * list.length)]; }
+function devWeighted(list){ const t=list.reduce((a,x)=>a+x.w,0); let r=Math.random()*t; for(const x of list){ r-=x.w; if(r<=0) return x; } return list[0]; }
 
-/* ---------- projects for sale this year ---------- */
-function egyGenerateProjects(){
-  const y = gameYear(), idx = p14EgyptPriceIndex(y), out = [];
-  const rosterSource = S.country === 'egy' ? EGY_PROJECT_ROSTER : EGY_EXPAT_ROSTER;
-  
-  for (let i=0; i<4; i++){ 
-    const roster = egyPick(rosterSource), unit = egyWeighted(EGY_UNITS);
-    const size = Math.round(unit.area * (.9 + Math.random()*.2));
-    const ready = Math.random()<.30; 
-    const finish = ready ? 'Fully finished' : (Math.random()<.50 ? 'Core & Shell (Unfinished)' : 'Fully finished');
-    const listEGP = Math.round(size * roster.ppm * unit.f * (.85 + Math.random()*.25) * (ready?1.20:1) * idx / 1000) * 1000;
-    out.push({
-      id:'egyp_'+y+'_'+i+'_'+Math.random().toString(36).slice(2,5),
-      developer:roster.dev, compound:roster.name, location:roster.loc, tag:roster.tag,
-      hap:roster.hap, hp:roster.hp,
-      unitId:unit.id, unitName:unit.name, typeId:unit.typeId, size, finish, ready, listEGP, year:y
-    });
+/* ---------- GENERATION ---------- */
+function devGenerateProjects(isEgypt){
+  const y = gameYear(), out = [];
+  if (isEgypt) {
+    const idx = p14EgyptPriceIndex ? p14EgyptPriceIndex(y) : 1000;
+    const rosterSource = S.country === 'egy' ? EGY_PROJECT_ROSTER : EGY_EXPAT_ROSTER;
+    for (let i = 0; i < 4; i++){ 
+      const roster = devPick(rosterSource), unit = devWeighted(DEV_UNITS);
+      const size = Math.round(unit.area * (.9 + Math.random() * .2));
+      const ready = Math.random() < .30;
+      const listEGP = Math.round(size * roster.ppm * unit.f * (.85 + Math.random() * .25) * (ready ? 1.20 : 1) * idx / 1000) * 1000;
+      out.push({
+        id: 'egyp_' + y + '_' + i + '_' + Math.random().toString(36).slice(2,5),
+        developer: roster.dev, compound: roster.name, location: roster.loc, tag: roster.tag,
+        hap: roster.hap, hp: roster.hp, unitId: unit.id, unitName: unit.name, typeId: unit.typeId,
+        size, ready, listEGP, year: y, isEgypt: true
+      });
+    }
+  } else {
+    const rosterSource = INTL_DEVELOPER_ROSTERS[S.country] || [
+      { dev: 'Global Zenith Properties', name: 'Metropolitan Residences', loc: 'City Center', ppm: 7000, hap: 3, hp: 2, tag: 'Modern Living' }
+    ];
+    for (let i = 0; i < 3; i++){
+      const roster = devPick(rosterSource), unit = devWeighted(DEV_UNITS);
+      const size = Math.round(unit.area * (.9 + Math.random() * .2));
+      const ready = Math.random() < .35;
+      const listLocal = Math.round(size * roster.ppm * unit.f * (.9 + Math.random() * .2));
+      out.push({
+        id: 'intlp_' + y + '_' + i + '_' + Math.random().toString(36).slice(2,5),
+        developer: roster.dev, compound: roster.name, location: roster.loc, tag: roster.tag,
+        hap: roster.hap, hp: roster.hp, unitId: unit.id, unitName: unit.name, typeId: unit.typeId,
+        size, ready, listLocal, year: y, isEgypt: false
+      });
+    }
   }
   return out;
 }
-function egyMarket(){
-  egyInit(S);
-  if (S.egyDev.year !== gameYear() || !S.egyDev.projects.length){
-    S.egyDev.projects = egyGenerateProjects(); S.egyDev.year = gameYear();
+
+function devMarket(isEgypt){
+  devInit(S);
+  const targetObj = isEgypt ? S.egyDev : S.intlDev;
+  if (targetObj.year !== gameYear() || !targetObj.projects.length){
+    targetObj.projects = devGenerateProjects(isEgypt);
+    targetObj.year = gameYear();
   }
-  return S.egyDev.projects;
+  return targetObj.projects;
 }
 
-/* ---------- plan maths ---------- */
-function egyQuote(listEGP, plan){
-  const price = Math.round(listEGP * plan.markup);
-  const down = plan.years===0 ? price : Math.round(price * plan.down);
-  const financed = price - down;
-  let annual = 0, total = price;
-  if (plan.years>0){
-    annual = Math.round(financed/plan.years);
-    total = down + annual*plan.years;
-  }
-  return {price, down, financed, annual, total, extraPct: Math.round((total/(listEGP*.85)-1)*100)};
-}
+/* ---------- BUYING LOGIC ---------- */
+function devBuy(projectId, planId, isEgypt){
+  devInit(S);
+  const market = devMarket(isEgypt);
+  const proj = market.find(p => p.id === projectId), plan = DEV_PLANS.find(p => p.id === planId);
+  if (!proj || !plan) return hint('This offer has expired.');
 
-/* ---------- buying ---------- */
-function egyBuy(projectId, planId){
-  if (!egyOn()) return hint('Developer projects are only available to adults.');
-  const proj = egyMarket().find(p=>p.id===projectId), plan = EGY_PLANS.find(p=>p.id===planId);
-  if (!proj || !plan) return hint('This offer has expired. The algorithm will show new ads soon.');
-  
-  const q = egyQuote(proj.listEGP, plan), y = gameYear();
-  const downLocal = Math.round(egpToLocal(q.down, y));
-  
-  if (S.wealth < downLocal) return hint(`You need ${displayCost(q.down, y)} up front. You only have ${typeof money === 'function' ? money(S.wealth) : S.wealth}.`);
-  S.wealth -= downLocal;
-  
-  egyInit(S);
+  const y = gameYear();
+  let price, down, annual, downPlayer;
+
+  if (isEgypt) {
+    price = Math.round(proj.listEGP * plan.markup);
+    down = plan.years === 0 ? price : Math.round(price * plan.down);
+    annual = plan.years > 0 ? Math.round((price - down) / plan.years) : 0;
+    downPlayer = Math.round(egpToLocal(down, y));
+  } else {
+    price = Math.round(proj.listLocal * plan.markup);
+    down = plan.years === 0 ? price : Math.round(price * plan.down);
+    annual = plan.years > 0 ? Math.round((price - down) / plan.years) : 0;
+    downPlayer = down;
+  }
+
+  if (S.wealth < downPlayer) return hint(`You need ${isEgypt ? displayCost(down, y) : money(down)} down payment.`);
+  S.wealth -= downPlayer;
+
+  const targetObj = isEgypt ? S.egyDev : S.intlDev;
   const c = {
-    id:'egyc_'+(++S.egyDev.seq)+'_'+Math.random().toString(36).slice(2,5),
-    projectName:`${proj.unitName} at ${proj.compound}`, developer:proj.developer, location:proj.location,
-    typeId:proj.typeId, size:proj.size, finish:proj.finish, planLabel:plan.label, planId:plan.id,
-    hap:proj.hap, hp:proj.hp,
-    listEGP:proj.listEGP, boughtYear:y, priceEGP:q.price, downEGP:q.down, annualEGP:q.annual,
-    paidEGP:q.down, remainingEGP:q.financed, arrearsEGP:0, missed:0, delays:0,
-    deliveryYear:proj.ready ? y : y + 2 + Math.floor(Math.random()*4), ready:!!proj.ready, delivered:false, homeId:null, status:'active', lastBal:0
+    id: (isEgypt ? 'egyc_' : 'intlc_') + (++targetObj.seq) + '_' + Math.random().toString(36).slice(2,5),
+    projectName: `${proj.unitName} at ${proj.compound}`, developer: proj.developer, location: proj.location,
+    typeId: proj.typeId, size: proj.size, planLabel: plan.label, hap: proj.hap, hp: proj.hp,
+    boughtYear: y, price, down, annual, paid: down, remaining: price - down, missed: 0,
+    deliveryYear: proj.ready ? y : y + 2 + Math.floor(Math.random() * 3), ready: !!proj.ready, delivered: false, homeId: null, status: 'active', isEgypt
   };
-  S.egyDev.contracts.push(c);
-  S.egyDev.projects = S.egyDev.projects.filter(p=>p.id!==projectId);
-  if (proj.ready) egyDeliver(c);
+
+  targetObj.contracts.push(c);
+  targetObj.projects = targetObj.projects.filter(p => p.id !== projectId);
   
-  log(`Signed contract with ${c.developer} for ${c.projectName}. Paid ${displayCost(q.down, y)} down.`);
-  if (typeof realismNotice==='function') realismNotice('Compound Investment', 
-    `You secured a unit in ${proj.compound}. Your installments are fixed in Egyptian Pounds, meaning currency fluctuations may affect the actual value you pay from abroad. Expect an 8% maintenance deposit upon delivery.`);
+  if (proj.ready) devDeliver(c);
+  
+  log(`Signed contract with ${c.developer} for ${c.projectName}. Paid ${isEgypt ? displayCost(down, y) : money(down)} down.`);
   render();
 }
 
-/* ---------- yearly processing & delivery ---------- */
-function egyDeliver(c){
-  const y = gameYear(), idx = p14EgyptPriceIndex(y)/Math.max(.0001, p14EgyptPriceIndex(c.boughtYear));
-  const valueEGP = c.listEGP * idx, valueInternal = egyToInternal(valueEGP, y);
-  const feesEGP = c.listEGP*(EGY_FEES.maintenance+EGY_FEES.registration+(c.finish.includes('Unfinished')?EGY_FEES.finishing:0));
-  const feesLocal = Math.round(egpToLocal(feesEGP, y));
-  
-  const paidFees = S.wealth >= feesLocal;
-  if (paidFees){ S.wealth -= feesLocal; c.paidEGP += feesEGP; }
-  else { c.remainingEGP += feesEGP; c.annualEGP += Math.round(feesEGP/3); }
-  
-  const listing = {catId:'egydev_'+c.id, typeId:c.typeId, name:c.projectName, priceInternal:Math.round(valueInternal),
-    condition:100, features:['Gated Community', 'Clubhouse Access', '24/7 Security'], location:c.location, hap:c.hap, hp:c.hp};
-  const cat = p12EnsureListingCategory(listing);
-  
-  const home = {id:'h_egy_'+Math.random().toString(36).slice(2,8), catId:cat.id, name:c.projectName, value:Math.round(valueInternal),
-    balance:Math.round(egyToInternal(c.remainingEGP, y)), cond:c.finish.includes('Unfinished')?70:100, rentInc:Math.round(valueInternal*.0045*12),
-    status:'vacant', pay:1, rate:.0001, features:listing.features.slice(), location:c.location, marketCountry:'egy', typeId:c.typeId,
-    furnishedQuality:'Unfurnished', marketRentRate:.0045, p12:true, egyContract:c.id, listingDetails:{...listing}};
-    
-  S.ownedHomes.push(home);
-  c.delivered = true; c.homeId = home.id; c.lastBal = home.balance;
-  log(`${c.developer} handed over the keys to your ${c.projectName}! Handover fees of ${displayCost(feesEGP, y)} were charged.`);
-}
-
-function egyCancel(c, why){
-  const refundLocal = Math.round(egpToLocal(c.paidEGP*.7, gameYear()));
-  S.wealth += refundLocal;
-  if (c.homeId){ const i=S.ownedHomes.findIndex(h=>h.id===c.homeId); if (i>=0){ if(S.housing===c.homeId) S.housing=(typeof fallbackHome==='function'?fallbackHome():null); S.ownedHomes.splice(i,1); } }
-  c.status='cancelled'; c.remainingEGP=0;
-  log(`${why} ${c.developer} cancelled the contract for ${c.projectName}, keeping 30% of paid funds.`);
-}
-
-function egyYear(){
-  if (!S || S.dead) return;
-  egyInit(S);
+function devDeliver(c){
   const y = gameYear();
-  S.egyDev.contracts.forEach(c=>{
-    if (c.status!=='active') return;
-    const home = c.homeId ? S.ownedHomes.find(h=>h.id===c.homeId) : null;
-    if (c.delivered && !home){ c.status='sold'; c.remainingEGP=0; return; }
-    
-    if (home){
-      const extraInternal = c.lastBal - home.balance;
-      if (extraInternal > Math.max(5, c.lastBal*.005)) c.remainingEGP = Math.max(0, c.remainingEGP - extraInternal*egyRate(y));
-    }
-    
-    if (c.remainingEGP > 0){
-      const dueEGP = Math.min(c.annualEGP + c.arrearsEGP, c.remainingEGP + c.arrearsEGP);
-      const dueLocal = Math.round(egpToLocal(dueEGP, y));
+  const valueInternal = c.isEgypt ? (c.price / egyRate(y)) : (c.price / localRate(y));
+  
+  const listing = {
+    catId: (c.isEgypt ? 'egydev_' : 'intldev_') + c.id, typeId: c.typeId, name: c.projectName,
+    priceInternal: Math.round(valueInternal), condition: 100, features: ['Gated Community', '24/7 Security'], location: c.location, hap: c.hap, hp: c.hp
+  };
+  const cat = typeof p12EnsureListingCategory === 'function' ? p12EnsureListingCategory(listing) : { id: listing.catId };
+  
+  const home = {
+    id: 'h_dev_' + Math.random().toString(36).slice(2,8), catId: cat.id, name: c.projectName,
+    value: Math.round(valueInternal), balance: Math.round(c.isEgypt ? c.remaining / egyRate(y) : c.remaining / localRate(y)),
+    cond: 100, rentInc: Math.round(valueInternal * .004 * 12), status: 'vacant', pay: 1, rate: .0001,
+    features: listing.features, location: c.location, marketCountry: c.isEgypt ? 'egy' : S.country, typeId: c.typeId, p12: true, devContract: c.id
+  };
+  
+  S.ownedHomes.push(home);
+  c.delivered = true; c.homeId = home.id;
+  log(`Key Handover! You now own ${c.projectName} in ${c.location}. It has been added to your properties.`);
+}
+
+function devYear(){
+  if (!S || S.dead) return;
+  devInit(S);
+  const y = gameYear();
+  
+  [...S.egyDev.contracts, ...S.intlDev.contracts].forEach(c => {
+    if (c.status !== 'active') return;
+    if (c.remaining > 0){
+      const due = Math.min(c.annual, c.remaining);
+      const duePlayer = c.isEgypt ? Math.round(egpToLocal(due, y)) : due;
       
-      if (S.wealth >= dueLocal){
-        S.wealth -= dueLocal; S.expenses=(S.expenses||0)+dueLocal;
-        const principal = Math.min(c.remainingEGP, dueEGP); c.remainingEGP -= principal; c.paidEGP += dueEGP; c.arrearsEGP = 0; c.missed = 0;
-        if (c.remainingEGP < 1) c.remainingEGP = 0;
+      if (S.wealth >= duePlayer){
+        S.wealth -= duePlayer;
+        c.remaining -= due; c.paid += due; c.missed = 0;
       } else {
-        c.missed++; c.arrearsEGP = Math.round(dueEGP*1.03);
-        if (c.missed >= 2){ egyCancel(c, 'Two missed installments.'); return; }
+        c.missed++;
+        if (c.missed >= 2){
+          c.status = 'cancelled';
+          log(`Contract Cancelled: Missed 2 installments for ${c.projectName}.`);
+          return;
+        }
       }
     }
-    
-    if (!c.delivered && y >= c.deliveryYear){
-      if (c.delays<2 && Math.random()<.30){ c.delays++; c.deliveryYear = y+1; log(`Construction delay at ${c.compound}: Delivery pushed to ${c.deliveryYear}.`); }
-      else egyDeliver(c);
-    }
-    
-    const h2 = c.homeId ? S.ownedHomes.find(h=>h.id===c.homeId) : null;
-    if (h2){ h2.balance = Math.max(0, Math.round(egyToInternal(c.remainingEGP, y))); c.lastBal = h2.balance; if (!h2.balance) h2.pay = 0; }
-    if (c.delivered && c.remainingEGP<=0){ c.status='done'; }
+    if (!c.delivered && y >= c.deliveryYear) devDeliver(c);
+    if (c.delivered && c.remaining <= 0) c.status = 'done';
   });
-  S.egyDev.projects = []; 
-}
-
-/* ---------- Social Media Ad UI Rendering ---------- */
-function egyDetailRows(p){
-  return EGY_PLANS.map(plan=>{
-    const q = egyQuote(p.listEGP, plan);
-    const line = plan.years===0 ? `Cash Offer: ${displayCost(q.down, p.year)}` : `Down ${displayCost(q.down, p.year)} · ${displayCost(q.annual, p.year)}/yr for ${plan.years} yrs`;
-    const extra = plan.id==='cash' ? 'Best value' : `Total contract: ${displayCost(q.total, p.year)}`;
-    return `<button class="btn" style="font-size:.85rem; background:var(--bg); border: 1px solid var(--line);" onclick="egyBuy('${p.id}','${plan.id}')"><b>${plan.label}</b><br><span class="muted">${line}<br>${extra}</span></button>`;
-  }).join('');
-}
-
-function egyRenderPanel(){
-  const view = $('view'); if (!view || typeof activeTab==='undefined' || activeTab!=='assets' || !egyOn()) return;
-  const old = $('egy-dev'); if (old) old.remove();
-  const live = S.egyDev.contracts.filter(c=>c.status==='active'), market = egyMarket();
-  const sec = document.createElement('section'); sec.className='card'; sec.id='egy-dev';
-  const isExpat = S.country !== 'egy';
   
-  let html = `<h3>${isExpat ? 'Invest in Egypt: Real Estate' : 'Developer Contracts'}</h3>`;
-  if (live.length) {
-    html += live.map(c => `<div class="row" style="flex-direction:column;align-items:stretch;border-top:1px solid var(--line);padding-top:8px;margin-top:8px">
-      <b>${c.projectName}</b><span class="muted">${c.location} · ${c.developer}</span>
-      <span class="muted">${c.delivered ? 'Delivered & Paying off' : `Under construction, expected ${c.deliveryYear}`}</span>
-      <span class="muted" style="color:var(--mint)">Remaining: ${displayCost(c.remainingEGP, gameYear())}</span>
-    </div>`).join('');
-  } else {
-    html += `<p class="muted">You have no active developer contracts in Egypt.</p>`;
+  S.egyDev.projects = [];
+  S.intlDev.projects = [];
+}
+
+/* ---------- UI PANEL RENDER ---------- */
+function devRenderPanel(){
+  const view = $('view'); if (!view || typeof activeTab === 'undefined' || activeTab !== 'assets' || !devOn()) return;
+  const old = $('dev-panel'); if (old) old.remove();
+  
+  devInit(S);
+  const sec = document.createElement('section'); sec.className = 'card'; sec.id = 'dev-panel';
+  let html = `<h3>Developer Real Estate Markets</h3>`;
+
+  // 1. LOCAL DEVELOPER MARKET (Germany, USA, UK, UAE, Egypt)
+  if (S.country !== 'egy' && INTL_DEVELOPER_ROSTERS[S.country]) {
+    const localMarket = devMarket(false);
+    html += `<h4 style="margin:16px 0 8px; color:var(--cyan);">Local Developers (${(COUNTRIES[S.country]||{}).name || S.country.toUpperCase()})</h4>
+             <p class="muted" style="font-size:0.85rem">New off-plan and ready-to-move compounds from local developers in your current country.</p>`;
+    html += renderMarketCards(localMarket, false);
   }
 
-  html += `<h4 style="margin:24px 0 8px; display:flex; align-items:center; gap:6px;">
-            <span style="background:var(--amber); color:#000; font-size:0.7rem; padding:2px 6px; border-radius:4px; font-weight:bold;">SPONSORED</span> 
-            ${isExpat ? 'Featured Diaspora Investment Offers' : 'Featured Developer Offers'}
-          </h4>
-          <p class="muted" style="font-size:0.85rem">${isExpat ? 'Secure a property back home. Contracts are fixed in Egyptian Pounds, meaning your installments will adjust against your current foreign income based on real-time exchange rates.' : 'Targeted properties from top Egyptian developers. Upgrading to a gated community improves Happiness and Health.'}</p>`;
-  
-  html += market.map(p=>`
-    <div style="border: 1px solid var(--line); border-radius: 8px; margin-bottom: 12px; overflow: hidden;">
-      <div style="background: var(--line); padding: 12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <b style="font-size:1.1rem">${p.compound} by ${p.developer}</b>
-        </div>
-        <div style="font-size:0.85rem; color:var(--text); margin-top:4px;"><i>"${p.tag}"</i></div>
-      </div>
-      <div style="padding: 12px;">
-        <div style="margin-bottom: 12px; font-size:0.9rem;">
-          <b>${p.unitName} (${p.size} m²)</b> in ${p.location}<br>
-          <span class="muted">Status: ${p.ready ? '✅ Ready to Move' : p.finish}</span><br>
-          <span class="muted" style="color:var(--cyan)">Amenities: Happiness +${p.hap}, Health +${p.hp}</span><br>
-          <b>Contract Value: ${displayCost(p.listEGP, p.year)}</b>
-        </div>
-        <details>
-          <summary style="cursor:pointer; color:var(--cyan); font-weight:bold; margin-bottom:8px;">View Payment Plans</summary>
-          <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
-            ${egyDetailRows(p)}
-          </div>
-        </details>
-      </div>
-    </div>`).join('');
+  // 2. EGYPTIAN DEVELOPER MARKET (Accessible locally or as Diaspora)
+  const egyMarketData = devMarket(true);
+  html += `<h4 style="margin:24px 0 8px; color:var(--amber);">${S.country === 'egy' ? 'Egyptian Developer Compounds' : 'Egyptian Diaspora Investment Market'}</h4>
+           <p class="muted" style="font-size:0.85rem">${S.country === 'egy' ? 'Top compounds in New Cairo, Zayed, Alexandria & North Coast.' : 'Invest in real estate back home in Egypt. Contracts are locked in EGP.'}</p>`;
+  html += renderMarketCards(egyMarketData, true);
 
   sec.innerHTML = html;
   view.appendChild(sec);
 }
 
-GameHooks.on('migrate', egyInit);
-GameHooks.on('newGame', egyInit);
-GameHooks.on('year', egyYear);
-GameHooks.on('render', egyRenderPanel);
+function renderMarketCards(market, isEgypt){
+  return market.map(p => {
+    const y = gameYear();
+    return `
+    <div style="border: 1px solid var(--line); border-radius: 8px; margin-bottom: 12px; padding: 12px; background: var(--bg);">
+      <b style="font-size:1.05rem">${p.compound} by ${p.developer}</b><br>
+      <span class="muted" style="font-size:0.85rem"><i>"${p.tag}"</i></span><br>
+      <div style="margin: 8px 0; font-size:0.9rem;">
+        ${p.unitName} (${p.size} m²) in ${p.location}<br>
+        <span style="color:var(--mint)">Amenities: Happiness +${p.hap}, Health +${p.hp}</span><br>
+        <b>Base Cost: ${isEgypt ? displayCost(p.listEGP, y) : money(p.listLocal)}</b>
+      </div>
+      <details>
+        <summary style="cursor:pointer; color:var(--cyan); font-weight:bold;">View Installment Plans</summary>
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+          ${DEV_PLANS.map(plan => {
+            const price = Math.round((isEgypt ? p.listEGP : p.listLocal) * plan.markup);
+            const down = plan.years === 0 ? price : Math.round(price * plan.down);
+            const ann = plan.years > 0 ? Math.round((price - down) / plan.years) : 0;
+            return `<button class="btn" style="font-size:0.8rem; text-align:left;" onclick="devBuy('${p.id}', '${plan.id}',${isEgypt})">
+              <b>${plan.label}</b> — Down: ${isEgypt ? displayCost(down, y) : money(down)}${ann ? ' · ' + (isEgypt ? displayCost(ann, y) : money(ann)) + '/yr' : ''}
+            </button>`;
+          }).join('')}
+        </div>
+      </details>
+    </div>`;
+  }).join('');
+}
+
+GameHooks.on('migrate', devInit);
+GameHooks.on('newGame', devInit);
+GameHooks.on('year', devYear);
+GameHooks.on('render', devRenderPanel);
