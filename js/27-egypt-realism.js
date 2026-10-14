@@ -27,11 +27,33 @@ function calculateBPOSalary(basePay, engStat, uniId) {
   
   return Math.round(basePay * multiplier);
 };
-const NEW_SIDE_JOBS = [
-  { id: 'security', title: 'Night Security Guard', pay: 24000, minAge: 18, smarts: 0, stress: 3, desc: 'Quiet night shifts, but messes with your sleep.' },
-  { id: 'uber_own', title: 'Uber Driver (Own Car)', pay: 45000, minAge: 21, smarts: 0, stress: 5, reqAsset: 'car', desc: 'Drive your own car. High wear and tear.' },
-  { id: 'uber_family', title: 'Uber Driver (Family Car)', pay: 22000, minAge: 21, smarts: 0, stress: 4, reqAsset: null, desc: 'Split the earnings with your family.' }
+/* Egypt-specific side jobs. Values are 2026 EGYPTIAN POUNDS per year.
+   We convert them into the same internal-USD scale the base PART_JOBS use,
+   so they render at realistic EGP amounts instead of being multiplied twice. */
+const NEW_SIDE_JOBS_EGP = [
+  { id: 'security',    title: 'Night Security Guard',          egpPerYear: 72000,  minAge: 18, smarts: 0, stress: 3, desc: 'Quiet night shifts, but messes with your sleep.' },
+  { id: 'uber_own',    title: 'Uber Driver (Own Car)',         egpPerYear: 132000, minAge: 21, smarts: 0, stress: 5, reqAsset: 'car', desc: 'Drive your own car. Fuel, maintenance and wear are on you.' },
+  { id: 'uber_family', title: 'Uber Driver (Family Car)',      egpPerYear: 78000,  minAge: 21, smarts: 0, stress: 4, reqAsset: null, desc: 'Share the car and split earnings with your family.' }
 ];
+
+NEW_SIDE_JOBS_EGP.forEach(j => {
+  /* Convert EGP → internal USD units at the 2026 reference rate, then scale
+     back through the era-pack pipeline so FWR wrapping stays correct. */
+  const internalUSD = j.egpPerYear / 52.7;   // 2026 EGP/USD reference
+  const wrAt2026 = 1;                        // era pack wr is 1 at 2026 baseline
+  const wrappedPay = Math.max(1, Math.round(internalUSD / wrAt2026 / 0.075));
+  PART_JOBS.push({
+    id: j.id,
+    title: j.title,
+    pay: wrappedPay,
+    minAge: j.minAge,
+    smarts: j.smarts,
+    stress: j.stress,
+    desc: j.desc,
+    reqAsset: j.reqAsset,
+    isEgyptOnly: true
+  });
+});
 
 PART_JOBS.push(...NEW_SIDE_JOBS);
 const P27_ageUpBeforeEviction = ageUp;
