@@ -106,33 +106,38 @@ function purchaseProperty(rosterId, unitId, planId, isCompound, isEgypt) {
 
   if (!prop || !unit) return hint('Selected property or unit is no longer available.');
 
-  // Calculate Base Price
-  const basePrice = Math.round(unit.area * prop.ppm * unit.mult * (typeof p14EgyptPriceIndex === 'function' ? p14EgyptPriceIndex(y) / 1000 : 1));
+  // Calculate Base Price (properly restoring the * 1000 multiplier to prevent micro-pricing)
+  const idx = (isEgypt && typeof p14EgyptPriceIndex === 'function') ? p14EgyptPriceIndex(y) : 1;
+  const rawPrice = unit.area * prop.ppm * unit.mult * idx;
+  const basePrice = Math.round(rawPrice / 1000) * 1000;
   const finalPrice = Math.round(basePrice * plan.markup);
   const downPaymentEGP = Math.round(finalPrice * plan.downPct);
 
   // Convert required values to player's wallet currency
   const localFinalPrice = (isEgypt && S.country !== 'egy') ? Math.round(egpToLocal(finalPrice, y)) : finalPrice;
   const localDown = (isEgypt && S.country !== 'egy') ? Math.round(egpToLocal(downPaymentEGP, y)) : downPaymentEGP;
-  const localRemaining = localFinalPrice - localDown;
 
   // STRICT CASH CHECK
   if (S.wealth < localDown) {
-    alert(`INSUFFICIENT FUNDS!\n\nRequired Down Payment: ${displayCurrency(downPaymentEGP, isEgypt)}\nYour Checking Balance: ${typeof money === 'function' ? money(S.wealth) : S.wealth}\n\nYou need ${displayCurrency(localDown - S.wealth, false)} more in cash to complete this transaction.`);
+    alert(`INSUFFICIENT FUNDS!\n\nRequired Down Payment: ${displayCurrency(downPaymentEGP, isEgypt)}\nYour Checking Balance: ${typeof money === 'function' ? money(S.wealth) : S.wealth}\n\nYou need ${displayCurrency((isEgypt && S.country !== 'egy' ? downPaymentEGP : localDown) - (isEgypt && S.country !== 'egy' ? (S.wealth / localRate(y) * egyRate(y)) : S.wealth), isEgypt)} more to complete this transaction.`);
     return hint(`Insufficient cash balance for down payment.`);
   }
 
   S.wealth -= localDown;
   const homeId = 'h_' + Math.random().toString(36).slice(2, 8);
 
+  // Generate internal game currency value so the inventory renders the local equivalent properly
+  const internalValue = isEgypt ? finalPrice / egyRate(y) : finalPrice / localRate(y);
+  const internalRemaining = isEgypt ? (finalPrice - downPaymentEGP) / egyRate(y) : (finalPrice - downPaymentEGP) / localRate(y);
+
   const newHome = {
     id: homeId,
     name: `${unit.name} - ${prop.name}`,
     catId: 'custom_' + prop.id,
-    value: localFinalPrice, // FIXED: Now stores the true un-divided value
-    balance: isCompound && plan.years > 0 ? localRemaining : 0,
+    value: Math.round(internalValue), 
+    balance: isCompound && plan.years > 0 ? Math.round(internalRemaining) : 0,
     cond: 100,
-    rentInc: Math.round(localFinalPrice * (isCompound ? 0.0045 : 0.0035) * 12),
+    rentInc: Math.round(internalValue * (isCompound ? 0.0045 : 0.0035) * 12),
     status: 'vacant',
     pay: 1,
     rate: 0.0001,
@@ -164,7 +169,7 @@ function purchaseProperty(rosterId, unitId, planId, isCompound, isEgypt) {
 
   log(`Successfully purchased ${newHome.name} in ${prop.loc}! Paid ${displayCurrency(downPaymentEGP, isEgypt)} down.`);
   if (typeof realismNotice === 'function') {
-    realismNotice('Property Purchased', `You acquired ${newHome.name}. It is now listed under Real Estate. The correct local market value has been applied.`);
+    realismNotice('Property Purchased', `You acquired ${newHome.name}. The market valuation has been permanently corrected to its true multi-million figure.`);
   }
   render();
 }
@@ -189,7 +194,7 @@ function housingYear() {
 
       const home = S.ownedHomes.find(h => h.id === c.homeId);
       if (home) {
-        home.balance = (c.isEgypt && S.country !== 'egy') ? Math.round(egpToLocal(c.remainingEGP, y)) : c.remainingEGP;
+        home.balance = Math.max(0, Math.round(c.isEgypt ? c.remainingEGP / egyRate(y) : c.remainingEGP / localRate(y)));
       }
       log(`Installment Paid: ${displayCurrency(dueEGP, c.isEgypt)} for ${c.name}. Remaining: ${displayCurrency(c.remainingEGP, c.isEgypt)}.`);
     } else {
@@ -207,14 +212,14 @@ setRentProperty = function(idx) {
     if (h && h.p12 && h.status !== 'rent' && h.status !== 'p12-rented') {
         const pct = prompt(`Enter annual rent increase percentage (e.g. 10 for 10%):`, "10");
         if (pct !== null) {
-            // First call original to set it up
             P24_setRentProperty(idx);
             
-            // Instantly rent it out at market value with the agreed increase
             const country = h.marketCountry || S.country;
             const rate = Math.max(.0001, typeof rateForCountry==='function' ? rateForCountry(country, gameYear()) : 1);
-            const yieldRate = Math.max(.001, Number(h.marketRentRate || .0045)); // High yield for compounds
-            const localMonthly = Math.max(1, Math.round((Number(h.value)||1000) * yieldRate));
+            const yieldRate = Math.max(.001, Number(h.marketRentRate || .0045));
+            
+            // Fixed to convert internal base value into properly scaled local currency
+            const localMonthly = Math.max(1, Math.round((Number(h.value)||1000) * yieldRate * rate));
             
             h.rentLocalAmount = localMonthly;
             h.rentAmount = localMonthly / rate;
@@ -231,7 +236,6 @@ setRentProperty = function(idx) {
             return;
         }
     }
-    // Fallback to normal behavior if prompt is cancelled or it's a legacy property
     P24_setRentProperty(idx);
 };
 
@@ -304,7 +308,12 @@ function renderHousingUI() {
           <summary style="cursor:pointer; color:var(--cyan); font-weight:bold;">Select Unit Type & Payment Terms</summary>
           <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--line);">
             ${PROPERTY_UNITS.map(unit => {
-              const baseEGP = Math.round(unit.area * prop.ppm * unit.mult * (typeof p14EgyptPriceIndex === 'function' ? p14EgyptPriceIndex(gameYear()) / 1000 : 1));
+              
+              // Base price fix directly applied to the UI component to restore proper scaling
+              const idx = (isEgyptData && typeof p14EgyptPriceIndex === 'function') ? p14EgyptPriceIndex(gameYear()) : 1;
+              const rawPrice = unit.area * prop.ppm * unit.mult * idx;
+              const baseEGP = Math.round(rawPrice / 1000) * 1000;
+              
               return `
                 <div style="border:1px solid var(--line); border-radius:6px; padding:8px; margin-bottom:8px;">
                   <b>${unit.name} (${unit.area} m²)</b><br>
