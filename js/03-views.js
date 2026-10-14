@@ -66,7 +66,7 @@ function viewSchool(){
 
   if (S.uni){
     const u = S.uni;
-    const un = UNIS[u.type] || { name: 'University' };
+    const un = UNIS[u.type] || { name: u.universityName || 'University' };
     const mj = (u.major && MAJORS[u.major]) ? MAJORS[u.major] : { name: u.faculty || u.universityName || 'Program', years: u.yearsTotal || 4 };
     return `<section class="card"><h3>${mj.name} · ${un.name}</h3><p class="muted">Year ${u.year} of ${mj.years}. Tuition ${money(tuitionFor(u))}/yr. Student loan: ${money(S.loan)}.</p><button class="btn" onclick="dropOut()">Drop out</button></section>` + effortCard;
   }
@@ -84,29 +84,7 @@ function viewSchool(){
   const majors = Object.entries(MAJORS).map(([k,m]) => `<div style="margin-top:12px"><b>${m.name}</b> <span class="muted">· ${m.years} yrs · Req Smarts ${m.min}%</span>
     <div class="acts" style="margin-top:6px"><button class="btn" onclick="enrollUni('national','${k}')">National · ${money(UNIS.national.tuition)}/yr</button><button class="btn" onclick="enrollUni('private','${k}')">Private · ${money(UNIS.private.tuition)}/yr</button></div></div>`).join('');
 
-  return skipUniCard + `<section class="card"><h3>Who pays tuition?</h3>${payBtns}</section><section class="card"><h3>University Options</h3>${majors}</section>`;
-}
-  }
-
-  if (S.uni){
-    const u=S.uni, un=UNIS[u.type], mj=MAJORS[u.major];
-    return `<section class="card"><h3>${mj.name} · ${un.name}</h3><p class="muted">Year ${u.year} of ${mj.years}. Tuition ${money(tuitionFor(u))}/yr. Student loan: ${money(S.loan)}.</p><button class="btn" onclick="dropOut()">Drop out</button></section>` + effortCard;
-  }
-
-  if (S.degree) return `<section class="card"><h3>Graduate</h3><p class="muted">Degree: <b>${MAJORS[S.degree].name}</b>. Higher career levels unlocked!</p></section>`;
-  if (!S.diploma) return `<section class="card"><h3>No diploma</h3><p class="muted">You left school without a diploma.</p></section>`;
-
-  const skipUniCard = `<section class="card" style="border:1px solid var(--cyan)">
-    <h3>Skip University</h3>
-    <p class="muted">University is completely optional. You can stick with your High School Diploma and enter the workforce directly.</p>
-    <button class="btn" style="text-align:center;background:var(--violet);color:#fff;font-weight:700;margin-top:8px" onclick="go('career')">Skip University & View Jobs</button>
-  </section>`;
-
-  const payBtns = Object.entries(PAYERS).map(([k,p]) => `<button class="btn ${S.payPref===k?'sel':''}" onclick="setPay('${k}')">${p.label}<small>${p.desc}</small></button>`).join('');
-  const majors = Object.entries(MAJORS).map(([k,m]) => `<div style="margin-top:12px"><b>${m.name}</b> <span class="muted">· ${m.years} yrs · Req Smarts ${m.min}%</span>
-    <div class="acts" style="margin-top:6px"><button class="btn" onclick="enrollUni('national','${k}')">National · ${money(UNIS.national.tuition)}/yr</button><button class="btn" onclick="enrollUni('private','${k}')">Private · ${money(UNIS.private.tuition)}/yr</button></div></div>`).join('');
-
-  return skipUniCard + `<section class="card"><h3>Who pays tuition?</h3>${payBtns}</section><section class="card"><h3>University Options</h3>${majors}</section>`;
+  return skipUniCard + `<section class="card"><h3>Who pays tuition?</h3>${payBtns}</section><section class="card"><h3>University Options</h3>${majors}</section>` + effortCard;
 }
 
 function viewPart(){
@@ -121,6 +99,7 @@ function viewPart(){
     .join('');
   return `<section class="card"><h3>Part-time work</h3><p class="muted">${cur ? `Working as a ${cur.title.toLowerCase()}.` : 'Side job for students.'}</p>${list}${cur ? '<button class="btn" onclick="quitPart()">Quit job</button>' : ''}</section>`;
 }
+
 /* CAREER TAB: multi-tier ranks, work schedules, overtime, retirement */
 function viewCareer(){
   const net = S.income - S.expenses;
@@ -264,4 +243,3 @@ function viewMine(){
         <button class="btn" onclick="discardItem('${i.uid}')">Discard</button></div></div>`; }).join('');
   return `<section class="card"><h3>My Items</h3><p class="muted">Items break and wear out with age. Insured items are cheap to repair. Items in a home only help while you live there.</p>${rows}</section>`;
 }
-
