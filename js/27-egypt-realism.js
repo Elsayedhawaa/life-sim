@@ -53,7 +53,7 @@ NEW_SIDE_JOBS_EGP.forEach(j => {
     reqAsset: j.reqAsset,
     isEgyptOnly: true
   });
-});
+
 
 PART_JOBS.push(...NEW_SIDE_JOBS);
 const P27_ageUpBeforeEviction = ageUp;
