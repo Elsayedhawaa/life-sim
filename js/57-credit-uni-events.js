@@ -252,11 +252,31 @@ uniYear = function (notes, bill) {
    PART 3 — LIFE EVENTS (monthly + yearly)
    ================================================================= */
 
-function p57InitEvents() {
-  if (!S.p57) S.p57 = {};
-  if (typeof S.p57.lastEventAbsMonth !== 'number') S.p57.lastEventAbsMonth = -100;
-  if (typeof S.p57.eventsThisYear !== 'number') S.p57.eventsThisYear = 0;
-  if (!Array.isArray(S.p57.history)) S.p57.history = [];
+function p57InitEvents(o) {
+  o = o || (typeof S !== 'undefined' ? S : null);
+  if (!o) return; /* Safely aborts if game hasn't started yet */
+  if (!o.p57) o.p57 = {};
+  if (typeof o.p57.lastEventAbsMonth !== 'number') o.p57.lastEventAbsMonth = -100;
+  if (typeof o.p57.eventsThisYear !== 'number') o.p57.eventsThisYear = 0;
+  if (!Array.isArray(o.p57.history)) o.p57.history = [];
+}
+
+/* Properly hook into save migration and new games per MASTER rules */
+const P57_migrateEvents = (typeof migrate === 'function') ? migrate : null;
+if (P57_migrateEvents) {
+  migrate = function(o) {
+    const r = P57_migrateEvents(o);
+    p57InitEvents(r);
+    return r;
+  };
+}
+
+const P57_newGameEvents = (typeof newGame === 'function') ? newGame : null;
+if (P57_newGameEvents) {
+  newGame = function() {
+    P57_newGameEvents.apply(this, arguments);
+    if (typeof S !== 'undefined') p57InitEvents(S);
+  };
 }
 
 /* ---- Event pool ---- */
