@@ -1585,6 +1585,7 @@ function p57ResolveEvent(eventId, choiceIndex, payMethod) {
       if (!cardId) return hint('No credit card available.');
       S.bank.cardDebt[cardId] = (Number(S.bank.cardDebt[cardId]) || 0) + internal;
       log('💳 Charged ' + cost.toLocaleString() + ' EGP to ' + cardId + ' for life event.');
+       }
     } else {
       if (internal > S.wealth) return hint('You cannot afford that right now.');
       S.wealth -= internal;
