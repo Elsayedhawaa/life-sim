@@ -710,4 +710,28 @@ viewPacing = function () {
 /* =================================================================
    INIT
    ================================================================= */
-p57InitEvents();
+p57InitEvents() 
+/* =================================================================
+   PART 4 — FORCED EVENT OVERRIDE (100% Chance)
+   Forces an event every month (monthly pacing) or every year (yearly)
+   ================================================================= */
+p57ShouldFireEvent = function (isMonthly) {
+  p57InitEvents();
+  
+  /* Do not fire if a modal is already open or game is pending a choice */
+  if (document.getElementById('p57-event-modal')) return false;
+  if (S.pending) return false;
+  if (S.yearPopup) return false;
+
+  const absMonth = (S.pacingAbsoluteMonth || 0);
+
+  if (S.pacing === 'monthly' || isMonthly) {
+    /* 100% chance every month. Prevent double-firing in the exact same month. */
+    if (S.p57.lastEventAbsMonth === absMonth) return false;
+    return true; 
+  } else {
+    /* 100% chance once per year in yearly mode. */
+    if (S.p57.eventsThisYear >= 1) return false;
+    return true;
+  }
+};
