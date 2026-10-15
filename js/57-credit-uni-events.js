@@ -269,15 +269,15 @@ function p57StealPhoneFromInventory() {
   let lostOne = false;
   S.inventory = S.inventory.filter(function (item) {
     if (lostOne || !item) return !lostOne ? true : false;
-    /* Match by cat === 'phone' which is the reliable field */
     if (item.cat === 'phone') {
       lostOne = true;
-      return false;  /* remove */
+      return false; /* remove */
     }
-    return true;  /* keep */
+    return true; /* keep */
   });
   return lostOne;
 }
+
 /* ---- Event pool ---- */
 function p57EventPool() {
   const pool = [];
@@ -1100,7 +1100,8 @@ function p57EventPool() {
       { label: 'Fight customer service for a refund', cost: function () { return 0; }, effect: function () { if (Math.random() > 0.4) { const amt = p57EGP(800); S.wealth += (amt / p57Rate()); return { msg: 'They eventually refunded you, but you guys ate instant noodles for dinner.', fx: { happiness: -2, stress: 2 } }; } else { return { msg: 'They claimed the GPS showed the driver at your location. You lost the food and the money.', fx: { happiness: -4, stress: 4 } }; } } },
       { label: 'Order something else with cash', cost: function () { return p57EGP(600); }, effect: function () { return { msg: 'You spent double the money, but at least you finally ate.', fx: { happiness: -1, stress: 1 } }; } }
     ]
-  }) 
+  });
+  
    /* =================================================================
      EXPANSION PACK 3: SHOPPING, CREDIT & HEALTH INSURANCE (30 Events)
      ================================================================= */
