@@ -267,17 +267,17 @@ if (P57_newGameEvents) {
 function p57StealPhoneFromInventory() {
   if (!S || !Array.isArray(S.inventory)) return false;
   let lostOne = false;
-  S.inventory = S.inventory.filter(function(item) {
-    const name = (item.name || item.id || '').toLowerCase();
-    if (!lostOne && (name.includes('phone') || name.includes('iphone') || name.includes('galaxy') || name.includes('samsung'))) {
+  S.inventory = S.inventory.filter(function (item) {
+    if (lostOne || !item) return !lostOne ? true : false;
+    /* Match by cat === 'phone' which is the reliable field */
+    if (item.cat === 'phone') {
       lostOne = true;
-      return false; /* Remove it from inventory */
+      return false;  /* remove */
     }
-    return true; /* Keep everything else */
+    return true;  /* keep */
   });
   return lostOne;
 }
-
 /* ---- Event pool ---- */
 function p57EventPool() {
   const pool = [];
