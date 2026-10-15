@@ -4,6 +4,7 @@
    - University graduation bug: complete replacement of uniYear
    - Life events system: monthly + yearly random events (family, friends,
      weddings, birthdays, drama)
+   - INTEGRATED CREDIT CARD EVENT PAYMENTS & INVENTORY THEFT
    Load AFTER 56-critical-fixes.js and BEFORE 99-boot.js
    ===================================================================== */
 
@@ -85,7 +86,6 @@ const P57_bankYearBefore = (typeof bankYear === 'function') ? bankYear : null;
 if (P57_bankYearBefore) {
   bankYear = function () {
     P57_bankYearBefore.apply(this, arguments);
-    /* Compounding already happens in base — nothing to add */
   };
 }
 
@@ -106,7 +106,6 @@ viewBank = function () {
     const minPayEGP = Math.max(500, Math.round(debtEGP * 0.05));   /* 5% min */
     const minPayInternal = minPayEGP / rate;
 
-    /* Find the "Pay balance" button for this card */
     const escId = cardId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const payBtnPattern = new RegExp('<button class="btn" onclick="p37PayCardPrompt\\(\'' + escId + '\'\\)">[^<]*<\\/button>');
     const newBtns = '<button class="btn" onclick="p57PayCardFull(\'' + cardId + '\')">Pay full · ' + debtEGP.toLocaleString() + ' EGP</button>' +
@@ -116,7 +115,6 @@ viewBank = function () {
     if (payBtnPattern.test(html)) {
       html = html.replace(payBtnPattern, newBtns);
     } else {
-      /* Insert after the "Approx. EGP balance" row for this card */
       const rowPattern = new RegExp('(<div class="row"><span>Approx\\. EGP balance<\\/span><b>[^<]*<\\/b><\\/div>)');
       html = html.replace(rowPattern, '$1' + newBtns);
     }
@@ -155,11 +153,8 @@ uniYear = function (notes, bill) {
   if (!S || !S.uni) return;
 
   const u = S.uni;
-
-  /* --- Handle both US and Egypt uni formats --- */
   const isEgypt = !!u.universityId;
 
-  /* --- Tuition --- */
   const yearIdx = p57Idx();
   const rate = p57Rate();
   let tuitionInternal = 0;
@@ -169,12 +164,10 @@ uniYear = function (notes, bill) {
   } else {
     const un = (typeof UNIS !== 'undefined' && UNIS[u.type]) ? UNIS[u.type] : null;
     const baseTuition = un ? Number(un.tuition) || 500 : 500;
-    /* Apply era inflation */
     const inflation = (typeof prOf === 'function') ? prOf(gameYear(), S) : 1;
     tuitionInternal = baseTuition * inflation * (u.scholar ? 0.5 : 1);
   }
 
-  /* --- Funding --- */
   if (u.pay === 'parents') {
     if (!parents().length || bestBond() < 20) {
       u.pay = 'self';
@@ -200,23 +193,16 @@ uniYear = function (notes, bill) {
     notes.push('student loan added ' + money(tuitionInternal));
   }
 
-  /* --- Effort effect on grades --- */
   const ef = (typeof EFFORT !== 'undefined' && EFFORT[S.effort]) ? EFFORT[S.effort] : { smarts: 1, happiness: 0, social: 0 };
   const mult = (u.type === 'private') ? 1.15 : 1.0;
   const smartsGain = ef.smarts > 0 ? Math.round(ef.smarts * mult) : ef.smarts;
   fx({ smarts: smartsGain, happiness: ef.happiness || 0, social: (ef.social || 0) + (u.type === 'private' ? 1 : 0) });
 
-  /* --- Advance year --- */
   u.year = (u.year || 0) + 1;
-
-  /* Years total: Egypt uni has it, US-style doesn't, use MAJORS */
   const yearsTotal = u.yearsTotal || ((u.major && MAJORS && MAJORS[u.major]) ? MAJORS[u.major].years : 4);
-
   notes.push('university year ' + u.year + '/' + yearsTotal);
 
-  /* --- Graduation? --- */
   if (u.year >= yearsTotal) {
-    /* Determine the major */
     let majorId = u.major || null;
     if (!majorId && u.faculty) {
       const facultyMap = (typeof P44_FACULTY_TO_MAJOR !== 'undefined') ? P44_FACULTY_TO_MAJOR : {};
@@ -235,7 +221,6 @@ uniYear = function (notes, bill) {
     fx({ happiness: 12, social: 5 });
     log('🎓 GRADUATED from ' + uniName + ' — ' + (u.faculty || majorName) + '. Your degree is recorded.');
 
-    /* Popup */
     setTimeout(function () {
       if (typeof p24Popup === 'function') {
         p24Popup('🎓 University graduation',
@@ -254,14 +239,13 @@ uniYear = function (notes, bill) {
 
 function p57InitEvents(o) {
   o = o || (typeof S !== 'undefined' ? S : null);
-  if (!o) return; /* Safely aborts if game hasn't started yet */
+  if (!o) return; 
   if (!o.p57) o.p57 = {};
   if (typeof o.p57.lastEventAbsMonth !== 'number') o.p57.lastEventAbsMonth = -100;
   if (typeof o.p57.eventsThisYear !== 'number') o.p57.eventsThisYear = 0;
   if (!Array.isArray(o.p57.history)) o.p57.history = [];
 }
 
-/* Properly hook into save migration and new games per MASTER rules */
 const P57_migrateEvents = (typeof migrate === 'function') ? migrate : null;
 if (P57_migrateEvents) {
   migrate = function(o) {
@@ -279,17 +263,28 @@ if (P57_newGameEvents) {
   };
 }
 
+/* Helper: Actually steal the phone from inventory */
+function p57StealPhoneFromInventory() {
+  if (!S || !Array.isArray(S.inventory)) return false;
+  let lostOne = false;
+  S.inventory = S.inventory.filter(function(item) {
+    const name = (item.name || item.id || '').toLowerCase();
+    if (!lostOne && (name.includes('phone') || name.includes('iphone') || name.includes('galaxy') || name.includes('samsung'))) {
+      lostOne = true;
+      return false; /* Remove it from inventory */
+    }
+    return true; /* Keep everything else */
+  });
+  return lostOne;
+}
+
 /* ---- Event pool ---- */
 function p57EventPool() {
   const pool = [];
 
   /* ---------- FAMILY: MONEY ---------- */
   pool.push({
-    id: 'fam_money_parent',
-    category: 'family',
-    weight: 10,
-    minAge: 20,
-    maxAge: 60,
+    id: 'fam_money_parent', category: 'family', weight: 10, minAge: 20, maxAge: 60,
     ok: function () { return (S.family || []).some(function (m) { return m.alive !== false && m.role === 'Mother' && (m.bond || 0) >= 20; }); },
     title: 'Your mother needs help',
     text: function () { return 'Your mother calls. She is short on the household bills this month and asks if you can help with ' + p57EGP(3000).toLocaleString() + ' EGP. She sounds tired.'; },
@@ -301,11 +296,7 @@ function p57EventPool() {
   });
 
   pool.push({
-    id: 'fam_money_sibling',
-    category: 'family',
-    weight: 8,
-    minAge: 20,
-    maxAge: 60,
+    id: 'fam_money_sibling', category: 'family', weight: 8, minAge: 20, maxAge: 60,
     ok: function () { return (S.family || []).some(function (m) { return m.alive !== false && m.role === 'Sibling'; }); },
     title: 'Your sibling needs a loan',
     text: function () { return 'Your sibling calls. They need ' + p57EGP(5000).toLocaleString() + ' EGP urgently — rent is overdue. They promise to pay you back.'; },
@@ -318,11 +309,7 @@ function p57EventPool() {
 
   /* ---------- FAMILY: TIME ---------- */
   pool.push({
-    id: 'fam_visit_request',
-    category: 'family',
-    weight: 10,
-    minAge: 20,
-    maxAge: 70,
+    id: 'fam_visit_request', category: 'family', weight: 10, minAge: 20, maxAge: 70,
     ok: function () { return (S.family || []).some(function (m) { return m.alive !== false && (m.role === 'Mother' || m.role === 'Father'); }); },
     title: 'Your parents want to see you',
     text: function () { return 'Your father calls. He says it has been too long since you visited. He asks if you can come by this weekend. It would be nice to see them.'; },
@@ -335,11 +322,7 @@ function p57EventPool() {
 
   /* ---------- FRIENDS: HANGOUT ---------- */
   pool.push({
-    id: 'friend_coffee',
-    category: 'friend',
-    weight: 20,
-    minAge: 16,
-    maxAge: 80,
+    id: 'friend_coffee', category: 'friend', weight: 20, minAge: 16, maxAge: 80,
     ok: function () { return (S.friends || []).length > 0; },
     title: 'A friend invites you for coffee',
     text: function () { return 'A friend texts you: "Free this Friday? Let\u2019s get coffee — I want to catch up." A coffee date costs about ' + p57EGP(200).toLocaleString() + ' EGP plus transport.'; },
@@ -351,11 +334,7 @@ function p57EventPool() {
   });
 
   pool.push({
-    id: 'friend_dinner',
-    category: 'friend',
-    weight: 12,
-    minAge: 18,
-    maxAge: 80,
+    id: 'friend_dinner', category: 'friend', weight: 12, minAge: 18, maxAge: 80,
     ok: function () { return (S.friends || []).length >= 2; },
     title: 'Dinner with friends',
     text: function () { return 'Friends are organising a dinner at a restaurant on Saturday. Dress nicely. The meal will cost around ' + p57EGP(900).toLocaleString() + ' EGP per person.'; },
@@ -368,11 +347,7 @@ function p57EventPool() {
 
   /* ---------- BIRTHDAY PARTY ---------- */
   pool.push({
-    id: 'friend_birthday',
-    category: 'social',
-    weight: 14,
-    minAge: 16,
-    maxAge: 80,
+    id: 'friend_birthday', category: 'social', weight: 14, minAge: 16, maxAge: 80,
     ok: function () { return (S.friends || []).length > 0; },
     title: 'A friend\u2019s birthday party',
     text: function () { return 'Your friend invites you to their birthday party. You will need a gift — around ' + p57EGP(1200).toLocaleString() + ' EGP is appropriate — plus transport and possibly dinner.'; },
@@ -384,11 +359,7 @@ function p57EventPool() {
   });
 
   pool.push({
-    id: 'family_birthday',
-    category: 'family',
-    weight: 10,
-    minAge: 20,
-    maxAge: 70,
+    id: 'family_birthday', category: 'family', weight: 10, minAge: 20, maxAge: 70,
     ok: function () { return (S.family || []).some(function (m) { return m.alive !== false && (m.role === 'Mother' || m.role === 'Father' || m.role === 'Sibling'); }); },
     title: 'It\u2019s a family member\u2019s birthday',
     text: function () { return 'A close family member\u2019s birthday is coming up. A good gift would cost around ' + p57EGP(1500).toLocaleString() + ' EGP. A simple one would be ' + p57EGP(500).toLocaleString() + ' EGP.'; },
@@ -401,11 +372,7 @@ function p57EventPool() {
 
   /* ---------- WEDDING ---------- */
   pool.push({
-    id: 'friend_wedding',
-    category: 'social',
-    weight: 8,
-    minAge: 22,
-    maxAge: 80,
+    id: 'friend_wedding', category: 'social', weight: 8, minAge: 22, maxAge: 80,
     ok: function () { return (S.friends || []).some(function (f) { return (f.bond || 0) >= 40; }); },
     title: 'A friend is getting married',
     text: function () { return 'A close friend is getting married in a few weeks. Egyptian weddings involve a cash gift (negoot) of 1000–5000 EGP, formal clothing, and often a full day of celebration.'; },
@@ -418,11 +385,7 @@ function p57EventPool() {
 
   /* ---------- SIBLING WEDDING ---------- */
   pool.push({
-    id: 'sibling_wedding',
-    category: 'family',
-    weight: 6,
-    minAge: 22,
-    maxAge: 60,
+    id: 'sibling_wedding', category: 'family', weight: 6, minAge: 22, maxAge: 60,
     ok: function () { return (S.family || []).some(function (m) { return m.alive !== false && m.role === 'Sibling' && m.age >= 20; }); },
     title: 'Your sibling is getting married',
     text: function () { return 'Your sibling is getting married. In Egyptian families, brothers and sisters are expected to help with wedding costs — often 10,000–30,000 EGP depending on your means.'; },
@@ -435,11 +398,7 @@ function p57EventPool() {
 
   /* ---------- FAMILY DINNER ---------- */
   pool.push({
-    id: 'family_dinner',
-    category: 'family',
-    weight: 10,
-    minAge: 20,
-    maxAge: 70,
+    id: 'family_dinner', category: 'family', weight: 10, minAge: 20, maxAge: 70,
     ok: function () { return (S.family || []).some(function (m) { return m.alive !== false; }); },
     title: 'Family dinner invitation',
     text: function () { return 'Your family is having a Friday dinner and expects you to bring something — sweets, fruit, or a dish. Around ' + p57EGP(400).toLocaleString() + ' EGP.'; },
@@ -452,11 +411,7 @@ function p57EventPool() {
 
   /* ---------- COLLEAGUE WEDDING ---------- */
   pool.push({
-    id: 'colleague_wedding',
-    category: 'work',
-    weight: 7,
-    minAge: 22,
-    maxAge: 60,
+    id: 'colleague_wedding', category: 'work', weight: 7, minAge: 22, maxAge: 60,
     ok: function () { return !!S.job; },
     title: 'A colleague is getting married',
     text: function () { return 'A work colleague invites you to their wedding. It is polite to attend and bring a gift of about ' + p57EGP(2000).toLocaleString() + ' EGP. Skipping could look bad in the office.'; },
@@ -469,11 +424,7 @@ function p57EventPool() {
 
   /* ---------- FAMILY DRAMA ---------- */
   pool.push({
-    id: 'family_drama_money',
-    category: 'drama',
-    weight: 8,
-    minAge: 20,
-    maxAge: 60,
+    id: 'family_drama_money', category: 'drama', weight: 8, minAge: 20, maxAge: 60,
     ok: function () { return (S.family || []).filter(function (m) { return m.alive !== false && (m.role === 'Mother' || m.role === 'Father'); }).length >= 1; },
     title: 'Family argument about money',
     text: function () { return 'Your parents are arguing about money again. One of them calls you to vent. You can listen, take sides, or step back.'; },
@@ -486,11 +437,7 @@ function p57EventPool() {
 
   /* ---------- RELATIVE ASKS FOR LOAN ---------- */
   pool.push({
-    id: 'relative_loan',
-    category: 'drama',
-    weight: 6,
-    minAge: 25,
-    maxAge: 70,
+    id: 'relative_loan', category: 'drama', weight: 6, minAge: 25, maxAge: 70,
     ok: function () { return (S.family || []).length >= 3; },
     title: 'A cousin asks for a loan',
     text: function () { return 'A cousin you have not spoken to in months calls. They need ' + p57EGP(8000).toLocaleString() + ' EGP for a business idea. They promise to repay in a year.'; },
@@ -503,11 +450,7 @@ function p57EventPool() {
 
   /* ---------- OLD FRIEND REAPPEARS ---------- */
   pool.push({
-    id: 'old_friend',
-    category: 'friend',
-    weight: 8,
-    minAge: 22,
-    maxAge: 70,
+    id: 'old_friend', category: 'friend', weight: 8, minAge: 22, maxAge: 70,
     ok: function () { return (S.friends || []).length > 0; },
     title: 'An old friend reappears',
     text: function () { return 'Someone you lost touch with messages you out of the blue: "Long time! Let\u2019s catch up properly. Dinner at my place this Friday?"'; },
@@ -520,11 +463,7 @@ function p57EventPool() {
 
   /* ---------- NEIGHBOR INVITE ---------- */
   pool.push({
-    id: 'neighbor_dinner',
-    category: 'social',
-    weight: 5,
-    minAge: 25,
-    maxAge: 70,
+    id: 'neighbor_dinner', category: 'social', weight: 5, minAge: 25, maxAge: 70,
     ok: function () { return S.housing && S.housing !== 'parents' && !S.ownedHomes.some(function (h) { return h.id === S.housing && h.status !== 'live'; }); },
     title: 'A neighbor invites you for dinner',
     text: function () { return 'Your neighbor waves you over: "We are having people over Friday. Join us!" You should bring something — sweets or drinks.'; },
@@ -533,11 +472,7 @@ function p57EventPool() {
       { label: 'Go but bring nothing', cost: function () { return 0; }, effect: function () { return { msg: 'You attended and had a pleasant evening.', fx: { happiness: 2 } }; } },
       { label: 'Decline politely', cost: function () { return 0; }, effect: function () { return { msg: 'You said you had plans. The neighbor smiled but seemed a bit put off.', fx: {} }; } }
     ]
-  })
-   /* =================================================================
-     NEW EXPANDED EVENT POOL (30 EVENTS)
-     Work, Health, Financial, Social, and Household Drama
-     ================================================================= */
+  });
 
   /* ---------- 1. WORKPLACE GOSSIP ---------- */
   pool.push({
@@ -782,7 +717,7 @@ function p57EventPool() {
   /* ---------- 20. DOUBLE DATE ---------- */
   pool.push({
     id: 'awkward_date', category: 'social', weight: 6, minAge: 18, maxAge: 35,
-    ok: function () { return (S.friends || []).length > 0 && (!S.marriage || !S.marriage.wifeWorks); }, // loosely checks if single
+    ok: function () { return (S.friends || []).length > 0 && (!S.marriage || !S.marriage.wifeWorks); },
     title: 'The Setup',
     text: function () { return 'A well-meaning friend sets you up on a blind double date at a nice cafe. It will cost about ' + p57EGP(500).toLocaleString() + ' EGP. They promise the person is "perfect for you."'; },
     choices: [
@@ -915,10 +850,7 @@ function p57EventPool() {
       { label: 'Try to mediate peacefully', cost: function () { return 0; }, effect: function () { return { msg: 'You tried to talk sense into everyone. Nobody listened to you, and you wasted hours stressing.', fx: { stress: 5, happiness: -3 } }; } },
       { label: 'Refuse to get involved', cost: function () { return 0; }, effect: function () { const p = (S.family||[]).find(x => x.role==='Mother' || x.role==='Father'); if(p) p.bond -= 5; return { msg: 'You blocked their numbers and stayed out of it. Your parents feel unsupported, but your mental health is intact.', fx: { happiness: 2 } }; } }
     ]
-  }) 
-   /* =================================================================
-     EXPANSION PACK: 20 REALISTIC EMERGENCIES & EVERYDAY DRAMA
-     ================================================================= */
+  });
 
   /* ---------- 31. THE MICROBUS INCIDENT ---------- */
   pool.push({
@@ -963,7 +895,7 @@ function p57EventPool() {
     title: 'Pickpocketed',
     text: function () { return 'You were squished in a crowded metro carriage at Al Shohada station. When you get off, your wallet is gone. You lost your cash (' + p57EGP(800).toLocaleString() + ' EGP), your National ID, and your bank cards.'; },
     choices: [
-      { label: 'Cancel cards and replace ID (Costs time and 800 EGP)', cost: function () { return p57EGP(800); }, effect: function () { return { msg: 'You spent three miserable mornings in government offices replacing your ID.', fx: { happiness: -5, stress: 5 } }; } }
+      { label: 'Cancel cards and replace ID', cost: function () { return p57EGP(800); }, effect: function () { return { msg: 'You spent three miserable mornings in government offices replacing your ID.', fx: { happiness: -5, stress: 5 } }; } }
     ]
   });
 
@@ -1082,7 +1014,7 @@ function p57EventPool() {
   /* ---------- 44. CRYPTO/STOCK CRASH ---------- */
   pool.push({
     id: 'bad_investment', category: 'financial', weight: 6, minAge: 21, maxAge: 60,
-    ok: function () { return S.wealth > (p57EGP(20000) / p57Rate()); }, // Only if they have decent money
+    ok: function () { return S.wealth > (p57EGP(20000) / p57Rate()); },
     title: 'Market Crash',
     text: function () { return 'Remember that "guaranteed" investment a friend told you about? The market just tanked, and the platform halted withdrawals. You lost a chunk of your savings.'; },
     choices: [
@@ -1137,15 +1069,24 @@ function p57EventPool() {
     ]
   });
 
-  /* ---------- 49. PHONE STOLEN ---------- */
+  /* ---------- 49. PHONE STOLEN (INVENTORY INTEGRATED) ---------- */
   pool.push({
     id: 'phone_stolen', category: 'emergency', weight: 8, minAge: 15, maxAge: 80,
-    ok: function () { return true; },
+    ok: function () { 
+      if (!S || !Array.isArray(S.inventory)) return false;
+      return S.inventory.some(i => {
+        let n = (i.name || i.id || '').toLowerCase();
+        return n.includes('phone') || n.includes('iphone') || n.includes('galaxy') || n.includes('samsung');
+      });
+    },
     title: 'Snatched in Traffic',
-    text: function () { return 'You were sitting in an Uber with the window down, texting. A motorcycle sped by and the passenger snatched the phone right out of your hand. It\'s gone.'; },
+    text: function () { return 'You were sitting in an Uber with the window down, texting. A motorcycle sped by and the passenger snatched your phone right out of your hand. It is gone.'; },
     choices: [
-      { label: 'Buy a replacement phone (8000 EGP)', cost: function () { return p57EGP(8000); }, effect: function () { return { msg: 'You lost all your photos and had to buy a new phone. A terrible day.', fx: { happiness: -6, stress: 5 } }; } },
-      { label: 'Buy a cheap used phone (3000 EGP)', cost: function () { return p57EGP(3000); }, effect: function () { return { msg: 'The used phone is slow and the battery is terrible, but you are connected.', fx: { happiness: -4, stress: 3 } }; } }
+      { label: 'Let it go. I will buy a new one from the Shopping tab.', cost: function () { return 0; }, effect: function () { 
+          const hadPhone = p57StealPhoneFromInventory();
+          return { msg: 'Your phone was stolen from your inventory. You are disconnected from the world until you buy a new one in the Shopping tab.', fx: { happiness: -8, stress: 5 } }; 
+        } 
+      }
     ]
   });
 
@@ -1175,7 +1116,6 @@ function p57PickEvent() {
     return true;
   });
   if (!eligible.length) return null;
-  /* Weighted pick */
   const totalWeight = eligible.reduce(function (sum, e) { return sum + (e.weight || 1); }, 0);
   let roll = Math.random() * totalWeight;
   for (const e of eligible) {
@@ -1188,45 +1128,72 @@ function p57PickEvent() {
 /* ---- Should an event fire? ---- */
 function p57ShouldFireEvent(isMonthly) {
   p57InitEvents();
-  /* Don't fire if a modal is already open */
   if (document.getElementById('p57-event-modal')) return false;
   if (S.pending) return false;
   if (S.yearPopup) return false;
 
   const absMonth = (S.pacingAbsoluteMonth || 0);
-  /* Cooldown: no event within 2 months of the last one */
-  if (absMonth - (S.p57.lastEventAbsMonth || -100) < 2) return false;
 
-  /* Fire chance */
-  const chance = isMonthly ? 0.20 : 0.85;
-  if (Math.random() > chance) return false;
-
-  return true;
+  if (S.pacing === 'monthly' || isMonthly) {
+    if (S.p57.lastEventAbsMonth === absMonth) return false;
+    return true; 
+  } else {
+    if (S.p57.eventsThisYear >= 1) return false;
+    return true;
+  }
 }
 
-/* ---- Show the event modal ---- */
+/* ---- Show the event modal (UPGRADED WITH CREDIT CARDS) ---- */
 function p57ShowEventModal(event) {
   if (!event) return;
   const existing = document.getElementById('p57-event-modal');
   if (existing) existing.remove();
 
   const text = (typeof event.text === 'function') ? event.text() : event.text;
-  const choicesHtml = (event.choices || []).map(function (c, i) {
-    const cost = (typeof c.cost === 'function') ? c.cost() : (c.cost || 0);
-    const costStr = cost > 0 ? ' — ' + cost.toLocaleString() + ' EGP' : '';
-    const canAfford = cost <= Math.round(S.wealth * p57Rate());
-    return '<button class="btn" ' + (canAfford ? '' : 'disabled') + ' onclick="p57ResolveEvent(\'' + event.id + '\',' + i + ')">' +
-      c.label + costStr +
-      (canAfford ? '' : '<small>Not enough cash</small>') +
-      '</button>';
-  }).join('');
+  
+  const hasCard = S && S.bank && Array.isArray(S.bank.activeCards) && S.bank.activeCards.length > 0;
+  const rate = p57Rate();
+
+  let choicesHtml = '';
+  (event.choices || []).forEach(function (c, i) {
+    const costEGP = (typeof c.cost === 'function') ? c.cost() : (c.cost || 0);
+    const internalCost = costEGP / rate;
+    
+    if (costEGP > 0) {
+      const canAffordCash = internalCost <= S.wealth;
+      choicesHtml += '<button class="btn" ' + (canAffordCash ? '' : 'disabled') + ' onclick="p57ResolveEvent(\'' + event.id + '\',' + i + ',\'cash\')">' +
+        c.label + ' (Cash)' +
+        (canAffordCash ? '' : '<small>Not enough cash in bank</small>') +
+        '</button>';
+        
+      if (hasCard) {
+        let cardId = (typeof p38PickCard === 'function') ? p38PickCard(internalCost) : (S.bank.primaryCard || S.bank.activeCards[0]);
+        let limit = 500;
+        if (cardId && typeof p38GetLimit === 'function') {
+            limit = p38GetLimit(cardId);
+        } else if (cardId) {
+            limit = Math.max(500, Math.round(((S.job && S.job.salary) || S.income || 0) * 0.25));
+        }
+        const currentDebt = cardId ? (Number(S.bank.cardDebt[cardId]) || 0) : 0;
+        const canAffordCredit = cardId && (currentDebt + internalCost <= limit);
+        
+        choicesHtml += '<button class="btn" style="border-color:var(--amber); color:var(--amber)" ' + (canAffordCredit ? '' : 'disabled') + ' onclick="p57ResolveEvent(\'' + event.id + '\',' + i + ',\'credit\')">' +
+          c.label + ' (Credit Card)' +
+          (canAffordCredit ? '' : '<small>Exceeds credit limit</small>') +
+          '</button>';
+      }
+    } else {
+      choicesHtml += '<button class="btn" onclick="p57ResolveEvent(\'' + event.id + '\',' + i + ',\'cash\')">' +
+        c.label + '</button>';
+    }
+  });
 
   const modal = document.createElement('div');
   modal.id = 'p57-event-modal';
   modal.className = 'p24-modal-backdrop';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(4,5,12,.78);backdrop-filter:blur(7px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:18px';
   modal.innerHTML = '<div class="p24-modal" style="max-width:460px">' +
-    '<div class="p24-pill">LIFE EVENT · ' + p52FormatDate() + '</div>' +
+    '<div class="p24-pill">LIFE EVENT · ' + (typeof p52FormatDate === 'function' ? p52FormatDate() : S.age) + '</div>' +
     '<h2>' + event.title + '</h2>' +
     '<p>' + text + '</p>' +
     '<div style="margin-top:14px">' + choicesHtml + '</div>' +
@@ -1235,8 +1202,8 @@ function p57ShowEventModal(event) {
 }
 window.p57ShowEventModal = p57ShowEventModal;
 
-/* ---- Resolve the event ---- */
-function p57ResolveEvent(eventId, choiceIndex) {
+/* ---- Resolve the event (UPGRADED WITH CREDIT CARDS) ---- */
+function p57ResolveEvent(eventId, choiceIndex, payMethod) {
   const pool = p57EventPool();
   const event = pool.find(function (e) { return e.id === eventId; });
   if (!event) return;
@@ -1247,35 +1214,34 @@ function p57ResolveEvent(eventId, choiceIndex) {
   const rate = p57Rate();
   const internal = cost / rate;
 
-  if (internal > S.wealth) {
-    hint('You cannot afford that right now.');
-    return;
-  }
-
   if (internal > 0) {
-    S.wealth -= internal;
+    if (payMethod === 'credit') {
+      let cardId = (typeof p38PickCard === 'function') ? p38PickCard(internal) : (S.bank.primaryCard || S.bank.activeCards[0]);
+      if (!cardId) return hint('No credit card available.');
+      S.bank.cardDebt[cardId] = (Number(S.bank.cardDebt[cardId]) || 0) + internal;
+      log('💳 Charged ' + cost.toLocaleString() + ' EGP to ' + cardId + ' for life event.');
+    } else {
+      if (internal > S.wealth) return hint('You cannot afford that right now.');
+      S.wealth -= internal;
+    }
     S.expenses = (S.expenses || 0) + internal;
     S.bill = S.bill || {};
     S.bill.lifeEvents = (S.bill.lifeEvents || 0) + internal;
   }
 
-  /* Apply effect */
   const result = (typeof choice.effect === 'function') ? choice.effect() : (choice.effect || {});
   if (result && result.fx && typeof fx === 'function') fx(result.fx);
 
-  /* Log */
   if (result && result.msg) {
     log('📅 ' + event.title + ' — ' + result.msg);
   }
 
-  /* Record */
   p57InitEvents();
   S.p57.lastEventAbsMonth = (S.pacingAbsoluteMonth || 0);
   S.p57.eventsThisYear = (S.p57.eventsThisYear || 0) + 1;
-  S.p57.history.push({ year: gameYear(), month: p52CurrentMonth(), event: event.id, choice: choiceIndex });
+  S.p57.history.push({ year: gameYear(), month: (typeof p52CurrentMonth === 'function' ? p52CurrentMonth() : 1), event: event.id, choice: choiceIndex, method: payMethod });
   S.p57.history = S.p57.history.slice(-30);
 
-  /* Remove modal */
   const modal = document.getElementById('p57-event-modal');
   if (modal) modal.remove();
 
@@ -1295,7 +1261,6 @@ const P57_p52AdvanceMonthBefore = p52AdvanceMonth;
 p52AdvanceMonth = function () {
   P57_p52AdvanceMonthBefore.apply(this, arguments);
   if (!S) return;
-  /* Check after the tick */
   if (p57ShouldFireEvent(true)) {
     const event = p57PickEvent();
     if (event) setTimeout(function () { p57ShowEventModal(event); }, 200);
@@ -1310,7 +1275,6 @@ ageUp = function () {
   if (!S) return;
   if (S.age === ageBefore) return;
   p57ResetYearlyCounters();
-  /* Fire one event per year in yearly mode */
   if (S.pacing !== 'monthly' && p57ShouldFireEvent(false)) {
     const event = p57PickEvent();
     if (event) setTimeout(function () { p57ShowEventModal(event); }, 400);
@@ -1327,7 +1291,8 @@ viewPacing = function () {
 
   let card = '<section class="card"><h3>🎭 Recent life events</h3>';
   hist.forEach(function (h) {
-    card += '<div class="row"><span>' + (P52_MONTH_NAMES[h.month - 1] || '?') + ' ' + h.year + ' · ' + h.event.replace(/_/g, ' ') + '</span></div>';
+    const mName = (typeof P52_MONTH_NAMES !== 'undefined' && P52_MONTH_NAMES[h.month - 1]) ? P52_MONTH_NAMES[h.month - 1] : '?';
+    card += '<div class="row"><span>' + mName + ' ' + h.year + ' · ' + h.event.replace(/_/g, ' ') + '</span></div>';
   });
   card += '</section>';
   return html + card;
@@ -1336,28 +1301,4 @@ viewPacing = function () {
 /* =================================================================
    INIT
    ================================================================= */
-p57InitEvents() 
-/* =================================================================
-   PART 4 — FORCED EVENT OVERRIDE (100% Chance)
-   Forces an event every month (monthly pacing) or every year (yearly)
-   ================================================================= */
-p57ShouldFireEvent = function (isMonthly) {
-  p57InitEvents();
-  
-  /* Do not fire if a modal is already open or game is pending a choice */
-  if (document.getElementById('p57-event-modal')) return false;
-  if (S.pending) return false;
-  if (S.yearPopup) return false;
-
-  const absMonth = (S.pacingAbsoluteMonth || 0);
-
-  if (S.pacing === 'monthly' || isMonthly) {
-    /* 100% chance every month. Prevent double-firing in the exact same month. */
-    if (S.p57.lastEventAbsMonth === absMonth) return false;
-    return true; 
-  } else {
-    /* 100% chance once per year in yearly mode. */
-    if (S.p57.eventsThisYear >= 1) return false;
-    return true;
-  }
-};
+p57InitEvents();
