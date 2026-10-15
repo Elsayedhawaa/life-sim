@@ -1100,6 +1100,370 @@ function p57EventPool() {
       { label: 'Fight customer service for a refund', cost: function () { return 0; }, effect: function () { if (Math.random() > 0.4) { const amt = p57EGP(800); S.wealth += (amt / p57Rate()); return { msg: 'They eventually refunded you, but you guys ate instant noodles for dinner.', fx: { happiness: -2, stress: 2 } }; } else { return { msg: 'They claimed the GPS showed the driver at your location. You lost the food and the money.', fx: { happiness: -4, stress: 4 } }; } } },
       { label: 'Order something else with cash', cost: function () { return p57EGP(600); }, effect: function () { return { msg: 'You spent double the money, but at least you finally ate.', fx: { happiness: -1, stress: 1 } }; } }
     ]
+  }) 
+   /* =================================================================
+     EXPANSION PACK 3: SHOPPING, CREDIT & HEALTH INSURANCE (30 Events)
+     ================================================================= */
+
+  /* ---------- 51. WHITE FRIDAY TV SALE ---------- */
+  pool.push({
+    id: 'white_friday_tv', category: 'financial', weight: 8, minAge: 20, maxAge: 70,
+    ok: function () { return S.housing !== 'parents'; },
+    title: 'White Friday Mega Sale',
+    text: function () { return 'You get a notification: A massive 65-inch 4K Smart TV is on sale for White Friday at 40% off. It looks incredible, but it still costs ' + p57EGP(15000).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Buy the TV!', cost: function () { return p57EGP(15000); }, effect: function () { return { msg: 'You bought the huge TV! Movie nights are amazing now, even if your wallet is crying.', fx: { happiness: 8, stress: 2 } }; } },
+      { label: 'Resist the urge', cost: function () { return 0; }, effect: function () { return { msg: 'You closed the app. Your current TV is fine. You feel financially responsible, but a bit bored.', fx: { smarts: 2, happiness: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 52. NEW IPHONE RELEASE ---------- */
+  pool.push({
+    id: 'new_iphone', category: 'social', weight: 6, minAge: 18, maxAge: 50,
+    ok: function () { return true; },
+    title: 'The Upgrade Itch',
+    text: function () { return 'Apple just announced the newest iPhone. All your coworkers and friends are talking about upgrading. The peer pressure is real. A new one costs ' + p57EGP(45000).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Buy the new iPhone', cost: function () { return p57EGP(45000); }, effect: function () { return { msg: 'You got the new phone! It takes amazing photos and you look very successful.', fx: { happiness: 6, social: 3, stress: 4 } }; } },
+      { label: 'Keep your old phone', cost: function () { return 0; }, effect: function () { return { msg: 'Your battery drains in 3 hours, but you saved a fortune.', fx: { happiness: -2, smarts: 3 } }; } }
+    ]
+  });
+
+  /* ---------- 53. AIR FRYER CRAZE ---------- */
+  pool.push({
+    id: 'air_fryer', category: 'financial', weight: 10, minAge: 20, maxAge: 60,
+    ok: function () { return S.housing !== 'parents'; },
+    title: 'The Air Fryer Cult',
+    text: function () { return 'Everyone on TikTok and in your friend group is obsessed with their new air fryers. You feel like you are missing out on healthy, easy cooking. A good one is ' + p57EGP(5500).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Buy the Air Fryer', cost: function () { return p57EGP(5500); }, effect: function () { return { msg: 'You make fries with zero oil now. It was totally worth it.', fx: { health: 2, happiness: 3 } }; } },
+      { label: 'Skip it', cost: function () { return 0; }, effect: function () { return { msg: 'You continue eating deep-fried food like a traditionalist.', fx: { health: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 54. WASHING MACHINE DEATH ---------- */
+  pool.push({
+    id: 'washing_machine', category: 'emergency', weight: 8, minAge: 22, maxAge: 80,
+    ok: function () { return S.housing && S.housing !== 'parents'; },
+    title: 'Flooded Kitchen',
+    text: function () { return 'Your washing machine makes a horrific grinding noise, stops mid-cycle, and leaks soapy water everywhere. The motor is dead. A replacement is ' + p57EGP(14000).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Buy a new washing machine', cost: function () { return p57EGP(14000); }, effect: function () { return { msg: 'You bought a brand new machine. Your clothes are clean, but that was an awful expense.', fx: { happiness: 1, stress: 3 } }; } },
+      { label: 'Wash by hand / Use laundry service for now', cost: function () { return p57EGP(1000); }, effect: function () { return { msg: 'You are spending hours hand-washing socks and paying the dry cleaner. It is exhausting.', fx: { happiness: -5, stress: 5, health: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 55. HEALTH INSURANCE GAP (BLOOD TESTS) ---------- */
+  pool.push({
+    id: 'health_insurance_gap', category: 'health', weight: 9, minAge: 22, maxAge: 65,
+    ok: function () { return true; },
+    title: 'Doctor Ordered Tests',
+    text: function () { return 'You have been feeling dizzy. The doctor ordered a massive panel of blood tests and an MRI. ' + (S.job ? 'Because you have corporate health insurance, you only pay a copay.' : 'Since you don\'t have a corporate job, you must pay fully out of pocket.'); },
+    choices: [
+      { label: 'Get the tests done', cost: function () { return S.job ? p57EGP(600) : p57EGP(4500); }, effect: function () { return { msg: 'You got the tests. Turns out you just need Vitamin D and iron. Good to know!', fx: { health: 4, happiness: 1 } }; } },
+      { label: 'Skip the expensive tests', cost: function () { return 0; }, effect: function () { return { msg: 'You ignored the dizziness. It haunts you and gives you anxiety every time you stand up fast.', fx: { health: -4, stress: 4 } }; } }
+    ]
+  });
+
+  /* ---------- 56. AUTO-RENEWAL SHOCK ---------- */
+  pool.push({
+    id: 'auto_renewal', category: 'financial', weight: 10, minAge: 18, maxAge: 50,
+    ok: function () { return true; },
+    title: 'Annual Subscription Hit',
+    text: function () { return 'You forgot to cancel that premium fitness app and a dating app. They both just auto-renewed for an annual plan. Total charge: ' + p57EGP(2800).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Accept the charge and try to use them', cost: function () { return p57EGP(2800); }, effect: function () { return { msg: 'You paid it. Now you are forcing yourself to do 10-minute workouts out of guilt.', fx: { health: 1, happiness: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 57. USD TRANSACTION FEES ---------- */
+  pool.push({
+    id: 'usd_markup', category: 'financial', weight: 12, minAge: 18, maxAge: 60,
+    ok: function () { return true; },
+    title: 'Bank Markup Fees',
+    text: function () { return 'You booked a flight/hotel online using a foreign site. Your bank applied a massive 10% currency markup and commission fee on the transaction, adding ' + p57EGP(1500).toLocaleString() + ' EGP to your bill.'; },
+    choices: [
+      { label: 'Pay the markup', cost: function () { return p57EGP(1500); }, effect: function () { return { msg: 'The hidden bank fees hurt your soul, but the payment went through.', fx: { happiness: -3 } }; } }
+    ]
+  });
+
+  /* ---------- 58. WISDOM TOOTH SURGERY ---------- */
+  pool.push({
+    id: 'wisdom_tooth', category: 'health', weight: 8, minAge: 18, maxAge: 35,
+    ok: function () { return true; },
+    title: 'Impacted Wisdom Tooth',
+    text: function () { return 'Your jaw is swelling. An x-ray shows an impacted wisdom tooth pushing against your nerves. You need minor oral surgery. Cost: ' + p57EGP(4500).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Get the surgery', cost: function () { return p57EGP(4500); }, effect: function () { return { msg: 'Your face was swollen like a chipmunk for a week, but the pain is finally gone.', fx: { health: 2, happiness: -1 } }; } },
+      { label: 'Take painkillers and wait', cost: function () { return p57EGP(200); }, effect: function () { return { msg: 'The infection spread. You were in agony for weeks before giving in.', fx: { health: -6, happiness: -6, stress: 5 } }; } }
+    ]
+  });
+
+  /* ---------- 59. EXPENSIVE SKINCARE URGE ---------- */
+  pool.push({
+    id: 'skincare_urge', category: 'shopping', weight: 8, minAge: 18, maxAge: 40,
+    ok: function () { return true; },
+    title: 'The Skincare Routine',
+    text: function () { return 'You fell down a dermatologist rabbit hole on YouTube. Now you feel an overwhelming urge to buy imported serums, sunscreens, and moisturizers to fix your skin (' + p57EGP(3500).toLocaleString() + ' EGP).'; },
+    choices: [
+      { label: 'Buy the premium routine', cost: function () { return p57EGP(3500); }, effect: function () { return { msg: 'You bought it all. Your skin is glowing and your confidence is up!', fx: { happiness: 4, social: 2, health: 1 } }; } },
+      { label: 'Stick to local pharmacy soap', cost: function () { return p57EGP(100); }, effect: function () { return { msg: 'You saved money, but you still have those annoying breakouts.', fx: { happiness: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 60. ERGONOMIC CHAIR ---------- */
+  pool.push({
+    id: 'ergo_chair', category: 'shopping', weight: 8, minAge: 22, maxAge: 60,
+    ok: function () { return !!S.job; },
+    title: 'Crippling Back Pain',
+    text: function () { return 'Sitting at a desk all day is destroying your lower back. You desperately want to buy a high-end ergonomic office chair. It costs ' + p57EGP(8000).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Invest in the chair', cost: function () { return p57EGP(8000); }, effect: function () { return { msg: 'It looks like a spaceship, but your back pain vanished completely.', fx: { health: 5, happiness: 3 } }; } },
+      { label: 'Buy a cheap cushion', cost: function () { return p57EGP(300); }, effect: function () { return { msg: 'The cushion flattened in two days. Your back still aches.', fx: { health: -2, happiness: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 61. SUPERSTAR CONCERT ---------- */
+  pool.push({
+    id: 'big_concert', category: 'social', weight: 8, minAge: 18, maxAge: 35,
+    ok: function () { return (S.friends || []).length > 0; },
+    title: 'Amr Diab Concert',
+    text: function () { return 'Amr Diab (or a massive international DJ) is playing a concert in Gouna/Sahel. VIP Tickets and transport will run you ' + p57EGP(4500).toLocaleString() + ' EGP. Your friends are all going.'; },
+    choices: [
+      { label: 'Buy the VIP ticket', cost: function () { return p57EGP(4500); }, effect: function () { S.friends.slice(0, 3).forEach(function (f) { f.bond = Math.min(100, (f.bond || 50) + 10); }); return { msg: 'You danced until 4 AM. An unforgettable core memory with friends.', fx: { happiness: 7, social: 5, health: -1 } }; } },
+      { label: 'Skip it, watch the stories', cost: function () { return 0; }, effect: function () { return { msg: 'You saved money, but suffered massive FOMO watching their Instagram stories.', fx: { happiness: -3, social: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 62. PADEL TENNIS OBSESSION ---------- */
+  pool.push({
+    id: 'padel_craze', category: 'social', weight: 8, minAge: 18, maxAge: 45,
+    ok: function () { return (S.friends || []).length > 0; },
+    title: 'The Padel Craze',
+    text: function () { return 'Your social circle is suddenly obsessed with playing Padel every week. Court rentals and buying your own decent racket will cost you ' + p57EGP(3500).toLocaleString() + ' EGP this month.'; },
+    choices: [
+      { label: 'Join the cult, buy the gear', cost: function () { return p57EGP(3500); }, effect: function () { return { msg: 'You are exhausted, but it is super fun and great networking.', fx: { health: 4, social: 4, happiness: 3 } }; } },
+      { label: 'Say it is too expensive', cost: function () { return 0; }, effect: function () { return { msg: 'You got left out of the group chat plans for a few weeks.', fx: { social: -2, happiness: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 63. HIGH-END STEAKHOUSE ---------- */
+  pool.push({
+    id: 'expensive_dinner', category: 'social', weight: 9, minAge: 22, maxAge: 50,
+    ok: function () { return (S.friends || []).length > 0; },
+    title: 'Peer Pressure Dining',
+    text: function () { return 'A friend gets a promotion and insists the group celebrates at a ridiculously overpriced premium steakhouse. Your share of the bill is going to be ' + p57EGP(2500).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Go and pay your share', cost: function () { return p57EGP(2500); }, effect: function () { return { msg: 'The steak was good, but swallowing that bill hurt your stomach.', fx: { happiness: 1, social: 3, stress: 2 } }; } },
+      { label: 'Make up an excuse to skip', cost: function () { return 0; }, effect: function () { return { msg: 'You looked a bit cheap, but you kept your money.', fx: { social: -2, happiness: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 64. WEEKEND IN DAHAB ---------- */
+  pool.push({
+    id: 'dahab_trip', category: 'shopping', weight: 6, minAge: 20, maxAge: 35,
+    ok: function () { return true; },
+    title: 'Spontaneous Travel Urge',
+    text: function () { return 'Work has been so stressful. You have an overwhelming urge to book a spontaneous 4-day trip to Dahab to dive and relax. Cost: ' + p57EGP(6000).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Book it immediately!', cost: function () { return p57EGP(6000); }, effect: function () { return { msg: 'You spent 4 days snorkeling in the Red Sea. Your stress completely vanished.', fx: { happiness: 10, stress: -8, health: 2 } }; } },
+      { label: 'Be responsible and stay home', cost: function () { return 0; }, effect: function () { return { msg: 'You stayed in the noisy city. You saved money but feel burned out.', fx: { happiness: -3, stress: 2 } }; } }
+    ]
+  });
+
+  /* ---------- 65. CAR TIRE BLOWOUT ---------- */
+  pool.push({
+    id: 'car_tires', category: 'emergency', weight: 9, minAge: 20, maxAge: 70,
+    ok: function () { return true; },
+    title: 'Pothole Disaster',
+    text: function () { return 'You hit a massive unseen pothole on the Ring Road. Two of your tires blew out completely, and the rim is bent. You need replacement tires immediately: ' + p57EGP(8500).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Replace the tires', cost: function () { return p57EGP(8500); }, effect: function () { return { msg: 'You got towed and replaced the tires. A horrible, expensive day.', fx: { happiness: -4, stress: 5 } }; } }
+    ]
+  });
+
+  /* ---------- 66. DOG BITE (RABIES SHOT) ---------- */
+  pool.push({
+    id: 'rabies_shot', category: 'health', weight: 6, minAge: 16, maxAge: 80,
+    ok: function () { return true; },
+    title: 'Stray Dog Encounter',
+    text: function () { return 'While walking at night, a defensive street dog nipped your ankle. It broke the skin. You absolutely must go to the hospital for a series of Rabies and Tetanus vaccines (' + p57EGP(1200).toLocaleString() + ' EGP private, or public clinic free but chaotic).'; },
+    choices: [
+      { label: 'Go to a private clinic', cost: function () { return p57EGP(1200); }, effect: function () { return { msg: 'You got clean, fast service for your 5 vaccine doses. You are safe.', fx: { health: 1, happiness: -2 } }; } },
+      { label: 'Go to the public hospital', cost: function () { return p57EGP(100); }, effect: function () { return { msg: 'You waited 6 hours in a chaotic ER for the free vaccine. Very stressful.', fx: { health: 1, happiness: -4, stress: 4 } }; } }
+    ]
+  });
+
+  /* ---------- 67. COWORKER BABY SHOWER ---------- */
+  pool.push({
+    id: 'coworker_baby', category: 'work', weight: 9, minAge: 22, maxAge: 65,
+    ok: function () { return !!S.job; },
+    title: 'Office Collection',
+    text: function () { return 'A coworker just had a baby. HR is passing around an envelope to collect money for a very expensive gold gift. Everyone is putting in ' + p57EGP(500).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Contribute the full amount', cost: function () { return p57EGP(500); }, effect: function () { if(S.job) S.job.perf = Math.min(100, (S.job.perf||50)+2); return { msg: 'You signed the card and contributed. You are seen as a team player.', fx: { social: 2 } }; } },
+      { label: 'Put in 100 EGP and hide', cost: function () { return p57EGP(100); }, effect: function () { return { msg: 'The collector gave you a weird look, but took it.', fx: { social: -1 } }; } },
+      { label: 'Refuse to contribute', cost: function () { return 0; }, effect: function () { return { msg: 'You refused. People talk about how cheap you are in the breakroom.', fx: { social: -3, happiness: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 68. ESPRESSO MACHINE URGE ---------- */
+  pool.push({
+    id: 'espresso_machine', category: 'shopping', weight: 7, minAge: 22, maxAge: 60,
+    ok: function () { return S.housing !== 'parents'; },
+    title: 'The Coffee Snob Phase',
+    text: function () { return 'You are tired of spending 150 EGP on lattes every morning. You have a massive urge to buy a premium home espresso machine with a milk frother (' + p57EGP(11000).toLocaleString() + ' EGP).'; },
+    choices: [
+      { label: 'Buy the espresso machine', cost: function () { return p57EGP(11000); }, effect: function () { return { msg: 'You are now a home barista. Your mornings are magical (and highly caffeinated).', fx: { happiness: 5, health: -1 } }; } },
+      { label: 'Stick to instant coffee', cost: function () { return p57EGP(200); }, effect: function () { return { msg: 'You bought a jar of instant coffee. It tastes like sadness, but saves money.', fx: { happiness: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 69. LASER EYE SURGERY ---------- */
+  pool.push({
+    id: 'laser_eye', category: 'health', weight: 5, minAge: 20, maxAge: 40,
+    ok: function () { return true; },
+    title: 'Tired of Glasses',
+    text: function () { return 'You are sick of contact lenses and fogged-up glasses. A highly-rated eye clinic is running an offer for Lasik surgery. ' + (S.job ? 'Your insurance won\'t cover cosmetic surgery.' : '') + ' It will cost ' + p57EGP(18000).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Get the Lasik surgery', cost: function () { return p57EGP(18000); }, effect: function () { return { msg: 'You can see in 4K! Waking up and just seeing the world is a miracle.', fx: { health: 5, happiness: 8, smarts: 1 } }; } },
+      { label: 'Just buy new glasses', cost: function () { return p57EGP(1500); }, effect: function () { return { msg: 'You updated your prescription. The dream of perfect vision is delayed.', fx: { health: 1 } }; } }
+    ]
+  });
+
+  /* ---------- 70. GAMING CONSOLE RESTOCK ---------- */
+  pool.push({
+    id: 'gaming_console', category: 'shopping', weight: 8, minAge: 16, maxAge: 40,
+    ok: function () { return true; },
+    title: 'PS5 Pro Available',
+    text: function () { return 'You walk past a tech store and see the newest gaming console is finally in stock without a waitlist. It is highly tempting, but costs ' + p57EGP(35000).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Buy the console!', cost: function () { return p57EGP(35000); }, effect: function () { return { msg: 'You bought it! You spent the whole weekend gaming and avoiding your problems.', fx: { happiness: 7, social: -2, stress: -4 } }; } },
+      { label: 'Walk away', cost: function () { return 0; }, effect: function () { return { msg: 'You walked away. Very disciplined, very boring.', fx: { smarts: 2, happiness: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 71. CLOTHES SHOPPING SPREE ---------- */
+  pool.push({
+    id: 'shopping_spree', category: 'shopping', weight: 10, minAge: 18, maxAge: 50,
+    ok: function () { return true; },
+    title: 'Wardrobe Crisis',
+    text: function () { return 'You open your closet and feel like you have absolutely nothing nice to wear. You have a sudden urge to go to the mall and drop ' + p57EGP(6000).toLocaleString() + ' EGP on a new seasonal wardrobe.'; },
+    choices: [
+      { label: 'Go on a shopping spree', cost: function () { return p57EGP(6000); }, effect: function () { return { msg: 'You bought fresh outfits. You look great and feel incredibly confident at work/uni.', fx: { happiness: 4, social: 3 } }; } },
+      { label: 'Just buy one shirt', cost: function () { return p57EGP(600); }, effect: function () { return { msg: 'You bought one item. It didn\'t fix the feeling, but it helped a little.', fx: { happiness: 1 } }; } },
+      { label: 'Wear your old clothes', cost: function () { return 0; }, effect: function () { return { msg: 'You wore a slightly faded hoodie. Nobody actually cares.', fx: { happiness: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 72. AC COMPRESSOR EXPLODES ---------- */
+  pool.push({
+    id: 'ac_breaks', category: 'emergency', weight: 8, minAge: 22, maxAge: 80,
+    ok: function () { return S.housing && S.housing !== 'parents'; },
+    title: 'Air Conditioning Failure',
+    text: function () { return 'It is mid-August (42 degrees). Your AC unit makes a loud popping sound and starts blowing hot air. The compressor is dead. Fix it for ' + p57EGP(8000).toLocaleString() + ' EGP or buy a new one for ' + p57EGP(24000).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Buy a brand new AC', cost: function () { return p57EGP(24000); }, effect: function () { return { msg: 'You bought a new inverter AC. It is freezing cold and saves electricity. RIP wallet.', fx: { happiness: 4, stress: -3 } }; } },
+      { label: 'Replace the compressor', cost: function () { return p57EGP(8000); }, effect: function () { return { msg: 'The fix worked, but the AC makes a weird rattling sound now.', fx: { happiness: 1 } }; } },
+      { label: 'Sleep in the heat (Buy a fan)', cost: function () { return p57EGP(1000); }, effect: function () { return { msg: 'You woke up drenched in sweat every day for a month.', fx: { health: -3, happiness: -6, stress: 6 } }; } }
+    ]
+  });
+
+  /* ---------- 73. WATER HEATER LEAKS ---------- */
+  pool.push({
+    id: 'water_heater', category: 'emergency', weight: 9, minAge: 20, maxAge: 80,
+    ok: function () { return S.housing && S.housing !== 'parents'; },
+    title: 'Freezing Showers',
+    text: function () { return 'It is January. You step into the shower and the water is freezing. You look up and see the water heater is leaking rusty water everywhere. It needs immediate replacement (' + p57EGP(4500).toLocaleString() + ' EGP).'; },
+    choices: [
+      { label: 'Buy and install a new heater', cost: function () { return p57EGP(4500); }, effect: function () { return { msg: 'You got a new heater. The hot shower felt like heaven.', fx: { happiness: 1, health: 1 } }; } },
+      { label: 'Take cold showers until next payday', cost: function () { return 0; }, effect: function () { return { msg: 'You caught a terrible cold and dreaded waking up every morning.', fx: { health: -4, happiness: -5, stress: 4 } }; } }
+    ]
+  });
+
+  /* ---------- 74. EXPENSIVE PERFUME ---------- */
+  pool.push({
+    id: 'expensive_perfume', category: 'shopping', weight: 7, minAge: 18, maxAge: 60,
+    ok: function () { return true; },
+    title: 'The Signature Scent',
+    text: function () { return 'You walk through duty-free or a mall and smell a luxury niche perfume (like Tom Ford or Creed). You want to make it your signature scent, but it is ' + p57EGP(8500).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Buy the luxury perfume', cost: function () { return p57EGP(8500); }, effect: function () { return { msg: 'You bought it. Every time you walk into a room, people ask what you are wearing.', fx: { happiness: 4, social: 3 } }; } },
+      { label: 'Buy a cheap clone/knockoff', cost: function () { return p57EGP(600); }, effect: function () { return { msg: 'It smells similar for 10 minutes, then fades into a weird alcohol smell.', fx: { happiness: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 75. INSTAGRAM AD SCAM ---------- */
+  pool.push({
+    id: 'insta_ad_scam', category: 'shopping', weight: 10, minAge: 15, maxAge: 65,
+    ok: function () { return true; },
+    title: 'The Targeted Ad',
+    text: function () { return 'An incredibly convincing Instagram ad shows a "smart posture corrector" or a "magic cleaning gel" that looks perfect for you. It is only ' + p57EGP(900).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Impulse buy it', cost: function () { return p57EGP(900); }, effect: function () { if (Math.random() > 0.8) { return { msg: 'Surprisingly, it actually works! A rare win.', fx: { happiness: 2 } }; } else { return { msg: 'It arrived broken and looks nothing like the video. You got scammed.', fx: { happiness: -2, smarts: -1 } }; } } },
+      { label: 'Ignore the ad', cost: function () { return 0; }, effect: function () { return { msg: 'You saved your money. Targeted ads have no power over you.', fx: { smarts: 1 } }; } }
+    ]
+  });
+
+  /* ---------- 76. WEDDING OUTFIT PANIC ---------- */
+  pool.push({
+    id: 'wedding_outfit', category: 'shopping', weight: 8, minAge: 20, maxAge: 45,
+    ok: function () { return true; },
+    title: 'Nothing to Wear',
+    text: function () { return 'You have a very upscale wedding to attend this weekend, and you suddenly realize your old suit/dress doesn\'t fit right anymore. You need to buy a new formal outfit (' + p57EGP(5500).toLocaleString() + ' EGP).'; },
+    choices: [
+      { label: 'Buy a brand new outfit', cost: function () { return p57EGP(5500); }, effect: function () { return { msg: 'You looked stunning at the wedding and took great photos.', fx: { happiness: 3, social: 4 } }; } },
+      { label: 'Squeeze into the old one', cost: function () { return 0; }, effect: function () { return { msg: 'You felt uncomfortable and underdressed the entire night. You hid in the back of group photos.', fx: { happiness: -3, social: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 77. TEETH WHITENING URGE ---------- */
+  pool.push({
+    id: 'teeth_whitening', category: 'health', weight: 6, minAge: 20, maxAge: 50,
+    ok: function () { return true; },
+    title: 'Cosmetic Dentistry',
+    text: function () { return 'You\'ve been drinking a lot of coffee, and you notice your teeth are looking yellow in photos. A dentist clinic is offering a professional laser whitening session for ' + p57EGP(3500).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Get the laser whitening', cost: function () { return p57EGP(3500); }, effect: function () { return { msg: 'Your teeth are painfully sensitive for a day, but your smile is blindingly bright.', fx: { happiness: 4, social: 2, health: 1 } }; } },
+      { label: 'Buy whitening strips from pharmacy', cost: function () { return p57EGP(500); }, effect: function () { return { msg: 'It helped a tiny bit, but mostly just made your gums hurt.', fx: { happiness: 1 } }; } },
+      { label: 'Do nothing', cost: function () { return 0; }, effect: function () { return { msg: 'You keep your money, but try not to smile too wide in photos.', fx: { happiness: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 78. BROKEN GLASSES ---------- */
+  pool.push({
+    id: 'broken_glasses', category: 'emergency', weight: 8, minAge: 12, maxAge: 80,
+    ok: function () { return true; },
+    title: 'Snap!',
+    text: function () { return 'You accidentally sat on your glasses (or lost a contact lens). The frame snapped in half. You are basically blind until you replace them. Cost for a decent frame and lenses: ' + p57EGP(2500).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Buy new glasses immediately', cost: function () { return p57EGP(2500); }, effect: function () { return { msg: 'You got a nice new frame. You can see again!', fx: { happiness: 1, stress: -1 } }; } },
+      { label: 'Tape them together', cost: function () { return p57EGP(50); }, effect: function () { return { msg: 'You taped the bridge. You look ridiculous and people keep staring, but you saved money.', fx: { happiness: -4, social: -4, stress: 3 } }; } }
+    ]
+  });
+
+  /* ---------- 79. THERAPY URGE ---------- */
+  pool.push({
+    id: 'therapy_urge', category: 'health', weight: 9, minAge: 18, maxAge: 60,
+    ok: function () { return true; },
+    title: 'Mental Health Check',
+    text: function () { return 'Lately, you have been feeling completely overwhelmed, anxious, and burnt out. You consider booking a session with a good therapist. It costs ' + p57EGP(1200).toLocaleString() + ' EGP per session.'; },
+    choices: [
+      { label: 'Book the therapy session', cost: function () { return p57EGP(1200); }, effect: function () { return { msg: 'Talking it out helped tremendously. You learned some coping mechanisms.', fx: { happiness: 4, stress: -6, health: 2 } }; } },
+      { label: 'Just bottle it up', cost: function () { return 0; }, effect: function () { return { msg: 'You pushed the feelings down. They will definitely explode later.', fx: { happiness: -3, stress: 4, health: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 80. THE "MOKHALES" (FIXER) ---------- */
+  pool.push({
+    id: 'mokhales_papers', category: 'financial', weight: 8, minAge: 21, maxAge: 70,
+    ok: function () { return true; },
+    title: 'Government Paperwork',
+    text: function () { return 'You need to renew an important government document (passport, car license, etc). The line is 4 hours long. A "Mokhales" (fixer) offers to do it all for you while you sit in a cafe, for ' + p57EGP(1500).toLocaleString() + ' EGP in "fees".'; },
+    choices: [
+      { label: 'Pay the fixer', cost: function () { return p57EGP(1500); }, effect: function () { return { msg: 'You drank coffee while he did the work. Expensive, but you saved your sanity.', fx: { happiness: 2, stress: -3 } }; } },
+      { label: 'Stand in line yourself', cost: function () { return p57EGP(300); }, effect: function () { return { msg: 'You lost an entire day to bureaucracy, sweat, and screaming officials.', fx: { happiness: -5, stress: 6, health: -1 } }; } }
+    ]
   });
 
   return pool;
