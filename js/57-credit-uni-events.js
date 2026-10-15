@@ -533,6 +533,388 @@ function p57EventPool() {
       { label: 'Go but bring nothing', cost: function () { return 0; }, effect: function () { return { msg: 'You attended and had a pleasant evening.', fx: { happiness: 2 } }; } },
       { label: 'Decline politely', cost: function () { return 0; }, effect: function () { return { msg: 'You said you had plans. The neighbor smiled but seemed a bit put off.', fx: {} }; } }
     ]
+  })
+   /* =================================================================
+     NEW EXPANDED EVENT POOL (30 EVENTS)
+     Work, Health, Financial, Social, and Household Drama
+     ================================================================= */
+
+  /* ---------- 1. WORKPLACE GOSSIP ---------- */
+  pool.push({
+    id: 'work_gossip', category: 'work', weight: 8, minAge: 20, maxAge: 65,
+    ok: function () { return !!S.job; },
+    title: 'Workplace Drama',
+    text: function () { return 'A coworker tries to drag you into some office gossip about your manager. It is juicy, but getting involved could backfire.'; },
+    choices: [
+      { label: 'Join in on the gossip', cost: function () { return 0; }, effect: function () { if (S.job) S.job.perf = Math.max(0, (S.job.perf || 50) - 5); return { msg: 'Word got back to your manager. Your performance review took a hit.', fx: { social: 2, happiness: -2 } }; } },
+      { label: 'Listen but stay neutral', cost: function () { return 0; }, effect: function () { return { msg: 'You nodded along without saying anything incriminating.', fx: { social: 1 } }; } },
+      { label: 'Tell them you are too busy', cost: function () { return 0; }, effect: function () { if (S.job) S.job.perf = Math.min(100, (S.job.perf || 50) + 2); return { msg: 'You stayed out of it. The coworker thinks you are boring, but your boss is happy.', fx: { social: -1, smarts: 1 } }; } }
+    ]
+  });
+
+  /* ---------- 2. UNPAID OVERTIME ---------- */
+  pool.push({
+    id: 'work_overtime', category: 'work', weight: 10, minAge: 20, maxAge: 65,
+    ok: function () { return !!S.job; },
+    title: 'Urgent Deadline',
+    text: function () { return 'Your boss asks you to stay late every day this week to finish a project. There is no overtime pay, but it might help your career.'; },
+    choices: [
+      { label: 'Work the unpaid overtime', cost: function () { return 0; }, effect: function () { if (S.job) S.job.perf = Math.min(100, (S.job.perf || 50) + 8); return { msg: 'You worked exhausting hours. Your boss was impressed, but you are drained.', fx: { health: -3, happiness: -4 } }; } },
+      { label: 'Compromise (stay late one day)', cost: function () { return 0; }, effect: function () { if (S.job) S.job.perf = Math.min(100, (S.job.perf || 50) + 2); return { msg: 'You helped out a bit without killing yourself.', fx: { health: -1, happiness: -1 } }; } },
+      { label: 'Refuse, say you have plans', cost: function () { return 0; }, effect: function () { if (S.job) S.job.perf = Math.max(0, (S.job.perf || 50) - 6); return { msg: 'You protected your free time, but your boss seemed annoyed.', fx: { happiness: 2 } }; } }
+    ]
+  });
+
+  /* ---------- 3. BROKEN PHONE SCREEN ---------- */
+  pool.push({
+    id: 'broken_phone', category: 'financial', weight: 12, minAge: 16, maxAge: 80,
+    ok: function () { return true; },
+    title: 'Shattered Screen',
+    text: function () { return 'You dropped your phone on the pavement. The screen is completely shattered. Fixing it properly costs ' + p57EGP(2000).toLocaleString() + ' EGP. A cheap fix is ' + p57EGP(600).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Fix it properly', cost: function () { return p57EGP(2000); }, effect: function () { return { msg: 'Your phone looks brand new again.', fx: { happiness: 1 } }; } },
+      { label: 'Get the cheap fix', cost: function () { return p57EGP(600); }, effect: function () { return { msg: 'The new screen has a weird blue tint and the touch is glitchy, but it works.', fx: { happiness: -2 } }; } },
+      { label: 'Live with the cracked screen', cost: function () { return 0; }, effect: function () { return { msg: 'You cut your thumb on the glass twice this week.', fx: { happiness: -4, health: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 4. THE BAWAB / DOORMAN ---------- */
+  pool.push({
+    id: 'bawab_tip', category: 'financial', weight: 12, minAge: 20, maxAge: 80,
+    ok: function () { return S.housing && S.housing !== 'parents'; },
+    title: 'The Bawab',
+    text: function () { return 'The building bawab (doorman) has been doing a lot of heavy lifting for you recently. He hints that a tip (Edeya or just a thank you) would be appreciated.'; },
+    choices: [
+      { label: 'Give a generous tip (300 EGP)', cost: function () { return p57EGP(300); }, effect: function () { return { msg: 'He is thrilled. Your car is always watched and your deliveries are rushed to your door.', fx: { happiness: 2 } }; } },
+      { label: 'Give a standard tip (100 EGP)', cost: function () { return p57EGP(100); }, effect: function () { return { msg: 'He said thanks. Things continue normally.', fx: {} }; } },
+      { label: 'Ignore the hint', cost: function () { return 0; }, effect: function () { return { msg: 'Suddenly, he is never around when you need him.', fx: { happiness: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 5. SAHEL TRIP INVITATION ---------- */
+  pool.push({
+    id: 'sahel_trip', category: 'social', weight: 6, minAge: 18, maxAge: 45,
+    ok: function () { return (S.friends || []).length >= 2; },
+    title: 'Weekend in Sahel',
+    text: function () { return 'Your friends are renting a villa in the North Coast (Sahel) for the weekend. Your share for accommodation, food, and going out will be about ' + p57EGP(6000).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Go all out and join them', cost: function () { return p57EGP(6000); }, effect: function () { S.friends.slice(0, 3).forEach(function (f) { f.bond = Math.min(100, (f.bond || 50) + 10); }); return { msg: 'You had an amazing, unforgettable weekend on the beach.', fx: { happiness: 8, social: 6, health: -1 } }; } },
+      { label: 'Go but try to spend less on outings', cost: function () { return p57EGP(3500); }, effect: function () { S.friends.slice(0, 3).forEach(function (f) { f.bond = Math.min(100, (f.bond || 50) + 5); }); return { msg: 'You went, but felt a bit left out sitting on the beach while they went to expensive parties.', fx: { happiness: 3, social: 3 } }; } },
+      { label: 'Skip it, too expensive', cost: function () { return 0; }, effect: function () { return { msg: 'You stayed in the hot city watching their Instagram stories.', fx: { happiness: -4, social: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 6. FOOD POISONING ---------- */
+  pool.push({
+    id: 'food_poisoning', category: 'health', weight: 10, minAge: 12, maxAge: 80,
+    ok: function () { return true; },
+    title: 'Bad Street Food',
+    text: function () { return 'That late-night liver sandwich was a mistake. You woke up with terrible food poisoning. You need medications and electrolytes (' + p57EGP(400).toLocaleString() + ' EGP).'; },
+    choices: [
+      { label: 'Buy the meds and rest', cost: function () { return p57EGP(400); }, effect: function () { return { msg: 'You stayed in bed for two days and recovered gracefully.', fx: { health: -2, happiness: -2 } }; } },
+      { label: 'Tough it out without meds', cost: function () { return 0; }, effect: function () { return { msg: 'You spent a miserable 4 days suffering in the bathroom. You lost weight and feel awful.', fx: { health: -8, happiness: -6 } }; } }
+    ]
+  });
+
+  /* ---------- 7. SUBSCRIPTION TRAP ---------- */
+  pool.push({
+    id: 'sub_trap', category: 'financial', weight: 10, minAge: 18, maxAge: 80,
+    ok: function () { return true; },
+    title: 'Forgotten Subscription',
+    text: function () { return 'You notice an auto-renewal charge on your card for an app you haven\'t used in a year. It cost ' + p57EGP(1200).toLocaleString() + ' EGP. You can try to fight customer service for a refund.'; },
+    choices: [
+      { label: 'Spend 2 hours arguing for a refund', cost: function () { return 0; }, effect: function () { if (Math.random() < 0.6) { return { msg: 'You eventually got the refund, but it ruined your afternoon.', fx: { happiness: -2, stress: 2 } }; } else { S.wealth -= (p57EGP(1200) / p57Rate()); return { msg: 'They pointed to the Terms of Service. You lost the money anyway.', fx: { happiness: -4 } }; } } },
+      { label: 'Accept the loss and just cancel it', cost: function () { return p57EGP(1200); }, effect: function () { return { msg: 'You paid the stupid tax and moved on.', fx: { happiness: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 8. THE COUSIN COMPARISON ---------- */
+  pool.push({
+    id: 'cousin_compare', category: 'family', weight: 8, minAge: 18, maxAge: 40,
+    ok: function () { return (S.family || []).some(function (m) { return m.role === 'Mother' || m.role === 'Father'; }); },
+    title: 'The Successful Cousin',
+    text: function () { return 'Your parent calls you just to mention how your cousin just bought a new car and got a promotion. The comparison is obvious and annoying.'; },
+    choices: [
+      { label: 'Change the subject calmly', cost: function () { return 0; }, effect: function () { return { msg: 'You brushed it off. Your parent got the hint.', fx: { smarts: 1 } }; } },
+      { label: 'Argue and defend yourself', cost: function () { return 0; }, effect: function () { const p = (S.family || []).find(function (m) { return m.role === 'Mother' || m.role === 'Father'; }); if (p) p.bond = Math.max(0, (p.bond || 50) - 5); return { msg: 'It turned into a fight. You hung up feeling terrible.', fx: { happiness: -4 } }; } },
+      { label: 'Agree and feel bad', cost: function () { return 0; }, effect: function () { return { msg: 'You agreed you need to do better. Your self-esteem took a hit.', fx: { happiness: -5 } }; } }
+    ]
+  });
+
+  /* ---------- 9. GYM PRESSURE ---------- */
+  pool.push({
+    id: 'gym_pressure', category: 'health', weight: 8, minAge: 18, maxAge: 50,
+    ok: function () { return (S.friends || []).length > 0; },
+    title: 'Gym Buddy',
+    text: function () { return 'A friend is pressuring you to join their gym so you can work out together. A 3-month membership is ' + p57EGP(2500).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Sign up and actually go', cost: function () { return p57EGP(2500); }, effect: function () { const f = (S.friends || [])[0]; if (f) f.bond = Math.min(100, (f.bond || 50) + 5); return { msg: 'You went regularly. You feel stronger and closer to your friend.', fx: { health: 5, happiness: 2, social: 3 } }; } },
+      { label: 'Sign up but stop going after a week', cost: function () { return p57EGP(2500); }, effect: function () { return { msg: 'You wasted the money and your friend is annoyed you bailed on them.', fx: { health: 1, happiness: -2 } }; } },
+      { label: 'Refuse to join', cost: function () { return 0; }, effect: function () { return { msg: 'You saved your money, but feel a little guilty every time they post a workout selfie.', fx: { health: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 10. AUNT'S SURPRISE VISIT ---------- */
+  pool.push({
+    id: 'aunt_visit', category: 'family', weight: 8, minAge: 22, maxAge: 60,
+    ok: function () { return S.housing && S.housing !== 'parents'; },
+    title: 'Unannounced Relatives',
+    text: function () { return 'Your aunt and her kids are in the neighborhood and decide to drop by your place unannounced. Your apartment is a mess and you have no food to offer.'; },
+    choices: [
+      { label: 'Order expensive hospitality delivery', cost: function () { return p57EGP(800); }, effect: function () { return { msg: 'You ordered gateaux and juices. She was impressed by your hospitality.', fx: { social: 3, happiness: 1 } }; } },
+      { label: 'Serve whatever you have (tea and biscuits)', cost: function () { return p57EGP(50); }, effect: function () { return { msg: 'She judged your messy house and cheap biscuits, but you survived the visit.', fx: { happiness: -2, stress: 2 } }; } },
+      { label: 'Pretend you are not home', cost: function () { return 0; }, effect: function () { return { msg: 'You hid in silence until they left. Your mother called later to yell at you.', fx: { happiness: -3, social: -3 } }; } }
+    ]
+  });
+
+  /* ---------- 11. PYRAMID SCHEME ---------- */
+  pool.push({
+    id: 'mlm_scheme', category: 'social', weight: 7, minAge: 18, maxAge: 40,
+    ok: function () { return (S.friends || []).length > 0; },
+    title: 'The "Business Opportunity"',
+    text: function () { return 'A friend invites you to coffee, only to pitch you a "guaranteed wealth" network marketing scheme. They want you to buy a starter kit for ' + p57EGP(4000).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Buy the kit to support them', cost: function () { return p57EGP(4000); }, effect: function () { const f = (S.friends || [])[0]; if (f) f.bond = Math.min(100, (f.bond || 50) + 15); return { msg: 'You bought the useless products. You lost money, but your friend loves you.', fx: { smarts: -2, happiness: -2 } }; } },
+      { label: 'Politely decline but pay for coffee', cost: function () { return p57EGP(200); }, effect: function () { return { msg: 'You dodged the scam gracefully.', fx: { smarts: 1 } }; } },
+      { label: 'Call it a scam and walk out', cost: function () { return 0; }, effect: function () { const f = (S.friends || [])[0]; if (f) f.bond = Math.max(0, (f.bond || 50) - 20); return { msg: 'You saved your money, but the friendship is severely damaged.', fx: { social: -3 } }; } }
+    ]
+  });
+
+  /* ---------- 12. DENTAL EMERGENCY ---------- */
+  pool.push({
+    id: 'toothache', category: 'health', weight: 8, minAge: 15, maxAge: 80,
+    ok: function () { return true; },
+    title: 'Severe Toothache',
+    text: function () { return 'You wake up with a pounding toothache. You need a root canal. Going to a good private dentist costs ' + p57EGP(3500).toLocaleString() + ' EGP. A cheap clinic is ' + p57EGP(800).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Go to the good dentist', cost: function () { return p57EGP(3500); }, effect: function () { return { msg: 'The procedure was painless and the tooth is fully fixed.', fx: { health: 1 } }; } },
+      { label: 'Go to the cheap clinic', cost: function () { return p57EGP(800); }, effect: function () { return { msg: 'It hurt. A lot. But the tooth is filled.', fx: { health: -1, happiness: -3 } }; } },
+      { label: 'Just take painkillers', cost: function () { return p57EGP(100); }, effect: function () { return { msg: 'The pain keeps coming back. You can barely sleep.', fx: { health: -5, happiness: -5 } }; } }
+    ]
+  });
+
+  /* ---------- 13. COWORKER ASKS FOR LOAN ---------- */
+  pool.push({
+    id: 'coworker_loan', category: 'work', weight: 6, minAge: 22, maxAge: 65,
+    ok: function () { return !!S.job; },
+    title: 'Awkward Ask',
+    text: function () { return 'A coworker pulls you aside. They are short on rent and ask to borrow ' + p57EGP(2000).toLocaleString() + ' EGP until payday.'; },
+    choices: [
+      { label: 'Lend them the money', cost: function () { return p57EGP(2000); }, effect: function () { if (Math.random() < 0.7) { return { msg: 'They paid you back on time. Your working relationship is great.', fx: { happiness: 1, social: 2 } }; } else { return { msg: 'They keep making excuses. You probably won\'t see that money again.', fx: { happiness: -3, social: -1 } }; } } },
+      { label: 'Make up an excuse to say no', cost: function () { return 0; }, effect: function () { return { msg: 'Things are awkward in the office now, but your money is safe.', fx: { happiness: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 14. WATER CUT ---------- */
+  pool.push({
+    id: 'water_cut', category: 'financial', weight: 10, minAge: 18, maxAge: 80,
+    ok: function () { return S.housing !== null; },
+    title: 'No Water in the Building',
+    text: function () { return 'A main pipe broke in the street. Your building will have no water for 48 hours. You need to buy big water bottles and order delivery for all meals.'; },
+    choices: [
+      { label: 'Buy water and order out', cost: function () { return p57EGP(900); }, effect: function () { return { msg: 'It was highly inconvenient, but you survived the weekend.', fx: { happiness: -2 } }; } },
+      { label: 'Go stay at a cheap hotel/Airbnb', cost: function () { return p57EGP(2500); }, effect: function () { return { msg: 'You spent money for comfort and took a nice hot shower.', fx: { happiness: 1 } }; } },
+      { label: 'Go crash with your parents', cost: function () { return 0; }, effect: function () { return { msg: 'You slept on their couch. Free, but annoying.', fx: { happiness: -1, social: 1 } }; } }
+    ]
+  });
+
+  /* ---------- 15. LOUD NEIGHBORS ---------- */
+  pool.push({
+    id: 'loud_neighbors', category: 'drama', weight: 8, minAge: 20, maxAge: 80,
+    ok: function () { return S.housing !== 'parents'; },
+    title: 'Upstairs Noise',
+    text: function () { return 'The neighbors upstairs are dragging furniture and yelling at 2 AM on a Tuesday. You can\'t sleep.'; },
+    choices: [
+      { label: 'Go upstairs and confront them', cost: function () { return 0; }, effect: function () { if (Math.random() > 0.5) { return { msg: 'They apologized and quieted down. You slept well.', fx: { happiness: 1 } }; } else { return { msg: 'They yelled at you. You went back down angry and awake.', fx: { happiness: -3, stress: 3 } }; } } },
+      { label: 'Call the Bawab to handle it', cost: function () { return p57EGP(50); }, effect: function () { return { msg: 'The Bawab talked to them and the noise stopped.', fx: { happiness: 1 } }; } },
+      { label: 'Put in earplugs and suffer', cost: function () { return 0; }, effect: function () { return { msg: 'You woke up exhausted for work.', fx: { health: -1, happiness: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 16. FOUND CASH ---------- */
+  pool.push({
+    id: 'found_cash', category: 'random', weight: 5, minAge: 12, maxAge: 80,
+    ok: function () { return true; },
+    title: 'A Lucky Find',
+    text: function () { return 'While putting on a winter jacket you haven\'t worn since last year, you reach into the pocket and find a crisp 200 EGP note (scaled for inflation).'; },
+    choices: [
+      { label: 'Keep it', cost: function () { return 0; }, effect: function () { const amt = p57EGP(200); S.wealth += (amt / p57Rate()); return { msg: 'Past you was looking out for present you! Found ' + amt + ' EGP.', fx: { happiness: 3 } }; } }
+    ]
+  });
+
+  /* ---------- 17. SCAM CALL ---------- */
+  pool.push({
+    id: 'scam_call', category: 'financial', weight: 8, minAge: 18, maxAge: 80,
+    ok: function () { return true; },
+    title: 'Bank "Security" Call',
+    text: function () { return 'You get a phone call from someone claiming to be from your bank. They say your account is frozen and they need your OTP to verify your identity.'; },
+    choices: [
+      { label: 'Give them the OTP', cost: function () { return 0; }, effect: function () { const lost = p57EGP(4000); if(S.wealth * p57Rate() > lost) S.wealth -= (lost / p57Rate()); else S.wealth = 0; return { msg: 'It was a scam. They stole money from your account before you could block the card.', fx: { happiness: -8, smarts: -3 } }; } },
+      { label: 'Hang up and block the number', cost: function () { return 0; }, effect: function () { return { msg: 'Nice try, scammers. You protected your money.', fx: { smarts: 2, happiness: 1 } }; } }
+    ]
+  });
+
+  /* ---------- 18. CAR / COMMUTE TROUBLE ---------- */
+  pool.push({
+    id: 'commute_trouble', category: 'financial', weight: 10, minAge: 18, maxAge: 65,
+    ok: function () { return !!S.job; },
+    title: 'Morning Disaster',
+    text: function () { return 'You are running late for an important meeting, but your usual transportation falls through. Taking a premium Uber surge ride will cost ' + p57EGP(300).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Pay the surge price', cost: function () { return p57EGP(300); }, effect: function () { return { msg: 'You made it to the meeting just in time, but your wallet hurts.', fx: { happiness: -1 } }; } },
+      { label: 'Take public transit and arrive late', cost: function () { return p57EGP(20); }, effect: function () { if (S.job) S.job.perf = Math.max(0, (S.job.perf || 50) - 4); return { msg: 'You were 45 minutes late. Your boss publicly scolded you.', fx: { happiness: -3 } }; } },
+      { label: 'Call in sick', cost: function () { return 0; }, effect: function () { if (S.job) S.job.perf = Math.max(0, (S.job.perf || 50) - 2); return { msg: 'You stayed home. You saved money but look unreliable.', fx: { happiness: 1 } }; } }
+    ]
+  });
+
+  /* ---------- 19. SIBLING NEEDS COVER ---------- */
+  pool.push({
+    id: 'sibling_cover', category: 'drama', weight: 8, minAge: 16, maxAge: 40,
+    ok: function () { return (S.family || []).some(function (m) { return m.role === 'Sibling'; }); },
+    title: 'Covering for a Sibling',
+    text: function () { return 'Your younger sibling calls. They sneaked out and need you to lie to your parents about where they are. If you get caught, the parents will be furious with you too.'; },
+    choices: [
+      { label: 'Lie for them', cost: function () { return 0; }, effect: function () { if (Math.random() > 0.4) { const s = (S.family||[]).find(x => x.role==='Sibling'); if (s) s.bond = Math.min(100, (s.bond||50)+8); return { msg: 'You covered successfully. Your sibling owes you one.', fx: { social: 1 } }; } else { const p = (S.family||[]).find(x => x.role==='Mother'); if(p) p.bond -= 10; return { msg: 'You both got caught. Your parents are incredibly disappointed in you.', fx: { happiness: -5 } }; } } },
+      { label: 'Refuse to lie', cost: function () { return 0; }, effect: function () { const s = (S.family||[]).find(x => x.role==='Sibling'); if (s) s.bond -= 10; return { msg: 'Your sibling got in huge trouble and blames you for not helping.', fx: { happiness: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 20. DOUBLE DATE ---------- */
+  pool.push({
+    id: 'awkward_date', category: 'social', weight: 6, minAge: 18, maxAge: 35,
+    ok: function () { return (S.friends || []).length > 0 && (!S.marriage || !S.marriage.wifeWorks); }, // loosely checks if single
+    title: 'The Setup',
+    text: function () { return 'A well-meaning friend sets you up on a blind double date at a nice cafe. It will cost about ' + p57EGP(500).toLocaleString() + ' EGP. They promise the person is "perfect for you."'; },
+    choices: [
+      { label: 'Go on the date', cost: function () { return p57EGP(500); }, effect: function () { if (Math.random() > 0.5) { return { msg: 'The date was actually really fun. You hit it off.', fx: { happiness: 4, social: 3 } }; } else { return { msg: 'It was the most awkward 2 hours of your life. Zero chemistry.', fx: { happiness: -2, social: 1 } }; } } },
+      { label: 'Make an excuse to cancel', cost: function () { return 0; }, effect: function () { return { msg: 'You stayed home and watched Netflix. Safe, but lonely.', fx: { happiness: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 21. APPLIANCE BROKEN ---------- */
+  pool.push({
+    id: 'fridge_broken', category: 'financial', weight: 10, minAge: 22, maxAge: 80,
+    ok: function () { return S.housing && S.housing !== 'parents'; },
+    title: 'Broken Refrigerator',
+    text: function () { return 'You wake up to find a puddle of water in the kitchen. Your fridge has completely stopped working. All your food is spoiling.'; },
+    choices: [
+      { label: 'Call an emergency technician', cost: function () { return p57EGP(1500); }, effect: function () { return { msg: 'The technician fixed the compressor. Most of your food was saved.', fx: { happiness: -1 } }; } },
+      { label: 'Wait days for the warranty guy', cost: function () { return 0; }, effect: function () { return { msg: 'The fix was free, but all your food spoiled and you ate takeout for 4 days.', fx: { happiness: -4, health: -1 } }; } }
+    ]
+  });
+
+  /* ---------- 22. FRIEND STARTUP ---------- */
+  pool.push({
+    id: 'friend_startup', category: 'social', weight: 6, minAge: 20, maxAge: 45,
+    ok: function () { return (S.friends || []).length > 0; },
+    title: 'Support a Friend',
+    text: function () { return 'Your friend just started a new small business selling handmade clothes/candles online. They hint they would love their friends to buy something to support the launch (' + p57EGP(800).toLocaleString() + ' EGP).'; },
+    choices: [
+      { label: 'Buy a product to support them', cost: function () { return p57EGP(800); }, effect: function () { const f = (S.friends || [])[0]; if (f) f.bond = Math.min(100, (f.bond || 50) + 12); return { msg: 'Your friend was incredibly grateful for the support. (The product isn\'t bad either).', fx: { happiness: 2, social: 2 } }; } },
+      { label: 'Just share their post on social media', cost: function () { return 0; }, effect: function () { const f = (S.friends || [])[0]; if (f) f.bond = Math.min(100, (f.bond || 50) + 2); return { msg: 'You supported them for free. They appreciated it.', fx: { social: 1 } }; } },
+      { label: 'Ignore it', cost: function () { return 0; }, effect: function () { return { msg: 'You ignored the launch. Your friend definitely noticed who bought and who didn\'t.', fx: { social: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 23. ELECTRICITY SPIKE ---------- */
+  pool.push({
+    id: 'electric_spike', category: 'financial', weight: 12, minAge: 20, maxAge: 80,
+    ok: function () { return S.housing && S.housing !== 'parents'; },
+    title: 'Summer Electricity Bill',
+    text: function () { return 'The August heat wave was brutal, and you ran the AC non-stop. The electricity bill just arrived and it is ' + p57EGP(2000).toLocaleString() + ' EGP higher than normal.'; },
+    choices: [
+      { label: 'Pay the bill', cost: function () { return p57EGP(2000); }, effect: function () { return { msg: 'Ouch. That hurt the wallet, but at least you didn\'t melt in the heat.', fx: { happiness: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 24. BAD BREAKUP FRIEND ---------- */
+  pool.push({
+    id: 'friend_breakup', category: 'social', weight: 8, minAge: 18, maxAge: 50,
+    ok: function () { return (S.friends || []).length > 0; },
+    title: 'The Breakup',
+    text: function () { return 'Your best friend just went through a horrible breakup. They show up at your door crying and want to stay over and talk all night.'; },
+    choices: [
+      { label: 'Order comfort food and stay up all night', cost: function () { return p57EGP(600); }, effect: function () { const f = (S.friends || [])[0]; if (f) f.bond = Math.min(100, (f.bond || 50) + 15); return { msg: 'You were a great friend. You are exhausted today, but they needed you.', fx: { health: -2, happiness: 2, social: 4 } }; } },
+      { label: 'Talk for an hour, then send them home', cost: function () { return 0; }, effect: function () { return { msg: 'You gave them some advice but protected your sleep schedule.', fx: { social: -1 } }; } },
+      { label: 'Say you are too busy', cost: function () { return 0; }, effect: function () { const f = (S.friends || [])[0]; if (f) f.bond -= 20; return { msg: 'You abandoned them when they needed you most. The friendship is cracked.', fx: { happiness: -3, social: -4 } }; } }
+    ]
+  });
+
+  /* ---------- 25. YOUNGER SIBLING ADVICE ---------- */
+  pool.push({
+    id: 'sibling_advice', category: 'family', weight: 8, minAge: 24, maxAge: 50,
+    ok: function () { return (S.family || []).some(function (m) { return m.role === 'Sibling' && m.age < S.age; }); },
+    title: 'Career Advice',
+    text: function () { return 'Your younger sibling asks you for advice. They want to drop out of university to pursue a risky career as an influencer/artist.'; },
+    choices: [
+      { label: 'Encourage them to follow their dreams', cost: function () { return 0; }, effect: function () { const s = (S.family||[]).find(x => x.role==='Sibling'); if (s) s.bond += 10; return { msg: 'Your sibling is thrilled, but your parents blame you for "corrupting" them.', fx: { happiness: 1, social: -2 } }; } },
+      { label: 'Tell them to be realistic and finish school', cost: function () { return 0; }, effect: function () { return { msg: 'You gave harsh but safe advice. They were annoyed but listened.', fx: { smarts: 2 } }; } },
+      { label: 'Take them out to dinner to discuss it properly', cost: function () { return p57EGP(800); }, effect: function () { const s = (S.family||[]).find(x => x.role==='Sibling'); if (s) s.bond += 12; return { msg: 'You had a deep, meaningful talk. You feel like a great older sibling.', fx: { happiness: 4, social: 2 } }; } }
+    ]
+  });
+
+  /* ---------- 26. PARENTS ANNIVERSARY ---------- */
+  pool.push({
+    id: 'parents_anniversary', category: 'family', weight: 8, minAge: 18, maxAge: 50,
+    ok: function () { return (S.family || []).filter(function (m) { return m.role === 'Mother' || m.role === 'Father'; }).length === 2; },
+    title: 'Parents Anniversary',
+    text: function () { return 'Your siblings want to pool money together to buy your parents a very nice anniversary gift (A weekend trip or a new TV). Your share is ' + p57EGP(3500).toLocaleString() + ' EGP.'; },
+    choices: [
+      { label: 'Pay your share willingly', cost: function () { return p57EGP(3500); }, effect: function () { (S.family || []).forEach(function (m) { m.bond = Math.min(100, (m.bond || 50) + 8); }); return { msg: 'Your parents cried when they got the gift. The whole family is happy.', fx: { happiness: 5 } }; } },
+      { label: 'Say you can only afford half', cost: function () { return p57EGP(1750); }, effect: function () { return { msg: 'Your siblings covered the rest. It caused a bit of friction, but the parents got the gift.', fx: { happiness: 2 } }; } },
+      { label: 'Refuse to pay', cost: function () { return 0; }, effect: function () { (S.family || []).filter(function(x){return x.role==='Sibling';}).forEach(function (m) { m.bond -= 15; }); return { msg: 'Your siblings are furious with you. You look cheap.', fx: { happiness: -4 } }; } }
+    ]
+  });
+
+  /* ---------- 27. INSOMNIA WEEK ---------- */
+  pool.push({
+    id: 'insomnia_week', category: 'health', weight: 8, minAge: 18, maxAge: 80,
+    ok: function () { return true; },
+    title: 'Bout of Insomnia',
+    text: function () { return 'For an entire week, you find it impossible to fall asleep before 4 AM. You are exhausted during the day and your brain feels foggy.'; },
+    choices: [
+      { label: 'Go to a pharmacy for sleep aids', cost: function () { return p57EGP(250); }, effect: function () { return { msg: 'The pills knocked you out. You finally caught up on sleep, but felt groggy.', fx: { health: 1, happiness: -1 } }; } },
+      { label: 'Just drink lots of coffee and survive', cost: function () { return p57EGP(150); }, effect: function () { return { msg: 'You survived the week on caffeine, but your heart rate is crazy and you are miserable.', fx: { health: -4, happiness: -4, stress: 4 } }; } },
+      { label: 'Take two days off work to rest', cost: function () { return 0; }, effect: function () { if (S.job) S.job.perf = Math.max(0, (S.job.perf || 50) - 3); return { msg: 'You lost some traction at work, but your body finally rested.', fx: { health: 3, happiness: 1 } }; } }
+    ]
+  });
+
+  /* ---------- 28. TEAM BUILDING ---------- */
+  pool.push({
+    id: 'work_team_building', category: 'work', weight: 8, minAge: 20, maxAge: 65,
+    ok: function () { return !!S.job; },
+    title: 'Mandatory Fun',
+    text: function () { return 'Your company is doing a "team building" escape room and dinner. It is technically voluntary, but the managers are noting who attends. Everyone has to pay ' + p57EGP(600).toLocaleString() + ' EGP for their own dinner.'; },
+    choices: [
+      { label: 'Go and pay', cost: function () { return p57EGP(600); }, effect: function () { if (S.job) S.job.perf = Math.min(100, (S.job.perf || 50) + 4); return { msg: 'You faked a smile, escaped the room, and scored points with the boss.', fx: { social: 2, happiness: -1 } }; } },
+      { label: 'Skip it', cost: function () { return 0; }, effect: function () { if (S.job) S.job.perf = Math.max(0, (S.job.perf || 50) - 3); return { msg: 'You went home early. You missed out on the networking, but kept your money.', fx: { happiness: 2, social: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 29. CHARITY CASE ---------- */
+  pool.push({
+    id: 'street_charity', category: 'random', weight: 8, minAge: 16, maxAge: 80,
+    ok: function () { return true; },
+    title: 'A Cry for Help',
+    text: function () { return 'While walking out of a supermarket, an elderly person quietly asks you for help buying some basic groceries for their family.'; },
+    choices: [
+      { label: 'Buy them a full grocery bag', cost: function () { return p57EGP(500); }, effect: function () { return { msg: 'You bought them rice, oil, chicken, and bread. They prayed for you. You feel deeply fulfilled.', fx: { happiness: 6, health: 1 } }; } },
+      { label: 'Give them some cash', cost: function () { return p57EGP(100); }, effect: function () { return { msg: 'You gave what you could spare. They thanked you.', fx: { happiness: 2 } }; } },
+      { label: 'Apologize and walk away', cost: function () { return 0; }, effect: function () { return { msg: 'You walked away, but felt a pang of guilt on the drive home.', fx: { happiness: -2 } }; } }
+    ]
+  });
+
+  /* ---------- 30. INHERITANCE DISPUTE ---------- */
+  pool.push({
+    id: 'inheritance_drama', category: 'drama', weight: 5, minAge: 25, maxAge: 60,
+    ok: function () { return (S.family || []).some(function(m){return m.role === 'Mother' || m.role === 'Father';}); },
+    title: 'Family Inheritance Drama',
+    text: function () { return 'Your parents are embroiled in a massive legal dispute with your uncles over an old piece of agricultural land. The tension is spilling over into your life; your uncle demands you convince your parents to give up.'; },
+    choices: [
+      { label: 'Defend your parents aggressively', cost: function () { return 0; }, effect: function () { const p = (S.family||[]).find(x => x.role==='Mother' || x.role==='Father'); if(p) p.bond += 10; return { msg: 'You yelled at your uncle. Your parents are proud of you, but the family is fractured.', fx: { stress: 4, happiness: -2 } }; } },
+      { label: 'Try to mediate peacefully', cost: function () { return 0; }, effect: function () { return { msg: 'You tried to talk sense into everyone. Nobody listened to you, and you wasted hours stressing.', fx: { stress: 5, happiness: -3 } }; } },
+      { label: 'Refuse to get involved', cost: function () { return 0; }, effect: function () { const p = (S.family||[]).find(x => x.role==='Mother' || x.role==='Father'); if(p) p.bond -= 5; return { msg: 'You blocked their numbers and stayed out of it. Your parents feel unsupported, but your mental health is intact.', fx: { happiness: 2 } }; } }
+    ]
   });
 
   return pool;
