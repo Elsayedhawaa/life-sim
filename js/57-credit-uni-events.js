@@ -1503,7 +1503,6 @@ function p57ShouldFireEvent(isMonthly) {
     /* ~25% chance each month → ~3 events per year */
     if (Math.random() > 0.25) return false;
     return true;
-}
   } else {
     if (S.p57.eventsThisYear >= 1) return false;
     return true;
@@ -1548,7 +1547,6 @@ function p57ShowEventModal(event) {
           c.label + ' (Credit Card)' +
           (canAffordCredit ? '' : '<small>Exceeds credit limit</small>') +
           '</button>';
-      }
     } else {
       choicesHtml += '<button class="btn" onclick="p57ResolveEvent(\'' + event.id + '\',' + i + ',\'cash\')">' +
         c.label + '</button>';
