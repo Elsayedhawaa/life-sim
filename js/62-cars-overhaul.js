@@ -416,26 +416,24 @@ const P62_INTERIORS = [
   { id: 'prem',    label: 'Premium leather / Alcantara',usd: 5500, hap: 2, soc: 1 },
   { id: 'sport',   label: 'Sport leather, red stitching',usd: 4000, hap: 1, soc: 1 }
 ];
-
 const P62_OPTIONS = [
   /* id, label, usd, hap, soc, fromYear, untilYear */
   ['sun',     'Panoramic sunroof',               1800, 1, 0, 2007, 9999],
   ['audio',   'Premium audio system',            1500, 1, 0, 2007, 9999],
   ['nav',     'Built-in navigation',             1200, 1, 0, 2007, 2016],
-  ['carplay', 'Apple CarPlay / Android Auto',     400, 1, 0, 2014, 9999],
-  ['cam',     'Backup camera',                    700, 0, 0, 2008, 9999],
+  ['carplay', 'Apple CarPlay / Android Auto',    400,  1, 0, 2014, 9999],
+  ['cam',     'Backup camera',                   700,  0, 0, 2008, 9999],
   ['adas',    'Adaptive cruise + lane assist',   2500, 1, 0, 2015, 9999],
-  ['heat',    'Heated seats and steering wheel',  800, 1, 0, 2007, 9999],
-  ['remote',  'Remote start',                     500, 1, 0, 2007, 9999],
-  ['qi',      'Wireless phone charging',          400, 1, 0, 2017, 9999],
+  ['heat',    'Heated seats and steering wheel', 800,  1, 0, 2007, 9999],
+  ['remote',  'Remote start',                    500,  1, 0, 2007, 9999],
+  ['qi',      'Wireless phone charging',         400,  1, 0, 2017, 9999],
   ['wheels',  '19-inch alloy wheels',            1600, 0, 1, 2007, 9999],
   ['winter',  'Winter package (AWD, snow tyres)',1800, 0, 0, 2007, 9999],
-  ['tow',     'Tow package',                      900, 0, 0, 2007, 9999],
+  ['tow',     'Tow package',                     900,  0, 0, 2007, 9999],
   ['hud',     'Head-up display',                 1200, 1, 1, 2013, 9999],
   ['massage', 'Massaging front seats',           2200, 2, 1, 2015, 9999],
   ['air',     'Air suspension',                  3200, 1, 1, 2012, 9999]
 ];
-
 /* ============ 5. INSURANCE ============ */
 const P62_INSURANCE = {
   none:    { label: 'No insurance',                    mult: 0,    desc: '⚠️ Illegal in Egypt. You will be fined.' },
