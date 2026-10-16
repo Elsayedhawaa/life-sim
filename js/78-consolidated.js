@@ -465,3 +465,184 @@
 
   console.log('[p78] Consolidated file loaded');
 })();
+/* =====================================================================
+   CAR OFFER MODAL — bulletproof accept/decline
+   The base 62-cars-overhaul.js uses m[3] (price) as the car class
+   instead of m[2]. Empty pool → throws → modal freezes. This override
+   uses the correct index and never throws.
+   ===================================================================== */
+(function p78CarOfferFix() {
+  'use strict';
+
+  function closeCarModal() {
+    const m = document.getElementById('p62-offer-modal');
+    if (m) m.remove();
+  }
+
+  window.p62AcceptParentCar = function () {
+    try {
+      if (!S || !S.p62) return closeCarModal();
+      if (!Array.isArray(S.p62.pendingOffers) || !S.p62.pendingOffers.length) {
+        return closeCarModal();
+      }
+
+      /* Consume one offer */
+      S.p62.pendingOffers.shift();
+
+      const tier = (S.p76 && S.p76.wealthLevel) || S.famWealth || 0;
+      const year = (typeof gameYear === 'function') ? gameYear() : 2019;
+
+      if (typeof P62_MODELS === 'undefined' || typeof P62_BRANDS === 'undefined') {
+        console.error('[p78] Car data missing — cannot grant car');
+        return closeCarModal();
+      }
+
+      /* Row structure: [0]make [1]model [2]class [3]price [4]mpg
+                        [5]hap [6]soc [7]life [8]fromYear [9]toYear
+                        [10]hybridFrom [11]isElectric */
+      const validYear = function (m) {
+        const f = Number(m[8]) || 0;
+        const t = Number(m[9]) || 9999;
+        return year >= f && year <= t;
+      };
+
+      let pool = [];
+
+      if (tier >= 5) {
+        /* Ultra-wealthy — luxury / brand new */
+        pool = P62_MODELS.filter(function (m) {
+          if (!validYear(m)) return false;
+          const b = P62_BRANDS[m[0]] || {};
+          return b.tier >= 3 && ['lux','exec','sport','suv'].indexOf(m[2]) >= 0;
+        });
+      } else if (tier === 4) {
+        /* Wealthy — premium */
+        pool = P62_MODELS.filter(function (m) {
+          if (!validYear(m)) return false;
+          const b = P62_BRANDS[m[0]] || {};
+          const cls = m[2];
+          return (b.tier === 3 || ['suv','lux'].indexOf(cls) >= 0) &&
+                 ['econ','compact'].indexOf(cls) === -1;
+        });
+      } else if (tier === 3) {
+        /* Upper-middle — mid / SUV / compact */
+        pool = P62_MODELS.filter(function (m) {
+          return validYear(m) && ['compact','mid','suv'].indexOf(m[2]) >= 0;
+        });
+      } else {
+        /* Middle and below — econ / compact */
+        pool = P62_MODELS.filter(function (m) {
+          return validYear(m) && ['econ','compact'].indexOf(m[2]) >= 0;
+        });
+      }
+
+      /* Fallback: any valid model */
+      if (!pool.length) pool = P62_MODELS.filter(validYear);
+      if (!pool.length) {
+        console.error('[p78] No car models available for year ' + year);
+        return closeCarModal();
+      }
+
+      const model = pool[Math.floor(Math.random() * pool.length)];
+      const brand = P62_BRANDS[model[0]] || { name: model[0] };
+      const baseUSD = (typeof p62BasePriceUSD === 'function')
+        ? p62BasePriceUSD(model, year)
+        : (Number(model[3]) || 20000);
+      const carAge = tier >= 4 ? 0 : tier === 3 ? 1 : 3 + Math.floor(Math.random() * 4);
+      const depreciation = (typeof p62Depreciation === 'function') ? p62Depreciation(carAge) : 0.7;
+      const value = Math.round(baseUSD * depreciation);
+
+      const car = {
+        uid: 'cg' + Math.random().toString(36).slice(2, 8),
+        make: brand.name,
+        name: model[1],
+        cls: model[2],                    /* FIX: class is [2], not [3] */
+        year: year - carAge,
+        trim: 0, color: 0, interior: 0, opts: [],
+        msrp: baseUSD, paid: 0,
+        insurance: 'compreh',
+        insuranceExpiry: year + 1,
+        registrationExpiry: year + 1,
+        miles: carAge * 12000,
+        cond: tier >= 4 ? 98 : tier === 3 ? 80 : 65,
+        age: carAge,
+        acc: false, broken: false, fix: 0,
+        mods: [], modCost: 0,
+        seller: 'parents',
+        brand: model[0],
+        fuel: model[11] ? 'e' : (model[10] && year >= model[10] ? 'h' : 'g'),
+        life: model[7],
+        value: value,
+        int: 0, intc: 0,
+        hasLoan: false
+      };
+
+      S.cars = S.cars || [];
+      S.cars.push(car);
+      S.cars = S.cars.slice(-4);
+
+      if (typeof parents === 'function') {
+        parents().forEach(function (p) {
+          if (p && p.alive !== false) {
+            p.bond = Math.min(100, (p.bond || 50) + 8);
+          }
+        });
+      }
+      if (typeof fx === 'function') fx({ happiness: 6, social: tier >= 4 ? 5 : 3 });
+      if (typeof log === 'function') {
+        log('🎁 Your parents gave you a ' + car.year + ' ' + car.make + ' ' + car.name +
+            (carAge === 0 ? ' — brand new' : ' (used)'));
+      }
+    } catch (e) {
+      console.error('[p78] accept parent car failed:', e);
+    } finally {
+      closeCarModal();
+      if (typeof save === 'function') save();
+      if (typeof render === 'function') render();
+    }
+  };
+
+  window.p62DeclineParentCar = function () {
+    try {
+      if (S && S.p62 && Array.isArray(S.p62.pendingOffers) && S.p62.pendingOffers.length) {
+        S.p62.pendingOffers.shift();
+      }
+      if (typeof parents === 'function') {
+        parents().forEach(function (p) {
+          if (p && p.alive !== false) {
+            p.bond = Math.max(0, (p.bond || 50) - 3);
+          }
+        });
+      }
+      if (typeof log === 'function') log('You politely declined your parents\' car offer.');
+    } catch (e) {
+      console.error('[p78] decline car failed:', e);
+    } finally {
+      closeCarModal();
+      if (typeof save === 'function') save();
+      if (typeof render === 'function') render();
+    }
+  };
+
+  /* Escape key closes a stuck car modal */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    const m = document.getElementById('p62-offer-modal');
+    if (m) {
+      if (S && S.p62 && Array.isArray(S.p62.pendingOffers)) S.p62.pendingOffers = [];
+      m.remove();
+      if (typeof render === 'function') render();
+    }
+  });
+
+  /* If a modal is stuck but there are no pending offers, auto-close it */
+  setInterval(function () {
+    const m = document.getElementById('p62-offer-modal');
+    if (!m) return;
+    if (!S || !S.p62 || !Array.isArray(S.p62.pendingOffers) || !S.p62.pendingOffers.length) {
+      m.remove();
+    }
+  }, 1200);
+
+  console.log('[p78] Car offer modal — bulletproof accept/decline loaded');
+})();
