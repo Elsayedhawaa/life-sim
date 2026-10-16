@@ -546,4 +546,252 @@ const P81_countryWatch = setInterval(function () {
    ================================================================= */
 p81Init(S);
 setTimeout(p81FixParentsHomeValue, 400);
-console.log('[p81] Abroad reality — visa + housing + career adaptation loaded');
+console.log('[p81] Abroad reality — visa + housing + career adaptation loaded')
+/* =================================================================
+   81.15 — PASSPORT FIX (home country based)
+   The passport panel in 25-languages-passport.js derives from
+   S.country. If you live in the UK, it shows a British passport.
+   Fix: derive from S.home (birth country). Only override if the
+   player has actually naturalized (which requires 6+ years abroad
+   with permanent residence).
+   ================================================================= */
+function p81PassportData() {
+  if (!S) return { country: 'egy', name: 'Egyptian passport', access: 50, flag: '🇪🇬' };
+  /* Naturalization check: 6+ years abroad with PR */
+  const yearsAbroad = (S.p81 && S.p81.abroadSinceYear > 0) ? (gameYear() - S.p81.abroadSinceYear) : 0;
+  const naturalized = yearsAbroad >= 6 && S.p81 && S.p81.hasPR;
+  /* Passport country: home by default, current if naturalized */
+  const passportCountry = naturalized ? S.country : (S.home || 'egy');
+  const c = (typeof COUNTRIES !== 'undefined' && COUNTRIES[passportCountry])
+    ? COUNTRIES[passportCountry]
+    : { n: 'Egypt', f: '🇪🇬' };
+  const access = {
+    egy: 50, gbr: 187, usa: 186, deu: 190, can: 186, fra: 190,
+    nld: 190, aus: 186, jpn: 193, kor: 192, ita: 190, sgp: 195,
+    sau: 78, uae: 180
+  }[passportCountry] || 50;
+  return {
+    country: passportCountry,
+    name: c.n + ' passport',
+    access: access,
+    flag: c.f,
+    naturalized: naturalized
+  };
+}
+
+/* Override passportCard if it exists */
+const P81_passportCardBase = (typeof passportCard === 'function') ? passportCard : null;
+if (P81_passportCardBase) {
+  passportCard = function () {
+    if (!S) return '';
+    const d = p81PassportData();
+    const abroad = S.country !== (S.home || 'egy');
+    const abroadName = abroad && COUNTRIES[S.country] ? COUNTRIES[S.country].n : null;
+    const pct = Math.round((d.access / 195) * 100);
+    return '<section class="card"><h3>🛂 Your passport</h3>' +
+      '<div class="row"><span>Country</span><b>' + d.flag + ' ' + d.name + '</b></div>' +
+      '<div class="row"><span>Type</span><b>Ordinary passport</b></div>' +
+      '<div class="row"><span>Visa-free access</span><b>~' + d.access + ' destinations (' + pct + '%)</b></div>' +
+      (abroad
+        ? '<p class="muted" style="font-size:.78rem;margin-top:8px">You currently live in ' + abroadName + ' on a visa. Your passport is still issued by ' + d.country.toUpperCase() + '.</p>'
+        : '<p class="muted" style="font-size:.78rem;margin-top:8px">Your passport is issued by ' + d.country.toUpperCase() + '.</p>') +
+      (d.naturalized
+        ? '<p class="muted" style="font-size:.78rem;color:var(--mint)">✓ You have naturalized in ' + d.country.toUpperCase() + '.</p>'
+        : (abroad && (S.p81 && S.p81.abroadSinceYear > 0)
+          ? '<p class="muted" style="font-size:.78rem">Naturalization possible after ~6 years abroad with permanent residence.</p>'
+          : '')) +
+      '</section>';
+  };
+}
+
+/* Intercept the world tab passport panel and replace it */
+const P81_viewWorldBefore = (typeof viewWorld === 'function') ? viewWorld : null;
+if (P81_viewWorldBefore) {
+  viewWorld = function () {
+    let html = P81_viewWorldBefore.apply(this, arguments);
+    if (!S) return html;
+
+    const d = p81PassportData();
+    const abroad = S.country !== (S.home || 'egy');
+    const abroadName = abroad && COUNTRIES[S.country] ? COUNTRIES[S.country].n : null;
+    const pct = Math.round((d.access / 195) * 100);
+
+    /* Replace the "🛂 Your passport and your options" section entirely */
+    const newSection =
+      '<section class="card">' +
+      '<h3>🛂 Your passport and your options</h3>' +
+      '<div class="row"><span>Your passport</span><b>' + d.flag + ' ' + d.name + '</b></div>' +
+      '<div class="row"><span>Visa-free access</span><b>~' + d.access + ' destinations (' + pct + '%)</b></div>' +
+      (abroad
+        ? '<div class="row"><span>Currently living in</span><b>' + abroadName + ' (on visa)</b></div>'
+        : '') +
+      '<p class="muted" style="font-size:.78rem;margin-top:8px">Numbers are approximate and change every year.</p>' +
+      '<p class="muted" style="font-size:.78rem">A visa application costs money, takes weeks, and is not refunded if refused. Officers look for proof that you will go home: a job, family, property, or savings.</p>' +
+      (abroad
+        ? '<p class="muted" style="font-size:.78rem">On a student visa, you can work part-time only. Full-time roles need employer sponsorship. After graduation, a post-study work visa usually allows 1–3 years without sponsorship.</p>'
+        : '<p class="muted" style="font-size:.78rem">Studying or working abroad can lead to permanent residence, then citizenship. A stronger passport opens more countries without a visa.</p>') +
+      '</section>';
+
+    html = html.replace(
+      /<section class="card">\s*<h3>🛂 Your passport and your options<\/h3>[\s\S]*?<\/section>/,
+      newSection
+    );
+    return html;
+  };
+}
+
+/* =================================================================
+   81.16 — "CONSIDER MASTER'S" BUTTON
+   The button only switches tab. It should open the master's picker.
+   ================================================================= */
+window.p81ShowMasterModal = function () {
+  if (!S) return;
+  const rate = p81Rate();
+  const bankEGP = Math.round(S.wealth * rate);
+  const gpa = (S.gpa && S.gpaN) ? S.gpa : 0;
+
+  const existing = document.getElementById('p81-master-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'p81-master-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(4,5,12,.85);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+  modal.innerHTML = '<div style="background:#14141f;border:1px solid #51416e;border-radius:16px;padding:18px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;color:#e8e8f2">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+    '<b style="font-size:1rem">🎓 Master\'s options</b>' +
+    '<button class="menu-btn" onclick="document.getElementById(\'p81-master-modal\').remove()">✕</button>' +
+    '</div>' +
+    '<p class="muted" style="font-size:.78rem;margin-top:8px">GPA <b>' + gpa.toFixed(2) + '</b> · Bank <b>E£' + bankEGP.toLocaleString() + '</b></p>' +
+    '<div style="margin-top:14px;padding:12px;background:rgba(52,211,153,.08);border-radius:8px;border-left:3px solid var(--mint)">' +
+    '<b style="font-size:.88rem">🇪🇬 Local master\'s in Egypt</b>' +
+    '<p class="muted" style="font-size:.75rem;margin-top:4px">Public: 25k–70k EGP/year · Private: 85k–200k EGP/year · 1–2 years duration · Scholarship available for GPA 3.5+</p>' +
+    '<button class="btn" style="margin-top:8px" onclick="document.getElementById(\'p81-master-modal\').remove()">Pick subject & apply below</button>' +
+    '</div>' +
+    '<div style="margin-top:12px;padding:12px;background:rgba(139,92,246,.08);border-radius:8px;border-left:3px solid var(--violet)">' +
+    '<b style="font-size:.88rem">🌍 Master\'s abroad</b>' +
+    '<p class="muted" style="font-size:.75rem;margin-top:4px">UK, USA, Germany, Canada, France, Netherlands, Australia, Japan, South Korea, Singapore, Italy, Saudi Arabia, UAE</p>' +
+    '<p class="muted" style="font-size:.75rem">Full cost = tuition + living + blocked account + visa + flight + setup</p>' +
+    '<button class="btn" style="margin-top:8px" onclick="document.getElementById(\'p81-master-modal\').remove()">Scroll down to Study Abroad</button>' +
+    '</div>' +
+    '<p class="muted" style="font-size:.75rem;margin-top:12px;text-align:center">The full master\'s pickers are in the Education tab below the English section.</p>' +
+    '</div>';
+  document.body.appendChild(modal);
+};
+
+/* Replace "Consider master's" buttons in the Education tab HTML */
+const P81_viewSchoolBeforeMasterBtn = viewSchool;
+viewSchool = function () {
+  let html = P81_viewSchoolBeforeMasterBtn.apply(this, arguments);
+  if (!S) return html;
+  /* Match any button containing "Consider master" */
+  html = html.replace(
+    /<button[^>]*>🎓 Consider master's<\/button>/g,
+    '<button class="btn" style="text-align:left" onclick="p81ShowMasterModal()">🎓 Consider master\'s</button>'
+  );
+  return html;
+};
+
+/* =================================================================
+   81.17 — GRADUATED -1 CLEANUP
+   The graduation year wasn't set on enrollment-abroad. Rebuild it.
+   ================================================================= */
+function p81FixGraduationYear() {
+  if (!S) return;
+  /* Case 1: p49.graduationYear is negative */
+  if (S.p49 && typeof S.p49.graduationYear === 'number' && S.p49.graduationYear < 0) {
+    if (S.degree && S.age >= 18) {
+      S.p49.graduationYear = gameYear() - 1;
+      log('🔧 Graduation year corrected to ' + S.p49.graduationYear + '.');
+    } else if (!S.degree) {
+      delete S.p49.graduationYear;
+    }
+    save();
+  }
+  /* Case 2: Degree exists but graduation year is missing */
+  if (S.degree && (!S.p49 || !S.p49.graduationYear || S.p49.graduationYear < 0)) {
+    S.p49 = S.p49 || {};
+    S.p49.graduationYear = gameYear() - 1;
+    save();
+  }
+}
+setTimeout(p81FixGraduationYear, 400);
+setTimeout(p81FixGraduationYear, 1500);
+setTimeout(p81FixGraduationYear, 3000);
+
+/* =================================================================
+   81.18 — CAREER VISA GATING
+   If you're abroad on a student visa, full-time jobs need
+   sponsorship. Show a warning card at the top of the career view.
+   ================================================================= */
+const P81_viewCareerBeforeVisaWarn = viewCareer;
+viewCareer = function () {
+  let html = P81_viewCareerBeforeVisaWarn.apply(this, arguments);
+  if (!S || S.age < 18) return html;
+  if (S.country === S.home) return html;
+  if (!S.p81 || !S.p81.visa) return html;
+
+  const visa = S.p81.visa;
+  const cc = COUNTRIES[S.country] || { n: 'abroad' };
+  const warnCard = '<section class="card" style="border-color:var(--amber)"><h3>⚠️ Work rights in ' + cc.n + '</h3>' +
+    '<div class="row"><span>Your visa</span><b>' + visa.name + '</b></div>' +
+    '<div class="row"><span>Work allowed</span><b style="color:var(--cyan)">' + visa.workRights + '</b></div>' +
+    (visa.expiresYear
+      ? '<div class="row"><span>Expires</span><b>' + visa.expiresYear + '</b></div>'
+      : '') +
+    '<p class="muted" style="font-size:.78rem;margin-top:6px">Full-time jobs require employer visa sponsorship. Check the "Work visa sponsorship" line on each posting before applying.</p>' +
+    '</section>';
+  return warnCard + html;
+};
+
+/* =================================================================
+   81.19 — SPONSORSHIP TEXT FIX
+   "Visa sponsorship: Not needed at home" shows while abroad.
+   Correct it to say sponsorship is required.
+   ================================================================= */
+const P81_renderBeforeSponsorFix = render;
+render = function () {
+  const r = P81_renderBeforeSponsorFix.apply(this, arguments);
+  if (!S || S.country === S.home) return r;
+  try {
+    /* Scan all rows for "Visa sponsorship" and fix the text if it says "Not needed" */
+    const rows = document.querySelectorAll('.row, div');
+    rows.forEach(function (n) {
+      const span = n.querySelector('span');
+      const b = n.querySelector('b');
+      if (span && b && span.textContent.trim() === 'Visa sponsorship') {
+        if (b.textContent.indexOf('Not needed') !== -1) {
+          b.textContent = 'Required — you are on a work-restricted visa';
+          b.style.color = 'var(--amber)';
+        }
+      }
+    });
+  } catch (e) {}
+  return r;
+};
+
+/* =================================================================
+   81.20 — JOB ELIGIBILITY BY VISA
+   Wrap any existing job eligibility check if we can find one.
+   Otherwise this is a no-op.
+   ================================================================= */
+if (typeof jobEligibility === 'function') {
+  const P81_jobEligBefore = jobEligibility;
+  jobEligibility = function (post) {
+    const base = P81_jobEligBefore.apply(this, arguments);
+    if (base && base.allowed === false) return base;
+    if (!S || S.country === S.home) return base;
+    if (!S.p81 || !S.p81.visa) return base;
+    const visa = S.p81.visa;
+    if (visa.type === 'student' && post && (post.hours || 0) >= 35 && !post.sponsorship) {
+      return { allowed: false, reason: 'You are on a student visa (' + visa.name + '). Full-time roles require employer sponsorship.' };
+    }
+    return base;
+  };
+}
+
+/* =================================================================
+   81.21 — INIT
+   ================================================================= */
+p81Init(S);
+p81FixGraduationYear();
+console.log('[p81 v3] Passport (home-based) + master button + visa gating + grad year cleanup');
