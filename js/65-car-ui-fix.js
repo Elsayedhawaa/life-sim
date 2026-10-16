@@ -1,13 +1,12 @@
 /* =====================================================================
-   65. CAR UI + PRICE + LOAN DEFAULT — Full Rewrite
+   65. CAR UI + PRICE + LOAN DEFAULT — Final Fixed Version
    Fixes:
-   - P62_OPTIONS is array-of-arrays — read by index [0],[1],[2],[5],[6]
-   - P62_TRIMS and P62_INTERIORS are objects — read by property name
-   - Single source of truth for prices (brand list matches config modal)
-   - Realistic option prices (no more 45k Apple CarPlay)
-   - Add Sell car button on garage tab
+   - Class index is [2] not [3] (was showing wrong class label)
+   - Unified car value: garage and sell button show the SAME number
+   - P62_OPTIONS read as array-of-arrays (fixed)
+   - Single price source: brand list matches config modal
+   - Sell car with dealership fee (10%)
    - Loan default → warnings → repossession
-   - Bank approval shown with reasons + projected cashflow
    Load AFTER 64-final-fixes.js and BEFORE 99-boot.js
    ===================================================================== */
 
@@ -15,10 +14,25 @@ function p65Rate() { return (typeof rateNow === 'function') ? rateNow() : 52.7; 
 function p65Idx()  { return (typeof p14EgyptPriceIndex === 'function') ? p14EgyptPriceIndex(gameYear()) : 1; }
 
 /* =================================================================
-   SINGLE SOURCE OF TRUTH FOR CAR PRICES
+   UNIFIED CAR VALUE — used by garage AND sell button
+   Formula: msrp × depreciation × condition factor
+   ================================================================= */
+function p65CarValueInternal(car) {
+  if (!car) return 0;
+  const msrp = Number(car.msrp) || 0;
+  const dep = (typeof p62Depreciation === 'function') ? p62Depreciation(car.age || 0) : 1;
+  const cond = Number(car.cond) || 100;
+  const condFactor = 0.6 + 0.4 * (cond / 100);
+  return Math.round(msrp * dep * condFactor);
+}
+
+/* =================================================================
+   PRICE HELPERS — single source of truth
+   P62_MODELS row indices:
+     [0]make [1]model [2]class [3]price [4]mpg [5]hap [6]soc [7]life
+     [8]fromYear [9]toYear [10]hybridFrom [11]isElectric
    ================================================================= */
 function p65CarBaseUSD(model, year) {
-  /* Raw USD from data × Egypt tier multiplier. NO CPI yet. */
   if (!model) return 0;
   let usd = Number(model[3]) || 0;
   if (S && S.country === 'egy') {
@@ -30,18 +44,16 @@ function p65CarBaseUSD(model, year) {
   return usd;
 }
 function p65CarBaseEGP(model, year) {
-  /* Display-EGP for base car in current year (2026 baseline × CPI). */
   const usd = p65CarBaseUSD(model, year);
   return Math.round(usd * 52.7 * p65Idx());
 }
 function p65CarBaseInternal(model, year) {
-  /* Internal units so money(x) shows the correct EGP. */
   return p65CarBaseEGP(model, year) / p65Rate();
 }
 function p65EGPtoInternal(egp) { return egp / p65Rate(); }
 function p65InternalToEGP(internal) { return internal * p65Rate(); }
 
-/* Replace the base function so all callers use the same math */
+/* Override the base function so everyone uses this math */
 p62BasePriceUSD = function (model, year) {
   return p65CarBaseInternal(model, year || gameYear());
 };
@@ -62,10 +74,8 @@ function p65CurrentNetInternal() {
 }
 
 /* =================================================================
-   OPTION / TRIM / INTERIOR READERS
-   P62_OPTIONS is array-of-arrays:  [id, label, usd, hap, soc, fromYear, untilYear]
-   P62_TRIMS is array-of-objects:   { id, label, mult, hap, soc, desc }
-   P62_INTERIORS is array-of-objects: { id, label, usd, hap, soc }
+   OPTION READERS (P62_OPTIONS is array-of-arrays)
+   Row: [id, label, usd, hap, soc, fromYear, untilYear]
    ================================================================= */
 function p65OptionsForYear(year) {
   if (typeof P62_OPTIONS === 'undefined') return [];
@@ -85,7 +95,7 @@ function p65OptionPriceInternal(o) {
 }
 
 /* =================================================================
-   CONFIG PRICE (internal units, single source of truth)
+   CONFIG PRICE — single source of truth
    ================================================================= */
 function p65CfgPrice() {
   p62Init();
@@ -96,8 +106,6 @@ function p65CfgPrice() {
   if (!model) return empty;
 
   const year = gameYear();
-
-  /* Base internal */
   const baseInternal = p65CarBaseInternal(model, year);
 
   /* Trim */
@@ -108,7 +116,7 @@ function p65CfgPrice() {
   const interior = (P62_INTERIORS && P62_INTERIORS[cfg.interior]) || (P62_INTERIORS && P62_INTERIORS[0]) || { usd: 0 };
   const interiorInternal = p65EGPtoInternal((Number(interior.usd) || 0) * 52.7 * p65Idx());
 
-  /* Options — array format */
+  /* Options */
   let optsInternal = 0;
   (cfg.opts || []).forEach(function (oid) {
     const o = p65OptionsForYear(year).find(function (opt) { return opt[0] === oid; });
@@ -128,14 +136,13 @@ function p65CfgPrice() {
     insurance: insuranceInternal,
     total: totalInternal,
     model: model,
-    cls: P62_CLS[model[3]] || P62_CLS.compact
+    cls: P62_CLS[model[2]] || P62_CLS.compact   /* FIX: model[2] is class */
   };
 }
-/* Also override p62CfgPrice so other code paths get the fixed version */
 p62CfgPrice = p65CfgPrice;
 
 /* =================================================================
-   LOAN BREAKDOWN (internal units)
+   LOAN BREAKDOWN
    ================================================================= */
 function p65LoanBreakdown(carInternal, downPct, months) {
   const down = carInternal * downPct;
@@ -211,6 +218,7 @@ function p65PurchaseCar(method) {
   const price = p65CfgPrice();
   if (!price.model) return hint('No car configured. Please pick a model first.');
   const rate = p65Rate();
+  const model = price.model;
 
   /* Cash */
   if (method === 'cash') {
@@ -218,56 +226,18 @@ function p65PurchaseCar(method) {
       return hint('❌ Not enough cash. Need ' + Math.round(price.total * rate).toLocaleString() + ' EGP. You have ' + Math.round(S.wealth * rate).toLocaleString() + ' EGP.');
     }
     S.wealth -= price.total;
-  } else {
-    const isSeven = method === 'loan7';
-    const downPct = isSeven ? 0.10 : 0.15;
-    const months = isSeven ? 84 : 60;
-    const loan = p65LoanBreakdown(price.car, downPct, months);
-
-    if (S.wealth < loan.down) {
-      return hint('❌ Not enough cash for down payment. Need ' + loan.downEGP.toLocaleString() + ' EGP. You have ' + Math.round(S.wealth * rate).toLocaleString() + ' EGP.');
-    }
-
-    const pred = p65PredictApproval(loan.monthlyPayment);
-    const approvalChance = Math.max(0.05, Math.min(0.95, 0.5 + pred.score * 0.08));
-    if (Math.random() > approvalChance) {
-      return hint('❌ Bank DECLINED your financing.\n\nReasons: ' + pred.reasons.join(', ') + '\n\nImprove your credit score or income and try again.');
-    }
-
-    S.wealth -= loan.down;
-    if (!S.bank) S.bank = { installments: {}, cardDebt: {}, activeCards: [], primaryCard: null, score: 680, savingsBal: 0, loans: [], missedPmts: 0 };
-    if (!S.bank.installments) S.bank.installments = {};
-
-    /* Create the car first so we can link the loan to it */
     const cfg = S.p62.carCfg;
-    const model = price.model;
     const uid = 'c' + Math.random().toString(36).slice(2, 8);
-
-    const key = 'car_loan_' + uid;
-    S.bank.installments[key] = {
-      name: 'Car loan — ' + model[1] + ' (' + months + ' mo)',
-      totalBalance: loan.totalWithInterest,
-      remaining: loan.totalWithInterest,
-      monthlyPayment: loan.monthlyPayment,
-      monthsTotal: months,
-      monthsLeft: months,
-      fee: loan.totalWithInterest - loan.financed,
-      startedYear: gameYear(),
-      linkedCarUid: uid,
-      missedPayments: 0,
-      warningsSent: 0
-    };
-
     const car = {
       uid: uid,
       make: P62_BRANDS[model[0]] ? P62_BRANDS[model[0]].name : model[0],
       name: model[1],
-      cls: model[3],
+      cls: model[2],                             /* FIX: class is [2] */
       year: gameYear(),
       trim: cfg.trim, color: cfg.color, interior: cfg.interior,
       opts: (cfg.opts || []).slice(),
       msrp: price.car,
-      paid: loan.down + price.registration + price.insurance,
+      paid: price.total,
       insurance: cfg.insurance,
       insuranceExpiry: gameYear() + 1,
       registrationExpiry: gameYear() + 1,
@@ -277,15 +247,13 @@ function p65PurchaseCar(method) {
       fuel: model[11] ? 'e' : (model[10] && gameYear() >= model[10] ? 'h' : 'g'),
       life: model[7],
       value: price.car,
-      hasLoan: true,
-      loanKey: key
+      hasLoan: false
     };
     S.cars = S.cars || [];
     S.cars.push(car);
     S.cars = S.cars.slice(-4);
     fx({ happiness: 8, social: 6 });
-    log('🏦 Bank APPROVED car loan. Down: ' + loan.downEGP.toLocaleString() + ' EGP. Monthly: ' + loan.monthlyEGP.toLocaleString() + ' EGP × ' + months + ' months.');
-    realismNotice('Car purchased on loan', car.year + ' ' + car.make + ' ' + car.name + ' financed over ' + months + ' months.');
+    log('🚗 Purchased ' + car.year + ' ' + car.make + ' ' + car.name + ' for cash (' + Math.round(price.total * rate).toLocaleString() + ' EGP).');
     closeCarModal();
     p62ResetCfg(null, null);
     S.p62.subTab = 'garage';
@@ -293,20 +261,54 @@ function p65PurchaseCar(method) {
     return;
   }
 
-  /* Cash purchase path */
+  /* Loan */
+  const isSeven = method === 'loan7';
+  const downPct = isSeven ? 0.10 : 0.15;
+  const months = isSeven ? 84 : 60;
+  const loan = p65LoanBreakdown(price.car, downPct, months);
+
+  if (S.wealth < loan.down) {
+    return hint('❌ Not enough cash for down payment. Need ' + loan.downEGP.toLocaleString() + ' EGP. You have ' + Math.round(S.wealth * rate).toLocaleString() + ' EGP.');
+  }
+
+  const pred = p65PredictApproval(loan.monthlyPayment);
+  const approvalChance = Math.max(0.05, Math.min(0.95, 0.5 + pred.score * 0.08));
+  if (Math.random() > approvalChance) {
+    return hint('❌ Bank DECLINED your financing.\n\nReasons: ' + pred.reasons.join(', ') + '\n\nImprove your credit score or income and try again.');
+  }
+
+  S.wealth -= loan.down;
+  if (!S.bank) S.bank = { installments: {}, cardDebt: {}, activeCards: [], primaryCard: null, score: 680, savingsBal: 0, loans: [], missedPmts: 0 };
+  if (!S.bank.installments) S.bank.installments = {};
+
   const cfg = S.p62.carCfg;
-  const model = price.model;
   const uid = 'c' + Math.random().toString(36).slice(2, 8);
+  const key = 'car_loan_' + uid;
+
+  S.bank.installments[key] = {
+    name: 'Car loan — ' + model[1] + ' (' + months + ' mo)',
+    totalBalance: loan.totalWithInterest,
+    remaining: loan.totalWithInterest,
+    monthlyPayment: loan.monthlyPayment,
+    monthsTotal: months,
+    monthsLeft: months,
+    fee: loan.totalWithInterest - loan.financed,
+    startedYear: gameYear(),
+    linkedCarUid: uid,
+    missedPayments: 0,
+    warningsSent: 0
+  };
+
   const car = {
     uid: uid,
     make: P62_BRANDS[model[0]] ? P62_BRANDS[model[0]].name : model[0],
     name: model[1],
-    cls: model[3],
+    cls: model[2],                                /* FIX: class is [2] */
     year: gameYear(),
     trim: cfg.trim, color: cfg.color, interior: cfg.interior,
     opts: (cfg.opts || []).slice(),
     msrp: price.car,
-    paid: price.total,
+    paid: loan.down + price.registration + price.insurance,
     insurance: cfg.insurance,
     insuranceExpiry: gameYear() + 1,
     registrationExpiry: gameYear() + 1,
@@ -316,13 +318,15 @@ function p65PurchaseCar(method) {
     fuel: model[11] ? 'e' : (model[10] && gameYear() >= model[10] ? 'h' : 'g'),
     life: model[7],
     value: price.car,
-    hasLoan: false
+    hasLoan: true,
+    loanKey: key
   };
   S.cars = S.cars || [];
   S.cars.push(car);
   S.cars = S.cars.slice(-4);
   fx({ happiness: 8, social: 6 });
-  log('🚗 Purchased ' + car.year + ' ' + car.make + ' ' + car.name + ' for cash (' + Math.round(price.total * rate).toLocaleString() + ' EGP).');
+  log('🏦 Bank APPROVED car loan. Down: ' + loan.downEGP.toLocaleString() + ' EGP. Monthly: ' + loan.monthlyEGP.toLocaleString() + ' EGP × ' + months + ' months.');
+  realismNotice('Car purchased on loan', car.year + ' ' + car.make + ' ' + car.name + ' financed over ' + months + ' months.');
   closeCarModal();
   p62ResetCfg(null, null);
   S.p62.subTab = 'garage';
@@ -334,9 +338,10 @@ function closeCarModal() {
   const m = document.getElementById('p62-cfg-modal');
   if (m) m.remove();
 }
+window.closeCarModal = closeCarModal;
 
 /* =================================================================
-   SELL CAR
+   SELL CAR — matches garage value exactly
    ================================================================= */
 function p65SellCar(uid) {
   if (!S || !S.cars) return;
@@ -344,41 +349,51 @@ function p65SellCar(uid) {
   if (!car) return hint('Car not found.');
 
   const rate = p65Rate();
-  const depFactor = (typeof p62Depreciation === 'function') ? p62Depreciation(car.age || 0) : 0.5;
-  const marketValue = Math.round((Number(car.msrp) || 0) * depFactor * (0.6 + 0.4 * ((car.cond || 100) / 100)));
-  const marketValueEGP = Math.round(marketValue * rate);
+  const fullValueInternal = p65CarValueInternal(car);
+  const fullValueEGP = Math.round(fullValueInternal * rate);
+  const commission = Math.round(fullValueEGP * 0.10);
+  const sellEGP = fullValueEGP - commission;
 
-  /* If car has an active loan, warn */
+  /* With active loan */
   if (car.hasLoan && car.loanKey && S.bank && S.bank.installments && S.bank.installments[car.loanKey]) {
     const loan = S.bank.installments[car.loanKey];
     const loanRemainingEGP = Math.round(loan.remaining * rate);
-    if (loan.remaining > marketValue) {
-      const shortfallEGP = Math.round((loan.remaining - marketValue) * rate);
+
+    if (loan.remaining > fullValueInternal) {
+      const shortfallEGP = Math.round((loan.remaining - fullValueInternal) * rate);
       if (!confirm('⚠️ SELLING AT A LOSS\n\n' +
-        'Market value: ' + marketValueEGP.toLocaleString() + ' EGP\n' +
+        'Car value: ' + fullValueEGP.toLocaleString() + ' EGP\n' +
+        'Dealer commission (10%): -' + commission.toLocaleString() + ' EGP\n' +
+        'You receive: ' + sellEGP.toLocaleString() + ' EGP\n\n' +
         'Loan remaining: ' + loanRemainingEGP.toLocaleString() + ' EGP\n\n' +
-        'You still owe ' + shortfallEGP.toLocaleString() + ' EGP after the sale.\n\n' +
-        'You will pay the shortfall from your cash.\n\nProceed?')) return;
-      if (S.wealth < (loan.remaining - marketValue)) {
+        'After the sale you will still owe ' + shortfallEGP.toLocaleString() + ' EGP.\n\n' +
+        'That amount will be charged to your cash.\n\nProceed?')) return;
+
+      if (S.wealth < p65EGPtoInternal(shortfallEGP)) {
         return hint('❌ You cannot afford the shortfall of ' + shortfallEGP.toLocaleString() + ' EGP.');
       }
-      S.wealth -= (loan.remaining - marketValue);
+      S.wealth -= p65EGPtoInternal(shortfallEGP);
       delete S.bank.installments[car.loanKey];
-      log('🚗 Sold ' + car.make + ' ' + car.name + ' at a loss. Loan cleared with a shortfall of ' + shortfallEGP.toLocaleString() + ' EGP from your cash.');
+      log('🚗 Sold ' + car.make + ' ' + car.name + ' at a loss. Shortfall ' + shortfallEGP.toLocaleString() + ' EGP paid from cash.');
     } else {
-      const net = marketValue - loan.remaining;
+      const netInternal = fullValueInternal - loan.remaining;
+      const netEGP = Math.round(netInternal * rate) - commission;
       if (!confirm('Sell ' + car.year + ' ' + car.make + ' ' + car.name + '?\n\n' +
-        'Market value: ' + marketValueEGP.toLocaleString() + ' EGP\n' +
-        'Loan remaining: ' + loanRemainingEGP.toLocaleString() + ' EGP\n' +
-        'You get: ' + Math.round(net * rate).toLocaleString() + ' EGP\n\nProceed?')) return;
-      S.wealth += net;
+        'Car value: ' + fullValueEGP.toLocaleString() + ' EGP\n' +
+        'Dealer commission (10%): -' + commission.toLocaleString() + ' EGP\n' +
+        'Loan remaining: ' + loanRemainingEGP.toLocaleString() + ' EGP\n\n' +
+        'You receive: ' + netEGP.toLocaleString() + ' EGP\n\nProceed?')) return;
+      S.wealth += p65EGPtoInternal(Math.max(0, netEGP));
       delete S.bank.installments[car.loanKey];
-      log('🚗 Sold ' + car.make + ' ' + car.name + ' and cleared the loan. Net: ' + Math.round(net * rate).toLocaleString() + ' EGP.');
+      log('🚗 Sold ' + car.make + ' ' + car.name + ' and cleared the loan. Net: ' + netEGP.toLocaleString() + ' EGP.');
     }
   } else {
-    if (!confirm('Sell ' + car.year + ' ' + car.make + ' ' + car.name + ' for ' + marketValueEGP.toLocaleString() + ' EGP?')) return;
-    S.wealth += marketValue;
-    log('🚗 Sold ' + car.make + ' ' + car.name + ' for ' + marketValueEGP.toLocaleString() + ' EGP.');
+    if (!confirm('Sell ' + car.year + ' ' + car.make + ' ' + car.name + '?\n\n' +
+      'Car value: ' + fullValueEGP.toLocaleString() + ' EGP\n' +
+      'Dealer commission (10%): -' + commission.toLocaleString() + ' EGP\n\n' +
+      'You receive: ' + sellEGP.toLocaleString() + ' EGP\n\nProceed?')) return;
+    S.wealth += p65EGPtoInternal(sellEGP);
+    log('🚗 Sold ' + car.make + ' ' + car.name + ' for ' + sellEGP.toLocaleString() + ' EGP.');
   }
   S.cars = S.cars.filter(function (c) { return c.uid !== uid; });
   render();
@@ -386,7 +401,7 @@ function p65SellCar(uid) {
 window.p65SellCar = p65SellCar;
 
 /* =================================================================
-   CONFIG MODAL (with correct option indexing)
+   CONFIG MODAL
    ================================================================= */
 function p65RenderConfigModal() {
   p62Init();
@@ -399,12 +414,9 @@ function p65RenderConfigModal() {
   const price = p65CfgPrice();
   const rate = p65Rate();
   const year = gameYear();
-
-  /* Base car EGP for reference */
   const baseCarEGP = p65CarBaseEGP(model, year);
-  const currentCarEGP = Math.round(price.car * rate);
 
-  /* Trim buttons — TRIMS is array-of-objects */
+  /* Trim buttons */
   const trimBtns = P62_TRIMS.map(function (t, i) {
     const delta = Math.round((Number(t.mult) - 1) * baseCarEGP);
     return '<button class="btn ' + (cfg.trim === i ? 'sel' : '') + '" style="margin:0;padding:8px;font-size:.72rem;text-align:left" onclick="p62CfgSet(\'trim\',' + i + ')">' +
@@ -422,14 +434,14 @@ function p65RenderConfigModal() {
     return '<button title="' + label + '" onclick="p62CfgSet(\'color\',' + i + ')" style="width:34px;height:34px;border-radius:50%;background:' + colorHex[i] + ';border:3px solid ' + (cfg.color === i ? 'var(--violet)' : 'var(--line)') + ';cursor:pointer"></button>';
   }).join('');
 
-  /* Interiors — object format */
+  /* Interiors */
   const intBtns = P62_INTERIORS.map(function (int, idx) {
     const egp = Math.round((Number(int.usd) || 0) * 52.7 * p65Idx());
     return '<button class="btn ' + (cfg.interior === idx ? 'sel' : '') + '" style="margin:0;padding:6px;font-size:.7rem" onclick="p62CfgSet(\'interior\',' + idx + ')">' +
       int.label + (egp > 0 ? ' · +' + egp.toLocaleString() + ' EGP' : '') + '</button>';
   }).join('');
 
-  /* Options — array format [id, label, usd, hap, soc, fromYear, untilYear] */
+  /* Options — array format */
   const optsHtml = p65OptionsForYear(year).map(function (o) {
     const id = o[0];
     const label = o[1];
@@ -460,17 +472,18 @@ function p65RenderConfigModal() {
   const pred5 = p65PredictApproval(loan5.monthlyPayment);
   const pred7 = p65PredictApproval(loan7.monthlyPayment);
 
+  /* Class label — index 2 */
+  const clsLabel = (P62_CLS[model[2]] || {}).label || 'Car';
+
   const html = '<div class="p24-modal" style="max-width:540px;max-height:92vh;overflow-y:auto;padding:16px">' +
-    /* Header */
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
     '<div style="display:flex;align-items:center;gap:10px">' + p62BrandBadge(model[0], 40) +
     '<div><div class="p24-pill">' + year + ' Model</div>' +
     '<h2 style="margin-top:6px;font-size:1.15rem">' + brand.name + ' ' + model[1] + '</h2>' +
-    '<div class="muted" style="font-size:.78rem">' + (P62_CLS[model[3]] || {}).label + ' · Base from ' + baseCarEGP.toLocaleString() + ' EGP</div>' +
+    '<div class="muted" style="font-size:.78rem">' + clsLabel + ' · Base from ' + baseCarEGP.toLocaleString() + ' EGP</div>' +
     '</div></div>' +
     '<button class="menu-btn" onclick="closeCarModal()">✕</button></div>' +
 
-    /* Your finances */
     '<div style="margin-top:14px;padding:10px;background:rgba(34,211,238,.06);border-radius:8px;border-left:3px solid var(--cyan)">' +
     '<b style="font-size:.78rem;color:var(--cyan)">YOUR FINANCES</b>' +
     '<div class="row" style="border:0;padding:3px 0;font-size:.82rem"><span>Monthly income</span><b class="mono">' + monthlyIncomeEGP.toLocaleString() + ' EGP</b></div>' +
@@ -478,26 +491,20 @@ function p65RenderConfigModal() {
     '<div class="row" style="border:0;padding:3px 0;font-size:.82rem"><span>Cash available</span><b class="mono">' + cashEGP.toLocaleString() + ' EGP</b></div>' +
     '</div>' +
 
-    /* Trim */
     '<h4 style="margin-top:14px;font-size:.85rem;color:var(--cyan)">Trim</h4>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">' + trimBtns + '</div>' +
 
-    /* Colors */
     '<h4 style="margin-top:14px;font-size:.85rem;color:var(--cyan)">Paint colour</h4>' +
     '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">' + colorBtns + '</div>' +
 
-    /* Interior */
     '<h4 style="margin-top:14px;font-size:.85rem;color:var(--cyan)">Interior</h4>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">' + intBtns + '</div>' +
 
-    /* Options */
     '<h4 style="margin-top:14px;font-size:.85rem;color:var(--cyan)">Options</h4>' + (optsHtml || '<p class="muted" style="font-size:.8rem">No options available this year.</p>') +
 
-    /* Insurance */
     '<h4 style="margin-top:14px;font-size:.85rem;color:var(--cyan)">Insurance</h4>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px">' + insBtns + '</div>' +
 
-    /* Price breakdown */
     '<div style="margin-top:16px;padding:12px;background:rgba(255,255,255,.04);border-radius:10px">' +
     '<b style="font-size:.85rem;color:var(--cyan)">💰 PRICE BREAKDOWN</b>' +
     '<div class="row" style="padding:4px 0"><span>Car</span><b class="mono">' + Math.round(price.car * rate).toLocaleString() + ' EGP</b></div>' +
@@ -507,7 +514,6 @@ function p65RenderConfigModal() {
     '<div class="row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px"><span><b>On the road</b></span><b class="mono" style="color:var(--mint);font-size:1rem">' + Math.round(price.total * rate).toLocaleString() + ' EGP</b></div>' +
     '</div>' +
 
-    /* Payment options */
     '<h4 style="margin-top:16px;font-size:.85rem;color:var(--cyan)">Payment</h4>' +
 
     /* Cash */
@@ -520,7 +526,7 @@ function p65RenderConfigModal() {
             : '<p class="muted" style="font-size:.78rem;margin-top:8px">❌ Need ' + Math.round((price.total - S.wealth) * rate).toLocaleString() + ' EGP more</p>') +
     '</div>' +
 
-    /* Loan 5y */
+    /* 5-year */
     '<div style="margin-top:10px;padding:12px;border:1px solid ' + (down5OK ? 'var(--cyan)' : 'var(--line)') + ';border-radius:10px">' +
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
     '<div style="flex:1"><b>🏦 Bank loan — 5 years</b><div class="muted" style="font-size:.76rem;margin-top:3px">15% down · 16% flat interest</div></div>' +
@@ -534,10 +540,10 @@ function p65RenderConfigModal() {
     '<div class="muted" style="font-size:.72rem;margin-top:3px">Net after purchase: <b style="color:' + (pred5.projectedNet >= 0 ? 'var(--mint)' : 'var(--rose)') + '">' + (pred5.projectedNetEGP >= 0 ? '+' : '') + pred5.projectedNetEGP.toLocaleString() + ' EGP/month</b></div>' +
     '<div class="muted" style="font-size:.7rem;margin-top:3px">' + pred5.reasons.slice(0, 3).join(' · ') + '</div></div>' +
     (down5OK ? '<button class="btn" style="margin-top:8px;text-align:center" onclick="p65PurchaseCar(\'loan5\')">Apply for 5-year loan</button>'
-            : '<p class="muted" style="font-size:.78rem;margin-top:8px">❌ Need ' + (loan5.downEGP - cashEGP).toLocaleString() + ' EGP more for down payment</p>') +
+            : '<p class="muted" style="font-size:.78rem;margin-top:8px">❌ Need ' + Math.max(0, loan5.downEGP - cashEGP).toLocaleString() + ' EGP more for down payment</p>') +
     '</div>' +
 
-    /* Loan 7y */
+    /* 7-year */
     '<div style="margin-top:10px;padding:12px;border:1px solid ' + (down7OK ? 'var(--cyan)' : 'var(--line)') + ';border-radius:10px">' +
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
     '<div style="flex:1"><b>🏦 Bank loan — 7 years</b><div class="muted" style="font-size:.76rem;margin-top:3px">10% down · lower monthly, more interest</div></div>' +
@@ -551,7 +557,7 @@ function p65RenderConfigModal() {
     '<div class="muted" style="font-size:.72rem;margin-top:3px">Net after purchase: <b style="color:' + (pred7.projectedNet >= 0 ? 'var(--mint)' : 'var(--rose)') + '">' + (pred7.projectedNetEGP >= 0 ? '+' : '') + pred7.projectedNetEGP.toLocaleString() + ' EGP/month</b></div>' +
     '<div class="muted" style="font-size:.7rem;margin-top:3px">' + pred7.reasons.slice(0, 3).join(' · ') + '</div></div>' +
     (down7OK ? '<button class="btn" style="margin-top:8px;text-align:center" onclick="p65PurchaseCar(\'loan7\')">Apply for 7-year loan</button>'
-            : '<p class="muted" style="font-size:.78rem;margin-top:8px">❌ Need ' + (loan7.downEGP - cashEGP).toLocaleString() + ' EGP more for down payment</p>') +
+            : '<p class="muted" style="font-size:.78rem;margin-top:8px">❌ Need ' + Math.max(0, loan7.downEGP - cashEGP).toLocaleString() + ' EGP more for down payment</p>') +
     '</div>' +
     '</div>';
 
@@ -571,10 +577,9 @@ p62OpenConfig = function (brandKey, modelId) {
   p65RenderConfigModal();
 };
 p62RenderConfigModal = p65RenderConfigModal;
-window.closeCarModal = closeCarModal;
 
 /* =================================================================
-   BRAND LIST + NEW TAB — use p65CarBaseEGP for consistent display
+   NEW CARS TAB + BRAND LIST
    ================================================================= */
 p62BuildNewTab = function () {
   if (!S.cars) S.cars = [];
@@ -611,7 +616,7 @@ p62OpenBrand = function (brandKey) {
   if (!models.length) return hint('No models available for ' + brand.name + ' in ' + year + '.');
   const list = models.map(function (m) {
     const egpPrice = p65CarBaseEGP(m, year);
-    const cls = P62_CLS[m[3]] || P62_CLS.compact;
+    const cls = P62_CLS[m[2]] || P62_CLS.compact;      /* FIX: class is [2] */
     const fuel = m[11] ? '⚡ Electric' : (m[10] && year >= m[10] ? '🔋 Hybrid' : '⛽ Gasoline');
     return '<button class="btn" style="text-align:left;padding:12px;margin:0" onclick="p62OpenConfig(\'' + brandKey + '\',\'' + m[0] + '_' + m[1] + '\')">' +
       '<div style="display:flex;justify-content:space-between;gap:8px">' +
@@ -635,7 +640,7 @@ p62OpenBrand = function (brandKey) {
 };
 
 /* =================================================================
-   GARAGE TAB — clean layout + sell button
+   GARAGE TAB — clean layout, uses unified value
    ================================================================= */
 p62BuildGarageTab = function () {
   const cars = S.cars || [];
@@ -646,13 +651,13 @@ p62BuildGarageTab = function () {
   const year = gameYear();
 
   return cars.map(function (car) {
-    const value = Math.round((Number(car.value) || Number(car.msrp) * 0.5) * rate);
+    const value = Math.round(p65CarValueInternal(car) * rate);      /* UNIFIED VALUE */
     const cond = Math.round(car.cond || 100);
     const condColor = cond < 40 ? 'var(--rose)' : cond < 65 ? 'var(--amber)' : 'var(--mint)';
     const fuel = car.fuel === 'e' ? '⚡ Electric' : car.fuel === 'h' ? '🔋 Hybrid' : '⛽ Gasoline';
     const insLabel = (P62_INSURANCE[car.insurance] || P62_INSURANCE.compreh).label;
+    const clsLabel = (P62_CLS[car.cls] || {}).label || 'Car';
 
-    /* Loan info */
     let loanHtml = '';
     if (car.hasLoan && car.loanKey && S.bank && S.bank.installments && S.bank.installments[car.loanKey]) {
       const loan = S.bank.installments[car.loanKey];
@@ -664,44 +669,39 @@ p62BuildGarageTab = function () {
         '<div class="row" style="border:0;padding:3px 0;font-size:.78rem"><span>Remaining</span><b class="mono">' + remainingEGP.toLocaleString() + ' EGP</b></div>' +
         '<div class="row" style="border:0;padding:3px 0;font-size:.78rem"><span>Monthly</span><b class="mono">' + monthlyEGP.toLocaleString() + ' EGP</b></div>' +
         '<div class="row" style="border:0;padding:3px 0;font-size:.78rem"><span>Payments left</span><b>' + (loan.monthsLeft || 0) + '</b></div>' +
-        (missed > 0 ? '<div style="margin-top:5px;padding:5px;background:rgba(251,113,133,.15);border-radius:4px;font-size:.76rem;color:var(--rose)"><b>⚠️ ' + missed + ' missed payment(s)</b> — pay soon or the bank will repossess.</div>' : '') +
+        (missed > 0 ? '<div style="margin-top:5px;padding:5px;background:rgba(251,113,133,.15);border-radius:4px;font-size:.76rem;color:var(--rose)"><b>⚠️ ' + missed + ' missed payment(s)</b> — pay soon or bank will repossess.</div>' : '') +
         '<button class="btn" style="margin-top:6px;font-size:.78rem;padding:6px" onclick="p65PayCarLoanEarly(\'' + car.loanKey + '\')">Pay extra / pay off</button>' +
         '</div>';
     }
 
     return '<section class="card" style="padding:14px;border-left:3px solid ' + condColor + '">' +
-      /* Header */
       '<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">' +
       '<div style="flex-shrink:0">' + p62BrandBadge(car.brand || 'toyota', 40) + '</div>' +
       '<div style="min-width:0;flex:1">' +
       '<div style="font-weight:700;font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + car.year + ' ' + car.make + ' ' + car.name + '</div>' +
-      '<div class="muted" style="font-size:.75rem;margin-top:2px">' + (P62_TRIMS[car.trim || 0] || P62_TRIMS[0]).label + ' · ' + fuel + ' · ' + (car.miles || 0).toLocaleString() + ' km</div>' +
+      '<div class="muted" style="font-size:.75rem;margin-top:2px">' + (P62_TRIMS[car.trim || 0] || P62_TRIMS[0]).label + ' · ' + clsLabel + ' · ' + fuel + '</div>' +
+      '<div class="muted" style="font-size:.72rem;margin-top:1px">' + (car.miles || 0).toLocaleString() + ' km</div>' +
       '</div></div>' +
 
-      /* Stats */
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
       '<div style="padding:8px;background:rgba(255,255,255,.03);border-radius:6px">' +
-      '<div class="muted" style="font-size:.68rem;text-transform:uppercase">Value</div>' +
+      '<div class="muted" style="font-size:.68rem;text-transform:uppercase">Market value</div>' +
       '<div class="mono" style="font-size:.9rem;font-weight:700;margin-top:3px">' + value.toLocaleString() + ' EGP</div></div>' +
       '<div style="padding:8px;background:rgba(255,255,255,.03);border-radius:6px">' +
       '<div class="muted" style="font-size:.68rem;text-transform:uppercase">Condition</div>' +
       '<div class="mono" style="font-size:.9rem;font-weight:700;margin-top:3px;color:' + condColor + '">' + cond + '%</div></div></div>' +
 
-      /* Condition bar */
       '<div style="height:5px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:10px">' +
       '<div style="height:100%;width:' + cond + '%;background:' + condColor + '"></div></div>' +
 
-      /* Broken */
       (car.broken ? '<div style="padding:10px;background:rgba(251,113,133,.1);border-left:3px solid var(--rose);border-radius:6px;margin-bottom:10px"><b style="font-size:.82rem;color:var(--rose)">🔧 Broken down</b><div class="muted" style="font-size:.78rem;margin-top:3px">Repair: ' + Math.round((car.fix || 0) * rate).toLocaleString() + ' EGP</div></div>' : '') +
 
-      /* Info */
       '<div class="row" style="padding:4px 0;font-size:.82rem"><span>Insurance</span><b>' + insLabel + '</b></div>' +
       '<div class="row" style="padding:4px 0;font-size:.82rem"><span>Insurance until</span><b>' + (car.insuranceExpiry || year) + '</b></div>' +
       '<div class="row" style="padding:4px 0;font-size:.82rem"><span>Registration until</span><b>' + (car.registrationExpiry || year) + '</b></div>' +
 
       loanHtml +
 
-      /* Actions */
       '<div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">' +
       (car.broken ? '<button class="btn" style="text-align:center;margin:0" onclick="p62RepairCar(\'' + car.uid + '\')">🔧 Repair</button>' : '') +
       '<button class="btn" style="text-align:center;margin:0" onclick="p62RenewInsurance(\'' + car.uid + '\')">🛡 Renew insurance</button>' +
@@ -720,21 +720,14 @@ p62BuildGarageTab = function () {
 function p65ProcessCarLoans() {
   if (!S || !S.cars || !S.bank || !S.bank.installments) return;
   const rate = p65Rate();
-  const year = gameYear();
 
   Object.keys(S.bank.installments).forEach(function (key) {
     const loan = S.bank.installments[key];
     if (!loan || !loan.linkedCarUid) return;
 
-    /* Find the linked car */
     const car = (S.cars || []).find(function (c) { return c && c.uid === loan.linkedCarUid; });
-    if (!car) {
-      /* Car gone — release the loan */
-      delete S.bank.installments[key];
-      return;
-    }
+    if (!car) { delete S.bank.installments[key]; return; }
 
-    /* Try to pay this month */
     const monthlyPayment = Number(loan.monthlyPayment) || 0;
     if (monthlyPayment <= 0) return;
 
@@ -746,7 +739,6 @@ function p65ProcessCarLoans() {
       loan.remaining = Math.max(0, loan.remaining - monthlyPayment);
       loan.monthsLeft = Math.max(0, (loan.monthsLeft || 0) - 1);
       loan.missedPayments = 0;
-
       if (loan.remaining < 0.5) {
         log('✅ Car loan for ' + car.make + ' ' + car.name + ' fully paid off!');
         delete S.bank.installments[key];
@@ -756,25 +748,18 @@ function p65ProcessCarLoans() {
     } else {
       loan.missedPayments = (loan.missedPayments || 0) + 1;
       const missed = loan.missedPayments;
-
       if (missed === 1) {
-        log('⚠️ MISSED car loan payment for ' + car.make + ' ' + car.name + '. Pay soon or the bank will act.');
-        realismNotice('Missed car loan payment',
-          'You missed a payment on your ' + car.make + ' ' + car.name + '. The bank charges a late fee. Pay soon or they may repossess.');
+        log('⚠️ MISSED car loan payment for ' + car.make + ' ' + car.name + '.');
+        realismNotice('Missed car loan payment', 'Pay soon or the bank will act. Late fee applied.');
         loan.remaining *= 1.05;
       } else if (missed === 2 || missed === 3) {
-        log('⚠️⚠️ ' + missed + ' missed payments on ' + car.make + ' ' + car.name + '. The bank sent a formal warning.');
-        realismNotice('Bank warning letter',
-          'You have missed ' + missed + ' payments on your car loan. The bank will repossess the car if you do not pay within the next 3 months. Late fees have been applied.');
+        log('⚠️⚠️ ' + missed + ' missed payments. Formal bank warning.');
+        realismNotice('Bank warning letter', 'You have missed ' + missed + ' payments. The bank will repossess if unpaid.');
         loan.remaining *= 1.05;
       } else if (missed >= 6) {
-        /* Repossession */
-        log('🚨 BANK REPOSSESSED your ' + car.year + ' ' + car.make + ' ' + car.name + ' after ' + missed + ' missed payments.');
-        realismNotice('Car repossessed',
-          'The bank repossessed your ' + car.make + ' ' + car.name + '. Market value ' +
-          Math.round((car.value || 0) * rate).toLocaleString() + ' EGP. The bank sold it and applied proceeds against your loan.');
+        log('🚨 BANK REPOSSESSED ' + car.year + ' ' + car.make + ' ' + car.name + ' after ' + missed + ' missed payments.');
+        realismNotice('Car repossessed', 'The bank repossessed your ' + car.make + ' ' + car.name + '.');
         S.cars = (S.cars || []).filter(function (c) { return c.uid !== loan.linkedCarUid; });
-        /* Any remaining balance stays as debt */
         if (loan.remaining > 0) {
           if (!S.bank.loans) S.bank.loans = [];
           S.bank.loans.push({
@@ -786,7 +771,7 @@ function p65ProcessCarLoans() {
             yearsTotal: 3,
             yearsLeft: 3
           });
-          log('💸 Remaining loan balance of ' + Math.round(loan.remaining * rate).toLocaleString() + ' EGP moved to bank debt.');
+          log('💸 Remaining ' + Math.round(loan.remaining * rate).toLocaleString() + ' EGP moved to bank debt.');
         }
         delete S.bank.installments[key];
       }
@@ -840,7 +825,43 @@ p62BuildCarsHeader = function () {
 };
 
 /* =================================================================
-   CLEANUP + RENDER HOOK
+   ONE-TIME REBUILD OF EXISTING SAVED CARS
+   Repairs msrp + class for cars bought before the fix.
+   ================================================================= */
+function p65RebuildOldCars() {
+  if (!S || !S.cars || !S.cars.length) return;
+  let fixed = 0;
+  S.cars.forEach(function (car) {
+    if (!car) return;
+    /* Find matching model row */
+    const model = P62_MODELS.find(function (m) {
+      return m[0] === (car.brand || '') && m[1] === car.name;
+    });
+    if (!model) return;
+    /* Fix class if wrong */
+    if (car.cls !== model[2]) car.cls = model[2];
+    /* Rebuild msrp using current base price for that year */
+    const year = car.year || gameYear();
+    const modelYear = Math.max(year, model[8] || 2007);
+    const correctMsrp = p65CarBaseInternal(model, modelYear);
+    /* Only override if existing msrp looks wrong (< 30% or > 300% of expected) */
+    const ratio = Number(car.msrp) / Math.max(1, correctMsrp);
+    if (ratio < 0.3 || ratio > 3) {
+      car.msrp = correctMsrp;
+      fixed++;
+    }
+    /* Recompute value */
+    car.value = p65CarValueInternal(car);
+  });
+  if (fixed > 0) {
+    log('🔧 Rebuilt prices for ' + fixed + ' old car(s) in your garage.');
+    save();
+  }
+}
+p65RebuildOldCars();
+
+/* =================================================================
+   RENDER HOOK
    ================================================================= */
 const P65_renderBefore = render;
 render = function () {
@@ -854,4 +875,4 @@ render = function () {
   return r;
 };
 
-console.log('[p65 v2] Loaded — single-price source, options fixed, sell car, loan default');
+console.log('[p65 v3] Loaded — class index fixed, unified value, sell matches garage, loan default active');
