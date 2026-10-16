@@ -912,4 +912,183 @@ render = function () {
 
 /* Run on load too */
 p81EnsureHome();
-p81ScheduleDomFix();
+p81ScheduleDomFix()
+/* =================================================================
+   81.22 — ROOT CAUSE FIX: S.home was overwritten by travel code.
+   Also corrects the DOM after every render, bypassing the wrapper
+   chain that keeps producing inconsistent HTML.
+   ================================================================= */
+
+/* ---- A. Force S.home back to birth country, permanently ---- */
+function p81EnsureHome() {
+  if (!S) return;
+  S.p81 = S.p81 || {};
+  /* Detect birth country once, from the life log */
+  if (!S.p81.birthCountry) {
+    const log = Array.isArray(S.logRows) ? S.logRows : [];
+    const bornEgypt = log.some(function (r) {
+      const t = (r && r.t) || '';
+      return t.indexOf('born in Egypt') !== -1 || t.indexOf('🇪🇬') !== -1;
+    });
+    S.p81.birthCountry = bornEgypt ? 'egy' : (S.home || 'egy');
+  }
+  /* Override home if it drifted */
+  if (S.home !== S.p81.birthCountry) {
+    const old = S.home;
+    S.home = S.p81.birthCountry;
+    console.log('[p81] Restored home country: ' + old + ' → ' + S.home);
+  }
+}
+
+/* ---- B. DOM corrector — runs on interval AND after render ---- */
+function p81FixDom() {
+  if (!S) return;
+  p81EnsureHome();
+  const view = document.getElementById('view');
+  if (!view) return;
+
+  const isAbroad = S.country !== S.home;
+
+  /* ---- 1. Passport panel ---- */
+  view.querySelectorAll('h3').forEach(function (h3) {
+    const txt = (h3.textContent || '').trim();
+    if (txt.indexOf('passport') === -1 && txt.indexOf('Passport') === -1) return;
+    const sec = h3.closest('section');
+    if (!sec || sec.dataset.p81Fixed === 'passport') return;
+    sec.dataset.p81Fixed = 'passport';
+
+    const d = p81PassportData();
+    const abroadName = isAbroad && COUNTRIES[S.country] ? COUNTRIES[S.country].n : null;
+    const pct = Math.round((d.access / 195) * 100);
+
+    sec.innerHTML =
+      '<h3>🛂 Your passport and your options</h3>' +
+      '<div class="row"><span>Your passport</span><b>' + d.flag + ' ' + d.name + '</b></div>' +
+      '<div class="row"><span>Visa-free access</span><b>~' + d.access + ' destinations (' + pct + '%)</b></div>' +
+      (isAbroad
+        ? '<div class="row"><span>Currently living in</span><b>' + abroadName + ' (on visa)</b></div>'
+        : '') +
+      '<p class="muted" style="font-size:.78rem;margin-top:8px">Your passport is issued by ' + d.country.toUpperCase() + '. Living abroad does not change it — naturalization typically requires 5–8 years of permanent residence.</p>' +
+      '<p class="muted" style="font-size:.78rem">A visa application costs money, takes weeks, and is not refunded if refused.</p>';
+  });
+
+  /* ---- 2. Parents' home in Real Estate — remove when abroad ---- */
+  if (isAbroad) {
+    view.querySelectorAll('section.card').forEach(function (sec) {
+      const t = (sec.textContent || '');
+      const hasParentsHeading = t.indexOf("Your parents' home") !== -1 ||
+                                t.indexOf('Your parents\u2019 home') !== -1 ||
+                                t.indexOf('YOU CURRENTLY LIVE IN') !== -1;
+      if (!hasParentsHeading) return;
+      /* Only remove if this section is inside the Real Estate tab */
+      if (activeTab !== 'assets') return;
+      /* Don't remove the abroad housing card (it says "Where you live now") */
+      if (t.indexOf('Where you live now') !== -1) return;
+      /* Remove the section */
+      if (sec.querySelector('button[onclick*="stayHome"]') ||
+          t.indexOf("Living with family") !== -1 ||
+          t.indexOf('Owned by your father') !== -1 ||
+          t.indexOf('Owned by your mother') !== -1) {
+        sec.remove();
+      }
+    });
+
+    /* Also nuke the tiny "YOU CURRENTLY LIVE IN" block (it's inside a div, not always a section) */
+    view.querySelectorAll('div').forEach(function (div) {
+      const t = (div.textContent || '').trim();
+      if (t.startsWith('YOU CURRENTLY LIVE IN') && t.indexOf('Parents') !== -1) {
+        div.remove();
+      }
+    });
+  }
+
+  /* ---- 3. "Ask for employer medical insurance" Egypt text ---- */
+  if (isAbroad) {
+    view.querySelectorAll('section.card').forEach(function (sec) {
+      const t = (sec.textContent || '');
+      if (t.indexOf('Ask for employer medical insurance') === -1) return;
+      if (t.indexOf('In Egypt, employer-provided insurance') === -1) return;
+      /* Replace the Egypt-specific text */
+      sec.innerHTML = sec.innerHTML.replace(
+        /In Egypt, employer-provided insurance typically covers 75% of medical bills up to 150,000 EGP\/year\. You can ask your HR or manager once per year\./g,
+        'In ' + ((COUNTRIES[S.country] || {}).n || 'your country') + ', employer-provided insurance typically varies. You can ask your HR or manager once per year.'
+      );
+    });
+  }
+
+  /* ---- 4. "Graduate now" button — disable if years not elapsed ---- */
+  if (S.p74 && S.p74.enrollStartAbsMonth >= 0 && S.p69 && S.p69.enrolled) {
+    const yearsIn = p81YearsInProgram();
+    const total = (S.p74.enrollTotalMonths || 36) / 12;
+    if (yearsIn < total - 0.05) {
+      view.querySelectorAll('button').forEach(function (btn) {
+        const txt = btn.textContent || '';
+        if (txt.indexOf('Graduate now') === -1) return;
+        btn.disabled = true;
+        btn.style.opacity = '.5';
+        btn.textContent = '🎓 Graduate now — ' + (total - yearsIn).toFixed(1) + ' years remaining';
+      });
+    }
+  }
+
+  /* ---- 5. Master's modal buttons — make them scroll instead of close ---- */
+  const masterModal = document.getElementById('p81-master-modal');
+  if (masterModal) {
+    /* Replace the "Pick subject & apply below" button */
+    const btn1 = Array.from(masterModal.querySelectorAll('button')).find(function (b) {
+      return (b.textContent || '').indexOf('Pick subject') !== -1;
+    });
+    if (btn1 && !btn1.dataset.p81Fixed) {
+      btn1.dataset.p81Fixed = '1';
+      btn1.setAttribute('onclick', 'p81ScrollTo("Local Master")');
+      btn1.textContent = 'Open local master\'s form →';
+    }
+    const btn2 = Array.from(masterModal.querySelectorAll('button')).find(function (b) {
+      return (b.textContent || '').indexOf('Scroll down to Study Abroad') !== -1;
+    });
+    if (btn2 && !btn2.dataset.p81Fixed) {
+      btn2.dataset.p81Fixed = '1';
+      btn2.setAttribute('onclick', 'p81ScrollTo("Master\'s abroad")');
+      btn2.textContent = 'Open study-abroad list →';
+    }
+  }
+}
+
+/* Helper: scroll to the section in the education tab */
+window.p81ScrollTo = function (headingLike) {
+  const m = document.getElementById('p81-master-modal');
+  if (m) m.remove();
+  /* Switch to education tab */
+  if (typeof go === 'function') go('school');
+  /* Then scroll to the heading */
+  setTimeout(function () {
+    const view = document.getElementById('view');
+    if (!view) return;
+    const h = Array.from(view.querySelectorAll('h3')).find(function (h3) {
+      return (h3.textContent || '').indexOf(headingLike) !== -1;
+    });
+    if (h) h.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
+};
+
+/* ---- C. Run on every render + on interval ---- */
+const P81_renderBeforeFinal = render;
+render = function () {
+  const r = P81_renderBeforeFinal.apply(this, arguments);
+  p81EnsureHome();
+  /* Defer to let innerHTML settle */
+  setTimeout(p81FixDom, 0);
+  return r;
+};
+
+/* Interval as a safety net — if render is missed, this catches it */
+setInterval(p81EnsureHome, 1500);
+setInterval(p81FixDom, 2000);
+
+/* Run immediately on load */
+p81EnsureHome();
+setTimeout(p81FixDom, 100);
+setTimeout(p81FixDom, 800);
+setTimeout(p81FixDom, 2000);
+
+console.log('[p81 v4] Home country forced + DOM corrector running');
