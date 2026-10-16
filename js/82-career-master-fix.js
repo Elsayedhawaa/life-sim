@@ -1,297 +1,186 @@
 /* =====================================================================
-   82. CAREER RESTORE + MASTER'S FIXES (v2)
-   - Bypass p80's destructive viewCareer wrapper entirely
-   - One family business card, clean role ladder
-   - Master's year advances on each ageUp
-   - Public/private university detection
+   82. CAREER RESTORE + MASTER'S FIX  (v2 — fixes the blanking bug)
+   - Prevents p80's greedy regex from eating the whole career tab
+   - Advances master's year on ageUp
+   - Detects public/private university correctly
    Load AFTER 81-education-life-makeover.js and BEFORE 99-boot.js
    ===================================================================== */
 
-console.log('=== [p82] v2 loading ===');
-
 (function p82Fix() {
-  'use strict';
 
   /* =================================================================
-     1. BYPASS p80's destructive viewCareer wrapper
-     p80's regex `[\s\S]*?` matched from the first section to the
-     family business card, eating everything in between.
-     Fix: call the chain BELOW p80 (`P80_viewCareerBefore`) directly.
+     1. THE ROOT CAUSE FIX
+     --------------------------------------------------------------
+     p80 runs this greedy regex against the FULL career html:
+
+       /<section class="card"[^>]*>[\s\S]*?<h3>💼 [^<]*<\/h3>
+          [\s\S]*?Your family owns and operates this business
+          [\s\S]*?<\/section>/g
+
+     Because [\s\S]*? is lazy but section-agnostic, it starts at the
+     FIRST <section class="card"> (finances) and extends across every
+     section until it reaches the family business text (which p78
+     appended at the END). Result: finances + current job + job
+     market + the family biz card are ALL deleted. p80 then adds its
+     own family biz card at the top — and only that card remains.
+
+     The fix: make p77FamilyBusinessCard() return '' during career
+     rendering. Without the trigger text, p80's regex never matches,
+     nothing gets deleted, and p80's own card is added cleanly on top.
      ================================================================= */
-  var P82_chainBelow = (typeof P80_viewCareerBefore !== 'undefined' && typeof P80_viewCareerBefore === 'function')
-    ? P80_viewCareerBefore
+
+  const P82_originalP77Card = (typeof p77FamilyBusinessCard === 'function')
+    ? p77FamilyBusinessCard
     : null;
 
-  if (!P82_chainBelow) {
-    console.warn('[p82] P80_viewCareerBefore not found. Falling back to current viewCareer chain.');
-  }
-
-  viewCareer = function () {
-    var html = '';
-    try {
-      if (P82_chainBelow) {
-        html = P82_chainBelow.apply(this, arguments);
-      } else {
-        /* Fallback: try the current chain, but only if p80 damage is detected */
-        html = '';
+  if (P82_originalP77Card) {
+    p77FamilyBusinessCard = function () {
+      /* Only suppress on the Career tab so p80's regex finds nothing */
+      if (typeof activeTab !== 'undefined' && activeTab === 'career') {
+        return '';
       }
-    } catch (e) {
-      console.error('[p82] chain failed:', e);
-      html = '<section class="card"><h3>Career</h3><p class="muted">Career view failed to load. Check the console.</p></section>';
-    }
-
-    if (!html || typeof S === 'undefined' || !S) return html;
-
-    /* Remove every family business card using a precise section-aware scanner */
-    html = p82RemoveFamilyBizCards(html);
-
-    /* Prepend one clean family business card at the top */
-    if (S.p76 && S.p76.familyBusiness && S.country === S.home && S.age >= 18) {
-      var biz = p82FamilyBusinessCard();
-      if (biz) html = biz + html;
-    }
-
-    return html;
-  };
-
-  /* Section-aware scanner — walks backward to <section, forward to </section> */
-  function p82RemoveFamilyBizCards(html) {
-    if (!html) return html;
-    var marker = 'Your family owns and operates this business';
-    var guard = 0;
-    var idx = html.indexOf(marker);
-    while (idx !== -1 && guard++ < 10) {
-      var sectionStart = html.lastIndexOf('<section', idx);
-      if (sectionStart === -1) break;
-      var sectionEnd = html.indexOf('</section>', idx);
-      if (sectionEnd === -1) break;
-      var endPos = sectionEnd + '</section>'.length;
-      html = html.slice(0, sectionStart) + html.slice(endPos);
-      idx = html.indexOf(marker);
-    }
-    return html;
+      /* Otherwise call the original (Life tab, etc.) */
+      return P82_originalP77Card.apply(this, arguments);
+    };
   }
 
   /* =================================================================
-     2. FAMILY BUSINESS — realistic role ladder
+     2. MASTER'S YEAR ADVANCEMENT
      ================================================================= */
-  var P82_ROLES = [
-    { title: 'Junior Associate',     minAge: 18, salary: 0.015, next: 'Operations Associate' },
-    { title: 'Operations Associate', minAge: 20, salary: 0.025, next: 'Senior Associate' },
-    { title: 'Senior Associate',     minAge: 23, salary: 0.035, next: 'Department Manager' },
-    { title: 'Department Manager',   minAge: 26, salary: 0.055, next: 'Operations Director' },
-    { title: 'Operations Director',  minAge: 30, salary: 0.080, next: 'General Manager' },
-    { title: 'General Manager',      minAge: 35, salary: 0.120, next: 'CEO / Chairman' },
-    { title: 'CEO / Chairman',       minAge: 40, salary: 0.180, next: null }
-  ];
-
-  function p82RoleFor(yearsWorked, age) {
-    var role = P82_ROLES[0];
-    for (var i = 0; i < P82_ROLES.length; i++) {
-      var r = P82_ROLES[i];
-      if (age >= r.minAge && yearsWorked >= i * 2) role = r;
-    }
-    return role;
-  }
-
-  var P82_SECTORS = {
-    'Delta Textiles':         { sector: 'Textile manufacturing',          founded: 1978, hq: 'Mahalla al-Kubra' },
-    'Nile Trading Company':   { sector: 'Import & export',                founded: 1985, hq: 'Alexandria' },
-    'Pyramid Foods':          { sector: 'Food processing',                founded: 1992, hq: '6th of October City' },
-    'Cairo Medical Supplies': { sector: 'Medical equipment distribution', founded: 2001, hq: 'Cairo' },
-    'Alexandria Shipping Co.':{ sector: 'Maritime logistics',             founded: 1968, hq: 'Alexandria Port' },
-    'Nile Valley Real Estate':{ sector: 'Property development',           founded: 1995, hq: 'New Cairo' }
-  };
-
-  function p82FamilyBusinessCard() {
-    if (!S || !S.p76 || !S.p76.familyBusiness) return '';
-    if (S.country !== S.home) return '';
-    if (S.age < 18) return '';
-    if (typeof p77Init === 'function') p77Init(S);
-
-    var rate = (typeof rateNow === 'function') ? rateNow() : 52.7;
-    var revEGP = Math.round((S.p77 && S.p77.familyBusinessRevenue || 0) * rate);
-    var works = !!(S.p77 && S.p77.worksForFamily);
-    var manages = !!(S.p77 && S.p77.familyBusinessManaged);
-    var yearsWorked = Number(S.p80_familyYearsWorked) || 0;
-    var role = works ? p82RoleFor(yearsWorked, S.age) : null;
-    var sector = P82_SECTORS[S.p76.familyBusiness] || { sector: 'Family business', founded: 1980, hq: 'Egypt' };
-
-    var html = '<section class="card" style="border-color:var(--mint)">';
-    html += '<h3>💼 ' + S.p76.familyBusiness + '</h3>';
-    html += '<p class="muted" style="font-size:.82rem">' + sector.sector + ' · Founded ' + sector.founded + ' · HQ ' + sector.hq + '</p>';
-    html += '<div class="row"><span>Annual revenue</span><b class="mono">E£' + revEGP.toLocaleString() + '</b></div>';
-    html += '<div class="row"><span>Employees</span><b>' + ((S.p77 && S.p77.familyBusinessEmployees) || 0) + '</b></div>';
-    html += '<div class="row"><span>Family ownership</span><b>100% · ' + ((S.p76 && S.p76.siblingCount) || 0) + ' sibling heirs</b></div>';
-
-    if (works && role) {
-      var salaryEGP = Math.round(revEGP * role.salary);
-      html += '<div style="margin-top:12px;padding:10px;background:rgba(52,211,153,.08);border-radius:8px;border-left:3px solid var(--mint)">';
-      html += '<div class="muted" style="font-size:.68rem;letter-spacing:.06em;font-weight:700">YOUR ROLE</div>';
-      html += '<div style="font-size:1rem;font-weight:700;margin-top:3px">' + role.title + '</div>';
-      html += '<div class="row" style="padding:3px 0"><span>Annual salary</span><b class="mono" style="color:var(--mint)">E£' + salaryEGP.toLocaleString() + '/yr</b></div>';
-      html += '<div class="row" style="padding:3px 0"><span>Tenure</span><b>' + yearsWorked + ' year(s)</b></div>';
-      if (role.next) {
-        html += '<div class="row" style="padding:3px 0"><span>Next step</span><b>' + role.next + '</b></div>';
-      }
-      html += '<button class="btn" style="border-color:var(--rose);color:var(--rose);margin-top:8px" onclick="p77QuitFamilyBusiness()">Leave the family business</button>';
-      html += '</div>';
-      if (!manages && S.age >= 25) {
-        html += '<button class="btn" onclick="p77ManageFamilyBusiness()">Take on management<small>+15–30%/yr revenue, but less personal time</small></button>';
-      }
-      if (manages) {
-        html += '<div class="row" style="border-top:1px solid var(--line);margin-top:10px;padding-top:8px"><span>You manage</span><b style="color:var(--mint)">Active</b></div>';
-        html += '<button class="btn" style="border-color:var(--amber)" onclick="p77StopManaging()">Step back from management</button>';
-      }
-      if (S.age >= 30) {
-        html += '<button class="btn" onclick="p77InheritBusiness()" style="border-color:var(--violet)">Request your share of the business</button>';
-      }
-    } else {
-      var startRole = P82_ROLES[0];
-      var startSalaryEGP = Math.round(revEGP * startRole.salary);
-      html += '<div style="margin-top:12px;padding:10px;background:rgba(255,255,255,.03);border-radius:8px">';
-      html += '<div class="muted" style="font-size:.72rem;margin-bottom:4px">The business is hiring family. Start as:</div>';
-      html += '<b>' + startRole.title + '</b> · E£' + startSalaryEGP.toLocaleString() + '/yr';
-      html += '<p class="muted" style="font-size:.75rem;margin-top:6px">Ladder: Junior Associate → Operations Associate → Senior Associate → Department Manager → Operations Director → General Manager → CEO.</p>';
-      html += '<button class="btn" style="background:var(--mint);color:#000;font-weight:700;margin-top:6px" onclick="p77WorkForFamily()">Join the family business</button>';
-      html += '</div>';
-    }
-
-    html += '</section>';
-    return html;
-  }
-
-  /* Sync S.job to the current role every 800ms */
-  setInterval(function () {
-    if (!S || !S.p77 || !S.p77.worksForFamily) return;
-    var rate = (typeof rateNow === 'function') ? rateNow() : 52.7;
-    var rev = Number(S.p77.familyBusinessRevenue) || 0;
-    var years = Number(S.p80_familyYearsWorked) || 0;
-    var role = p82RoleFor(years, S.age);
-    var salaryInternal = rev * role.salary;
-
-    if (!S.job || !S.job.isFamilyBusiness) {
-      S.job = {
-        trackId: 'entry', level: 0, title: role.title, salary: salaryInternal,
-        perf: 60, years: years,
-        company: (S.p76 && S.p76.familyBusiness) || 'Family Business',
-        companySize: 'family business', companyFactor: 1,
-        benefits: { medical: true, social: true, bonus: 0.02, leave: 21, remote: 'On-site', hours: 40, pension: true, contract: 'Family employment' },
-        stress: 3, isFamilyBusiness: true
-      };
-    } else {
-      if (S.job.title !== role.title) S.job.title = role.title;
-      S.job.salary = salaryInternal;
-    }
-    S.salary = salaryInternal;
-  }, 800);
-
-  /* Track years worked */
-  var P82_ageUpTenure = ageUp;
+  const P82_ageUpBefore = ageUp;
   ageUp = function () {
-    var r = P82_ageUpTenure.apply(this, arguments);
-    if (S && S.p77 && S.p77.worksForFamily) {
-      S.p80_familyYearsWorked = (Number(S.p80_familyYearsWorked) || 0) + 1;
-    } else if (S) {
-      S.p80_familyYearsWorked = 0;
-    }
-    return r;
-  };
-
-  /* =================================================================
-     3. MASTER'S YEAR ADVANCEMENT
-     ================================================================= */
-  var P82_ageUpMaster = ageUp;
-  ageUp = function () {
-    var ageBefore = S && S.age;
-    var r = P82_ageUpMaster.apply(this, arguments);
+    const ageBefore = S && S.age;
+    const r = P82_ageUpBefore.apply(this, arguments);
     if (!S || S.age === ageBefore) return r;
 
     if (S.localMast) {
-      var thisYear = (typeof gameYear === 'function') ? gameYear() : 2026;
+      const thisYear = (typeof gameYear === 'function') ? gameYear() : 2026;
       if (S.localMast.lastAdvanceYear !== thisYear) {
         S.localMast.lastAdvanceYear = thisYear;
         S.localMast.year = (S.localMast.year || 0) + 1;
 
-        var total = S.localMast.yearsTotal || 2;
-        if (S.localMast.year >= total) {
+        if (S.localMast.year >= (S.localMast.yearsTotal || 2)) {
+          /* Completed */
           S.mastDone = true;
           S.masterField = S.localMast.fieldName;
-          var uniName = S.localMast.universityName || 'Egyptian university';
-          var field = S.localMast.fieldName || 'postgraduate programme';
+          const uniName = S.localMast.universityName || 'Egyptian university';
+          const field = S.localMast.fieldName || 'postgraduate programme';
           if (typeof log === 'function') log('🎓 Completed your Master\'s in ' + field + ' at ' + uniName + '.');
-          if (typeof realismNotice === 'function') realismNotice('Master\'s completed', 'You earned a Master\'s in ' + field + ' from ' + uniName + '.');
+          if (typeof realismNotice === 'function') {
+            realismNotice('Master\'s completed', 'You earned a Master\'s in ' + field + ' from ' + uniName + '. Career options are now open.');
+          }
           S.localMast = null;
         } else {
-          if (typeof log === 'function') log('📖 Master\'s year ' + ((S.localMast.year || 0) + 1) + ' of ' + total + ' started.');
+          if (typeof log === 'function') {
+            log('📖 Master\'s year ' + ((S.localMast.year || 0) + 1) + ' of ' + (S.localMast.yearsTotal || 2) + ' started.');
+          }
         }
       }
     }
     return r;
   };
 
+  /* Also advance on monthly ticks in monthly pacing */
+  const P82_p52TickBefore = (typeof p52MonthlyTick === 'function') ? p52MonthlyTick : null;
+  if (P82_p52TickBefore) {
+    p52MonthlyTick = function () {
+      P82_p52TickBefore.apply(this, arguments);
+      /* Year-advance for master's is handled by the ageUp wrapper,
+         so nothing additional here. */
+    };
+  }
+
   /* =================================================================
-     4. PUBLIC / PRIVATE UNIVERSITY DETECTION
+     3. PUBLIC / PRIVATE UNIVERSITY DETECTION
      ================================================================= */
-  var P82_PRIVATE = [
-    'auc', 'american university in cairo', 'american university',
-    'guc', 'german university in cairo', 'german university',
-    'bue', 'british university in egypt', 'british university',
-    'aastmt', 'arab academy for science',
-    'miu', 'misr international university',
+  const P82_PRIVATE_UNI_PATTERNS = [
+    'auc', 'american university', 'american univ',
+    'guc', 'german university', 'german univ',
+    'bue', 'british university', 'british univ',
+    'aastmt', 'arab academy',
+    'miu', 'misr international',
     'buc', 'badr university',
-    'msa', 'modern sciences and arts',
+    'msa', 'modern sciences',
     'nile university',
     'future university',
     'heliopolis university',
     'must', 'misr university for science',
     'o6u', 'october 6 university',
-    'mti',
-    'gaf', 'german academic foundation',
+    'mti', 'modern sciences and arts',
     'eri', 'egyptian russian university',
-    'ust', 'university of science and technology',
-    'smart', 'badr university'
+    'ust', 'university of science and technology'
   ];
 
-  function p82IsPrivate(name) {
-    if (!name) return false;
-    var s = String(name).toLowerCase();
-    for (var i = 0; i < P82_PRIVATE.length; i++) {
-      if (s.indexOf(P82_PRIVATE[i]) !== -1) return true;
+  function p82IsPrivateUniversity(nameOrId) {
+    if (!nameOrId) return false;
+    const s = String(nameOrId).toLowerCase();
+    for (let i = 0; i < P82_PRIVATE_UNI_PATTERNS.length; i++) {
+      if (s.indexOf(P82_PRIVATE_UNI_PATTERNS[i]) !== -1) return true;
     }
     return false;
   }
+  window.p82IsPrivateUniversity = p82IsPrivateUniversity;
 
-  function p82FixKind() {
+  function p82FixLocalMastKind() {
     if (!S || !S.localMast) return;
-    var check = (S.localMast.universityName || '') + ' ' + (S.localMast.universityId || '');
-    if (p82IsPrivate(check)) {
-      if (S.localMast.kind !== 'private') {
-        S.localMast.kind = 'private';
-        console.log('[p82] Corrected master\'s kind to private:', S.localMast.universityName);
-      }
-    } else if (!S.localMast.kind) {
-      S.localMast.kind = 'public';
+    const m = S.localMast;
+    const check = (m.universityName || '') + ' ' + (m.universityId || '');
+    if (p82IsPrivateUniversity(check)) {
+      if (m.kind !== 'private') m.kind = 'private';
+    } else if (!m.kind) {
+      m.kind = 'public';
     }
   }
-  setInterval(p82FixKind, 700);
-  setTimeout(p82FixKind, 100);
+  setInterval(p82FixLocalMastKind, 700);
+  setTimeout(p82FixLocalMastKind, 200);
+
+  /* =================================================================
+     4. CLEANUP: remove duplicate p80 biz card if p82's suppression
+        didn't catch a stale render from a previous session.
+     ================================================================= */
+  function p82CleanDuplicateBizCards() {
+    if (typeof S === 'undefined' || !S) return;
+    if (typeof activeTab === 'undefined' || activeTab !== 'career') return;
+    const view = document.getElementById('view');
+    if (!view) return;
+
+    /* Collect all sections whose h3 starts with 💼 and that talk about
+       "Family ownership" — those are family business cards. */
+    const cards = [];
+    view.querySelectorAll('section.card').forEach(function (sec) {
+      const t = sec.textContent || '';
+      if (t.indexOf('Family ownership') === -1) return;
+      if (t.indexOf('Annual revenue') === -1) return;
+      cards.push(sec);
+    });
+    /* Keep only the first; remove the rest. */
+    for (let i = 1; i < cards.length; i++) cards[i].remove();
+  }
+
+  const P82_renderBefore = render;
+  render = function () {
+    const r = P82_renderBefore.apply(this, arguments);
+    /* Run synchronously after the base render, before paint if possible */
+    try { p82CleanDuplicateBizCards(); } catch (e) {}
+    /* One more pass deferred, in case some other wrapper appends late */
+    setTimeout(function () { try { p82CleanDuplicateBizCards(); } catch (e) {} }, 30);
+    return r;
+  };
 
   /* =================================================================
      5. DIAGNOSTICS
      ================================================================= */
   window.p82Diag = function () {
     console.log({
-      chainBelowP80: !!P82_chainBelow,
-      activeTab: typeof activeTab !== 'undefined' ? activeTab : '?',
+      activeTab: (typeof activeTab !== 'undefined') ? activeTab : '?',
+      careerHtmlLength: (typeof viewCareer === 'function') ? viewCareer().length : 0,
+      hasP77Card: typeof p77FamilyBusinessCard === 'function',
       degree: S && S.degree,
       localMast: S && S.localMast,
-      familyBusiness: S && S.p76 && S.p76.familyBusiness,
-      worksForFamily: S && S.p77 && S.p77.worksForFamily,
-      familyYears: S && S.p80_familyYearsWorked,
-      careerHtmlLen: typeof viewCareer === 'function' ? (viewCareer() || '').length : 0
+      localMastKind: S && S.localMast && S.localMast.kind,
+      familyBusiness: S && S.p76 && S.p76.familyBusiness
     });
   };
 
-  console.log('=== [p82] v2 loaded ===');
+  console.log('[p82 v2] Career restore + master\'s year advancement loaded');
 })();
