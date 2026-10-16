@@ -418,21 +418,22 @@ const P62_INTERIORS = [
 ];
 
 const P62_OPTIONS = [
-  ['sun',      'Panoramic sunroof',              usd: 1800, hap: 1, soc: 0, safety: 0, from: 2007 ],
-  ['audio',    'Premium audio system',           usd: 1500, hap: 1, soc: 0, safety: 0, from: 2007 ],
-  ['nav',      'Built-in navigation',            usd: 1200, hap: 1, soc: 0, safety: 0, from: 2007, until: 2016 ],
-  ['carplay',  'Apple CarPlay / Android Auto',   usd: 400,  hap: 1, soc: 0, safety: 0, from: 2014 ],
-  ['cam',      'Backup camera',                  usd: 700,  hap: 0, soc: 0, safety: 1, from: 2008 ],
-  ['adas',     'Adaptive cruise + lane assist',  usd: 2500, hap: 1, soc: 0, safety: 2, from: 2015 ],
-  ['heat',     'Heated seats and steering wheel',usd: 800,  hap: 1, soc: 0, safety: 0, from: 2007 ],
-  ['remote',   'Remote start',                   usd: 500,  hap: 1, soc: 0, safety: 0, from: 2007 ],
-  ['qi',       'Wireless phone charging',        usd: 400,  hap: 1, soc: 0, safety: 0, from: 2017 ],
-  ['wheels',   '19-inch alloy wheels',           usd: 1600, hap: 0, soc: 1, safety: 0, from: 2007 ],
-  ['winter',   'Winter package (AWD, snow tyres)',usd: 1800, hap: 0, soc: 0, safety: 1, from: 2007 ],
-  ['tow',      'Tow package',                    usd: 900,  hap: 0, soc: 0, safety: 0, from: 2007 ],
-  ['hud',      'Head-up display',                usd: 1200, hap: 1, soc: 1, safety: 0, from: 2013 ],
-  ['massage',  'Massaging front seats',          usd: 2200, hap: 2, soc: 1, safety: 0, from: 2015 ],
-  ['air',      'Air suspension',                 usd: 3200, hap: 1, soc: 1, safety: 0, from: 2012 ]
+  /* id, label, usd, hap, soc, fromYear, untilYear */
+  ['sun',     'Panoramic sunroof',               1800, 1, 0, 2007, 9999],
+  ['audio',   'Premium audio system',            1500, 1, 0, 2007, 9999],
+  ['nav',     'Built-in navigation',             1200, 1, 0, 2007, 2016],
+  ['carplay', 'Apple CarPlay / Android Auto',     400, 1, 0, 2014, 9999],
+  ['cam',     'Backup camera',                    700, 0, 0, 2008, 9999],
+  ['adas',    'Adaptive cruise + lane assist',   2500, 1, 0, 2015, 9999],
+  ['heat',    'Heated seats and steering wheel',  800, 1, 0, 2007, 9999],
+  ['remote',  'Remote start',                     500, 1, 0, 2007, 9999],
+  ['qi',      'Wireless phone charging',          400, 1, 0, 2017, 9999],
+  ['wheels',  '19-inch alloy wheels',            1600, 0, 1, 2007, 9999],
+  ['winter',  'Winter package (AWD, snow tyres)',1800, 0, 0, 2007, 9999],
+  ['tow',     'Tow package',                      900, 0, 0, 2007, 9999],
+  ['hud',     'Head-up display',                 1200, 1, 1, 2013, 9999],
+  ['massage', 'Massaging front seats',           2200, 2, 1, 2015, 9999],
+  ['air',     'Air suspension',                  3200, 1, 1, 2012, 9999]
 ];
 
 /* ============ 5. INSURANCE ============ */
