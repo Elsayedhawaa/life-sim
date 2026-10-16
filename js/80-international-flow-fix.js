@@ -1,9 +1,10 @@
 /* =====================================================================
-   80. INTERNATIONAL UNIVERSITY FLOW + FAMILY BUSINESS PROTECTION
-   - Working modal for international university applications
-   - Clean rebuild of Education tab for IGCSE/IB/American students
-   - Family business can never fire you (fixes "released from family business")
-   - Aggressive dedup of status cards, passport, TOEFL, languages
+   80. INTERNATIONAL FLOW v2 — Egyptian private + fixed resolution
+   - Restore Egyptian private universities for rich families
+   - Applications resolve by month/year tick (not setTimeout)
+   - Choose pathway: private (Egypt) OR abroad OR wait
+   - Family business can never fire you
+   - Aggressive dedup
    Load AFTER 79-emergency-fixes.js and BEFORE 99-boot.js
    ===================================================================== */
 
@@ -14,7 +15,8 @@ function p80Init(o) {
   o = o || S;
   if (!o) return;
   if (!o.p80) o.p80 = {};
-  if (typeof o.p80.modalOpen !== 'boolean') o.p80.modalOpen = false;
+  if (typeof o.p80.modalCountry !== 'string') o.p80.modalCountry = 'gbr';
+  if (typeof o.p80.pathwayChosen !== 'boolean') o.p80.pathwayChosen = false;
 }
 const P80_migrate = migrate;
 migrate = function (o) { const r = P80_migrate(o); p80Init(r); return r; };
@@ -22,32 +24,15 @@ const P80_newGame = newGame;
 newGame = function () { P80_newGame.apply(this, arguments); p80Init(S); };
 
 /* =================================================================
-   1. FAMILY BUSINESS NEVER FIRES
+   1. FAMILY BUSINESS CAN NEVER FIRE
    ================================================================= */
 const P80_packYearBefore = packYear;
 packYear = function () {
   if (!S) return P80_packYearBefore.apply(this, arguments);
-
-  const isFamilyBiz = !!(S.job && S.job.isFamilyBusiness);
-  const savedJob = isFamilyBiz ? {
-    trackId: S.job.trackId,
-    level: S.job.level,
-    title: S.job.title,
-    salary: S.job.salary,
-    perf: Math.max(60, S.job.perf || 60),
-    years: (S.job.years || 0),
-    company: S.job.company,
-    companySize: S.job.companySize,
-    companyFactor: S.job.companyFactor,
-    benefits: S.job.benefits,
-    stress: S.job.stress,
-    isFamilyBusiness: true
-  } : null;
-
+  const wasFamilyBiz = !!(S.job && S.job.isFamilyBusiness);
+  const savedJob = wasFamilyBiz ? Object.assign({}, S.job) : null;
   const result = P80_packYearBefore.apply(this, arguments);
-
-  /* If family business job was terminated by base layoff logic, restore it */
-  if (isFamilyBiz && savedJob && !S.job) {
+  if (wasFamilyBiz && savedJob && !S.job) {
     S.job = savedJob;
     S.job.years = (S.job.years || 0) + 1;
     log('ℹ️ The family business continues — you remain employed as ' + S.job.title + '.');
@@ -56,15 +41,29 @@ packYear = function () {
 };
 
 /* =================================================================
-   2. INTERNATIONAL SYSTEM DETECTION
+   2. EGYPTIAN PRIVATE UNIVERSITIES
    ================================================================= */
-function p80IsInternational() {
-  if (!S || !S.p78) return false;
-  return ['igcse', 'american', 'ib'].indexOf(S.p78.educationSystem) !== -1;
+const P80_EGY_PRIVATE = [
+  { id: 'auc',    name: 'American University in Cairo (AUC)',      reqGpa: 3.2, ielts: 6.5, tuitionUSD: 21000, accepts: ['igcse', 'american', 'ib', 'thanaweya'], notes: 'US-accredited liberal arts. Most prestigious private university in Egypt.' },
+  { id: 'guc',    name: 'German University in Cairo (GUC)',        reqGpa: 3.0, ielts: 6.0, tuitionEGP: 280000, accepts: ['igcse', 'american', 'ib', 'thanaweya'], notes: 'German-accredited. Engineering, management, pharmacy.' },
+  { id: 'bue',    name: 'British University in Egypt (BUE)',       reqGpa: 2.9, ielts: 6.0, tuitionEGP: 180000, accepts: ['igcse', 'american', 'ib', 'thanaweya'], notes: 'UK-validated degrees. Dentistry, engineering, business.' },
+  { id: 'aastmt', name: 'Arab Academy for Science & Technology',   reqGpa: 3.0, ielts: 6.0, tuitionUSD: 10000, accepts: ['igcse', 'american', 'ib', 'thanaweya'], notes: 'Maritime, engineering, IT. Regional network.' },
+  { id: 'buc',    name: 'Badr University in Cairo (BUC)',           reqGpa: 2.7, ielts: 5.5, tuitionEGP: 130000, accepts: ['igcse', 'american', 'ib', 'thanaweya'], notes: 'Modern private university. Medicine, dentistry, engineering.' },
+  { id: 'miu',    name: 'Misr International University (MIU)',     reqGpa: 2.7, ielts: 5.5, tuitionEGP: 120000, accepts: ['igcse', 'american', 'ib', 'thanaweya'], notes: 'Private university, English-taught. Business, pharmacy, computer science.' },
+  { id: 'msa',    name: 'Modern Sciences and Arts University',      reqGpa: 2.7, ielts: 5.5, tuitionEGP: 110000, accepts: ['igcse', 'american', 'ib', 'thanaweya'], notes: 'Private university. Business, media, computer science.' },
+  { id: 'nile',   name: 'Nile University',                          reqGpa: 3.0, ielts: 6.0, tuitionEGP: 160000, accepts: ['igcse', 'american', 'ib', 'thanaweya'], notes: 'Engineering, business, computer science.' },
+  { id: 'future', name: 'Future University in Egypt',               reqGpa: 2.8, ielts: 5.5, tuitionEGP: 130000, accepts: ['igcse', 'american', 'ib', 'thanaweya'], notes: 'Engineering, pharmacy, business.' },
+  { id: 'helwan_i', name: 'Heliopolis University',                  reqGpa: 2.7, ielts: 5.5, tuitionEGP: 100000, accepts: ['igcse', 'american', 'ib', 'thanaweya'], notes: 'Sustainable development focus. Private.' }
+];
+
+function p80TuitionEGP(uni) {
+  if (uni.tuitionUSD) return Math.round(uni.tuitionUSD * 52.7 * p80Idx());
+  if (uni.tuitionEGP) return Math.round(uni.tuitionEGP * p80Idx());
+  return 0;
 }
 
 /* =================================================================
-   3. WORKING INTERNATIONAL UNIVERSITY MODAL
+   3. INTERNATIONAL UNIVERSITY CATALOG
    ================================================================= */
 const P80_INT_UNIS = {
   gbr: [
@@ -123,26 +122,26 @@ const P80_INT_UNIS = {
 
 const P80_INT_SCHOLARSHIPS = {
   gbr: [
-    { name: 'Chevening Scholarship',       cover: 1.0, reqGpa: 3.5, reqIelts: 7.0, chance: 0.18 },
-    { name: 'Commonwealth Scholarship',    cover: 1.0, reqGpa: 3.4, reqIelts: 6.5, chance: 0.15 },
-    { name: 'University merit scholarship', cover: 0.5, reqGpa: 3.5, reqIelts: 6.5, chance: 0.35 }
+    { name: 'Chevening Scholarship',       cover: 1.0, reqGpa: 3.5, reqIelts: 7.0, chance: 0.20 },
+    { name: 'Commonwealth Scholarship',    cover: 1.0, reqGpa: 3.4, reqIelts: 6.5, chance: 0.18 },
+    { name: 'University merit scholarship', cover: 0.5, reqGpa: 3.5, reqIelts: 6.5, chance: 0.38 }
   ],
   usa: [
-    { name: 'Fulbright Foreign Student Program', cover: 1.0, reqGpa: 3.6, reqIelts: 7.0, chance: 0.12 },
-    { name: 'University full-ride',         cover: 1.0, reqGpa: 3.8, reqIelts: 7.5, chance: 0.08 },
-    { name: 'University partial scholarship', cover: 0.5, reqGpa: 3.5, reqIelts: 7.0, chance: 0.30 }
+    { name: 'Fulbright Foreign Student Program', cover: 1.0, reqGpa: 3.6, reqIelts: 7.0, chance: 0.15 },
+    { name: 'University full-ride',        cover: 1.0, reqGpa: 3.8, reqIelts: 7.5, chance: 0.10 },
+    { name: 'University partial scholarship', cover: 0.5, reqGpa: 3.5, reqIelts: 7.0, chance: 0.35 }
   ],
   deu: [
-    { name: 'DAAD Scholarship',             cover: 1.0, reqGpa: 3.4, reqIelts: 6.5, chance: 0.20 },
-    { name: 'Erasmus+ Scholarship',         cover: 0.8, reqGpa: 3.2, reqIelts: 6.5, chance: 0.25 }
+    { name: 'DAAD Scholarship',            cover: 1.0, reqGpa: 3.4, reqIelts: 6.5, chance: 0.22 },
+    { name: 'Erasmus+ Scholarship',        cover: 0.8, reqGpa: 3.2, reqIelts: 6.5, chance: 0.28 }
   ],
-  can: [{ name: 'University entrance scholarship', cover: 0.4, reqGpa: 3.3, reqIelts: 6.5, chance: 0.35 }],
-  fra: [{ name: 'Eiffel Excellence Scholarship', cover: 1.0, reqGpa: 3.5, reqIelts: 6.5, chance: 0.15 }],
-  nld: [{ name: 'Orange Tulip Scholarship', cover: 0.6, reqGpa: 3.3, reqIelts: 6.5, chance: 0.28 }],
-  aus: [{ name: 'Australia Awards',          cover: 1.0, reqGpa: 3.4, reqIelts: 6.5, chance: 0.15 }]
+  can: [{ name: 'University entrance scholarship', cover: 0.4, reqGpa: 3.3, reqIelts: 6.5, chance: 0.40 }],
+  fra: [{ name: 'Eiffel Excellence Scholarship', cover: 1.0, reqGpa: 3.5, reqIelts: 6.5, chance: 0.18 }],
+  nld: [{ name: 'Orange Tulip Scholarship', cover: 0.6, reqGpa: 3.3, reqIelts: 6.5, chance: 0.32 }],
+  aus: [{ name: 'Australia Awards',          cover: 1.0, reqGpa: 3.4, reqIelts: 6.5, chance: 0.18 }]
 };
 
-function p80Year1Cost(countryCode, tuitionUSD) {
+function p80Year1CostAbroad(countryCode, tuitionUSD) {
   const living = { gbr: 15000, usa: 18000, deu: 11500, can: 16000, fra: 10500, nld: 12500, aus: 20000 }[countryCode] || 15000;
   const blocked = { deu: 11208, can: 14000 }[countryCode] || 0;
   const visa = { gbr: 490, usa: 185, deu: 75, can: 150, fra: 100, nld: 210, aus: 710 }[countryCode] || 200;
@@ -152,86 +151,169 @@ function p80Year1Cost(countryCode, tuitionUSD) {
   return Math.round(total * 52.7 * p80Idx());
 }
 
-function p80ShowUniModal(country) {
-  p80Init(S);
+/* =================================================================
+   4. APPLICATION RESOLUTION — tick-based, not setTimeout
+   ================================================================= */
+function p80ResolvePendingApplications() {
+  if (!S || !S.p79 || !Array.isArray(S.p79.appliedUnis)) return;
+  const absMonth = Number(S.pacingAbsoluteMonth) || 0;
+  const year = gameYear();
+  let changed = false;
+
+  S.p79.appliedUnis.forEach(function (app) {
+    if (!app || app.resolved) return;
+    /* Both private (Egypt) and abroad applications resolve after N months */
+    const readyAbs = app.appliedAbs + (app.resolveAfterMonths || 3);
+    const readyYear = (app.appliedYear || year) + (app.resolveAfterYears || 0);
+    const isReady = (S.pacing === 'monthly')
+      ? (absMonth >= readyAbs)
+      : (year >= readyYear + 1);   /* at least next year */
+    if (!isReady) return;
+
+    /* Admission decision */
+    const gpa = (S.gpa && S.gpaN) ? S.gpa : 2.5;
+    const ielts = S.ielts || 0;
+    const gpaDelta = gpa - (app.reqGpa || 3.0);
+    const ieltsDelta = ielts - (app.reqIelts || 6.5);
+    let chance = 0.35 + gpaDelta * 0.4 + ieltsDelta * 0.08;
+    if ((app.reqGpa || 3.0) >= 3.5) chance -= 0.15;
+    if (app.universityId && app.universityId === 'auc') chance -= 0.05;
+    chance = Math.max(0.05, Math.min(0.9, chance));
+
+    if (Math.random() > chance) {
+      app.resolved = true;
+      app.result = 'rejected';
+      log('❌ ' + app.uni + ' rejected your application.');
+      realismNotice('Application rejected', app.uni + ' did not admit you.');
+      changed = true;
+      return;
+    }
+
+    /* Funding */
+    if (app.funding === 'self') {
+      const costEGP = app.year1CostEGP || 0;
+      const bank = Math.round(S.wealth * p80Rate());
+      if (bank < costEGP) {
+        app.resolved = true;
+        app.result = 'admitted-no-funds';
+        log('⚠️ Admitted to ' + app.uni + ' but bank is E£' + bank.toLocaleString() + ' and year 1 costs E£' + costEGP.toLocaleString() + '.');
+      } else {
+        app.resolved = true;
+        app.result = 'admitted-self';
+        log('✅ Admitted to ' + app.uni + '! Self-funded.');
+        realismNotice('Admitted (self-funded)', app.uni + ' admitted you. Tuition will be deducted at the start of the year.');
+      }
+    } else if (app.funding === 'parents') {
+      const tier = (S.p76 && S.p76.wealthLevel) || 0;
+      const agreeChance = tier >= 4 ? 0.92 : tier >= 3 ? 0.60 : 0.15;
+      if (Math.random() < agreeChance) {
+        app.resolved = true;
+        app.result = 'admitted-parents';
+        log('✅ Admitted to ' + app.uni + '! Parents agreed to fund.');
+        realismNotice('Admitted (family-funded)', 'Your family will cover tuition at ' + app.uni + '.');
+      } else {
+        app.resolved = true;
+        app.result = 'admitted-no-funds';
+        log('⚠️ Admitted to ' + app.uni + ' but parents declined to fund.');
+      }
+    } else if (app.funding === 'scholarship') {
+      const schols = P80_INT_SCHOLARSHIPS[app.country] || [];
+      const target = schols.find(function (s) { return gpa >= s.reqGpa && ielts >= s.reqIelts; });
+      if (target && Math.random() < target.chance + gpaDelta * 0.05) {
+        app.resolved = true;
+        app.result = 'admitted-scholarship';
+        app.scholarship = target.name;
+        app.cover = target.cover;
+        log('🏆 Admitted to ' + app.uni + ' with ' + target.name + ' (' + Math.round(target.cover * 100) + '%)!');
+        realismNotice('Admitted with scholarship', target.name + ' at ' + app.uni + '.');
+      } else {
+        app.resolved = true;
+        app.result = 'admitted-no-funds';
+        log('⚠️ Admitted to ' + app.uni + ' but no scholarship was awarded.');
+      }
+    } else {
+      /* Fallback */
+      app.resolved = true;
+      app.result = 'admitted-no-funds';
+    }
+    changed = true;
+  });
+
+  if (changed) save();
+}
+
+/* Call on monthly tick */
+const P80_p52TickBefore = p52MonthlyTick;
+p52MonthlyTick = function () {
+  P80_p52TickBefore.apply(this, arguments);
+  try { p80ResolvePendingApplications(); } catch (e) { console.error('p80 resolve:', e); }
+};
+
+/* Call on yearly age-up */
+const P80_ageUpBefore = ageUp;
+ageUp = function () {
+  const r = P80_ageUpBefore.apply(this, arguments);
+  try { p80ResolvePendingApplications(); } catch (e) {}
+  return r;
+};
+
+/* Also resolve on load — in case game was closed between apply and decision */
+setTimeout(p80ResolvePendingApplications, 800);
+setTimeout(p80ResolvePendingApplications, 2500);
+
+/* =================================================================
+   5. APPLY ACTIONS
+   ================================================================= */
+function p80ApplyEgyptPrivate(uniIndex, funding) {
   if (!S) return;
-  const rate = p80Rate();
+  const uni = P80_EGY_PRIVATE[uniIndex];
+  if (!uni) return hint('University not found.');
+
+  /* Check education system is accepted */
+  const sys = (S.p78 && S.p78.educationSystem) || 'thanaweya';
+  if (uni.accepts.indexOf(sys) === -1) return hint('This university does not accept your education system.');
+
   const gpa = (S.gpa && S.gpaN) ? S.gpa : 2.5;
   const ielts = S.ielts || 0;
-  const bankEGP = Math.round(S.wealth * rate);
+  if (gpa < uni.reqGpa) return hint('GPA too low: needs ' + uni.reqGpa + '+');
+  if (ielts < uni.ielts) return hint('IELTS too low: needs ' + uni.ielts + '+');
 
-  const countries = Object.keys(P80_INT_UNIS);
-  const active = country || S.p80?.modalCountry || 'gbr';
-  S.p80 = S.p80 || {};
-  S.p80.modalCountry = active;
+  const feeEGP = Math.round(500 * 52.7 * p80Idx());
+  const internal = feeEGP / p80Rate();
+  if (S.wealth < internal) return hint('Application fee: E£' + feeEGP.toLocaleString());
 
-  const unis = P80_INT_UNIS[active] || [];
-  const schols = P80_INT_SCHOLARSHIPS[active] || [];
-  const c = COUNTRIES[active] || {};
+  S.wealth -= internal;
+  S.expenses = (S.expenses || 0) + internal;
 
-  const countryTabs = countries.map(function (code) {
-    const cc = COUNTRIES[code] || {};
-    const sel = code === active;
-    return '<button class="btn ' + (sel ? 'sel' : '') + '" style="margin:0;padding:6px;font-size:.72rem;flex:1;min-width:70px" onclick="p80ShowUniModal(\'' + code + '\')">' +
-      (cc.f || '') + ' ' + (cc.n || code) + '</button>';
-  }).join('');
+  p79Init(S);
+  S.p79.appliedUnis = S.p79.appliedUnis || [];
+  const year1CostEGP = p80TuitionEGP(uni) * (1 + 0.15);   /* tuition + living */
+  S.p79.appliedUnis.push({
+    uni: uni.name,
+    country: 'egy',
+    level: 'bachelor',
+    funding: funding,
+    appliedYear: gameYear(),
+    appliedAbs: S.pacingAbsoluteMonth || 0,
+    resolveAfterMonths: 2,
+    resolveAfterYears: 0,
+    resolved: false,
+    result: null,
+    reqGpa: uni.reqGpa,
+    reqIelts: uni.ielts,
+    tuitionUSD: uni.tuitionUSD || 0,
+    tuitionEGP: p80TuitionEGP(uni),
+    year1CostEGP: year1CostEGP,
+    isEgyptPrivate: true
+  });
 
-  const uniCards = unis.map(function (uni, i) {
-    const tuitionEGP = Math.round(uni.tuition * 52.7 * p80Idx());
-    const canApply = gpa >= uni.req && ielts >= uni.ielts;
-    const applied = (S.p79 && Array.isArray(S.p79.appliedUnis)) && S.p79.appliedUnis.some(function (a) { return a.uni === uni.n; });
-
-    return '<div style="margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:8px">' +
-      '<b style="font-size:.9rem">' + uni.n + '</b> <span class="muted" style="font-size:.72rem">· Tier ' + uni.tier + '</span>' +
-      '<div class="row" style="border:0;padding:2px 0;font-size:.76rem"><span>Tuition/year</span><b class="mono">' + (uni.tuition === 0 ? 'FREE' : 'E£' + tuitionEGP.toLocaleString()) + '</b></div>' +
-      '<div class="row" style="border:0;padding:2px 0;font-size:.76rem"><span>Needs</span><b>GPA ' + uni.req + '+ · IELTS ' + uni.ielts + '+</b></div>' +
-      (applied
-        ? '<p style="color:var(--amber);font-size:.76rem;margin-top:6px">⏳ Application submitted</p>'
-        : canApply
-          ? '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-top:6px">' +
-            '<button class="btn" style="margin:0;padding:5px;font-size:.68rem" onclick="p80Apply(\'' + active + '\',' + i + ',\'self\')">Self</button>' +
-            '<button class="btn" style="margin:0;padding:5px;font-size:.68rem" onclick="p80Apply(\'' + active + '\',' + i + ',\'scholarship\')">Scholarship</button>' +
-            '<button class="btn" style="margin:0;padding:5px;font-size:.68rem" onclick="p80Apply(\'' + active + '\',' + i + ',\'parents\')">Family</button>' +
-            '</div>'
-          : '<p style="color:var(--rose);font-size:.72rem;margin-top:5px">' +
-            (gpa < uni.req ? '❌ GPA ' + gpa.toFixed(2) + ' < ' + uni.req + '. ' : '') +
-            (ielts < uni.ielts ? '❌ IELTS ' + (ielts || 'none') + ' < ' + uni.ielts + '.' : '') +
-            '</p>') +
-      '</div>';
-  }).join('');
-
-  const scholsHtml = schols.length ? '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">' +
-    '<b style="font-size:.82rem;color:var(--cyan)">Scholarships for ' + (c.n || active) + '</b>' +
-    schols.map(function (s) {
-      const ok = gpa >= s.reqGpa && ielts >= s.reqIelts;
-      return '<div style="margin-top:6px;padding:8px;border-left:3px solid ' + (ok ? 'var(--mint)' : 'var(--line)') + ';background:rgba(255,255,255,.02);border-radius:4px">' +
-        '<b style="font-size:.8rem">' + s.name + '</b> <span style="color:var(--mint);font-size:.72rem">· ' + Math.round(s.cover * 100) + '%</span>' +
-        '<div class="muted" style="font-size:.72rem;margin-top:2px">GPA ' + s.reqGpa + '+ · IELTS ' + s.reqIelts + '+</div>' +
-        (ok ? '<div style="color:var(--mint);font-size:.72rem;margin-top:3px">✓ You qualify</div>' : '') +
-        '</div>';
-    }).join('') + '</div>' : '';
-
-  const existing = document.getElementById('p80-uni-modal');
-  if (existing) existing.remove();
-
-  const modal = document.createElement('div');
-  modal.id = 'p80-uni-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(4,5,12,.85);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
-  modal.innerHTML = '<div style="background:#14141f;border:1px solid #51416e;border-radius:16px;padding:18px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;color:#e8e8f2">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
-    '<b style="font-size:1rem">🌍 Apply to international universities</b>' +
-    '<button class="menu-btn" onclick="document.getElementById(\'p80-uni-modal\').remove()">✕</button>' +
-    '</div>' +
-    '<p class="muted" style="font-size:.8rem;margin-top:8px">Your GPA: <b>' + gpa.toFixed(2) + '</b> · IELTS: <b>' + (ielts || 'none') + '</b> · Bank: <b>E£' + bankEGP.toLocaleString() + '</b></p>' +
-    '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:10px">' + countryTabs + '</div>' +
-    '<div style="margin-top:12px">' + uniCards + '</div>' +
-    scholsHtml +
-    '</div>';
-  document.body.appendChild(modal);
+  log('📤 Applied to ' + uni.name + ' · ' + funding + '. Fee: E£' + feeEGP.toLocaleString() + '.');
+  realismNotice('Application submitted', uni.name + ' — ' + funding + '. Decision expected in 2 months.');
+  hint(); render();
 }
-window.p80ShowUniModal = p80ShowUniModal;
+window.p80ApplyEgyptPrivate = p80ApplyEgyptPrivate;
 
-function p80Apply(country, index, funding) {
+function p80ApplyAbroad(country, index, funding) {
   if (!S) return;
   const unis = P80_INT_UNIS[country] || [];
   const uni = unis[index];
@@ -252,164 +334,313 @@ function p80Apply(country, index, funding) {
   p79Init(S);
   S.p79.appliedUnis = S.p79.appliedUnis || [];
   S.p79.appliedUnis.push({
-    uni: uni.n, country: country, level: 'bachelor',
-    funding: funding, appliedYear: gameYear(),
+    uni: uni.n,
+    country: country,
+    level: 'bachelor',
+    funding: funding,
+    appliedYear: gameYear(),
     appliedAbs: S.pacingAbsoluteMonth || 0,
-    resolved: false, result: null,
-    tuitionUSD: uni.tuition, reqGpa: uni.req, reqIelts: uni.ielts
+    resolveAfterMonths: 3,
+    resolveAfterYears: 0,
+    resolved: false,
+    result: null,
+    reqGpa: uni.req,
+    reqIelts: uni.ielts,
+    tuitionUSD: uni.tuition,
+    year1CostEGP: p80Year1CostAbroad(country, uni.tuition)
   });
 
-  log('📤 Applied to ' + uni.n + ' · ' + funding + '. Fee: E£' + feeEGP.toLocaleString() + '.');
-  realismNotice('Application submitted', uni.n + ' — ' + funding + '. Decision expected soon.');
-
-  /* Immediate resolution for gameplay */
-  setTimeout(function () { p80Resolve(uni.n); }, 400);
+  log('📤 Applied to ' + uni.n + ' (' + country.toUpperCase() + ') · ' + funding + '. Fee: E£' + feeEGP.toLocaleString() + '.');
+  realismNotice('Application submitted', uni.n + ' — ' + funding + '. Decision expected in 3 months.');
   hint(); render();
 }
-window.p80Apply = p80Apply;
+window.p80ApplyAbroad = p80ApplyAbroad;
 
-function p80Resolve(uniName) {
+/* =================================================================
+   6. ENROLL INTO THE ADMITTED UNIVERSITY
+   ================================================================= */
+function p80EnrollFromApp(uniName) {
   p79Init(S);
-  const app = (S.p79.appliedUnis || []).find(function (a) { return a.uni === uniName && !a.resolved; });
-  if (!app) return;
+  const app = (S.p79.appliedUnis || []).find(function (a) { return a.uni === uniName && a.result && a.result.indexOf('admitted') === 0; });
+  if (!app) return hint('No admission to accept.');
 
-  const gpa = (S.gpa && S.gpaN) ? S.gpa : 2.5;
-  const ielts = S.ielts || 0;
-  const gpaDelta = gpa - (app.reqGpa || 3.0);
-  const ieltsDelta = ielts - (app.reqIelts || 6.5);
-  let chance = 0.35 + gpaDelta * 0.4 + ieltsDelta * 0.08;
-  if ((app.reqGpa || 3.0) >= 3.5) chance -= 0.15;
-  chance = Math.max(0.05, Math.min(0.9, chance));
-
-  if (Math.random() > chance) {
+  /* Egyptian private */
+  if (app.isEgyptPrivate) {
+    const uni = P80_EGY_PRIVATE.find(function (u) { return u.name === app.uni; });
+    const facultyMap = { 'auc': 'Business', 'guc': 'Engineering', 'bue': 'Dentistry', 'aastmt': 'Engineering', 'buc': 'Medicine', 'miu': 'Business', 'msa': 'Business', 'nile': 'Engineering', 'future': 'Engineering', 'helwan_i': 'Business' };
+    const faculty = facultyMap[uni.id] || 'Business';
+    S.uni = {
+      type: 'private',
+      universityId: uni.id,
+      universityName: uni.name,
+      faculty: faculty,
+      year: 0,
+      yearsTotal: 4,
+      annualCostEGP: p80TuitionEGP(uni),
+      annualCostInternal: p80TuitionEGP(uni) / p80Rate(),
+      pay: app.funding === 'parents' ? 'parents' : 'self',
+      scholar: app.funding === 'scholarship'
+    };
+    log('🎓 Enrolled at ' + uni.name + ' — Faculty of ' + faculty + '.');
+    realismNotice('Enrolled at private university', uni.name + ' · ' + faculty + '. Tuition E£' + p80TuitionEGP(uni).toLocaleString() + '/year.');
     app.resolved = true;
-    app.result = 'rejected';
-    log('❌ ' + uniName + ' rejected your application.');
-    realismNotice('Application rejected', uniName + ' did not admit you.');
+    app.result = 'enrolled';
     hint(); render();
     return;
   }
 
-  /* Funding */
+  /* Abroad */
+  const cc = COUNTRIES[app.country] || {};
+  /* Move abroad and set enrollment */
+  S.country = app.country;
+  S.cf = null;
+  if (typeof setWorld === 'function') setWorld(S);
+  S.p69 = S.p69 || {};
+  S.p69.enrolled = {
+    uni: app.uni,
+    country: app.country,
+    level: 'bachelor',
+    funding: { name: app.scholarship || app.funding, cover: app.cover || (app.funding === 'parents' ? 1 : 0) },
+    field: 'General'
+  };
+  S.p73 = S.p73 || {};
+  S.p73.abroadStartedYear = gameYear();
+  S.p73.abroadField = 'General';
+  /* Deduct year-1 cost if self-funded */
   if (app.funding === 'self') {
-    const year1 = p80Year1Cost(app.country, app.tuitionUSD);
-    const bank = Math.round(S.wealth * p80Rate());
-    if (bank < year1) {
-      app.resolved = true;
-      app.result = 'admitted-no-funds';
-      log('⚠️ Admitted to ' + uniName + ' but bank is E£' + bank.toLocaleString() + ' and year 1 costs E£' + year1.toLocaleString() + '.');
-    } else {
-      app.resolved = true;
-      app.result = 'admitted-self';
-      log('✅ Admitted to ' + uniName + '! Self-funded.');
-    }
-  } else if (app.funding === 'parents') {
-    const tier = (S.p76 && S.p76.wealthLevel) || 0;
-    const agreeChance = tier >= 4 ? 0.92 : tier >= 3 ? 0.55 : 0.15;
-    if (Math.random() < agreeChance) {
-      app.resolved = true;
-      app.result = 'admitted-parents';
-      log('✅ Admitted to ' + uniName + '! Parents agreed to fund.');
-    } else {
-      app.resolved = true;
-      app.result = 'admitted-no-funds';
-      log('⚠️ Admitted to ' + uniName + ' but parents declined to fund.');
-    }
-  } else {
-    const schols = P80_INT_SCHOLARSHIPS[app.country] || [];
-    const target = schols.find(function (s) { return gpa >= s.reqGpa && ielts >= s.reqIelts; });
-    if (target && Math.random() < target.chance + gpaDelta * 0.05) {
-      app.resolved = true;
-      app.result = 'admitted-scholarship';
-      app.scholarship = target.name;
-      app.cover = target.cover;
-      log('🏆 Admitted to ' + uniName + ' with ' + target.name + ' (' + Math.round(target.cover * 100) + '%)!');
-      realismNotice('Admitted with scholarship', target.name + ' at ' + uniName + '.');
-    } else {
-      app.resolved = true;
-      app.result = 'admitted-no-funds';
-      log('⚠️ Admitted to ' + uniName + ' but no scholarship was awarded.');
-    }
+    const cost = (app.year1CostEGP || 0) / p80Rate();
+    if (S.wealth >= cost) S.wealth -= cost;
   }
-  save(); hint(); render();
+  log('✈️ Enrolled at ' + app.uni + ' in ' + cc.n + '.');
+  realismNotice('Enrolled abroad', 'You are now studying at ' + app.uni + ' in ' + cc.n + '.');
+  app.result = 'enrolled';
+  hint(); render();
 }
-window.p80Resolve = p80Resolve;
+window.p80EnrollFromApp = p80EnrollFromApp;
 
 /* =================================================================
-   4. CLEAN REBUILD OF EDUCATION TAB FOR INTERNATIONAL SYSTEM
+   7. MODAL — Egypt + Abroad options
+   ================================================================= */
+function p80ShowPathwayModal() {
+  if (!S) return;
+  const rate = p80Rate();
+  const gpa = (S.gpa && S.gpaN) ? S.gpa : 2.5;
+  const ielts = S.ielts || 0;
+  const bankEGP = Math.round(S.wealth * rate);
+  const tier = (S.p76 && S.p76.wealthLevel) || 0;
+  const sys = (S.p78 && S.p78.educationSystem) || 'thanaweya';
+
+  /* Egyptian private universities */
+  const egyCards = P80_EGY_PRIVATE.map(function (uni, i) {
+    const accepted = uni.accepts.indexOf(sys) !== -1;
+    const gpaOK = gpa >= uni.reqGpa;
+    const ieltsOK = ielts >= uni.ielts;
+    const canApply = accepted && gpaOK && ieltsOK;
+    const tuitionEGP = p80TuitionEGP(uni);
+    const tuitionLabel = uni.tuitionUSD ? '$' + uni.tuitionUSD.toLocaleString() + '/yr (~E£' + tuitionEGP.toLocaleString() + ')' : 'E£' + tuitionEGP.toLocaleString() + '/yr';
+
+    return '<div style="margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:8px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+      '<div style="flex:1;min-width:0"><b style="font-size:.86rem">' + uni.name + '</b>' +
+      '<div class="muted" style="font-size:.72rem;margin-top:2px">' + uni.notes + '</div>' +
+      '<div class="muted" style="font-size:.72rem;margin-top:4px"><b>' + tuitionLabel + '</b> · Needs GPA ' + uni.reqGpa + '+ · IELTS ' + uni.ielts + '+</div>' +
+      '</div></div>' +
+      (canApply
+        ? '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:8px">' +
+          '<button class="btn" style="margin:0;padding:5px;font-size:.7rem" onclick="p80ApplyEgyptPrivate(' + i + ',\'self\')">Self</button>' +
+          '<button class="btn" style="margin:0;padding:5px;font-size:.7rem" onclick="p80ApplyEgyptPrivate(' + i + ',\'scholarship\')">Scholarship</button>' +
+          '<button class="btn" style="margin:0;padding:5px;font-size:.7rem" onclick="p80ApplyEgyptPrivate(' + i + ',\'parents\')">Family</button>' +
+          '</div>'
+        : '<p style="color:var(--rose);font-size:.72rem;margin-top:5px">' +
+          (!accepted ? '❌ Does not accept ' + sys + '. ' : '') +
+          (!gpaOK ? '❌ GPA ' + gpa.toFixed(2) + ' < ' + uni.reqGpa + '. ' : '') +
+          (!ieltsOK ? '❌ IELTS ' + (ielts || 'none') + ' < ' + uni.ielts + '.' : '') +
+          '</p>') +
+      '</div>';
+  }).join('');
+
+  /* Applications in progress */
+  const inProg = (S.p79 && Array.isArray(S.p79.appliedUnis)) ? S.p79.appliedUnis.filter(function (a) { return !a.resolved; }) : [];
+  const inProgHtml = inProg.length ? '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">' +
+    '<b style="font-size:.85rem;color:var(--amber)">⏳ Applications in progress</b>' +
+    inProg.map(function (a) {
+      const cc = COUNTRIES[a.country] || {};
+      const flag = cc.f || (a.isEgyptPrivate ? '🇪🇬' : '');
+      return '<div class="row" style="padding:4px 0;font-size:.78rem"><span>' + flag + ' ' + a.uni + '</span><b>' + a.funding + '</b></div>';
+    }).join('') + '</div>' : '';
+
+  /* Admitted offers */
+  const admitted = (S.p79 && Array.isArray(S.p79.appliedUnis)) ? S.p79.appliedUnis.filter(function (a) { return a.result && a.result.indexOf('admitted') === 0; }) : [];
+  const admitHtml = admitted.length ? '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">' +
+    '<b style="font-size:.85rem;color:var(--mint)">✅ Admission offers — click to enroll</b>' +
+    admitted.map(function (a) {
+      const cc = COUNTRIES[a.country] || {};
+      const flag = cc.f || (a.isEgyptPrivate ? '🇪🇬' : '');
+      const funding = a.scholarship ? ' · ' + a.scholarship : (a.funding === 'parents' ? ' · Family' : ' · Self');
+      return '<button class="btn" style="margin-top:6px;text-align:left;background:rgba(52,211,153,.15);border-color:var(--mint)" onclick="p80EnrollFromApp(\'' + a.uni.replace(/'/g, "\\'") + '\')">' +
+        flag + ' <b>' + a.uni + '</b>' + funding +
+        '<small>Click to accept and enroll</small>' +
+        '</button>';
+    }).join('') + '</div>' : '';
+
+  const existing = document.getElementById('p80-path-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'p80-path-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(4,5,12,.85);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+  modal.innerHTML = '<div style="background:#14141f;border:1px solid #51416e;border-radius:16px;padding:18px;max-width:540px;width:100%;max-height:88vh;overflow-y:auto;color:#e8e8f2">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+    '<b style="font-size:1rem">🎓 Apply to universities</b>' +
+    '<button class="menu-btn" onclick="document.getElementById(\'p80-path-modal\').remove()">✕</button>' +
+    '</div>' +
+    '<p class="muted" style="font-size:.78rem;margin-top:8px">GPA <b>' + gpa.toFixed(2) + '</b> · IELTS <b>' + (ielts || 'none') + '</b> · Bank <b>E£' + bankEGP.toLocaleString() + '</b> · System <b>' + sys + '</b></p>' +
+
+    '<h4 style="font-size:.9rem;color:var(--cyan);margin-top:14px">🇪🇬 Egyptian private universities</h4>' +
+    '<p class="muted" style="font-size:.75rem">These accept your education system and are close to home. Rich families often choose this route.</p>' +
+    egyCards +
+
+    '<div style="margin-top:18px;padding:12px;background:rgba(139,92,246,.08);border-radius:8px">' +
+    '<b style="font-size:.85rem">🌍 Study abroad</b>' +
+    '<p class="muted" style="font-size:.75rem;margin-top:4px">Apply to universities in the UK, USA, Germany, Canada, France, Netherlands, Australia. Longer commitment, higher costs, but international career and immigration path.</p>' +
+    '<button class="btn" style="margin-top:8px" onclick="document.getElementById(\'p80-path-modal\').remove();p80ShowAbroadModal()">Open study-abroad list</button>' +
+    '</div>' +
+
+    inProgHtml +
+    admitHtml +
+    '</div>';
+  document.body.appendChild(modal);
+}
+window.p80ShowPathwayModal = p80ShowPathwayModal;
+
+function p80ShowAbroadModal() {
+  if (!S) return;
+  p80Init(S);
+  const rate = p80Rate();
+  const gpa = (S.gpa && S.gpaN) ? S.gpa : 2.5;
+  const ielts = S.ielts || 0;
+  const bankEGP = Math.round(S.wealth * rate);
+
+  const countries = Object.keys(P80_INT_UNIS);
+  const active = S.p80.modalCountry || 'gbr';
+  S.p80.modalCountry = active;
+
+  const unis = P80_INT_UNIS[active] || [];
+  const schols = P80_INT_SCHOLARSHIPS[active] || [];
+  const c = COUNTRIES[active] || {};
+
+  const countryTabs = countries.map(function (code) {
+    const cc = COUNTRIES[code] || {};
+    const sel = code === active;
+    return '<button class="btn ' + (sel ? 'sel' : '') + '" style="margin:0;padding:5px;font-size:.7rem;flex:1;min-width:60px" onclick="p80SwitchAbroad(\'' + code + '\')">' +
+      (cc.f || '') + ' ' + (cc.n || code) + '</button>';
+  }).join('');
+
+  const uniCards = unis.map(function (uni, i) {
+    const tuitionEGP = Math.round(uni.tuition * 52.7 * p80Idx());
+    const canApply = gpa >= uni.req && ielts >= uni.ielts;
+    const alreadyApplied = (S.p79 && Array.isArray(S.p79.appliedUnis)) && S.p79.appliedUnis.some(function (a) { return a.uni === uni.n; });
+
+    return '<div style="margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:8px">' +
+      '<b style="font-size:.86rem">' + uni.n + '</b> <span class="muted" style="font-size:.7rem">· Tier ' + uni.tier + '</span>' +
+      '<div class="row" style="border:0;padding:2px 0;font-size:.74rem"><span>Tuition/year</span><b class="mono">' + (uni.tuition === 0 ? 'FREE' : 'E£' + tuitionEGP.toLocaleString()) + '</b></div>' +
+      '<div class="row" style="border:0;padding:2px 0;font-size:.74rem"><span>Needs</span><b>GPA ' + uni.req + '+ · IELTS ' + uni.ielts + '+</b></div>' +
+      (alreadyApplied
+        ? '<p style="color:var(--amber);font-size:.74rem;margin-top:5px">⏳ Application submitted</p>'
+        : canApply
+          ? '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-top:6px">' +
+            '<button class="btn" style="margin:0;padding:5px;font-size:.68rem" onclick="p80ApplyAbroad(\'' + active + '\',' + i + ',\'self\')">Self</button>' +
+            '<button class="btn" style="margin:0;padding:5px;font-size:.68rem" onclick="p80ApplyAbroad(\'' + active + '\',' + i + ',\'scholarship\')">Scholarship</button>' +
+            '<button class="btn" style="margin:0;padding:5px;font-size:.68rem" onclick="p80ApplyAbroad(\'' + active + '\',' + i + ',\'parents\')">Family</button>' +
+            '</div>'
+          : '<p style="color:var(--rose);font-size:.7rem;margin-top:5px">' +
+            (gpa < uni.req ? '❌ GPA ' + gpa.toFixed(2) + ' < ' + uni.req + '. ' : '') +
+            (ielts < uni.ielts ? '❌ IELTS ' + (ielts || 'none') + ' < ' + uni.ielts + '.' : '') +
+            '</p>') +
+      '</div>';
+  }).join('');
+
+  const scholsHtml = schols.length ? '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">' +
+    '<b style="font-size:.82rem;color:var(--cyan)">Scholarships for ' + (c.n || active) + '</b>' +
+    schols.map(function (s) {
+      const ok = gpa >= s.reqGpa && ielts >= s.reqIelts;
+      return '<div style="margin-top:6px;padding:8px;border-left:3px solid ' + (ok ? 'var(--mint)' : 'var(--line)') + ';background:rgba(255,255,255,.02);border-radius:4px">' +
+        '<b style="font-size:.78rem">' + s.name + '</b> <span style="color:var(--mint);font-size:.7rem">· ' + Math.round(s.cover * 100) + '%</span>' +
+        '<div class="muted" style="font-size:.7rem;margin-top:2px">Needs GPA ' + s.reqGpa + '+ · IELTS ' + s.reqIelts + '+</div>' +
+        (ok ? '<div style="color:var(--mint);font-size:.7rem;margin-top:3px">✓ You qualify</div>' : '') +
+        '</div>';
+    }).join('') + '</div>' : '';
+
+  const existing = document.getElementById('p80-abroad-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'p80-abroad-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(4,5,12,.85);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+  modal.innerHTML = '<div style="background:#14141f;border:1px solid #51416e;border-radius:16px;padding:18px;max-width:540px;width:100%;max-height:88vh;overflow-y:auto;color:#e8e8f2">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+    '<b style="font-size:1rem">🌍 Study abroad</b>' +
+    '<button class="menu-btn" onclick="document.getElementById(\'p80-abroad-modal\').remove()">✕</button>' +
+    '</div>' +
+    '<p class="muted" style="font-size:.78rem;margin-top:8px">GPA <b>' + gpa.toFixed(2) + '</b> · IELTS <b>' + (ielts || 'none') + '</b> · Bank <b>E£' + bankEGP.toLocaleString() + '</b></p>' +
+    '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:10px">' + countryTabs + '</div>' +
+    '<div style="margin-top:12px">' + uniCards + '</div>' +
+    scholsHtml +
+    '<button class="btn" style="margin-top:14px" onclick="document.getElementById(\'p80-abroad-modal\').remove();p80ShowPathwayModal()">← Back to Egyptian private universities</button>' +
+    '</div>';
+  document.body.appendChild(modal);
+}
+window.p80ShowAbroadModal = p80ShowAbroadModal;
+
+function p80SwitchAbroad(country) {
+  p80Init(S);
+  S.p80.modalCountry = country;
+  p80ShowAbroadModal();
+}
+window.p80SwitchAbroad = p80SwitchAbroad;
+
+/* =================================================================
+   8. CLEAN REBUILD OF EDUCATION TAB
    ================================================================= */
 const P80_viewSchoolBefore = viewSchool;
 viewSchool = function () {
   if (!S) return P80_viewSchoolBefore.apply(this, arguments);
 
-  /* Only take over when: international system, ready for university, no uni yet */
-  if (p80IsInternational() && !S.uni && !S.degree && S.diploma && S.age >= 15) {
-    return p80BuildCleanIntView();
+  /* Handle the "ready for university" state — no matter the system */
+  if (!S.uni && !S.degree && S.diploma && S.age >= 15) {
+    return p80BuildReadyForUniView();
   }
 
-  /* Otherwise, apply dedup + button fix on top of the normal view */
   let html = P80_viewSchoolBefore.apply(this, arguments);
   html = p80DedupEverything(html);
-  html = p80FixButtons(html);
   return html;
 };
 
 function p80DedupEverything(html) {
   if (!html) return html;
 
-  /* Aggressive dedup: keep FIRST occurrence of any repeated <section> with same H3 title */
-  const h3Pattern = /<section class="card"[^>]*>\s*<h3>([^<]+)<\/h3>/g;
+  /* Dedup by section title (H3) */
   const seenTitles = {};
-  let match;
-  const sections = [];
-  let lastIndex = 0;
-
-  /* Collect all section starts with their titles */
+  const h3re = /<section class="card"[^>]*>\s*<h3>([^<]+)<\/h3>/g;
   const starts = [];
   let m;
-  const h3re = /<section class="card"[^>]*>\s*<h3>([^<]+)<\/h3>/g;
   while ((m = h3re.exec(html)) !== null) {
     starts.push({ idx: m.index, title: m[1].trim() });
   }
-
-  /* For each pair of duplicates, remove the later one */
-  const titles = {};
-  starts.forEach(function (s) {
-    if (titles[s.title] == null) {
-      titles[s.title] = s.idx;
-    } else {
-      /* Find the section end for this occurrence */
-      const start = s.idx;
-      let end = html.indexOf('</section>', start);
-      if (end === -1) return;
-      end += '</section>'.length;
-      /* Check if already removed (position moved) */
-      if (start < html.length && html.slice(start, start + 20).indexOf('<section') === 0) {
-        html = html.slice(0, start) + html.slice(end);
-      }
+  for (let i = starts.length - 1; i >= 0; i--) {
+    const s = starts[i];
+    if (seenTitles[s.title] === undefined) {
+      seenTitles[s.title] = s.idx;
+      continue;
     }
-  });
+    /* Duplicate — find section end and remove */
+    let end = html.indexOf('</section>', s.idx);
+    if (end === -1) continue;
+    end += '</section>'.length;
+    html = html.slice(0, s.idx) + html.slice(end);
+  }
 
-  /* Also dedup by unique heading strings */
-  const uniqueHeadings = [
-    'EDUCATION STATUS',
-    '🛂 Your passport and your options',
-    '🇩🇪 German',
-    '🇳🇱 Dutch',
-    '📝 IELTS / TOEFL',
-    '🎓 Your education'
-  ];
-
-  uniqueHeadings.forEach(function (heading) {
-    let count = 0;
-    const re = new RegExp('<section class="card"[^>]*>\\s*<h3>[^<]*' + heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\s\\S]*?<\\/section>', 'g');
-    html = html.replace(re, function (match) {
-      count++;
-      return count === 1 ? match : '';
-    });
-  });
-
-  /* Special handling for EDUCATION STATUS which is inside a div, not h3 */
+  /* Special handling for EDUCATION STATUS inside a div */
   const statusMatches = html.match(/<section class="card"[^>]*>\s*<div[^>]*>EDUCATION STATUS[\s\S]*?<\/section>/g);
   if (statusMatches && statusMatches.length > 1) {
     let count = 0;
@@ -422,34 +653,19 @@ function p80DedupEverything(html) {
   return html;
 }
 
-function p80FixButtons(html) {
-  if (!html) return html;
-
-  /* Replace dead "Apply to universities" button */
-  html = html.replace(
-    /<button[^>]*onclick="activeTab=&#39;school&#39;;render\(\)"[^>]*>🌍 Apply to universities \(international system\)<\/button>/g,
-    '<button class="btn" style="text-align:left" onclick="p80ShowUniModal()">🌍 Apply to universities (international system)</button>'
-  );
-  html = html.replace(
-    /<button[^>]*onclick="activeTab='school';render\(\)"[^>]*>🌍 Apply to universities \(international system\)<\/button>/g,
-    '<button class="btn" style="text-align:left" onclick="p80ShowUniModal()">🌍 Apply to universities (international system)</button>'
-  );
-
-  return html;
-}
-
 /* =================================================================
-   5. CLEAN INTERNATIONAL VIEW (used when player is on IGCSE/IB/American + ready for uni)
+   9. READY-FOR-UNIVERSITY VIEW
    ================================================================= */
-function p80BuildCleanIntView() {
+function p80BuildReadyForUniView() {
   p80Init(S);
   const rate = p80Rate();
   const gpa = (S.gpa && S.gpaN) ? S.gpa : 0;
   const gpaColor = gpa >= 3.7 ? 'var(--mint)' : gpa >= 3.0 ? 'var(--cyan)' : gpa >= 2.0 ? 'var(--amber)' : 'var(--rose)';
   const bankEGP = Math.round(S.wealth * rate);
-  const sysLabel = (typeof p78EducationSystemLabel === 'function')
-    ? p78EducationSystemLabel(S.p78.educationSystem)
-    : S.p78.educationSystem;
+  const sys = (S.p78 && S.p78.educationSystem) || 'thanaweya';
+  const sysLabel = (typeof p78EducationSystemLabel === 'function') ? p78EducationSystemLabel(sys) : sys;
+  const isIntl = ['igcse', 'american', 'ib'].indexOf(sys) !== -1;
+  const tier = (S.p76 && S.p76.wealthLevel) || 2;
 
   let html = '';
 
@@ -458,98 +674,118 @@ function p80BuildCleanIntView() {
     '<div class="muted" style="font-size:.72rem;letter-spacing:.06em;font-weight:700">EDUCATION STATUS</div>' +
     '<div style="font-size:1.15rem;font-weight:700;margin-top:4px">🎓 Ready for university</div>' +
     '<div class="muted" style="font-size:.82rem;margin-top:2px">' + sysLabel + '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">' +
     '<div style="padding:8px;background:rgba(255,255,255,.03);border-radius:6px">' +
-    '<div class="muted" style="font-size:.68rem;text-transform:uppercase">GPA</div>' +
-    '<div class="mono" style="font-size:1.05rem;font-weight:700;margin-top:3px;color:' + gpaColor + '">' + gpa.toFixed(2) + '</div>' +
+    '<div class="muted" style="font-size:.66rem;text-transform:uppercase">GPA</div>' +
+    '<div class="mono" style="font-size:1rem;font-weight:700;margin-top:3px;color:' + gpaColor + '">' + gpa.toFixed(2) + '</div>' +
     '</div>' +
     '<div style="padding:8px;background:rgba(255,255,255,.03);border-radius:6px">' +
-    '<div class="muted" style="font-size:.68rem;text-transform:uppercase">IELTS</div>' +
-    '<div class="mono" style="font-size:1.05rem;font-weight:700;margin-top:3px">' + (S.ielts || '—') + '</div>' +
+    '<div class="muted" style="font-size:.66rem;text-transform:uppercase">IELTS</div>' +
+    '<div class="mono" style="font-size:1rem;font-weight:700;margin-top:3px">' + (S.ielts || '—') + '</div>' +
+    '</div>' +
+    '<div style="padding:8px;background:rgba(255,255,255,.03);border-radius:6px">' +
+    '<div class="muted" style="font-size:.66rem;text-transform:uppercase">Bank</div>' +
+    '<div class="mono" style="font-size:.85rem;font-weight:700;margin-top:3px">E£' + Math.round(bankEGP / 1000) + 'k</div>' +
     '</div>' +
     '</div>' +
     '</section>';
 
-  /* Action buttons */
+  /* What to do next — pathway buttons */
   html += '<section class="card"><h3>✅ What to do next</h3>' +
-    '<button class="btn" style="text-align:left;background:var(--violet);color:#fff;font-weight:700" onclick="p80ShowUniModal()">' +
-    '🌍 Apply to international universities' +
-    '<small>Choose country, then apply to specific universities</small>' +
+    '<button class="btn" style="text-align:left;background:var(--violet);color:#fff;font-weight:700" onclick="p80ShowPathwayModal()">' +
+    '🎓 Apply to universities' +
+    '<small>Egyptian private universities (AUC, GUC, BUE...) AND study abroad</small>' +
     '</button>' +
-    (S.age >= 16 && !S.ielts ? '<button class="btn" style="text-align:left" onclick="takeIelts()">📝 Take IELTS first (' + (S.eng >= 75 ? 'recommended' : 'consider improving English first') + ')</button>' : '') +
+    (!S.ielts && S.age >= 16 ? '<button class="btn" style="text-align:left" onclick="takeIelts()">📝 Take IELTS first</button>' : '') +
     '</section>';
 
-  /* Applications in progress */
-  const apps = (S.p79 && Array.isArray(S.p79.appliedUnis)) ? S.p79.appliedUnis.filter(function (a) { return !a.resolved; }) : [];
-  if (apps.length) {
-    html += '<section class="card" style="border-color:var(--amber)"><h3>📤 Applications in progress</h3>' +
-      apps.map(function (a) {
+  /* Thanaweya-only info (if system is Thanaweya) */
+  if (sys === 'thanaweya' && (!S.p68 || !S.p68.thanaweyaTrack)) {
+    html += '<section class="card" style="border-color:var(--amber)"><h3>📝 Thanaweya Amma track</h3>' +
+      '<p class="muted" style="font-size:.82rem">Choose your national high-school track first — this determines public university eligibility.</p>' +
+      '<button class="btn" onclick="p68ChooseTrack(\'adabi\')">📖 Adabi (Literary)</button>' +
+      '<button class="btn" onclick="p68ChooseTrack(\'elmi-riyada\')">🔬 Elmi Riyada (Science-Math)</button>' +
+      '<button class="btn" onclick="p68ChooseTrack(\'elmi-olom\')">🧬 Elmi Olom (Science-Biology)</button>' +
+      '</section>';
+  }
+
+  /* In-progress applications */
+  const inProg = (S.p79 && Array.isArray(S.p79.appliedUnis)) ? S.p79.appliedUnis.filter(function (a) { return !a.resolved; }) : [];
+  if (inProg.length) {
+    html += '<section class="card" style="border-color:var(--amber)"><h3>⏳ Applications in progress</h3>' +
+      inProg.map(function (a) {
         const cc = COUNTRIES[a.country] || {};
-        return '<div class="row" style="padding:5px 0;font-size:.82rem"><span>' + (cc.f || '') + ' ' + a.uni + '</span><b>' + a.funding + '</b></div>';
+        const flag = cc.f || (a.isEgyptPrivate ? '🇪🇬' : '');
+        return '<div class="row" style="padding:4px 0;font-size:.82rem"><span>' + flag + ' ' + a.uni + '</span><b>' + a.funding + '</b></div>';
       }).join('') +
       '</section>';
   }
 
-  /* Resolved applications */
-  const doneApps = (S.p79 && Array.isArray(S.p79.appliedUnis)) ? S.p79.appliedUnis.filter(function (a) { return a.resolved; }) : [];
-  if (doneApps.length) {
-    html += '<section class="card"><h3>📋 Recent application results</h3>' +
-      doneApps.slice(-5).reverse().map(function (a) {
+  /* Admission offers */
+  const admits = (S.p79 && Array.isArray(S.p79.appliedUnis)) ? S.p79.appliedUnis.filter(function (a) { return a.result && a.result.indexOf('admitted') === 0; }) : [];
+  if (admits.length) {
+    html += '<section class="card" style="border-color:var(--mint)"><h3>✅ Admission offers</h3>' +
+      admits.map(function (a) {
         const cc = COUNTRIES[a.country] || {};
-        const result = a.result === 'admitted-scholarship' ? '🏆 Admitted · ' + (a.scholarship || 'Scholarship')
-          : a.result === 'admitted-self' ? '✅ Admitted · Self-funded'
-          : a.result === 'admitted-parents' ? '✅ Admitted · Family funded'
-          : a.result === 'admitted-no-funds' ? '⚠️ Admitted but no funding'
-          : '❌ Rejected';
-        return '<div class="row" style="padding:5px 0;font-size:.82rem"><span>' + (cc.f || '') + ' ' + a.uni + '</span><b>' + result + '</b></div>';
+        const flag = cc.f || (a.isEgyptPrivate ? '🇪🇬' : '');
+        const fundingLabel = a.scholarship ? ' · ' + a.scholarship : (a.funding === 'parents' ? ' · Family' : ' · Self');
+        return '<button class="btn" style="margin-top:6px;text-align:left;background:rgba(52,211,153,.15);border-color:var(--mint)" onclick="p80EnrollFromApp(\'' + a.uni.replace(/'/g, "\\'") + '\')">' +
+          flag + ' <b>' + a.uni + '</b>' + fundingLabel +
+          '<small>Click to accept and enroll</small>' +
+          '</button>';
       }).join('') +
       '</section>';
   }
 
-  /* English language section */
-  html += '<section class="card"><h3>🇬🇧 English language — ' + (S.eng || 0) + '%</h3>' +
-    '<p class="muted" style="font-size:.82rem">Needed for international universities and IELTS.</p>' +
-    '<button class="btn" onclick="takeEng(0)">Self-study · Free · +2</button>' +
-    '<button class="btn" onclick="takeEng(1)">Online course · +5</button>' +
-    '<button class="btn" onclick="takeEng(2)">Language institute · +9</button>' +
-    '<button class="btn" onclick="takeEng(3)">Intensive + speaking club · +14</button>' +
+  /* Results */
+  const results = (S.p79 && Array.isArray(S.p79.appliedUnis)) ? S.p79.appliedUnis.filter(function (a) { return a.resolved && a.result === 'rejected'; }) : [];
+  if (results.length) {
+    html += '<section class="card"><h3>📋 Recent results</h3>' +
+      results.slice(-3).reverse().map(function (a) {
+        const cc = COUNTRIES[a.country] || {};
+        const flag = cc.f || (a.isEgyptPrivate ? '🇪🇬' : '');
+        return '<div class="row" style="padding:4px 0;font-size:.78rem"><span>' + flag + ' ' + a.uni + '</span><b style="color:var(--rose)">Rejected</b></div>';
+      }).join('') +
+      '</section>';
+  }
+
+  /* English + IELTS */
+  html += '<section class="card"><h3>🇬🇧 English — ' + (S.eng || 0) + '%</h3>' +
+    '<button class="btn" onclick="takeEng(0)">Self-study · Free</button>' +
+    '<button class="btn" onclick="takeEng(1)">Online · +5</button>' +
+    '<button class="btn" onclick="takeEng(2)">Institute · +9</button>' +
+    '<button class="btn" onclick="takeEng(3)">Intensive · +14</button>' +
     '</section>';
 
-  /* IELTS/TOEFL card */
   html += '<section class="card"><h3>📝 IELTS / TOEFL</h3>' +
     '<div class="row"><span>IELTS</span><b>' + (S.ielts || 'Not taken') + '</b></div>' +
     '<div class="row"><span>TOEFL</span><b>' + (S.toefl ? S.toefl + '/120' : 'Not taken') + '</b></div>' +
-    '<button class="btn" onclick="takeIelts()">Take IELTS · ' + money((typeof imp === 'function' ? imp(250) : 250)) + '</button>' +
-    (typeof takeToefl === 'function' ? '<button class="btn" onclick="takeToefl()">Take TOEFL · ' + money((typeof imp === 'function' ? imp(250) : 250)) + '</button>' : '') +
+    '<button class="btn" onclick="takeIelts()">Take IELTS</button>' +
     '</section>';
 
-  /* Passport — single card */
+  /* Passport */
   if (S.age >= 16 && typeof passportCard === 'function') {
     const passportHtml = passportCard();
     if (passportHtml) html += passportHtml;
   }
 
-  /* Return / reset option */
-  html += '<section class="card"><h3>⚙️ Options</h3>' +
-    '<p class="muted" style="font-size:.78rem">You can switch to the Egyptian Thanaweya Amma system (only if you have not graduated high school yet) or continue with the international route.</p>' +
-    '<button class="btn" style="border-color:var(--amber)" onclick="p80ResetEducationSystem()">Switch to Thanaweya Amma (Egyptian)</button>' +
-    '</section>';
-
   return html;
 }
 
-function p80ResetEducationSystem() {
-  if (!S) return;
-  if (S.age > 16) return hint('You are too old to switch education systems.');
-  S.p78.educationSystem = 'thanaweya';
-  S.p78.systemChosen = true;
-  log('🎓 You switched to the Egyptian Thanaweya Amma system.');
-  hint(); render();
-}
-window.p80ResetEducationSystem = p80ResetEducationSystem;
-
 /* =================================================================
-   6. STATE INIT
+   10. INIT
    ================================================================= */
 p80Init(S);
-console.log('[p80] International university modal + family business protection loaded');
+/* Mark existing application requests with resolve timing for old saves */
+if (S && S.p79 && Array.isArray(S.p79.appliedUnis)) {
+  S.p79.appliedUnis.forEach(function (a) {
+    if (a && !a.resolveAfterMonths) {
+      a.resolveAfterMonths = 3;
+      a.appliedAbs = a.appliedAbs || Number(S.pacingAbsoluteMonth) || 0;
+      a.appliedYear = a.appliedYear || gameYear();
+    }
+  });
+}
+setTimeout(p80ResolvePendingApplications, 500);
+
+console.log('[p80 v2] Egyptian private + abroad + tick-based resolution loaded');
