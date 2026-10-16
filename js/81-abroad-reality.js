@@ -794,4 +794,122 @@ if (typeof jobEligibility === 'function') {
    ================================================================= */
 p81Init(S);
 p81FixGraduationYear();
-console.log('[p81 v3] Passport (home-based) + master button + visa gating + grad year cleanup');
+console.log('[p81 v3] Passport (home-based) + master button + visa gating + grad year cleanup')
+/* =================================================================
+   81.22 — DOM-LEVEL FIXER (bypasses the wrapper chain entirely)
+   Runs after every render via setTimeout(0), so it sees the FINAL
+   html that all wrappers produced, and corrects what's wrong.
+   ================================================================= */
+
+/* 1. Ensure S.home is never overwritten */
+function p81EnsureHome() {
+  if (!S) return;
+  if (!S.home || typeof S.home !== 'string') S.home = 'egy';
+}
+
+/* 2. Run on every render — scheduled after all wrappers finish */
+let p81DomPending = false;
+function p81ScheduleDomFix() {
+  if (p81DomPending) return;
+  p81DomPending = true;
+  setTimeout(function () {
+    p81DomPending = false;
+    p81ApplyDomFixes();
+  }, 0);
+}
+
+function p81ApplyDomFixes() {
+  if (!S) return;
+  p81EnsureHome();
+  const view = document.getElementById('view');
+  if (!view) return;
+
+  /* ---- A. Passport panel — rebuild with correct country ---- */
+  const h3s = view.querySelectorAll('h3');
+  h3s.forEach(function (h3) {
+    const txt = (h3.textContent || '').trim();
+    if (txt.indexOf('Your passport') === -1) return;
+    const sec = h3.closest('section');
+    if (!sec || sec.dataset.p81PassportFixed) return;
+    sec.dataset.p81PassportFixed = '1';
+
+    const d = p81PassportData();
+    const abroad = S.country !== (S.home || 'egy');
+    const abroadName = abroad && COUNTRIES[S.country] ? COUNTRIES[S.country].n : null;
+    const pct = Math.round((d.access / 195) * 100);
+
+    sec.innerHTML =
+      '<h3>🛂 Your passport and your options</h3>' +
+      '<div class="row"><span>Your passport</span><b>' + d.flag + ' ' + d.name + '</b></div>' +
+      '<div class="row"><span>Visa-free access</span><b>~' + d.access + ' destinations (' + pct + '%)</b></div>' +
+      (abroad
+        ? '<div class="row"><span>Currently living in</span><b>' + abroadName + ' (on visa)</b></div>'
+        : '') +
+      '<p class="muted" style="font-size:.78rem;margin-top:8px">Your passport is issued by ' + d.country.toUpperCase() + '. Living abroad does not change it — naturalization typically requires 5–8 years of permanent residence.</p>' +
+      (d.naturalized
+        ? '<p class="muted" style="font-size:.78rem;color:var(--mint)">✓ You have naturalized.</p>'
+        : '') +
+      '<p class="muted" style="font-size:.78rem">A visa application costs money, takes weeks, and is not refunded if refused.</p>';
+  });
+
+  /* ---- B. "Graduate now" button — disable if years not elapsed ---- */
+  const buttons = view.querySelectorAll('button');
+  buttons.forEach(function (btn) {
+    const txt = (btn.textContent || '');
+    if (txt.indexOf('Graduate now') === -1) return;
+    const yearsIn = p81YearsInProgram();
+    const total = (S.p74 && S.p74.enrollTotalMonths) ? S.p74.enrollTotalMonths / 12 : 3;
+    if (yearsIn < total - 0.05) {
+      btn.disabled = true;
+      btn.style.opacity = '.5';
+      btn.textContent = '🎓 Graduate now (needs ' + (total - yearsIn).toFixed(1) + ' more years)';
+    }
+  });
+
+  /* ---- C. Visa sponsorship text ---- */
+  if (S.country !== S.home) {
+    const rows = view.querySelectorAll('.row');
+    rows.forEach(function (row) {
+      const span = row.querySelector('span');
+      const b = row.querySelector('b');
+      if (!span || !b) return;
+      if ((span.textContent || '').trim() === 'Visa sponsorship') {
+        if ((b.textContent || '').indexOf('Not needed') !== -1) {
+          b.textContent = 'Required — you are on a work-restricted visa';
+          b.style.color = 'var(--amber)';
+        }
+      }
+    });
+  }
+
+  /* ---- D. Career — banner if you're working without authorization ---- */
+  if (S.country !== S.home && S.p81 && S.p81.visa && S.job && activeTab === 'career') {
+    const visa = S.p81.visa;
+    const jobHours = (S.job.benefits && S.job.benefits.hours) || 40;
+    const isStudentVisa = visa.type === 'student';
+    const needsSponsorship = jobHours >= 35 && isStudentVisa;
+    const alreadyBannered = view.querySelector('.p81-visa-banner');
+    if (needsSponsorship && !alreadyBannered) {
+      const banner = document.createElement('section');
+      banner.className = 'card p81-visa-banner';
+      banner.style.borderColor = 'var(--rose)';
+      banner.innerHTML =
+        '<h3 style="color:var(--rose)">🚨 Work authorization issue</h3>' +
+        '<p class="muted" style="font-size:.82rem">You are employed full-time at ' + (S.job.company || 'a UK employer') + ' while on a <b>' + visa.name + '</b>, which only allows ' + visa.workRights + '.</p>' +
+        '<p class="muted" style="font-size:.82rem">In reality you would be asked to leave the country or switch to a work visa. The game lets you keep the job, but you should apply for a <b>Skilled Worker visa</b> (requires employer sponsorship) or leave the role.</p>';
+      view.insertBefore(banner, view.firstChild);
+    }
+  }
+}
+
+/* Hook the render → schedule DOM fix after all wrappers complete */
+const P81_renderBeforeDomFix = render;
+render = function () {
+  const r = P81_renderBeforeDomFix.apply(this, arguments);
+  p81ScheduleDomFix();
+  return r;
+};
+
+/* Run on load too */
+p81EnsureHome();
+p81ScheduleDomFix();
