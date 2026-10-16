@@ -1,477 +1,424 @@
 /* =====================================================================
-   79. CONSISTENCY FIX
-   - Family car offer scales with wealth tier + hides after university
-   - Hide Thanaweya cutoffs after you graduate
-   - Move "career ladder" card: Education tab → Career tab
-   - Passport panel: only World tab (remove from Life + Education)
-   - Family business card: only Career tab (remove from Life)
-   - Family business salary counts as income
-   - "Consider local master's" and "Study abroad" buttons open real modals
-   - Local master's modal includes private universities
-   - Remove the useless "Target destination" dropdown and "Year 1 costs" text card
-   Load AFTER 78-reality-fix.js and BEFORE 99-boot.js
+   79. CONSISTENCY FIX — FINAL
+   Run synchronously inside the render wrapper.
    ===================================================================== */
 
-(function p79ConsistencyFix() {
+console.log('=== [p79] FILE IS LOADING ===');
+
+(function () {
+  'use strict';
 
   /* =================================================================
-     1. FAMILY CAR OFFER — scale by wealth, hide after university
+     1. SALARY SYNC — force S.job to exist when working for family
      ================================================================= */
-  function p79ShouldOfferCar() {
-    if (!S) return false;
-    if (S.age < 18) return false;
-    /* Once you graduate high school / enter university, no more handout */
-    if (S.uni || S.degree) return false;
-    /* Already has a car */
-    if (S.cars && S.cars.length > 0) return false;
-    /* Family wealth tier */
-    const level = (S.p76 && S.p76.wealthLevel) || 0;
-    /* Poor / lower-middle don't gift cars */
-    if (level < 2) return false;
-    return true;
-  }
+  function syncFamilyJob() {
+    if (typeof S === 'undefined' || !S) return;
+    if (!S.p77 || !S.p77.worksForFamily) return;
 
-  const p79OrigParentOffer = (typeof p62ParentCarOffer === 'function') ? p62ParentCarOffer : null;
-  if (p79OrigParentOffer) {
-    p62ParentCarOffer = function () {
-      if (!p79ShouldOfferCar()) return;
-      return p79OrigParentOffer.apply(this, arguments);
-    };
-  }
+    const rate = (typeof rateNow === 'function') ? rateNow() : 52.7;
+    const rev = Number(S.p77.familyBusinessRevenue) || 0;
+    const salary = rev * 0.03;
 
-  /* Rebuild accept to pick tier-appropriate car and always close the modal */
-  window.p62AcceptParentCar = function () {
-    try {
-      if (!S) return;
-      const off = (S.p62 && S.p62.pendingOffers && S.p62.pendingOffers.length) ? S.p62.pendingOffers.shift() : null;
-      const level = (S.p76 && S.p76.wealthLevel) || 0;
-      const year = (typeof gameYear === 'function') ? gameYear() : 2026;
-      if (typeof p62Init === 'function') p62Init();
+    /* Set every possible field the game might read */
+    S.salary = salary;
+    S.p77.familySalary = salary;
+    S.p77.familySalaryEGP = Math.round(salary * rate);
 
-      if (typeof P62_MODELS === 'undefined' || typeof P62_BRANDS === 'undefined') {
-        return hint('Car data unavailable.');
-      }
-
-      /* Choose class pool by tier */
-      let pool;
-      if (level >= 5) {
-        /* Ultra: luxury brands, brand new */
-        pool = P62_MODELS.filter(function (m) {
-          const fromY = Number(m[8]) || 0, toY = Number(m[9]) || 9999;
-          if (year < fromY || year > toY) return false;
-          const brand = P62_BRANDS[m[0]] || {};
-          return (brand.tier || 0) >= 3 && ['lux','exec','sport','suv'].indexOf(m[2]) >= 0;
-        });
-      } else if (level === 4) {
-        /* Wealthy: premium/luxury */
-        pool = P62_MODELS.filter(function (m) {
-          const fromY = Number(m[8]) || 0, toY = Number(m[9]) || 9999;
-          if (year < fromY || year > toY) return false;
-          const brand = P62_BRANDS[m[0]] || {};
-          return (brand.tier || 0) >= 3 && ['lux','exec','suv'].indexOf(m[2]) >= 0;
-        });
-      } else if (level === 3) {
-        /* Upper-middle: new mid-size / SUV */
-        pool = P62_MODELS.filter(function (m) {
-          const fromY = Number(m[8]) || 0, toY = Number(m[9]) || 9999;
-          if (year < fromY || year > toY) return false;
-          return ['mid','suv','compact'].indexOf(m[2]) >= 0;
-        });
-      } else {
-        /* Middle: used econ/compact */
-        pool = P62_MODELS.filter(function (m) {
-          const fromY = Number(m[8]) || 0, toY = Number(m[9]) || 9999;
-          if (year < fromY || year > toY) return false;
-          return ['econ','compact'].indexOf(m[2]) >= 0;
-        });
-      }
-
-      if (!pool.length) pool = P62_MODELS.filter(function (m) {
-        const fromY = Number(m[8]) || 0, toY = Number(m[9]) || 9999;
-        return year >= fromY && year <= toY;
-      });
-      if (!pool.length) { hint('No car available.'); return; }
-
-      const model = pool[Math.floor(Math.random() * pool.length)];
-      const brand = P62_BRANDS[model[0]] || { name: model[0] };
-      const base = (typeof p62BasePriceUSD === 'function') ? p62BasePriceUSD(model, year) : (model[3] * 52.7);
-      const carAge = level >= 4 ? 0 : level === 3 ? 1 : 3 + Math.floor(Math.random() * 4);
-      const value = (typeof p62Depreciation === 'function') ? Math.round(base * p62Depreciation(carAge)) : base;
-
-      const car = {
-        uid: 'cg' + Math.random().toString(36).slice(2, 8),
-        make: brand.name,
-        name: model[1],
-        cls: model[2],
-        year: year - carAge,
-        trim: 0, color: 0, interior: 0, opts: [],
-        msrp: base, paid: 0,
-        insurance: 'tp',
-        insuranceExpiry: year + 1,
-        registrationExpiry: year + 1,
-        miles: carAge * 12000,
-        cond: level >= 4 ? 98 : level === 3 ? 85 : 70,
-        age: carAge,
-        acc: false, broken: false, fix: 0,
-        mods: [], modCost: 0,
-        seller: 'parents',
-        brand: model[0],
-        fuel: model[11] ? 'e' : (model[10] && year >= model[10] ? 'h' : 'g'),
-        life: model[7],
-        value: value,
-        int: 0, intc: 0,
-        hasLoan: false
+    /* Force S.job to exist */
+    if (!S.job || !S.job.isFamilyBusiness) {
+      S.job = {
+        trackId: 'entry',
+        level: 0,
+        title: 'Family Business Associate',
+        salary: salary,
+        perf: 60,
+        years: (S.job && S.job.years) || 0,
+        company: (S.p76 && S.p76.familyBusiness) || 'Family Business',
+        companySize: 'family business',
+        companyFactor: 1,
+        benefits: {
+          medical: true, social: true, bonus: 0.02, leave: 21,
+          remote: 'On-site', hours: 40, pension: true, contract: 'Family employment'
+        },
+        stress: 3,
+        isFamilyBusiness: true
       };
-      S.cars = S.cars || [];
-      S.cars.push(car);
-      S.cars = S.cars.slice(-4);
-
-      (typeof parents === 'function' ? parents() : []).forEach(function (p) {
-        if (p && p.alive !== false) p.bond = Math.min(100, (p.bond || 50) + 8);
-      });
-      if (typeof fx === 'function') fx({ happiness: 6, social: level >= 4 ? 5 : 3 });
-      if (typeof log === 'function') {
-        log('🎁 Your parents gave you a ' + car.year + ' ' + car.make + ' ' + car.name + (carAge === 0 ? ' — brand new' : ''));
-      }
-    } catch (err) {
-      console.error('[p79] accept car failed:', err);
-    } finally {
-      const m = document.getElementById('p62-offer-modal');
-      if (m) m.remove();
-      if (typeof save === 'function') save();
-      if (typeof render === 'function') render();
+    } else {
+      S.job.salary = salary;
     }
-  };
-
-  /* Offer text reflects tier */
-  const p79OrigShowOffer = (typeof p62ShowPendingOffer === 'function') ? p62ShowPendingOffer : null;
-  if (p79OrigShowOffer) {
-    p62ShowPendingOffer = function () {
-      const modal = document.getElementById('p62-offer-modal');
-      if (modal) modal.remove();
-      const level = (S && S.p76 && S.p76.wealthLevel) || 2;
-      let desc;
-      if (level >= 5) desc = 'Your family is upgrading their fleet. They are giving you the outgoing top-of-the-line model — a luxury car in excellent condition.';
-      else if (level === 4) desc = 'Your family is buying a new car and passing their previous one to you. It is a premium vehicle in excellent condition.';
-      else if (level === 3) desc = 'Your parents are upgrading their car and passing their older model to you. It is a solid mid-range car in good condition.';
-      else desc = 'Your parents offer you their old car now that they are upgrading. You will still pay insurance and maintenance yourself.';
-
-      const el = document.createElement('div');
-      el.id = 'p62-offer-modal';
-      el.className = 'p24-modal-backdrop';
-      el.style.cssText = 'position:fixed;inset:0;background:rgba(4,5,12,.78);backdrop-filter:blur(7px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px';
-      el.innerHTML =
-        '<div class="p24-modal" style="max-width:460px">' +
-        '<div class="p24-pill">FAMILY OFFER · ' + ((typeof gameYear === 'function') ? gameYear() : '') + '</div>' +
-        '<h2>🚗 Your parents offer you a car</h2>' +
-        '<p>' + desc + '</p>' +
-        '<div class="acts" style="margin-top:14px">' +
-        '<button class="btn" style="background:var(--mint);color:#000;font-weight:700" onclick="p62AcceptParentCar();return false;">Accept the offer</button>' +
-        '<button class="btn" onclick="p62DeclineParentCar();return false;">Politely decline</button>' +
-        '</div></div>';
-      document.body.appendChild(el);
-    };
   }
 
   /* =================================================================
-     2. HIDE THANAWEYA CUTOFFS AFTER GRADUATION
-     ================================================================= */
-  const p79OrigViewSchool = viewSchool;
-  viewSchool = function () {
-    let html = p79OrigViewSchool.apply(this, arguments);
-    if (!html || !S) return html;
-
-    /* If the player has a degree, no Thanaweya content should show */
-    if (S.degree) {
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>📊 Egyptian university cutoffs[\s\S]*?<\/section>/g, '');
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>📝 Thanaweya Amma:[\s\S]*?<\/section>/g, '');
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>📊 Your Thanaweya Amma position<\/h3>[\s\S]*?<\/section>/g, '');
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>📝 Choose Thanaweya Amma track<\/h3>[\s\S]*?<\/section>/g, '');
-      html = html.replace(/Choose a Thanaweya Amma track first\./g, '');
-      /* If enrolled in university, hide too */
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>📊 Egyptian university cutoffs[\s\S]*?<\/section>/g, '');
-    } else if (S.uni) {
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>📊 Egyptian university cutoffs[\s\S]*?<\/section>/g, '');
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>📝 Thanaweya Amma:[\s\S]*?<\/section>/g, '');
-    }
-
-    /* Remove duplicate EDUCATION STATUS (keep only the first) */
-    const statusMatches = html.match(/<section class="card"[^>]*>\s*<div[^>]*>EDUCATION STATUS[\s\S]*?<\/section>/g);
-    if (statusMatches && statusMatches.length > 1) {
-      let count = 0;
-      html = html.replace(/<section class="card"[^>]*>\s*<div[^>]*>EDUCATION STATUS[\s\S]*?<\/section>/g, function (m) {
-        count++;
-        return count === 1 ? m : '';
-      });
-    }
-
-    /* Remove the "💼 Your X career ladder" card from Education — it belongs in Career */
-    html = html.replace(/<section class="card"[^>]*>\s*<h3>💼 Your [^<]*career ladder<\/h3>[\s\S]*?<\/section>/g, '');
-
-    /* Remove "🎯 Target destination" dropdown — it did nothing */
-    html = html.replace(/<section class="card"[^>]*>\s*<h3>🎯 Target destination<\/h3>[\s\S]*?<\/section>/g, '');
-
-    /* Remove the "🌍 Master's abroad — year 1 costs" text-heavy table */
-    html = html.replace(/<section class="card"[^>]*>\s*<h3>🌍 Master's abroad — year 1 costs<\/h3>[\s\S]*?<\/section>/g, '');
-
-    /* Remove passport panel from Education — belongs in World tab only */
-    html = html.replace(/<section class="card"[^>]*>\s*<h3>🛂 Your passport and your options<\/h3>[\s\S]*?<\/section>/g, '');
-
-    /* Remove private lessons / school trips / olympiads if graduated */
-    if (S.degree) {
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>📚 Private lessons[\s\S]*?<\/section>/g, '');
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>🚌 School trips[\s\S]*?<\/section>/g, '');
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>🏆 School olympiads[\s\S]*?<\/section>/g, '');
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>📖 Thanaweya Amma pressure<\/h3>[\s\S]*?<\/section>/g, '');
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>🔧 Vocational \/ technical school<\/h3>[\s\S]*?<\/section>/g, '');
-      html = html.replace(/<section class="card"[^>]*>\s*<h3>👥 Join a study group<\/h3>[\s\S]*?<\/section>/g, '');
-    }
-
-    /* Replace "What to do next" buttons with real actions */
-    html = html.replace(
-      /<button[^>]*onclick="activeTab='career';render\(\)"[^>]*>💼 Open Career tab<\/button>/g,
-      '<button class="btn" style="text-align:left" onclick="go(\'career\')">💼 Open Career tab</button>'
-    );
-    html = html.replace(
-      /<button[^>]*onclick="activeTab='school';render\(\)"[^>]*>🎓 Consider local master's<\/button>/g,
-      '<button class="btn" style="text-align:left" onclick="p79OpenLocalMaster()">🎓 Consider local master\'s</button>'
-    );
-    html = html.replace(
-      /<button[^>]*onclick="activeTab='school';render\(\)"[^>]*>🎓 Consider master's<\/button>/g,
-      '<button class="btn" style="text-align:left" onclick="p79OpenLocalMaster()">🎓 Consider master\'s</button>'
-    );
-    html = html.replace(
-      /<button[^>]*>🌍 Study abroad<\/button>/g,
-      '<button class="btn" style="text-align:left" onclick="p79OpenStudyAbroad()">🌍 Study abroad</button>'
-    );
-    html = html.replace(
-      /<button[^>]*onclick="p75ToggleStudyAbroad\(\)"[^>]*>🌍 Study abroad<\/button>/g,
-      '<button class="btn" style="text-align:left" onclick="p79OpenStudyAbroad()">🌍 Study abroad</button>'
-    );
-
-    return html;
-  };
-
-  /* =================================================================
-     3. FAMILY BUSINESS CARD — Career tab only, and salary counts
-     ================================================================= */
-  const p79OrigViewCareer = viewCareer;
-  viewCareer = function () {
-    let html = p79OrigViewCareer.apply(this, arguments);
-    if (!S || S.age < 18) return html;
-    if (S.country !== S.home) return html;
-    if (!S.p76 || !S.p76.familyBusiness) return html;
-
-    /* Add the family business card at the top */
-    const rate = (typeof rateNow === 'function') ? rateNow() : 52.7;
-    const rev = (S.p77 && S.p77.familyBusinessRevenue) || 0;
-    const revEGP = Math.round(rev * rate);
-    const works = !!(S.p77 && S.p77.worksForFamily);
-    const manages = !!(S.p77 && S.p77.familyBusinessManaged);
-
-    /* Include family business salary in the income calculation display */
-    if (works && S.job && S.job.isFamilyBusiness) {
-      const salEGP = Math.round((S.job.salary || 0) * rate);
-      html = html.replace(
-        /Yearly income \(live — includes salary, rent, certificates\)<\/span><b class="mono" style="color:var\(--mint\)">E£[\d,]+<\/b>/,
-        'Yearly income (live — includes family business salary)<\/span><b class="mono" style="color:var(--mint)">E£' + (Math.round(((typeof p54LiveIncome === 'function') ? p54LiveIncome() : 0) * rate) + salEGP).toLocaleString() + '<\/b>'
-      );
-    }
-
-    let card = '<section class="card" style="border-color:var(--mint)"><h3>💼 ' + S.p76.familyBusiness + '</h3>' +
-      '<p class="muted" style="font-size:.82rem">Your family owns and operates this business.</p>' +
-      '<div class="row"><span>Annual revenue</span><b class="mono">E£' + revEGP.toLocaleString() + '</b></div>' +
-      '<div class="row"><span>Employees</span><b>' + ((S.p77 && S.p77.familyBusinessEmployees) || 0) + '</b></div>';
-
-    if (works) {
-      const salEGP = Math.round((S.job && S.job.salary || 0) * rate);
-      card += '<div class="row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px"><span>Your role</span><b>Employee</b></div>' +
-        '<div class="row"><span>Your salary</span><b class="mono">E£' + salEGP.toLocaleString() + '/yr</b></div>' +
-        '<button class="btn" style="border-color:var(--rose);color:var(--rose)" onclick="p77QuitFamilyBusiness()">Leave</button>';
-    } else {
-      card += '<button class="btn" style="background:var(--mint);color:#000;font-weight:700" onclick="p77WorkForFamily()">Work for the family business</button>';
-    }
-
-    if (manages) {
-      card += '<div class="row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px"><span>You manage</span><b style="color:var(--mint)">Active</b></div>' +
-        '<button class="btn" style="border-color:var(--amber)" onclick="p77StopManaging()">Stop managing</button>';
-    } else if (S.age >= 21) {
-      card += '<button class="btn" onclick="p77ManageFamilyBusiness()">Manage the business</button>';
-    }
-    if (S.age >= 25) {
-      card += '<button class="btn" onclick="p77InheritBusiness()" style="border-color:var(--violet)">Request your share</button>';
-    }
-    card += '</section>';
-
-    /* Insert at top */
-    return card + html;
-  };
-
-  /* Remove family business card from Life tab */
-  const p79OrigViewLife = viewLife;
-  viewLife = function () {
-    let html = p79OrigViewLife.apply(this, arguments);
-    /* Remove the family business card (anywhere it appears) */
-    html = html.replace(/<section class="card"[^>]*>[\s\S]*?<h3>💼 [^<]*<\/h3>[\s\S]*?Family owns and operates this business[\s\S]*?<\/section>/g, '');
-    /* Remove the standalone passport panel from Life */
-    html = html.replace(/<section class="card"[^>]*>\s*<h3>🛂 Your passport and your options<\/h3>[\s\S]*?<\/section>/g, '');
-    return html;
-  };
-
-  /* Also remove family business from Assets and Family tabs (if it appeared there) */
-  const p79OrigViewAssets = viewAssets;
-  viewAssets = function () {
-    let html = p79OrigViewAssets.apply(this, arguments);
-    html = html.replace(/<section class="card"[^>]*>[\s\S]*?<h3>💼 [^<]*<\/h3>[\s\S]*?Family owns and operates this business[\s\S]*?<\/section>/g, '');
-    return html;
-  };
-
-  /* =================================================================
-     4. MAKE FAMILY BUSINESS ROLE ACTUALLY SET S.job
-     ================================================================= */
-  window.p77WorkForFamily = function () {
-    if (!S || !S.p77) return;
-    if (S.job) return hint('Quit your current job first.');
-    if (S.age < 18) return hint('You must be 18+ to work.');
-    const rate = (typeof rateNow === 'function') ? rateNow() : 52.7;
-    const revEGP = Math.round((S.p77.familyBusinessRevenue || 0) * rate);
-    const salaryEGP = Math.round(revEGP * 0.03);
-    const salaryInternal = salaryEGP / rate;
-    S.p77.worksForFamily = true;
-    S.job = {
-      trackId: 'entry',
-      level: 0,
-      title: 'Family Business Associate',
-      salary: salaryInternal,
-      perf: 60,
-      years: 0,
-      company: S.p76.familyBusiness,
-      companySize: 'family business',
-      companyFactor: 1,
-      benefits: { medical: true, social: true, bonus: 0.02, leave: 21, remote: 'On-site', hours: 40, pension: true, contract: 'Family employment' },
-      stress: 3,
-      isFamilyBusiness: true
-    };
-    log('💼 You started working for ' + S.p76.familyBusiness + ' at E£' + salaryEGP.toLocaleString() + '/year.');
-    realismNotice('Working for the family', 'You joined the family business.');
-    render();
-  };
-
-  /* =================================================================
-     5. LOCAL MASTER'S MODAL — with public AND private unis
+     2. MODALS
      ================================================================= */
   window.p79OpenLocalMaster = function () {
-    if (!S) return;
+    if (typeof S === 'undefined' || !S) return;
+    const old = document.getElementById('p79-local-master-modal');
+    if (old) old.remove();
     const modal = document.createElement('div');
     modal.id = 'p79-local-master-modal';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(4,5,12,.85);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
     modal.innerHTML =
-      '<div style="background:#14141f;border:1px solid #51416e;border-radius:16px;padding:18px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;color:#e8e8f2">' +
+      '<div style="background:#14141f;border:1px solid #51416e;border-radius:16px;padding:18px;max-width:540px;width:100%;max-height:88vh;overflow-y:auto;color:#e8e8f2">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
       '<b style="font-size:1rem">🎓 Local Master\'s in Egypt</b>' +
       '<button class="menu-btn" onclick="document.getElementById(\'p79-local-master-modal\').remove()">✕</button>' +
       '</div>' +
-      '<p class="muted" style="font-size:.78rem;margin-top:8px">Public universities: 25k–70k EGP/yr. Private universities: 85k–200k EGP/yr. Duration 1–2 years. Scholarships available for GPA 3.5+.</p>' +
-      '<label class="muted" style="font-size:.8rem;display:block;margin-top:10px">Subject</label>' +
+      '<p class="muted" style="font-size:.78rem;margin-top:8px">Public: 25k–70k EGP/yr · Private: 85k–200k EGP/yr · 1–2 years.</p>' +
+      '<label class="muted" style="font-size:.8rem;display:block;margin-top:10px">University</label>' +
+      '<select id="p79-lm-uni" style="width:100%;margin:6px 0;padding:6px;background:#1d1d2a;color:#e8e8f2;border:1px solid #51416e;border-radius:6px">' +
+      '<optgroup label="Public"><option>Cairo University</option><option>Ain Shams University</option><option>Alexandria University</option><option>Mansoura University</option></optgroup>' +
+      '<optgroup label="Private"><option>American University in Cairo (AUC)</option><option>German University in Cairo (GUC)</option><option>British University in Egypt (BUE)</option><option>Arab Academy for Science &amp; Technology</option><option>Misr International University (MIU)</option></optgroup>' +
+      '</select>' +
+      '<label class="muted" style="font-size:.8rem;display:block;margin-top:8px">Subject</label>' +
       '<select id="p79-lm-field" style="width:100%;margin:6px 0;padding:6px;background:#1d1d2a;color:#e8e8f2;border:1px solid #51416e;border-radius:6px">' +
-      '<option value="mba">MBA — Business Administration</option>' +
-      '<option value="msc-fin">MSc Accounting & Finance</option>' +
-      '<option value="msc-econ">MSc Economics</option>' +
-      '<option value="msc-cs">MSc Computer Science</option>' +
-      '<option value="mph">MPH — Public Health</option>' +
-      '<option value="llm">LLM — Law</option>' +
-      '<option value="msc-eng">MSc Engineering</option>' +
-      '<option value="msc-med">MSc Medical Sciences</option>' +
+      '<option>MBA — Business Administration</option>' +
+      '<option>MSc Accounting &amp; Finance</option>' +
+      '<option>MSc Economics</option>' +
+      '<option>MSc Computer Science</option>' +
+      '<option>Master of Public Health</option>' +
+      '<option>LLM — Law</option>' +
+      '<option>MSc Engineering</option>' +
+      '<option>MSc Medical Sciences</option>' +
       '</select>' +
-      '<label class="muted" style="font-size:.8rem;display:block;margin-top:8px">University type</label>' +
-      '<select id="p79-lm-type" style="width:100%;margin:6px 0;padding:6px;background:#1d1d2a;color:#e8e8f2;border:1px solid #51416e;border-radius:6px">' +
-      '<option value="public">Public (Cairo, Ain Shams, Alexandria)</option>' +
-      '<option value="private">Private (AUC, GUC, BUE, MIU)</option>' +
-      '</select>' +
-      '<label class="muted" style="font-size:.8rem;display:block;margin-top:8px">Funding</label>' +
-      '<select id="p79-lm-fund" style="width:100%;margin:6px 0;padding:6px;background:#1d1d2a;color:#e8e8f2;border:1px solid #51416e;border-radius:6px">' +
-      '<option value="self">Pay myself</option>' +
-      '<option value="parents">Ask parents</option>' +
-      '<option value="partial">Compete for 50% scholarship</option>' +
-      '<option value="scholar">Compete for full scholarship</option>' +
-      '</select>' +
-      '<button class="btn" style="margin-top:12px;width:100%;text-align:center;background:var(--mint);color:#000;font-weight:700" onclick="p79SubmitLocalMaster()">Apply for local master\'s</button>' +
+      '<button class="btn" style="margin-top:14px;width:100%;text-align:center;background:var(--mint);color:#000;font-weight:700" onclick="p79SubmitLocalMaster()">Apply</button>' +
       '</div>';
     document.body.appendChild(modal);
   };
 
   window.p79SubmitLocalMaster = function () {
-    const field = document.getElementById('p79-lm-field');
-    const type = document.getElementById('p79-lm-type');
-    const fund = document.getElementById('p79-lm-fund');
-    if (!field || !type || !fund) return;
-
-    const typeLabel = type.options[type.selectedIndex].text;
-    const fundLabel = fund.options[fund.selectedIndex].text;
-    if (!S.localMast) S.localMast = {};
+    const uniEl = document.getElementById('p79-lm-uni');
+    const fieldEl = document.getElementById('p79-lm-field');
+    if (!uniEl || !fieldEl) return;
     S.localMast = {
-      fieldId: field.value,
-      fieldName: field.options[field.selectedIndex].text,
-      kind: type.value,
-      kindLabel: typeLabel,
-      funding: fund.value,
-      fundingLabel: fundLabel,
+      universityName: uniEl.value,
+      fieldName: fieldEl.value,
       year: 0,
-      yearsTotal: 2
+      yearsTotal: 2,
+      startYear: (typeof gameYear === 'function') ? gameYear() : 2026
     };
-    log('🎓 You enrolled in ' + S.localMast.fieldName + ' at a ' + typeLabel + ' — funding: ' + fundLabel + '.');
-    realismNotice('Local master\'s started', 'You are now enrolled in ' + S.localMast.fieldName + '.');
+    if (typeof log === 'function') log('🎓 Enrolled at ' + uniEl.value + ' — ' + fieldEl.value + '.');
     const m = document.getElementById('p79-local-master-modal');
     if (m) m.remove();
-    render();
+    if (typeof save === 'function') save();
+    if (typeof render === 'function') render();
   };
 
-  /* =================================================================
-     6. STUDY ABROAD MODAL — picker with country → universities
-     ================================================================= */
   window.p79OpenStudyAbroad = function () {
-    if (typeof p80ShowAbroadModal === 'function') {
-      /* Prefer the existing rich modal if it exists */
-      return p80ShowAbroadModal();
-    }
-    if (typeof p80ShowPathwayModal === 'function') {
-      return p80ShowPathwayModal();
-    }
-    /* Simple fallback */
-    hint('Study-abroad picker not available.');
+    if (typeof S === 'undefined' || !S) return;
+    const old = document.getElementById('p79-abroad-modal');
+    if (old) old.remove();
+
+    const rate = (typeof rateNow === 'function') ? rateNow() : 52.7;
+    const idx = (typeof p14EgyptPriceIndex === 'function') ? p14EgyptPriceIndex((typeof gameYear === 'function') ? gameYear() : 2026) : 1;
+    const gpa = (S.gpa && S.gpaN) ? S.gpa : 0;
+    const ielts = S.ielts || 0;
+    const bankEGP = Math.round((S.wealth || 0) * rate);
+    const level = S.degree ? 'master' : 'bachelor';
+
+    const countries = [
+      { c: 'gbr', f: '🇬🇧', n: 'United Kingdom', cost: 28000 + 15000 + 490 + 650 + 1000 },
+      { c: 'usa', f: '🇺🇸', n: 'United States', cost: 44000 + 18000 + 185 + 1100 + 1500 },
+      { c: 'deu', f: '🇩🇪', n: 'Germany', cost: 0 + 11500 + 11208 + 75 + 590 + 800 },
+      { c: 'fra', f: '🇫🇷', n: 'France', cost: 3000 + 10500 + 100 + 620 + 800 },
+      { c: 'can', f: '🇨🇦', n: 'Canada', cost: 25000 + 16000 + 14000 + 150 + 1000 + 1200 },
+      { c: 'nld', f: '🇳🇱', n: 'Netherlands', cost: 15000 + 12500 + 210 + 640 + 900 },
+      { c: 'aus', f: '🇦🇺', n: 'Australia', cost: 30000 + 20000 + 710 + 1350 + 1200 },
+      { c: 'ita', f: '🇮🇹', n: 'Italy', cost: 2900 + 9500 + 90 + 580 + 700 },
+      { c: 'jpn', f: '🇯🇵', n: 'Japan', cost: 5000 + 12000 + 60 + 850 + 900 },
+      { c: 'kor', f: '🇰🇷', n: 'South Korea', cost: 6000 + 11000 + 60 + 850 + 900 },
+      { c: 'sgp', f: '🇸🇬', n: 'Singapore', cost: 28000 + 16000 + 90 + 950 + 1000 },
+      { c: 'sau', f: '🇸🇦', n: 'Saudi Arabia', cost: 8000 + 11000 + 200 + 340 + 700 },
+      { c: 'uae', f: '🇦🇪', n: 'UAE', cost: 32000 + 14000 + 250 + 300 + 800 }
+    ];
+
+    const rows = countries.map(function (c) {
+      const costEGP = Math.round(c.cost * 52.7 * idx);
+      const afford = bankEGP >= costEGP;
+      return '<button class="btn" style="margin-top:6px;text-align:left;width:100%" onclick="p79ShowCountryUnis(\'' + c.c + '\')">' +
+        c.f + ' <b>' + c.n + '</b>' +
+        '<small>Year 1 from E£' + costEGP.toLocaleString() + ' ' + (afford ? '· ✓ Affordable' : '· ✗ Short E£' + (costEGP - bankEGP).toLocaleString()) + '</small>' +
+        '</button>';
+    }).join('');
+
+    const modal = document.createElement('div');
+    modal.id = 'p79-abroad-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(4,5,12,.85);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+    modal.innerHTML =
+      '<div style="background:#14141f;border:1px solid #51416e;border-radius:16px;padding:18px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;color:#e8e8f2">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+      '<b style="font-size:1rem">🌍 Study abroad — ' + (level === 'master' ? 'Master\'s' : 'Bachelor\'s') + '</b>' +
+      '<button class="menu-btn" onclick="document.getElementById(\'p79-abroad-modal\').remove()">✕</button>' +
+      '</div>' +
+      '<p class="muted" style="font-size:.78rem;margin-top:8px">GPA <b>' + gpa.toFixed(2) + '</b> · IELTS <b>' + (ielts || 'none') + '</b> · Bank <b>E£' + bankEGP.toLocaleString() + '</b></p>' +
+      rows +
+      '</div>';
+    document.body.appendChild(modal);
   };
 
-  /* =================================================================
-     7. INCOME — include family business salary
-     ================================================================= */
-  const p79OrigLiveIncome = (typeof p54LiveIncome === 'function') ? p54LiveIncome : null;
-  if (p79OrigLiveIncome) {
-    p54LiveIncome = function () {
-      let total = p79OrigLiveIncome.apply(this, arguments) || 0;
-      /* If working for family business, add the salary (only if not already counted) */
-      if (S && S.job && S.job.isFamilyBusiness && S.p77 && S.p77.worksForFamily) {
-        total += Number(S.job.salary) || 0;
-      }
-      return total;
+  window.p79ShowCountryUnis = function (code) {
+    const UNIS = {
+      gbr: [
+        { n: 'University of Oxford', gpa: 3.8, ielts: 7.5, tu: 28000 },
+        { n: 'University of Cambridge', gpa: 3.8, ielts: 7.5, tu: 28000 },
+        { n: 'Imperial College London', gpa: 3.6, ielts: 7.0, tu: 32000 },
+        { n: 'LSE', gpa: 3.7, ielts: 7.0, tu: 30000 },
+        { n: 'UCL', gpa: 3.5, ielts: 7.0, tu: 28000 },
+        { n: 'KCL', gpa: 3.3, ielts: 6.5, tu: 26000 },
+        { n: 'Edinburgh', gpa: 3.3, ielts: 6.5, tu: 24000 },
+        { n: 'Manchester', gpa: 3.1, ielts: 6.5, tu: 22000 }
+      ],
+      usa: [
+        { n: 'MIT', gpa: 3.9, ielts: 7.5, tu: 55000 },
+        { n: 'Harvard', gpa: 3.9, ielts: 7.5, tu: 55000 },
+        { n: 'Stanford', gpa: 3.9, ielts: 7.5, tu: 55000 },
+        { n: 'Yale', gpa: 3.8, ielts: 7.0, tu: 52000 },
+        { n: 'Princeton', gpa: 3.8, ielts: 7.0, tu: 52000 },
+        { n: 'Columbia', gpa: 3.7, ielts: 7.0, tu: 55000 }
+      ],
+      deu: [
+        { n: 'TUM', gpa: 3.6, ielts: 6.5, tu: 0 },
+        { n: 'Heidelberg', gpa: 3.5, ielts: 6.5, tu: 0 },
+        { n: 'RWTH Aachen', gpa: 3.4, ielts: 6.5, tu: 0 }
+      ],
+      fra: [
+        { n: 'Sorbonne', gpa: 3.5, ielts: 6.5, tu: 3000 },
+        { n: 'Sciences Po', gpa: 3.6, ielts: 7.0, tu: 14000 },
+        { n: 'HEC Paris', gpa: 3.7, ielts: 7.0, tu: 22000 }
+      ],
+      can: [
+        { n: 'Toronto', gpa: 3.6, ielts: 6.5, tu: 35000 },
+        { n: 'McGill', gpa: 3.5, ielts: 6.5, tu: 25000 },
+        { n: 'UBC', gpa: 3.5, ielts: 6.5, tu: 32000 }
+      ],
+      nld: [
+        { n: 'TU Delft', gpa: 3.5, ielts: 6.5, tu: 18000 },
+        { n: 'Amsterdam', gpa: 3.4, ielts: 6.5, tu: 16000 },
+        { n: 'Utrecht', gpa: 3.3, ielts: 6.5, tu: 15000 }
+      ],
+      aus: [
+        { n: 'Melbourne', gpa: 3.5, ielts: 6.5, tu: 32000 },
+        { n: 'Sydney', gpa: 3.4, ielts: 6.5, tu: 34000 },
+        { n: 'ANU', gpa: 3.4, ielts: 6.5, tu: 30000 }
+      ],
+      ita: [
+        { n: 'Bologna', gpa: 3.3, ielts: 6.0, tu: 3000 },
+        { n: 'Politecnico Milano', gpa: 3.4, ielts: 6.0, tu: 3500 },
+        { n: 'Sapienza Rome', gpa: 3.3, ielts: 6.0, tu: 2900 }
+      ],
+      jpn: [
+        { n: 'Tokyo', gpa: 3.6, ielts: 6.5, tu: 5000 },
+        { n: 'Kyoto', gpa: 3.5, ielts: 6.5, tu: 5000 }
+      ],
+      kor: [
+        { n: 'Seoul National', gpa: 3.5, ielts: 6.5, tu: 6000 },
+        { n: 'KAIST', gpa: 3.6, ielts: 6.5, tu: 6000 }
+      ],
+      sgp: [
+        { n: 'NUS', gpa: 3.7, ielts: 6.5, tu: 30000 },
+        { n: 'NTU', gpa: 3.6, ielts: 6.5, tu: 28000 }
+      ],
+      sau: [
+        { n: 'King Fahd', gpa: 3.3, ielts: 6.0, tu: 8000 },
+        { n: 'KAUST', gpa: 3.6, ielts: 6.5, tu: 12000 }
+      ],
+      uae: [
+        { n: 'NYU Abu Dhabi', gpa: 3.8, ielts: 7.0, tu: 55000 },
+        { n: 'AUS', gpa: 3.3, ielts: 6.5, tu: 32000 }
+      ]
     };
+    const list = UNIS[code] || [];
+    const rate = (typeof rateNow === 'function') ? rateNow() : 52.7;
+    const idx = (typeof p14EgyptPriceIndex === 'function') ? p14EgyptPriceIndex((typeof gameYear === 'function') ? gameYear() : 2026) : 1;
+    const gpa = (S.gpa && S.gpaN) ? S.gpa : 0;
+    const ielts = S.ielts || 0;
+    const level = S.degree ? 'master' : 'bachelor';
+
+    const rows = list.map(function (u) {
+      const requiredGpa = level === 'master' ? u.gpa + 0.1 : u.gpa;
+      const gpaOK = gpa >= requiredGpa;
+      const ieltsOK = ielts >= u.ielts;
+      const tuitionEGP = Math.round(u.tu * 52.7 * idx);
+      const canApply = gpaOK && ieltsOK;
+      return '<div style="margin-top:10px;padding:10px;border:1px solid #2a2a3a;border-radius:8px">' +
+        '<b>' + u.n + '</b>' +
+        '<div class="row" style="border:0;padding:2px 0;font-size:.78rem"><span>Tuition/year</span><b class="mono">' + (u.tu === 0 ? 'FREE' : 'E£' + tuitionEGP.toLocaleString()) + '</b></div>' +
+        '<div class="row" style="border:0;padding:2px 0;font-size:.78rem"><span>Needs</span><b>GPA ' + requiredGpa.toFixed(2) + '+ · IELTS ' + u.ielts + '+</b></div>' +
+        (canApply
+          ? '<button class="btn" style="margin-top:6px;width:100%" onclick="p79SubmitAbroad(\'' + code + '\',\'' + u.n + '\',' + requiredGpa + ',' + u.ielts + ',' + u.tu + ')">Apply</button>'
+          : '<p style="color:var(--rose);font-size:.72rem;margin-top:5px">' + (!gpaOK ? '❌ GPA too low. ' : '') + (!ieltsOK ? '❌ IELTS too low.' : '') + '</p>') +
+        '</div>';
+    }).join('');
+
+    const m = document.getElementById('p79-abroad-modal');
+    if (m) m.innerHTML =
+      '<div style="background:#14141f;border:1px solid #51416e;border-radius:16px;padding:18px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;color:#e8e8f2">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+      '<b>Universities</b>' +
+      '<button class="menu-btn" onclick="document.getElementById(\'p79-abroad-modal\').remove()">✕</button>' +
+      '</div>' + rows +
+      '<button class="btn" style="margin-top:14px;width:100%" onclick="p79OpenStudyAbroad()">← Back</button>' +
+      '</div>';
+  };
+
+  window.p79SubmitAbroad = function (code, uniName, reqGpa, reqIelts, tuitionUSD) {
+    const rate = (typeof rateNow === 'function') ? rateNow() : 52.7;
+    const idx = (typeof p14EgyptPriceIndex === 'function') ? p14EgyptPriceIndex((typeof gameYear === 'function') ? gameYear() : 2026) : 1;
+    const feeEGP = Math.round(100 * 52.7 * idx);
+    const internal = feeEGP / rate;
+    if (S.wealth < internal) return hint('Fee: E£' + feeEGP.toLocaleString());
+    S.wealth -= internal;
+    S.expenses = (S.expenses || 0) + internal;
+    S.p79 = S.p79 || {};
+    S.p79.appliedUnis = S.p79.appliedUnis || [];
+    S.p79.appliedUnis.push({
+      uni: uniName, country: code,
+      level: S.degree ? 'master' : 'bachelor',
+      funding: 'self',
+      appliedYear: (typeof gameYear === 'function') ? gameYear() : 2026,
+      appliedAbs: S.pacingAbsoluteMonth || 0,
+      resolveAfterMonths: 2,
+      resolved: false, result: null,
+      reqGpa: reqGpa, reqIelts: reqIelts,
+      tuitionUSD: tuitionUSD,
+      year1CostEGP: Math.round((tuitionUSD + 15000) * 52.7 * idx)
+    });
+    log('📤 Applied to ' + uniName + '.');
+    const m = document.getElementById('p79-abroad-modal');
+    if (m) m.remove();
+    save(); render();
+  };
+
+  /* Alias old broken handlers */
+  window.p75ToggleStudyAbroad = window.p79OpenStudyAbroad;
+  window.p68ApplyLocalMaster = window.p79SubmitLocalMaster;
+
+  /* =================================================================
+     3. THE FIX: synchronous DOM correction inside a render wrapper
+     ================================================================= */
+
+  function fixDOMNow() {
+    if (typeof S === 'undefined' || !S) return;
+    const view = document.getElementById('view');
+    if (!view) return;
+
+    /* 3a) Rewire broken buttons by walking the actual buttons */
+    const btns = view.querySelectorAll('button');
+    for (let i = 0; i < btns.length; i++) {
+      const b = btns[i];
+      const t = (b.textContent || '');
+      const oc = b.getAttribute('onclick') || '';
+      if (t.indexOf('Study abroad') !== -1 && oc.indexOf('p79OpenStudyAbroad') === -1) {
+        b.setAttribute('onclick', 'p79OpenStudyAbroad()');
+      }
+      if ((t.indexOf('Consider master') !== -1 || t.indexOf('Consider local master') !== -1) && oc.indexOf('p79OpenLocalMaster') === -1) {
+        b.setAttribute('onclick', 'p79OpenLocalMaster()');
+      }
+      if (t.indexOf('Apply for local master') !== -1 && oc.indexOf('p79OpenLocalMaster') === -1 && oc.indexOf('p79SubmitLocalMaster') === -1) {
+        b.setAttribute('onclick', 'p79OpenLocalMaster()');
+      }
+    }
+
+    /* 3b) Remove ALL family business cards — we re-add one clean one */
+    const allCards = view.querySelectorAll('section.card');
+    let keptBizCard = false;
+    for (let i = 0; i < allCards.length; i++) {
+      const card = allCards[i];
+      const t = card.textContent || '';
+      if (t.indexOf('Your family owns and operates') !== -1) {
+        if (keptBizCard) {
+          card.remove();
+        } else {
+          keptBizCard = true;
+          /* Fix the salary line inside this card */
+          const rows = card.querySelectorAll('.row');
+          for (let j = 0; j < rows.length; j++) {
+            const span = rows[j].querySelector('span');
+            const bEl = rows[j].querySelector('b');
+            if (span && bEl && (span.textContent || '').trim() === 'Your salary') {
+              const rate = (typeof rateNow === 'function') ? rateNow() : 52.7;
+              const rev = (S.p77 && S.p77.familyBusinessRevenue) || 0;
+              const correctEGP = Math.round(rev * 0.03 * rate);
+              bEl.textContent = 'E£' + correctEGP.toLocaleString() + '/yr';
+              bEl.style.color = 'var(--mint)';
+            }
+          }
+        }
+      }
+    }
+
+    /* 3c) Remove duplicate local master's cards */
+    let keptLM = false;
+    for (let i = 0; i < allCards.length; i++) {
+      const card = allCards[i];
+      if (!card.parentNode) continue;
+      const h3 = card.querySelector('h3');
+      if (!h3) continue;
+      const t = h3.textContent || '';
+      if (t.indexOf("Local Master's in Egypt") !== -1 || t.indexOf('Local Master\u2019s in Egypt') !== -1) {
+        if (keptLM) card.remove();
+        else keptLM = true;
+      }
+    }
+
+    /* 3d) Remove useless cards */
+    for (let i = 0; i < allCards.length; i++) {
+      const card = allCards[i];
+      if (!card.parentNode) continue;
+      const h3 = card.querySelector('h3');
+      if (!h3) continue;
+      const t = h3.textContent || '';
+      if (t.indexOf('Target destination') !== -1) card.remove();
+      else if (t.indexOf("Master's abroad") !== -1 && t.indexOf('year 1 cost') !== -1) card.remove();
+      else if (t.indexOf('Study abroad — realistic costs') !== -1) card.remove();
+      else if (t.indexOf('Your passport and your options') !== -1 && activeTab !== 'world') card.remove();
+      else if (t.indexOf('career ladder') !== -1 && activeTab !== 'career') card.remove();
+    }
+
+    /* 3e) Hide Egyptian school content after graduation */
+    if (S.degree || S.uni) {
+      for (let i = 0; i < allCards.length; i++) {
+        const card = allCards[i];
+        if (!card.parentNode) continue;
+        const h3 = card.querySelector('h3');
+        if (!h3) continue;
+        const t = h3.textContent || '';
+        if (t.indexOf('Egyptian university cutoffs') !== -1) card.remove();
+        else if (t.indexOf('Thanaweya Amma') !== -1) card.remove();
+        else if (t.indexOf('Your Thanaweya') !== -1) card.remove();
+        else if (t.indexOf('Private lessons') !== -1) card.remove();
+        else if (t.indexOf('School trips') !== -1) card.remove();
+        else if (t.indexOf('School olympiads') !== -1) card.remove();
+        else if (t.indexOf('Vocational / technical') !== -1) card.remove();
+        else if (t.indexOf('Join a study group') !== -1) card.remove();
+      }
+    }
   }
 
-  /* =================================================================
-     8. DIAGNOSTICS
-     ================================================================= */
-  window.p79Diag = function () {
-    console.log({
-      age: S && S.age,
-      degree: S && S.degree,
-      uni: S && S.uni,
-      job: S && S.job && (S.job.title + ' @ ' + S.job.company),
-      familyBiz: S && S.p76 && S.p76.familyBusiness,
-      worksForFamily: S && S.p77 && S.p77.worksForFamily,
-      familyBizSalary: S && S.job && S.job.salary,
-      p77rev: S && S.p77 && S.p77.familyBusinessRevenue,
-      liveIncome: (typeof p54LiveIncome === 'function') ? p54LiveIncome() : null
-    });
+  /* THE KEY: wrap render so we fix the DOM synchronously,
+     not via setTimeout, before the browser paints */
+  var _origRender = window.render;
+  window.render = function () {
+    syncFamilyJob();                             /* 1. set salary BEFORE render */
+    var r = _origRender.apply(this, arguments);  /* 2. base render runs */
+    try { fixDOMNow(); } catch (e) { console.error('[p79] fixDOMNow', e); }  /* 3. synchronous fix */
+    return r;
   };
 
-  console.log('[p79] Consistency fix loaded');
+  /* Also fix on ageUp */
+  var _origAgeUp = window.ageUp;
+  window.ageUp = function () {
+    syncFamilyJob();
+    var r = _origAgeUp.apply(this, arguments);
+    try { fixDOMNow(); } catch (e) { console.error('[p79] ageUp fix', e); }
+    return r;
+  };
+
+  /* Fix once on load */
+  if (typeof S !== 'undefined' && S) {
+    syncFamilyJob();
+    fixDOMNow();
+  }
+
+  console.log('=== [p79] FILE LOADED SUCCESSFULLY ===');
 })();
