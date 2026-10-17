@@ -1,9 +1,17 @@
 /* =====================================================================
-   68. CORE FIXES — Phase 3.1 consolidation
+   68. CORE FIXES — Phase 3.1 consolidation (merge pass 1)
    Replaces: 68-car-education-fix.js, 73-abroad-career-tracking-fix.js,
              74-education-abroad-fix.js, 75-education-parttime-cleanup.js,
              78-consolidated.js, 79-education-uni-fix.js
    Load AFTER 67-debt-truth-fix.js and BEFORE 69-study-abroad-system.js
+
+   Merge pass note:
+   - Removed PART 4 (dead p77FamilyBusinessCard override — captured at
+     module load before 76 was loaded, so it never executed).
+   - Removed the viewCareer, viewFamily, viewAssets, viewBank wrappers.
+     Their work (family business card, extended family, household staff,
+     trust fund) is now done exclusively in 76-family-dynasty.js, which
+     loads after this file and strips+re-adds the same cards anyway.
    ===================================================================== */
 
 (function p68CoreFixes() {
@@ -203,18 +211,6 @@
   newGame = function () { _newGame2.apply(this, arguments); setTimeout(healState, 200); };
   const _loadGame2 = loadGame;
   loadGame = function () { _loadGame2.apply(this, arguments); setTimeout(healState, 200); };
-
-  /* =================================================================
-     PART 4 — SUPPRESS p77's family biz card on Career
-     (Prevents greedy regex damage from any wrapper)
-     ================================================================= */
-  const _p77Card = (typeof p77FamilyBusinessCard === 'function') ? p77FamilyBusinessCard : null;
-  if (_p77Card) {
-    p77FamilyBusinessCard = function () {
-      if (typeof activeTab !== 'undefined' && activeTab === 'career') return '';
-      return _p77Card.apply(this, arguments);
-    };
-  }
 
   /* =================================================================
      PART 5 — MASTER'S YEAR ADVANCEMENT
@@ -441,6 +437,8 @@
 
   /* =================================================================
      PART 9 — VIEW WRAPPERS
+     (viewCareer, viewFamily, viewAssets, viewBank wrappers removed
+      during the merge pass — 76-family-dynasty.js now does this work)
      ================================================================= */
 
   /* ---- viewSchool ---- */
@@ -449,9 +447,6 @@
     let html = '';
     try { html = _viewSchool.apply(this, arguments); } catch (e) { console.error('[p68] viewSchool chain failed:', e); html = ''; }
     if (!S) return html;
-
-    /* If abroad and enrolled, delegate to whatever the chain built
-       (files 74 was providing the abroad view — we keep it via chain) */
 
     /* School-age: school picker at top */
     if (S.age >= 6 && S.age < 18 && !S.uni && !S.degree && !S.localMast) {
@@ -507,31 +502,6 @@
     return html;
   };
 
-  /* ---- viewCareer: family business card at top; country-aware already in chain ---- */
-  const _viewCareer = viewCareer;
-  viewCareer = function () {
-    let html = '';
-    try { html = _viewCareer.apply(this, arguments); } catch (e) { console.error('[p68] viewCareer chain failed:', e); html = ''; }
-    if (!html || !S) return html;
-    if (S.country !== S.home) return html;
-    if (S.age < 18) return html;
-    if (!S.p76 || !S.p76.familyBusiness) return html;
-
-    /* Remove existing family business card */
-    html = html.replace(/<section class="card"[^>]*>[\s\S]*?<h3>💼 [^<]*<\/h3>[\s\S]*?Family ownership[\s\S]*?<\/section>/g, '');
-
-    /* Add p77's card at top */
-    if (typeof p77FamilyBusinessCard === 'function') {
-      const saved = activeTab;
-      activeTab = 'life';
-      let card = '';
-      try { card = p77FamilyBusinessCard(); } catch (e) {}
-      activeTab = saved;
-      if (card) html = card + html;
-    }
-    return html;
-  };
-
   /* ---- viewLife: strip cards that belong elsewhere ---- */
   const _viewLife = viewLife;
   viewLife = function () {
@@ -545,45 +515,6 @@
     html = html.replace(/<section class="card"[^>]*>\s*<h3>💍 Marriage expectations<\/h3>[\s\S]*?<\/section>/g, '');
     html = html.replace(/<section class="card"[^>]*>\s*<h3>⭐ Social Standing<\/h3>[\s\S]*?<\/section>/g, '');
     html = html.replace(/<section class="card"[^>]*>\s*<h3>🛂 Your passport and your options<\/h3>[\s\S]*?<\/section>/g, '');
-    return html;
-  };
-
-  /* ---- viewFamily: extended family + prestige + marriage expectations ---- */
-  const _viewFamily = viewFamily;
-  viewFamily = function () {
-    let html = _viewFamily.apply(this, arguments);
-    if (!S || !S.p77) return html;
-    if (typeof p77ExtendedFamilyCard === 'function') { const c = p77ExtendedFamilyCard(); if (c) html += c; }
-    if (typeof p77PrestigeCard === 'function') { const c = p77PrestigeCard(); if (c) html += c; }
-    if (typeof p77MarriageExpectationCard === 'function') { const c = p77MarriageExpectationCard(); if (c) html += c; }
-    return html;
-  };
-
-  /* ---- viewAssets: household staff ---- */
-  const _viewAssets = viewAssets;
-  viewAssets = function () {
-    let html = _viewAssets.apply(this, arguments);
-    if (!S || !S.p77) return html;
-    if (S.country !== S.home) return html;
-    if (typeof p77HouseholdStaffCard === 'function') { const c = p77HouseholdStaffCard(); if (c) html += c; }
-    return html;
-  };
-
-  /* ---- viewBank: trust fund ---- */
-  const _viewBank = viewBank;
-  viewBank = function () {
-    let html = _viewBank.apply(this, arguments);
-    if (!S || !S.p77 || S.p77.trustFundBalance <= 0) return html;
-    const rate = (typeof rateNow === 'function') ? rateNow() : 52.7;
-    const bal = Math.round(S.p77.trustFundBalance * rate);
-    const unlock = S.p77.trustFundUnlockAge || 21;
-    const locked = S.age < unlock;
-    html += '<section class="card" style="border-color:var(--amber)"><h3>🏦 Family Trust Fund</h3>' +
-      '<div class="row"><span>Balance</span><b class="mono" style="color:var(--mint)">E£' + bal.toLocaleString() + '</b></div>' +
-      '<div class="row"><span>Unlocks at age</span><b>' + unlock + '</b></div>' +
-      (locked ? '<p class="muted" style="font-size:.82rem;margin-top:8px">Managed by your family until age ' + unlock + '.</p>'
-              : '<button class="btn" style="background:var(--mint);color:#000;font-weight:700" onclick="p77WithdrawTrustFund()">Withdraw entire balance</button>') +
-      '</section>';
     return html;
   };
 
