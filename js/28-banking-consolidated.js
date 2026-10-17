@@ -669,3 +669,251 @@
 
   console.log('[p28] Banking consolidated (Phase 3.5) v2 loaded — 8 files → 1');
 })();
+/* =====================================================================
+   28-B. BANKING UI RESTORE
+   Restores the certificate purchase panel and credit card application
+   panel that were lost when 32/33/36/38/39/58/59 were consolidated.
+   ===================================================================== */
+
+(function p28bBankingUI() {
+  'use strict';
+
+  function rate() { return (typeof rateNow === 'function') ? rateNow() : 52.7; }
+
+  /* ----------------------------------------------------------------
+     Certificate products
+     ---------------------------------------------------------------- */
+  const CERT_PRODUCTS = [
+    { id: 'nbe_1y',    bank: 'NBE',          name: 'NBE 1-Year CD',              years: 1, min: 1000,  apy: 0.19 },
+    { id: 'nbe_3y',    bank: 'NBE',          name: 'NBE 3-Year CD',              years: 3, min: 1000,  apy: 0.22 },
+    { id: 'nbe_5y',    bank: 'NBE',          name: 'NBE 5-Year CD (premium)',    years: 5, min: 50000, apy: 0.23 },
+    { id: 'cib_3y',    bank: 'CIB',          name: 'CIB 3-Year Premium CD',      years: 3, min: 10000, apy: 0.24 },
+    { id: 'alex_2y',   bank: 'AlexBank',     name: 'AlexBank 2-Year CD',         years: 2, min: 5000,  apy: 0.20 },
+    { id: 'misr_3y',   bank: 'Banque Misr',  name: 'Banque Misr 3-Year CD',      years: 3, min: 5000,  apy: 0.21 },
+    { id: 'cib_5y',    bank: 'CIB',          name: 'CIB 5-Year High-Yield',      years: 5, min: 100000, apy: 0.25 }
+  ];
+
+  window.p28bPromptBuyCert = function (productId) {
+    if (!S) return;
+    const p = CERT_PRODUCTS.find(function (x) { return x.id === productId; });
+    if (!p) return;
+    const r = rate();
+    const cashEGP = Math.round(S.wealth * r);
+    const input = prompt(
+      'Buy "' + p.name + '"\n\n' +
+      'Bank: ' + p.bank + '\n' +
+      'Term: ' + p.years + ' year(s)\n' +
+      'APY: ' + (p.apy * 100).toFixed(2) + '%\n' +
+      'Minimum: E£' + p.min.toLocaleString() + '\n\n' +
+      'You have E£' + cashEGP.toLocaleString() + '.\n' +
+      'How much do you want to deposit?',
+      String(p.min)
+    );
+    if (input == null) return;
+    const amt = Number(input);
+    if (!isFinite(amt) || amt < p.min) return hint('Minimum is E£' + p.min.toLocaleString());
+    if (amt > cashEGP) return hint('You only have E£' + cashEGP.toLocaleString());
+
+    const internal = amt / r;
+    const schedule = [];
+    for (let i = 0; i < p.years; i++) schedule.push(p.apy);
+    const now = (typeof gameYear === 'function') ? gameYear() : 2026;
+
+    S.wealth -= internal;
+    S.certificates = S.certificates || [];
+    S.certificates.push({
+      id: 'cert_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      bank: p.bank,
+      name: p.name,
+      principalEGP: amt,
+      principalInternal: internal,
+      yearsTotal: p.years,
+      yearsHeld: 0,
+      rateSchedule: schedule,
+      totalPaid: 0,
+      startedYear: now,
+      startedAbsMonth: Number(S.pacingAbsoluteMonth) || 0,
+      tier: p.min >= 50000 ? 'premium' : 'standard',
+      matured: false
+    });
+
+    if (typeof log === 'function') log('💼 Bought ' + p.name + ' for E£' + amt.toLocaleString() +
+      ' (' + p.years + ' years, ' + (p.apy * 100).toFixed(2) + '% APY).');
+    if (typeof realismNotice === 'function') realismNotice('Certificate purchased',
+      p.name + ' at ' + p.bank + ' — E£' + amt.toLocaleString() + ' for ' + p.years + ' years at ' +
+      (p.apy * 100).toFixed(2) + '% APY.');
+    if (typeof save === 'function') save();
+    if (typeof render === 'function') render();
+  };
+
+  /* ----------------------------------------------------------------
+     Credit card products
+     ---------------------------------------------------------------- */
+  const CARD_PRODUCTS = [
+    { id: 'basic',     name: 'Basic Visa',           minIncome: 30000,  limitMult: 0.15, rate: 0.025, minScore: 500 },
+    { id: 'gold',      name: 'Gold Visa',            minIncome: 80000,  limitMult: 0.25, rate: 0.022, minScore: 620 },
+    { id: 'platinum',  name: 'Platinum Mastercard',  minIncome: 200000, limitMult: 0.40, rate: 0.020, minScore: 700 },
+    { id: 'signature', name: 'Signature Visa',       minIncome: 500000, limitMult: 0.60, rate: 0.018, minScore: 750 }
+  ];
+
+  window.p28bApplyCard = function (productId) {
+    if (!S) return;
+    const p = CARD_PRODUCTS.find(function (x) { return x.id === productId; });
+    if (!p) return;
+    const r = rate();
+    const incomeEGP = Math.round(((S.job && S.job.salary) || S.income || 0) * r);
+    const score = (S.bank && S.bank.score) || 680;
+
+    if (incomeEGP < p.minIncome) return hint('This card requires E£' + p.minIncome.toLocaleString() + '/yr income.');
+    if (score < p.minScore) return hint('This card requires a credit score of ' + p.minScore + '+.');
+
+    const cardId = p.name.replace(/\s+/g, '_').toLowerCase() + '_' + Date.now().toString(36).slice(-4);
+    S.bank.activeCards = S.bank.activeCards || [];
+    S.bank.cardDebt = S.bank.cardDebt || {};
+    S.bank.activeCards.push(cardId);
+    S.bank.cardDebt[cardId] = 0;
+    if (!S.bank.primaryCard) S.bank.primaryCard = cardId;
+
+    const limitEGP = Math.round(incomeEGP * p.limitMult);
+    if (typeof log === 'function') log('💳 Approved for ' + p.name + '. Limit: E£' + limitEGP.toLocaleString() + '.');
+    if (typeof realismNotice === 'function') realismNotice('Credit card approved',
+      p.name + ' — limit E£' + limitEGP.toLocaleString() + '.');
+    if (typeof save === 'function') save();
+    if (typeof render === 'function') render();
+  };
+
+  /* ----------------------------------------------------------------
+     Panels
+     ---------------------------------------------------------------- */
+  function certPanel() {
+    if (!S || S.age < 18) return '';
+    const r = rate();
+    const cashEGP = Math.round(S.wealth * r);
+
+    const productRows = CERT_PRODUCTS.map(function (p) {
+      const canBuy = cashEGP >= p.min;
+      return '<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+        '<div style="min-width:0;flex:1"><b>' + p.name + '</b>' +
+        '<div class="muted" style="font-size:.75rem;margin-top:2px">' + p.bank + ' · ' + p.years + ' yr · min E£' + p.min.toLocaleString() + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;flex-shrink:0">' +
+        '<div class="mono" style="font-size:.95rem;color:var(--mint);font-weight:700">' + (p.apy * 100).toFixed(2) + '%</div>' +
+        '<div class="muted" style="font-size:.68rem">APY</div>' +
+        '</div></div>' +
+        '<button class="btn" style="margin-top:8px" ' + (canBuy ? '' : 'disabled') +
+        ' onclick="p28bPromptBuyCert(\'' + p.id + '\')">' +
+        (canBuy ? 'Buy certificate' : 'Need E£' + p.min.toLocaleString()) +
+        '</button></div>';
+    }).join('');
+
+    const certs = (S.certificates || []).filter(function (c) { return c && !c.matured; });
+    const now = (typeof gameYear === 'function') ? gameYear() : 2026;
+
+    const certRows = certs.length ? certs.map(function (c) {
+      const yearsIn = Math.max(0, now - (c.startedYear || now));
+      const remaining = Math.max(0, (c.yearsTotal || 3) - yearsIn);
+      const idx = Math.min(c.yearsHeld || 0, (c.rateSchedule || []).length - 1);
+      const rr = (c.rateSchedule || [])[idx] || 0;
+      const monthlyEGP = ((Number(c.principalEGP) || 0) * rr) / 12;
+      return '<div style="margin-top:10px;padding:10px;background:rgba(52,211,153,.06);border-radius:8px">' +
+        '<b>' + (c.name || 'Certificate') + '</b> <span class="muted" style="font-size:.75rem">· ' + (c.bank || 'Bank') + '</span>' +
+        '<div class="row" style="padding:3px 0"><span>Principal</span><b class="mono">E£' + (Number(c.principalEGP) || 0).toLocaleString() + '</b></div>' +
+        '<div class="row" style="padding:3px 0"><span>Earns</span><b class="mono" style="color:var(--mint)">+E£' + Math.round(monthlyEGP).toLocaleString() + '/month</b></div>' +
+        '<div class="row" style="padding:3px 0"><span>Term progress</span><b>Year ' + (yearsIn + 1) + ' of ' + (c.yearsTotal || 3) + ' (' + remaining + ' to go)</b></div>' +
+        '<div class="row" style="padding:3px 0"><span>Total interest earned</span><b class="mono" style="color:var(--mint)">+E£' + Math.round(Number(c.totalPaid) || 0).toLocaleString() + '</b></div>' +
+        '</div>';
+    }).join('') : '<p class="muted" style="font-size:.82rem;margin-top:8px">You have no active certificates.</p>';
+
+    return '<section class="card" style="border-color:var(--mint)" id="p28b-cert-panel">' +
+      '<h3>💼 Deposit certificates</h3>' +
+      '<p class="muted" style="font-size:.82rem">Fixed-term deposits at Egyptian banks. Higher APY than savings. Money locked for the term.</p>' +
+      '<h4 style="font-size:.85rem;margin-top:12px;color:var(--cyan)">Available products</h4>' +
+      productRows +
+      '<h4 style="font-size:.85rem;margin-top:16px;color:var(--cyan)">Your certificates</h4>' +
+      certRows +
+      '</section>';
+  }
+
+  function cardPanel() {
+    if (!S || S.age < 18) return '';
+    const r = rate();
+    const score = (S.bank && S.bank.score) || 680;
+    const incomeEGP = Math.round(((S.job && S.job.salary) || S.income || 0) * r);
+
+    const owned = (S.bank && S.bank.activeCards) || [];
+    const ownedRows = owned.length ? owned.map(function (cid) {
+      const limit = (typeof window.p28GetLimit === 'function') ? window.p28GetLimit(cid) : 500;
+      const debt = Number(S.bank.cardDebt[cid]) || 0;
+      const debtEGP = Math.round(debt * r);
+      const limitEGP = Math.round(limit * r);
+      const util = limit > 0 ? Math.round((debt / limit) * 100) : 0;
+      return '<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px">' +
+        '<b>' + cid + '</b>' +
+        '<div class="row" style="padding:3px 0"><span>Balance / limit</span><b class="mono">E£' + debtEGP.toLocaleString() + ' / E£' + limitEGP.toLocaleString() + '</b></div>' +
+        '<div style="height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:6px"><div style="height:100%;width:' + util + '%;background:' + (util > 70 ? 'var(--rose)' : util > 40 ? 'var(--amber)' : 'var(--mint)') + '"></div></div>' +
+        '<div class="muted" style="font-size:.72rem;margin-top:4px">' + util + '% utilized</div>' +
+        '</div>';
+    }).join('') : '<p class="muted" style="font-size:.82rem;margin-top:8px">You have no credit cards.</p>';
+
+    const productRows = CARD_PRODUCTS.map(function (p) {
+      const incomeOK = incomeEGP >= p.minIncome;
+      const scoreOK = score >= p.minScore;
+      const eligible = incomeOK && scoreOK;
+      const limitEGP = Math.round(incomeEGP * p.limitMult);
+      let reason = '';
+      if (!incomeOK) reason = 'Need E£' + p.minIncome.toLocaleString() + '/yr income';
+      else if (!scoreOK) reason = 'Need score ' + p.minScore + '+';
+      return '<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+        '<div style="min-width:0;flex:1"><b>' + p.name + '</b>' +
+        '<div class="muted" style="font-size:.75rem;margin-top:2px">Min income E£' + p.minIncome.toLocaleString() + ' · ' + (p.rate * 100).toFixed(1) + '%/mo interest</div>' +
+        '</div>' +
+        '<div style="text-align:right;flex-shrink:0"><div class="mono" style="font-size:.85rem">≈ E£' + limitEGP.toLocaleString() + '</div>' +
+        '<div class="muted" style="font-size:.68rem">limit</div></div></div>' +
+        (eligible
+          ? '<button class="btn" style="margin-top:8px" onclick="p28bApplyCard(\'' + p.id + '\')">Apply for card</button>'
+          : '<p style="color:var(--rose);font-size:.75rem;margin-top:6px">' + reason + '</p>') +
+        '</div>';
+    }).join('');
+
+    return '<section class="card" style="border-color:var(--violet)" id="p28b-card-panel">' +
+      '<h3>💳 Credit cards</h3>' +
+      '<p class="muted" style="font-size:.82rem">Credit score: <b>' + score + '</b> · Income: E£' + incomeEGP.toLocaleString() + '/yr</p>' +
+      '<h4 style="font-size:.85rem;margin-top:12px;color:var(--cyan)">Your cards</h4>' +
+      ownedRows +
+      '<h4 style="font-size:.85rem;margin-top:16px;color:var(--cyan)">Available products</h4>' +
+      productRows +
+      '</section>';
+  }
+
+  /* ----------------------------------------------------------------
+     Wire into viewBank
+     ---------------------------------------------------------------- */
+  const _viewBank = viewBank;
+  viewBank = function () {
+    let html = _viewBank.apply(this, arguments);
+    if (!S || S.age < 18) return html;
+    /* Remove any previous injection */
+    html = html.replace(/<section class="card"[^>]*id="p28b-cert-panel"[\s\S]*?<\/section>/g, '');
+    html = html.replace(/<section class="card"[^>]*id="p28b-card-panel"[\s\S]*?<\/section>/g, '');
+    /* Insert at the TOP so they are prominent */
+    return cardPanel() + certPanel() + html;
+  };
+
+  /* ----------------------------------------------------------------
+     Diagnostics
+     ---------------------------------------------------------------- */
+  window.p28bDiag = function () {
+    console.log({
+      hasCertPanel: typeof window.p28bPromptBuyCert === 'function',
+      hasCardPanel: typeof window.p28bApplyCard === 'function',
+      certs: S && S.certificates && S.certificates.length,
+      cards: S && S.bank && S.bank.activeCards && S.bank.activeCards.length,
+      bankScore: S && S.bank && S.bank.score,
+      viewBankLen: (typeof viewBank === 'function') ? viewBank().length : 0
+    });
+  };
+
+  console.log('[p28-B] Certificate purchase + credit card UI restored');
+})();
