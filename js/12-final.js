@@ -599,11 +599,7 @@ function p15LocalEmployer(country,suffix,index){
   return `${prefix} ${suffix}`;
 }
 
-/* EXPANDED degree-specific job boards.
-   New law, business, CS, medicine and biology titles are appended after the
-   original 12 / 9 / 6 / 4 / 5 entries. Each new job uses a unique id, keeps the
-   same factor / smarts / eng / leave / remote schema, and declares degrees so
-   the joint-eligibility logic in P15/P18/P19 works without changes. */
+/* EXPANDED degree-specific job boards. */
 const P15_DEGREE_JOBS={
  law:[
   /* Original 12 law roles — unchanged */
@@ -805,11 +801,8 @@ viewCareer=function(){
   return html;
 };
 
-/* Remote vacancies — original six entries are preserved below; expanded
-   real-company remote roles follow. Each new entry uses the same schema
-   (id, t, eng, smarts, usd, deg, st, track, exp, perks) so P15’s
-   p15RemoteTrack(), p15SearchRemote() and the remote eligibility checks
-   continue to work without changes. */
+/* Remote vacancies — single expanded set. This is the ONLY remote vacancy
+   block in Phase 15; the older duplicate tail has been removed. */
 [
   /* Original six remote roles */
   {id:'p15-rem-law-review',t:'Remote legal document review analyst',eng:78,smarts:62,usd:21000,deg:'law',st:4,track:'law',exp:0,perks:'Cross-border contract review; jurisdiction-specific advice is not part of the role; benefits depend on the contractor agreement.'},
@@ -906,88 +899,6 @@ const P15_renderBeforeRemoteMigration=render;
 render=function(){p15AdoptLegacyRemote();return P15_renderBeforeRemoteMigration();};
 const P15_p10YearBeforeRemoteUnstack=p10Year;
 p10Year=function(){p15AdoptLegacyRemote();return P15_p10YearBeforeRemoteUnstack();};
-/* Remote vacancies inspired by the supplied version's US/UK company list. */
-[
-  {id:'p15-rem-law-review',t:'Remote legal document review analyst',eng:78,smarts:62,usd:21000,deg:'law',st:4,track:'law',exp:0,perks:'Cross-border contract review; jurisdiction-specific advice is not part of the role; benefits depend on the contractor agreement.'},
-  {id:'p15-rem-jr-fullstack',t:'Junior remote full-stack developer',eng:75,smarts:55,usd:28000,deg:'cs',st:4,track:'tech',exp:0,perks:'Technical interview and portfolio required; paid leave and insurance are employer-dependent.'},
-  {id:'p15-rem-systems-architect',t:'Senior remote systems architect',eng:88,smarts:82,usd:58000,deg:'cs',st:6,track:'tech',exp:5,premium:true,perks:'Rare senior contract; substantial production experience, architecture interviews and strong references expected.'},
-  {id:'p15-rem-fin-controller',t:'Remote financial analyst / controller',eng:80,smarts:68,usd:36000,deg:'business',st:5,track:'finance',exp:3,perks:'Financial modelling and reporting deadlines; benefits vary by contract and the client may require overlap with its time zone.'},
-  {id:'p15-rem-customer-success',t:'Bilingual customer success specialist',eng:70,smarts:42,usd:16000,deg:null,st:3,track:'entry',exp:0,perks:'Time-zone coverage and performance targets; paid leave and health insurance may not be included.'},
-  {id:'p15-rem-growth',t:'Remote digital growth / SEO strategist',eng:76,smarts:52,usd:22000,deg:null,st:4,track:'entry',exp:1,perks:'Portfolio-led hiring; campaign budgets, analytics evidence and client communication matter.'}
-].forEach(r=>{if(!REMOTE.some(x=>x.id===r.id))REMOTE.push(r);});
-
-/* All successful remote applications now become the player's only main job.
-   A rejection leaves the existing job untouched. A contractor offer is not a visa. */
-function p15RemoteTrack(r){
-  if(r.track)return r.track;
-  if(r.deg==='cs')return 'tech';if(r.deg==='business')return 'finance';if(r.deg==='law')return 'law';
-  const t=String(r.t||'').toLowerCase();if(/analyst|account|bookkeep|financial|finance|compliance/.test(t))return 'finance';
-  if(/develop|engineer|data|software|systems|technical/.test(t))return 'tech';return 'entry';
-}
-function p15AdoptLegacyRemote(){
-  if(!S||!S.remote)return;
-  if(S.job&&S.job.isRemoteUSD){S.remote=null;S.remoteJob=null;return;}
-  if(S.age<18){S.remote=null;S.remoteJob=null;return;}
-  const old=S.job?{...S.job}:null, r=S.remote, listing=REMOTE.find(x=>x.id===r.id), track=p15RemoteTrack(listing||r);
-  if(old)recordCareer(old,true);
-  const cr=(S.careerRecords||{})[track],level=cr?cr.level||0:0;
-  S.job={trackId:track,level,title:r.title||listing?.t||'Remote contractor',salary:Math.max(0,Number(r.usd)||0),perf:45,years:0,company:r.company||'International Remote Contractor',companyId:`legacy_remote_${S.age}`,industry:'International remote work',isRemoteUSD:true,visaSponsorship:false,companyFactor:1,stress:r.st||4,benefits:{medical:false,social:false,pension:false,bonus:0,leave:10,remote:'Fully remote · USD contract',hours:40,contract:'Legacy remote contract — no guaranteed benefits'},remotePerks:r.perks||listing?.perks||'Benefits depend on contract.'};
-  S.lastSalary=S.job.salary;S.retired=false;S.remote=null;S.remoteJob=null;
-  log(`Save compatibility update: your existing remote contract is now your main job, replacing ${old?old.title+' at '+(old.company||'your former employer'):'the empty main-job slot'}. A second full-time salary is no longer counted.`);
-}
-function p15SearchRemote(id){
-  if(!S||S.age<18)return hint('Full-time remote roles start at 18.');
-  const r=REMOTE.find(x=>x.id===id);if(!r)return hint('This remote vacancy is no longer available.');
-  const why=p12RemoteEligibility(r);if(why)return hint(why);
-  if(S.pendingJobOffer)return hint('Resolve the pending work-visa sponsorship case before changing jobs.');
-  if(S.country!==S.home&&!p12CanWorkWithoutSponsor())return hint('This remote contractor role does not sponsor a visa. You need a status that independently permits this work before replacing an overseas employer.');
-  if(S.didW===S.age)return hint('You have already used your remote-job application this year.');
-  S.didW=S.age;
-  const track=p15RemoteTrack(r),experience=trackExperience(track),current=S.job?{...S.job,benefits:{...(S.job.benefits||{})}}:null;
-  let chance=.035+Math.max(0,S.eng-(r.eng||0))/260+Math.max(0,S.smarts-(r.smarts||0))/420+experience*.025+((S.masterField||S.mastDone)?.05:0);
-  if(r.premium)chance=.008+Math.max(0,S.eng-92)/100+Math.max(0,S.smarts-88)/160+Math.max(0,experience-5)*.015;
-  if(S.econ==='recession')chance*=.7;chance=Math.max(.01,Math.min(r.premium ? .12 : .48,chance));
-  if(Math.random()>=chance){S.rsTry=(S.rsTry||0)+1;fx({happiness:-3});S.jobApplications=S.jobApplications||[];S.jobApplications.push({year:gameYear(),company:r.company||'International client',role:r.t,result:'Rejected — remote application'});log(`Your application for ${r.t} was rejected or the client chose another candidate. Your current main job remains unchanged.`);realismNotice('Remote application unsuccessful',`International remote roles are competitive. Improve relevant experience, English, portfolio evidence and interview performance before trying again.`);hint();render();return;}
-  if(current)recordCareer(current,true);
-  const record=(S.careerRecords||{})[track],level=Math.max(record?record.level||0:0,current&&current.trackId===track?current.level||0:0);
-  const salaryUSD=Math.round((r.usd||0)*(S.wrEra||1));
-  const orgs={
-    'cold':'Veloce Global Contact Services','supp':'Northbridge Customer Operations','dev':'Veloce Cloud Inc.','ana':'Boreal International Business Services',
-    'bookkeep':'Cedarline Finance Operations','arremote':'Boreal Finance Services','eval':'Pioneer Data Quality Network','finremote':'Boreal Asset Group','biremote':'Atlas Analytics Partners','devremote':'Veloce Cloud Inc.','uspremium':'Northstar International Analytics',
-    'p15-rem-law-review':'Northstar Legal Process Services','p15-rem-jr-fullstack':'Veloce Cloud Inc.','p15-rem-systems-architect':'Nexus Data Systems','p15-rem-fin-controller':'Boreal Asset Group','p15-rem-customer-success':'Clearpath Customer Success','p15-rem-growth':'Horizon Digital Growth'
-  };
-  const company=orgs[r.id]||'International Remote Employer';
-  const benefits={medical:false,social:false,pension:false,bonus:0,leave:10,remote:'Fully remote · USD contract',hours:r.hrs||40,contract:'International contractor; no guaranteed employer benefits'};
-  const oldTitle=current?current.title:null;
-  S.job={trackId:track,level,title:r.t,salary:salaryUSD,perf:Math.max(45,(current&&current.perf)||48),years:0,company,companyId:`remote_${r.id}_${gameYear()}`,industry:'International remote work',companyFactor:1,isRemoteUSD:true,visaSponsorship:false,benefits,stress:r.st||4,remotePerks:r.perks||'Benefits depend on the contract.'};
-  S.remote=null;S.remoteJob=null;S.retired=false;S.lastSalary=salaryUSD;S.vacationCap=20;S.vacationDays=Math.min(S.vacationDays||0,20);
-  S.jobApplications=S.jobApplications||[];S.jobApplications.push({year:gameYear(),company,role:r.t,result:'Hired — remote job replaced main employment'});
-  fx({happiness:8});log(`You accepted ${r.t} at ${company}, paid in USD. ${oldTitle?`You left ${oldTitle}; it is no longer your current job.`:'This is now your main salaried job.'} The contract does not itself grant an immigration visa and does not guarantee healthcare, pension or paid leave.`);
-  realismNotice('Remote offer accepted — main job updated',`${r.t} at ${company}. Gross pay: ${usd(salaryUSD)}/year. Your previous job was closed and recorded in career history; you do not receive two full-time salaries. Employer-sponsored immigration is not included in this remote contract.`);
-  hint();render();
-}
-searchRemote=p15SearchRemote;
-quitRemote=function(){
-  if(S&&S.job&&S.job.isRemoteUSD){quitJob();return;}
-  if(S&&S.remote){S.remote=null;log('Legacy remote contract closed.');render();return;}
-  hint('There is no separate remote contract to quit.');
-};
-const P15_searchCurrentRemoteBefore=p15SearchRemote;
-/* The same-title remote route uses its dedicated offer terms, but we also
-   clear any stale legacy side-job field when it succeeds. */
-const P15_searchCurrentTitleBefore=searchCurrentRemoteOffer;
-searchCurrentRemoteOffer=function(){
-  const before=S&&S.job;P15_searchCurrentTitleBefore();
-  if(S&&S.job&&S.job.isRemoteUSD){S.remote=null;S.remoteJob=null;}
-};
-
-/* Old saves sometimes carried S.remote beside S.job. Convert that contract
-   to the main job on load/render and skip the old second-salary yearly hook. */
-const P15_renderBeforeRemoteMigration=render;
-render=function(){p15AdoptLegacyRemote();return P15_renderBeforeRemoteMigration();};
-const P15_p10YearBeforeRemoteUnstack=p10Year;
-p10Year=function(){p15AdoptLegacyRemote();return P15_p10YearBeforeRemoteUnstack();};
-
 /* ================= PHASE 16 — IDEAS MERGED FROM THE ALTERNATE BUILD =================
    Interactive phone, childhood enrichment, family outings, and purpose-specific
    requests for parental support. These features are deliberately non-lethal. */
