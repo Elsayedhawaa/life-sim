@@ -1,5 +1,5 @@
 /* =====================================================================
-   40. MEDICAL & FERTILITY SYSTEM
+   40. MEDICAL & FERTILITY SYSTEM (With Robust Tab Injection)
    Adds a Medical tab with:
    - Health insurance (employer-provided or bought)
    - Doctor visits (specialist / consultant fees)
@@ -8,7 +8,7 @@
    - Fertility: try-for-baby with realistic chance per year
    - Fertility diagnosis + IVF (أطفال أنابيب)
    - Pregnancy tests, wife pregnancy announcements
-   Load AFTER 39-bank-bug-fix.js and BEFORE 99-boot.js
+   Load AFTER 39-bank-bug-fix.js and BEFORE 41-family-life-consolidated.js
    ===================================================================== */
 
 /* ============ 1. STATE ============ */
@@ -497,55 +497,80 @@ function viewMedical() {
   return html;
 }
 
-/* Register the tab */
+/* ============ 9. ROBUST TAB INJECTION & ROUTING ============ */
+function injectMedicalTab() {
+  const nav = document.getElementById('tabs');
+  if (!nav) return;
+  if (nav.querySelector('[data-tab="medical"]')) return;
+
+  const btn = document.createElement('button');
+  btn.className = 'tab';
+  btn.dataset.tab = 'medical';
+  btn.textContent = 'Medical';
+  btn.onclick = function () {
+    activeTab = 'medical';
+    if (typeof render === 'function') render();
+  };
+
+  /* Insert before Pacing if it exists, else append */
+  const pacing = nav.querySelector('[data-tab="pacing"]');
+  if (pacing) nav.insertBefore(btn, pacing);
+  else nav.appendChild(btn);
+}
+
+/* Override the render dispatcher so 'medical' works properly */
+const P40_renderBeforeMedical = render;
+render = function () {
+  /* Special case: we're on the medical tab */
+  if (typeof activeTab !== 'undefined' && activeTab === 'medical') {
+    const saved = activeTab;
+    activeTab = 'life'; /* base render needs a valid tab to process normal UI updates */
+    try { P40_renderBeforeMedical.apply(this, arguments); } catch (e) { console.error('[p40] base render failed:', e); }
+    activeTab = saved;
+
+    const nav = document.getElementById('tabs');
+    const view = document.getElementById('view');
+
+    /* Ensure the tab button exists and is marked active */
+    if (nav) {
+      nav.querySelectorAll('.tab').forEach(function (b) { b.classList.remove('on'); });
+      let btn = nav.querySelector('[data-tab="medical"]');
+      if (!btn) { injectMedicalTab(); btn = nav.querySelector('[data-tab="medical"]'); }
+      if (btn) btn.classList.add('on');
+    }
+
+    /* Swap in the medical view */
+    if (view) {
+      try {
+        view.innerHTML = typeof viewMedical === 'function' ? viewMedical() : '<section class="card"><h3>🏥 Medical</h3><p class="muted">Medical view failed to render. Check console.</p></section>';
+      } catch (e) {
+        console.error('[p40] viewMedical failed:', e);
+        view.innerHTML = '<section class="card"><h3>🏥 Medical</h3><p class="muted">Medical view failed to render. Check console.</p></section>';
+      }
+    }
+
+    if (typeof save === 'function') save();
+    return;
+  }
+
+  /* Normal tab routing */
+  const r = P40_renderBeforeMedical.apply(this, arguments);
+  try { injectMedicalTab(); } catch (e) {}
+  return r;
+};
+
+/* Ensure it exists even before the first render */
+setTimeout(injectMedicalTab, 100);
+setTimeout(injectMedicalTab, 600);
+
+/* Also hook to catch third-party renders */
 if (typeof GameHooks !== 'undefined' && GameHooks.on) {
   GameHooks.on('render', function () {
-    const nav = document.getElementById('tabs');
-    if (!nav || nav.querySelector('[data-tab="medical"]')) return;
-    const btn = document.createElement('button');
-    btn.className = 'tab';
-    btn.dataset.tab = 'medical';
-    btn.textContent = 'Medical';
-    btn.onclick = function () {
-      activeTab = 'medical';
-      if (typeof render === 'function') render();
-    };
-    nav.insertBefore(btn, nav.lastElementChild);
+    try { injectMedicalTab(); } catch (e) {}
   });
 }
 
-/* Override the render dispatcher so 'medical' works */
-const P40_renderBeforeMedical = render;
-render = function () {
-  /* Add medical to the dispatcher if not present */
-  const origTab = activeTab;
-  if (origTab === 'medical') {
-    const tabs = document.getElementById('tabs');
-    if (tabs) {
-      /* Ensure the button is marked active */
-      tabs.querySelectorAll('.tab').forEach(b => { b.classList.remove('on'); });
-      const me = tabs.querySelector('[data-tab="medical"]');
-      if (me) me.classList.add('on');
-    }
-    const view = document.getElementById('view');
-    const top = document.getElementById('top');
-    if (view) {
-      /* Temporarily point activeTab at 'life' so the render dispatcher runs, then replace */
-      activeTab = 'life';
-      P40_renderBeforeMedical();
-      activeTab = 'medical';
-      if (view) view.innerHTML = viewMedical();
-      if (tabs) {
-        tabs.querySelectorAll('.tab').forEach(b => { b.classList.remove('on'); });
-        const me2 = tabs.querySelector('[data-tab="medical"]');
-        if (me2) me2.classList.add('on');
-      }
-      if (typeof save === 'function') save();
-      return;
-    }
-  }
-  return P40_renderBeforeMedical.apply(this, arguments);
-} /* ============ JOB LOSS CLARITY ============ */
+/* ============ 10. JOB LOSS CLARITY ============ */
 const P40_fireBefore = workHarder;
 /* Actually the fire happens in packYear. Wrap packYear to log clearly. */
 const P40_packYearBefore = packYear;
