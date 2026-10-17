@@ -1,9 +1,9 @@
 /* =====================================================================
-   28. BANKING CONSOLIDATED — Phase 3.5
-   Replaces: 28-global-banking.js, 32-banking-fix-egypt-certificates.js,
-             33-debt-display-fix.js, 36-certificate-buy-fix.js,
-             38-credit-limit-fix.js, 39-bank-bug-fix.js,
-             58-certificate-monthly-fix.js, 59-early-payment-bank-ui.js
+   28. BANKING CONSOLIDATED — Phase 3.5 v2
+   Replaces: 28-global-banking, 32-banking-fix-egypt-certificates,
+             33-debt-display-fix, 36-certificate-buy-fix,
+             38-credit-limit-fix, 39-bank-bug-fix,
+             58-certificate-monthly-fix, 59-early-payment-bank-ui
    Load AFTER 27-egypt-realism.js and BEFORE 29-egypt-universities.js
    ===================================================================== */
 
@@ -13,23 +13,49 @@
   function p28Rate() { return (typeof rateNow === 'function') ? rateNow() : 52.7; }
 
   /* =================================================================
-     PART 1 — STATE (from 28, 32, 58)
+     SAFE HOOK INSTALLER — waits for a function to exist, then wraps it.
+     ================================================================= */
+  function p28Hook(targetName, handler, options) {
+    options = options || {};
+    const maxWait = options.maxWait || 30000;
+    const interval = options.interval || 80;
+
+    function install() {
+      const target = window[targetName];
+      if (typeof target !== 'function') return false;
+      if (target.__p28Hooked === true) return true;
+      const wrapped = function () {
+        const r = target.apply(this, arguments);
+        try { handler.apply(this, arguments); } catch (e) { console.error('[p28] hook ' + targetName + ' failed:', e); }
+        return r;
+      };
+      wrapped.__p28Hooked = true;
+      wrapped.__p28Original = target;
+      window[targetName] = wrapped;
+      return true;
+    }
+
+    if (install()) return true;
+    const start = Date.now();
+    const timer = setInterval(function () {
+      if (install()) { clearInterval(timer); return; }
+      if (Date.now() - start > maxWait) {
+        clearInterval(timer);
+        console.warn('[p28] gave up waiting for ' + targetName);
+      }
+    }, interval);
+    return false;
+  }
+
+  /* =================================================================
+     PART 1 — STATE
      ================================================================= */
   function p28Init(o) {
     o = o || S;
     if (!o) return;
     if (!o.bank || typeof o.bank !== 'object') {
-      o.bank = {
-        score: 680,
-        savingsBal: 0,
-        savingsUSD: 0,
-        activeCards: [],
-        primaryCard: null,
-        cardDebt: {},
-        installments: {},
-        loans: [],
-        missedPmts: 0
-      };
+      o.bank = { score: 680, savingsBal: 0, savingsUSD: 0, activeCards: [],
+                 primaryCard: null, cardDebt: {}, installments: {}, loans: [], missedPmts: 0 };
     }
     if (!Array.isArray(o.bank.activeCards)) o.bank.activeCards = [];
     if (!o.bank.cardDebt || typeof o.bank.cardDebt !== 'object') o.bank.cardDebt = {};
@@ -37,7 +63,6 @@
     if (!Array.isArray(o.bank.loans)) o.bank.loans = [];
     if (typeof o.bank.score !== 'number') o.bank.score = 680;
     if (typeof o.bank.savingsBal !== 'number') o.bank.savingsBal = 0;
-
     if (!Array.isArray(o.certificates)) o.certificates = [];
     if (!o.p58) o.p58 = { lastCertLogMonth: -1 };
     if (typeof o.p58.lastCertLogMonth !== 'number') o.p58.lastCertLogMonth = -1;
@@ -49,15 +74,11 @@
   p28Init(S);
 
   /* =================================================================
-     PART 2 — CERTIFICATE HELPERS (from 32, 36)
+     PART 2 — CERTIFICATE HELPERS
      ================================================================= */
-  function p28CertRateNow() { return p28Rate(); }
-
   function p28GetCertRate(year, tier) {
-    /* Egyptian deposit certificate rates (approximate historical) */
     const base = year <= 2020 ? 0.12 : year <= 2022 ? 0.11 : year <= 2024 ? 0.19 : year <= 2026 ? 0.22 : 0.18;
-    const tierMult = tier === 'premium' ? 1.05 : 1;
-    return base * tierMult;
+    return base * (tier === 'premium' ? 1.05 : 1);
   }
 
   function p28MatureCertificates() {
@@ -71,14 +92,10 @@
       if (now - startYear >= yearsTotal) {
         const principalInternal = Number(cert.principalInternal) || ((Number(cert.principalEGP) || 0) / rate);
         S.wealth += principalInternal;
-        if (typeof log === 'function') {
-          log('📜 ' + (cert.name || 'Certificate') + ' matured. Principal of ' +
-              ((Number(cert.principalEGP) || 0)).toLocaleString() + ' EGP returned.');
-        }
+        if (typeof log === 'function') log('📜 ' + (cert.name || 'Certificate') + ' matured. Principal returned.');
         if (typeof realismNotice === 'function') {
-          realismNotice('Certificate matured',
-            (cert.name || 'Certificate') + ' completed its term. Total interest earned: ' +
-            Math.round(Number(cert.totalPaid) || 0).toLocaleString() + ' EGP.');
+          realismNotice('Certificate matured', (cert.name || 'Certificate') + ' completed. Total interest earned: E£' +
+            Math.round(Number(cert.totalPaid) || 0).toLocaleString() + '.');
         }
         return false;
       }
@@ -93,13 +110,12 @@
     const principalInternal = principalEGP / rate;
     if (S.wealth < principalInternal) {
       return typeof hint === 'function'
-        ? hint('You need E£' + principalEGP.toLocaleString() + ' to buy this certificate.')
-        : null;
+        ? hint('You need E£' + principalEGP.toLocaleString() + ' to buy this certificate.') : null;
     }
     const now = (typeof gameYear === 'function') ? gameYear() : 2026;
     const ratePerYear = p28GetCertRate(now, tier);
-    const rateSchedule = [];
-    for (let i = 0; i < years; i++) rateSchedule.push(ratePerYear);
+    const schedule = [];
+    for (let i = 0; i < years; i++) schedule.push(ratePerYear);
     S.wealth -= principalInternal;
     S.certificates.push({
       id: 'cert_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
@@ -109,35 +125,28 @@
       principalInternal: principalInternal,
       yearsTotal: years || 3,
       yearsHeld: 0,
-      rateSchedule: rateSchedule,
+      rateSchedule: schedule,
       totalPaid: 0,
       startedYear: now,
       startedAbsMonth: Number(S.pacingAbsoluteMonth) || 0,
       tier: tier || 'standard',
       matured: false
     });
-    if (typeof log === 'function') {
-      log('💼 Bought ' + (name || 'certificate') + ' for E£' + principalEGP.toLocaleString() +
-          ' (' + (years || 3) + ' years, ' + (ratePerYear * 100).toFixed(1) + '% APY).');
-    }
+    if (typeof log === 'function') log('💼 Bought ' + (name || 'certificate') + ' for E£' + principalEGP.toLocaleString() +
+      ' (' + years + ' years, ' + (ratePerYear * 100).toFixed(1) + '% APY).');
     if (typeof save === 'function') save();
     if (typeof render === 'function') render();
   };
 
   /* =================================================================
-     PART 3 — CERTIFICATE INTEREST LOGIC (from 58)
+     PART 3 — CERTIFICATE PROCESSING
      ================================================================= */
-  /* In monthly pacing, credit interest via the live-income calc in
-     p54. In yearly pacing, credit at year-end and log. */
-
   function p28ProcessCertificates() {
     p28Init(S);
     if (!S || !S.certificates || !S.certificates.length) return;
     const rate = p28Rate();
-    const now = (typeof gameYear === 'function') ? gameYear() : 2026;
 
     if (S.pacing === 'monthly') {
-      /* Only advance yearsHeld and check maturity — interest already credited monthly */
       S.certificates.forEach(function (cert) {
         if (!cert || cert.matured) return;
         if ((cert.yearsHeld || 0) >= (cert.yearsTotal || 3)) return;
@@ -147,56 +156,70 @@
       return;
     }
 
-    /* Yearly pacing: credit interest once */
     S.certificates.forEach(function (cert) {
       if (!cert || cert.matured) return;
       const idx = Math.min(cert.yearsHeld || 0, (cert.rateSchedule || []).length - 1);
       const r = (cert.rateSchedule || [])[idx] || 0;
       const annualEGP = (Number(cert.principalEGP) || 0) * r;
-      const annualInternal = annualEGP / rate;
-      S.wealth += annualInternal;
-      S.income = (S.income || 0) + annualInternal;
+      const internal = annualEGP / rate;
+      S.wealth += internal;
+      S.income = (S.income || 0) + internal;
       cert.totalPaid = (Number(cert.totalPaid) || 0) + annualEGP;
       cert.yearsHeld = (cert.yearsHeld || 0) + 1;
-      if (typeof log === 'function') {
-        log('📈 ' + (cert.name || 'Certificate') + ' paid E£' +
-            Math.round(annualEGP).toLocaleString() + ' in interest.');
-      }
+      if (typeof log === 'function') log('📈 ' + (cert.name || 'Certificate') + ' paid E£' +
+        Math.round(annualEGP).toLocaleString() + ' in interest.');
     });
     p28MatureCertificates();
   }
 
-  /* Monthly log (interest already credited via p54, just log it) */
-  const _p52Tick = p52MonthlyTick;
-  p52MonthlyTick = function () {
-    _p52Tick.apply(this, arguments);
+  /* Monthly cert log (interest already credited by p54's live income) */
+  function p28MonthlyCertLog() {
     if (!S || S.pacing !== 'monthly') return;
     if (!S.certificates || !S.certificates.length) return;
     if (S.age < 18) return;
-
     let totalEGP = 0;
     S.certificates.forEach(function (c) {
       if (!c || c.matured) return;
       const idx = Math.min(c.yearsHeld || 0, (c.rateSchedule || []).length - 1);
       const r = (c.rateSchedule || [])[idx] || 0;
-      const monthlyEGP = ((Number(c.principalEGP) || 0) * r) / 12;
-      totalEGP += monthlyEGP;
-      c.totalPaid = (Number(c.totalPaid) || 0) + monthlyEGP;
+      const m = ((Number(c.principalEGP) || 0) * r) / 12;
+      totalEGP += m;
+      c.totalPaid = (Number(c.totalPaid) || 0) + m;
     });
-
     p28Init(S);
     const key = Number(S.pacingAbsoluteMonth) || 0;
     if (totalEGP > 0 && S.p58.lastCertLogMonth !== key) {
       S.p58.lastCertLogMonth = key;
-      if (typeof log === 'function') {
-        log('📈 Certificate interest credited this month: +E£' +
-            Math.round(totalEGP).toLocaleString() + '.');
-      }
+      if (typeof log === 'function') log('📈 Certificate interest credited this month: +E£' +
+        Math.round(totalEGP).toLocaleString() + '.');
     }
-  };
+  }
+
+  /* Card monthly interest */
+  function p28CardMonthlyInterest() {
+    p28Init(S);
+    if (!S || !S.bank || !S.bank.cardDebt) return;
+    let total = 0;
+    Object.keys(S.bank.cardDebt).forEach(function (id) {
+      const debt = Number(S.bank.cardDebt[id]) || 0;
+      if (debt <= 0.01) return;
+      const interest = debt * 0.022;
+      S.bank.cardDebt[id] = debt + interest;
+      total += interest;
+    });
+    if (total > 0.5 && typeof log === 'function') {
+      log('💳 Credit card interest this month: ' + (typeof money === 'function' ? money(total) : total) + ' (2.2%/month).');
+    }
+  }
+
+  /* Install via safe hook installer (waits for 52 to load) */
+  p28Hook('p52MonthlyTick', function () {
+    p28MonthlyCertLog();
+    if (S && S.age >= 18) p28CardMonthlyInterest();
+  });
 
   /* =================================================================
-     PART 4 — CREDIT CARD HELPERS (from 38, 39)
+     PART 4 — CREDIT CARD HELPERS
      ================================================================= */
   window.p28GetLimit = function (cardId) {
     p28Init(S);
@@ -208,17 +231,15 @@
     return Math.round(base * mult);
   };
 
-  window.p28PickCard = function (neededAmount) {
+  window.p28PickCard = function (needed) {
     p28Init(S);
     if (!S || !S.bank || !Array.isArray(S.bank.activeCards) || !S.bank.activeCards.length) return null;
-    /* Prefer card with enough room */
     for (let i = 0; i < S.bank.activeCards.length; i++) {
       const cid = S.bank.activeCards[i];
       const limit = window.p28GetLimit(cid);
       const debt = Number(S.bank.cardDebt[cid]) || 0;
-      if (debt + neededAmount <= limit) return cid;
+      if (debt + needed <= limit) return cid;
     }
-    /* Otherwise return primary or first */
     return S.bank.primaryCard || S.bank.activeCards[0];
   };
 
@@ -246,7 +267,7 @@
     S.wealth -= debt;
     S.bank.cardDebt[realId] = 0;
     S.bank.score = Math.min(850, (S.bank.score || 680) + 8);
-    if (typeof log === 'function') log('Paid off ' + realId + ' in full (' + (typeof money === 'function' ? money(debt) : debt) + '). Credit score improved.');
+    if (typeof log === 'function') log('Paid off ' + realId + ' in full. Credit score improved.');
     if (typeof save === 'function') save();
     if (typeof render === 'function') render();
   };
@@ -269,9 +290,7 @@
     S.bank.cardDebt[realId] = Math.max(0, debt - pay);
     if (S.bank.cardDebt[realId] < 0.5) S.bank.cardDebt[realId] = 0;
     if (typeof log === 'function') log('Paid ' + Math.round(pay * rate).toLocaleString() + ' EGP toward ' + realId + '.');
-    if (S.bank.cardDebt[realId] === 0) {
-      S.bank.score = Math.min(850, (S.bank.score || 680) + 6);
-    }
+    if (S.bank.cardDebt[realId] === 0) S.bank.score = Math.min(850, (S.bank.score || 680) + 6);
     if (typeof save === 'function') save();
     if (typeof render === 'function') render();
   };
@@ -291,39 +310,14 @@
     if (typeof render === 'function') render();
   };
 
-  /* Monthly card interest (from 57 code, kept here for the bank) */
-  function p28CardMonthlyInterest() {
-    p28Init(S);
-    if (!S || !S.bank || !S.bank.cardDebt) return;
-    const monthlyRate = 0.022;
-    let total = 0;
-    Object.keys(S.bank.cardDebt).forEach(function (id) {
-      const debt = Number(S.bank.cardDebt[id]) || 0;
-      if (debt <= 0.01) return;
-      const interest = debt * monthlyRate;
-      S.bank.cardDebt[id] = debt + interest;
-      total += interest;
-    });
-    if (total > 0.5) {
-      if (typeof log === 'function') {
-        log('💳 Credit card interest this month: ' + (typeof money === 'function' ? money(total) : total) + ' (2.2%/month).');
-      }
-    }
-  }
-  const _p52Tick2 = p52MonthlyTick;
-  p52MonthlyTick = function () {
-    _p52Tick2.apply(this, arguments);
-    if (S && S.age >= 18) p28CardMonthlyInterest();
-  };
-
   /* =================================================================
-     PART 5 — EARLY PAYMENT: installments & mortgages (from 59)
+     PART 5 — INSTALLMENT / MORTGAGE EARLY PAYMENT
      ================================================================= */
   function p28AllInstallments() {
     p28Init(S);
     if (!S || !S.bank || !S.bank.installments) return [];
-    return Object.entries(S.bank.installments).map(function (pair) {
-      return { key: pair[0], data: pair[1] };
+    return Object.entries(S.bank.installments).map(function (p) {
+      return { key: p[0], data: p[1] };
     }).filter(function (x) { return x.data && Number(x.data.remaining) > 0.5; });
   }
 
@@ -349,7 +343,8 @@
     if (pay <= 0) return typeof hint === 'function' ? hint('Not enough cash.') : null;
     S.wealth -= pay;
     inst.remaining = Math.max(0, inst.remaining - pay);
-    if (typeof log === 'function') log('💸 Paid ' + Math.round(pay * rate).toLocaleString() + ' EGP early on ' + (inst.name || 'installment') + '. Remaining: ' + Math.round(inst.remaining * rate).toLocaleString() + ' EGP.');
+    if (typeof log === 'function') log('💸 Paid ' + Math.round(pay * rate).toLocaleString() + ' EGP early. Remaining: ' +
+      Math.round(inst.remaining * rate).toLocaleString() + ' EGP.');
     if (inst.remaining <= 0.5) {
       delete S.bank.installments[key];
       if (typeof log === 'function') log('✅ ' + (inst.name || 'Installment') + ' fully paid off.');
@@ -366,7 +361,7 @@
     const amt = inst.remaining;
     S.wealth -= amt;
     delete S.bank.installments[key];
-    if (typeof log === 'function') log('✅ Paid off ' + (inst.name || 'installment') + ' in full (' + (typeof money === 'function' ? money(amt) : amt) + ').');
+    if (typeof log === 'function') log('✅ Paid off ' + (inst.name || 'installment') + ' in full.');
     if (typeof save === 'function') save();
     if (typeof render === 'function') render();
   };
@@ -376,10 +371,10 @@
     const home = (S.ownedHomes || []).find(function (h) { return h.id === homeId; });
     if (!home) return;
     const bal = Number(home.balance) || 0;
-    if (bal <= 0) return typeof hint === 'function' ? hint('No mortgage on this property.') : null;
+    if (bal <= 0) return typeof hint === 'function' ? hint('No mortgage.') : null;
     const rate = p28Rate();
     const balEGP = Math.round(bal * rate);
-    const input = prompt('How much to pay toward the mortgage? (Full: ' + balEGP.toLocaleString() + ' EGP)', '');
+    const input = prompt('How much to pay? (Full: ' + balEGP.toLocaleString() + ' EGP)', '');
     if (input == null) return;
     const egp = Number(input);
     if (!isFinite(egp) || egp <= 0) return typeof hint === 'function' ? hint('Invalid amount.') : null;
@@ -388,10 +383,11 @@
     if (pay <= 0) return typeof hint === 'function' ? hint('Not enough cash.') : null;
     S.wealth -= pay;
     home.balance = Math.max(0, home.balance - pay);
-    if (typeof log === 'function') log('🏠 Paid ' + Math.round(pay * rate).toLocaleString() + ' EGP toward the mortgage on ' + (home.name || 'property') + '. Remaining: ' + Math.round(home.balance * rate).toLocaleString() + ' EGP.');
+    if (typeof log === 'function') log('🏠 Paid ' + Math.round(pay * rate).toLocaleString() + ' EGP toward mortgage. Remaining: ' +
+      Math.round(home.balance * rate).toLocaleString() + ' EGP.');
     if (home.balance <= 0.5) {
       home.balance = 0;
-      if (typeof log === 'function') log('✅ Mortgage on ' + (home.name || 'property') + ' fully paid off!');
+      if (typeof log === 'function') log('✅ Mortgage fully paid off!');
     }
     if (typeof save === 'function') save();
     if (typeof render === 'function') render();
@@ -406,13 +402,13 @@
     if (bal > S.wealth) return typeof hint === 'function' ? hint('Not enough cash.') : null;
     S.wealth -= bal;
     home.balance = 0;
-    if (typeof log === 'function') log('✅ Mortgage on ' + (home.name || 'property') + ' fully paid off: ' + (typeof money === 'function' ? money(bal) : bal) + '.');
+    if (typeof log === 'function') log('✅ Mortgage fully paid off.');
     if (typeof save === 'function') save();
     if (typeof render === 'function') render();
   };
 
   /* =================================================================
-     PART 6 — SHARED ACCOUNT (from 39)
+     PART 6 — SHARED ACCOUNT
      ================================================================= */
   window.p28DepositShared = function () {
     if (!S.marriage) S.marriage = {};
@@ -433,8 +429,8 @@
   window.p28WithdrawShared = function () {
     if (!S.marriage) S.marriage = {};
     const rate = p28Rate();
-    const curEGP = Math.round((S.marriage.sharedBal || 0) * rate);
-    const input = prompt('Amount to withdraw (EGP). Available: ' + curEGP.toLocaleString() + ' EGP:', '');
+    const cur = Math.round((S.marriage.sharedBal || 0) * rate);
+    const input = prompt('Amount to withdraw (EGP). Available: ' + cur.toLocaleString() + ' EGP:', '');
     if (input == null) return;
     const egp = Number(input);
     if (!isFinite(egp) || egp <= 0) return typeof hint === 'function' ? hint('Invalid amount.') : null;
@@ -447,13 +443,10 @@
     if (typeof render === 'function') render();
   };
 
-  /* Wife savings + shared yield on year */
-  function p28ProcessWifeSavings() {
+  function p28WifeSavings() {
     if (!S || !S.marriage) return;
     const spouse = (typeof partner === 'function') ? partner() : null;
     if (!spouse || spouse.stage !== 'married') return;
-
-    /* Shared account yield */
     if (S.marriage.sharedBank && (S.marriage.sharedBal || 0) > 0) {
       const earned = Math.round(S.marriage.sharedBal * 0.12);
       if (earned > 0) {
@@ -462,23 +455,21 @@
         if (typeof log === 'function') log('Shared account earned ' + (typeof money === 'function' ? money(earned) : earned) + ' in interest.');
       }
     }
-    /* Wife deposits to shared */
     if (S.marriage.sharedBank && S.marriage.wifeWorks) {
-      const herIncome = Number(spouse.income) || 0;
-      if (herIncome > 0) {
-        const saveRate = 0.15 + (Number(spouse.generosity) || 0.5) * 0.25;
-        const amt = Math.round(herIncome * saveRate);
+      const herInc = Number(spouse.income) || 0;
+      if (herInc > 0) {
+        const rate = 0.15 + (Number(spouse.generosity) || 0.5) * 0.25;
+        const amt = Math.round(herInc * rate);
         if (amt > 0) {
           S.marriage.sharedBal = (S.marriage.sharedBal || 0) + amt;
           if (typeof log === 'function') log(spouse.name + ' deposited ' + (typeof money === 'function' ? money(amt) : amt) + ' into the shared account.');
         }
       }
     }
-    /* Wife personal savings */
     if (S.marriage.wifeWorks) {
-      const herIncome = Number(spouse.income) || 0;
-      if (herIncome > 0) {
-        const saved = Math.round(herIncome * (0.10 + (Number(spouse.generosity) || 0.5) * 0.15));
+      const herInc = Number(spouse.income) || 0;
+      if (herInc > 0) {
+        const saved = Math.round(herInc * (0.10 + (Number(spouse.generosity) || 0.5) * 0.15));
         spouse.personalSavings = (Number(spouse.personalSavings) || 0) + saved;
         spouse.netWorth = (Number(spouse.netWorth) || 0) + saved;
       }
@@ -488,39 +479,37 @@
   }
 
   /* =================================================================
-     PART 7 — YEARLY TICK — hook into ageUp
+     PART 7 — YEARLY HOOK (ageUp is defined in 05, so safe to wrap now)
      ================================================================= */
   const _ageUp = ageUp;
   ageUp = function () {
     const a0 = S && S.age;
     const r = _ageUp.apply(this, arguments);
     if (!S || S.age === a0) return r;
-    try { p28ProcessCertificates(); } catch (e) { console.error('[p28] cert year failed:', e); }
-    try { p28ProcessWifeSavings(); } catch (e) { console.error('[p28] wife savings failed:', e); }
+    try { p28ProcessCertificates(); } catch (e) { console.error('[p28] cert year:', e); }
+    try { p28WifeSavings(); } catch (e) { console.error('[p28] wife savings:', e); }
     return r;
   };
 
   /* =================================================================
-     PART 8 — viewBank REBUILD (single wrapper, clean)
+     PART 8 — viewBank WRAPPER
      ================================================================= */
   const _viewBank = viewBank;
   viewBank = function () {
     let html = '';
-    try { html = _viewBank.apply(this, arguments); } catch (e) { console.error('[p28] viewBank chain failed:', e); html = ''; }
+    try { html = _viewBank.apply(this, arguments); } catch (e) { console.error('[p28] viewBank chain:', e); html = ''; }
     if (!S || S.age < 18) return html;
     p28Init(S);
-
     const rate = p28Rate();
 
-    /* --- 8a. Add early payment panel with ACTIVE buttons --- */
+    /* Early payment panel */
     const insts = p28AllInstallments();
     const morts = p28AllMortgages();
-
     if (insts.length || morts.length) {
+      html = html.replace(/<section class="card"[^>]*id="p28-early-payment"[\s\S]*?<\/section>/g, '');
       let panel = '<section class="card" style="border-color:var(--rose)" id="p28-early-payment">' +
         '<h3>💸 Pay off debt early</h3>' +
         '<p class="muted">Have extra cash? Pay down debt early to reduce interest and finish sooner.</p>';
-
       if (insts.length) {
         panel += '<h4 style="margin-top:12px;color:var(--cyan);font-size:.9rem">Installment plans</h4>';
         insts.forEach(function (x) {
@@ -538,7 +527,6 @@
             '</div></div>';
         });
       }
-
       if (morts.length) {
         panel += '<h4 style="margin-top:14px;color:var(--cyan);font-size:.9rem">Home mortgages</h4>';
         morts.forEach(function (x) {
@@ -555,35 +543,30 @@
         });
       }
       panel += '</section>';
-      /* Remove existing p28 panel and prepend our own */
-      html = html.replace(/<section class="card"[^>]*id="p28-early-payment"[\s\S]*?<\/section>/g, '');
       html = panel + html;
     }
 
-    /* --- 8b. Credit cards: ensure correct Pay buttons --- */
+    /* Per-card debt buttons */
     (S.bank.activeCards || []).forEach(function (cardId) {
       const debt = Number(S.bank.cardDebt[cardId]) || 0;
       if (debt <= 0) return;
       const debtEGP = Math.round(debt * rate);
       const minEGP = Math.max(500, Math.round(debtEGP * 0.05));
       const canFull = debt <= S.wealth;
-      const canMin = minEGP / rate <= S.wealth;
-      /* Look for the debt row for this card */
+      const canMin = (minEGP / rate) <= S.wealth;
       const escapedId = cardId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const rowPattern = new RegExp('(<div class="row"><span>' + escapedId + '[^<]*</span><b class="mono"[^>]*>[^<]*</b></div>)');
+      const rowRe = new RegExp('(<div class="row"><span>' + escapedId + '[^<]*</span><b class="mono"[^>]*>[^<]*</b></div>)');
       const buttons = '<div class="acts" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">' +
         '<button class="btn" ' + (canFull ? '' : 'disabled') + ' onclick="p28PayCardFull(\'' + cardId + '\')">Pay full · ' + debtEGP.toLocaleString() + ' EGP</button>' +
         '<button class="btn" onclick="p28PayCardCustom(\'' + cardId + '\')">Pay custom</button>' +
         '<button class="btn" ' + (canMin ? '' : 'disabled') + ' onclick="p28PayCardMin(\'' + cardId + '\', ' + minEGP + ')">Pay minimum · ' + minEGP.toLocaleString() + ' EGP</button>' +
         '</div>';
-      if (rowPattern.test(html)) {
-        html = html.replace(rowPattern, '$1' + buttons);
-      }
+      if (rowRe.test(html)) html = html.replace(rowRe, '$1' + buttons);
     });
 
-    /* --- 8c. Certificate portfolio summary --- */
+    /* Certificate portfolio summary */
     const certs = (S.certificates || []).filter(function (c) { return c && !c.matured; });
-    if (certs.length) {
+    if (certs.length && html.indexOf('Certificate portfolio') === -1) {
       const principalEGP = certs.reduce(function (s, c) { return s + (Number(c.principalEGP) || 0); }, 0);
       const paidEGP = certs.reduce(function (s, c) { return s + (Number(c.totalPaid) || 0); }, 0);
       const summary = '<section class="card" style="border-color:var(--mint)"><h3>💼 Certificate portfolio</h3>' +
@@ -591,20 +574,18 @@
         '<div class="row"><span>Total principal</span><b class="mono" style="color:var(--mint)">E£' + principalEGP.toLocaleString() + '</b></div>' +
         '<div class="row"><span>Total interest earned</span><b class="mono" style="color:var(--mint)">+E£' + Math.round(paidEGP).toLocaleString() + '</b></div>' +
         '</section>';
-      if (html.indexOf('Certificate portfolio') === -1) {
-        const anchor = html.indexOf('</section>');
-        if (anchor !== -1) html = html.slice(0, anchor + 10) + summary + html.slice(anchor + 10);
-        else html = summary + html;
-      }
+      const anchor = html.indexOf('</section>');
+      if (anchor !== -1) html = html.slice(0, anchor + 10) + summary + html.slice(anchor + 10);
+      else html = summary + html;
     }
 
-    /* --- 8d. Shared account display --- */
+    /* Shared account note */
     if (S.marriage && (S.marriage.sharedBal || 0) > 0) {
       const sharedEGP = Math.round(S.marriage.sharedBal * rate);
-      const sharedNote = '<p class="muted" style="font-size:.78rem;margin-top:2px">Approximately E£' + sharedEGP.toLocaleString() + ' · earns 12% APY</p>';
+      const note = '<p class="muted" style="font-size:.78rem;margin-top:2px">Approximately E£' + sharedEGP.toLocaleString() + ' · earns 12% APY</p>';
       html = html.replace(
         /(<div class="row"><span>Shared balance<\/span><b[^>]*>)([^<]*)(<\/b><\/div>)/,
-        function (m, pre, val, post) { return pre + val + post + sharedNote; }
+        function (m, pre, val, post) { return pre + val + post + note; }
       );
     }
 
@@ -612,12 +593,12 @@
   };
 
   /* =================================================================
-     PART 9 — viewMoney REBUILD (debt display clarity)
+     PART 9 — viewMoney WRAPPER
      ================================================================= */
   const _viewMoney = viewMoney;
   viewMoney = function () {
     let html = '';
-    try { html = _viewMoney.apply(this, arguments); } catch (e) { console.error('[p28] viewMoney chain failed:', e); html = ''; }
+    try { html = _viewMoney.apply(this, arguments); } catch (e) { console.error('[p28] viewMoney chain:', e); html = ''; }
     if (!S || S.age < 18) return html;
 
     const rate = p28Rate();
@@ -633,23 +614,14 @@
     const totalDebt = totalInst + totalMort + cardTotal;
 
     if (totalDebt > 0.01) {
-      /* Remove any old p28 debt summary card */
       html = html.replace(/<section class="card"[^>]*id="p28-debt-summary"[\s\S]*?<\/section>/g, '');
-
       let card = '<section class="card" style="border-color:var(--rose)" id="p28-debt-summary">' +
         '<h3>📱 Active debt</h3>';
-      if (cardTotal > 0) {
-        card += '<div class="row"><span>Credit cards</span><b class="mono" style="color:var(--rose)">E£' + Math.round(cardTotal * rate).toLocaleString() + '</b></div>';
-      }
-      if (totalInst > 0) {
-        card += '<div class="row"><span>Installments</span><b class="mono" style="color:var(--rose)">E£' + Math.round(totalInst * rate).toLocaleString() + '</b></div>';
-      }
-      if (totalMort > 0) {
-        card += '<div class="row"><span>Mortgages</span><b class="mono" style="color:var(--rose)">E£' + Math.round(totalMort * rate).toLocaleString() + '</b></div>';
-      }
+      if (cardTotal > 0) card += '<div class="row"><span>Credit cards</span><b class="mono" style="color:var(--rose)">E£' + Math.round(cardTotal * rate).toLocaleString() + '</b></div>';
+      if (totalInst > 0) card += '<div class="row"><span>Installments</span><b class="mono" style="color:var(--rose)">E£' + Math.round(totalInst * rate).toLocaleString() + '</b></div>';
+      if (totalMort > 0) card += '<div class="row"><span>Mortgages</span><b class="mono" style="color:var(--rose)">E£' + Math.round(totalMort * rate).toLocaleString() + '</b></div>';
       card += '<div class="row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px"><span><b>Total owed</b></span><b class="mono" style="color:var(--rose);font-size:1rem">E£' + Math.round(totalDebt * rate).toLocaleString() + '</b></div>' +
         '<button class="btn" style="margin-top:8px" onclick="go(\'bank\')">Manage in Bank tab</button></section>';
-
       const anchor = html.indexOf('</section>');
       if (anchor !== -1) html = html.slice(0, anchor + 10) + card + html.slice(anchor + 10);
       else html = card + html;
@@ -669,7 +641,6 @@
         '<b class="mono" style="color:var(--mint)">+E£' + Math.round(earnedEGP).toLocaleString() + '</b></div>' +
         (monthlyProj > 0 ? '<div class="row"><span>Certificate income (projected)</span>' +
           '<b class="mono" style="color:var(--mint)">+E£' + Math.round(monthlyProj).toLocaleString() + '/month</b></div>' : '');
-      /* Insert after Retirement pot row if present, else after Cash */
       const anchor = /(<div class="row"><span>Retirement pot<\/span><b[^>]*>[^<]*<\/b><\/div>)/;
       if (anchor.test(html)) html = html.replace(anchor, '$1' + certRows);
     }
@@ -686,15 +657,15 @@
       bankScore: S && S.bank && S.bank.score,
       savingsBal: S && S.bank && S.bank.savingsBal,
       activeCards: S && S.bank && S.bank.activeCards.length,
-      cardDebt: S && S.bank && S.bank.cardDebt,
       installments: S && S.bank && Object.keys(S.bank.installments || {}).length,
       certificates: S && S.certificates && S.certificates.length,
       certTotalPaid: S && S.certificates && S.certificates.reduce(function (s, c) { return s + (Number(c.totalPaid) || 0); }, 0),
-      sharedBal: S && S.marriage && S.marriage.sharedBal
+      monthlyTickExists: typeof p52MonthlyTick === 'function',
+      monthlyTickHooked: typeof p52MonthlyTick === 'function' && p52MonthlyTick.__p28Hooked === true,
+      viewBankLen: (typeof viewBank === 'function') ? viewBank().length : 0,
+      viewMoneyLen: (typeof viewMoney === 'function') ? viewMoney().length : 0
     });
-    console.log('viewBank len:', viewBank().length);
-    console.log('viewMoney len:', viewMoney().length);
   };
 
-  console.log('[p28] Banking consolidated (Phase 3.5) loaded — 8 files → 1');
+  console.log('[p28] Banking consolidated (Phase 3.5) v2 loaded — 8 files → 1');
 })();
