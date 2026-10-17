@@ -1,9 +1,14 @@
 /* =====================================================================
-   40. CORE MEDICAL
-   Phase 3.3 consolidation of:
-     - 40-medical-system.js
-     - 45-medical-work-loans.js
-   Both in one file. No wrappers on top of wrappers.
+   40. CORE MEDICAL (Phase 3.3 + Robust Tab Injection)
+   Consolidated File:
+   - Advanced Medical State, Doctor Visits, Lab Tests
+   - Employer Insurance, Private Insurance, Sick Leave
+   - Pending Medical Bills & Installment Conversions
+   - Student Loans
+   - Fertility System (IVF, Try for baby, Births)
+   - Home Ownership Banner Integrations
+   - Robust Tab Injection & Routing (No disappearing tabs)
+   - Job Loss Clarity Notifications
    Load AFTER 39-bank-bug-fix.js and BEFORE 41-family-marriage-gift-fix.js
    ===================================================================== */
 
@@ -17,9 +22,7 @@
     o = o || S;
     if (!o) return;
 
-    if (!o.medical || typeof o.medical !== 'object') {
-      o.medical = {};
-    }
+    if (!o.medical || typeof o.medical !== 'object') o.medical = {};
     const m = o.medical;
     if (typeof m.hasInsurance !== 'boolean') m.hasInsurance = false;
     if (typeof m.insuranceTier !== 'string') m.insuranceTier = 'none';
@@ -67,8 +70,7 @@
   }
 
   /* =================================================================
-     PART 2 — INSURANCE COVERAGE (unified)
-     Employer plan > private premium > private basic > none
+     PART 2 — INSURANCE COVERAGE
      ================================================================= */
   function p40EmployerCoversInsurance() {
     return !!(S && S.job && S.job.benefits && S.job.benefits.medical);
@@ -102,24 +104,6 @@
     return { ratio: 0, cap: 0, source: 'none' };
   }
 
-  function p40PayBill(egp, label) {
-    const idx = (typeof p14EgyptPriceIndex === 'function') ? p14EgyptPriceIndex(gameYear()) : 1;
-    const egpThisYear = egp * idx;
-    const coverage = p40CoverageRatio();
-    const cap = p40InsuranceCap();
-    const covered = Math.min(egpThisYear * coverage, cap);
-    const outOfPocket = Math.max(0, egpThisYear - covered);
-    if (!p40Paid(outOfPocket, label)) {
-      log('You could not cover the medical bill. Debt or unpaid treatment may follow.');
-      S.wealth -= p40Cost(outOfPocket * 0.4);
-      S.bill = S.bill || {};
-      S.bill.medicalDebt = (S.bill.medicalDebt || 0) + p40Cost(outOfPocket * 0.4);
-      return false;
-    }
-    if (covered > 0) log('Insurance covered ' + Math.round(covered).toLocaleString() + ' EGP; you paid ' + Math.round(outOfPocket).toLocaleString() + ' EGP.');
-    return true;
-  }
-
   window.p40BuyInsurance = function (tier) {
     p40Init(S);
     if (S.age < 18) return hint('Insurance is bought by adults.');
@@ -131,6 +115,7 @@
     S.medical.insuranceTier = tier;
     S.medical.insuranceRenewYear = gameYear();
     log('You bought ' + tier + ' health insurance for EGP ' + p40Price(egp).toLocaleString() + '/year.');
+    if (typeof realismNotice === 'function') realismNotice('Health insurance active', tier === 'premium' ? 'Premium plan: 85% coverage, max 250,000 EGP/year.' : 'Basic plan: 60% coverage, max 100,000 EGP/year.');
     render();
   };
   window.p40CancelInsurance = function () {
@@ -155,6 +140,7 @@
       const c = ['hypertension','type-2 diabetes','high cholesterol','anemia'][Math.floor(Math.random() * 4)];
       if (S.medical.conditions.indexOf(c) === -1) S.medical.conditions.push(c);
       log('Doctor visit: diagnosed with ' + c + '.');
+      if (typeof realismNotice === 'function') realismNotice('Diagnosis', 'You were diagnosed with ' + c + '. Take it seriously — ongoing care matters.');
     } else {
       log('Doctor visit: everything normal.');
       fx({ health: 2 });
@@ -170,6 +156,7 @@
       const c = ['kidney issues','liver concerns','early heart disease','thyroid problem'][Math.floor(Math.random() * 4)];
       if (S.medical.conditions.indexOf(c) === -1) S.medical.conditions.push(c);
       log('Full checkup revealed: ' + c + '.');
+      if (typeof realismNotice === 'function') realismNotice('Full checkup', 'Early sign of ' + c + ' found. Book follow-up with a specialist.');
     } else {
       log('Full checkup: all normal.');
       fx({ health: 3, happiness: 2 });
@@ -189,7 +176,7 @@
   };
 
   /* =================================================================
-     PART 4 — ILLNESS EVENTS (legacy + new p45 system)
+     PART 4 — ILLNESS EVENTS 
      ================================================================= */
   function p40IllnessEvent() {
     p40Init(S);
@@ -210,6 +197,7 @@
     const coverage = p40CoverageRatio();
     const outOfPocket = Math.round(egpThisYear * (1 - coverage));
     log('Medical emergency: ' + pick.label + '. Est cost EGP ' + egpThisYear.toLocaleString() + ' (insurance covers ' + Math.round(coverage * 100) + '%).');
+    if (typeof realismNotice === 'function') realismNotice('Medical emergency', 'You got ' + pick.label + '. ' + (coverage > 0 ? 'Insurance will cover part of it. ' : 'No insurance — you pay everything. ') + 'Estimated out-of-pocket: EGP ' + outOfPocket.toLocaleString() + '.');
     S.medical.pendingIllness = { type: pick.id, egp: egpThisYear, hp: pick.hp, label: pick.label };
     fx({ health: pick.hp, happiness: -5 });
   }
@@ -256,6 +244,7 @@
     const hpLoss = pick.sev === 'critical' ? -20 : pick.sev === 'serious' ? -14 : pick.sev === 'moderate' ? -8 : -4;
     fx({ health: hpLoss, happiness: -4 });
     log('Medical event: ' + pick.label + ' (est EGP ' + egp.toLocaleString() + ', ' + pick.days + ' days recovery). Check Medical tab.');
+    if (typeof realismNotice === 'function') realismNotice('Medical Condition', 'You suffered ' + pick.label + '. A medical bill is pending in the Medical tab. Requires ' + pick.days + ' days of recovery.');
   };
 
   /* =================================================================
@@ -294,12 +283,15 @@
     const chance = Math.max(0.02, Math.min(0.55, Math.sqrt(pF * wF) * 0.35));
     if (Math.random() < chance) {
       S.medical.pendingPregnancy = { wifeId: sp.id, year: gameYear(), months: 0 };
-      log(sp.name + ' is pregnant! Baby arrives next year.');
-      realismNotice('Pregnancy!', sp.name + ' is pregnant.');
+      const msg = sp.name + ' is pregnant! Baby arrives next year.';
+      log(msg);
+      if (typeof realismNotice === 'function') realismNotice('Pregnancy!', msg + ' Prepare for the birth. Costs, childcare and life changes are coming.');
     } else {
       const failed = (f.attempts || 0) + 1;
       f.attempts = failed;
-      log(sp.name + ' did not become pregnant this year.');
+      const msg = sp.name + ' did not become pregnant this year.';
+      log(msg);
+      if (typeof realismNotice === 'function') realismNotice('Not this year', msg + (failed >= 2 ? ' Consider a fertility consultation in the Medical tab.' : ' Try again next year or consult a doctor.'));
     }
     render();
   };
@@ -311,10 +303,11 @@
     p40InitFertility();
     S.medical.fertility.diagnosisDone = true;
     const f = S.medical.fertility;
-    let msg = 'Your fertility: ' + f.playerFertility + '%. ' + sp.name + ': ' + f.wifeFertility + '%. ';
+    let msg = 'Consultant tests: your fertility is ' + f.playerFertility + '%, ' + sp.name + '\'s is ' + f.wifeFertility + '%. ';
     if (f.playerFertility >= 40 && f.wifeFertility >= 40) msg += 'No major issue. Keep trying.';
-    else msg += 'IVF may be needed.';
+    else msg += 'IVF (أطفال أنابيب) may be needed due to low fertility.';
     log(msg);
+    if (typeof realismNotice === 'function') realismNotice('Fertility diagnosis', msg);
     render();
   };
   window.p40IVF = function () {
@@ -341,8 +334,10 @@
     if (Math.random() < chance) {
       S.medical.pendingPregnancy = { wifeId: sp.id, year: gameYear(), viaIVF: true };
       log('IVF succeeded! ' + sp.name + ' is pregnant.');
+      if (typeof realismNotice === 'function') realismNotice('IVF success', sp.name + ' is pregnant after IVF. The baby arrives next year.');
     } else {
       log('IVF cycle did not succeed. Cost EGP ' + outPocket.toLocaleString() + '.');
+      if (typeof realismNotice === 'function') realismNotice('IVF unsuccessful', 'The IVF cycle failed. This happens. You may try again next year — the chance is roughly ' + Math.round(chance * 100) + '%.');
     }
     render();
   };
@@ -355,6 +350,7 @@
       kid.name = (typeof localName === 'function') ? localName(S.country, kid.g) : 'Baby';
       kid.bond = 90;
       log('Your child ' + kid.name + ' was born!');
+      if (typeof realismNotice === 'function') realismNotice('A child is born', sp.name + ' gave birth to a healthy baby, ' + kid.name + '. Congratulations.');
     }
     fx({ happiness: 12, health: -2 });
     const birthCost = p40Price(25000);
@@ -437,7 +433,6 @@
       p45ApplySickLeave(bill);
       render(); return;
     }
-    /* mode 'insurance' or 'credit' — 55 will handle 'credit' override */
     if (mode === 'insurance') {
       const internal = bill.outOfPocketEGP / p40Rate();
       if (S.wealth >= internal) {
@@ -473,7 +468,7 @@
       if (S.job.benefits) S.job.benefits.medical = true;
       fx({ happiness: 8 });
       log('Employer approved medical coverage.');
-      realismNotice('Employer medical coverage', 'Your job now includes medical insurance.');
+      if (typeof realismNotice === 'function') realismNotice('Employer medical coverage', 'Your job now includes medical insurance.');
     } else {
       S.p45.employerInsuranceRefused.push(gameYear());
       if (S.job) S.job.perf = Math.max(0, (Number(S.job.perf) || 0) - 2);
@@ -641,15 +636,15 @@
   /* =================================================================
      PART 11 — VIEW WRAPPERS
      ================================================================= */
-  const _viewAssets = viewAssets;
-  viewAssets = function () {
+  const _viewAssets = typeof viewAssets === 'function' ? viewAssets : function() { return ''; };
+  window.viewAssets = function () {
     let html = _viewAssets.apply(this, arguments);
     html = html.replace(/<section class="card"[^>]*>\s*<div[^>]*>\s*<div[^>]*>YOU CURRENTLY LIVE IN[\s\S]*?<\/section>/g, '');
     return p45HomeBanner() + html;
   };
 
-  const _viewLife = viewLife;
-  viewLife = function () {
+  const _viewLife = typeof viewLife === 'function' ? viewLife : function() { return ''; };
+  window.viewLife = function () {
     let html = _viewLife.apply(this, arguments);
     html = html.replace(/<section class="card"[^>]*>\s*<div[^>]*>\s*<div[^>]*>YOU CURRENTLY LIVE IN[\s\S]*?<\/section>/g, '');
     const out = p45HomeBanner() + html;
@@ -662,8 +657,8 @@
     return out;
   };
 
-  const _viewCareer = viewCareer;
-  viewCareer = function () {
+  const _viewCareer = typeof viewCareer === 'function' ? viewCareer : function() { return ''; };
+  window.viewCareer = function () {
     let html = _viewCareer.apply(this, arguments);
     if (!S || S.age < 18 || !S.job) return html;
     if (S.p45.employerInsurance || (S.job.benefits && S.job.benefits.medical)) return html;
@@ -676,8 +671,8 @@
     return card + html;
   };
 
-  const _viewMoney = viewMoney;
-  viewMoney = function () {
+  const _viewMoney = typeof viewMoney === 'function' ? viewMoney : function() { return ''; };
+  window.viewMoney = function () {
     let html = _viewMoney.apply(this, arguments);
     if (!S || S.age < 18) return html;
     if (!(Number(S.loan) > 0)) return html;
@@ -692,19 +687,86 @@
     return html;
   };
 
-  /* Render wrapper: sync S.medical.hasInsurance */
-  const _render = render;
-  render = function () {
+  /* =================================================================
+     PART 12 — ROBUST TAB INJECTION & ROUTING
+     ================================================================= */
+  function injectMedicalTab() {
+    const nav = document.getElementById('tabs');
+    if (!nav) return;
+    if (nav.querySelector('[data-tab="medical"]')) return;
+
+    const btn = document.createElement('button');
+    btn.className = 'tab';
+    btn.dataset.tab = 'medical';
+    btn.textContent = 'Medical';
+    btn.onclick = function () {
+      activeTab = 'medical';
+      if (typeof render === 'function') render();
+    };
+
+    const pacing = nav.querySelector('[data-tab="pacing"]');
+    if (pacing) nav.insertBefore(btn, pacing);
+    else nav.appendChild(btn);
+  }
+
+  const _render = typeof render === 'function' ? render : function(){};
+  window.render = function () {
+    /* 1. Sync Insurance State */
     if (S && S.p45 && S.p45.employerInsurance) {
       if (!S.medical) S.medical = { hasInsurance: true, insuranceTier: 'employer' };
       else if (S.medical.insuranceTier !== 'employer') S.medical.hasInsurance = true;
     }
-    return _render.apply(this, arguments);
+
+    /* 2. Medical Tab Routing */
+    if (typeof activeTab !== 'undefined' && activeTab === 'medical') {
+      const saved = activeTab;
+      activeTab = 'life'; /* base render needs a valid tab */
+      try { _render.apply(this, arguments); } catch (e) { console.error('[p40] base render failed:', e); }
+      activeTab = saved;
+
+      const nav = document.getElementById('tabs');
+      const view = document.getElementById('view');
+
+      if (nav) {
+        nav.querySelectorAll('.tab').forEach(function (b) { b.classList.remove('on'); });
+        let btn = nav.querySelector('[data-tab="medical"]');
+        if (!btn) { injectMedicalTab(); btn = nav.querySelector('[data-tab="medical"]'); }
+        if (btn) btn.classList.add('on');
+      }
+
+      if (view) {
+        try {
+          view.innerHTML = typeof viewMedical === 'function' ? viewMedical() : '<section class="card"><h3>🏥 Medical</h3><p class="muted">Medical view failed to render. Check console.</p></section>';
+        } catch (e) {
+          console.error('[p40] viewMedical failed:', e);
+          view.innerHTML = '<section class="card"><h3>🏥 Medical</h3><p class="muted">Medical view failed to render. Check console.</p></section>';
+        }
+      }
+
+      if (typeof save === 'function') save();
+      return;
+    }
+
+    /* 3. Normal Tab Routing */
+    const r = _render.apply(this, arguments);
+    try { injectMedicalTab(); } catch (e) {}
+    return r;
   };
 
-  /* Yearly tick: run illness + medical events */
-  const _ageUp = ageUp;
-  ageUp = function () {
+  /* Ensure tab injection runs */
+  setTimeout(injectMedicalTab, 100);
+  setTimeout(injectMedicalTab, 600);
+  if (typeof GameHooks !== 'undefined' && GameHooks.on) {
+    GameHooks.on('render', function () {
+      try { injectMedicalTab(); } catch (e) {}
+    });
+  }
+
+  /* =================================================================
+     PART 13 — AGE UP / YEARLY LOGIC
+     ================================================================= */
+  const _ageUp = typeof ageUp === 'function' ? ageUp : function(){};
+  window.ageUp = function () {
     const ageBefore = S && S.age;
     const r = _ageUp.apply(this, arguments);
     if (!S || S.age === ageBefore) return r;
@@ -754,8 +816,22 @@
   };
 
   /* =================================================================
-     PART 12 — INIT
+     PART 14 — JOB LOSS CLARITY
      ================================================================= */
-  p40Init(S);
-  console.log('[p40] Core medical (Phase 3.3) loaded');
+  const _packYear = typeof packYear === 'function' ? packYear : function(){};
+  window.packYear = function () {
+    const jobBefore = S && S.job ? S.job.title : null;
+    const reasonBefore = S && S.job ? (S.job.perf || 0) : 0;
+    _packYear.apply(this, arguments);
+    if (jobBefore && S && !S.job) {
+      const reason = reasonBefore < 25 ? 'Performance fell too low (below 25%).' :
+                     S.econ === 'recession' ? 'The economy is in recession and the company cut staff.' :
+                     'Management decided to let you go.';
+      if (typeof realismNotice === 'function') realismNotice('You lost your job', 'You were released from "' + jobBefore + '". ' + reason + ' Check the Career tab for new openings.');
+    }
+  };
+
+  /* Init check */
+  p40Init(typeof S !== 'undefined' ? S : null);
+  console.log('[p40] Core medical (Phase 3.3 + Robust Tab Injection) loaded');
 })();
