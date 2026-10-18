@@ -943,12 +943,7 @@ window.bankDoBuyGold = function(karat) {
   if (!bankSpend(total, `Gold: ${grams}g ${karat}`)) { log('Insufficient total funds.'); return; }
   S.bank.gold.push({ id: 'gold_' + Math.random().toString(36).slice(2), karat, grams, purchaseValue: total, buyPricePerGram: perGram, buyYear: gameYear() });
   render();
-};
-window.bankDoSellGold = function(idx) {
-  const g = S.bank.gold[idx];
-  const prices = GOLD_PRICES[S.country] || GOLD_PRICES.egy;
-  const perGram = g.karat === '24K' ? prices.perGram24K : g.karat === '21K' ? prices.perGram21K : prices.perGram18K;
-  
+
 window.bankDoSellGold = function(idx) {
   const g = S.bank.gold[idx];
   const prices = GOLD_PRICES[S.country] || GOLD_PRICES.egy;
@@ -1089,7 +1084,6 @@ window.bankGoalRemove = function(idx) {
 /* ---------- 9. TRANSFERS & REMITTANCES ---------- */
 function bankTransferSection() {
   const services = (typeof REMITTANCE_SERVICES !== 'undefined' ? REMITTANCE_SERVICES[S.country] : null) || [];
-  const receiving = services.length === 0 ? [] : ((typeof REMITTANCE_SERVICES !== 'undefined' ? REMITTANCE_SERVICES.foreign_to_egy : null) || []);
 
   let html = `<div class="card">
     <h3>Send Money</h3>
@@ -1112,7 +1106,7 @@ function bankTransferSection() {
     html += `<button class="opt" style="margin-top:6px;text-align:center;background:#8b5cf6;color:#fff;font-weight:700" onclick="bankSendRemittance()">Send via Remittance</button></div>`;
   }
 
-  if (b_remitHistory_has_entries()) {
+  if (S.bank.remitHistory && S.bank.remitHistory.length > 0) {
     html += `<div class="card"><h3>Recent Transfers</h3>`;
     S.bank.remitHistory.slice(0, 10).forEach(r => {
       html += `<div class="row" style="padding:4px 0;font-size:.78rem">
@@ -1124,8 +1118,6 @@ function bankTransferSection() {
 
   return html;
 }
-
-function b_remitHistory_has_entries() { return S.bank && S.bank.remitHistory && S.bank.remitHistory.length > 0; }
 
 window.bankDomesticTransfer = function() {
   const amt = Math.round(Number(prompt(`Amount to transfer?\nAvailable: ${money(bankGetTotalLiquidCash())}`, '1000')) || 0);
@@ -1230,7 +1222,6 @@ function bankYearTick() {
   ensureBankState();
   const b = S.bank;
 
-  // 1. Auto-deposit toggle: sweep positive cash into first account
   if (b.autoDepositSalary && b.accounts.length > 0 && S.wealth > 0) {
     const amt = S.wealth;
     S.wealth = 0;
@@ -1238,7 +1229,6 @@ function bankYearTick() {
     bankLogTransaction('Auto-deposit cash sweep', amt, 'income');
   }
 
-  // 2. Savings account interest
   b.accounts.forEach(acc => {
     const bankDef = (BANKS[S.country] || []).find(x => x.id === acc.bankId);
     if (bankDef && bankDef.savingsRate > 0 && acc.balance > 0) {
@@ -1247,7 +1237,6 @@ function bankYearTick() {
     }
   });
 
-  // 3. Certificates: interest + maturity
   b.certificates = b.certificates.filter(c => {
     if (c.yearsHeld >= c.term) {
       const proceeds = c.principal + c.totalInterestPaid;
@@ -1269,7 +1258,6 @@ function bankYearTick() {
     return true;
   });
 
-  // 4. Loans: annual payment
   b.loans.forEach(l => {
     if (l.remaining <= 0) return;
     const annualPayment = l.monthlyPayment * 12;
@@ -1287,7 +1275,6 @@ function bankYearTick() {
   });
   b.loans = b.loans.filter(l => l.remaining > 0 && l.monthsLeft > 0);
 
-  // 5. Credit cards: auto-pay or accrue interest
   b.creditCards.forEach(c => {
     if (c.balance <= 0) return;
     const min = BankMath.cardMinPayment(c, c.balance);
@@ -1301,7 +1288,6 @@ function bankYearTick() {
     }
   });
 
-  // 6. Investments: mark-to-market
   b.investments.forEach(inv => {
     if (!inv.volatility && inv.expectedReturn) {
       inv.currentValue = Math.round(inv.currentValue * (1 + inv.expectedReturn));
@@ -1311,7 +1297,6 @@ function bankYearTick() {
     }
   });
 
-  // 7. Pension: add contributions to value
   let pensionContrib = 0;
   b.pension.active.forEach(p => {
     const yearly = p.monthlyContribution * 12;
@@ -1324,7 +1309,6 @@ function bankYearTick() {
   });
   if (pensionContrib > 0) log(`🏛️ Pension contributions this year: ${money(pensionContrib)}.`);
 
-  // 8. Insurance: pay premiums
   b.insurance.forEach(ins => {
     if (S.wealth >= ins.annualPremium) {
       S.wealth -= ins.annualPremium;
@@ -1333,7 +1317,6 @@ function bankYearTick() {
     }
   });
 
-  // 9. Goals: auto-deposit
   b.goals.forEach(g => {
     if (g.monthlyDeposit > 0 && g.saved < g.target) {
       const monthly = Math.min(g.monthlyDeposit * 12, g.target - g.saved);
@@ -1344,7 +1327,6 @@ function bankYearTick() {
     }
   });
 
-  // 10. Snapshot net worth for sparkline
   const nw = bankGetTotalAssets() - bankGetTotalDebt();
   if (!Array.isArray(b.netWorthHistory)) b.netWorthHistory = [];
   b.netWorthHistory.unshift({ year: gameYear(), value: nw });
