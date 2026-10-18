@@ -941,8 +941,9 @@ window.bankDoBuyGold = function(karat) {
   if (grams <= 0) return;
   const total = grams * perGram;
   if (!bankSpend(total, `Gold: ${grams}g ${karat}`)) { log('Insufficient total funds.'); return; }
-  S.bank.gold.push({ id: 'gold_' + Math.random().toString(36).slice(2), karat, grams, purchaseValue: total, buyPricePerGram: perGram, buyYear: gameYear() });
+    S.bank.gold.push({ id: 'gold_' + Math.random().toString(36).slice(2), karat, grams, purchaseValue: total, buyPricePerGram: perGram, buyYear: gameYear() });
   render();
+};
 
 window.bankDoSellGold = function(idx) {
   const g = S.bank.gold[idx];
