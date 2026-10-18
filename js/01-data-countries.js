@@ -109,7 +109,7 @@ const COUNTRIES = {
     ],
   },
 
-  sau: {
+ sau: {
     id: 'sau', name: 'Saudi Arabia', flag: '🇸🇦',
     currency: 'SAR', rate: 3.75,
     salary: 96000,
@@ -133,15 +133,18 @@ const COUNTRIES = {
       { id: 'sau_doc', title: 'Physician', company: 'King Faisal Hospital', salary: 300000, minAge: 24, degree: 'medicine' },
     ],
     events: [
-      { id: 'sau_iqama', minAge: 22, maxAge: 40,
+      { 
+        id: 'sau_iqama', minAge: 22, maxAge: 40,
         title: 'Iqama renewal',
         text: 'Your residence permit is up for renewal. Employer is deciding.',
         choices: [
-         { label: 'Wait and hope', effect: s => { s.flags.iqamaRisk = true; } },
-      { label: 'Ask employer for sponsorship', effect: s => { s.flags.iqamaSafe = true; s.happiness += 2; } },
-    ],
+          { label: 'Wait and hope', effect: s => { s.flags.iqamaRisk = true; } },
+          { label: 'Ask employer for sponsorship', effect: s => { s.flags.iqamaSafe = true; s.happiness += 2; } },
+        ]
+      }
+    ]
   }
   /* 👇 ADD NEW COUNTRIES HERE 👇 */
-}; // <-- This closes the main COUNTRIES object
+}; 
 
 window.COUNTRIES = COUNTRIES;
