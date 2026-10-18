@@ -139,10 +139,7 @@ const COUNTRIES = {
         choices: [
           { label: 'Wait and hope', effect: s => { s.flags.iqamaRisk = true; } },
           { label: 'Ask employer for sponsorship', effect: s => { s.flags.iqamaSafe = true; s.happiness += 2; } },
-        ]
-      },
     ],
-  },
 };
 
 
