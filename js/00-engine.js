@@ -376,14 +376,17 @@ window.COUNTRIES = COUNTRIES;</pre>
         }).join('')}
       </div>
     </div>
-    <div class="card">
-      <h3>Family wealth</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px">
-        <button class="pill ${START.familyTier==='poor'?'on':''}" onclick="START.familyTier='poor';renderStart()">Poor</button>
-        <button class="pill ${START.familyTier==='middle'?'on':''}" onclick="START.familyTier='middle';renderStart()">Middle</button>
-        <button class="pill ${START.familyTier==='wealthy'?'on':''}" onclick="START.familyTier='wealthy';renderStart()">Wealthy</button>
-      </div>
-    </div>
+ <div class="card">
+  <h3>Family wealth</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px">
+    <button class="pill ${START.familyTier==='poor'?'on':''}" style="padding:8px 4px;font-size:.72rem" onclick="START.familyTier='poor';renderStart()">Poor</button>
+    <button class="pill ${START.familyTier==='lower-mid'?'on':''}" style="padding:8px 4px;font-size:.72rem" onclick="START.familyTier='lower-mid';renderStart()">Lower-mid</button>
+    <button class="pill ${START.familyTier==='middle'?'on':''}" style="padding:8px 4px;font-size:.72rem" onclick="START.familyTier='middle';renderStart()">Middle</button>
+    <button class="pill ${START.familyTier==='upper-mid'?'on':''}" style="padding:8px 4px;font-size:.72rem" onclick="START.familyTier='upper-mid';renderStart()">Upper-mid</button>
+    <button class="pill ${START.familyTier==='wealthy'?'on':''}" style="padding:8px 4px;font-size:.72rem" onclick="START.familyTier='wealthy';renderStart()">Wealthy</button>
+    <button class="pill ${START.familyTier==='ultra'?'on':''}" style="padding:8px 4px;font-size:.72rem" onclick="START.familyTier='ultra';renderStart()">Ultra</button>
+  </div>
+</div>
     <div class="card">
       <h3>Parents</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px">
