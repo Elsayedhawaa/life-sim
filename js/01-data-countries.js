@@ -137,13 +137,11 @@ const COUNTRIES = {
         title: 'Iqama renewal',
         text: 'Your residence permit is up for renewal. Employer is deciding.',
         choices: [
-          { label: 'Wait and hope', effect: s => { s.flags.iqamaRisk = true; } },
-          { label: 'Ask employer for sponsorship', effect: s => { s.flags.iqamaSafe = true; s.happiness += 2; } },
+         { label: 'Wait and hope', effect: s => { s.flags.iqamaRisk = true; } },
+      { label: 'Ask employer for sponsorship', effect: s => { s.flags.iqamaSafe = true; s.happiness += 2; } },
     ],
-};
-
-
+  }
   /* 👇 ADD NEW COUNTRIES HERE 👇 */
-};
+}; // <-- This closes the main COUNTRIES object
 
 window.COUNTRIES = COUNTRIES;
