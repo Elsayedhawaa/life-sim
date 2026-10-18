@@ -3,88 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lifeline – Realistic Life Simulation</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<title>World Life</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div id="app">
-  <!-- START SCREEN -->
-  <section id="start" class="card overlay">
-    <h1>Lifeline</h1>
-    <p>It is 2007. You are six years old. Every choice shapes the story ahead.</p>
-    <div class="bigav" id="av-big"></div>
-    <div class="picker" id="av-g"></div>
-    <div class="picker" id="av-t"></div>
-    <select id="country-sel" style="width:100%;margin-bottom:10px"></select>
-    <div class="picker" id="like-p" style="gap:6px"></div>
-    <p class="muted" id="country-desc" style="font-size:.82rem;margin:0 0 12px"></p>
-    <input id="name-input" placeholder="Your name" maxlength="20" autocomplete="off">
-    <button class="btn" id="start-btn" style="text-align:center" onclick="startGame()">Begin life</button>
-    <button class="btn hidden" id="cont-btn" style="text-align:center" onclick="loadGame()">Continue saved life</button>
-  </section>
+<div id="header"></div>
+<div id="tabs"></div>
+<div id="view"></div>
+<div id="bottom"></div>
 
-  <!-- GAME SCREEN -->
-  <div id="game" class="hidden" style="display:flex;flex-direction:column;gap:12px">
-    <header id="head">
-      <section class="card" id="top"></section>
-      <nav class="tabs" id="tabs"></nav>
-    </header>
-    <main id="view" style="display:flex;flex-direction:column;gap:12px"></main>
-    <div id="age-wrap"><div id="hint"></div><button id="age-btn" onclick="ageUp()">Age up</button></div>
-  </div>
-  <!-- Interactive phone, inspired by the supplied alternate version -->
-  <div id="life-phone-modal" class="p16-phone-backdrop hidden" role="dialog" aria-modal="true" aria-label="Your phone">
-    <div class="p16-phone-shell">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <div><div class="muted" style="font-size:.72rem">LIFELINE DEVICE</div><h3 id="p16-phone-model" style="margin-top:3px">Your phone</h3></div>
-        <button class="menu-btn" onclick="closeLifePhone()">Close</button>
-      </div>
-      <div id="p16-phone-screen" class="p16-phone-screen"></div>
-    </div>
-  </div>
-</div>
-<script src="00-viewMatters-stub.js"></script>
-  <script src="js/01-data.js"></script>
-<script src="js/02-state.js"></script>
-<script src="js/03-views.js"></script>
-<script src="js/04-actions.js"></script>
-<script src="js/05-ageup.js"></script>
-<script src="js/06-setup.js"></script>
-<script src="js/07-era-pack.js"></script>
-<script src="js/08-countries-abroad-love.js"></script>
-<script src="js/09-realism-education-visas.js"></script>
-<script src="js/10-jobs-property-travel.js"></script>
-<script src="js/11-final-realism-flow.js"></script>
-<script src="js/12-final.js"></script>
-<script src="js/90-hooks.js"></script>
-<script src="js/24-egypt-housing.js"></script>
-<script src="js/25-languages-passport.js"></script>
-<script src="js/27-egypt-realism.js"></script>
-  <script src="js/28-banking-consolidated.js"></script>
-<script src="js/29-egypt-universities.js"></script>
-<script src="js/30-auto-rent.js"></script>
-  <script src="js/31-viewschool-safety.js"></script>
-  <script src="js/35-marriage-system.js"></script>
-  <script src="js/37-life-integration.js"></script>
- <script src="js/40-core-medical.js"></script>
-<script src="js/41-family-life-consolidated.js"></script>
-  <script src="js/46-asset-display-fix.js"></script>
-  <script src="js/47-visa-travel-realism.js"></script>
-   <script src="js/48-education-travel-link.js"></script>
-  <script src="js/49-education-additions.js"></script>
-  <script src="js/50-school-bpo-medical-gpa.js"></script>
-<script src="js/52-pacing-system.js"></script>
-  <script src="js/55-career-graduation-medical-fixes.js"></script>
-  <script src="js/56-critical-fixes.js"></script>
-  <script src="js/57-credit-uni-events.js"></script>
-  <script src="js/61-inheritance-migrate-fix.js"></script>
-  <script src="js/62-cars-overhaul.js"></script>
-<script src="js/63-cars-fixes.js"></script>
-<script src="js/66-core-finance.js"></script>
-<script src="js/68-core-fixes.js"></script>
-  <script src="js/70-education-life.js"></script>
- <script src="js/72-faculty-career-connection.js"></script>
-<script src="js/76-family-dynasty.js"></script>
+<!-- 1. Engine first -->
+<script src="js/00-engine.js"></script>
+
+<!-- 2. Data (order matters: realestate and banks both feed views) -->
+<script src="js/01-data-countries.js"></script>
+<script src="js/02-data-events.js"></script>
+<script src="js/03-data-realestate.js"></script>
+<script src="js/04-data-banks.js"></script>
+
+<!-- 3. Views -->
+<script src="js/10-view-life.js"></script>
+<script src="js/11-view-school.js"></script>
+<script src="js/12-view-career.js"></script>
+<script src="js/13-view-family.js"></script>
+<script src="js/14-view-assets.js"></script>
+<script src="js/15-view-realestate.js"></script>
+<script src="js/16-view-home-manage.js"></script>
+<script src="js/17-view-banking.js"></script>
+
+<!-- 4. Boot last -->
 <script src="js/99-boot.js"></script>
+</body>
+</html>
