@@ -7,7 +7,7 @@
    ============================================================ */
 
 const COUNTRIES = {
-   egy: {
+  egy: {
     id: 'egy', name: 'Egypt', flag: '🇪🇬',
     currency: 'EGP', rate: 52.7,
     salary: 84000,
@@ -109,7 +109,7 @@ const COUNTRIES = {
     ],
   },
 
- sau: {
+  sau: {
     id: 'sau', name: 'Saudi Arabia', flag: '🇸🇦',
     currency: 'SAR', rate: 3.75,
     salary: 96000,
@@ -133,8 +133,7 @@ const COUNTRIES = {
       { id: 'sau_doc', title: 'Physician', company: 'King Faisal Hospital', salary: 300000, minAge: 24, degree: 'medicine' },
     ],
     events: [
-      { 
-        id: 'sau_iqama', minAge: 22, maxAge: 40,
+      { id: 'sau_iqama', minAge: 22, maxAge: 40,
         title: 'Iqama renewal',
         text: 'Your residence permit is up for renewal. Employer is deciding.',
         choices: [
@@ -144,7 +143,6 @@ const COUNTRIES = {
       }
     ]
   }
-  /* 👇 ADD NEW COUNTRIES HERE 👇 */
-}; 
+};
 
 window.COUNTRIES = COUNTRIES;
