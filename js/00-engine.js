@@ -1,13 +1,11 @@
 /* ============================================================
-   WORLD LIFE — ENGINE
+   WORLD LIFE — ENGINE (hardened)
    ============================================================
    This file owns: S, GameHooks, helpers, ageUp, render,
    start screen, save/load/reset, event system.
 
-   It knows NOTHING about specific views. Views register themselves
-   via GameHooks.registerTab({...}) at the bottom of their own file.
-
-   DO NOT ADD FEATURES HERE. This file should never grow past ~400 lines.
+   Defensive: if a data file (js/01-data-*.js etc.) fails to load,
+   the game shows a friendly error screen instead of crashing.
    ============================================================ */
 
 const SAVE_KEY = 'world_life_v5';
@@ -16,7 +14,7 @@ let activeTab = 'life';
 let START = { name: '', gender: 'm', country: 'egy', familyTier: 'middle', parentType: 'balanced' };
 
 /* ============================================================
-   GAMEHOOKS — the connection between engine and every system
+   GAMEHOOKS
    ============================================================ */
 const GameHooks = {
   year: [], render: [], newGame: [], migrate: [],
@@ -27,15 +25,25 @@ const GameHooks = {
 };
 
 /* ============================================================
+   DATA GUARD — true if COUNTRIES loaded correctly
+   ============================================================ */
+function dataOK() {
+  return typeof COUNTRIES !== 'undefined' && COUNTRIES && COUNTRIES.egy;
+}
+
+/* ============================================================
    HELPERS
    ============================================================ */
-function C() { return COUNTRIES[S?.country] || COUNTRIES.egy; }
+function C() {
+  const fb = { id: 'unknown', name: 'Unknown', flag: '?', currency: '?', prices: {}, schools: [], universities: [], jobs: [], events: [] };
+  if (!dataOK()) return fb;
+  return COUNTRIES[S?.country] || COUNTRIES.egy;
+}
 function gameYear() { return 2001 + (S?.age || 6); }
 function money(n) { const c = C(); return Math.round(n).toLocaleString() + ' ' + c.currency; }
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, Math.round(v))); }
 function log(msg) { if (!S.log) S.log = []; S.log.unshift({ age: S.age, year: gameYear(), msg }); if (S.log.length > 200) S.log.pop(); }
-// Apply stat effects. Used by year ticks in views (16, 17, etc).
-// Example: fx({ happiness: -5, social: +2 })
+
 function fx(effects) {
   if (!effects || !S) return;
   ['happiness', 'health', 'smarts', 'social'].forEach(k => {
@@ -48,7 +56,15 @@ function fx(effects) {
    NEW LIFE
    ============================================================ */
 function newLife() {
+  if (!dataOK()) {
+    alert('Cannot start a new life — game data (js/01-data-countries.js) failed to load.\n\nOpen browser console (F12) for the exact error.');
+    return;
+  }
   const c = COUNTRIES[START.country];
+  if (!c) {
+    alert('Country "' + START.country + '" not found.');
+    return;
+  }
   S = {
     name: START.name || 'You',
     gender: START.gender,
@@ -77,13 +93,15 @@ function newLife() {
   log(`Born in ${c.name}, 2007. You are 6 years old.`);
   log(START.gender === 'f' ? 'You are a girl.' : 'You are a boy.');
   log(`Family: ${START.familyTier} · Parents: ${START.parentType}.`);
-  S.pending = prepareEvent(GLOBAL_EVENTS[0]);
+  if (typeof GLOBAL_EVENTS !== 'undefined' && GLOBAL_EVENTS.length) {
+    S.pending = prepareEvent(GLOBAL_EVENTS[0]);
+  }
   GameHooks.run('newGame', S);
   save(); render();
 }
 
 /* ============================================================
-   EVENT PREPARATION — for events with dynamic choice lists
+   EVENT PREPARATION
    ============================================================ */
 function prepareEvent(e) {
   if (e.dynamic === 'school') {
@@ -91,7 +109,7 @@ function prepareEvent(e) {
     return {
       title: e.title,
       text: e.text,
-      choices: c.schools.map(sch => ({
+      choices: (c.schools || []).map(sch => ({
         label: `${sch.name}${sch.cost > 0 ? ' (' + sch.cost.toLocaleString() + ' ' + c.currency + '/yr, family pays)' : ' (free)'}`,
         effect: s => { s.school = sch.id; }
       }))
@@ -101,16 +119,17 @@ function prepareEvent(e) {
 }
 
 /* ============================================================
-   AGE UP — the ONE year tick
+   AGE UP
    ============================================================ */
 function ageUp() {
+  if (!dataOK()) { alert('Game data not loaded.'); return; }
   if (S.pending) return;
   S.age++;
 
   S.family.forEach(m => { if (m.alive) m.age++; });
 
   if (S.age >= 6 && S.age < 18 && S.school) {
-    const sch = C().schools.find(x => x.id === S.school);
+    const sch = (C().schools || []).find(x => x.id === S.school);
     if (sch) S.smarts = clamp(S.smarts + sch.smarts, 0, 100);
   }
 
@@ -149,11 +168,11 @@ function ageUp() {
   if (S.age >= 18) {
     const c = C();
     if (S.housing === 'parents') {
-      const personal = Math.round(c.prices.phone * 0.5 + c.prices.transport * 0.25);
+      const personal = Math.round((c.prices.phone || 0) * 0.5 + (c.prices.transport || 0) * 0.25);
       S.wealth -= personal;
     } else {
-      let expenses = c.prices.food + c.prices.phone + c.prices.transport;
-      if (S.housing === 'rented') expenses += c.prices.rent;
+      let expenses = (c.prices.food || 0) + (c.prices.phone || 0) + (c.prices.transport || 0);
+      if (S.housing === 'rented') expenses += (c.prices.rent || 0);
       S.wealth -= expenses;
     }
   }
@@ -164,7 +183,7 @@ function ageUp() {
 
   ['health', 'happiness', 'smarts', 'social'].forEach(k => { S[k] = clamp(S[k], 0, 100); });
 
-  const allEvents = [...GLOBAL_EVENTS, ...(C().events || [])];
+  const allEvents = [...(typeof GLOBAL_EVENTS !== 'undefined' ? GLOBAL_EVENTS : []), ...((C().events) || [])];
   const eligible = allEvents.filter(e =>
     S.age >= e.minAge && S.age <= e.maxAge &&
     !S.flags['evt_' + e.id] &&
@@ -194,10 +213,29 @@ function chooseEvent(i) {
 }
 
 /* ============================================================
-   RENDER — dispatches to the registered tab view
+   RENDER
    ============================================================ */
 function render() {
   if (!S) { renderStart(); return; }
+
+  if (!dataOK()) {
+    document.getElementById('header').innerHTML = '';
+    document.getElementById('tabs').innerHTML = '';
+    document.getElementById('bottom').innerHTML = '';
+    document.getElementById('view').innerHTML = `
+      <div class="card" style="border-color:#fb7185;background:#1a0a12">
+        <h2 style="color:#fb7185">⚠️ Game data not loaded</h2>
+        <p class="muted small" style="margin-top:8px;line-height:1.6">
+          <b>js/01-data-countries.js</b> failed to load. Fix the file and refresh.
+        </p>
+        <p class="muted small" style="margin-top:8px">
+          Restart the game to see the start screen with full instructions:
+        </p>
+        <button onclick="reset()" class="opt" style="margin-top:10px;background:#8b5cf6;color:#fff;font-weight:700">Reset and retry</button>
+      </div>`;
+    return;
+  }
+
   document.getElementById('header').innerHTML = header();
   document.getElementById('tabs').innerHTML = tabs();
   const viewFn = getViewFn(activeTab);
@@ -266,6 +304,44 @@ function renderStart() {
   document.getElementById('header').innerHTML = '';
   document.getElementById('tabs').innerHTML = '';
   document.getElementById('bottom').innerHTML = '';
+
+  if (!dataOK()) {
+    document.getElementById('view').innerHTML = `
+      <div class="card" style="border-color:#fb7185;background:#1a0a12">
+        <h2 style="color:#fb7185;margin-bottom:8px">⚠️ Game data failed to load</h2>
+        <p class="muted small" style="line-height:1.6">
+          <b>js/01-data-countries.js</b> has a syntax error and was skipped by the browser.
+          The <b>COUNTRIES</b> object was never created.
+        </p>
+        <p class="muted small" style="margin-top:14px;line-height:1.6;color:#fbbf24">
+          <b>Most common cause — extra <code>};</code> at the bottom of the file.</b>
+        </p>
+        <p class="muted small" style="margin-top:8px;line-height:1.6">
+          Open <b>js/01-data-countries.js</b> in Notepad and scroll to the very bottom.
+          The file must end like this:
+        </p>
+        <pre style="background:#0a0a12;padding:10px;border-radius:6px;margin:8px 0;font-size:.75rem;overflow-x:auto;color:#34d399">  sau: {
+    ...
+  },
+  /* 👇 ADD NEW COUNTRIES HERE 👇 */
+};
+
+window.COUNTRIES = COUNTRIES;</pre>
+        <p class="muted small" style="line-height:1.6">
+          If you see <b>TWO</b> <code>};</code> lines with a comment between them, delete the extra one.
+        </p>
+        <p class="muted small" style="margin-top:14px;padding:10px;background:#0a0a12;border-radius:6px;line-height:1.7">
+          <b>Not sure what's wrong?</b><br>
+          1. Press <b>F12</b> in your browser<br>
+          2. Click the <b>Console</b> tab<br>
+          3. Look for a <span style="color:#fb7185">red</span> error mentioning <b>01-data-countries.js</b><br>
+          4. It will say the exact line number that's broken
+        </p>
+        <button onclick="location.reload(true)" class="opt" style="margin-top:14px;background:#8b5cf6;color:#fff;font-weight:700;text-align:center">Reload page</button>
+      </div>`;
+    return;
+  }
+
   const countryKeys = Object.keys(COUNTRIES);
   document.getElementById('view').innerHTML = `
     <div class="card" style="text-align:center;padding:24px">
@@ -325,7 +401,7 @@ function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) { S = JSON.parse(raw); activeTab = 'life'; render(); return true; }
-  } catch(e) {}
+  } catch(e) { console.error(e); }
   renderStart();
   return false;
 }
@@ -337,7 +413,7 @@ function reset() {
 }
 
 /* ============================================================
-   WINDOW BINDINGS — engine globals
+   WINDOW BINDINGS
    ============================================================ */
 window.ageUp = ageUp;
 window.chooseEvent = chooseEvent;
@@ -349,3 +425,4 @@ window.loadGame = loadGame;
 window.reset = reset;
 window.renderStart = renderStart;
 window.START = START;
+window.dataOK = dataOK;
