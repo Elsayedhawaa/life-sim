@@ -1,5 +1,5 @@
 /* ============================================================
-   VIEW: FAMILY, RELATIONSHIPS & HEALTH (v3 Massive Expansion)
+   VIEW: FAMILY, RELATIONSHIPS & HEALTH (v3 Massive Expansion FIXED)
    ============================================================
    Takes over the old family tab and dramatically expands it to 
    handle deep life simulation mechanics:
@@ -15,7 +15,7 @@ function ensureFamilyState() {
   if (!S) return;
   if (!Array.isArray(S.family)) S.family = [];
   if (!S.homeCountry) S.homeCountry = S.country || 'egy';
-  if (!S.familySubTab) S.familySubTab = 'relatives'; // relatives, partner, children, medical, vacation
+  if (!S.familySubTab) S.familySubTab = 'relatives';
 
   const tier = resolveFamilyTier(S.familyTier);
   const tierCfg = FAMILY_TIERS[tier] || FAMILY_TIERS.middle;
@@ -47,11 +47,12 @@ function ensureFamilyState() {
   }
 
   // Init Relationships & Partner
-  if (!S.datingStatus) S.datingStatus = 'single'; // single, dating, engaged, married
+  if (!S.datingStatus) S.datingStatus = 'single';
   if (typeof S.partner === 'undefined') S.partner = null;
   if (!Array.isArray(S.exes)) S.exes = [];
   if (!Array.isArray(S.childrenList)) S.childrenList = [];
-  if (typeof S.pregnantMonths === 'number') S.pregnantMonths = 0; // 0 means not pregnant
+  // FIXED BUG: Was === 'number', forced pregnancy to reset constantly
+  if (typeof S.pregnantMonths !== 'number') S.pregnantMonths = 0; 
 
   // Init Medical
   if (!S.medical) S.medical = { insurance: 'none', conditions: [] };
@@ -108,7 +109,6 @@ function familySetTab(tab) {
   S.familySubTab = tab;
   render();
 }
-window.familySetTab = familySetTab;
 
 /* ---------- HELPERS ---------- */
 function familyParents() { return (S.family || []).filter(function(m) { return m.role === 'Mother' || m.role === 'Father'; }); }
@@ -130,10 +130,12 @@ function familyLog(msg) {
   S.familyEventLog = S.familyEventLog.slice(0, 50);
 }
 
+function getExchangeRate() { return (C && C() && C().rate) || 1; }
+
 function getMedicalCost(baseCostUSD) {
     const ins = MEDICAL_INSURANCE_TIERS.find(i => i.id === S.medical.insurance) || MEDICAL_INSURANCE_TIERS[0];
     const covered = baseCostUSD * (ins.coveragePct / 100);
-    return Math.round((baseCostUSD - covered) * (C().rate || 1));
+    return Math.round((baseCostUSD - covered) * getExchangeRate());
 }
 
 /* ============================================================
@@ -183,7 +185,7 @@ function renderRelativesTab() {
   if (pendingReq.length) {
     html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">Pending Requests</h3>';
     pendingReq.forEach(function(r) {
-      const amtLocal = r.amount * (C().rate || 1);
+      const amtLocal = (r.amount || 0) * getExchangeRate();
       const amt = r.perMonth ? (money(amtLocal) + '/mo') : money(amtLocal);
       const canShare = r.shareable && siblings.length > 0;
       html += '<div style="padding:10px 0;border-bottom:1px solid #1a1a2a">' +
@@ -213,11 +215,10 @@ function renderRelativesTab() {
 
   if (familyPlayerAbroad() && livingParents.length) {
       const homeCountry = familyHomeCountry();
-      const info = REMITTANCE_COSTS[homeCountry] || REMITTANCE_COSTS.egy;
       html += '<div class="card"><h3>✈️ Remittance</h3>' +
-        '<p class="muted small">You live in ' + C().name + ' · family in ' + homeCountry.toUpperCase() + '.</p>';
+        '<p class="muted small">You live in ' + (C() ? C().name : 'Abroad') + ' · family in ' + homeCountry.toUpperCase() + '.</p>';
       const totalMonthlyUSD = Object.values(S.parentAllowances || {}).reduce(function(s, v) { return s + v; }, 0);
-      if (totalMonthlyUSD > 0) html += '<div class="row"><span>Committed monthly</span><b>' + money(totalMonthlyUSD * (C().rate || 1)) + '/mo</b></div>';
+      if (totalMonthlyUSD > 0) html += '<div class="row"><span>Committed monthly</span><b>' + money(totalMonthlyUSD * getExchangeRate()) + '/mo</b></div>';
       html += '<button class="opt" style="margin-top:8px;text-align:center;background:#3b82f6;color:#fff;font-weight:700" onclick="familySendRemittance()">Send one-time amount</button></div>';
   }
 
@@ -261,7 +262,7 @@ function familyRenderRelative(p) {
     '<div style="height:4px;background:#1a1a2a;border-radius:2px;margin-bottom:6px"><div style="height:100%;width:' + (p.health || 100) + '%;background:' + hColor + ';border-radius:2px"></div></div>' +
     '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:#888;margin-bottom:2px"><span>Bond</span><span>' + (p.bond || 70) + '%</span></div>' +
     '<div style="height:4px;background:#1a1a2a;border-radius:2px;margin-bottom:6px"><div style="height:100%;width:' + (p.bond || 70) + '%;background:' + bColor + ';border-radius:2px"></div></div>' +
-    (allowanceUSD > 0 ? '<div class="muted small" style="margin-bottom:6px">💰 Allowance: <b>' + money(allowanceUSD * (C().rate || 1)) + '/mo</b></div>' : '') +
+    (allowanceUSD > 0 ? '<div class="muted small" style="margin-bottom:6px">💰 Allowance: <b>' + money(allowanceUSD * getExchangeRate()) + '/mo</b></div>' : '') +
     '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">' +
     '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyCall(\'' + p.id + '\')">📞 Call</button>' +
     '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyVisit(\'' + p.id + '\')">☕ Visit</button>' +
@@ -274,23 +275,23 @@ function familyRenderRelative(p) {
   return html;
 }
 
-// Re-using the functions from the original script but adjusting for USD rates
 function familyHelpPrompt(memberId, defaultAmountUSD) {
-  const localDefault = Math.round(defaultAmountUSD * (C().rate || 1));
+  const localDefault = Math.round(defaultAmountUSD * getExchangeRate());
   const amount = Math.round(Number(prompt('How much to give?\n(You have ' + money(S.wealth) + ')', String(localDefault))));
   if (!amount || amount <= 0) return;
   familyHelpMoney(memberId, amount);
 }
+
 function familySetAllowance(memberId) {
   ensureFamilyState();
   const m = familyById(memberId);
   if (!m) return;
   const currentUSD = S.parentAllowances[memberId] || 0;
-  const currentLocal = Math.round(currentUSD * (C().rate || 1));
+  const currentLocal = Math.round(currentUSD * getExchangeRate());
   const input = prompt('Set monthly allowance for ' + m.name + '?\n(Current: ' + money(currentLocal) + '/month)\n(Enter 0 to stop)', String(currentLocal));
   if (input === null) return;
   const amtLocal = Math.max(0, Math.round(Number(input) || 0));
-  const amtUSD = Math.round(amtLocal / (C().rate || 1));
+  const amtUSD = Math.round(amtLocal / getExchangeRate());
   
   if (amtUSD === 0) delete S.parentAllowances[memberId];
   else S.parentAllowances[memberId] = amtUSD;
@@ -298,12 +299,13 @@ function familySetAllowance(memberId) {
   log('💰 Allowance for ' + m.name + ': ' + money(amtLocal) + '/month.');
   render();
 }
+
 function familySendRemittance() {
   ensureFamilyState();
   const homeCountry = familyHomeCountry();
   const info = REMITTANCE_COSTS[homeCountry] || REMITTANCE_COSTS.egy;
-  const minLocal = Math.round(info.minMonthly * (C().rate || 1));
-  const maxLocal = Math.round(info.maxMonthly * (C().rate || 1));
+  const minLocal = Math.round(info.minMonthly * getExchangeRate());
+  const maxLocal = Math.round(info.maxMonthly * getExchangeRate());
   
   const amt = Math.round(Number(prompt(
     'Send one-time money home.\nSuggested: ' + money(minLocal) + ' - ' + money(maxLocal) + '\nYou have ' + money(S.wealth),
@@ -329,11 +331,15 @@ function familySendRemittance() {
 function familyRenderInheritance() {
   const h = S.inheritedFamilyHome;
   if (!h) return '';
-  const valLocal = h.valueUSD * (C().rate || 1);
+  
+  // FIXED BUG: Safe fallback for v2 saved files using h.value instead of h.valueUSD
+  const baseValue = h.valueUSD || h.value || 0;
+  const valLocal = baseValue * getExchangeRate();
+
   let html = '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">🏠 Family Home</h3>' +
     '<div class="row"><span>Estimated value</span><b>' + money(valLocal) + '</b></div>' +
     '<div class="row"><span>Your share</span><b>' + Math.round(h.myPct * 100) + '% (' + money(valLocal * h.myPct) + ')</b></div>';
-  if (h.shares.length) {
+  if (h.shares && h.shares.length) {
     html += '<h4 style="font-size:.8rem;color:#fbbf24;margin-top:10px">Sibling shares</h4>';
     h.shares.forEach(function(s) {
       const sib = familyById(s.siblingId);
@@ -356,7 +362,7 @@ function renderPartnerTab() {
     if (S.datingStatus === 'single') {
         html += '<div class="card"><h3>Find a Partner</h3><p class="muted small">You are currently single.</p>';
         DATING_SOURCES.forEach(src => {
-             const costLocal = 200 * (C().rate || 1);
+             const costLocal = 200 * getExchangeRate();
              html += '<div class="row"><span>' + src.label + '</span>' +
                      '<button class="opt" style="padding:4px 8px" onclick="familyDate(\'' + src.id + '\')">Try (' + money(costLocal) + ')</button></div>';
         });
@@ -410,7 +416,7 @@ function renderPartnerCard() {
 }
 
 function familyDate(sourceId) {
-    const costLocal = 200 * (C().rate || 1);
+    const costLocal = 200 * getExchangeRate();
     if (S.wealth < costLocal) { log('Not enough cash for dates.'); render(); return; }
     S.wealth -= costLocal;
 
@@ -421,7 +427,6 @@ function familyDate(sourceId) {
         render(); return;
     }
 
-    // Found someone
     const names = S.gender === 'm' ? SIBLING_NAMES[S.country || 'egy'].f : SIBLING_NAMES[S.country || 'egy'].m;
     const name = names[Math.floor(Math.random() * names.length)];
     const age = Math.max(18, S.age + Math.floor(Math.random() * 8) - 4);
@@ -453,7 +458,7 @@ function familyBreakup() {
 }
 
 function familyPartnerAction(action) {
-    const costLocal = action === 'gift' ? 500 * (C().rate||1) : 100 * (C().rate||1);
+    const costLocal = action === 'gift' ? 500 * getExchangeRate() : 100 * getExchangeRate();
     if(S.wealth < costLocal) { log('Not enough cash.'); return; }
     S.wealth -= costLocal;
     const boost = action === 'gift' ? 8 : 4;
@@ -463,7 +468,6 @@ function familyPartnerAction(action) {
     render();
 }
 
-/* --- Wedding Planner --- */
 function familyOpenProposal() {
     S.weddingPlan = { shabka: 'standard', mahr: 'standard', tier: 'mid_hotel', finance: 'egalitarian_50_50' };
     render();
@@ -485,7 +489,7 @@ function renderWeddingPlanner() {
         html += '<h4 style="font-size:.8rem;color:#fb7185;margin-top:10px">Shabka (Gold/Ring)</h4><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">';
         Object.keys(trad.shabka).forEach(k => {
             const item = trad.shabka[k];
-            const cLocal = item.cost * (C().rate||1);
+            const cLocal = item.cost * getExchangeRate();
             html += '<button class="pill ' + (plan.shabka === k ? 'on' : '') + '" style="padding:6px;font-size:.65rem" onclick="familyWeddingSet(\'shabka\',\'' + k + '\')">' + item.label + '<br>' + money(cLocal) + '</button>';
         });
         html += '</div>';
@@ -493,7 +497,7 @@ function renderWeddingPlanner() {
         html += '<h4 style="font-size:.8rem;color:#fb7185;margin-top:10px">Mahr (Dowry)</h4><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">';
         Object.keys(trad.mahr).forEach(k => {
             const item = trad.mahr[k];
-            const cLocal = item.cost * (C().rate||1);
+            const cLocal = item.cost * getExchangeRate();
             html += '<button class="pill ' + (plan.mahr === k ? 'on' : '') + '" style="padding:6px;font-size:.65rem" onclick="familyWeddingSet(\'mahr\',\'' + k + '\')">' + item.label + '<br>' + money(cLocal) + '</button>';
         });
         html += '</div>';
@@ -501,7 +505,7 @@ function renderWeddingPlanner() {
 
     html += '<h4 style="font-size:.8rem;color:#fb7185;margin-top:10px">Wedding Ceremony</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
     WEDDING_TIERS.forEach(t => {
-        const cLocal = t.costUSD * (C().rate||1);
+        const cLocal = t.costUSD * getExchangeRate();
         html += '<button class="pill ' + (plan.tier === t.id ? 'on' : '') + '" style="padding:6px;font-size:.65rem" onclick="familyWeddingSet(\'tier\',\'' + t.id + '\')">' + t.label + '<br>' + money(cLocal) + '</button>';
     });
     html += '</div>';
@@ -512,14 +516,13 @@ function renderWeddingPlanner() {
     });
     html += '</select>';
 
-    // Calc total
     let totalLocal = 0;
     if(!isWestern) {
-        totalLocal += trad.shabka[plan.shabka].cost * (C().rate||1);
-        totalLocal += trad.mahr[plan.mahr].cost * (C().rate||1);
+        totalLocal += trad.shabka[plan.shabka].cost * getExchangeRate();
+        totalLocal += trad.mahr[plan.mahr].cost * getExchangeRate();
     }
     const wedTier = WEDDING_TIERS.find(t=>t.id === plan.tier);
-    totalLocal += wedTier.costUSD * (C().rate||1);
+    totalLocal += wedTier.costUSD * getExchangeRate();
 
     const canAfford = S.wealth >= totalLocal;
 
@@ -595,7 +598,7 @@ function renderChildrenTab() {
         html += '<div class="card"><h3>Your Children</h3>';
         S.childrenList.forEach(c => {
             const schTier = Object.values(CHILD_EXPENSE_TIERS.schooling).find(s => s.label === c.school) || CHILD_EXPENSE_TIERS.schooling.public;
-            const costLocal = (schTier.annualUSD || 0) * (C().rate || 1);
+            const costLocal = (schTier.annualUSD || 0) * getExchangeRate();
             
             html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
                     '<div class="row"><b>' + c.name + ' (' + c.gender.toUpperCase() + ')</b><span>Age ' + c.age + '</span></div>' +
@@ -605,7 +608,7 @@ function renderChildrenTab() {
                 html += '<select onchange="familyChangeSchool(\'' + c.id + '\', this.value)" style="margin-top:6px;width:100%;padding:4px;background:#0f0f1a;color:#fff;border:1px solid #25253a;font-size:.75rem">';
                 Object.keys(CHILD_EXPENSE_TIERS.schooling).forEach(sk => {
                     const st = CHILD_EXPENSE_TIERS.schooling[sk];
-                    html += '<option value="' + st.label + '" ' + (c.school === st.label ? 'selected' : '') + '>' + st.label + ' - ' + money(st.annualUSD * (C().rate||1)) + '/yr</option>';
+                    html += '<option value="' + st.label + '" ' + (c.school === st.label ? 'selected' : '') + '>' + st.label + ' - ' + money(st.annualUSD * getExchangeRate()) + '/yr</option>';
                 });
                 html += '</select>';
             }
@@ -617,14 +620,13 @@ function renderChildrenTab() {
     if (S.datingStatus === 'married' && S.pregnantMonths === 0) {
         html += '<div class="card"><h3>Family Planning</h3>';
         
-        // Show fertility based on age
         const ageToUse = S.gender === 'f' ? S.age : (S.partner ? S.partner.age : S.age);
         const fert = FERTILITY_RATES.find(f => ageToUse >= f.minAge && ageToUse <= f.maxAge) || FERTILITY_RATES[FERTILITY_RATES.length-1];
         
         html += '<div class="row"><span>Estimated Fertility Chance</span><b style="color:' + (fert.baseChance > 0.5 ? '#34d399' : '#fb7185') + '">' + Math.round(fert.baseChance*100) + '%</b></div>';
         html += '<button class="opt" style="margin-top:10px;text-align:center" onclick="familyTryBaby()">Try for Baby (Natural)</button>';
         
-        const ivfCostLocal = 8000 * (C().rate||1);
+        const ivfCostLocal = 8000 * getExchangeRate();
         html += '<button class="opt" style="margin-top:6px;text-align:center" onclick="familyIVF()">IVF Treatment (' + money(ivfCostLocal) + ', ' + Math.round(fert.ivfSuccess*100) + '% chance)</button>';
         html += '</div>';
     }
@@ -651,7 +653,7 @@ function familyTryBaby() {
 
 function familyIVF() {
     if(S.pregnantMonths > 0) return;
-    const ivfCostLocal = 8000 * (C().rate||1);
+    const ivfCostLocal = 8000 * getExchangeRate();
     if(S.wealth < ivfCostLocal) { log('Not enough cash for IVF.'); return; }
     S.wealth -= ivfCostLocal;
 
@@ -686,19 +688,17 @@ function familyChangeSchool(childId, schoolLabel) {
 function renderMedicalTab() {
     let html = '<div class="card"><h3>🏥 Health & Insurance</h3>';
     
-    // Insurance Selection
     const currentIns = MEDICAL_INSURANCE_TIERS.find(i => i.id === S.medical.insurance) || MEDICAL_INSURANCE_TIERS[0];
     html += '<div class="muted small" style="margin-bottom:4px">Current Medical Insurance:</div>';
     html += '<select onchange="medicalChangeInsurance(this.value)" style="width:100%;padding:6px;background:#0f0f1a;color:#fff;border:1px solid #25253a">';
     MEDICAL_INSURANCE_TIERS.forEach(ins => {
-        const costLocal = ins.premiumUSD * (C().rate||1);
+        const costLocal = ins.premiumUSD * getExchangeRate();
         html += '<option value="' + ins.id + '" ' + (S.medical.insurance === ins.id ? 'selected' : '') + '>' + ins.label + ' - ' + money(costLocal) + '/yr</option>';
     });
     html += '</select>';
     html += '<div class="muted small" style="margin-top:4px">Coverage: ' + currentIns.coveragePct + '% of major medical costs.</div>';
     html += '</div>';
 
-    // Conditions
     html += '<div class="card"><h3>Medical Conditions</h3>';
     if(S.medical.conditions.length === 0) {
         html += '<p class="muted small">You are currently healthy with no chronic conditions.</p>';
@@ -709,7 +709,6 @@ function renderMedicalTab() {
             html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">';
             html += '<div style="font-weight:700;color:#fb7185">⚠️ ' + cond.label + '</div>';
             
-            // Find treatments for this condition
             const treats = MEDICAL_TREATMENTS.filter(t => t.condition === cond.type);
             treats.forEach(t => {
                 const baseCost = getMedicalCost(t.costUSD);
@@ -773,13 +772,13 @@ function renderVacationTab() {
 
     html += '<h4 style="font-size:.85rem;color:#3b82f6;margin-top:10px">Local / Easy Access</h4>';
     VACATION_DESTINATIONS.egypt_local.forEach(dest => {
-        const costLocal = dest.costPerDayUSD * (C().rate || 1);
+        const costLocal = dest.costPerDayUSD * getExchangeRate();
         html += '<button class="opt" style="margin-top:6px;width:100%;text-align:left" onclick="vacationBook(\'' + dest.id + '\', false, ' + costLocal + ')">' + dest.label + ' - ' + money(costLocal) + '/day</button>';
     });
 
     html += '<h4 style="font-size:.85rem;color:#3b82f6;margin-top:10px">International</h4>';
     VACATION_DESTINATIONS.abroad.forEach(dest => {
-        const costLocal = dest.costPerDayUSD * (C().rate || 1);
+        const costLocal = dest.costPerDayUSD * getExchangeRate();
         const needsVisa = dest.visaRequired && (
             (dest.id === 'europe_schengen' && pp.shengenRequiresVisa) ||
             (dest.id === 'usa' && pp.usRequiresVisa)
@@ -803,9 +802,8 @@ function vacationBook(destId, needsVisa, costPerDayLocal) {
     }
 
     let totalCost = days * costPerDayLocal;
-    // Add flight cost if international
     const dest = VACATION_DESTINATIONS.abroad.find(d => d.id === destId);
-    if(dest) totalCost += 800 * (C().rate||1); // Rough flight cost
+    if(dest) totalCost += 800 * getExchangeRate();
 
     if(S.wealth < totalCost) {
         log('❌ Not enough cash. Need ' + money(totalCost) + '.');
@@ -813,14 +811,13 @@ function vacationBook(destId, needsVisa, costPerDayLocal) {
     }
 
     if(needsVisa) {
-        // Simple visa calculation based on wealth and job
         let visaChance = 0.3;
-        if(S.wealth > 10000 * (C().rate||1)) visaChance += 0.3;
+        if(S.wealth > 10000 * getExchangeRate()) visaChance += 0.3;
         if(S.job) visaChance += 0.3;
         
         if(Math.random() > visaChance) {
             log('🛑 Visa Application Denied. You lost the application fees.');
-            S.wealth -= 150 * (C().rate||1);
+            S.wealth -= 150 * getExchangeRate();
             fx({happiness: -5});
             render();
             return;
@@ -853,7 +850,7 @@ GameHooks.on('year', function() {
 
   /* ===== PREGNANCY & CHILDREN ===== */
   if(S.pregnantMonths > 0) {
-      S.pregnantMonths += 12; // A year passes, baby is born
+      S.pregnantMonths += 12; 
       S.pregnantMonths = 0;
       
       const gender = Math.random() < 0.5 ? 'm' : 'f';
@@ -868,7 +865,7 @@ GameHooks.on('year', function() {
           school: 'Public School'
       });
       
-      const hosp = MATERNITY_HOSPITALS[1]; // default private
+      const hosp = MATERNITY_HOSPITALS[1];
       const cost = getMedicalCost(hosp.costUSD);
       if(S.wealth >= cost) S.wealth -= cost;
       
@@ -877,12 +874,11 @@ GameHooks.on('year', function() {
       fx({happiness: 30});
   }
 
-  // Age children and charge school fees
   S.childrenList.forEach(c => {
       c.age += 1;
       const schTier = Object.values(CHILD_EXPENSE_TIERS.schooling).find(s => s.label === c.school);
       if(schTier && c.age >= 4 && c.age <= 18) {
-          const costLocal = schTier.annualUSD * (C().rate || 1);
+          const costLocal = schTier.annualUSD * getExchangeRate();
           if(S.wealth >= costLocal) {
               S.wealth -= costLocal;
           } else {
@@ -891,14 +887,13 @@ GameHooks.on('year', function() {
           }
       }
       
-      // Basic living expenses per child
-      const livingCostLocal = 200 * 12 * (C().rate || 1);
+      const livingCostLocal = 200 * 12 * getExchangeRate();
       if(S.wealth >= livingCostLocal) S.wealth -= livingCostLocal;
   });
 
   /* ===== SPOUSE & DATING ===== */
   if(S.partner) {
-      S.partner.bond -= 5; // Natural decay
+      S.partner.bond -= 5;
       if(S.datingStatus === 'married' && S.partner.bond < 20 && Math.random() < 0.1) {
           log('💔 ' + S.partner.name + ' asked for a divorce due to a low relationship bond.');
           familyDivorce();
@@ -906,15 +901,13 @@ GameHooks.on('year', function() {
   }
 
   /* ===== MEDICAL ===== */
-  // Pay insurance
   const ins = MEDICAL_INSURANCE_TIERS.find(i => i.id === S.medical.insurance) || MEDICAL_INSURANCE_TIERS[0];
   if(ins.premiumUSD > 0) {
-      const premLocal = ins.premiumUSD * (C().rate||1);
+      const premLocal = ins.premiumUSD * getExchangeRate();
       if(S.wealth >= premLocal) S.wealth -= premLocal;
-      else S.medical.insurance = 'none'; // Cancel if can't pay
+      else S.medical.insurance = 'none';
   }
 
-  // Random Medical Conditions
   if(S.age > 30 && Math.random() < 0.05) {
       const cond = MEDICAL_CONDITIONS[Math.floor(Math.random() * MEDICAL_CONDITIONS.length)];
       if(!S.medical.conditions.includes(cond.id)) {
@@ -956,7 +949,7 @@ GameHooks.on('year', function() {
 
       const amountUSD = Math.floor(tpl.amountUSD[0] + Math.random() * (tpl.amountUSD[1] - tpl.amountUSD[0]));
       const reason = tpl.reasons ? tpl.reasons[Math.floor(Math.random() * tpl.reasons.length)] : '';
-      const message = tpl.message.replace('{name}', p.name).replace('{amount}', money(amountUSD * (C().rate||1))).replace('{reason}', reason);
+      const message = tpl.message.replace('{name}', p.name).replace('{amount}', money(amountUSD * getExchangeRate())).replace('{reason}', reason);
 
       S.familyRequests.push({
         id: 'req_' + Math.random().toString(36).slice(2, 8),
@@ -1002,7 +995,7 @@ GameHooks.on('year', function() {
       if (Math.random() >= chance) return;
 
       const amountUSD = Math.floor(tpl.amountUSD[0] + Math.random() * (tpl.amountUSD[1] - tpl.amountUSD[0]));
-      const message = tpl.message.replace('{name}', sib.name).replace('{amount}', money(amountUSD * (C().rate||1)));
+      const message = tpl.message.replace('{name}', sib.name).replace('{amount}', money(amountUSD * getExchangeRate()));
       S.familyRequests.push({
         id: 'req_' + Math.random().toString(36).slice(2, 8),
         memberId: sib.id, memberName: sib.name, memberRole: sib.role,
@@ -1013,10 +1006,9 @@ GameHooks.on('year', function() {
     });
   });
 
-  /* Allowances deducted */
   const totalMonthlyUSD = Object.values(S.parentAllowances || {}).reduce(function(s, v) { return s + v; }, 0);
   if (totalMonthlyUSD > 0) {
-    const yearlyLocal = totalMonthlyUSD * 12 * (C().rate || 1);
+    const yearlyLocal = totalMonthlyUSD * 12 * getExchangeRate();
     if (S.wealth >= yearlyLocal) {
       S.wealth -= yearlyLocal;
       log('💰 Paid ' + money(yearlyLocal) + ' in parent allowances this year.');
@@ -1053,7 +1045,7 @@ function familyParentDies(p) {
 
   const livingParentsAfter = familyLivingParents();
   if (livingParentsAfter.length === 0 && !S.inheritedFamilyHome) {
-    const homeValueUSD = Math.max(50000, (p.wealth || 0) / (C().rate||1) * 3);
+    const homeValueUSD = Math.max(50000, (p.wealth || 0) / getExchangeRate() * 3);
     S.inheritedFamilyHome = {
       valueUSD: homeValueUSD,
       myPct: 1 / totalChildren,
@@ -1065,13 +1057,12 @@ function familyParentDies(p) {
 }
 
 /* ---------- REQUEST ACTIONS ---------- */
-// Redefined to use USD stored amounts properly via rate conversion
 function familyPayRequest(requestId) {
   ensureFamilyState();
   const idx = S.familyRequests.findIndex(function(r) { return r.id === requestId; });
   if (idx < 0) return;
   const r = S.familyRequests[idx];
-  const amtLocal = r.amount * (C().rate || 1);
+  const amtLocal = (r.amount || 0) * getExchangeRate();
   const totalAmount = r.perMonth ? amtLocal * 12 : amtLocal;
   
   if (S.wealth < totalAmount) { log('Not enough cash for ' + money(totalAmount) + '.'); render(); return; }
@@ -1099,7 +1090,7 @@ function familyShareRequest(requestId) {
   const siblings = familySiblings();
   if (!siblings.length) { familyPayRequest(requestId); return; }
 
-  const amtLocal = r.amount * (C().rate || 1);
+  const amtLocal = (r.amount || 0) * getExchangeRate();
   const totalAmount = r.perMonth ? amtLocal * 12 : amtLocal;
   const totalPeople = 1 + siblings.length;
   const myShare = Math.round(totalAmount / totalPeople);
@@ -1131,16 +1122,13 @@ function familyDeclineRequest(requestId) {
   render();
 }
 
-window.familyPayRequest = familyPayRequest;
-window.familyShareRequest = familyShareRequest;
-window.familyDeclineRequest = familyDeclineRequest;
-
 /* ---------- BUY/SELL INHERITED HOME ---------- */
 function familyBuySiblingShare(siblingId) {
   if (!S.inheritedFamilyHome) return;
   const share = S.inheritedFamilyHome.shares.find(function(s) { return s.siblingId === siblingId; });
   if (!share) return;
-  const cost = Math.round(S.inheritedFamilyHome.valueUSD * share.pct * (C().rate || 1));
+  const baseVal = S.inheritedFamilyHome.valueUSD || S.inheritedFamilyHome.value || 0;
+  const cost = Math.round(baseVal * share.pct * getExchangeRate());
   if (S.wealth < cost) { log('Need ' + money(cost) + ' to buy this share.'); render(); return; }
   S.wealth -= cost;
   S.inheritedFamilyHome.myPct += share.pct;
@@ -1150,7 +1138,8 @@ function familyBuySiblingShare(siblingId) {
 }
 function familySellMyHomeShare() {
   if (!S.inheritedFamilyHome) return;
-  const myShareValue = Math.round(S.inheritedFamilyHome.valueUSD * S.inheritedFamilyHome.myPct * (C().rate || 1));
+  const baseVal = S.inheritedFamilyHome.valueUSD || S.inheritedFamilyHome.value || 0;
+  const myShareValue = Math.round(baseVal * S.inheritedFamilyHome.myPct * getExchangeRate());
   if (!confirm('Sell your share of the family home for ' + money(myShareValue) + '?')) return;
   S.wealth += myShareValue;
   log('🏠 Sold your share of the family home: ' + money(myShareValue) + '.');
@@ -1159,13 +1148,7 @@ function familySellMyHomeShare() {
   render();
 }
 
-/* ---------- REGISTER ---------- */
-GameHooks.registerTab({ id: 'family', label: '❤️ Family', order: 3, view: familyView });
-/* ============================================================
-   ADDENDUM — missing functions from v2 view
-   (Called by buttons in Relatives tab and by familyHelpPrompt)
-   ============================================================ */
-
+/* ---------- GIFTS & OLD BUTTONS ---------- */
 function familyCall(memberId) {
   ensureFamilyState();
   const m = familyById(memberId);
@@ -1204,3 +1187,66 @@ function familyHelpMoney(memberId, amount) {
   log('💵 Helped ' + m.name + ' with ' + money(amount) + '.');
   render();
 }
+
+function familySendGift(memberId, giftId) {
+  ensureFamilyState();
+  const m = familyById(memberId);
+  if (!m) return;
+  const gift = GIFT_CATALOG.find(function(g) { return g.id === giftId; });
+  if (!gift) { log('Unknown gift.'); render(); return; }
+  
+  const costLocal = gift.cost * getExchangeRate();
+  const abroad = !!familyPlayerAbroad();
+  const shipCostLocal = abroad ? (((REMITTANCE_COSTS[familyHomeCountry()] || REMITTANCE_COSTS.egy).giftShip || 0) * getExchangeRate()) : 0;
+  const total = costLocal + shipCostLocal;
+  
+  if (S.wealth < total) { log('Not enough cash for ' + money(total) + '.'); render(); return; }
+  S.wealth -= total;
+  familyAddBond(m, gift.bond);
+  familyMarkContact(m);
+  fx({ happiness: 2 });
+  familyLog('🎁 Sent ' + gift.label + ' to ' + m.name);
+  log('🎁 Sent ' + m.name + ' a ' + gift.label + ' for ' + money(total) + '. Bond +' + gift.bond + '.');
+  render();
+}
+
+function familyOpenGiftPicker(memberId) {
+  const options = GIFT_CATALOG.map(function(g) { 
+      return g.id + ' = ' + g.label + ' (' + money(g.cost * getExchangeRate()) + ')'; 
+  }).join('\n');
+  const choice = prompt('Which gift to send?\n\n' + options + '\n\nEnter gift id:', 'phone');
+  if (!choice) return;
+  familySendGift(memberId, choice.trim());
+}
+
+/* ---------- REGISTER TAB & WINDOW EXPORTS ---------- */
+GameHooks.registerTab({ id: 'family', label: '❤️ Family', order: 3, view: familyView });
+
+// Expose all UI functions to global window for HTML buttons
+window.familySetTab = familySetTab;
+window.familyCall = familyCall;
+window.familyVisit = familyVisit;
+window.familyHelpMoney = familyHelpMoney;
+window.familyHelpPrompt = familyHelpPrompt;
+window.familySetAllowance = familySetAllowance;
+window.familySendRemittance = familySendRemittance;
+window.familyPayRequest = familyPayRequest;
+window.familyShareRequest = familyShareRequest;
+window.familyDeclineRequest = familyDeclineRequest;
+window.familyBuySiblingShare = familyBuySiblingShare;
+window.familySellMyHomeShare = familySellMyHomeShare;
+window.familySendGift = familySendGift;
+window.familyOpenGiftPicker = familyOpenGiftPicker;
+window.familyDate = familyDate;
+window.familyBreakup = familyBreakup;
+window.familyPartnerAction = familyPartnerAction;
+window.familyOpenProposal = familyOpenProposal;
+window.familyWeddingSet = familyWeddingSet;
+window.familyConfirmWedding = familyConfirmWedding;
+window.familyDivorce = familyDivorce;
+window.familyTryBaby = familyTryBaby;
+window.familyIVF = familyIVF;
+window.familyChangeSchool = familyChangeSchool;
+window.medicalChangeInsurance = medicalChangeInsurance;
+window.medicalTreat = medicalTreat;
+window.vacationBook = vacationBook;
