@@ -1161,3 +1161,46 @@ function familySellMyHomeShare() {
 
 /* ---------- REGISTER ---------- */
 GameHooks.registerTab({ id: 'family', label: '❤️ Family', order: 3, view: familyView });
+/* ============================================================
+   ADDENDUM — missing functions from v2 view
+   (Called by buttons in Relatives tab and by familyHelpPrompt)
+   ============================================================ */
+
+function familyCall(memberId) {
+  ensureFamilyState();
+  const m = familyById(memberId);
+  if (!m || m.alive === false) return;
+  familyMarkContact(m);
+  familyAddBond(m, FAMILY_BOND_BONUSES.call);
+  fx({ happiness: 2 });
+  log('📞 You called your ' + m.role.toLowerCase() + ', ' + m.name + '.');
+  familyLog('📞 Called ' + m.name);
+  render();
+}
+
+function familyVisit(memberId) {
+  ensureFamilyState();
+  const m = familyById(memberId);
+  if (!m || m.alive === false) return;
+  familyMarkContact(m);
+  familyAddBond(m, FAMILY_BOND_BONUSES.visit);
+  fx({ happiness: 4 });
+  log('☕ You visited ' + m.name + '.');
+  familyLog('☕ Visited ' + m.name);
+  render();
+}
+
+function familyHelpMoney(memberId, amount) {
+  ensureFamilyState();
+  const m = familyById(memberId);
+  if (!m || m.alive === false) return;
+  if (S.wealth < amount) { log('Not enough cash.'); render(); return; }
+  S.wealth -= amount;
+  m.wealth = (m.wealth || 0) + amount;
+  familyMarkContact(m);
+  familyAddBond(m, FAMILY_BOND_BONUSES.helpMoney);
+  fx({ happiness: 3 });
+  familyLog('💵 Helped ' + m.name + ' with ' + money(amount));
+  log('💵 Helped ' + m.name + ' with ' + money(amount) + '.');
+  render();
+}
