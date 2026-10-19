@@ -464,9 +464,44 @@ function carHireFromApplication(app) {
     years: 0
   };
 
+  /* Update CV */
   S.career.cv.experience += 1;
   S.career.cv.skill = Math.min(100, S.career.cv.skill + 5);
 
+  /* Milestone tracking */
+  if (S.career.jobHistory.length === 0) {
+    carAddMilestone('first_job', 'First Full-Time Job');
+  }
+
+  /* Add a colleague from the new job */
+  if (Math.random() < 0.4) {
+    carAddColleague(app.companyName);
+  }
+
+  /* Auto-enroll in National Social Insurance (mandatory for formal employees) */
+  if (S.bank && S.bank.pension && Array.isArray(S.bank.pension.active) && S.bank.pension.active.length === 0) {
+    if (typeof PENSION_PRODUCTS !== 'undefined') {
+      var pPool = PENSION_PRODUCTS[S.country] || PENSION_PRODUCTS.egy || [];
+      var nationalPlan = pPool.find(function(p) {
+        return p.id === 'national_pension' || (p.name && p.name.toLowerCase().indexOf('national') >= 0);
+      });
+      if (nationalPlan) {
+        var monthlyContrib = Math.round((app.baseSalary / 12) * (nationalPlan.contributionRate || 0.11));
+        S.bank.pension.active.push({
+          id: 'pen_national_' + Math.random().toString(36).slice(2, 6),
+          productId: nationalPlan.id,
+          name: nationalPlan.name,
+          provider: nationalPlan.provider || 'Government',
+          monthlyContribution: monthlyContrib,
+          value: 0,
+          startedYear: gameYear()
+        });
+        log('🏛 Auto-enrolled in ' + nationalPlan.name + ' (mandatory). Monthly: ' + money(monthlyContrib) + '.');
+      }
+    }
+  }
+
+  log('🎉 HIRED at ' + app.companyName + ' as ' + app.title + ' · ' + money(app.baseSalary) + '/year.');
   /* Milestone tracking */
   if (S.career.jobHistory.length === 0) {
     carAddMilestone('first_job', 'First Full-Time Job');
@@ -1558,10 +1593,8 @@ GameHooks.on('year', function() {
     j.tenure = (j.tenure || 0) + 1;
     if (S.job) S.job.years = j.tenure;
 
-    /* Salary payout */
-    S.wealth += j.salary;
+       /* Salary already paid by engine's ageUp(). Track for records only. */
     c.lastSalary = j.salary;
-
     /* Work mode effects */
     let perfChange = 0;
     let happinessChange = 0;
@@ -1584,8 +1617,7 @@ GameHooks.on('year', function() {
       S.wealth += overtimePay;
       log('💼 Overtime bonus: ' + money(overtimePay) + '.');
     }
-    j.performance = Math.max(0, Math.min(100, j.performance + perfChange));
-    fx({ happiness: happinessChange, health: healthChange });
+ j.performance 
 
     /* Imtyaz progress */
     if (c.imtyaz.monthsLeft > 0) {
