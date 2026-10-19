@@ -1780,8 +1780,4 @@ function carFireJobEvent(evt, j) {
     fx({ happiness: -10 });
   }
 }
-
-/* ============================================================
-   END OF CAREER VIEW
-   ============================================================ */
 GameHooks.registerTab({ id: 'career', label: '💼 Career', order: 2, view: careerView });
