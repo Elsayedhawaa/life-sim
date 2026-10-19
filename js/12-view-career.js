@@ -315,9 +315,16 @@ function carApplyToJob(trackId, companyIndex) {
     startLevel = 1;
   }
 
-  const level = track.levels[startLevel];
-  const baseSalary = Math.round(level.baseSalaryEGP * company.payMult);
-
+   const level = track.levels[startLevel];
+  let salaryMult = company.payMult;
+  if (track.id === 'bpo' && track.languageTiers) {
+    var detectedLang = 'en';
+    if ((S.languageScores && S.languageScores.goethe || 0) >= 3) detectedLang = 'de';
+    else if ((S.languageScores && S.languageScores.delf || 0) >= 3) detectedLang = 'fr';
+    var tier = track.languageTiers[detectedLang] || track.languageTiers.en;
+    salaryMult *= tier.payMult;
+  }
+  const baseSalary = Math.round(level.baseSalaryEGP * salaryMult);
   S.career.applications.push({
     id: 'app_' + Math.random().toString(36).slice(2, 8),
     trackId: trackId,
