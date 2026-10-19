@@ -888,7 +888,7 @@ GameHooks.on('year', function() {
   }
 
   /* ===== THANAWEYA GENERATION (age 18) ===== */
-  if (S.age === 18 && !S.thanaweyaScore) {
+  if (S.age >= 18 && !S.thanaweyaScore) {
       /* Base score on smarts */
       let baseScore = 50 + (S.smarts / 2); 
       
