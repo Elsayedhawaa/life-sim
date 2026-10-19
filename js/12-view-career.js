@@ -1865,3 +1865,49 @@ function carFireJobEvent(evt, j) {
   }
 }
 GameHooks.registerTab({ id: 'career', label: '💼 Career', order: 2, view: careerView });
+/* ============================================================
+   BULLETPROOF PILL HANDLERS — attach real click listeners
+   after every render, bypassing inline onclick entirely.
+   ============================================================ */
+GameHooks.on('render', function() {
+  if (typeof activeTab === 'undefined' || activeTab !== 'career') return;
+  var view = document.getElementById('view');
+  if (!view) return;
+  var pills = view.querySelectorAll('button.pill');
+  for (var i = 0; i < pills.length; i++) {
+    var btn = pills[i];
+    if (btn._careerBound) continue;
+    var onclick = btn.getAttribute('onclick') || '';
+    var match = onclick.match(/carSetTab\('([^']+)'\)/);
+    if (!match) continue;
+    var tabName = match[1];
+    btn._careerBound = true;
+    btn.removeAttribute('onclick');
+    (function(name) {
+      btn.addEventListener('click', function(ev) {
+        ev.preventDefault();
+        S.career.tab = name;
+        render();
+      });
+    })(tabName);
+  }
+
+  /* Also bind the "Find a job" button (.opt with carSetTab) */
+  var opts = view.querySelectorAll('button.opt[onclick*="carSetTab"]');
+  for (var j = 0; j < opts.length; j++) {
+    var ob = opts[j];
+    if (ob._careerBound) continue;
+    var oclick = ob.getAttribute('onclick') || '';
+    var om = oclick.match(/carSetTab\('([^']+)'\)/);
+    if (!om) continue;
+    ob._careerBound = true;
+    ob.removeAttribute('onclick');
+    (function(name) {
+      ob.addEventListener('click', function(ev) {
+        ev.preventDefault();
+        S.career.tab = name;
+        render();
+      });
+    })(om[1]);
+  }
+});
