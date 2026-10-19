@@ -1064,7 +1064,7 @@ GameHooks.on('year', function() {
       };
       S.uni = null;
     }
-
+  }
   /* ===== SCHOLARSHIP DECISIONS ===== */
   S.scholarshipApps = S.scholarshipApps.filter(function(app) {
     if (app.decisionYear > year) return true;
