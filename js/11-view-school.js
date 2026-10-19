@@ -147,49 +147,6 @@ function eduChooseTrack(trackId) {
   fx({ happiness: 2, smarts: 3 });
   render();
 }
-  
-  const fee = eduEGP(track.annualEGP);
-  if (fee > 0) {
-     if (S.wealth >= fee) {
-       S.wealth -= fee;
-     } else {
-       const familyWealth = eduFamilyWealth();
-       if (familyWealth >= fee) {
-          log('👨‍👩‍👧 Your family paid for your High School track.');
-       } else {
-          log('❌ Cannot afford ' + track.label + ' (' + money(fee) + '/year).');
-          render(); return;
-       }
-     }
-  }
-  
-  S.educationTrack = trackId;
-  log('📚 Chose ' + track.label + ' track. ' + (fee > 0 ? 'Cost: ' + money(fee) + '/year.' : 'Free.'));
-  fx({ happiness: 2, smarts: 3 });
-  render();
-}
-window.eduChooseTrack = eduChooseTrack;
-
-/* ---------- PRIVATE TUTORING (Darass Khososy) ---------- */
-window.eduHireTutors = function() {
-  if (!S.educationTrack || S.tutoring) return;
-  const track = eduTrackById(S.educationTrack);
-  const cost = eduEGP(track.tutoringCost);
-  
-  if (cost === 0) { log('Tutoring not needed for this track.'); return; }
-  
-  if (S.wealth >= cost) {
-    S.wealth -= cost;
-  } else {
-     const familyWealth = eduFamilyWealth();
-     if (familyWealth >= cost) {
-        log('👨‍👩‍👧 Your family paid for your private tutors.');
-     } else {
-        log('❌ Cannot afford private tutoring (' + money(cost) + '). Thanaweya will be much harder.');
-        render(); return;
-     }
-  }
-  
   S.tutoring = true;
   S.examStress = Math.min(100, S.examStress + 15);
   log('👨‍🏫 Hired private tutors for ' + money(cost) + '. Score potential increased, but stress is up!');
