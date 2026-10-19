@@ -1,14 +1,13 @@
 /* ============================================================
-   VIEW: FAMILY (v2 — replaces 13-view-family.js)
+   VIEW: FAMILY, RELATIONSHIPS & HEALTH (v3 Massive Expansion)
    ============================================================
-   Parents aging, health, requests, death, inheritance.
-   Siblings life stages, marriage, children, requests.
-   Remittances, visits with flight classes, gifts.
-   Share parent costs with siblings. Inherit home shares.
-
-   Registers tab 'family' at order 3 (takes over old slot).
-   IMPORTANT: 13-view-family.js must be REMOVED from index.html
-   or this file's tab won't be shown (duplicate id).
+   Takes over the old family tab and dramatically expands it to 
+   handle deep life simulation mechanics:
+   - Relatives: Parents & Siblings with deep traits, drama, inheritance.
+   - Dating & Marriage: Salonat, apps, shabka, mahr, wedding tiers, divorce & custody.
+   - Children: Fertility, IVF, birth tiers, diapers, schools, sports clubs.
+   - Medical: Conditions (mental, chronic, severe), insurance tiers, treatments.
+   - Vacations & Visas: Local resorts vs Schengen/USA with visa chances.
    ============================================================ */
 
 /* ---------- STATE MIGRATION ---------- */
@@ -16,10 +15,12 @@ function ensureFamilyState() {
   if (!S) return;
   if (!Array.isArray(S.family)) S.family = [];
   if (!S.homeCountry) S.homeCountry = S.country || 'egy';
+  if (!S.familySubTab) S.familySubTab = 'relatives'; // relatives, partner, children, medical, vacation
 
   const tier = resolveFamilyTier(S.familyTier);
   const tierCfg = FAMILY_TIERS[tier] || FAMILY_TIERS.middle;
 
+  // Init Base Family
   S.family.forEach(function(m) {
     if (!m.id) m.id = 'fam_' + Math.random().toString(36).slice(2, 8);
     if (typeof m.health !== 'number') m.health = 100;
@@ -28,6 +29,13 @@ function ensureFamilyState() {
     if (typeof m.age !== 'number') m.age = 30;
     if (typeof m.lastContactYear === 'undefined') m.lastContactYear = null;
     if (typeof m.deathYear === 'undefined') m.deathYear = null;
+    
+    // Assign Traits
+    if (!m.trait) {
+      const traits = Object.keys(PERSONALITY_TRAITS);
+      m.trait = traits[Math.floor(Math.random() * traits.length)];
+    }
+
     const isParent = (m.role === 'Mother' || m.role === 'Father');
     if (typeof m.wealth !== 'number') m.wealth = isParent ? tierCfg.parentWealth : 0;
     if (typeof m.income !== 'number') m.income = isParent ? tierCfg.parentIncome : 0;
@@ -38,13 +46,27 @@ function ensureFamilyState() {
     familyAddSiblings();
   }
 
+  // Init Relationships & Partner
+  if (!S.datingStatus) S.datingStatus = 'single'; // single, dating, engaged, married
+  if (typeof S.partner === 'undefined') S.partner = null;
+  if (!Array.isArray(S.exes)) S.exes = [];
+  if (!Array.isArray(S.childrenList)) S.childrenList = [];
+  if (typeof S.pregnantMonths === 'number') S.pregnantMonths = 0; // 0 means not pregnant
+
+  // Init Medical
+  if (!S.medical) S.medical = { insurance: 'none', conditions: [] };
+
+  // Trackers
   if (!Array.isArray(S.familyRequests)) S.familyRequests = [];
   if (!S.parentAllowances || typeof S.parentAllowances !== 'object') S.parentAllowances = {};
   if (typeof S.vacationDays !== 'number') S.vacationDays = 21;
   if (typeof S.vacationDaysUsedThisYear !== 'number') S.vacationDaysUsedThisYear = 0;
   if (typeof S.inheritedFamilyHome === 'undefined') S.inheritedFamilyHome = null;
   if (!Array.isArray(S.familyEventLog)) S.familyEventLog = [];
-  if (typeof S.familyVisitPlan === 'undefined') S.familyVisitPlan = null;
+  
+  // Planners
+  if (typeof S.weddingPlan === 'undefined') S.weddingPlan = null;
+  if (typeof S.vacationPlan === 'undefined') S.vacationPlan = null;
 }
 
 function familyAddSiblings() {
@@ -60,11 +82,16 @@ function familyAddSiblings() {
     usedNames.add(name);
     const ageOffset = Math.floor(Math.random() * 14) - 5;
     const siblingAge = Math.max(1, S.age + ageOffset);
+    
+    const traits = Object.keys(PERSONALITY_TRAITS);
+    const trait = traits[Math.floor(Math.random() * traits.length)];
+
     S.family.push({
       id: 'sib_' + Math.random().toString(36).slice(2, 8),
       role: gender === 'm' ? 'Brother' : 'Sister',
       name: name, age: siblingAge,
       bond: 60 + Math.floor(Math.random() * 30),
+      trait: trait,
       alive: true, health: 100, gender: gender, isSibling: true,
       lastContactYear: null, wealth: 0, income: 0, deathYear: null,
       lifeStage: siblingAge < 6 ? 'toddler' : siblingAge < 18 ? 'student' : siblingAge < 22 ? 'uni' : 'working',
@@ -76,17 +103,22 @@ function familyAddSiblings() {
 GameHooks.on('newGame', ensureFamilyState);
 GameHooks.on('migrate', ensureFamilyState);
 
+/* ---------- SUB-TABS ROUTING ---------- */
+function familySetTab(tab) {
+  S.familySubTab = tab;
+  render();
+}
+window.familySetTab = familySetTab;
+
 /* ---------- HELPERS ---------- */
 function familyParents() { return (S.family || []).filter(function(m) { return m.role === 'Mother' || m.role === 'Father'; }); }
 function familySiblings() { return (S.family || []).filter(function(m) { return m.isSibling === true && m.alive !== false; }); }
 function familyLivingParents() { return familyParents().filter(function(m) { return m.alive !== false; }); }
-function familyByRole(role) { return (S.family || []).find(function(m) { return m.role === role; }); }
 function familyById(id) { return (S.family || []).find(function(m) { return m.id === id; }); }
 function familyHealthColor(v) { return v > 70 ? '#34d399' : v > 40 ? '#fbbf24' : '#fb7185'; }
 function familyBondColor(v) { return v > 70 ? '#34d399' : v > 40 ? '#fbbf24' : '#fb7185'; }
 function familyPlayerAbroad() { return S.country && S.homeCountry && S.country !== S.homeCountry; }
 function familyHomeCountry() { return S.homeCountry || S.country || 'egy'; }
-
 function familyMarkContact(member) { if (member) member.lastContactYear = gameYear(); }
 function familyAddBond(member, amount) {
   if (!member) return;
@@ -98,172 +130,184 @@ function familyLog(msg) {
   S.familyEventLog = S.familyEventLog.slice(0, 50);
 }
 
-/* ---------- CONTACT ---------- */
-function familyCall(memberId) {
-  ensureFamilyState();
-  const m = familyById(memberId);
-  if (!m || m.alive === false) return;
-  familyMarkContact(m);
-  familyAddBond(m, FAMILY_BOND_BONUSES.call);
-  fx({ happiness: 2 });
-  log('📞 You called your ' + m.role.toLowerCase() + ', ' + m.name + '.');
-  familyLog('📞 Called ' + m.name);
-  render();
+function getMedicalCost(baseCostUSD) {
+    const ins = MEDICAL_INSURANCE_TIERS.find(i => i.id === S.medical.insurance) || MEDICAL_INSURANCE_TIERS[0];
+    const covered = baseCostUSD * (ins.coveragePct / 100);
+    return Math.round((baseCostUSD - covered) * (C().rate || 1));
 }
-function familyVisit(memberId) {
+
+/* ============================================================
+   VIEW ROUTER
+   ============================================================ */
+function familyView() {
   ensureFamilyState();
-  const m = familyById(memberId);
-  if (!m || m.alive === false) return;
-  familyMarkContact(m);
-  familyAddBond(m, FAMILY_BOND_BONUSES.visit);
-  fx({ happiness: 4 });
-  log('☕ You visited ' + m.name + '.');
-  familyLog('☕ Visited ' + m.name);
-  render();
+  if (!S) return '';
+  if (S.age < 6) return '<div class="card"><h3>Family</h3><p class="muted">You are too young to understand these complexities.</p></div>';
+
+  const tabs = [
+    ['relatives', '👨‍👩‍👧 Relatives'],
+    ['partner', '❤️ Partner'],
+    ['children', '👶 Children'],
+    ['medical', '🏥 Health'],
+    ['vacation', '✈️ Vacations']
+  ];
+
+  let html = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#fb718515 0%,transparent 100%);border-color:#fb7185">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<div><div class="muted small" style="letter-spacing:.06em;font-weight:700">LIFE · FAMILY & HEALTH</div>' +
+    '<div style="font-weight:700;font-size:1.05rem;margin-top:2px">Your Personal Life</div></div>' +
+    '<div style="font-size:2rem">❤️</div></div>' +
+    '<div style="display:flex;gap:4px;overflow-x:auto;margin-top:10px;scrollbar-width:none">' +
+    tabs.map(function(t) { return '<button class="pill ' + (S.familySubTab === t[0] ? 'on' : '') + '" style="padding:6px 10px;font-size:.72rem;white-space:nowrap" onclick="familySetTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') +
+    '</div></div>';
+
+  if (S.familySubTab === 'relatives') html += renderRelativesTab();
+  else if (S.familySubTab === 'partner') html += renderPartnerTab();
+  else if (S.familySubTab === 'children') html += renderChildrenTab();
+  else if (S.familySubTab === 'medical') html += renderMedicalTab();
+  else if (S.familySubTab === 'vacation') html += renderVacationTab();
+
+  return html;
 }
-function familyHelpMoney(memberId, amount) {
-  ensureFamilyState();
-  const m = familyById(memberId);
-  if (!m || m.alive === false) return;
-  if (S.wealth < amount) { log('Not enough cash.'); render(); return; }
-  S.wealth -= amount;
-  m.wealth = (m.wealth || 0) + amount;
-  familyMarkContact(m);
-  familyAddBond(m, FAMILY_BOND_BONUSES.helpMoney);
-  fx({ happiness: 3 });
-  familyLog('💵 Helped ' + m.name + ' with ' + money(amount));
-  log('💵 Helped ' + m.name + ' with ' + money(amount) + '.');
-  render();
+
+/* ============================================================
+   TAB 1: RELATIVES (Parents & Siblings)
+   ============================================================ */
+function renderRelativesTab() {
+  let html = '';
+  const livingParents = familyLivingParents();
+  const deadParents = familyParents().filter(function(m) { return m.alive === false; });
+  const siblings = familySiblings();
+  const pendingReq = S.familyRequests || [];
+
+  if (pendingReq.length) {
+    html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">Pending Requests</h3>';
+    pendingReq.forEach(function(r) {
+      const amtLocal = r.amount * (C().rate || 1);
+      const amt = r.perMonth ? (money(amtLocal) + '/mo') : money(amtLocal);
+      const canShare = r.shareable && siblings.length > 0;
+      html += '<div style="padding:10px 0;border-bottom:1px solid #1a1a2a">' +
+        '<div style="font-size:.9rem;margin-bottom:6px">' + r.message + '</div>' +
+        '<div class="muted small" style="margin-bottom:8px">Amount: <b style="color:#fbbf24">' + amt + '</b>' +
+        (r.perMonth ? ' (' + money(amtLocal * 12) + '/year)' : '') + '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;background:#34d399;color:#000;font-weight:700" onclick="familyPayRequest(\'' + r.id + '\')">Pay full</button>' +
+        (canShare ? '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyShareRequest(\'' + r.id + '\')">Split with siblings</button>' : '') +
+        '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;border-color:#fb7185;color:#fb7185" onclick="familyDeclineRequest(\'' + r.id + '\')">Decline</button>' +
+        '</div></div>';
+    });
+    html += '</div>';
+  }
+
+  if (livingParents.length) {
+    html += '<div class="card"><h3>Parents</h3>';
+    livingParents.forEach(function(p) { html += familyRenderRelative(p); });
+    html += '</div>';
+  }
+
+  if (siblings.length) {
+    html += '<div class="card"><h3>Siblings</h3>';
+    siblings.forEach(function(sib) { html += familyRenderRelative(sib); });
+    html += '</div>';
+  }
+
+  if (familyPlayerAbroad() && livingParents.length) {
+      const homeCountry = familyHomeCountry();
+      const info = REMITTANCE_COSTS[homeCountry] || REMITTANCE_COSTS.egy;
+      html += '<div class="card"><h3>✈️ Remittance</h3>' +
+        '<p class="muted small">You live in ' + C().name + ' · family in ' + homeCountry.toUpperCase() + '.</p>';
+      const totalMonthlyUSD = Object.values(S.parentAllowances || {}).reduce(function(s, v) { return s + v; }, 0);
+      if (totalMonthlyUSD > 0) html += '<div class="row"><span>Committed monthly</span><b>' + money(totalMonthlyUSD * (C().rate || 1)) + '/mo</b></div>';
+      html += '<button class="opt" style="margin-top:8px;text-align:center;background:#3b82f6;color:#fff;font-weight:700" onclick="familySendRemittance()">Send one-time amount</button></div>';
+  }
+
+  if (S.inheritedFamilyHome) html += familyRenderInheritance();
+
+  if (deadParents.length) {
+    html += '<div class="card" style="border-color:#666"><h3 style="color:#888">In Memoriam</h3>' +
+      deadParents.map(function(m) {
+        return '<div class="row"><span style="color:#888">' + m.name + ' (' + m.role + ')</span><span class="muted small">' + (m.deathYear || '?') + '</span></div>';
+      }).join('') + '</div>';
+  }
+
+  return html;
 }
-function familyHelpPrompt(memberId, defaultAmount) {
-  const amount = Math.round(Number(prompt('How much to give?\n(You have ' + money(S.wealth) + ')', String(defaultAmount || 20000))));
+
+function familyRenderRelative(p) {
+  const isParent = p.role === 'Mother' || p.role === 'Father';
+  const hColor = familyHealthColor(p.health || 100);
+  const bColor = familyBondColor(p.bond || 70);
+  const lastContact = p.lastContactYear ? ('last contact ' + (gameYear() - p.lastContactYear) + 'y ago') : 'never contacted';
+  const traitObj = PERSONALITY_TRAITS[p.trait] || PERSONALITY_TRAITS.balanced;
+  
+  let extraLabel = '';
+  if(isParent) {
+      extraLabel = p.age >= 85 ? 'Elderly' : p.age >= 75 ? 'Senior' : p.age >= 65 ? 'Retiring' : p.age >= 50 ? 'Middle-aged' : 'Active';
+  } else {
+      const stageLabel = { toddler: 'Toddler', student: 'Student', uni: 'University', working: 'Working', married: 'Married', parent: 'Parent' }[p.lifeStage] || 'Unknown';
+      const successLabel = { poor: 'Struggling', middle: 'Doing OK', successful: 'Successful' }[p.successLevel] || '';
+      extraLabel = stageLabel + ' · ' + successLabel;
+  }
+
+  const allowanceUSD = S.parentAllowances[p.id] || 0;
+
+  let html = '<div style="padding:12px 0;border-bottom:1px solid #1a1a2a">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">' +
+    '<div><div style="font-weight:700">' + p.name + ' · ' + p.role + '</div>' +
+    '<div class="muted small">age ' + p.age + ' · ' + extraLabel + '</div>' +
+    '<div class="muted small" style="color:#8b5cf6">Trait: ' + traitObj.label + '</div></div>' +
+    '<div class="muted" style="font-size:.7rem;text-align:right">' + lastContact + '</div></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:#888;margin-bottom:2px"><span>Health</span><span>' + (p.health || 100) + '%</span></div>' +
+    '<div style="height:4px;background:#1a1a2a;border-radius:2px;margin-bottom:6px"><div style="height:100%;width:' + (p.health || 100) + '%;background:' + hColor + ';border-radius:2px"></div></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:#888;margin-bottom:2px"><span>Bond</span><span>' + (p.bond || 70) + '%</span></div>' +
+    '<div style="height:4px;background:#1a1a2a;border-radius:2px;margin-bottom:6px"><div style="height:100%;width:' + (p.bond || 70) + '%;background:' + bColor + ';border-radius:2px"></div></div>' +
+    (allowanceUSD > 0 ? '<div class="muted small" style="margin-bottom:6px">💰 Allowance: <b>' + money(allowanceUSD * (C().rate || 1)) + '/mo</b></div>' : '') +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">' +
+    '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyCall(\'' + p.id + '\')">📞 Call</button>' +
+    '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyVisit(\'' + p.id + '\')">☕ Visit</button>' +
+    '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyHelpPrompt(\'' + p.id + '\', 500)">💵 Help</button>';
+    
+    if(isParent) html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familySetAllowance(\'' + p.id + '\')">💰 Allowance</button>';
+    else html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyOpenGiftPicker(\'' + p.id + '\')">🎁 Gift</button>';
+    
+  html += '</div></div>';
+  return html;
+}
+
+// Re-using the functions from the original script but adjusting for USD rates
+function familyHelpPrompt(memberId, defaultAmountUSD) {
+  const localDefault = Math.round(defaultAmountUSD * (C().rate || 1));
+  const amount = Math.round(Number(prompt('How much to give?\n(You have ' + money(S.wealth) + ')', String(localDefault))));
   if (!amount || amount <= 0) return;
   familyHelpMoney(memberId, amount);
 }
-window.familyCall = familyCall;
-window.familyVisit = familyVisit;
-window.familyHelpMoney = familyHelpMoney;
-window.familyHelpPrompt = familyHelpPrompt;
-
-/* ---------- REQUESTS ---------- */
-function familyPayRequest(requestId) {
-  ensureFamilyState();
-  const idx = S.familyRequests.findIndex(function(r) { return r.id === requestId; });
-  if (idx < 0) return;
-  const r = S.familyRequests[idx];
-  const isMonthly = r.perMonth === true;
-  const totalAmount = isMonthly ? r.amount * 12 : r.amount;
-  if (S.wealth < totalAmount) { log('Not enough cash for ' + money(totalAmount) + '.'); render(); return; }
-  S.wealth -= totalAmount;
-
-  if (isMonthly) {
-    S.parentAllowances[r.memberId] = (S.parentAllowances[r.memberId] || 0) + r.amount;
-    familyLog('💵 Committed ' + money(r.amount) + '/mo to ' + r.memberName);
-    log('💵 You committed ' + money(r.amount) + '/month to help ' + r.memberName + '.');
-  } else {
-    const m = familyById(r.memberId);
-    if (m) m.wealth = (m.wealth || 0) + r.amount;
-    familyLog('💵 Paid ' + money(r.amount) + ' to ' + r.memberName);
-    log('💵 You paid ' + money(r.amount) + ' for ' + r.memberName + "'s " + r.kind + '.');
-  }
-
-  const m = familyById(r.memberId);
-  if (m) { familyAddBond(m, FAMILY_BOND_BONUSES.helpMoney); familyMarkContact(m); }
-  fx({ happiness: 3 });
-  S.familyRequests.splice(idx, 1);
-  render();
-}
-
-function familyDeclineRequest(requestId) {
-  ensureFamilyState();
-  const idx = S.familyRequests.findIndex(function(r) { return r.id === requestId; });
-  if (idx < 0) return;
-  const r = S.familyRequests[idx];
-  const m = familyById(r.memberId);
-  if (m) familyAddBond(m, -10);
-  fx({ happiness: -2 });
-  familyLog('❌ Declined ' + r.memberName + "'s request");
-  log('❌ You declined ' + r.memberName + "'s request for " + money(r.amount) + '.');
-  S.familyRequests.splice(idx, 1);
-  render();
-}
-
-function familyShareRequest(requestId) {
-  ensureFamilyState();
-  const idx = S.familyRequests.findIndex(function(r) { return r.id === requestId; });
-  if (idx < 0) return;
-  const r = S.familyRequests[idx];
-  const siblings = familySiblings();
-  if (!siblings.length) { familyPayRequest(requestId); return; }
-
-  const totalPeople = 1 + siblings.length;
-  const isMonthly = r.perMonth === true;
-  const totalAmount = isMonthly ? r.amount * 12 : r.amount;
-  const myShare = Math.round(totalAmount / totalPeople);
-  if (S.wealth < myShare) { log('Not enough cash for your share (' + money(myShare) + ').'); render(); return; }
-  S.wealth -= myShare;
-
-  const contributions = [{ name: S.name, paid: myShare }];
-  siblings.forEach(function(sib) {
-    const chance = SIBLING_CONTRIBUTE_CHANCE[sib.successLevel] || SIBLING_CONTRIBUTE_CHANCE.middle;
-    if (Math.random() < chance) {
-      const theirShare = Math.round(totalAmount / totalPeople);
-      sib.wealth = Math.max(0, (sib.wealth || 0) - theirShare);
-      contributions.push({ name: sib.name, paid: theirShare });
-    } else {
-      contributions.push({ name: sib.name, paid: 0 });
-      familyAddBond(sib, -5);
-    }
-  });
-
-  const paid = contributions.reduce(function(sum, c) { return sum + c.paid; }, 0);
-  const summary = contributions.map(function(c) { return c.name + ': ' + money(c.paid); }).join(' · ');
-  familyLog('💵 Shared ' + r.memberName + "'s request · " + summary);
-  log('💵 Shared cost with siblings. ' + summary);
-
-  if (isMonthly) {
-    S.parentAllowances[r.memberId] = (S.parentAllowances[r.memberId] || 0) + Math.round(r.amount / totalPeople);
-  } else {
-    const m = familyById(r.memberId);
-    if (m) m.wealth = (m.wealth || 0) + paid;
-  }
-
-  const m = familyById(r.memberId);
-  if (m) { familyAddBond(m, FAMILY_BOND_BONUSES.shareHelp); familyMarkContact(m); }
-  fx({ happiness: 2 });
-  S.familyRequests.splice(idx, 1);
-  render();
-}
-
-window.familyPayRequest = familyPayRequest;
-window.familyDeclineRequest = familyDeclineRequest;
-window.familyShareRequest = familyShareRequest;
-
-/* ---------- ALLOWANCE ---------- */
 function familySetAllowance(memberId) {
   ensureFamilyState();
   const m = familyById(memberId);
   if (!m) return;
-  const current = S.parentAllowances[memberId] || 0;
-  const input = prompt('Set monthly allowance for ' + m.name + '?\n(Current: ' + money(current) + '/month)\n(Enter 0 to stop)', String(current));
+  const currentUSD = S.parentAllowances[memberId] || 0;
+  const currentLocal = Math.round(currentUSD * (C().rate || 1));
+  const input = prompt('Set monthly allowance for ' + m.name + '?\n(Current: ' + money(currentLocal) + '/month)\n(Enter 0 to stop)', String(currentLocal));
   if (input === null) return;
-  const amt = Math.max(0, Math.round(Number(input) || 0));
-  if (amt === 0) delete S.parentAllowances[memberId];
-  else S.parentAllowances[memberId] = amt;
-  familyLog('💰 Allowance for ' + m.name + ' set to ' + money(amt) + '/mo');
-  log('💰 Allowance for ' + m.name + ': ' + money(amt) + '/month.');
+  const amtLocal = Math.max(0, Math.round(Number(input) || 0));
+  const amtUSD = Math.round(amtLocal / (C().rate || 1));
+  
+  if (amtUSD === 0) delete S.parentAllowances[memberId];
+  else S.parentAllowances[memberId] = amtUSD;
+  familyLog('💰 Allowance for ' + m.name + ' set to ' + money(amtLocal) + '/mo');
+  log('💰 Allowance for ' + m.name + ': ' + money(amtLocal) + '/month.');
   render();
 }
-window.familySetAllowance = familySetAllowance;
-
-/* ---------- REMITTANCE ---------- */
 function familySendRemittance() {
   ensureFamilyState();
   const homeCountry = familyHomeCountry();
   const info = REMITTANCE_COSTS[homeCountry] || REMITTANCE_COSTS.egy;
+  const minLocal = Math.round(info.minMonthly * (C().rate || 1));
+  const maxLocal = Math.round(info.maxMonthly * (C().rate || 1));
+  
   const amt = Math.round(Number(prompt(
-    'Send one-time money home.\nSuggested: ' + money(info.minMonthly) + ' - ' + money(info.maxMonthly) + '\nYou have ' + money(S.wealth),
-    String(info.minMonthly * 3)
+    'Send one-time money home.\nSuggested: ' + money(minLocal) + ' - ' + money(maxLocal) + '\nYou have ' + money(S.wealth),
+    String(minLocal * 3)
   )));
   if (!amt || amt <= 0) return;
   if (S.wealth < amt) { log('Not enough cash.'); render(); return; }
@@ -282,338 +326,519 @@ function familySendRemittance() {
   render();
 }
 
-function familySendGift(memberId, giftId) {
-  ensureFamilyState();
-  const m = familyById(memberId);
-  if (!m) return;
-  const gift = GIFT_CATALOG.find(function(g) { return g.id === giftId; });
-  if (!gift) { log('Unknown gift.'); render(); return; }
-  const abroad = !!familyPlayerAbroad();
-  const shipCost = abroad ? ((REMITTANCE_COSTS[familyHomeCountry()] || REMITTANCE_COSTS.egy).giftShip || 0) : 0;
-  const total = gift.cost + shipCost;
-  if (S.wealth < total) { log('Not enough cash for ' + money(total) + '.'); render(); return; }
-  S.wealth -= total;
-  familyAddBond(m, gift.bond);
-  familyMarkContact(m);
-  fx({ happiness: 2 });
-  familyLog('🎁 Sent ' + gift.label + ' to ' + m.name);
-  log('🎁 Sent ' + m.name + ' a ' + gift.label + ' for ' + money(total) + '. Bond +' + gift.bond + '.');
-  render();
-}
-
-function familyOpenGiftPicker(memberId) {
-  const options = GIFT_CATALOG.map(function(g) { return g.id + ' = ' + g.label + ' (' + money(g.cost) + ')'; }).join('\n');
-  const choice = prompt('Which gift to send?\n\n' + options + '\n\nEnter gift id:', 'phone');
-  if (!choice) return;
-  familySendGift(memberId, choice.trim());
-}
-
-window.familySendRemittance = familySendRemittance;
-window.familySendGift = familySendGift;
-window.familyOpenGiftPicker = familyOpenGiftPicker;
-
-/* ---------- VISIT PLANNER ---------- */
-function familyOpenVisitPlanner() {
-  if (!familyPlayerAbroad()) {
-    const parents = familyLivingParents();
-    if (parents.length) familyVisit(parents[0].id);
-    return;
-  }
-  S.familyVisitPlan = { duration: 'medium', airClass: 'economy', hotel: 'family_home', gifts: 20000 };
-  render();
-}
-function familyVisitSet(key, value) {
-  if (!S.familyVisitPlan) return;
-  S.familyVisitPlan[key] = value;
-  render();
-}
-function familyVisitCancel() { S.familyVisitPlan = null; render(); }
-function familyVisitConfirm() {
-  const plan = S.familyVisitPlan;
-  if (!plan) return;
-  const homeCountry = familyHomeCountry();
-  const costs = REMITTANCE_COSTS[homeCountry] || REMITTANCE_COSTS.egy;
-  const airClass = VISIT_CLASSES.find(function(c) { return c.id === plan.airClass; }) || VISIT_CLASSES[0];
-  const duration = VISIT_DURATIONS.find(function(d) { return d.id === plan.duration; }) || VISIT_DURATIONS[1];
-  const hotel = VISIT_HOTELS.find(function(h) { return h.id === plan.hotel; }) || VISIT_HOTELS[0];
-
-  const airCost = Math.round(costs.airfareEconomy * airClass.mult);
-  const hotelCost = hotel.costPerNight * duration.days;
-  const giftCost = plan.gifts || 0;
-  const total = airCost + hotelCost + giftCost;
-
-  if (S.vacationDaysUsedThisYear + duration.days > S.vacationDays) {
-    log('❌ Manager refused: not enough vacation days left (' + (S.vacationDays - S.vacationDaysUsedThisYear) + ' of ' + S.vacationDays + ').');
-    render(); return;
-  }
-  if (S.wealth < total) { log('❌ Need ' + money(total) + ' for this visit.'); render(); return; }
-
-  S.wealth -= total;
-  S.vacationDaysUsedThisYear += duration.days;
-
-  familyLivingParents().forEach(function(p) { familyAddBond(p, FAMILY_BOND_BONUSES.holidayVisit); familyMarkContact(p); });
-  familySiblings().forEach(function(sib) { familyAddBond(sib, FAMILY_BOND_BONUSES.visit); familyMarkContact(sib); });
-  fx({ happiness: 8 });
-
-  familyLog('✈️ Visited home (' + duration.days + 'd, ' + airClass.label + ')');
-  log('✈️ You visited family in ' + homeCountry.toUpperCase() + ' for ' + duration.days + ' days. Cost: ' + money(total) + '. Bond +' + FAMILY_BOND_BONUSES.holidayVisit + '.');
-  S.familyVisitPlan = null;
-  render();
-}
-window.familyOpenVisitPlanner = familyOpenVisitPlanner;
-window.familyVisitSet = familyVisitSet;
-window.familyVisitCancel = familyVisitCancel;
-window.familyVisitConfirm = familyVisitConfirm;
-
-/* ---------- INHERITANCE HOME SHARES ---------- */
-function familyBuySiblingShare(siblingId) {
-  if (!S.inheritedFamilyHome) return;
-  const share = S.inheritedFamilyHome.shares.find(function(s) { return s.siblingId === siblingId; });
-  if (!share) return;
-  const cost = Math.round(S.inheritedFamilyHome.value * share.pct);
-  if (S.wealth < cost) { log('Need ' + money(cost) + ' to buy this share.'); render(); return; }
-  S.wealth -= cost;
-  const sib = familyById(siblingId);
-  if (sib) sib.wealth = (sib.wealth || 0) + cost;
-  S.inheritedFamilyHome.myPct += share.pct;
-  S.inheritedFamilyHome.shares = S.inheritedFamilyHome.shares.filter(function(s) { return s.siblingId !== siblingId; });
-  familyLog('🏠 Bought ' + (sib ? sib.name : 'sibling') + "'s home share");
-  log('🏠 Bought ' + (sib ? sib.name : "sibling") + "'s share of the family home for " + money(cost) + '.');
-  render();
-}
-function familySellMyHomeShare() {
-  if (!S.inheritedFamilyHome) return;
-  const myShareValue = Math.round(S.inheritedFamilyHome.value * S.inheritedFamilyHome.myPct);
-  if (!confirm('Sell your share of the family home for ' + money(myShareValue) + '?')) return;
-  S.wealth += myShareValue;
-  familyLog('🏠 Sold your share of family home for ' + money(myShareValue));
-  log('🏠 Sold your share of the family home: ' + money(myShareValue) + '.');
-  S.inheritedFamilyHome = null;
-  if (S.housing === 'parents') S.housing = 'rented';
-  render();
-}
-window.familyBuySiblingShare = familyBuySiblingShare;
-window.familySellMyHomeShare = familySellMyHomeShare;
-
-/* ---------- MAIN VIEW ---------- */
-function familyView() {
-  ensureFamilyState();
-  if (!S) return '';
-  if (S.age < 6) return '<div class="card"><h3>Family</h3><p class="muted">Nothing to see yet.</p></div>';
-
-  const livingParents = familyLivingParents();
-  const deadParents = familyParents().filter(function(m) { return m.alive === false; });
-  const siblings = familySiblings();
-  const spouse = familyByRole('Spouse');
-  const pendingReq = S.familyRequests || [];
-
-  let html = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#fb718515 0%,transparent 100%);border-color:#fb7185">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center">' +
-    '<div><div class="muted small" style="letter-spacing:.06em;font-weight:700">FAMILY · ' + C().name.toUpperCase() + '</div>' +
-    '<div style="font-weight:700;font-size:1.05rem;margin-top:2px">' + livingParents.length + ' parent(s) · ' + siblings.length + ' sibling(s)' + (spouse ? ' · married' : '') + '</div>' +
-    (pendingReq.length ? '<div style="color:#fbbf24;font-weight:700;margin-top:4px">⚠️ ' + pendingReq.length + ' pending request(s)</div>' : '') +
-    '</div><div style="font-size:2rem">👨‍👩‍👧</div></div></div>';
-
-  if (pendingReq.length) {
-    html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">Pending Requests</h3>';
-    pendingReq.forEach(function(r) {
-      const amt = r.perMonth ? (money(r.amount) + '/mo') : money(r.amount);
-      const canShare = r.shareable && siblings.length > 0;
-      html += '<div style="padding:10px 0;border-bottom:1px solid #1a1a2a">' +
-        '<div style="font-size:.9rem;margin-bottom:6px">' + r.message + '</div>' +
-        '<div class="muted small" style="margin-bottom:8px">Amount: <b style="color:#fbbf24">' + amt + '</b>' +
-        (r.perMonth ? ' (' + money(r.amount * 12) + '/year)' : '') + '</div>' +
-        '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
-        '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;background:#34d399;color:#000;font-weight:700" onclick="familyPayRequest(\'' + r.id + '\')">Pay full</button>' +
-        (canShare ? '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyShareRequest(\'' + r.id + '\')">Split with siblings</button>' : '') +
-        '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;border-color:#fb7185;color:#fb7185" onclick="familyDeclineRequest(\'' + r.id + '\')">Decline</button>' +
-        '</div></div>';
-    });
-    html += '</div>';
-  }
-
-  if (S.familyVisitPlan) html += familyRenderVisitPlanner();
-
-  if (livingParents.length) {
-    html += '<div class="card"><h3>Parents</h3>';
-    livingParents.forEach(function(p) { html += familyRenderParent(p); });
-    html += '</div>';
-  }
-
-  if (siblings.length) {
-    html += '<div class="card"><h3>Siblings</h3>';
-    siblings.forEach(function(sib) { html += familyRenderSibling(sib); });
-    html += '</div>';
-  }
-
-  if (familyPlayerAbroad() && livingParents.length) html += familyRenderRemittance();
-
-  if (familyPlayerAbroad()) {
-    html += '<div class="card">' +
-      '<h3>✈️ Visit Family</h3>' +
-      '<p class="muted small">You live in ' + C().name + '. Family in ' + familyHomeCountry().toUpperCase() + '.</p>' +
-      '<div class="row"><span>Vacation days left</span><b>' + (S.vacationDays - S.vacationDaysUsedThisYear) + ' / ' + S.vacationDays + '</b></div>' +
-      '<button class="opt" style="margin-top:8px;text-align:center;background:#8b5cf6;color:#fff;font-weight:700" onclick="familyOpenVisitPlanner()">Plan a visit</button>' +
-      '</div>';
-  }
-
-  if (S.inheritedFamilyHome) html += familyRenderInheritance();
-
-  if (spouse && spouse.alive !== false) {
-    html += '<div class="card"><h3>Spouse</h3>' +
-      '<div class="row"><span>' + spouse.name + '</span><span class="muted small">age ' + spouse.age + ' · bond ' + spouse.bond + '%</span></div>' +
-      '<p class="muted small" style="margin-top:8px">Marriage details live in the future Marriage system.</p></div>';
-  }
-
-  if (deadParents.length) {
-    html += '<div class="card" style="border-color:#666"><h3 style="color:#888">In Memoriam</h3>' +
-      deadParents.map(function(m) {
-        return '<div class="row"><span style="color:#888">' + m.name + ' (' + m.role + ')</span><span class="muted small">' + (m.deathYear || '?') + '</span></div>';
-      }).join('') + '</div>';
-  }
-
-  const recent = (S.familyEventLog || []).slice(0, 15);
-  if (recent.length) {
-    html += '<div class="card"><h3>Recent Family Events</h3>' +
-      recent.map(function(l) {
-        return '<div style="padding:5px 0;border-bottom:1px solid #1a1a2a;font-size:.85rem"><span class="muted mono" style="font-size:.72rem">Age ' + l.age + '</span> · ' + l.msg + '</div>';
-      }).join('') + '</div>';
-  }
-
-  return html;
-}
-
-function familyRenderParent(p) {
-  const hColor = familyHealthColor(p.health || 100);
-  const bColor = familyBondColor(p.bond || 70);
-  const lastContact = p.lastContactYear ? ('last contact ' + (gameYear() - p.lastContactYear) + 'y ago') : 'never contacted';
-  const ageBracket = p.age >= 85 ? 'Elderly' : p.age >= 75 ? 'Senior' : p.age >= 65 ? 'Retiring' : p.age >= 50 ? 'Middle-aged' : 'Active';
-  const allowance = S.parentAllowances[p.id] || 0;
-
-  return '<div style="padding:12px 0;border-bottom:1px solid #1a1a2a">' +
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">' +
-    '<div><div style="font-weight:700">' + p.name + ' · ' + p.role + '</div>' +
-    '<div class="muted small">age ' + p.age + ' · ' + ageBracket + '</div></div>' +
-    '<div class="muted" style="font-size:.7rem;text-align:right">' + lastContact + '</div></div>' +
-    '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:#888;margin-bottom:2px"><span>Health</span><span>' + (p.health || 100) + '%</span></div>' +
-    '<div style="height:4px;background:#1a1a2a;border-radius:2px;margin-bottom:6px"><div style="height:100%;width:' + (p.health || 100) + '%;background:' + hColor + ';border-radius:2px"></div></div>' +
-    '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:#888;margin-bottom:2px"><span>Bond</span><span>' + (p.bond || 70) + '%</span></div>' +
-    '<div style="height:4px;background:#1a1a2a;border-radius:2px;margin-bottom:6px"><div style="height:100%;width:' + (p.bond || 70) + '%;background:' + bColor + ';border-radius:2px"></div></div>' +
-    (allowance > 0 ? '<div class="muted small" style="margin-bottom:6px">💰 Monthly allowance: <b>' + money(allowance) + '/mo</b></div>' : '') +
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">' +
-    '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyCall(\'' + p.id + '\')">📞 Call</button>' +
-    '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyVisit(\'' + p.id + '\')">☕ Visit</button>' +
-    '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyHelpPrompt(\'' + p.id + '\', 20000)">💵 Help</button>' +
-    '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familySetAllowance(\'' + p.id + '\')">💰 Allowance</button>' +
-    '</div></div>';
-}
-
-function familyRenderSibling(sib) {
-  const bColor = familyBondColor(sib.bond || 70);
-  const lastContact = sib.lastContactYear ? ('last contact ' + (gameYear() - sib.lastContactYear) + 'y ago') : 'never contacted';
-  const stageLabel = { toddler: 'Toddler', student: 'Student', uni: 'University', working: 'Working', married: 'Married', parent: 'Parent' }[sib.lifeStage] || 'Unknown';
-  const successLabel = { poor: 'Struggling', middle: 'Doing OK', successful: 'Successful' }[sib.successLevel] || '';
-
-  return '<div style="padding:12px 0;border-bottom:1px solid #1a1a2a">' +
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
-    '<div><div style="font-weight:700">' + sib.name + ' · ' + sib.role + '</div>' +
-    '<div class="muted small">age ' + sib.age + ' · ' + stageLabel + ' · ' + successLabel + '</div>' +
-    (sib.spouse ? '<div class="muted small">Married to ' + sib.spouse.name + '</div>' : '') +
-    (sib.children ? '<div class="muted small">' + sib.children + ' child(ren)</div>' : '') +
-    '</div>' +
-    '<div class="muted" style="font-size:.7rem;text-align:right;flex-shrink:0">' + lastContact + '</div></div>' +
-    '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:#888;margin:8px 0 2px"><span>Bond</span><span>' + (sib.bond || 70) + '%</span></div>' +
-    '<div style="height:4px;background:#1a1a2a;border-radius:2px;margin-bottom:10px"><div style="height:100%;width:' + (sib.bond || 70) + '%;background:' + bColor + ';border-radius:2px"></div></div>' +
-    '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
-    '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyCall(\'' + sib.id + '\')">📞 Call</button>' +
-    '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyVisit(\'' + sib.id + '\')">☕ Visit</button>' +
-    '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyHelpPrompt(\'' + sib.id + '\', 15000)">💵 Help</button>' +
-    '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyOpenGiftPicker(\'' + sib.id + '\')">🎁 Gift</button>' +
-    '</div></div>';
-}
-
-function familyRenderRemittance() {
-  const homeCountry = familyHomeCountry();
-  const info = REMITTANCE_COSTS[homeCountry] || REMITTANCE_COSTS.egy;
-  let html = '<div class="card"><h3>✈️ Remittance</h3>' +
-    '<p class="muted small">You live in ' + C().name + ' · family in ' + homeCountry.toUpperCase() + '.</p>';
-  const totalMonthly = Object.values(S.parentAllowances || {}).reduce(function(s, v) { return s + v; }, 0);
-  if (totalMonthly > 0) html += '<div class="row"><span>Committed monthly to parents</span><b>' + money(totalMonthly) + '/mo</b></div>';
-  html += '<button class="opt" style="margin-top:8px;text-align:center;background:#3b82f6;color:#fff;font-weight:700" onclick="familySendRemittance()">Send one-time amount</button></div>';
-  return html;
-}
-
-function familyRenderVisitPlanner() {
-  const plan = S.familyVisitPlan;
-  if (!plan) return '';
-  const costs = REMITTANCE_COSTS[familyHomeCountry()] || REMITTANCE_COSTS.egy;
-  const duration = VISIT_DURATIONS.find(function(d) { return d.id === plan.duration; }) || VISIT_DURATIONS[1];
-  const airClass = VISIT_CLASSES.find(function(c) { return c.id === plan.airClass; }) || VISIT_CLASSES[0];
-  const hotel = VISIT_HOTELS.find(function(h) { return h.id === plan.hotel; }) || VISIT_HOTELS[0];
-
-  const airCost = Math.round(costs.airfareEconomy * airClass.mult);
-  const hotelCost = hotel.costPerNight * duration.days;
-  const total = airCost + hotelCost + (plan.gifts || 0);
-  const daysLeft = S.vacationDays - S.vacationDaysUsedThisYear;
-  const canGo = daysLeft >= duration.days && S.wealth >= total;
-
-  let html = '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">Plan Visit Home</h3>';
-
-  html += '<h4 style="font-size:.8rem;color:#8b5cf6;margin-top:10px">Duration</h4><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">';
-  VISIT_DURATIONS.forEach(function(d) {
-    html += '<button class="pill ' + (plan.duration === d.id ? 'on' : '') + '" style="padding:6px;font-size:.68rem" onclick="familyVisitSet(\'duration\',\'' + d.id + '\')">' + d.label + '</button>';
-  });
-  html += '</div>';
-
-  html += '<h4 style="font-size:.8rem;color:#8b5cf6;margin-top:10px">Flight class</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
-  VISIT_CLASSES.forEach(function(c) {
-    const cost = Math.round(costs.airfareEconomy * c.mult);
-    html += '<button class="pill ' + (plan.airClass === c.id ? 'on' : '') + '" style="padding:6px;font-size:.68rem" onclick="familyVisitSet(\'airClass\',\'' + c.id + '\')">' + c.label + '<br><span class="muted" style="font-size:.65rem">' + money(cost) + '</span></button>';
-  });
-  html += '</div>';
-
-  html += '<h4 style="font-size:.8rem;color:#8b5cf6;margin-top:10px">Accommodation</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
-  VISIT_HOTELS.forEach(function(h) {
-    html += '<button class="pill ' + (plan.hotel === h.id ? 'on' : '') + '" style="padding:6px;font-size:.68rem" onclick="familyVisitSet(\'hotel\',\'' + h.id + '\')">' + h.label + '<br><span class="muted" style="font-size:.65rem">' + (h.costPerNight ? money(h.costPerNight) + '/night' : 'free') + '</span></button>';
-  });
-  html += '</div>';
-
-  html += '<div class="card" style="background:#0f0f1a;margin-top:12px;padding:10px">' +
-    '<div class="row"><span>Flight (' + airClass.label + ')</span><b>' + money(airCost) + '</b></div>' +
-    '<div class="row"><span>Accommodation (' + duration.days + ' nights)</span><b>' + money(hotelCost) + '</b></div>' +
-    '<div class="row"><span>Gifts & spending</span><b>' + money(plan.gifts || 0) + '</b></div>' +
-    '<div class="row" style="border-top:1px solid #25253a;margin-top:6px;padding-top:6px"><b>Total</b><b style="color:#8b5cf6">' + money(total) + '</b></div>' +
-    '<div class="row"><span>Vacation days needed</span><b>' + duration.days + ' (have ' + daysLeft + ')</b></div>' +
-    '</div>';
-
-  html += '<div style="display:flex;gap:6px;margin-top:10px">' +
-    '<button class="opt" style="flex:1;padding:8px;font-size:.75rem;background:' + (canGo ? '#34d399' : '#25253a') + ';color:' + (canGo ? '#000' : '#666') + ';font-weight:700" ' + (canGo ? '' : 'disabled') + ' onclick="familyVisitConfirm()">Confirm visit</button>' +
-    '<button class="opt" style="flex:1;padding:8px;font-size:.75rem;border-color:#fb7185;color:#fb7185" onclick="familyVisitCancel()">Cancel</button>' +
-    '</div></div>';
-  return html;
-}
-
 function familyRenderInheritance() {
   const h = S.inheritedFamilyHome;
   if (!h) return '';
+  const valLocal = h.valueUSD * (C().rate || 1);
   let html = '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">🏠 Family Home</h3>' +
-    '<div class="row"><span>Estimated value</span><b>' + money(h.value) + '</b></div>' +
-    '<div class="row"><span>Your share</span><b>' + Math.round(h.myPct * 100) + '% (' + money(h.value * h.myPct) + ')</b></div>';
+    '<div class="row"><span>Estimated value</span><b>' + money(valLocal) + '</b></div>' +
+    '<div class="row"><span>Your share</span><b>' + Math.round(h.myPct * 100) + '% (' + money(valLocal * h.myPct) + ')</b></div>';
   if (h.shares.length) {
     html += '<h4 style="font-size:.8rem;color:#fbbf24;margin-top:10px">Sibling shares</h4>';
     h.shares.forEach(function(s) {
       const sib = familyById(s.siblingId);
       if (!sib) return;
-      const cost = Math.round(h.value * s.pct);
+      const cost = Math.round(valLocal * s.pct);
       html += '<div class="row"><span>' + sib.name + ' · ' + Math.round(s.pct * 100) + '%</span>' +
         '<button class="opt" style="padding:3px 8px;font-size:.7rem" onclick="familyBuySiblingShare(\'' + s.siblingId + '\')">Buy · ' + money(cost) + '</button></div>';
     });
   }
-  html += '<button class="opt" style="margin-top:10px;text-align:center;border-color:#fb7185;color:#fb7185" onclick="familySellMyHomeShare()">Sell my share · ' + money(h.value * h.myPct) + '</button></div>';
+  html += '<button class="opt" style="margin-top:10px;text-align:center;border-color:#fb7185;color:#fb7185" onclick="familySellMyHomeShare()">Sell my share · ' + money(valLocal * h.myPct) + '</button></div>';
   return html;
 }
 
-/* ---------- YEAR TICK ---------- */
+/* ============================================================
+   TAB 2: PARTNER (Dating, Marriage, Divorce)
+   ============================================================ */
+function renderPartnerTab() {
+    let html = '';
+    
+    if (S.datingStatus === 'single') {
+        html += '<div class="card"><h3>Find a Partner</h3><p class="muted small">You are currently single.</p>';
+        DATING_SOURCES.forEach(src => {
+             const costLocal = 200 * (C().rate || 1);
+             html += '<div class="row"><span>' + src.label + '</span>' +
+                     '<button class="opt" style="padding:4px 8px" onclick="familyDate(\'' + src.id + '\')">Try (' + money(costLocal) + ')</button></div>';
+        });
+        html += '</div>';
+    } 
+    else if (S.datingStatus === 'dating') {
+        html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">In a Relationship</h3>';
+        html += renderPartnerCard();
+        html += '<button class="opt" style="margin-top:10px;text-align:center;background:#fb7185;color:#fff" onclick="familyOpenProposal()">Propose Marriage</button>';
+        html += '<button class="opt" style="margin-top:6px;text-align:center;border-color:#fb7185;color:#fb7185" onclick="familyBreakup()">Break Up</button>';
+        html += '</div>';
+
+        if(S.weddingPlan) html += renderWeddingPlanner();
+    }
+    else if (S.datingStatus === 'married') {
+        html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">Marriage</h3>';
+        html += renderPartnerCard();
+        html += '<div class="row" style="margin-top:8px"><span>Finance Setup</span><b>' + (S.partner.financeModel || 'Traditional') + '</b></div>';
+        
+        html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">';
+        html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyPartnerAction(\'date\')">Romantic Date</button>';
+        html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyPartnerAction(\'gift\')">Buy Gift</button>';
+        html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyTryBaby()">Try for Baby</button>';
+        html += '</div>';
+        
+        html += '<button class="opt" style="margin-top:12px;text-align:center;border-color:#fb7185;color:#fb7185" onclick="familyDivorce()">Ask for Divorce</button>';
+        html += '</div>';
+    }
+
+    if (S.exes && S.exes.length > 0) {
+        html += '<div class="card"><h3>Exes</h3>';
+        S.exes.forEach(ex => {
+            html += '<div class="row"><span>' + ex.name + '</span><span class="muted small">' + ex.reason + '</span></div>';
+        });
+        html += '</div>';
+    }
+
+    return html;
+}
+
+function renderPartnerCard() {
+    const p = S.partner;
+    if(!p) return '';
+    const bColor = familyBondColor(p.bond);
+    return '<div>' +
+           '<div style="font-weight:700;font-size:1.1rem">' + p.name + '</div>' +
+           '<div class="muted small">Age ' + p.age + ' · Met via ' + p.source + '</div>' +
+           '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:#888;margin:8px 0 2px"><span>Bond</span><span>' + p.bond + '%</span></div>' +
+           '<div style="height:4px;background:#1a1a2a;border-radius:2px;margin-bottom:6px"><div style="height:100%;width:' + p.bond + '%;background:' + bColor + ';border-radius:2px"></div></div>' +
+           '</div>';
+}
+
+function familyDate(sourceId) {
+    const costLocal = 200 * (C().rate || 1);
+    if (S.wealth < costLocal) { log('Not enough cash for dates.'); render(); return; }
+    S.wealth -= costLocal;
+
+    const src = DATING_SOURCES.find(s => s.id === sourceId);
+    if(Math.random() > src.matchChance) {
+        log('❌ No luck this time on ' + src.label + '.');
+        fx({happiness: -2});
+        render(); return;
+    }
+
+    // Found someone
+    const names = S.gender === 'm' ? SIBLING_NAMES[S.country || 'egy'].f : SIBLING_NAMES[S.country || 'egy'].m;
+    const name = names[Math.floor(Math.random() * names.length)];
+    const age = Math.max(18, S.age + Math.floor(Math.random() * 8) - 4);
+    
+    S.partner = {
+        name: name,
+        age: age,
+        bond: 50 + Math.floor(Math.random() * 30),
+        source: src.label,
+        familyApproval: src.familyApproval
+    };
+    S.datingStatus = 'dating';
+    log('❤️ You started dating ' + name + ' (Age ' + age + ') via ' + src.label + '.');
+    familyLog('Started dating ' + name);
+    fx({happiness: 10});
+    render();
+}
+
+function familyBreakup() {
+    if(!confirm('Are you sure you want to break up with ' + S.partner.name + '?')) return;
+    S.exes.push({ name: S.partner.name, reason: 'Broke up while dating' });
+    log('💔 You broke up with ' + S.partner.name + '.');
+    familyLog('Broke up with ' + S.partner.name);
+    S.partner = null;
+    S.datingStatus = 'single';
+    S.weddingPlan = null;
+    fx({happiness: -15});
+    render();
+}
+
+function familyPartnerAction(action) {
+    const costLocal = action === 'gift' ? 500 * (C().rate||1) : 100 * (C().rate||1);
+    if(S.wealth < costLocal) { log('Not enough cash.'); return; }
+    S.wealth -= costLocal;
+    const boost = action === 'gift' ? 8 : 4;
+    S.partner.bond = Math.min(100, S.partner.bond + boost);
+    fx({happiness: 3});
+    log('❤️ Spent time/' + action + ' with ' + S.partner.name + '. Bond +' + boost + '.');
+    render();
+}
+
+/* --- Wedding Planner --- */
+function familyOpenProposal() {
+    S.weddingPlan = { shabka: 'standard', mahr: 'standard', tier: 'mid_hotel', finance: 'egalitarian_50_50' };
+    render();
+}
+function familyWeddingSet(key, val) {
+    if(S.weddingPlan) S.weddingPlan[key] = val;
+    render();
+}
+
+function renderWeddingPlanner() {
+    const plan = S.weddingPlan;
+    if(!plan) return '';
+    const trad = MARRIAGE_TRADITIONS[S.country] || MARRIAGE_TRADITIONS.egy;
+    const isWestern = !trad.mahr;
+
+    let html = '<div class="card" style="border-color:#fb7185;margin-top:10px"><h3 style="color:#fb7185">💍 Plan Proposal & Wedding</h3>';
+
+    if(!isWestern) {
+        html += '<h4 style="font-size:.8rem;color:#fb7185;margin-top:10px">Shabka (Gold/Ring)</h4><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">';
+        Object.keys(trad.shabka).forEach(k => {
+            const item = trad.shabka[k];
+            const cLocal = item.cost * (C().rate||1);
+            html += '<button class="pill ' + (plan.shabka === k ? 'on' : '') + '" style="padding:6px;font-size:.65rem" onclick="familyWeddingSet(\'shabka\',\'' + k + '\')">' + item.label + '<br>' + money(cLocal) + '</button>';
+        });
+        html += '</div>';
+
+        html += '<h4 style="font-size:.8rem;color:#fb7185;margin-top:10px">Mahr (Dowry)</h4><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">';
+        Object.keys(trad.mahr).forEach(k => {
+            const item = trad.mahr[k];
+            const cLocal = item.cost * (C().rate||1);
+            html += '<button class="pill ' + (plan.mahr === k ? 'on' : '') + '" style="padding:6px;font-size:.65rem" onclick="familyWeddingSet(\'mahr\',\'' + k + '\')">' + item.label + '<br>' + money(cLocal) + '</button>';
+        });
+        html += '</div>';
+    }
+
+    html += '<h4 style="font-size:.8rem;color:#fb7185;margin-top:10px">Wedding Ceremony</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
+    WEDDING_TIERS.forEach(t => {
+        const cLocal = t.costUSD * (C().rate||1);
+        html += '<button class="pill ' + (plan.tier === t.id ? 'on' : '') + '" style="padding:6px;font-size:.65rem" onclick="familyWeddingSet(\'tier\',\'' + t.id + '\')">' + t.label + '<br>' + money(cLocal) + '</button>';
+    });
+    html += '</div>';
+
+    html += '<h4 style="font-size:.8rem;color:#fb7185;margin-top:10px">Post-Marriage Finance</h4><select onchange="familyWeddingSet(\'finance\', this.value)" style="width:100%;padding:6px;background:#0f0f1a;color:#fff;border:1px solid #25253a">';
+    MARRIAGE_FINANCE_MODELS.forEach(m => {
+        html += '<option value="' + m.id + '" ' + (plan.finance === m.id ? 'selected' : '') + '>' + m.label + '</option>';
+    });
+    html += '</select>';
+
+    // Calc total
+    let totalLocal = 0;
+    if(!isWestern) {
+        totalLocal += trad.shabka[plan.shabka].cost * (C().rate||1);
+        totalLocal += trad.mahr[plan.mahr].cost * (C().rate||1);
+    }
+    const wedTier = WEDDING_TIERS.find(t=>t.id === plan.tier);
+    totalLocal += wedTier.costUSD * (C().rate||1);
+
+    const canAfford = S.wealth >= totalLocal;
+
+    html += '<div class="card" style="background:#0f0f1a;margin-top:12px;padding:10px">';
+    html += '<div class="row"><b>Total Wedding Cost</b><b style="color:#fb7185">' + money(totalLocal) + '</b></div>';
+    html += '<p class="muted small">As the groom, you typically bear these upfront costs in traditional settings. If playing as a woman, this may represent your family\'s contribution or shared costs.</p>';
+    html += '</div>';
+
+    html += '<button class="opt" style="margin-top:10px;text-align:center;background:' + (canAfford ? '#fb7185' : '#25253a') + ';color:' + (canAfford ? '#fff' : '#666') + '" ' + (canAfford ? '' : 'disabled') + ' onclick="familyConfirmWedding(' + totalLocal + ')">Confirm Marriage</button>';
+
+    html += '</div>';
+    return html;
+}
+
+function familyConfirmWedding(totalCost) {
+    if(S.wealth < totalCost) return;
+    S.wealth -= totalCost;
+    
+    const wedTier = WEDDING_TIERS.find(t=>t.id === S.weddingPlan.tier);
+    const financeModel = MARRIAGE_FINANCE_MODELS.find(m=>m.id === S.weddingPlan.finance).label;
+
+    S.partner.financeModel = financeModel;
+    S.partner.bond = 100;
+    S.datingStatus = 'married';
+    S.weddingPlan = null;
+
+    fx({happiness: 30, social: wedTier.socialBoost});
+    log('💍 You married ' + S.partner.name + ' in a ' + wedTier.label + '!');
+    familyLog('Married ' + S.partner.name);
+    render();
+}
+
+function familyDivorce() {
+    const isWestern = S.country === 'usa' || S.country === 'uk' || S.country === 'can' || S.country === 'deu';
+    let assetSplit = 0;
+    
+    if(isWestern) {
+        assetSplit = Math.floor(S.wealth / 2);
+    } else {
+        assetSplit = Math.floor(S.wealth * 0.15); // Nafaqa/Mut'ah approximation
+    }
+
+    if(!confirm('Divorcing ' + S.partner.name + ' will cost you approximately ' + money(assetSplit) + ' in legal/settlement fees. Proceed?')) return;
+
+    S.wealth -= assetSplit;
+    S.exes.push({ name: S.partner.name, reason: 'Divorced. Cost: ' + money(assetSplit) });
+    
+    log('💔 You divorced ' + S.partner.name + '. Asset split/alimony cost: ' + money(assetSplit) + '.');
+    familyLog('Divorced ' + S.partner.name);
+    
+    S.partner = null;
+    S.datingStatus = 'single';
+    fx({happiness: -30});
+    render();
+}
+
+/* ============================================================
+   TAB 3: CHILDREN
+   ============================================================ */
+function renderChildrenTab() {
+    let html = '';
+
+    if (S.datingStatus !== 'married' && S.childrenList.length === 0) {
+        return '<div class="card"><h3>Children</h3><p class="muted small">You need a partner to have children traditionally in this simulation.</p></div>';
+    }
+
+    if(S.pregnantMonths > 0) {
+        html += '<div class="card" style="border-color:#fbbf24;background:#fbbf2415"><h3 style="color:#fbbf24">👶 Expecting!</h3>' +
+                '<p>Pregnancy is at ' + S.pregnantMonths + ' months. The baby will arrive soon.</p></div>';
+    }
+
+    if (S.childrenList.length > 0) {
+        html += '<div class="card"><h3>Your Children</h3>';
+        S.childrenList.forEach(c => {
+            const schTier = Object.values(CHILD_EXPENSE_TIERS.schooling).find(s => s.label === c.school) || CHILD_EXPENSE_TIERS.schooling.public;
+            const costLocal = (schTier.annualUSD || 0) * (C().rate || 1);
+            
+            html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
+                    '<div class="row"><b>' + c.name + ' (' + c.gender.toUpperCase() + ')</b><span>Age ' + c.age + '</span></div>' +
+                    '<div class="muted small">School: ' + c.school + ' (' + money(costLocal) + '/yr)</div>';
+            
+            if(c.age >= 4 && c.age <= 18) {
+                html += '<select onchange="familyChangeSchool(\'' + c.id + '\', this.value)" style="margin-top:6px;width:100%;padding:4px;background:#0f0f1a;color:#fff;border:1px solid #25253a;font-size:.75rem">';
+                Object.keys(CHILD_EXPENSE_TIERS.schooling).forEach(sk => {
+                    const st = CHILD_EXPENSE_TIERS.schooling[sk];
+                    html += '<option value="' + st.label + '" ' + (c.school === st.label ? 'selected' : '') + '>' + st.label + ' - ' + money(st.annualUSD * (C().rate||1)) + '/yr</option>';
+                });
+                html += '</select>';
+            }
+            html += '</div>';
+        });
+        html += '</div>';
+    }
+
+    if (S.datingStatus === 'married' && S.pregnantMonths === 0) {
+        html += '<div class="card"><h3>Family Planning</h3>';
+        
+        // Show fertility based on age
+        const ageToUse = S.gender === 'f' ? S.age : (S.partner ? S.partner.age : S.age);
+        const fert = FERTILITY_RATES.find(f => ageToUse >= f.minAge && ageToUse <= f.maxAge) || FERTILITY_RATES[FERTILITY_RATES.length-1];
+        
+        html += '<div class="row"><span>Estimated Fertility Chance</span><b style="color:' + (fert.baseChance > 0.5 ? '#34d399' : '#fb7185') + '">' + Math.round(fert.baseChance*100) + '%</b></div>';
+        html += '<button class="opt" style="margin-top:10px;text-align:center" onclick="familyTryBaby()">Try for Baby (Natural)</button>';
+        
+        const ivfCostLocal = 8000 * (C().rate||1);
+        html += '<button class="opt" style="margin-top:6px;text-align:center" onclick="familyIVF()">IVF Treatment (' + money(ivfCostLocal) + ', ' + Math.round(fert.ivfSuccess*100) + '% chance)</button>';
+        html += '</div>';
+    }
+
+    return html;
+}
+
+function familyTryBaby() {
+    if(S.pregnantMonths > 0) { log('Already expecting!'); return; }
+    const ageToUse = S.gender === 'f' ? S.age : (S.partner ? S.partner.age : S.age);
+    const fert = FERTILITY_RATES.find(f => ageToUse >= f.minAge && ageToUse <= f.maxAge) || FERTILITY_RATES[FERTILITY_RATES.length-1];
+
+    if(Math.random() < fert.baseChance) {
+        S.pregnantMonths = 1;
+        log('🎉 Success! You and ' + S.partner.name + ' are expecting a baby.');
+        familyLog('Partner became pregnant');
+        fx({happiness: 20});
+    } else {
+        log('No luck this month trying for a baby. Try again later.');
+        fx({happiness: -2});
+    }
+    render();
+}
+
+function familyIVF() {
+    if(S.pregnantMonths > 0) return;
+    const ivfCostLocal = 8000 * (C().rate||1);
+    if(S.wealth < ivfCostLocal) { log('Not enough cash for IVF.'); return; }
+    S.wealth -= ivfCostLocal;
+
+    const ageToUse = S.gender === 'f' ? S.age : (S.partner ? S.partner.age : S.age);
+    const fert = FERTILITY_RATES.find(f => ageToUse >= f.minAge && ageToUse <= f.maxAge) || FERTILITY_RATES[FERTILITY_RATES.length-1];
+
+    if(Math.random() < fert.ivfSuccess) {
+        S.pregnantMonths = 1;
+        log('🎉 The IVF was successful! Expecting a baby.');
+        familyLog('Successful IVF');
+        fx({happiness: 25});
+    } else {
+        log('😔 The IVF cycle failed. Cost: ' + money(ivfCostLocal));
+        familyLog('Failed IVF');
+        fx({happiness: -10});
+    }
+    render();
+}
+
+function familyChangeSchool(childId, schoolLabel) {
+    const c = S.childrenList.find(x => x.id === childId);
+    if(c) {
+        c.school = schoolLabel;
+        log('🏫 ' + c.name + ' is now enrolled in ' + schoolLabel + '.');
+    }
+    render();
+}
+
+/* ============================================================
+   TAB 4: MEDICAL & HEALTH
+   ============================================================ */
+function renderMedicalTab() {
+    let html = '<div class="card"><h3>🏥 Health & Insurance</h3>';
+    
+    // Insurance Selection
+    const currentIns = MEDICAL_INSURANCE_TIERS.find(i => i.id === S.medical.insurance) || MEDICAL_INSURANCE_TIERS[0];
+    html += '<div class="muted small" style="margin-bottom:4px">Current Medical Insurance:</div>';
+    html += '<select onchange="medicalChangeInsurance(this.value)" style="width:100%;padding:6px;background:#0f0f1a;color:#fff;border:1px solid #25253a">';
+    MEDICAL_INSURANCE_TIERS.forEach(ins => {
+        const costLocal = ins.premiumUSD * (C().rate||1);
+        html += '<option value="' + ins.id + '" ' + (S.medical.insurance === ins.id ? 'selected' : '') + '>' + ins.label + ' - ' + money(costLocal) + '/yr</option>';
+    });
+    html += '</select>';
+    html += '<div class="muted small" style="margin-top:4px">Coverage: ' + currentIns.coveragePct + '% of major medical costs.</div>';
+    html += '</div>';
+
+    // Conditions
+    html += '<div class="card"><h3>Medical Conditions</h3>';
+    if(S.medical.conditions.length === 0) {
+        html += '<p class="muted small">You are currently healthy with no chronic conditions.</p>';
+    } else {
+        S.medical.conditions.forEach(condId => {
+            const cond = MEDICAL_CONDITIONS.find(c => c.id === condId);
+            if(!cond) return;
+            html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">';
+            html += '<div style="font-weight:700;color:#fb7185">⚠️ ' + cond.label + '</div>';
+            
+            // Find treatments for this condition
+            const treats = MEDICAL_TREATMENTS.filter(t => t.condition === cond.type);
+            treats.forEach(t => {
+                const baseCost = getMedicalCost(t.costUSD);
+                html += '<button class="opt" style="margin-top:6px;padding:4px 8px;font-size:.7rem" onclick="medicalTreat(\'' + condId + '\', \'' + t.id + '\')">Get ' + t.label + ' (' + money(baseCost) + ' after ins.)</button>';
+            });
+            html += '</div>';
+        });
+    }
+    html += '</div>';
+
+    return html;
+}
+
+function medicalChangeInsurance(insId) {
+    S.medical.insurance = insId;
+    log('🏥 Changed medical insurance to ' + insId + '.');
+    render();
+}
+
+function medicalTreat(condId, treatmentId) {
+    const treat = MEDICAL_TREATMENTS.find(t => t.id === treatmentId);
+    if(!treat) return;
+    const cost = getMedicalCost(treat.costUSD);
+    
+    if(S.wealth < cost) { log('Not enough cash to cover the medical bill (' + money(cost) + ').'); return; }
+    S.wealth -= cost;
+    
+    if(treat.effectiveness) {
+        if(Math.random() < treat.effectiveness) {
+            S.medical.conditions = S.medical.conditions.filter(c => c !== condId);
+            log('✅ Treatment successful! You recovered from the condition.');
+            fx({health: 20, happiness: 10});
+        } else {
+            log('Treatment helped, but the condition persists.');
+            fx({health: 5});
+        }
+    } else if (treat.cureChance) {
+        if(Math.random() < treat.cureChance) {
+            S.medical.conditions = S.medical.conditions.filter(c => c !== condId);
+            log('✅ Incredible news! The ' + treat.label + ' worked. You are cured.');
+            fx({health: 50, happiness: 50});
+        } else {
+            log('The treatment extended your life, but the condition remains.');
+            fx({health: 10});
+        }
+    } else {
+        log('Received ' + treat.label + '.');
+        fx({health: 10});
+    }
+    render();
+}
+
+/* ============================================================
+   TAB 5: VACATION
+   ============================================================ */
+function renderVacationTab() {
+    let html = '<div class="card"><h3>✈️ Vacations</h3><p class="muted small">Take a break to reduce stress and increase happiness.</p>';
+    html += '<div class="row"><span>Vacation Days Left</span><b>' + (S.vacationDays - S.vacationDaysUsedThisYear) + ' / ' + S.vacationDays + '</b></div>';
+    
+    const pp = PASSPORT_STRENGTH[S.country] || PASSPORT_STRENGTH.egy;
+
+    html += '<h4 style="font-size:.85rem;color:#3b82f6;margin-top:10px">Local / Easy Access</h4>';
+    VACATION_DESTINATIONS.egypt_local.forEach(dest => {
+        const costLocal = dest.costPerDayUSD * (C().rate || 1);
+        html += '<button class="opt" style="margin-top:6px;width:100%;text-align:left" onclick="vacationBook(\'' + dest.id + '\', false, ' + costLocal + ')">' + dest.label + ' - ' + money(costLocal) + '/day</button>';
+    });
+
+    html += '<h4 style="font-size:.85rem;color:#3b82f6;margin-top:10px">International</h4>';
+    VACATION_DESTINATIONS.abroad.forEach(dest => {
+        const costLocal = dest.costPerDayUSD * (C().rate || 1);
+        const needsVisa = dest.visaRequired && (
+            (dest.id === 'europe_schengen' && pp.shengenRequiresVisa) ||
+            (dest.id === 'usa' && pp.usRequiresVisa)
+        );
+        const visaStr = needsVisa ? ' <span style="color:#fb7185">(Visa Req)</span>' : '';
+        html += '<button class="opt" style="margin-top:6px;width:100%;text-align:left" onclick="vacationBook(\'' + dest.id + '\', ' + needsVisa + ', ' + costLocal + ')">' + dest.label + visaStr + ' - ' + money(costLocal) + '/day + Flights</button>';
+    });
+
+    html += '</div>';
+    return html;
+}
+
+function vacationBook(destId, needsVisa, costPerDayLocal) {
+    const daysStr = prompt('How many days do you want to go for?');
+    const days = parseInt(daysStr);
+    if(isNaN(days) || days <= 0) return;
+
+    if(S.vacationDaysUsedThisYear + days > S.vacationDays) {
+        log('❌ You don\'t have enough vacation days approved by your manager.');
+        return;
+    }
+
+    let totalCost = days * costPerDayLocal;
+    // Add flight cost if international
+    const dest = VACATION_DESTINATIONS.abroad.find(d => d.id === destId);
+    if(dest) totalCost += 800 * (C().rate||1); // Rough flight cost
+
+    if(S.wealth < totalCost) {
+        log('❌ Not enough cash. Need ' + money(totalCost) + '.');
+        return;
+    }
+
+    if(needsVisa) {
+        // Simple visa calculation based on wealth and job
+        let visaChance = 0.3;
+        if(S.wealth > 10000 * (C().rate||1)) visaChance += 0.3;
+        if(S.job) visaChance += 0.3;
+        
+        if(Math.random() > visaChance) {
+            log('🛑 Visa Application Denied. You lost the application fees.');
+            S.wealth -= 150 * (C().rate||1);
+            fx({happiness: -5});
+            render();
+            return;
+        }
+        log('🛂 Visa Approved!');
+    }
+
+    S.wealth -= totalCost;
+    S.vacationDaysUsedThisYear += days;
+    
+    log('✈️ You took a ' + days + '-day vacation to ' + (dest ? dest.label : destId) + ' for ' + money(totalCost) + '.');
+    fx({happiness: days * 3, health: days});
+    render();
+}
+
+/* ============================================================
+   YEAR TICK LOGIC
+   ============================================================ */
 GameHooks.on('year', function() {
   ensureFamilyState();
   if (!S) return;
@@ -626,13 +851,84 @@ GameHooks.on('year', function() {
     S.vacationDaysUsedThisYear = 0;
   }
 
-  /* ===== PARENTS ===== */
+  /* ===== PREGNANCY & CHILDREN ===== */
+  if(S.pregnantMonths > 0) {
+      S.pregnantMonths += 12; // A year passes, baby is born
+      S.pregnantMonths = 0;
+      
+      const gender = Math.random() < 0.5 ? 'm' : 'f';
+      const names = SIBLING_NAMES[S.country || 'egy'][gender];
+      const name = names[Math.floor(Math.random() * names.length)];
+      
+      S.childrenList.push({
+          id: 'child_' + Math.random().toString(36).slice(2, 8),
+          name: name,
+          gender: gender,
+          age: 0,
+          school: 'Public School'
+      });
+      
+      const hosp = MATERNITY_HOSPITALS[1]; // default private
+      const cost = getMedicalCost(hosp.costUSD);
+      if(S.wealth >= cost) S.wealth -= cost;
+      
+      log('🍼 Baby ' + name + ' was born! Hospital cost: ' + money(cost));
+      familyLog('Baby ' + name + ' born');
+      fx({happiness: 30});
+  }
+
+  // Age children and charge school fees
+  S.childrenList.forEach(c => {
+      c.age += 1;
+      const schTier = Object.values(CHILD_EXPENSE_TIERS.schooling).find(s => s.label === c.school);
+      if(schTier && c.age >= 4 && c.age <= 18) {
+          const costLocal = schTier.annualUSD * (C().rate || 1);
+          if(S.wealth >= costLocal) {
+              S.wealth -= costLocal;
+          } else {
+              log('⚠️ Could not afford school fees for ' + c.name + '. Moved to Public School.');
+              c.school = 'Public School';
+          }
+      }
+      
+      // Basic living expenses per child
+      const livingCostLocal = 200 * 12 * (C().rate || 1);
+      if(S.wealth >= livingCostLocal) S.wealth -= livingCostLocal;
+  });
+
+  /* ===== SPOUSE & DATING ===== */
+  if(S.partner) {
+      S.partner.bond -= 5; // Natural decay
+      if(S.datingStatus === 'married' && S.partner.bond < 20 && Math.random() < 0.1) {
+          log('💔 ' + S.partner.name + ' asked for a divorce due to a low relationship bond.');
+          familyDivorce();
+      }
+  }
+
+  /* ===== MEDICAL ===== */
+  // Pay insurance
+  const ins = MEDICAL_INSURANCE_TIERS.find(i => i.id === S.medical.insurance) || MEDICAL_INSURANCE_TIERS[0];
+  if(ins.premiumUSD > 0) {
+      const premLocal = ins.premiumUSD * (C().rate||1);
+      if(S.wealth >= premLocal) S.wealth -= premLocal;
+      else S.medical.insurance = 'none'; // Cancel if can't pay
+  }
+
+  // Random Medical Conditions
+  if(S.age > 30 && Math.random() < 0.05) {
+      const cond = MEDICAL_CONDITIONS[Math.floor(Math.random() * MEDICAL_CONDITIONS.length)];
+      if(!S.medical.conditions.includes(cond.id)) {
+          S.medical.conditions.push(cond.id);
+          log('🏥 You were diagnosed with ' + cond.label + '. See the Health tab for treatments.');
+          fx({health: -(cond.healthDrop || 10), happiness: -20});
+      }
+  }
+
+  /* ===== EXTENDED RELATIVES (Parents & Siblings) ===== */
   familyParents().forEach(function(p) {
     if (p.alive === false) return;
-
     const bracket = PARENT_HEALTH_DECAY.find(function(b) { return p.age >= b.minAge && p.age <= b.maxAge; });
     if (bracket && bracket.decay > 0) p.health = Math.max(0, (p.health || 100) - bracket.decay);
-
     if (p.lastContactYear === null || (year - p.lastContactYear) >= CONTACT_DECAY_THRESHOLD_YEARS) {
       p.bond = Math.max(0, (p.bond || 70) - CONTACT_DECAY_AMOUNT);
     }
@@ -651,81 +947,47 @@ GameHooks.on('year', function() {
       if (tpl.oncePerLife && tpl.kind === 'retirement' && p.retirementRequested) return;
       if ((S.familyRequests || []).some(function(r) { return r.memberId === p.id; })) return;
 
-      const chance = tpl.chance * tierCfg.requestChanceMult;
+      const traitObj = PERSONALITY_TRAITS[p.trait] || PERSONALITY_TRAITS.balanced;
+      const demandMult = traitObj.demandMult || 1.0;
+      const chance = tpl.chance * tierCfg.requestChanceMult * demandMult;
+      
       if (Math.random() >= chance) return;
       if (tpl.oncePerLife && tpl.kind === 'retirement') p.retirementRequested = true;
 
-      const amount = Math.floor(tpl.amount[0] + Math.random() * (tpl.amount[1] - tpl.amount[0]));
+      const amountUSD = Math.floor(tpl.amountUSD[0] + Math.random() * (tpl.amountUSD[1] - tpl.amountUSD[0]));
       const reason = tpl.reasons ? tpl.reasons[Math.floor(Math.random() * tpl.reasons.length)] : '';
-      const message = tpl.message.replace('{name}', p.name).replace('{amount}', money(amount)).replace('{reason}', reason);
+      const message = tpl.message.replace('{name}', p.name).replace('{amount}', money(amountUSD * (C().rate||1))).replace('{reason}', reason);
 
       S.familyRequests.push({
         id: 'req_' + Math.random().toString(36).slice(2, 8),
         memberId: p.id, memberName: p.name, memberRole: p.role,
-        kind: tpl.kind, amount: amount, perMonth: tpl.perMonth === true,
+        kind: tpl.kind, amount: amountUSD, perMonth: tpl.perMonth === true,
         shareable: tpl.shareable === true, message: message, createdYear: year
       });
       log('📨 ' + message);
     });
-
-    if (tierCfg.giftToPlayerChance > 0 && (p.bond || 70) > 60) {
-      const chance = 0.15 * tierCfg.giftToPlayerChance;
-      if (Math.random() < chance) {
-        const gift = Math.floor((p.wealth || 0) * (0.01 + Math.random() * 0.05));
-        if (gift > 0) {
-          p.wealth -= gift; S.wealth += gift;
-          log('🎁 ' + p.name + ' sent you ' + money(gift) + ' as a gift.');
-          familyLog('🎁 ' + p.name + ' sent ' + money(gift));
-          familyAddBond(p, 5);
-        }
-      }
-    }
   });
 
-  /* ===== SIBLINGS ===== */
   familySiblings().forEach(function(sib) {
     if (sib.lastContactYear === null || (year - sib.lastContactYear) >= CONTACT_DECAY_THRESHOLD_YEARS) {
       sib.bond = Math.max(0, (sib.bond || 70) - CONTACT_DECAY_AMOUNT);
     }
     if (sib.lifeStage === 'toddler' && sib.age >= SIBLING_MILESTONES.schoolStart) sib.lifeStage = 'student';
     if (sib.lifeStage === 'student' && sib.age >= SIBLING_MILESTONES.uniStart) sib.lifeStage = 'uni';
-    if (sib.lifeStage === 'uni' && sib.age >= SIBLING_MILESTONES.workStart) {
-      sib.lifeStage = 'working';
-      log('🎓 ' + sib.name + ' graduated and started working.');
-      familyLog('🎓 ' + sib.name + ' graduated');
-    }
+    if (sib.lifeStage === 'uni' && sib.age >= SIBLING_MILESTONES.workStart) { sib.lifeStage = 'working'; }
 
     sib.justMarried = false;
-    if (sib.lifeStage === 'working' && !sib.spouse &&
-        sib.age >= SIBLING_MILESTONES.marryMin && sib.age <= SIBLING_MILESTONES.marryMax &&
-        Math.random() < SIBLING_WEDDING_CHANCE) {
+    if (sib.lifeStage === 'working' && !sib.spouse && sib.age >= SIBLING_MILESTONES.marryMin && sib.age <= SIBLING_MILESTONES.marryMax && Math.random() < SIBLING_WEDDING_CHANCE) {
       const pool = SIBLING_NAMES[S.country] || SIBLING_NAMES.egy;
       const otherGender = sib.gender === 'm' ? 'f' : 'm';
-      const spouseName = pool[otherGender][Math.floor(Math.random() * pool[otherGender].length)];
-      sib.spouse = { name: spouseName };
+      sib.spouse = { name: pool[otherGender][Math.floor(Math.random() * pool[otherGender].length)] };
       sib.lifeStage = 'married';
       sib.justMarried = true;
-      log('🎉 ' + sib.name + ' got married to ' + spouseName + '.');
-      familyLog('🎉 ' + sib.name + ' married ' + spouseName);
-      fx({ happiness: 2 });
     }
 
-    if ((sib.lifeStage === 'married' || sib.lifeStage === 'parent') &&
-        sib.age >= SIBLING_MILESTONES.childMin && sib.age <= SIBLING_MILESTONES.childMax &&
-        Math.random() < SIBLING_CHILD_CHANCE) {
+    if ((sib.lifeStage === 'married' || sib.lifeStage === 'parent') && sib.age >= SIBLING_MILESTONES.childMin && sib.age <= SIBLING_MILESTONES.childMax && Math.random() < SIBLING_CHILD_CHANCE) {
       sib.children = (sib.children || 0) + 1;
       sib.lifeStage = 'parent';
-      log('👶 ' + sib.name + ' had a child (' + sib.children + ' total). You became an uncle/aunt.');
-      familyLog('👶 ' + sib.name + ' had a child');
-      fx({ happiness: 2 });
-    }
-
-    if (sib.lifeStage === 'working' || sib.lifeStage === 'married' || sib.lifeStage === 'parent') {
-      const evo = SIBLING_SUCCESS_EVOLUTION[sib.successLevel] || SIBLING_SUCCESS_EVOLUTION.middle;
-      const r = Math.random();
-      if (r < evo.toPoor) sib.successLevel = 'poor';
-      else if (r < evo.toPoor + evo.toSuccess) sib.successLevel = 'successful';
-      else sib.successLevel = 'middle';
     }
 
     if ((sib.bond || 70) < 20) return;
@@ -734,14 +996,17 @@ GameHooks.on('year', function() {
       if (tpl.onlyIfStage && tpl.onlyIfStage.indexOf(sib.lifeStage) < 0) return;
       if (tpl.onlyJustMarried && !sib.justMarried) return;
       if ((S.familyRequests || []).some(function(r) { return r.memberId === sib.id; })) return;
-      if (Math.random() >= tpl.chance) return;
+      
+      const traitObj = PERSONALITY_TRAITS[sib.trait] || PERSONALITY_TRAITS.balanced;
+      const chance = tpl.chance * (traitObj.demandMult || 1.0);
+      if (Math.random() >= chance) return;
 
-      const amount = Math.floor(tpl.amount[0] + Math.random() * (tpl.amount[1] - tpl.amount[0]));
-      const message = tpl.message.replace('{name}', sib.name).replace('{amount}', money(amount));
+      const amountUSD = Math.floor(tpl.amountUSD[0] + Math.random() * (tpl.amountUSD[1] - tpl.amountUSD[0]));
+      const message = tpl.message.replace('{name}', sib.name).replace('{amount}', money(amountUSD * (C().rate||1)));
       S.familyRequests.push({
         id: 'req_' + Math.random().toString(36).slice(2, 8),
         memberId: sib.id, memberName: sib.name, memberRole: sib.role,
-        kind: tpl.kind, amount: amount, perMonth: tpl.perMonth === true,
+        kind: tpl.kind, amount: amountUSD, perMonth: tpl.perMonth === true,
         shareable: false, message: message, createdYear: year
       });
       log('📨 ' + message);
@@ -749,17 +1014,15 @@ GameHooks.on('year', function() {
   });
 
   /* Allowances deducted */
-  const totalMonthly = Object.values(S.parentAllowances || {}).reduce(function(s, v) { return s + v; }, 0);
-  if (totalMonthly > 0) {
-    const yearly = totalMonthly * 12;
-    if (S.wealth >= yearly) {
-      S.wealth -= yearly;
-      log('💰 Paid ' + money(yearly) + ' in parent allowances this year.');
+  const totalMonthlyUSD = Object.values(S.parentAllowances || {}).reduce(function(s, v) { return s + v; }, 0);
+  if (totalMonthlyUSD > 0) {
+    const yearlyLocal = totalMonthlyUSD * 12 * (C().rate || 1);
+    if (S.wealth >= yearlyLocal) {
+      S.wealth -= yearlyLocal;
+      log('💰 Paid ' + money(yearlyLocal) + ' in parent allowances this year.');
     } else {
-      log('⚠️ Could not afford parent allowances (' + money(yearly) + '). Bond may suffer.');
-      familyLivingParents().forEach(function(p) {
-        if (S.parentAllowances[p.id]) familyAddBond(p, -5);
-      });
+      log('⚠️ Could not afford parent allowances (' + money(yearlyLocal) + '). Bond may suffer.');
+      familyLivingParents().forEach(function(p) { if (S.parentAllowances[p.id]) familyAddBond(p, -5); });
     }
   }
 });
@@ -790,16 +1053,111 @@ function familyParentDies(p) {
 
   const livingParentsAfter = familyLivingParents();
   if (livingParentsAfter.length === 0 && !S.inheritedFamilyHome) {
-    const homeValue = Math.max(500000, (p.wealth || 0) * 3);
+    const homeValueUSD = Math.max(50000, (p.wealth || 0) / (C().rate||1) * 3);
     S.inheritedFamilyHome = {
-      value: homeValue,
+      valueUSD: homeValueUSD,
       myPct: 1 / totalChildren,
       shares: children.map(function(sib) { return { siblingId: sib.id, pct: 1 / totalChildren }; })
     };
     familyLog('🏠 Inherited family home share');
-    log('🏠 You inherited ' + Math.round(100 / totalChildren) + '% of the family home (est. ' + money(homeValue) + ').');
+    log('🏠 You inherited ' + Math.round(100 / totalChildren) + '% of the family home.');
   }
 }
 
+/* ---------- REQUEST ACTIONS ---------- */
+// Redefined to use USD stored amounts properly via rate conversion
+function familyPayRequest(requestId) {
+  ensureFamilyState();
+  const idx = S.familyRequests.findIndex(function(r) { return r.id === requestId; });
+  if (idx < 0) return;
+  const r = S.familyRequests[idx];
+  const amtLocal = r.amount * (C().rate || 1);
+  const totalAmount = r.perMonth ? amtLocal * 12 : amtLocal;
+  
+  if (S.wealth < totalAmount) { log('Not enough cash for ' + money(totalAmount) + '.'); render(); return; }
+  S.wealth -= totalAmount;
+
+  if (r.perMonth) {
+    S.parentAllowances[r.memberId] = (S.parentAllowances[r.memberId] || 0) + r.amount;
+    log('💵 You committed ' + money(amtLocal) + '/month to help ' + r.memberName + '.');
+  } else {
+    log('💵 You paid ' + money(amtLocal) + ' for ' + r.memberName + "'s " + r.kind + '.');
+  }
+
+  const m = familyById(r.memberId);
+  if (m) { familyAddBond(m, FAMILY_BOND_BONUSES.helpMoney); familyMarkContact(m); }
+  fx({ happiness: 3 });
+  S.familyRequests.splice(idx, 1);
+  render();
+}
+
+function familyShareRequest(requestId) {
+  ensureFamilyState();
+  const idx = S.familyRequests.findIndex(function(r) { return r.id === requestId; });
+  if (idx < 0) return;
+  const r = S.familyRequests[idx];
+  const siblings = familySiblings();
+  if (!siblings.length) { familyPayRequest(requestId); return; }
+
+  const amtLocal = r.amount * (C().rate || 1);
+  const totalAmount = r.perMonth ? amtLocal * 12 : amtLocal;
+  const totalPeople = 1 + siblings.length;
+  const myShare = Math.round(totalAmount / totalPeople);
+  
+  if (S.wealth < myShare) { log('Not enough cash for your share (' + money(myShare) + ').'); render(); return; }
+  S.wealth -= myShare;
+
+  log('💵 Shared cost with siblings. You paid ' + money(myShare) + '.');
+  if (r.perMonth) {
+    S.parentAllowances[r.memberId] = (S.parentAllowances[r.memberId] || 0) + Math.round(r.amount / totalPeople);
+  }
+
+  const m = familyById(r.memberId);
+  if (m) { familyAddBond(m, FAMILY_BOND_BONUSES.shareHelp); familyMarkContact(m); }
+  S.familyRequests.splice(idx, 1);
+  render();
+}
+
+function familyDeclineRequest(requestId) {
+  ensureFamilyState();
+  const idx = S.familyRequests.findIndex(function(r) { return r.id === requestId; });
+  if (idx < 0) return;
+  const r = S.familyRequests[idx];
+  const m = familyById(r.memberId);
+  if (m) familyAddBond(m, -10);
+  fx({ happiness: -2 });
+  log('❌ You declined ' + r.memberName + "'s request.");
+  S.familyRequests.splice(idx, 1);
+  render();
+}
+
+window.familyPayRequest = familyPayRequest;
+window.familyShareRequest = familyShareRequest;
+window.familyDeclineRequest = familyDeclineRequest;
+
+/* ---------- BUY/SELL INHERITED HOME ---------- */
+function familyBuySiblingShare(siblingId) {
+  if (!S.inheritedFamilyHome) return;
+  const share = S.inheritedFamilyHome.shares.find(function(s) { return s.siblingId === siblingId; });
+  if (!share) return;
+  const cost = Math.round(S.inheritedFamilyHome.valueUSD * share.pct * (C().rate || 1));
+  if (S.wealth < cost) { log('Need ' + money(cost) + ' to buy this share.'); render(); return; }
+  S.wealth -= cost;
+  S.inheritedFamilyHome.myPct += share.pct;
+  S.inheritedFamilyHome.shares = S.inheritedFamilyHome.shares.filter(function(s) { return s.siblingId !== siblingId; });
+  log('🏠 Bought sibling\'s share of the family home for ' + money(cost) + '.');
+  render();
+}
+function familySellMyHomeShare() {
+  if (!S.inheritedFamilyHome) return;
+  const myShareValue = Math.round(S.inheritedFamilyHome.valueUSD * S.inheritedFamilyHome.myPct * (C().rate || 1));
+  if (!confirm('Sell your share of the family home for ' + money(myShareValue) + '?')) return;
+  S.wealth += myShareValue;
+  log('🏠 Sold your share of the family home: ' + money(myShareValue) + '.');
+  S.inheritedFamilyHome = null;
+  if (S.housing === 'parents') S.housing = 'rented';
+  render();
+}
+
 /* ---------- REGISTER ---------- */
-GameHooks.registerTab({ id: 'family', label: 'Family', order: 3, view: familyView });
+GameHooks.registerTab({ id: 'family', label: '❤️ Family', order: 3, view: familyView });
