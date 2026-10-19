@@ -1,10 +1,10 @@
- /* ============================================================
+/* ============================================================
    WORLD LIFE — DATA: IMMIGRATION
    ============================================================
    Pure data. No logic, no functions.
 
    Currently supported destinations (full country pack required):
-   - usa, sau
+   - usa, sau, uae, gbr, deu, can, aus, nld, fra, jpn, ita, sgp, bra, ind
    When you add uk/deu/can packs to 01-data-countries.js, also
    append them to SUPPORTED_DESTINATIONS below.
 
@@ -12,8 +12,7 @@
    ============================================================ */
 
 /* ---------- 1. WHICH DESTINATIONS THE PLAYER CAN ACTUALLY MOVE TO ---------- */
-/* Add 'uk', 'deu', 'can' etc once their country packs exist. */
-const SUPPORTED_DESTINATIONS = ['usa', 'sau'];
+const SUPPORTED_DESTINATIONS = ['usa', 'sau', 'uae', 'gbr', 'deu', 'can', 'aus', 'nld', 'fra', 'jpn', 'ita', 'sgp', 'bra', 'ind'];
 
 /* ---------- 2. PASSPORTS ---------- */
 /* For each passport, categorize destinations by entry difficulty.
@@ -31,14 +30,14 @@ const PASSPORT_DATA = {
     visa_free:      ['egy', 'jor', 'lbn', 'mar', 'tun', 'sud', 'ken', 'uga', 'eth'],
     visa_on_arrival:['tur', 'ind', 'tha', 'mly', 'idn', 'irq', 'lka', 'mvd'],
     evisa:          ['uae', 'sau', 'omn', 'qat', 'jpn', 'kor', 'sau'],
-    visa_required:  ['usa', 'uk', 'can', 'deu', 'fra', 'ita', 'esp', 'gbr', 'aus', 'nzl', 'jpn'],
-    visa_hard:      ['usa', 'uk', 'can']
+    visa_required:  ['usa', 'uk', 'can', 'deu', 'fra', 'ita', 'esp', 'gbr', 'aus', 'nzl', 'jpn', 'nld', 'sgp', 'bra'],
+    visa_hard:      ['usa', 'uk', 'can', 'aus']
   },
   usa: {
     label: 'American',
     color: '#3C3B6E',
     strengthScore: 188,
-    visa_free:      ['uk', 'deu', 'fra', 'ita', 'esp', 'jpn', 'kor', 'sgp', 'can', 'mex', 'bra', 'aus', 'nzl', 'uae', 'qat', 'sau', 'tur', 'egy', 'mar', 'tun', 'ind'],
+    visa_free:      ['uk', 'deu', 'fra', 'ita', 'esp', 'jpn', 'kor', 'sgp', 'can', 'mex', 'bra', 'aus', 'nzl', 'uae', 'qat', 'sau', 'tur', 'egy', 'mar', 'tun', 'ind', 'nld', 'gbr'],
     visa_on_arrival:['idn', 'tha', 'mly', 'mvd', 'jord', 'lbn', 'ken'],
     evisa:          ['ind', 'vnm', 'sau', 'omn'],
     visa_required:  ['chn', 'rus', 'irn', 'prk', 'cub'],
@@ -50,9 +49,99 @@ const PASSPORT_DATA = {
     strengthScore: 88,
     visa_free:      ['sau', 'bhr', 'kwt', 'omn', 'qat', 'uae', 'jor', 'egy', 'mar', 'tun'],
     visa_on_arrival:['tur', 'mly', 'tha', 'idn', 'lka', 'mvd'],
-    evisa:          ['uk', 'deu', 'fra', 'usa', 'jpn', 'kor', 'sgp'],
-    visa_required:  ['usa', 'uk', 'can', 'aus', 'nzl', 'ind', 'chn'],
+    evisa:          ['uk', 'deu', 'fra', 'usa', 'jpn', 'kor', 'sgp', 'gbr', 'nld', 'ita'],
+    visa_required:  ['usa', 'uk', 'can', 'aus', 'nzl', 'ind', 'chn', 'bra'],
     visa_hard:      ['usa', 'can']
+  },
+  gbr: {
+    label: 'British',
+    color: '#012169',
+    strengthScore: 187,
+    visa_free:      ['usa', 'deu', 'fra', 'ita', 'esp', 'jpn', 'kor', 'sgp', 'can', 'aus', 'nzl', 'uae', 'sau', 'egy', 'nld', 'bra', 'ind'],
+    visa_on_arrival:['idn', 'tha', 'tur'],
+    evisa:          ['vnm', 'omn'],
+    visa_required:  ['chn', 'rus', 'irn'],
+    visa_hard:      ['irn', 'prk', 'rus']
+  },
+  deu: {
+    label: 'German',
+    color: '#000000',
+    strengthScore: 190,
+    visa_free:      ['usa', 'gbr', 'fra', 'ita', 'esp', 'jpn', 'kor', 'sgp', 'can', 'aus', 'nzl', 'uae', 'sau', 'egy', 'nld', 'bra', 'ind'],
+    visa_on_arrival:['idn', 'tha', 'tur'],
+    evisa:          ['vnm', 'omn'],
+    visa_required:  ['chn', 'rus', 'irn'],
+    visa_hard:      ['irn', 'prk', 'rus']
+  },
+  can: {
+    label: 'Canadian',
+    color: '#FF0000',
+    strengthScore: 185,
+    visa_free:      ['usa', 'gbr', 'deu', 'fra', 'ita', 'esp', 'jpn', 'kor', 'sgp', 'aus', 'nzl', 'uae', 'sau', 'egy', 'nld', 'bra'],
+    visa_on_arrival:['idn', 'tha', 'tur', 'ind'],
+    evisa:          ['vnm', 'omn'],
+    visa_required:  ['chn', 'rus', 'irn'],
+    visa_hard:      ['irn', 'prk', 'rus']
+  },
+  aus: {
+    label: 'Australian',
+    color: '#00008B',
+    strengthScore: 185,
+    visa_free:      ['usa', 'gbr', 'deu', 'fra', 'ita', 'esp', 'jpn', 'kor', 'sgp', 'can', 'nzl', 'uae', 'sau', 'egy', 'nld', 'bra'],
+    visa_on_arrival:['idn', 'tha', 'tur', 'ind'],
+    evisa:          ['vnm', 'omn'],
+    visa_required:  ['chn', 'rus', 'irn'],
+    visa_hard:      ['irn', 'prk', 'rus']
+  },
+  fra: {
+    label: 'French',
+    color: '#002395',
+    strengthScore: 189,
+    visa_free:      ['usa', 'gbr', 'deu', 'ita', 'esp', 'jpn', 'kor', 'sgp', 'can', 'aus', 'nzl', 'uae', 'sau', 'egy', 'nld', 'bra', 'ind'],
+    visa_on_arrival:['idn', 'tha', 'tur'],
+    evisa:          ['vnm', 'omn'],
+    visa_required:  ['chn', 'rus', 'irn'],
+    visa_hard:      ['irn', 'prk', 'rus']
+  },
+  jpn: {
+    label: 'Japanese',
+    color: '#BC002D',
+    strengthScore: 193,
+    visa_free:      ['usa', 'gbr', 'deu', 'fra', 'ita', 'esp', 'kor', 'sgp', 'can', 'aus', 'nzl', 'uae', 'sau', 'egy', 'nld', 'bra', 'ind'],
+    visa_on_arrival:['idn', 'tha', 'tur'],
+    evisa:          ['vnm', 'omn'],
+    visa_required:  ['chn', 'rus', 'irn'],
+    visa_hard:      ['irn', 'prk', 'rus']
+  },
+  ita: {
+    label: 'Italian',
+    color: '#009246',
+    strengthScore: 189,
+    visa_free:      ['usa', 'gbr', 'deu', 'fra', 'esp', 'jpn', 'kor', 'sgp', 'can', 'aus', 'nzl', 'uae', 'sau', 'egy', 'nld', 'bra', 'ind'],
+    visa_on_arrival:['idn', 'tha', 'tur'],
+    evisa:          ['vnm', 'omn'],
+    visa_required:  ['chn', 'rus', 'irn'],
+    visa_hard:      ['irn', 'prk', 'rus']
+  },
+  bra: {
+    label: 'Brazilian',
+    color: '#009C3B',
+    strengthScore: 170,
+    visa_free:      ['uk', 'deu', 'fra', 'ita', 'esp', 'sgp', 'nzl', 'uae', 'egy', 'nld', 'gbr'],
+    visa_on_arrival:['idn', 'tha', 'tur', 'ind', 'mvd'],
+    evisa:          ['aus', 'jpn', 'sau'],
+    visa_required:  ['usa', 'can', 'chn', 'rus', 'irn'],
+    visa_hard:      ['usa']
+  },
+  ind: {
+    label: 'Indian',
+    color: '#FF9933',
+    strengthScore: 60,
+    visa_free:      ['idn', 'mvd', 'npl', 'btn', 'mar'],
+    visa_on_arrival:['tha', 'lka', 'jor'],
+    evisa:          ['uae', 'sau', 'omn', 'sgp', 'vnm'],
+    visa_required:  ['usa', 'uk', 'can', 'deu', 'fra', 'ita', 'esp', 'gbr', 'aus', 'nzl', 'jpn', 'nld', 'bra', 'egy'],
+    visa_hard:      ['usa', 'uk', 'can', 'aus']
   }
 };
 
@@ -124,6 +213,12 @@ const VISA_FEES = {
     work:    { fee: 900, wait: 0.2, sevis: 976 },  // Skilled worker
     lawyer: 1500
   },
+  gbr: {
+    tourist: { fee: 145, wait: 0.1, sevis: 0 },
+    student: { fee: 620, wait: 0.1, sevis: 976 },
+    work:    { fee: 900, wait: 0.2, sevis: 976 },
+    lawyer: 1500
+  },
   sau: {
     tourist: { fee: 140, wait: 0.05, sevis: 0 },
     student: { fee: 300, wait: 0.25, sevis: 0 },
@@ -147,6 +242,54 @@ const VISA_FEES = {
     student: { fee: 110, wait: 0.2, sevis: 15000 },  // funds proof
     work:    { fee: 115, wait: 0.3, sevis: 0 },
     lawyer: 2000
+  },
+  aus: {
+    tourist: { fee: 130, wait: 0.15, sevis: 0 },
+    student: { fee: 450, wait: 0.2, sevis: 18000 },
+    work:    { fee: 600, wait: 0.3, sevis: 0 },
+    lawyer: 2200
+  },
+  nld: {
+    tourist: { fee: 90, wait: 0.2, sevis: 0 },
+    student: { fee: 210, wait: 0.25, sevis: 12000 },
+    work:    { fee: 350, wait: 0.2, sevis: 0 },
+    lawyer: 1800
+  },
+  fra: {
+    tourist: { fee: 90, wait: 0.2, sevis: 0 },
+    student: { fee: 100, wait: 0.25, sevis: 8000 },
+    work:    { fee: 250, wait: 0.2, sevis: 0 },
+    lawyer: 1500
+  },
+  jpn: {
+    tourist: { fee: 30, wait: 0.1, sevis: 0 },
+    student: { fee: 50, wait: 0.2, sevis: 15000 },
+    work:    { fee: 80, wait: 0.2, sevis: 0 },
+    lawyer: 1200
+  },
+  ita: {
+    tourist: { fee: 90, wait: 0.2, sevis: 0 },
+    student: { fee: 60, wait: 0.25, sevis: 7000 },
+    work:    { fee: 120, wait: 0.3, sevis: 0 },
+    lawyer: 1500
+  },
+  sgp: {
+    tourist: { fee: 45, wait: 0.1, sevis: 0 },
+    student: { fee: 90, wait: 0.15, sevis: 12000 },
+    work:    { fee: 150, wait: 0.15, sevis: 0 },
+    lawyer: 1000
+  },
+  bra: {
+    tourist: { fee: 80, wait: 0.1, sevis: 0 },
+    student: { fee: 100, wait: 0.15, sevis: 5000 },
+    work:    { fee: 200, wait: 0.2, sevis: 0 },
+    lawyer: 800
+  },
+  ind: {
+    tourist: { fee: 100, wait: 0.1, sevis: 0 },
+    student: { fee: 150, wait: 0.15, sevis: 3000 },
+    work:    { fee: 250, wait: 0.2, sevis: 0 },
+    lawyer: 500
   }
 };
 
@@ -158,6 +301,11 @@ const VISA_APPROVAL = {
     work:    { baseChance: 0.15, requiresJobOffer: true, requiresDegree: true, lottery: true }  // H-1B
   },
   uk: {
+    tourist: { baseChance: 0.75, requiresFunds: 1500, requiresTies: false },
+    student: { baseChance: 0.82, requiresFunds: 12000, requiresAcceptance: true, requiresIELTS: 6.0 },
+    work:    { baseChance: 0.55, requiresJobOffer: true, requiresSalary: 38700, requiresDegree: false }
+  },
+  gbr: {
     tourist: { baseChance: 0.75, requiresFunds: 1500, requiresTies: false },
     student: { baseChance: 0.82, requiresFunds: 12000, requiresAcceptance: true, requiresIELTS: 6.0 },
     work:    { baseChance: 0.55, requiresJobOffer: true, requiresSalary: 38700, requiresDegree: false }
@@ -181,6 +329,46 @@ const VISA_APPROVAL = {
     tourist: { baseChance: 0.65, requiresFunds: 3000, requiresTies: true },
     student: { baseChance: 0.72, requiresFunds: 15000, requiresAcceptance: true, requiresIELTS: 6.0 },
     work:    { baseChance: 0.50, requiresJobOffer: true, requiresDegree: true, pointsBased: true }
+  },
+  aus: {
+    tourist: { baseChance: 0.60, requiresFunds: 4000, requiresTies: true },
+    student: { baseChance: 0.70, requiresFunds: 18000, requiresAcceptance: true, requiresIELTS: 6.5 },
+    work:    { baseChance: 0.45, requiresJobOffer: true, requiresDegree: true, pointsBased: true }
+  },
+  nld: {
+    tourist: { baseChance: 0.75, requiresFunds: 2500, requiresTies: false },
+    student: { baseChance: 0.85, requiresFunds: 12000, requiresAcceptance: true, requiresIELTS: 6.0 },
+    work:    { baseChance: 0.60, requiresJobOffer: true, requiresSalary: 40000, requiresDegree: true }
+  },
+  fra: {
+    tourist: { baseChance: 0.75, requiresFunds: 2500, requiresTies: false },
+    student: { baseChance: 0.85, requiresFunds: 8000, requiresAcceptance: true, requiresIELTS: 0 },
+    work:    { baseChance: 0.60, requiresJobOffer: true, requiresSalary: 35000, requiresDegree: true }
+  },
+  jpn: {
+    tourist: { baseChance: 0.80, requiresFunds: 2000, requiresTies: false },
+    student: { baseChance: 0.88, requiresFunds: 15000, requiresAcceptance: true, requiresIELTS: 0 },
+    work:    { baseChance: 0.65, requiresJobOffer: true, requiresDegree: true }
+  },
+  ita: {
+    tourist: { baseChance: 0.70, requiresFunds: 2000, requiresTies: false },
+    student: { baseChance: 0.80, requiresFunds: 7000, requiresAcceptance: true, requiresIELTS: 0 },
+    work:    { baseChance: 0.55, requiresJobOffer: true, requiresDegree: false }
+  },
+  sgp: {
+    tourist: { baseChance: 0.85, requiresFunds: 2000, requiresTies: false },
+    student: { baseChance: 0.85, requiresFunds: 12000, requiresAcceptance: true, requiresIELTS: 6.0 },
+    work:    { baseChance: 0.60, requiresJobOffer: true, requiresSalary: 50000, requiresDegree: true }
+  },
+  bra: {
+    tourist: { baseChance: 0.90, requiresFunds: 1000, requiresTies: false },
+    student: { baseChance: 0.90, requiresFunds: 5000, requiresAcceptance: true, requiresIELTS: 0 },
+    work:    { baseChance: 0.70, requiresJobOffer: true, requiresDegree: false }
+  },
+  ind: {
+    tourist: { baseChance: 0.85, requiresFunds: 1000, requiresTies: false },
+    student: { baseChance: 0.90, requiresFunds: 3000, requiresAcceptance: true, requiresIELTS: 0 },
+    work:    { baseChance: 0.70, requiresJobOffer: true, requiresDegree: false }
   }
 };
 
@@ -188,36 +376,63 @@ const VISA_APPROVAL = {
 const PR_REQUIREMENTS = {
   usa: { years: 5, fee: 1440, requiresJob: true, requiresTax: true, requiresCleanRecord: true },
   uk:  { years: 5, fee: 2885, requiresJob: true, requiresTax: true, requiresLifeTest: true },
+  gbr: { years: 5, fee: 2885, requiresJob: true, requiresTax: true, requiresLifeTest: true },
   sau: { years: null, note: 'No PR available. Iqama forever or Golden Visa (10 yr renewable, AED/SAR 2M investment).' },
   uae: { years: null, note: 'No PR for most. Golden Visa (10 yr) for AED 2M investment or elite talent.' },
   deu: { years: 5, fee: 300, requiresJob: true, requiresB1German: true },
-  can: { years: 3, fee: 500, requiresJob: true, requiresTax: true }
+  can: { years: 3, fee: 500, requiresJob: true, requiresTax: true },
+  aus: { years: 4, fee: 4000, requiresJob: true, requiresTax: true },
+  nld: { years: 5, fee: 200, requiresJob: true, requiresTax: true },
+  fra: { years: 5, fee: 250, requiresJob: true, requiresTax: true },
+  jpn: { years: 10, fee: 100, requiresJob: true, requiresTax: true, requiresCleanRecord: true },
+  ita: { years: 5, fee: 200, requiresJob: true, requiresTax: true },
+  sgp: { years: 3, fee: 100, requiresJob: true, requiresTax: true },
+  bra: { years: 4, fee: 100, requiresJob: true, requiresTax: true },
+  ind: { years: 7, fee: 50, requiresJob: true, requiresTax: true }
 };
 
 /* ---------- 7. CITIZENSHIP REQUIREMENTS ---------- */
 const CITIZENSHIP_REQUIREMENTS = {
   usa: { yearsOnPR: 5, fee: 725, requiresEnglishTest: true, requiresCivicTest: true, allowsDual: true },
   uk:  { yearsOnPR: 1, fee: 1580, requiresEnglishTest: true, requiresLifeInUK: true, allowsDual: true },
+  gbr: { yearsOnPR: 1, fee: 1580, requiresEnglishTest: true, requiresLifeInUK: true, allowsDual: true },
   sau: { yearsOnPR: null, note: 'Rarely granted to foreigners. King\'s decree only.' },
   uae: { yearsOnPR: null, note: 'Extremely rare. Cabinet approval required.' },
   deu: { yearsOnPR: 5, fee: 255, requiresGermanB1: true, requiresCivicTest: true, allowsDual: false },
-  can: { yearsOnPR: 2, fee: 630, requiresEnglishTest: true, requiresCivicTest: true, allowsDual: true }
+  can: { yearsOnPR: 2, fee: 630, requiresEnglishTest: true, requiresCivicTest: true, allowsDual: true },
+  aus: { yearsOnPR: 1, fee: 300, requiresEnglishTest: true, requiresCivicTest: true, allowsDual: true },
+  nld: { yearsOnPR: 0, fee: 900, requiresDutchA2: true, requiresCivicTest: true, allowsDual: false },
+  fra: { yearsOnPR: 0, fee: 55, requiresFrenchB1: true, requiresCivicTest: true, allowsDual: true },
+  jpn: { yearsOnPR: 0, fee: 0, requiresJapaneseBasic: true, requiresCivicTest: true, allowsDual: false }, // Requires 5 years total residency, not PR specific
+  ita: { yearsOnPR: 5, fee: 250, requiresItalianB1: true, requiresCivicTest: true, allowsDual: true }, // 10 years total
+  sgp: { yearsOnPR: 2, fee: 100, requiresEnglishTest: false, requiresCivicTest: false, allowsDual: false },
+  bra: { yearsOnPR: 0, fee: 0, requiresPortugueseBasic: true, requiresCivicTest: false, allowsDual: true }, // 4 years residency
+  ind: { yearsOnPR: 5, fee: 150, requiresEnglishTest: false, requiresCivicTest: false, allowsDual: false } // 12 years total
 };
 
 /* ---------- 8. ASYLUM INFO ---------- */
 const ASYLUM_INFO = {
   usa: { approvalChance: 0.30, waitYears: 2, canWorkAfterMonths: 6, notes: 'Approval depends on country of origin and case strength.' },
   uk:  { approvalChance: 0.40, waitYears: 1.5, canWorkAfterMonths: 12, notes: 'Strict, but backlog means long limbo.' },
+  gbr: { approvalChance: 0.40, waitYears: 1.5, canWorkAfterMonths: 12, notes: 'Strict, but backlog means long limbo.' },
   deu: { approvalChance: 0.50, waitYears: 1, canWorkAfterMonths: 3, notes: 'Most welcoming to Syrians, Afghans, Egyptians with valid claim.' },
   can: { approvalChance: 0.55, waitYears: 1.5, canWorkAfterMonths: 0, notes: 'Can work immediately while case pending.' },
   sau: { approvalChance: 0.0, waitYears: 99, canWorkAfterMonths: 99, notes: 'Not a signatory. No asylum path.' },
-  uae: { approvalChance: 0.0, waitYears: 99, canWorkAfterMonths: 99, notes: 'Not a signatory. No asylum path.' }
+  uae: { approvalChance: 0.0, waitYears: 99, canWorkAfterMonths: 99, notes: 'Not a signatory. No asylum path.' },
+  aus: { approvalChance: 0.35, waitYears: 2, canWorkAfterMonths: 6, notes: 'Strict off-shore processing in some cases.' },
+  nld: { approvalChance: 0.45, waitYears: 1, canWorkAfterMonths: 6, notes: 'Housing shortage affects placement.' },
+  fra: { approvalChance: 0.40, waitYears: 1, canWorkAfterMonths: 6, notes: 'Bureaucratic delays common.' },
+  jpn: { approvalChance: 0.01, waitYears: 3, canWorkAfterMonths: 99, notes: 'Extremely rare to be granted.' },
+  ita: { approvalChance: 0.35, waitYears: 1.5, canWorkAfterMonths: 2, notes: 'Common entry point, systems overwhelmed.' },
+  sgp: { approvalChance: 0.0, waitYears: 99, canWorkAfterMonths: 99, notes: 'Does not accept refugees.' },
+  bra: { approvalChance: 0.60, waitYears: 1, canWorkAfterMonths: 0, notes: 'Relatively open to applicants from certain regions.' },
+  ind: { approvalChance: 0.10, waitYears: 5, canWorkAfterMonths: 99, notes: 'Ad hoc policies, difficult to get formal status.' }
 };
 
 /* Asylum grounds — the "reason" you're seeking asylum */
 const ASYLUM_GROUNDS = [
-  { id: 'political', label: 'Political persecution',          baseChanceBonus: 0.15, risky: true },
-  { id: 'religious', label: 'Religious persecution',          baseChanceBonus: 0.20, risky: true },
+  { id: 'political', label: 'Political persecution',         baseChanceBonus: 0.15, risky: true },
+  { id: 'religious', label: 'Religious persecution',         baseChanceBonus: 0.20, risky: true },
   { id: 'lgbtq',     label: 'LGBTQ+ persecution',              baseChanceBonus: 0.25, risky: true },
   { id: 'war',       label: 'War / armed conflict',            baseChanceBonus: 0.30, risky: true },
   { id: 'ethnic',    label: 'Ethnic / minority persecution',   baseChanceBonus: 0.20, risky: true },
@@ -226,7 +441,7 @@ const ASYLUM_GROUNDS = [
 
 /* ---------- 9. LANGUAGE TESTS ---------- */
 const LANGUAGE_TESTS = [
-  { id: 'ielts',    label: 'IELTS Academic', cost: 250, duration: 0.1, forCountries: ['uk', 'aus', 'can', 'usa', 'nzl'] },
+  { id: 'ielts',    label: 'IELTS Academic', cost: 250, duration: 0.1, forCountries: ['uk', 'gbr', 'aus', 'can', 'usa', 'nzl', 'sgp', 'ind'] },
   { id: 'toefl',    label: 'TOEFL iBT',      cost: 220, duration: 0.1, forCountries: ['usa', 'can'] },
   { id: 'goethe',   label: 'Goethe-Zertifikat B1/B2', cost: 200, duration: 0.15, forCountries: ['deu'] },
   { id: 'delf',     label: 'DELF B2',         cost: 180, duration: 0.15, forCountries: ['fra'] },
@@ -245,14 +460,14 @@ const LANGUAGE_SCORE_RANGES = {
 /* ---------- 10. REAL SCHOLARSHIPS ---------- */
 const SCHOLARSHIPS = [
   { id: 'fulbright',    name: 'Fulbright Foreign Student Program', country: 'usa', coverage: 'full', requires: { gpa: 3.5, ielts: 7.0 }, acceptanceRate: 0.08 },
-  { id: 'chevening',    name: 'Chevening (UK)',                    country: 'uk',  coverage: 'full', requires: { gpa: 3.5, ielts: 7.0, workYears: 2 }, acceptanceRate: 0.05 },
+  { id: 'chevening',    name: 'Chevening (UK)',                    country: 'gbr',  coverage: 'full', requires: { gpa: 3.5, ielts: 7.0, workYears: 2 }, acceptanceRate: 0.05 },
   { id: 'daad',         name: 'DAAD (Germany)',                    country: 'deu', coverage: 'full', requires: { gpa: 3.3, germanB1: true }, acceptanceRate: 0.15 },
   { id: 'erasmus',      name: 'Erasmus Mundus (EU)',               country: 'eu',  coverage: 'full', requires: { gpa: 3.5, ielts: 7.0 }, acceptanceRate: 0.10 },
   { id: 'mext',         name: 'MEXT (Japan)',                      country: 'jpn', coverage: 'full', requires: { gpa: 3.5 }, acceptanceRate: 0.12 },
-  { id: 'gates',        name: 'Gates Cambridge (UK)',              country: 'uk',  coverage: 'full', requires: { gpa: 3.8 }, acceptanceRate: 0.02 },
-  { id: 'rhodes',       name: 'Rhodes Scholarship (Oxford)',       country: 'uk',  coverage: 'full', requires: { gpa: 3.8, leadership: true }, acceptanceRate: 0.03 },
+  { id: 'gates',        name: 'Gates Cambridge (UK)',              country: 'gbr',  coverage: 'full', requires: { gpa: 3.8 }, acceptanceRate: 0.02 },
+  { id: 'rhodes',       name: 'Rhodes Scholarship (Oxford)',       country: 'gbr',  coverage: 'full', requires: { gpa: 3.8, leadership: true }, acceptanceRate: 0.03 },
   { id: 'vanier',       name: 'Vanier Canada Graduate',            country: 'can', coverage: 'full', requires: { gpa: 3.5 }, acceptanceRate: 0.10 },
-  { id: 'commonwealth', name: 'Commonwealth Scholarship (UK)',     country: 'uk',  coverage: 'full', requires: { gpa: 3.5, developingCountry: true }, acceptanceRate: 0.12 },
+  { id: 'commonwealth', name: 'Commonwealth Scholarship (UK)',     country: 'gbr',  coverage: 'full', requires: { gpa: 3.5, developingCountry: true }, acceptanceRate: 0.12 },
   { id: 'australia_awards', name: 'Australia Awards',              country: 'aus', coverage: 'full', requires: { gpa: 3.5 }, acceptanceRate: 0.10 }
 ];
 
@@ -261,10 +476,15 @@ const SCHOLARSHIPS = [
    for study — the study abroads give you a degree + temporary status. */
 const STUDY_DESTINATIONS = [
   { id: 'usa', country: 'usa', label: 'United States',     universities: ['Harvard', 'MIT', 'Stanford', 'UC Berkeley', 'NYU'] },
-  { id: 'uk',  country: 'uk',  label: 'United Kingdom',    universities: ['Oxford', 'Cambridge', 'Imperial', 'UCL', 'LSE'] },
+  { id: 'gbr', country: 'gbr', label: 'United Kingdom',    universities: ['Oxford', 'Cambridge', 'Imperial', 'UCL', 'LSE'] },
   { id: 'deu', country: 'deu', label: 'Germany',           universities: ['TUM', 'LMU Munich', 'Heidelberg', 'RWTH Aachen'] },
   { id: 'can', country: 'can', label: 'Canada',            universities: ['University of Toronto', 'UBC', 'McGill', 'Waterloo'] },
-  { id: 'aus', country: 'aus', label: 'Australia',         universities: ['University of Melbourne', 'ANU', 'Sydney', 'UNSW'] }
+  { id: 'aus', country: 'aus', label: 'Australia',         universities: ['University of Melbourne', 'ANU', 'Sydney', 'UNSW'] },
+  { id: 'nld', country: 'nld', label: 'Netherlands',       universities: ['Leiden', 'UvA', 'TU Delft'] },
+  { id: 'fra', country: 'fra', label: 'France',            universities: ['Sorbonne', 'École Polytechnique', 'HEC Paris'] },
+  { id: 'jpn', country: 'jpn', label: 'Japan',             universities: ['University of Tokyo', 'Kyoto University', 'Waseda'] },
+  { id: 'ita', country: 'ita', label: 'Italy',             universities: ['Sapienza', 'Politecnico di Milano', 'Bocconi'] },
+  { id: 'sgp', country: 'sgp', label: 'Singapore',         universities: ['NUS', 'NTU', 'SMU'] }
 ];
 
 /* ---------- 12. RELOCATION COSTS (once approved) ---------- */
@@ -272,11 +492,19 @@ const STUDY_DESTINATIONS = [
 const RELOCATION_COSTS = {
   usa:  { flight: 900,  shipping: 600,  deposit: 3000 },
   uk:   { flight: 500,  shipping: 400,  deposit: 2000 },
+  gbr:  { flight: 500,  shipping: 400,  deposit: 2000 },
   deu:  { flight: 400,  shipping: 350,  deposit: 1500 },
   can:  { flight: 1000, shipping: 600,  deposit: 2500 },
   aus:  { flight: 1200, shipping: 700,  deposit: 2500 },
   sau:  { flight: 350,  shipping: 200,  deposit: 1500 },
-  uae:  { flight: 250,  shipping: 150,  deposit: 1200 }
+  uae:  { flight: 250,  shipping: 150,  deposit: 1200 },
+  nld:  { flight: 450,  shipping: 350,  deposit: 1800 },
+  fra:  { flight: 400,  shipping: 300,  deposit: 1600 },
+  jpn:  { flight: 1100, shipping: 500,  deposit: 2000 },
+  ita:  { flight: 350,  shipping: 300,  deposit: 1200 },
+  sgp:  { flight: 900,  shipping: 400,  deposit: 3500 },
+  bra:  { flight: 1000, shipping: 500,  deposit: 1000 },
+  ind:  { flight: 600,  shipping: 300,  deposit: 800 }
 };
 
 /* ---------- 13. IQAMA RENEWAL (Gulf only) ---------- */
