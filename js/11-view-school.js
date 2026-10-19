@@ -34,6 +34,27 @@ function ensureEducationState() {
     S.uni.credits = 0;
     S.uni.startedYear = S.uni.startedYear || (gameYear() - (S.uni.year || 0));
   }
+
+  /* Reconstruct graduation data for old saves that finished university */
+  if (S.degree && !S.graduation) {
+    var reconstructed = {
+      uniName: (S.uni && S.uni.name) || S.graduatedFrom || 'Unknown University',
+      majorLabel: S.majorLabel || S.majorId || (S.degree.charAt(0).toUpperCase() + S.degree.slice(1)),
+      gpa: (S.uni && S.uni.gpa) || (typeof S.finalGpa === 'number' ? S.finalGpa : 0),
+      degree: S.degree,
+      year: (S.uni && S.uni.startedYear ? S.uni.startedYear + (S.uni.yearsTotal || 4) : gameYear() - 1),
+      isStudyAbroad: false
+    };
+    if (S.uni) {
+      reconstructed.uniName = S.uni.name || 'Unknown University';
+      reconstructed.gpa = S.uni.gpa || 0;
+      reconstructed.majorLabel = (typeof eduMajorById === 'function' && S.uni.major)
+        ? ((eduMajorById(S.uni.major) || {}).label || S.uni.major)
+        : (S.uni.major || S.degree);
+      S.uni = null;
+    }
+    S.graduation = reconstructed;
+  }
 }
 GameHooks.on('newGame', ensureEducationState);
 GameHooks.on('migrate', ensureEducationState);
@@ -467,16 +488,38 @@ function eduStatusLabel() {
 /* ---------- TAB: OVERVIEW ---------- */
 function eduRenderOverview() {
   var html = '<div class="card"><h3>📋 Status</h3>' +
-    '<div class="row"><span>Age</span><b>' + S.age + '</b></div>' +
-    '<div class="row"><span>School</span><b>' + (S.school ? ((eduSchoolById(S.school) || {}).label || S.school) : 'Not enrolled') + '</b></div>' +
-    (S.educationTrack ? '<div class="row"><span>Track</span><b>' + ((eduTrackById(S.educationTrack) || {}).label || S.educationTrack) + '</b></div>' : '') +
-    (S.thanaweyaScore ? '<div class="row"><span>Exam Score</span><b class="' + (S.thanaweyaScore >= 80 ? 'good' : S.thanaweyaScore >= 60 ? '' : 'bad') + '">' + S.thanaweyaScore.toFixed(1) + '%</b></div>' : '') +
-    (S.uni ? '<div class="row"><span>University</span><b>' + S.uni.name + '</b></div>' : '') +
-    (S.uni ? '<div class="row"><span>Major</span><b>' + ((eduMajorById(S.uni.major) || {}).label || S.uni.major) + '</b></div>' : '') +
-    (S.uni ? '<div class="row"><span>GPA</span><b>' + S.uni.gpa.toFixed(2) + ' / 4.0</b></div>' : '') +
-    (S.degree ? '<div class="row"><span>Degree</span><b class="good">' + S.degree + '</b></div>' : '') +
-    (S.examStress > 0 ? '<div class="row"><span>Exam stress</span><b class="' + (S.examStress > 70 ? 'bad' : '') + '">' + S.examStress + '/100</b></div>' : '') +
-    '</div>';
+    '<div class="row"><span>Age</span><b>' + S.age + '</b></div>';
+
+  if (S.degree) {
+    /* Graduated */
+    html += '<div class="row"><span>Status</span><b class="good">🎓 Graduated</b></div>' +
+      '<div class="row"><span>Degree</span><b class="good">' + S.degree + '</b></div>';
+    if (S.graduation) {
+      html += '<div class="row"><span>Major</span><b>' + (S.graduation.majorLabel || '—') + '</b></div>' +
+        '<div class="row"><span>University</span><b>' + (S.graduation.uniName || '—') + '</b></div>' +
+        '<div class="row"><span>Final GPA</span><b>' + (S.graduation.gpa ? S.graduation.gpa.toFixed(2) : '—') + '</b></div>' +
+        '<div class="row"><span>Graduated</span><b>' + (S.graduation.year || '—') + '</b></div>';
+    }
+  } else {
+    /* Currently in school or uni */
+    html += '<div class="row"><span>School</span><b>' + (S.school ? ((eduSchoolById(S.school) || {}).label || S.school) : 'Not enrolled') + '</b></div>';
+    if (S.educationTrack) {
+      html += '<div class="row"><span>Track</span><b>' + ((eduTrackById(S.educationTrack) || {}).label || S.educationTrack) + '</b></div>';
+    }
+    if (S.thanaweyaScore) {
+      html += '<div class="row"><span>Exam Score</span><b class="' + (S.thanaweyaScore >= 80 ? 'good' : S.thanaweyaScore >= 60 ? '' : 'bad') + '">' + S.thanaweyaScore.toFixed(1) + '%</b></div>';
+    }
+    if (S.uni) {
+      html += '<div class="row"><span>University</span><b>' + S.uni.name + '</b></div>' +
+        '<div class="row"><span>Major</span><b>' + ((eduMajorById(S.uni.major) || {}).label || S.uni.major) + '</b></div>' +
+        '<div class="row"><span>GPA</span><b>' + S.uni.gpa.toFixed(2) + ' / 4.0</b></div>';
+    }
+    if (S.examStress > 0) {
+      html += '<div class="row"><span>Exam stress</span><b class="' + (S.examStress > 70 ? 'bad' : '') + '">' + S.examStress + '/100</b></div>';
+    }
+  }
+
+  html += '</div>';
 
   if (S.age >= 6 && S.age < 18 && !S.school) {
     html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">⚠️ Choose a School</h3>' +
@@ -667,7 +710,10 @@ function eduRenderCurrentUni() {
 
 /* ---------- ACTIVITIES ---------- */
 function eduRenderActivities() {
-  var inSchool = (S.age >= 6 && S.age <= 25) || S.uni;
+  if (S.degree) {
+    return '<div class="card"><h3>🎯 Activities</h3><p class="muted small">Activities are only available during school or university. You have graduated — focus on your career.</p></div>';
+  }
+  var inSchool = S.school || S.uni;
   if (!inSchool) return '<div class="card"><h3>🎯 Activities</h3><p class="muted small">Available during school or university.</p></div>';
 
   var html = '<div class="card"><h3>🎯 Clubs & Activities</h3></div>';
