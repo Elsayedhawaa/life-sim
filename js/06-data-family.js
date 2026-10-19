@@ -132,7 +132,7 @@ const WEDDING_TIERS = [
   { id: 'elite_5star', label: '5-Star Luxury Wedding', costUSD: 50000, socialBoost: 25, stress: 10 }
 ];
 
-const MARRIAGE_FINANCE_MODELS = [
+const FAMILY_MARRIAGE_FINANCE_MODELS = [
   { id: 'traditional_male_provider', label: 'Husband pays all (Wife keeps her income or housewife)' },
   { id: 'egalitarian_50_50', label: 'Split 50/50 (Shared Account)' },
   { id: 'proportional', label: 'Split by Income %' },
