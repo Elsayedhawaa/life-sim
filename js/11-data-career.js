@@ -1153,7 +1153,6 @@ const CAR_TRACKS = [
   },
 
   /* ===== OTHER ===== */
-  {
     {
     id: 'bpo',
     label: 'Call Center / BPO',
