@@ -18,7 +18,20 @@ const SHOP_MULT = {
   uk:  { phone: 1.20, tablet: 1.20, laptop: 1.20, tv: 1.20, audio: 1.20, watch: 1.05, appliances: 1.15, furniture: 1.10, fashion: 1.10, luxury: 1.05, bag: 1.05 },
   deu: { phone: 1.15, tablet: 1.15, laptop: 1.15, tv: 1.15, audio: 1.15, watch: 1.05, appliances: 1.10, furniture: 1.10, fashion: 1.10, luxury: 1.05, bag: 1.05 }
 };
-
+/* ---------- WARRANTY DEFAULTS (years) ---------- */
+/* Base warranty by category. View adjusts upward for luxury tier. */
+const SHOP_WARRANTY_YEARS = {
+  phone: 1,
+  tablet: 2,
+  laptop: 2,
+  desktop: 2,
+  tv: 2,
+  audio: 1,
+  watch: 2,
+  appliances: 2,
+  furniture: 0,
+  fashion: 0
+};
 /* ---------- SALES / DISCOUNT EVENTS ---------- */
 const SHOP_SALES = [
   { id: 'black_friday', label: 'Black Friday', month: 11, cats: ['phone', 'tablet', 'laptop', 'tv', 'audio', 'appliances', 'fashion'], discount: 0.30 },
