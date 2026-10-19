@@ -58,7 +58,7 @@ const BANKS = {
     { id: 'cbd', name: 'Commercial Bank of Dubai', shortName: 'CBD', founded: 1969, reputation: 4, savingsRate: 0.016, type: 'commercial' },
     { id: 'rakbank', name: 'RAKBANK', shortName: 'RAKBANK', founded: 1976, reputation: 4, savingsRate: 0.018, type: 'commercial' }
   ],
-  uk: [
+  gbr: [
     { id: 'hsbc_uk', name: 'HSBC UK', shortName: 'HSBC', founded: 1865, reputation: 5, savingsRate: 0.020, type: 'commercial' },
     { id: 'barclays', name: 'Barclays Bank', shortName: 'Barclays', founded: 1690, reputation: 5, savingsRate: 0.015, type: 'commercial' },
     { id: 'lloyds', name: 'Lloyds Bank', shortName: 'Lloyds', founded: 1765, reputation: 4, savingsRate: 0.014, type: 'commercial' },
@@ -189,7 +189,7 @@ const CERTIFICATES = {
     { id: 'adcb_millionaire', bankId: 'adcb', name: 'ADCB Millionaire Savings Certificate', term: 1, minAmount: 5000, rates: [0.0350], payout: 'at_maturity', earlyPenalty: 0.005 },
     { id: 'wio_space_cd', bankId: 'wio', name: 'Wio Save Space 12-Month CD', term: 1, minAmount: 1000, rates: [0.0525], payout: 'monthly', earlyPenalty: 0.005 }
   ],
-  uk: [
+  gbr: [
     { id: 'hsbc_1yr_fixed', bankId: 'hsbc_uk', name: 'HSBC Fixed Rate Saver 1-Year', term: 1, minAmount: 2000, rates: [0.0460], payout: 'at_maturity', earlyPenalty: 0.010 },
     { id: 'barclays_1yr_bond', bankId: 'barclays', name: 'Barclays 1-Year Fixed Rate Bond', term: 1, minAmount: 500, rates: [0.0450], payout: 'at_maturity', earlyPenalty: 0.010 },
     { id: 'monzo_growth_pot', bankId: 'monzo', name: 'Monzo Fixed Savings Pot 12-Mo', term: 1, minAmount: 500, rates: [0.0480], payout: 'at_maturity', earlyPenalty: 0.005 },
@@ -276,7 +276,7 @@ const CREDIT_CARDS = {
     { id: 'fab_cashback_infinite', bankId: 'fab', name: 'FAB Cashback Visa Infinite', tier: 'infinite', minLimit: 30000, maxLimit: 250000, apr: 0.26, minPaymentPct: 0.05, cashbackRate: 0.050, reqScore: 720, reqIncome: 240000, perks: ['5% cash back on Supermarkets, Fuel, and Utilities', 'VIP airport transfers'] },
     { id: 'adcb_touchpoints', bankId: 'adcb', name: 'ADCB TouchPoints Titanium', tier: 'gold', minLimit: 10000, maxLimit: 80000, apr: 0.29, minPaymentPct: 0.05, cashbackRate: 0.015, reqScore: 640, reqIncome: 96000, perks: ['TouchPoints reward catalog', '2-for-1 Vox Cinema tickets'] }
   ],
-  uk: [
+ gbr: [
     { id: 'barclaycard_avios', bankId: 'barclays', name: 'Barclaycard Avios Plus', tier: 'platinum', minLimit: 3000, maxLimit: 25000, apr: 0.23, minPaymentPct: 0.02, cashbackRate: 0.020, reqScore: 720, reqIncome: 35000, perks: ['1.5 British Airways Avios per £1', 'Cabin Upgrade Voucher yearly'] },
     { id: 'hsbc_premier_uk', bankId: 'hsbc_uk', name: 'HSBC Premier World Elite Card', tier: 'infinite', minLimit: 8000, maxLimit: 50000, apr: 0.21, minPaymentPct: 0.02, cashbackRate: 0.025, reqScore: 760, reqIncome: 75000, perks: ['LoungeKey airport pass', '2 Reward points per £1', 'No foreign transaction fees'] },
     { id: 'monzo_flex', bankId: 'monzo', name: 'Monzo Flex Credit Line', tier: 'classic', minLimit: 500, maxLimit: 6000, apr: 0.22, minPaymentPct: 0.03, cashbackRate: 0.010, reqScore: 630, reqIncome: 18000, perks: ['Split any purchase into 3 monthly interest-free payments'] }
@@ -314,7 +314,7 @@ const LOAN_PRODUCTS = {
     { id: 'home_finance_expat', name: 'Residential Home Mortgage Finance', purpose: 'mortgage', minAmount: 250000, maxAmount: 10000000, rate: 0.045, minTerm: 10, maxTerm: 25, reqScore: 680, reqIncome: 20000, requiresProperty: true, requiresCar: false },
     { id: 'auto_loan_uae', name: 'Comprehensive Auto Finance', purpose: 'car', minAmount: 25000, maxAmount: 600000, rate: 0.042, minTerm: 2, maxTerm: 5, reqScore: 640, reqIncome: 10000, requiresProperty: false, requiresCar: true }
   ],
-  uk: [
+ gbr: [
     { id: 'unsecured_personal_uk', name: 'Fixed Rate Personal Loan', purpose: 'general', minAmount: 2000, maxAmount: 35000, rate: 0.068, minTerm: 1, maxTerm: 7, reqScore: 660, reqIncome: 18000, requiresProperty: false, requiresCar: false },
     { id: 'residential_mortgage_uk', name: '5-Year Fixed Rate Residential Mortgage', purpose: 'mortgage', minAmount: 50000, maxAmount: 1000000, rate: 0.047, minTerm: 15, maxTerm: 35, reqScore: 680, reqIncome: 30000, requiresProperty: true, requiresCar: false },
     { id: 'pcp_car_finance', name: 'Personal Contract Purchase (PCP) Auto', purpose: 'car', minAmount: 5000, maxAmount: 80000, rate: 0.062, minTerm: 2, maxTerm: 4, reqScore: 650, reqIncome: 20000, requiresProperty: false, requiresCar: true }
@@ -424,7 +424,7 @@ const DIGITAL_WALLETS = {
     { id: 'careem_pay', name: 'Careem Pay', provider: 'Careem', fees: 0, transferFee: 0 },
     { id: 'eand_money', name: 'e& money', provider: 'e& (Etisalat)', fees: 0, transferFee: 0 }
   ],
-  uk: [
+ gbr: [
     { id: 'monzo_wallet', name: 'Monzo', provider: 'Monzo Bank', fees: 0, transferFee: 0 },
     { id: 'revolut', name: 'Revolut', provider: 'Revolut', fees: 0, transferFee: 0, multiCurrency: true },
     { id: 'wise', name: 'Wise', provider: 'Wise', fees: 0, transferFee: 0.0041, multiCurrency: true }
@@ -480,7 +480,7 @@ const GOV_BONDS = {
     { id: 'mbill_1yr', name: 'UAE M-Bill 1-Year', yield: 0.0480, minAmount: 5000, termDays: 365, risk: 'sovereign' },
     { id: 'bond_5yr', name: 'UAE Federal Bond 5-Year', yield: 0.0450, minAmount: 5000, termDays: 1825, risk: 'sovereign' }
   ],
-  uk: [
+ gbr: [
     { id: 'gilt_1yr', name: 'UK Gilt 1-Year', yield: 0.0480, minAmount: 100, termDays: 365, risk: 'sovereign' },
     { id: 'gilt_5yr', name: 'UK Gilt 5-Year', yield: 0.0420, minAmount: 100, termDays: 1825, risk: 'sovereign' },
     { id: 'gilt_10yr', name: 'UK Gilt 10-Year', yield: 0.0430, minAmount: 100, termDays: 3650, risk: 'sovereign' }
@@ -519,7 +519,7 @@ const INVESTMENT_PRODUCTS = {
     { id: 'adx_index', name: 'Abu Dhabi Exchange Fund', provider: 'FAB', expectedReturn: 0.11, volatility: 0.18, minInvestment: 10000, risk: 'high' },
     { id: 'global_equity', name: 'Global Equity Fund', provider: 'Mashreq', expectedReturn: 0.09, volatility: 0.15, minInvestment: 25000, risk: 'medium' }
   ],
-  uk: [
+gbr: [
     { id: 'ftse_all_share', name: 'FTSE All-Share Index Fund', provider: 'Vanguard UK', expectedReturn: 0.075, volatility: 0.14, minInvestment: 100, risk: 'medium' },
     { id: 'lifestrategy_60', name: 'Vanguard LifeStrategy 60% Equity', provider: 'Vanguard UK', expectedReturn: 0.065, volatility: 0.10, minInvestment: 100, risk: 'medium' },
     { id: 'isa_cash', name: 'Cash ISA (tax-free savings)', provider: 'Multiple', expectedReturn: 0.042, volatility: 0, minInvestment: 1, risk: 'none', taxFree: true }
@@ -547,7 +547,7 @@ const PENSION_PRODUCTS = {
     { id: 'gpssa', name: 'GPSSA (for UAE nationals)', provider: 'Government', contributionRate: 0.05, employerRate: 0.125, retirementAge: 60, expectedReturn: 0.06 },
     { id: 'dews', name: 'DIFC Employee Workplace Savings (DEWS)', provider: 'DIFC', contributionRate: 0.055, employerRate: 0.055, retirementAge: 60, expectedReturn: 0.07 }
   ],
-  uk: [
+gbr: [
     { id: 'state_pension', name: 'UK State Pension', provider: 'Government', contributionRate: 0.08, employerRate: 0.138, retirementAge: 66, expectedReturn: 0.03 },
     { id: 'workplace_pension', name: 'Workplace Auto-Enrollment Pension', provider: 'Multiple', contributionRate: 0.05, employerRate: 0.03, retirementAge: 55, expectedReturn: 0.07 },
     { id: 'sipp', name: 'Self-Invested Personal Pension (SIPP)', provider: 'Multiple', contributionRate: 0.20, employerMatch: 0, retirementAge: 55, expectedReturn: 0.075, taxAdvantaged: true }
@@ -585,7 +585,7 @@ const INSURANCE_PRODUCTS = {
     { id: 'life_oman', name: 'Oman Insurance — Life', type: 'life', provider: 'Oman Insurance', annualRate: 0.0035, maxCoverage: 3000000 },
     { id: 'car_oman', name: 'Oman Insurance — Car', type: 'car', provider: 'Oman Insurance', annualRate: 0.045, maxCoverage: 'market_value' }
   ],
-  uk: [
+ gbr: [
     { id: 'home_aviva', name: 'Aviva — Home', type: 'home', provider: 'Aviva', annualRate: 0.0015, maxCoverage: 1000000, deductible: 0.015 },
     { id: 'life_aviva', name: 'Aviva — Term Life', type: 'life', provider: 'Aviva', annualRate: 0.0025, maxCoverage: 500000 },
     { id: 'car_direct_line', name: 'Direct Line — Car', type: 'car', provider: 'Direct Line', annualRate: 0.040, maxCoverage: 'market_value' }
@@ -613,7 +613,7 @@ const OVERDRAFT_PRODUCTS = {
   uae: [
     { id: 'enbd_overdraft', bankId: 'emirates_nbd', name: 'Emirates NBD Overdraft', maxAmount: 200000, apr: 0.075, minIncome: 10000 }
   ],
-  uk: [
+gbr: [
     { id: 'barclays_overdraft', bankId: 'barclays', name: 'Barclays Arranged Overdraft', maxAmount: 5000, apr: 0.35, minIncome: 1500 }
   ]
 };
@@ -652,7 +652,7 @@ const SAVINGS_GOAL_TEMPLATES = {
     { id: 'house_down', name: 'Property Down Payment', targetAmount: 200000, note: '20% of AED 1M' },
     { id: 'car_down', name: 'Car Down Payment', targetAmount: 50000, note: '20% down' }
   ],
-  uk: [
+gbr: [
     { id: 'emergency', name: 'Emergency Fund', targetAmount: 10000, note: '6 months' },
     { id: 'house_deposit', name: 'House Deposit', targetAmount: 40000, note: '10% deposit' },
     { id: 'car', name: 'Car Purchase', targetAmount: 15000, note: 'Used car' }
