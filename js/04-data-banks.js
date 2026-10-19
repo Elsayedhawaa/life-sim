@@ -23,7 +23,8 @@ const BANKS = {
     { id: 'aaib', name: 'Arab African International Bank', shortName: 'AAIB', founded: 1964, reputation: 5, savingsRate: 0.025, type: 'commercial' },
     { id: 'adib_egy', name: 'Abu Dhabi Islamic Bank Egypt', shortName: 'ADIB', founded: 2007, reputation: 4, savingsRate: 0.024, type: 'islamic' },
     { id: 'credit_agricole', name: 'Crédit Agricole Egypt', shortName: 'CAE', founded: 2006, reputation: 4, savingsRate: 0.018, type: 'international' },
-    { id: 'telda', name: 'Telda FinTech', shortName: 'Telda', founded: 2021, reputation: 3, savingsRate: 0.000, type: 'neobank' }
+    { id: 'telda', name: 'Telda FinTech', shortName: 'Telda', founded: 2021, reputation: 3, savingsRate: 0.000, type: 'neobank' },
+    { id: 'nasser_social', name: 'Nasser Social Bank', shortName: 'NSB', founded: 1971, reputation: 3, savingsRate: 0.018, type: 'state' }
   ],
   usa: [
     { id: 'chase', name: 'JPMorgan Chase Bank', shortName: 'Chase', founded: 1799, reputation: 5, savingsRate: 0.0001, type: 'commercial' },
@@ -34,7 +35,9 @@ const BANKS = {
     { id: 'capital_one', name: 'Capital One', shortName: 'CapOne', founded: 1994, reputation: 4, savingsRate: 0.0415, type: 'commercial' },
     { id: 'marcus', name: 'Marcus by Goldman Sachs', shortName: 'Marcus', founded: 2016, reputation: 5, savingsRate: 0.0440, type: 'neobank' },
     { id: 'schwab', name: 'Charles Schwab Bank', shortName: 'Schwab', founded: 1971, reputation: 5, savingsRate: 0.0045, type: 'wealth' },
-    { id: 'fidelity', name: 'Fidelity Cash Management', shortName: 'Fidelity', founded: 1946, reputation: 5, savingsRate: 0.0480, type: 'wealth' }
+    { id: 'fidelity', name: 'Fidelity Cash Management', shortName: 'Fidelity', founded: 1946, reputation: 5, savingsRate: 0.0480, type: 'wealth' },
+    { id: 'amex', name: 'American Express', shortName: 'Amex', founded: 1850, reputation: 5, savingsRate: 0.0001, type: 'commercial' },
+    { id: 'discover', name: 'Discover Financial Services', shortName: 'Discover', founded: 1985, reputation: 4, savingsRate: 0.0400, type: 'commercial' }
   ],
   sau: [
     { id: 'snb', name: 'Saudi National Bank', shortName: 'SNB', founded: 1953, reputation: 5, savingsRate: 0.015, type: 'state' },
@@ -51,7 +54,9 @@ const BANKS = {
     { id: 'adcb', name: 'Abu Dhabi Commercial Bank', shortName: 'ADCB', founded: 1985, reputation: 4, savingsRate: 0.014, type: 'commercial' },
     { id: 'dib', name: 'Dubai Islamic Bank', shortName: 'DIB', founded: 1975, reputation: 5, savingsRate: 0.022, type: 'islamic' },
     { id: 'mashreq', name: 'Mashreq Bank', shortName: 'Mashreq', founded: 1967, reputation: 4, savingsRate: 0.020, type: 'commercial' },
-    { id: 'wio', name: 'Wio Bank', shortName: 'Wio', founded: 2022, reputation: 4, savingsRate: 0.050, type: 'neobank' }
+    { id: 'wio', name: 'Wio Bank', shortName: 'Wio', founded: 2022, reputation: 4, savingsRate: 0.050, type: 'neobank' },
+    { id: 'cbd', name: 'Commercial Bank of Dubai', shortName: 'CBD', founded: 1969, reputation: 4, savingsRate: 0.016, type: 'commercial' },
+    { id: 'rakbank', name: 'RAKBANK', shortName: 'RAKBANK', founded: 1976, reputation: 4, savingsRate: 0.018, type: 'commercial' }
   ],
   uk: [
     { id: 'hsbc_uk', name: 'HSBC UK', shortName: 'HSBC', founded: 1865, reputation: 5, savingsRate: 0.020, type: 'commercial' },
@@ -59,7 +64,92 @@ const BANKS = {
     { id: 'lloyds', name: 'Lloyds Bank', shortName: 'Lloyds', founded: 1765, reputation: 4, savingsRate: 0.014, type: 'commercial' },
     { id: 'natwest', name: 'NatWest', shortName: 'NatWest', founded: 1968, reputation: 4, savingsRate: 0.018, type: 'commercial' },
     { id: 'monzo', name: 'Monzo Bank', shortName: 'Monzo', founded: 2015, reputation: 5, savingsRate: 0.041, type: 'neobank' },
-    { id: 'starling', name: 'Starling Bank', shortName: 'Starling', founded: 2014, reputation: 5, savingsRate: 0.032, type: 'neobank' }
+    { id: 'starling', name: 'Starling Bank', shortName: 'Starling', founded: 2014, reputation: 5, savingsRate: 0.032, type: 'neobank' },
+    { id: 'santander_uk', name: 'Santander UK', shortName: 'Santander', founded: 2010, reputation: 4, savingsRate: 0.016, type: 'commercial' },
+    { id: 'nationwide', name: 'Nationwide Building Society', shortName: 'Nationwide', founded: 1884, reputation: 5, savingsRate: 0.019, type: 'building_society' }
+  ],
+  deu: [
+    { id: 'db', name: 'Deutsche Bank', shortName: 'DB', founded: 1870, reputation: 5, savingsRate: 0.005, type: 'commercial' },
+    { id: 'commerzbank', name: 'Commerzbank', shortName: 'Commerzbank', founded: 1870, reputation: 4, savingsRate: 0.005, type: 'commercial' },
+    { id: 'sparkasse', name: 'Sparkasse', shortName: 'Sparkasse', founded: 1778, reputation: 5, savingsRate: 0.001, type: 'state' },
+    { id: 'n26', name: 'N26', shortName: 'N26', founded: 2013, reputation: 4, savingsRate: 0.022, type: 'neobank' },
+    { id: 'dkb', name: 'DKB', shortName: 'DKB', founded: 1990, reputation: 4, savingsRate: 0.015, type: 'commercial' },
+    { id: 'ing_diba', name: 'ING-DiBa', shortName: 'ING', founded: 1965, reputation: 5, savingsRate: 0.035, type: 'commercial' }
+  ],
+  can: [
+    { id: 'rbc', name: 'Royal Bank of Canada', shortName: 'RBC', founded: 1864, reputation: 5, savingsRate: 0.010, type: 'commercial' },
+    { id: 'td', name: 'TD Bank', shortName: 'TD', founded: 1955, reputation: 5, savingsRate: 0.010, type: 'commercial' },
+    { id: 'scotiabank', name: 'Scotiabank', shortName: 'Scotiabank', founded: 1832, reputation: 5, savingsRate: 0.012, type: 'commercial' },
+    { id: 'bmo', name: 'Bank of Montreal', shortName: 'BMO', founded: 1817, reputation: 4, savingsRate: 0.010, type: 'commercial' },
+    { id: 'cibc', name: 'CIBC', shortName: 'CIBC', founded: 1961, reputation: 4, savingsRate: 0.010, type: 'commercial' },
+    { id: 'tangerine', name: 'Tangerine', shortName: 'Tangerine', founded: 1997, reputation: 4, savingsRate: 0.040, type: 'neobank' },
+    { id: 'simplii', name: 'Simplii Financial', shortName: 'Simplii', founded: 2017, reputation: 4, savingsRate: 0.035, type: 'neobank' }
+  ],
+  aus: [
+    { id: 'cba', name: 'Commonwealth Bank', shortName: 'CommBank', founded: 1911, reputation: 5, savingsRate: 0.015, type: 'commercial' },
+    { id: 'westpac', name: 'Westpac', shortName: 'Westpac', founded: 1817, reputation: 5, savingsRate: 0.015, type: 'commercial' },
+    { id: 'anz', name: 'ANZ Bank', shortName: 'ANZ', founded: 1835, reputation: 5, savingsRate: 0.015, type: 'commercial' },
+    { id: 'nab', name: 'National Australia Bank', shortName: 'NAB', founded: 1858, reputation: 4, savingsRate: 0.015, type: 'commercial' },
+    { id: 'macquarie', name: 'Macquarie Bank', shortName: 'Macquarie', founded: 1969, reputation: 4, savingsRate: 0.045, type: 'wealth' },
+    { id: 'ing_aus', name: 'ING Australia', shortName: 'ING', founded: 1999, reputation: 4, savingsRate: 0.050, type: 'commercial' },
+    { id: 'ubank', name: 'UBank', shortName: 'UBank', founded: 2008, reputation: 4, savingsRate: 0.045, type: 'neobank' }
+  ],
+  nld: [
+    { id: 'ing_nl', name: 'ING Bank', shortName: 'ING', founded: 1991, reputation: 5, savingsRate: 0.015, type: 'commercial' },
+    { id: 'rabobank', name: 'Rabobank', shortName: 'Rabobank', founded: 1898, reputation: 5, savingsRate: 0.015, type: 'commercial' },
+    { id: 'abn_amro', name: 'ABN AMRO', shortName: 'ABN AMRO', founded: 1991, reputation: 4, savingsRate: 0.015, type: 'commercial' },
+    { id: 'bunq', name: 'bunq', shortName: 'bunq', founded: 2012, reputation: 4, savingsRate: 0.024, type: 'neobank' },
+    { id: 'sns_bank', name: 'SNS Bank', shortName: 'SNS', founded: 1817, reputation: 4, savingsRate: 0.017, type: 'commercial' }
+  ],
+  fra: [
+    { id: 'bnpp', name: 'BNP Paribas', shortName: 'BNPP', founded: 2000, reputation: 5, savingsRate: 0.010, type: 'commercial' },
+    { id: 'socgen', name: 'Société Générale', shortName: 'SocGen', founded: 1864, reputation: 5, savingsRate: 0.010, type: 'commercial' },
+    { id: 'credit_agricole_fra', name: 'Crédit Agricole', shortName: 'Crédit Agricole', founded: 1894, reputation: 5, savingsRate: 0.010, type: 'commercial' },
+    { id: 'bpce', name: 'Groupe BPCE', shortName: 'BPCE', founded: 2009, reputation: 4, savingsRate: 0.010, type: 'commercial' },
+    { id: 'boursobank', name: 'BoursoBank', shortName: 'BoursoBank', founded: 1995, reputation: 4, savingsRate: 0.025, type: 'neobank' },
+    { id: 'hello_bank', name: 'Hello bank!', shortName: 'Hello bank!', founded: 2013, reputation: 4, savingsRate: 0.020, type: 'neobank' }
+  ],
+  jpn: [
+    { id: 'mufg', name: 'MUFG Bank', shortName: 'MUFG', founded: 2006, reputation: 5, savingsRate: 0.00001, type: 'commercial' },
+    { id: 'smbc', name: 'SMBC', shortName: 'SMBC', founded: 2001, reputation: 5, savingsRate: 0.00001, type: 'commercial' },
+    { id: 'mizuho', name: 'Mizuho Bank', shortName: 'Mizuho', founded: 2002, reputation: 5, savingsRate: 0.00001, type: 'commercial' },
+    { id: 'jp_post', name: 'Japan Post Bank', shortName: 'JP Post', founded: 2006, reputation: 5, savingsRate: 0.00001, type: 'state' },
+    { id: 'rakuten_bank', name: 'Rakuten Bank', shortName: 'Rakuten', founded: 2001, reputation: 4, savingsRate: 0.0002, type: 'neobank' },
+    { id: 'sbi_sumishin', name: 'SBI Sumishin Net Bank', shortName: 'SBI Sumishin', founded: 2007, reputation: 4, savingsRate: 0.0001, type: 'neobank' }
+  ],
+  ita: [
+    { id: 'isp', name: 'Intesa Sanpaolo', shortName: 'ISP', founded: 2007, reputation: 5, savingsRate: 0.005, type: 'commercial' },
+    { id: 'unicredit', name: 'UniCredit', shortName: 'UniCredit', founded: 1998, reputation: 5, savingsRate: 0.005, type: 'commercial' },
+    { id: 'cdp', name: 'Cassa Depositi e Prestiti', shortName: 'CDP', founded: 1850, reputation: 5, savingsRate: 0.015, type: 'state' },
+    { id: 'bpm', name: 'Banco BPM', shortName: 'BPM', founded: 2017, reputation: 4, savingsRate: 0.005, type: 'commercial' },
+    { id: 'illimity', name: 'illimity Bank', shortName: 'illimity', founded: 2018, reputation: 4, savingsRate: 0.030, type: 'neobank' },
+    { id: 'fineco', name: 'FinecoBank', shortName: 'Fineco', founded: 1999, reputation: 4, savingsRate: 0.010, type: 'wealth' }
+  ],
+  sgp: [
+    { id: 'dbs', name: 'DBS Bank', shortName: 'DBS', founded: 1968, reputation: 5, savingsRate: 0.0005, type: 'commercial' },
+    { id: 'ocbc', name: 'OCBC Bank', shortName: 'OCBC', founded: 1932, reputation: 5, savingsRate: 0.0005, type: 'commercial' },
+    { id: 'uob', name: 'UOB', shortName: 'UOB', founded: 1935, reputation: 5, savingsRate: 0.0005, type: 'commercial' },
+    { id: 'scb_sgp', name: 'Standard Chartered', shortName: 'SCB', founded: 1859, reputation: 4, savingsRate: 0.001, type: 'international' },
+    { id: 'citi_sgp', name: 'Citibank Singapore', shortName: 'Citi', founded: 1902, reputation: 4, savingsRate: 0.001, type: 'international' },
+    { id: 'trust_bank', name: 'Trust Bank', shortName: 'Trust', founded: 2022, reputation: 4, savingsRate: 0.020, type: 'neobank' }
+  ],
+  bra: [
+    { id: 'itau', name: 'Itaú Unibanco', shortName: 'Itaú', founded: 1945, reputation: 5, savingsRate: 0.060, type: 'commercial' },
+    { id: 'bradesco', name: 'Banco Bradesco', shortName: 'Bradesco', founded: 1943, reputation: 5, savingsRate: 0.060, type: 'commercial' },
+    { id: 'bb', name: 'Banco do Brasil', shortName: 'BB', founded: 1808, reputation: 5, savingsRate: 0.060, type: 'state' },
+    { id: 'caixa', name: 'Caixa Econômica Federal', shortName: 'Caixa', founded: 1861, reputation: 5, savingsRate: 0.060, type: 'state' },
+    { id: 'nubank', name: 'Nubank', shortName: 'Nubank', founded: 2013, reputation: 5, savingsRate: 0.100, type: 'neobank' },
+    { id: 'inter', name: 'Banco Inter', shortName: 'Inter', founded: 1994, reputation: 4, savingsRate: 0.090, type: 'neobank' },
+    { id: 'c6', name: 'C6 Bank', shortName: 'C6', founded: 2018, reputation: 4, savingsRate: 0.095, type: 'neobank' }
+  ],
+  ind: [
+    { id: 'sbi', name: 'State Bank of India', shortName: 'SBI', founded: 1955, reputation: 5, savingsRate: 0.027, type: 'state' },
+    { id: 'hdfc', name: 'HDFC Bank', shortName: 'HDFC', founded: 1994, reputation: 5, savingsRate: 0.030, type: 'commercial' },
+    { id: 'icici', name: 'ICICI Bank', shortName: 'ICICI', founded: 1994, reputation: 5, savingsRate: 0.030, type: 'commercial' },
+    { id: 'axis', name: 'Axis Bank', shortName: 'Axis', founded: 1993, reputation: 4, savingsRate: 0.030, type: 'commercial' },
+    { id: 'kotak', name: 'Kotak Mahindra Bank', shortName: 'Kotak', founded: 1985, reputation: 4, savingsRate: 0.035, type: 'commercial' },
+    { id: 'jupiter', name: 'Jupiter', shortName: 'Jupiter', founded: 2019, reputation: 3, savingsRate: 0.040, type: 'neobank' },
+    { id: 'fi_money', name: 'Fi Money', shortName: 'Fi', founded: 2019, reputation: 3, savingsRate: 0.035, type: 'neobank' }
   ]
 };
 
@@ -104,6 +194,52 @@ const CERTIFICATES = {
     { id: 'barclays_1yr_bond', bankId: 'barclays', name: 'Barclays 1-Year Fixed Rate Bond', term: 1, minAmount: 500, rates: [0.0450], payout: 'at_maturity', earlyPenalty: 0.010 },
     { id: 'monzo_growth_pot', bankId: 'monzo', name: 'Monzo Fixed Savings Pot 12-Mo', term: 1, minAmount: 500, rates: [0.0480], payout: 'at_maturity', earlyPenalty: 0.005 },
     { id: 'starling_fixed_saver', bankId: 'starling', name: 'Starling 1-Year Fixed Saver', term: 1, minAmount: 2000, rates: [0.0470], payout: 'at_maturity', earlyPenalty: 0.005 }
+  ],
+  deu: [
+    { id: 'db_1yr', bankId: 'db', name: 'DB FestzinsSparen 1 Year', term: 1, minAmount: 2500, rates: [0.0350], payout: 'at_maturity', earlyPenalty: 0.005 },
+    { id: 'ing_1yr', bankId: 'ing_diba', name: 'ING Festgeld 1 Year', term: 1, minAmount: 10000, rates: [0.0375], payout: 'at_maturity', earlyPenalty: 0.005 },
+    { id: 'dkb_1yr', bankId: 'dkb', name: 'DKB-Festgeld 1 Year', term: 1, minAmount: 2500, rates: [0.0350], payout: 'at_maturity', earlyPenalty: 0.005 }
+  ],
+  can: [
+    { id: 'td_1yr_gic', bankId: 'td', name: 'TD 1-Year Non-Cashable GIC', term: 1, minAmount: 1000, rates: [0.0450], payout: 'at_maturity', earlyPenalty: 0.020 },
+    { id: 'tangerine_1yr_gic', bankId: 'tangerine', name: 'Tangerine 1-Year GIC', term: 1, minAmount: 0, rates: [0.0500], payout: 'at_maturity', earlyPenalty: 0.010 },
+    { id: 'rbc_1yr_gic', bankId: 'rbc', name: 'RBC 1-Year Non-Redeemable GIC', term: 1, minAmount: 1000, rates: [0.0425], payout: 'at_maturity', earlyPenalty: 0.020 }
+  ],
+  aus: [
+    { id: 'cba_1yr_term', bankId: 'cba', name: 'CommBank 12-Month Term Deposit', term: 1, minAmount: 5000, rates: [0.0475], payout: 'at_maturity', earlyPenalty: 0.015 },
+    { id: 'macquarie_1yr_term', bankId: 'macquarie', name: 'Macquarie 1-Year Term Deposit', term: 1, minAmount: 5000, rates: [0.0500], payout: 'at_maturity', earlyPenalty: 0.010 },
+    { id: 'ing_aus_1yr_term', bankId: 'ing_aus', name: 'ING 1-Year Term Deposit', term: 1, minAmount: 10000, rates: [0.0510], payout: 'at_maturity', earlyPenalty: 0.010 }
+  ],
+  nld: [
+    { id: 'ing_nl_1yr', bankId: 'ing_nl', name: 'ING Spaardeposito 1 Year', term: 1, minAmount: 500, rates: [0.0300], payout: 'at_maturity', earlyPenalty: 0.005 },
+    { id: 'rabobank_1yr', bankId: 'rabobank', name: 'Rabobank DoelSparen 1 Year', term: 1, minAmount: 1000, rates: [0.0320], payout: 'at_maturity', earlyPenalty: 0.005 },
+    { id: 'bunq_1yr', bankId: 'bunq', name: 'bunq 1-Year Fixed Deposit', term: 1, minAmount: 100, rates: [0.0350], payout: 'at_maturity', earlyPenalty: 0.005 }
+  ],
+  fra: [
+    { id: 'ca_1yr', bankId: 'credit_agricole_fra', name: 'Crédit Agricole Compte à Terme 1 an', term: 1, minAmount: 5000, rates: [0.0350], payout: 'at_maturity', earlyPenalty: 0.005 },
+    { id: 'bnpp_1yr', bankId: 'bnpp', name: 'BNP Paribas Compte à Terme 1 an', term: 1, minAmount: 15000, rates: [0.0320], payout: 'at_maturity', earlyPenalty: 0.005 }
+  ],
+  jpn: [
+    { id: 'mufg_1yr', bankId: 'mufg', name: 'MUFG Super Time Deposit 1 Year', term: 1, minAmount: 100000, rates: [0.00002], payout: 'at_maturity', earlyPenalty: 0.00001 },
+    { id: 'sbi_1yr', bankId: 'sbi_sumishin', name: 'SBI 1-Year Yen Term Deposit', term: 1, minAmount: 1000, rates: [0.002], payout: 'at_maturity', earlyPenalty: 0.0005 }
+  ],
+  ita: [
+    { id: 'isp_1yr', bankId: 'isp', name: 'Intesa Sanpaolo Deposito Vincolato 1 Year', term: 1, minAmount: 10000, rates: [0.0300], payout: 'at_maturity', earlyPenalty: 0.005 },
+    { id: 'illimity_1yr', bankId: 'illimity', name: 'illimity 1-Year Non-Cancellable Deposit', term: 1, minAmount: 1000, rates: [0.0400], payout: 'at_maturity', earlyPenalty: 0.020 }
+  ],
+  sgp: [
+    { id: 'dbs_1yr', bankId: 'dbs', name: 'DBS 12-Month Fixed Deposit', term: 1, minAmount: 1000, rates: [0.0320], payout: 'at_maturity', earlyPenalty: 0.005 },
+    { id: 'ocbc_1yr', bankId: 'ocbc', name: 'OCBC 12-Month Time Deposit', term: 1, minAmount: 5000, rates: [0.0340], payout: 'at_maturity', earlyPenalty: 0.005 }
+  ],
+  bra: [
+    { id: 'itau_cdb_1yr', bankId: 'itau', name: 'Itaú CDB 1 Ano', term: 1, minAmount: 1000, rates: [0.105], payout: 'at_maturity', earlyPenalty: 0.020 },
+    { id: 'nubank_cdb_1yr', bankId: 'nubank', name: 'Nubank RDB 1 Ano', term: 1, minAmount: 100, rates: [0.115], payout: 'at_maturity', earlyPenalty: 0.020 },
+    { id: 'inter_lci_1yr', bankId: 'inter', name: 'Banco Inter LCI 1 Ano (Tax-Free)', term: 1, minAmount: 100, rates: [0.095], payout: 'at_maturity', earlyPenalty: 0.020 }
+  ],
+  ind: [
+    { id: 'sbi_1yr_fd', bankId: 'sbi', name: 'SBI 1-Year Fixed Deposit', term: 1, minAmount: 1000, rates: [0.068], payout: 'at_maturity', earlyPenalty: 0.010 },
+    { id: 'hdfc_1yr_fd', bankId: 'hdfc', name: 'HDFC 1-Year Fixed Deposit', term: 1, minAmount: 10000, rates: [0.071], payout: 'at_maturity', earlyPenalty: 0.010 },
+    { id: 'bajaj_fd', bankId: 'bajaj', name: 'Bajaj Finance 1-Year FD', term: 1, minAmount: 15000, rates: [0.075], payout: 'at_maturity', earlyPenalty: 0.015 }
   ]
 };
 
@@ -125,10 +261,10 @@ const CREDIT_CARDS = {
   usa: [
     { id: 'chase_freedom', bankId: 'chase', name: 'Chase Freedom Unlimited', tier: 'classic', minLimit: 3000, maxLimit: 25000, apr: 0.22, minPaymentPct: 0.02, cashbackRate: 0.015, reqScore: 670, reqIncome: 35000, perks: ['1.5% unlimited cash back', '3% on dining & drugstores', '0% intro APR for 15 months'] },
     { id: 'chase_sapphire', bankId: 'chase', name: 'Chase Sapphire Reserve', tier: 'infinite', minLimit: 10000, maxLimit: 75000, apr: 0.23, minPaymentPct: 0.02, cashbackRate: 0.035, reqScore: 750, reqIncome: 90000, perks: ['$300 Annual Travel Credit', '3x on Travel & Dining', 'Priority Pass Select Lounge Access', 'Global Entry fee credit'] },
-    { id: 'amex_gold', bankId: 'chase', name: 'American Express Gold Card', tier: 'gold', minLimit: 5000, maxLimit: 50000, apr: 0.24, minPaymentPct: 0.02, cashbackRate: 0.025, reqScore: 700, reqIncome: 60000, perks: ['4x at Restaurants & US Supermarkets', '$120 Uber Cash annually', '$120 Dining credit'] },
+    { id: 'amex_gold', bankId: 'amex', name: 'American Express Gold Card', tier: 'gold', minLimit: 5000, maxLimit: 50000, apr: 0.24, minPaymentPct: 0.02, cashbackRate: 0.025, reqScore: 700, reqIncome: 60000, perks: ['4x at Restaurants & US Supermarkets', '$120 Uber Cash annually', '$120 Dining credit'] },
     { id: 'capital_venture_x', bankId: 'capital_one', name: 'Capital One Venture X', tier: 'infinite', minLimit: 10000, maxLimit: 60000, apr: 0.21, minPaymentPct: 0.02, cashbackRate: 0.030, reqScore: 740, reqIncome: 85000, perks: ['10x on Hotels & Rental cars', '$300 Annual Capital One Travel credit', 'Capital One & Plaza Premium lounge access'] },
     { id: 'citi_double', bankId: 'citi', name: 'Citi Double Cash Card', tier: 'classic', minLimit: 2000, maxLimit: 20000, apr: 0.20, minPaymentPct: 0.02, cashbackRate: 0.020, reqScore: 660, reqIncome: 30000, perks: ['2% flat cash back (1% when you buy, 1% when you pay)'] },
-    { id: 'discover_it', bankId: 'ally', name: 'Discover it Cash Back', tier: 'classic', minLimit: 1500, maxLimit: 15000, apr: 0.19, minPaymentPct: 0.02, cashbackRate: 0.025, reqScore: 650, reqIncome: 25000, perks: ['5% rotating quarterly categories', 'First year cashback match double bonus'] }
+    { id: 'discover_it', bankId: 'discover', name: 'Discover it Cash Back', tier: 'classic', minLimit: 1500, maxLimit: 15000, apr: 0.19, minPaymentPct: 0.02, cashbackRate: 0.025, reqScore: 650, reqIncome: 25000, perks: ['5% rotating quarterly categories', 'First year cashback match double bonus'] }
   ],
   sau: [
     { id: 'snb_alfursan', bankId: 'snb', name: 'SNB AlFursan Visa Infinite', tier: 'infinite', minLimit: 50000, maxLimit: 300000, apr: 0.22, minPaymentPct: 0.05, cashbackRate: 0.030, reqScore: 740, reqIncome: 240000, perks: ['1 AlFursan Air Mile per 3 SAR spent', 'Unlimited airport lounges', 'Free green fee at golf courses'] },
@@ -522,35 +658,6 @@ const SAVINGS_GOAL_TEMPLATES = {
     { id: 'car', name: 'Car Purchase', targetAmount: 15000, note: 'Used car' }
   ]
 };
-
-/* ============================================================
-   15. BANKS ADDITIONS — Amex, Discover, more neobanks
-   ============================================================
-   Fix for amex_gold and discover_it card references.
-   ============================================================ */
-
-/* Add to BANKS.usa: */
-BANKS.usa.push(
-  { id: 'amex', name: 'American Express', shortName: 'Amex', founded: 1850, reputation: 5, savingsRate: 0.0001, type: 'commercial' },
-  { id: 'discover', name: 'Discover Financial Services', shortName: 'Discover', founded: 1985, reputation: 4, savingsRate: 0.0400, type: 'commercial' }
-);
-
-/* Add to BANKS.egy: */
-BANKS.egy.push(
-  { id: 'nasser_social', name: 'Nasser Social Bank', shortName: 'NSB', founded: 1971, reputation: 3, savingsRate: 0.018, type: 'state' }
-);
-
-/* Add to BANKS.uae: */
-BANKS.uae.push(
-  { id: 'cbd', name: 'Commercial Bank of Dubai', shortName: 'CBD', founded: 1969, reputation: 4, savingsRate: 0.016, type: 'commercial' },
-  { id: 'rakbank', name: 'RAKBANK', shortName: 'RAKBANK', founded: 1976, reputation: 4, savingsRate: 0.018, type: 'commercial' }
-);
-
-/* Add to BANKS.uk: */
-BANKS.uk.push(
-  { id: 'santander_uk', name: 'Santander UK', shortName: 'Santander', founded: 2010, reputation: 4, savingsRate: 0.016, type: 'commercial' },
-  { id: 'nationwide', name: 'Nationwide Building Society', shortName: 'Nationwide', founded: 1884, reputation: 5, savingsRate: 0.019, type: 'building_society' }
-);
 
 /* ============================================================
    16. EXPORTS — extended globals
