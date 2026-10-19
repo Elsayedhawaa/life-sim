@@ -549,8 +549,10 @@ function chRenderChildrenList() {
   
   S.childrenList.forEach(function(c) {
     const school = c.school ? chBySchoolLabel(c.school) : null;
-    const trait = c.traits && c.traits.length ? CHILDREN_TRAITS.find(function(t) { return t.id === c.traits[0]; }) : null;
-
+    cconst traitLabels = (c.traits || []).map(function(tid) {
+  const tr = CHILDREN_TRAITS.find(function(x) { return x.id === tid; });
+  return tr ? tr.label : tid;
+});
     html += '<div class="card" style="border-left:3px solid ' + (c.bond > 60 ? '#34d399' : c.bond > 40 ? '#fbbf24' : '#fb7185') + '">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
       '<div><div style="font-weight:700;font-size:1.05rem">' + c.name + (c.movedOut ? ' 🏠' : '') + '</div>' +
