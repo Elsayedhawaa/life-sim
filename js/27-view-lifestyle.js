@@ -1,10 +1,9 @@
 /* ============================================================
-   VIEW: LIFESTYLE (EXPANDED & DETAILED)
+   VIEW: LIFESTYLE
    ============================================================
-   Owns: S.lifestyle (config), annual living costs.
-   REFUNDS engine's basic charge in year tick — replaces it entirely
-   once player configures.
-   Registers tab 'lifestyle' at order 13.
+   Owns: S.lifestyle, annual living costs.
+   Refunds engine's basic charge in year tick, then applies
+   real lifestyle config. Registers tab 'lifestyle' at order 13.
    ============================================================ */
 
 /* ---------- STATE ---------- */
@@ -41,12 +40,10 @@ function ensureLifestyleState() {
   if (typeof lf.monthlyTotal !== 'number') lf.monthlyTotal = 0;
   if (typeof lf.yearlyTotal !== 'number') lf.yearlyTotal = 0;
 
-  /* Handle missing new categories from updates */
   if (!lf.personal_care) lf.personal_care = 'standard';
   if (!lf.domestic_staff) lf.domestic_staff = 'none';
   if (!lf.healthcare_insurance) lf.healthcare_insurance = 'public';
 
-  /* Country changed → reset plans to country defaults */
   if (lf.country !== S.country) {
     lf.country = S.country;
     lf.active = false;
@@ -80,7 +77,6 @@ function lifeSubPrice(subId) {
   return sub.prices[S.country] || sub.prices.egy || 0;
 }
 
-/* Calculate the monthly + yearly total */
 function lifeCalculate() {
   const plans = lifePlans();
   const lf = S.lifestyle;
@@ -90,12 +86,10 @@ function lifeCalculate() {
   let smarts = 0;
   let social = 0;
 
-  /* If living with parents: minimal personal spending */
+  /* Living with parents: minimal personal spending */
   if (S.housing === 'parents') {
     const phonePlan = plans.phone.find(function(p) { return p.id === lf.phone; }) || plans.phone[0];
-    monthly = phonePlan.monthly + 200; // personal allowance
-    
-    // They still pay for their own subscriptions
+    monthly = phonePlan.monthly + 200;
     lf.subscriptions.forEach(function(subId) {
       const sub = LIFE_SUBSCRIPTIONS.find(function(s) { return s.id === subId; });
       if (!sub) return;
@@ -105,16 +99,15 @@ function lifeCalculate() {
       if (sub.smarts) smarts += sub.smarts;
       if (sub.social) social += sub.social;
     });
-
-    return { monthly: monthly, yearly: Math.round(monthly * 12), happiness: happiness, health: health, smarts: smarts, social: social, isMinimal: true };
+    return { monthly: monthly, yearly: Math.round(monthly * 12), happiness: happiness, health: health, smarts: smarts, social: social, housingMonthly: 0, isMinimal: true };
   }
 
-  /* Regular Lifestyle Calc */
+  /* Regular lifestyle */
   const getMonthly = function(category) {
-      const planList = plans[category];
-      if(!planList) return 0;
-      const plan = planList.find(function(p) { return p.id === lf[category]; }) || planList[0];
-      return plan.monthly;
+    const planList = plans[category];
+    if (!planList) return 0;
+    const plan = planList.find(function(p) { return p.id === lf[category]; }) || planList[0];
+    return plan.monthly;
   };
 
   monthly += getMonthly('phone');
@@ -129,7 +122,6 @@ function lifeCalculate() {
   monthly += getMonthly('domestic_staff');
   monthly += getMonthly('healthcare_insurance');
 
-  /* Subscriptions */
   lf.subscriptions.forEach(function(subId) {
     const sub = LIFE_SUBSCRIPTIONS.find(function(s) { return s.id === subId; });
     if (!sub) return;
@@ -140,44 +132,40 @@ function lifeCalculate() {
     if (sub.social) social += sub.social;
   });
 
-  /* Housing costs */
   let housingMonthly = 0;
   if (S.housing === 'rented') {
-    /* C().prices.rent is yearly — divide to get monthly */
     housingMonthly = (C().prices.rent || 0) / 12;
   }
-  /* Owned property: mortgage separate, not in lifestyle */
   monthly += housingMonthly;
 
-  /* Happiness/health from tier selection */
   if (lf.food === 'survival') { happiness -= 3; health -= 3; }
   if (lf.food === 'budget') { happiness -= 1; health -= 1; }
   if (lf.food === 'premium') { happiness += 1; health += 2; }
   if (lf.food === 'luxury') { happiness += 3; health += 4; }
-  
+
   if (lf.dining === 'often') happiness += 2;
   if (lf.dining === 'fine_dining') { happiness += 4; social += 2; }
   if (lf.dining === 'exclusive') { happiness += 6; social += 4; }
-  
+
   if (lf.clothing === 'premium') { happiness += 2; social += 2; }
   if (lf.clothing === 'luxury') { happiness += 4; social += 5; }
   if (lf.clothing === 'haute_couture') { happiness += 6; social += 8; }
-  
+
   if (lf.entertainment === 'active') { happiness += 4; social += 2; }
   if (lf.entertainment === 'luxury') { happiness += 7; social += 5; }
   if (lf.entertainment === 'jetset') { happiness += 10; social += 8; }
-  
-  if (lf.transport === 'public') { happiness -= 1; }
+
+  if (lf.transport === 'public') happiness -= 1;
   if (lf.transport === 'own_car') { happiness += 3; health -= 1; }
   if (lf.transport === 'luxury_car') { happiness += 6; social += 3; }
-  
+
   if (lf.personal_care === 'premium') { happiness += 2; health += 1; }
   if (lf.personal_care === 'luxury') { happiness += 5; health += 3; }
-  
+
   if (lf.domestic_staff === 'cleaner') happiness += 2;
   if (lf.domestic_staff === 'full_maid') happiness += 5;
   if (lf.domestic_staff === 'full_estate_team') { happiness += 10; social += 5; }
-  
+
   if (lf.healthcare_insurance === 'public') health -= 1;
   if (lf.healthcare_insurance === 'premium_private') health += 3;
   if (lf.healthcare_insurance === 'vip_concierge') { health += 6; happiness += 2; }
@@ -218,12 +206,10 @@ function lifeApplyPreset(presetId) {
   const preset = LIFE_PRESETS[presetId];
   if (!preset) return;
   S.lifestyle.active = true;
-  
   const keys = ['phone', 'internet', 'utilities', 'food', 'dining', 'transport', 'clothing', 'entertainment', 'personal_care', 'domestic_staff', 'healthcare_insurance'];
   keys.forEach(function(k) {
-      if(preset[k]) S.lifestyle[k] = preset[k];
+    if (preset[k]) S.lifestyle[k] = preset[k];
   });
-  
   S.lifestyle.subscriptions = preset.subscriptions.slice();
   log('🏠 Applied ' + preset.label + ' lifestyle preset.');
   render();
@@ -290,7 +276,6 @@ function lifeRenderOverview(totals) {
       '<p class="muted small">Choose a preset below, then fine-tune from the tabs. Once configured, your yearly expenses are managed here.</p></div>';
   }
 
-  /* Preset quick-apply */
   html += '<div class="card"><h3>⚡ Quick Presets</h3>';
   Object.keys(LIFE_PRESETS).forEach(function(key) {
     const p = LIFE_PRESETS[key];
@@ -300,14 +285,11 @@ function lifeRenderOverview(totals) {
   });
   html += '</div>';
 
-  /* Breakdown */
-  /* Breakdown */
   if (lf.active) {
     let subsMonthly = 0;
     lf.subscriptions.forEach(function(id) { subsMonthly += lifeSubPrice(id); });
 
     if (totals.isMinimal) {
-      /* Living with parents — simplified breakdown only */
       const phoneOnly = totals.monthly - subsMonthly - 200;
       html += '<div class="card"><h3>📊 Monthly Breakdown</h3>' +
         '<div class="row"><span>📱 Phone</span><b>' + money(phoneOnly) + '</b></div>' +
@@ -317,11 +299,10 @@ function lifeRenderOverview(totals) {
         '<div class="row"><b>Total per year</b><b style="color:#f59e0b">' + money(totals.yearly) + '</b></div>' +
         '</div>';
     } else {
-      /* Full breakdown for independent living */
       const plans = lifePlans();
       const getCost = function(cat) {
-          const plan = plans[cat] ? plans[cat].find(function(p) { return p.id === lf[cat]; }) || plans[cat][0] : null;
-          return plan ? plan.monthly : 0;
+        const plan = plans[cat] ? plans[cat].find(function(p) { return p.id === lf[cat]; }) || plans[cat][0] : null;
+        return plan ? plan.monthly : 0;
       };
 
       html += '<div class="card"><h3>📊 Monthly Breakdown</h3>' +
@@ -332,14 +313,12 @@ function lifeRenderOverview(totals) {
         '<div class="row"><span>👕 Clothes & Care</span><b>' + money(getCost('clothing') + getCost('personal_care')) + '</b></div>' +
         '<div class="row"><span>🩺 Healthcare Ins.</span><b>' + money(getCost('healthcare_insurance')) + '</b></div>' +
         '<div class="row"><span>🎉 Ent. & Subs</span><b>' + money(getCost('entertainment') + subsMonthly) + '</b></div>' +
-        (totals.housingMonthly > 0 ? '<div class="row" style="margin-top:6px; color:#fbbf24"><span>🏠 Rent</span><b>' + money(totals.housingMonthly) + '</b></div>' : '') +
+        (totals.housingMonthly > 0 ? '<div class="row" style="margin-top:6px;color:#fbbf24"><span>🏠 Rent</span><b>' + money(totals.housingMonthly) + '</b></div>' : '') +
         '<div class="row" style="border-top:1px solid #25253a;margin-top:6px;padding-top:6px"><b>Total per month</b><b style="color:#f59e0b">' + money(totals.monthly) + '</b></div>' +
         '<div class="row"><b>Total per year</b><b style="color:#f59e0b">' + money(totals.yearly) + '</b></div>' +
         '</div>';
     }
-  }
 
-    /* Income comparison */
     if (S.job && S.job.salary) {
       const yearIncome = S.job.salary;
       const yearExpenses = totals.yearly;
@@ -352,7 +331,6 @@ function lifeRenderOverview(totals) {
         '</div>';
     }
 
-    /* Lifestyle effects */
     if (totals.happiness !== 0 || totals.health !== 0 || totals.smarts !== 0 || totals.social !== 0) {
       html += '<div class="card"><h3>💭 Annual Stat Effects</h3>' +
         (totals.happiness !== 0 ? '<div class="row"><span>Happiness</span><b class="' + (totals.happiness > 0 ? 'good' : 'bad') + '">' + (totals.happiness > 0 ? '+' : '') + totals.happiness + '</b></div>' : '') +
@@ -374,13 +352,13 @@ function lifeRenderOverview(totals) {
 /* ---------- RENDER HELPER ---------- */
 function renderLifeCategory(title, key, list, icon) {
   const lf = S.lifestyle;
-  if(!list) return '';
+  if (!list) return '';
   let h = '<div class="card"><h3>' + icon + ' ' + title + '</h3>' +
     '<div style="display:flex; flex-direction:column; gap:4px">';
   list.forEach(function(item) {
-    h += '<button class="pill ' + (lf[key] === item.id ? 'on' : '') + '" style="padding:8px;font-size:.75rem;text-align:left; display:flex; justify-content:space-between; align-items:center;" onclick="lifeSetPlan(\'' + key + '\',\'' + item.id + '\')">' +
+    h += '<button class="pill ' + (lf[key] === item.id ? 'on' : '') + '" style="padding:8px;font-size:.75rem;text-align:left;display:flex;justify-content:space-between;align-items:center;" onclick="lifeSetPlan(\'' + key + '\',\'' + item.id + '\')">' +
       '<div><div style="font-weight:700">' + item.label + '</div>' +
-      (item.perks ? '<div class="muted" style="font-size:.65rem; margin-top:2px;">' + item.perks + '</div>' : '') +
+      (item.perks ? '<div class="muted" style="font-size:.65rem;margin-top:2px;">' + item.perks + '</div>' : '') +
       '</div>' +
       '<div style="font-weight:bold">' + money(item.monthly) + '/mo</div>' +
       '</button>';
@@ -435,14 +413,22 @@ function lifeRenderFun(totals) {
   let html = renderLifeCategory('Mobile Phone Plan', 'phone', plans.phone, '📱');
   html += renderLifeCategory('Daily Transport', 'transport', plans.transport, '🚗');
 
-  if (S.cars && S.cars.length > 0 && lf.transport !== 'own_car' && lf.transport !== 'luxury_car') {
+  const ownsCar = S.cars && S.cars.length > 0;
+  const budgetingForCar = lf.transport === 'own_car' || lf.transport === 'luxury_car';
+
+  if (ownsCar && !budgetingForCar) {
     html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">💡 Tip</h3>' +
-      '<p class="muted small">You own a car but aren\'t budgeting for it. Switch Transport to "Own car" to cover fuel, insurance, and maintenance.</p></div>';
+      '<p class="muted small">You own a car but aren\'t budgeting for it. Switch Transport to "Own car" to cover fuel, insurance, and maintenance.</p>' +
+      '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.72rem" onclick="lifeSetPlan(\'transport\',\'own_car\')">Switch to own car</button></div>';
+  }
+  if (!ownsCar && budgetingForCar) {
+    html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">⚠️ Budget/Reality Mismatch</h3>' +
+      '<p class="muted small">You are budgeting for a car you don\'t own. Switch to Uber or Public transport to save money, or buy a car in the Cars tab.</p>' +
+      '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.72rem" onclick="lifeSetPlan(\'transport\',\'mixed\')">Switch to Mixed</button></div>';
   }
 
   html += renderLifeCategory('Entertainment & Leisure', 'entertainment', plans.entertainment, '🎉');
 
-  /* Subscriptions - Grouped */
   html += '<div class="card"><h3>📺 App Subscriptions & Gyms</h3>';
   LIFE_SUBSCRIPTIONS.forEach(function(sub) {
     const on = lf.subscriptions.indexOf(sub.id) >= 0;
@@ -464,7 +450,7 @@ function lifeRenderFun(totals) {
 function lifeRenderCharity(totals) {
   const lf = S.lifestyle;
   const currentPct = lf.charityPct || 0;
-  const yearlyWealth = S.wealth; // approximate
+  const yearlyWealth = S.wealth;
   const yearlyCharity = Math.round(yearlyWealth * currentPct / 100);
 
   let html = '<div class="card"><h3>💝 Charity & Zakat</h3>' +
@@ -489,9 +475,8 @@ GameHooks.on('year', function() {
   ensureLifestyleState();
   if (!S) return;
   if (S.age < 18) return;
-  if (!S.lifestyle.active) return; // Player hasn't configured — let engine's basic charge stand
+  if (!S.lifestyle.active) return;
 
-  /* Refund engine's basic charge since Lifestyle overrides it */
   const c = C();
   let engineCharge = 0;
   if (S.housing === 'parents') {
@@ -502,7 +487,6 @@ GameHooks.on('year', function() {
   }
   S.wealth += engineCharge;
 
-  /* Apply lifestyle total */
   const totals = lifeCalculate();
   S.lifestyle.monthlyTotal = totals.monthly;
   S.lifestyle.yearlyTotal = totals.yearly;
@@ -513,18 +497,16 @@ GameHooks.on('year', function() {
   } else {
     const partial = Math.max(0, S.wealth);
     S.wealth = 0;
-    S.wealth -= (totals.yearly - partial); // go into debt
+    S.wealth -= (totals.yearly - partial);
     log('⚠️ Could not fully cover lifestyle expenses. Went ' + money(totals.yearly - partial) + ' into debt.');
     fx({ happiness: -15, health: -5 });
   }
 
-  /* Apply happiness/health/smarts/social effects */
   if (totals.happiness !== 0) fx({ happiness: totals.happiness });
   if (totals.health !== 0) fx({ health: totals.health });
   if (totals.smarts !== 0) fx({ smarts: totals.smarts });
   if (totals.social !== 0) fx({ social: totals.social });
 
-  /* Charity */
   if (S.lifestyle.charityPct > 0 && S.wealth > 0) {
     const charityAmount = Math.round(S.wealth * S.lifestyle.charityPct / 100);
     S.wealth -= charityAmount;
