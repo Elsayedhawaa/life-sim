@@ -87,22 +87,52 @@ function ensureCareerState() {
 
   /* Migrate legacy S.job */
   if (S.job && !c.job) {
+    var detectedTrack = carDetectTrackFromTitle(S.job.title || '');
+    var trackDef = carTrackById(detectedTrack);
+    var companyPool = carCompaniesFor(trackDef ? trackDef.industry : 'retail');
+    var companyMatch = companyPool.find(function(co) { return co.name === S.job.company; });
+
+    var baseSalEGP = S.job.salary || 48000;
+    if (companyMatch && companyMatch.payMult > 0) {
+      baseSalEGP = Math.round((S.job.salary || 48000) / companyMatch.payMult);
+    }
+
     c.job = {
       company: S.job.company || 'Unknown',
       title: S.job.title || 'Worker',
-      track: 'entry',
+      track: detectedTrack,
       level: S.job.level || 0,
       salary: S.job.salary || 48000,
-      baseSalaryEGP: S.job.salary || 48000,
-      payMult: 1.0,
+      baseSalaryEGP: baseSalEGP,
+      payMult: companyMatch ? companyMatch.payMult : 1.0,
       performance: 50,
       hiredYear: gameYear() - (S.job.years || 0),
       tenure: S.job.years || 0,
-      benefits: [],
-      stability: 0.85,
-      prestige: 2,
+      benefits: companyMatch ? companyMatch.benefits.slice() : [],
+      stability: companyMatch ? companyMatch.stability : 0.85,
+      prestige: companyMatch ? companyMatch.prestige : 2,
       salaryCurrency: C().currency
     };
+  }
+
+  /* One-time fix for already-migrated saves with wrong track (v3) */
+  if (!c.migratedV3 && c.job) {
+    c.migratedV3 = true;
+    if (c.job.track === 'entry' && c.job.title) {
+      var reTrack = carDetectTrackFromTitle(c.job.title);
+      if (reTrack !== 'entry') {
+        var reTrackDef = carTrackById(reTrack);
+        var rePool = carCompaniesFor(reTrackDef ? reTrackDef.industry : 'retail');
+        var reMatch = rePool.find(function(co) { return co.name === c.job.company; });
+        c.job.track = reTrack;
+        if (reMatch) {
+          c.job.payMult = reMatch.payMult;
+          c.job.stability = reMatch.stability;
+          c.job.prestige = reMatch.prestige;
+          c.job.benefits = reMatch.benefits.slice();
+        }
+      }
+    }
   }
 
   /* Migrate job if it exists but has no payMult */
