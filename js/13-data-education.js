@@ -55,7 +55,7 @@ const EDU_TRACKS = [
     universityAccess: 'global',
     scoreSystem: 'grades_A_to_E',
     thanaweyaBonus: 5,
-    desc: 'UK university entrance. A*-E grades. Requires private tutors in Egypt usually.'
+    desc: 'gbr university entrance. A*-E grades. Requires private tutors in Egypt usually.'
   },
   {
     id: 'ib',
@@ -120,7 +120,7 @@ const EDU_UNIVERSITIES = [
   /* Private - High Cost, Lower Thanaweya Cutoffs */
   { id: 'auc',        name: 'American University in Cairo (AUC)',  type: 'private', city: 'New Cairo',  tuitionEGP: 600000, quality: 10, years: 4, cutoffs: 60 },
   { id: 'guc',        name: 'German University in Cairo (GUC)',    type: 'private', city: 'New Cairo',  tuitionEGP: 350000, quality: 9,  years: 4, cutoffs: 60 },
-  { id: 'bue',        name: 'British University in Egypt (BUE)',   type: 'private', city: 'El Sherouk', tuitionEGP: 280000, quality: 8,  years: 4, cutoffs: 58 },
+  { id: 'bue',        name: 'British University in Egypt (BUE)',   type: 'private', city: 'El Sherogbr', tuitionEGP: 280000, quality: 8,  years: 4, cutoffs: 58 },
   { id: 'aastmt',     name: 'Arab Academy (AASTMT)',               type: 'private', city: 'Alexandria', tuitionEGP: 200000, quality: 8,  years: 4, cutoffs: 55 },
   { id: 'miu',        name: 'Misr International University (MIU)', type: 'private', city: 'Cairo',      tuitionEGP: 220000, quality: 7,  years: 4, cutoffs: 55 },
   { id: 'msa',        name: 'Modern Sciences & Arts (MSA)',        type: 'private', city: '6th of Oct', tuitionEGP: 150000, quality: 7,  years: 4, cutoffs: 52 },
@@ -159,7 +159,7 @@ const EDU_MAJORS = [
 
 /* ---------- LANGUAGE TESTS ---------- */
 const EDU_LANGUAGE_TESTS = [
-  { id: 'ielts',   label: 'IELTS Academic',              costUSD: 250, waitMonths: 1, maxScore: 9,   passScore: 6.5, desc: 'Required for UK, Australia, Canada, US universities.' },
+  { id: 'ielts',   label: 'IELTS Academic',              costUSD: 250, waitMonths: 1, maxScore: 9,   passScore: 6.5, desc: 'Required for gbr, Australia, Canada, US universities.' },
   { id: 'toefl',   label: 'TOEFL iBT',                   costUSD: 220, waitMonths: 1, maxScore: 120, passScore: 90,  desc: 'US-focused, widely accepted globally.' },
   { id: 'goethe',  label: 'Goethe-Zertifikat (German)',  costUSD: 200, waitMonths: 2, maxScore: 6,   passScore: 4,   desc: 'German proficiency. B1=3, B2=4 (Req for Univ), C1=5.' },
   { id: 'delf',    label: 'DELF/DALF (French)',          costUSD: 180, waitMonths: 2, maxScore: 6,   passScore: 4,   desc: 'French proficiency. B2=4 (Req for Univ), C1=5.' },
@@ -168,11 +168,11 @@ const EDU_LANGUAGE_TESTS = [
 
 /* ---------- STUDY ABROAD UNIVERSITIES ---------- */
 const EDU_STUDY_ABROAD_UNIS = [
-  { id: 'oxford',    country: 'uk',  name: 'University of Oxford',    tuitionUSD: 45000, quality: 10, requiresIELTS: 7.5, requiresGPA: 3.8, reqTrack: ['alevels','ib'] },
-  { id: 'cambridge', country: 'uk',  name: 'University of Cambridge', tuitionUSD: 45000, quality: 10, requiresIELTS: 7.5, requiresGPA: 3.8, reqTrack: ['alevels','ib'] },
-  { id: 'imperial',  country: 'uk',  name: 'Imperial College London', tuitionUSD: 40000, quality: 10, requiresIELTS: 7.0, requiresGPA: 3.6, reqTrack: ['alevels','ib'] },
-  { id: 'ucl',       country: 'uk',  name: 'University College London', tuitionUSD: 35000, quality: 9, requiresIELTS: 6.5, requiresGPA: 3.4, reqTrack: 'any' },
-  { id: 'lse',       country: 'uk',  name: 'London School of Economics', tuitionUSD: 35000, quality: 9, requiresIELTS: 7.0, requiresGPA: 3.6, reqTrack: 'any' },
+  { id: 'oxford',    country: 'gbr',  name: 'University of Oxford',    tuitionUSD: 45000, quality: 10, requiresIELTS: 7.5, requiresGPA: 3.8, reqTrack: ['alevels','ib'] },
+  { id: 'cambridge', country: 'gbr',  name: 'University of Cambridge', tuitionUSD: 45000, quality: 10, requiresIELTS: 7.5, requiresGPA: 3.8, reqTrack: ['alevels','ib'] },
+  { id: 'imperial',  country: 'gbr',  name: 'Imperial College London', tuitionUSD: 40000, quality: 10, requiresIELTS: 7.0, requiresGPA: 3.6, reqTrack: ['alevels','ib'] },
+  { id: 'ucl',       country: 'gbr',  name: 'University College London', tuitionUSD: 35000, quality: 9, requiresIELTS: 6.5, requiresGPA: 3.4, reqTrack: 'any' },
+  { id: 'lse',       country: 'gbr',  name: 'London School of Economics', tuitionUSD: 35000, quality: 9, requiresIELTS: 7.0, requiresGPA: 3.6, reqTrack: 'any' },
   { id: 'harvard',   country: 'usa', name: 'Harvard University',      tuitionUSD: 60000, quality: 10, requiresTOEFL: 100, requiresGPA: 3.9, reqTrack: 'any' },
   { id: 'mit',       country: 'usa', name: 'MIT',                     tuitionUSD: 62000, quality: 10, requiresTOEFL: 100, requiresGPA: 3.9, reqTrack: 'any' },
   { id: 'stanford',  country: 'usa', name: 'Stanford University',     tuitionUSD: 62000, quality: 10, requiresTOEFL: 100, requiresGPA: 3.9, reqTrack: 'any' },
@@ -191,12 +191,12 @@ const EDU_STUDY_ABROAD_UNIS = [
 /* ---------- SCHOLARSHIPS ---------- */
 const EDU_SCHOLARSHIPS = [
   { id: 'fulbright', name: 'Fulbright Foreign Student Program', country: 'usa', coverage: 'full', requiresGPA: 3.5, requiresIELTS: 7.0, acceptanceRate: 0.08, desc: 'Full tuition + stipend for US study. J-1 Visa (Must return home 2 yrs).' },
-  { id: 'chevening', name: 'Chevening Scholarship (UK)',        country: 'uk',  coverage: 'full', requiresGPA: 3.5, requiresIELTS: 7.0, requiresWork: 2, acceptanceRate: 0.05, desc: 'UK government scholarship. Full funding. Must return home 2 yrs.' },
+  { id: 'chevening', name: 'Chevening Scholarship (gbr)',        country: 'gbr',  coverage: 'full', requiresGPA: 3.5, requiresIELTS: 7.0, requiresWork: 2, acceptanceRate: 0.05, desc: 'gbr government scholarship. Full funding. Must return home 2 yrs.' },
   { id: 'daad',      name: 'DAAD Scholarship (Germany)',        country: 'deu', coverage: 'full', requiresGPA: 3.3, requiresGerman: 3, acceptanceRate: 0.15, desc: 'German academic exchange. Full funding + Monthly Stipend.' },
   { id: 'erasmus',   name: 'Erasmus Mundus (EU)',               country: 'eu',  coverage: 'full', requiresGPA: 3.5, requiresIELTS: 7.0, acceptanceRate: 0.10, desc: 'EU multi-country master program. Very prestigious.' },
   { id: 'mext',      name: 'MEXT (Japan)',                      country: 'jpn', coverage: 'full', requiresGPA: 3.5, acceptanceRate: 0.12, desc: 'Japanese government scholarship. Includes 1 yr language prep.' },
-  { id: 'gates',     name: 'Gates Cambridge (UK)',              country: 'uk',  coverage: 'full', requiresGPA: 3.8, acceptanceRate: 0.02, desc: 'Full Cambridge funding. Extremely selective.' },
-  { id: 'rhodes',    name: 'Rhodes Scholarship (Oxford)',       country: 'uk',  coverage: 'full', requiresGPA: 3.8, requiresLeadership: true, acceptanceRate: 0.03, desc: 'Oxford full scholarship with leadership focus.' },
+  { id: 'gates',     name: 'Gates Cambridge (gbr)',              country: 'gbr',  coverage: 'full', requiresGPA: 3.8, acceptanceRate: 0.02, desc: 'Full Cambridge funding. Extremely selective.' },
+  { id: 'rhodes',    name: 'Rhodes Scholarship (Oxford)',       country: 'gbr',  coverage: 'full', requiresGPA: 3.8, requiresLeadership: true, acceptanceRate: 0.03, desc: 'Oxford full scholarship with leadership focus.' },
   { id: 'eiffel',    name: 'Eiffel Excellence (France)',        country: 'fra', coverage: 'full', requiresGPA: 3.5, requiresFrench: 3, acceptanceRate: 0.10, desc: 'French Gov scholarship for Masters/PhD.' },
   { id: 'vanier',    name: 'Vanier Canada Graduate',            country: 'can', coverage: 'full', requiresGPA: 3.5, acceptanceRate: 0.10, desc: 'Canadian doctoral scholarship.' },
   { id: 'sawiris',   name: 'Sawiris Foundation Scholarship',    country: 'egy', coverage: 'full', requiresGPA: 3.7, reqUni: 'auc', acceptanceRate: 0.05, desc: 'Full ride to AUC/UChicago for outstanding Egyptian students.' }
@@ -265,7 +265,7 @@ const EDU_INTERNSHIPS = [
   { id: 'un_intern',       label: 'UN Agencies Intern (Cairo)',  company: 'United Nations',  paid: true,  monthlyEGP: 15000, months: 6, requiresMajor: ['economics', 'law', 'arts'] },
   { id: 'mcit_intern',     label: 'MCIT NTI Training',           company: 'Gov MCIT',        paid: true,  monthlyEGP: 3000, months: 3, requiresMajor: ['cs', 'engineering', 'it'] },
   { id: 'unpaid_ngo',      label: 'NGO Volunteer Internship',    company: 'Various NGOs',    paid: false, monthlyEGP: 0,    months: 2, requiresMajor: [] },
-  { id: 'law_firm',        label: 'Matouk Bassiouny Law Clerk',  company: 'Law Firm',        paid: true,  monthlyEGP: 5000, months: 3, requiresMajor: ['law'] },
+  { id: 'law_firm',        label: 'Matogbr Bassiouny Law Clerk',  company: 'Law Firm',        paid: true,  monthlyEGP: 5000, months: 3, requiresMajor: ['law'] },
   { id: 'hospital_imtyaz', label: 'Imtyaz (Medical Internship)', company: 'Public Hospital', paid: true,  monthlyEGP: 3500, months: 12, requiresMajor: ['medicine', 'dentistry', 'nursing', 'physical_therapy', 'pharmacy'] } // Mandatory for medical fields
 ];
 
