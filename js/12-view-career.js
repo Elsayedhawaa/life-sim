@@ -1784,3 +1784,4 @@ function carFireJobEvent(evt, j) {
 /* ============================================================
    END OF CAREER VIEW
    ============================================================ */
+GameHooks.registerTab({ id: 'career', label: '💼 Career', order: 2, view: careerView });
