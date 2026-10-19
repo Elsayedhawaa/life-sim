@@ -511,7 +511,7 @@ function renderWeddingPlanner() {
     html += '</div>';
 
     html += '<h4 style="font-size:.8rem;color:#fb7185;margin-top:10px">Post-Marriage Finance</h4><select onchange="familyWeddingSet(\'finance\', this.value)" style="width:100%;padding:6px;background:#0f0f1a;color:#fff;border:1px solid #25253a">';
-    MARRIAGE_FINANCE_MODELS.forEach(m => {
+    FAMILY_MARRIAGE_FINANCE_MODELS.forEach(m => {
         html += '<option value="' + m.id + '" ' + (plan.finance === m.id ? 'selected' : '') + '>' + m.label + '</option>';
     });
     html += '</select>';
@@ -542,7 +542,7 @@ function familyConfirmWedding(totalCost) {
     S.wealth -= totalCost;
     
     const wedTier = WEDDING_TIERS.find(t=>t.id === S.weddingPlan.tier);
-    const financeModel = MARRIAGE_FINANCE_MODELS.find(m=>m.id === S.weddingPlan.finance).label;
+    const financeModel = FAMILY_MARRIAGE_FINANCE_MODELS.find(m=>m.id === S.weddingPlan.finance).label;
 
     S.partner.financeModel = financeModel;
     S.partner.bond = 100;
