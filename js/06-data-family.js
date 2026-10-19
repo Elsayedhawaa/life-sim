@@ -510,3 +510,151 @@ const VISIT_DURATIONS = [
   { id: 'medium', label: 'Medium (10 days)', days: 10 },
   { id: 'long',   label: 'Long (14 days)',   days: 14 }
 ];
+
+/* ============================================================
+   ADDITIONAL COUNTRIES — appended to cover missing data
+   (Original file only had: egy, usa, sau, uae, uk)
+   This block adds: gbr, deu, can, aus, nld, fra, jpn, ita, sgp, bra, ind
+   ============================================================ */
+
+/* ---------- SIBLING NAMES ---------- */
+SIBLING_NAMES.gbr = {
+  m: ['Oliver','Harry','Jack','Charlie','George','Jacob','Thomas','James','William','Henry','Leo','Arthur','Theodore','Oscar','Alfie'],
+  f: ['Olivia','Amelia','Isla','Emily','Poppy','Ava','Isabella','Lily','Sophie','Grace','Freya','Ella','Mia','Charlotte','Florence']
+};
+SIBLING_NAMES.deu = {
+  m: ['Lukas','Leon','Felix','Jonas','Noah','Paul','Finn','Elias','Maximilian','Ben','Moritz','Niklas','Jannik','Tim','Luca'],
+  f: ['Mia','Emma','Hannah','Emilia','Lina','Sophia','Lea','Clara','Lena','Anna','Marie','Johanna','Charlotte','Ella','Greta']
+};
+SIBLING_NAMES.can = {
+  m: ['Liam','Noah','Benjamin','Lucas','William','Jack','Logan','Owen','Nathan','Ethan','Gabriel','Jacob','Oliver','Liam','Sam'],
+  f: ['Olivia','Emma','Charlotte','Amelia','Sophia','Chloe','Avery','Mila','Abigail','Ella','Maya','Zoe','Lily','Hannah','Grace']
+};
+SIBLING_NAMES.aus = {
+  m: ['Oliver','Noah','Jack','William','Henry','Charlie','Thomas','Lucas','James','Leo','Hudson','Lachlan','Hunter','Cooper','Mason'],
+  f: ['Charlotte','Olivia','Amelia','Isla','Mia','Ava','Grace','Harper','Willow','Matilda','Ella','Ruby','Chloe','Sienna','Zoe']
+};
+SIBLING_NAMES.nld = {
+  m: ['Daan','Sem','Lucas','Milan','Levi','Finn','Luuk','Mees','Bram','Jesse','Thijs','Lars','Tim','Stijn','Ruben'],
+  f: ['Emma','Julia','Mila','Tess','Sophie','Sara','Nora','Yara','Lotte','Eva','Evi','Liv','Fenna','Lina','Roos']
+};
+SIBLING_NAMES.fra = {
+  m: ['Gabriel','Raphaël','Louis','Jules','Arthur','Adam','Lucas','Hugo','Léo','Nathan','Paul','Mathis','Théo','Tom','Ethan'],
+  f: ['Jade','Louise','Ambre','Emma','Alice','Rose','Anna','Mia','Lina','Chloé','Léa','Manon','Camille','Juliette','Inès']
+};
+SIBLING_NAMES.jpn = {
+  m: ['Haruto','Yuto','Sota','Haruki','Ren','Yuki','Kaito','Riku','Takumi','Daiki','Hiroto','Itsuki','Minato','Kenta','Ryo'],
+  f: ['Hina','Yui','Sakura','Aoi','Rin','Mei','Akari','Yuna','Himari','Mio','Koharu','Nanami','Yua','Ichika','Sara']
+};
+SIBLING_NAMES.ita = {
+  m: ['Leonardo','Francesco','Alessandro','Lorenzo','Mattia','Andrea','Gabriele','Riccardo','Tommaso','Edoardo','Marco','Luca','Davide','Matteo','Federico'],
+  f: ['Sofia','Giulia','Aurora','Ginevra','Alice','Beatrice','Emma','Vittoria','Greta','Chiara','Martina','Francesca','Sara','Elena','Camilla']
+};
+SIBLING_NAMES.sgp = {
+  m: ['Wei Ming','Jun Wei','Jia Hao','Daniel','Ryan','Ethan','Arjun','Aarav','Muhammad','Rizwan','Kai','Darren','Marcus','Joel','Nathan'],
+  f: ['Jia Yi','Xin Yi','Nur Aisyah','Siti','Priya','Ananya','Chloe','Alyssa','Grace','Rachel','Mei','Hui Min','Sarah','Nadia','Jasmine']
+};
+SIBLING_NAMES.bra = {
+  m: ['Miguel','Arthur','Heitor','Bernardo','Davi','Gabriel','Pedro','Lucas','Matheus','Rafael','Enzo','Guilherme','Felipe','Gustavo','Bruno'],
+  f: ['Helena','Alice','Laura','Maria','Valentina','Sophia','Isabella','Manuela','Júlia','Luiza','Beatriz','Camila','Larissa','Fernanda','Marina']
+};
+SIBLING_NAMES.ind = {
+  m: ['Aarav','Arjun','Vihaan','Aditya','Ishaan','Rohan','Rahul','Dev','Karan','Ayaan','Kabir','Krishna','Reyansh','Vivaan','Arnav'],
+  f: ['Aanya','Aadhya','Ananya','Diya','Isha','Priya','Kavya','Meera','Saanvi','Riya','Anika','Pooja','Nisha','Isha','Tara']
+};
+
+/* ---------- PASSPORT STRENGTH ---------- */
+PASSPORT_STRENGTH.gbr = { visaFreeCountries: 187, shengenRequiresVisa: false, usRequiresVisa: false };
+PASSPORT_STRENGTH.deu = { visaFreeCountries: 190, shengenRequiresVisa: false, usRequiresVisa: false };
+PASSPORT_STRENGTH.can = { visaFreeCountries: 185, shengenRequiresVisa: false, usRequiresVisa: false };
+PASSPORT_STRENGTH.aus = { visaFreeCountries: 185, shengenRequiresVisa: false, usRequiresVisa: false };
+PASSPORT_STRENGTH.nld = { visaFreeCountries: 191, shengenRequiresVisa: false, usRequiresVisa: false };
+PASSPORT_STRENGTH.fra = { visaFreeCountries: 189, shengenRequiresVisa: false, usRequiresVisa: false };
+PASSPORT_STRENGTH.jpn = { visaFreeCountries: 193, shengenRequiresVisa: false, usRequiresVisa: false };
+PASSPORT_STRENGTH.ita = { visaFreeCountries: 189, shengenRequiresVisa: false, usRequiresVisa: false };
+PASSPORT_STRENGTH.sgp = { visaFreeCountries: 195, shengenRequiresVisa: false, usRequiresVisa: false };
+PASSPORT_STRENGTH.bra = { visaFreeCountries: 170, shengenRequiresVisa: true, usRequiresVisa: true };
+PASSPORT_STRENGTH.ind = { visaFreeCountries: 60, shengenRequiresVisa: true, usRequiresVisa: true };
+
+/* ---------- REMITTANCE COSTS (local currency) ---------- */
+REMITTANCE_COSTS.gbr = { minMonthly: 100, maxMonthly: 1000, airfareEconomy: 500, airfareBusiness: 2000, giftShip: 60 };
+REMITTANCE_COSTS.deu = { minMonthly: 100, maxMonthly: 1000, airfareEconomy: 400, airfareBusiness: 1800, giftShip: 60 };
+REMITTANCE_COSTS.can = { minMonthly: 200, maxMonthly: 2000, airfareEconomy: 900, airfareBusiness: 3800, giftShip: 80 };
+REMITTANCE_COSTS.aus = { minMonthly: 200, maxMonthly: 2000, airfareEconomy: 1100, airfareBusiness: 4200, giftShip: 100 };
+REMITTANCE_COSTS.nld = { minMonthly: 100, maxMonthly: 1000, airfareEconomy: 450, airfareBusiness: 1900, giftShip: 60 };
+REMITTANCE_COSTS.fra = { minMonthly: 100, maxMonthly: 1000, airfareEconomy: 400, airfareBusiness: 1800, giftShip: 60 };
+REMITTANCE_COSTS.jpn = { minMonthly: 15000, maxMonthly: 150000, airfareEconomy: 90000, airfareBusiness: 350000, giftShip: 10000 };
+REMITTANCE_COSTS.ita = { minMonthly: 100, maxMonthly: 1000, airfareEconomy: 400, airfareBusiness: 1700, giftShip: 60 };
+REMITTANCE_COSTS.sgp = { minMonthly: 200, maxMonthly: 2000, airfareEconomy: 800, airfareBusiness: 3000, giftShip: 80 };
+REMITTANCE_COSTS.bra = { minMonthly: 500, maxMonthly: 5000, airfareEconomy: 1000, airfareBusiness: 4000, giftShip: 100 };
+REMITTANCE_COSTS.ind = { minMonthly: 10000, maxMonthly: 100000, airfareEconomy: 600, airfareBusiness: 2500, giftShip: 100 };
+
+/* ---------- FUNERAL COSTS (local currency) ---------- */
+FUNERAL_COSTS.gbr = 5000;
+FUNERAL_COSTS.deu = 7000;
+FUNERAL_COSTS.can = 10000;
+FUNERAL_COSTS.aus = 12000;
+FUNERAL_COSTS.nld = 7000;
+FUNERAL_COSTS.fra = 7000;
+FUNERAL_COSTS.jpn = 1500000;
+FUNERAL_COSTS.ita = 6000;
+FUNERAL_COSTS.sgp = 8000;
+FUNERAL_COSTS.bra = 15000;
+FUNERAL_COSTS.ind = 100000;
+
+/* ---------- FAMILY HOLIDAYS ---------- */
+FAMILY_HOLIDAYS.gbr = [
+  { id: 'christmas', name: 'Christmas', monthHint: 'December' },
+  { id: 'easter', name: 'Easter', monthHint: 'Spring' },
+  { id: 'boxing_day', name: 'Boxing Day', monthHint: 'December' }
+];
+FAMILY_HOLIDAYS.deu = [
+  { id: 'christmas', name: 'Weihnachten', monthHint: 'December' },
+  { id: 'easter', name: 'Ostern', monthHint: 'Spring' },
+  { id: 'oktoberfest', name: 'Oktoberfest', monthHint: 'September-October' }
+];
+FAMILY_HOLIDAYS.can = [
+  { id: 'thanksgiving', name: 'Thanksgiving', monthHint: 'October' },
+  { id: 'christmas', name: 'Christmas', monthHint: 'December' },
+  { id: 'canada_day', name: 'Canada Day', monthHint: 'July' }
+];
+FAMILY_HOLIDAYS.aus = [
+  { id: 'christmas', name: 'Christmas', monthHint: 'December' },
+  { id: 'easter', name: 'Easter', monthHint: 'Spring' },
+  { id: 'australia_day', name: 'Australia Day', monthHint: 'January' }
+];
+FAMILY_HOLIDAYS.nld = [
+  { id: 'sinterklaas', name: 'Sinterklaas', monthHint: 'December' },
+  { id: 'christmas', name: 'Kerstmis', monthHint: 'December' },
+  { id: 'easter', name: 'Pasen', monthHint: 'Spring' }
+];
+FAMILY_HOLIDAYS.fra = [
+  { id: 'christmas', name: 'Noël', monthHint: 'December' },
+  { id: 'easter', name: 'Pâques', monthHint: 'Spring' },
+  { id: 'bastille_day', name: 'Bastille Day', monthHint: 'July' }
+];
+FAMILY_HOLIDAYS.jpn = [
+  { id: 'new_year', name: 'Shōgatsu (New Year)', monthHint: 'January' },
+  { id: 'golden_week', name: 'Golden Week', monthHint: 'May' },
+  { id: 'obon', name: 'Obon', monthHint: 'August' }
+];
+FAMILY_HOLIDAYS.ita = [
+  { id: 'christmas', name: 'Natale', monthHint: 'December' },
+  { id: 'easter', name: 'Pasqua', monthHint: 'Spring' },
+  { id: 'ferragosto', name: 'Ferragosto', monthHint: 'August' }
+];
+FAMILY_HOLIDAYS.sgp = [
+  { id: 'chinese_new_year', name: 'Chinese New Year', monthHint: 'January-February' },
+  { id: 'hari_raya', name: 'Hari Raya', monthHint: 'Variable' },
+  { id: 'deepavali', name: 'Deepavali', monthHint: 'October-November' }
+];
+FAMILY_HOLIDAYS.bra = [
+  { id: 'carnaval', name: 'Carnaval', monthHint: 'February' },
+  { id: 'christmas', name: 'Natal', monthHint: 'December' },
+  { id: 'easter', name: 'Páscoa', monthHint: 'Spring' }
+];
+FAMILY_HOLIDAYS.ind = [
+  { id: 'diwali', name: 'Diwali', monthHint: 'October-November' },
+  { id: 'holi', name: 'Holi', monthHint: 'March' },
+  { id: 'eid', name: 'Eid', monthHint: 'Variable' }
+];
