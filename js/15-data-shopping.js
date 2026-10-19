@@ -32,6 +32,24 @@ const SHOP_WARRANTY_YEARS = {
   furniture: 0,
   fashion: 0
 };
+/* ---------- EXTENDED WARRANTY OPTIONS ---------- */
+const SHOP_EXTENDED_WARRANTY = {
+  none:    { label: 'None',           multiplier: 0,    extraYears: 0 },
+  basic:   { label: '+2 years (+15%)',multiplier: 0.15, extraYears: 2 },
+  premium: { label: '+4 years (+30%)',multiplier: 0.30, extraYears: 4 }
+};
+
+/* Items eligible for extended warranty (electronics + appliances + TVs + audio) */
+const SHOP_WARRANTY_ELIGIBLE = ['phone', 'tablet', 'laptop', 'desktop', 'tv', 'audio', 'watch', 'appliances'];
+
+/* ---------- CARD INSTALLMENT PLANS ---------- */
+/* "Real life" credit-card purchase plans */
+const SHOP_CARD_INSTALLMENTS = [
+  { id: 'full',  months: 0,  fee: 0.00, label: 'Full charge' },
+  { id: 'c3mo',  months: 3,  fee: 0.03, label: '3 months (+3%)' },
+  { id: 'c6mo',  months: 6,  fee: 0.06, label: '6 months (+6%)' },
+  { id: 'c12mo', months: 12, fee: 0.12, label: '12 months (+12%)' }
+];
 /* ---------- SALES / DISCOUNT EVENTS ---------- */
 const SHOP_SALES = [
   { id: 'black_friday', label: 'Black Friday', month: 11, cats: ['phone', 'tablet', 'laptop', 'tv', 'audio', 'appliances', 'fashion'], discount: 0.30 },
