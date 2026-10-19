@@ -549,7 +549,7 @@ function chRenderChildrenList() {
   
   S.childrenList.forEach(function(c) {
     const school = c.school ? chBySchoolLabel(c.school) : null;
-    cconst traitLabels = (c.traits || []).map(function(tid) {
+    const traitLabels = (c.traits || []).map(function(tid) {
   const tr = CHILDREN_TRAITS.find(function(x) { return x.id === tid; });
   return tr ? tr.label : tid;
 });
