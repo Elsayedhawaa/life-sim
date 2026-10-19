@@ -1154,22 +1154,23 @@ const CAR_TRACKS = [
 
   /* ===== OTHER ===== */
   {
+    {
     id: 'bpo',
     label: 'Call Center / BPO',
     requiresDegree: null,
     industry: 'bpo',
     languageTiers: {
-      en:    { label: 'English',  payMult: 1.00, baseMonthEGP: 6000,  requirement: 'english_ok' },
-      fr:    { label: 'French',   payMult: 2.00, baseMonthEGP: 12000, requirement: 'french_b2' },
-      de:    { label: 'German',   payMult: 2.50, baseMonthEGP: 15000, requirement: 'german_b2' },
-      nl:    { label: 'Dutch',    payMult: 2.20, baseMonthEGP: 13000, requirement: 'dutch_b2' }
+      en:    { label: 'English',  payMult: 1.00, requirement: 'english_ok' },
+      fr:    { label: 'French',   payMult: 2.00, requirement: 'french_b2' },
+      de:    { label: 'German',   payMult: 2.50, requirement: 'german_b2' },
+      nl:    { label: 'Dutch',    payMult: 2.20, requirement: 'dutch_b2' }
     },
     levels: [
-      { level: 0, title: 'Customer Service Agent', requirements: {}, desc: 'Take calls.' },
-      { level: 1, title: 'Senior Agent',           requirements: { years: 2 }, desc: 'Complex tickets.' },
-      { level: 2, title: 'Team Leader',            requirements: { years: 4 }, desc: 'Lead agents.' },
-      { level: 3, title: 'Operations Manager',     requirements: { years: 6 }, desc: 'Manage site.' },
-      { level: 4, title: 'Site Director',          requirements: { years: 10 }, desc: 'Run operation.' }
+      { level: 0, title: 'Customer Service Agent', baseSalaryEGP: 72000,  requirements: {}, desc: 'Take calls.' },
+      { level: 1, title: 'Senior Agent',           baseSalaryEGP: 108000, requirements: { years: 2 },  desc: 'Complex tickets.' },
+      { level: 2, title: 'Team Leader',            baseSalaryEGP: 168000, requirements: { years: 4 },  desc: 'Lead agents.' },
+      { level: 3, title: 'Operations Manager',     baseSalaryEGP: 288000, requirements: { years: 6 },  desc: 'Manage site.' },
+      { level: 4, title: 'Site Director',          baseSalaryEGP: 480000, requirements: { years: 10 }, desc: 'Run operation.' }
     ]
   },
   {
