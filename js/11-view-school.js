@@ -124,11 +124,29 @@ window.eduChooseSchool = eduChooseSchool;
 function eduChooseTrack(trackId) {
   const track = eduTrackById(trackId);
   if (!track) return;
-  
+
   if (track.requiresSchool !== 'any' && track.requiresSchool && track.requiresSchool.indexOf(S.school) < 0) {
     log('❌ Your current school does not offer ' + track.label + '.');
     render(); return;
   }
+
+  const fee = eduEGP(track.annualEGP);
+  if (fee > 0) {
+    if (S.wealth >= fee) {
+      S.wealth -= fee;
+    } else if (eduFamilyWealth() >= fee) {
+      log('👨‍👩‍👧 Your family paid the ' + track.label + ' track fee (' + money(fee) + '/year).');
+    } else {
+      log('❌ Cannot afford ' + track.label + ' (' + money(fee) + '/year). Neither you nor your family has enough.');
+      render(); return;
+    }
+  }
+
+  S.educationTrack = trackId;
+  log('📚 Track: ' + track.label + '. ' + (fee > 0 ? 'Fee: ' + money(fee) + '/year.' : 'Free.'));
+  fx({ happiness: 2, smarts: 3 });
+  render();
+}
   
   const fee = eduEGP(track.annualEGP);
   if (fee > 0) {
@@ -184,59 +202,56 @@ function eduApplyToUni(uniId, facultyId, paymentMode) {
   const faculty = eduMajorById(facultyId);
   if (!uni || !faculty) return;
 
-  /* Check score */
   const score = S.thanaweyaScore || 0;
   const cutoff = eduCutoffFor(faculty.cutoffKey);
-  
+
   if (uni.type === 'public' && score < cutoff) {
-    log('❌ Your score ' + score.toFixed(1) + '% is below the ' + cutoff + '% cutoff for ' + faculty.label + ' at ' + uni.name + '.');
+    log('❌ Score ' + score.toFixed(1) + '% is below the ' + cutoff + '% cutoff for ' + faculty.label + ' at ' + uni.name + '.');
     render(); return;
   }
   if (uni.type === 'private' && uni.cutoffs && score < uni.cutoffs) {
-    log('❌ Your score ' + score.toFixed(1) + '% is below ' + uni.name + "'s minimum of " + uni.cutoffs + '%.');
+    log('❌ Score ' + score.toFixed(1) + '% is below ' + uni.name + "'s minimum of " + uni.cutoffs + '%.');
     render(); return;
   }
 
-  /* Payment */
   const tuition = eduEGP(uni.tuitionEGP);
-  if (paymentMode === 'self' && S.wealth < tuition) {
-    log('❌ Cannot afford self-pay (' + money(tuition) + '/year).');
-    render(); return;
-  }
-  if (paymentMode === 'family') {
-    const familyParents = (S.family || []).filter(function(m) { return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false; });
-    if (!familyParents.length) { log('❌ No living parents to pay.'); render(); return; }
-    const familyWealth = eduFamilyWealth();
-    if (familyWealth < tuition) {
-      log('❌ Your family cannot afford this tuition.');
+
+  /* Payment handling */
+  if (paymentMode === 'self') {
+    if (S.wealth < tuition) {
+      log('❌ Cannot afford self-pay (' + money(tuition) + '/year).');
       render(); return;
     }
-  }
-  if (paymentMode === 'loan') {
-    /* Student loan — track in banking if available */
-    if (S.bank) {
-      if (!Array.isArray(S.bank.loans)) S.bank.loans = [];
-      S.bank.loans.push({
-        id: 'student_loan_' + Math.random().toString(36).slice(2, 8),
-        name: 'Student loan — ' + uni.name,
-        principal: tuition * faculty.years,
-        remaining: tuition * faculty.years,
-        rate: 0.05,
-        monthsLeft: 120,
-        monthsTotal: 120,
-        monthlyPayment: Math.round((tuition * faculty.years) / 120 * 1.15),
-        startYear: gameYear(),
-        loanType: 'student',
-        linkedUni: uni.id
-      });
-      log('📚 Student loan taken: ' + money(tuition * faculty.years) + ' total over 10 years.');
-    } else {
-       log('❌ Banking system not available for loan.'); render(); return;
+    S.wealth -= tuition;
+    log('💸 You paid the first year yourself: ' + money(tuition) + '.');
+  } else if (paymentMode === 'family') {
+    const famW = eduFamilyWealth();
+    if (famW < tuition) {
+      log('❌ Your family cannot afford ' + money(tuition) + '/year. (Family wealth tier: ' + S.familyTier + ')');
+      render(); return;
     }
+    log('👨‍👩‍👧 Your family is paying your tuition: ' + money(tuition) + '/year.');
+  } else if (paymentMode === 'loan') {
+    if (!S.bank) { log('❌ No banking system available.'); render(); return; }
+    if (!Array.isArray(S.bank.loans)) S.bank.loans = [];
+    S.bank.loans.push({
+      id: 'student_loan_' + Math.random().toString(36).slice(2, 8),
+      name: 'Student loan — ' + uni.name,
+      principal: tuition * faculty.years,
+      remaining: tuition * faculty.years,
+      rate: 0.05,
+      monthsLeft: 120,
+      monthsTotal: 120,
+      monthlyPayment: Math.round((tuition * faculty.years) / 120 * 1.15),
+      startYear: gameYear(),
+      loanType: 'student',
+      linkedUni: uni.id
+    });
+    log('📚 Student loan taken: ' + money(tuition * faculty.years) + ' over 10 years.');
+  } else {
+    log('❌ Unknown payment mode.'); render(); return;
   }
-  if (paymentMode === 'self') S.wealth -= tuition;
 
-  /* Enroll */
   S.uni = {
     id: uni.id,
     name: uni.name,
@@ -257,12 +272,11 @@ function eduApplyToUni(uniId, facultyId, paymentMode) {
     isStudyAbroad: false
   };
 
-  log('🎓 Enrolled in ' + faculty.label + ' at ' + uni.name + ' (payment: ' + paymentMode + ').');
+  log('🎓 Enrolled in ' + faculty.label + ' at ' + uni.name + ' (' + paymentMode + ').');
   fx({ happiness: 15 });
   S.educationTab = 'studies';
   render();
 }
-window.eduApplyToUni = eduApplyToUni;
 
 /* ---------- ACTIVITY ENROLLMENT ---------- */
 function eduJoinActivity(activityId) {
@@ -514,7 +528,7 @@ function eduRenderStudies() {
   const age = S.age;
 
   /* Phase 1: Pick school (age 6+) */
-  if (age >= 6 && S.school === null) {
+  if (age >= 6 && age < 18 && !S.school && !S.thanaweyaScore) {
     let html = '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">🏫 Choose Your School</h3>' +
       '<p class="muted small">Your family will pay the annual fees if you can afford them. Free public school or elite private.</p></div>';
 
@@ -607,17 +621,20 @@ function eduRenderTansik() {
   let html = '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">🎓 Tansik — University Placement</h3>' +
     '<div class="row"><span>Your high school score</span><b class="' + (score >= 80 ? 'good' : score >= 65 ? '' : 'bad') + '">' + score.toFixed(1) + '%</b></div>' +
     '<div class="row"><span>Track</span><b>' + (S.educationTrack ? (eduTrackById(S.educationTrack) || {}).label : '—') + '</b></div>' +
+    '<div class="row"><span>Family wealth tier</span><b>' + S.familyTier + ' (' + money(eduFamilyWealth()) + ')</b></div>' +
+    '<div class="row"><span>Your cash</span><b>' + money(S.wealth) + '</b></div>' +
     '</div>';
 
-  /* Faculty selection first */
+  /* Faculty selection */
   if (!S.uniPendingFaculty) {
-    html += '<div class="card"><h3>Step 1: Choose your Faculty</h3>';
+    html += '<div class="card"><h3>Step 1 · Choose your Faculty</h3>' +
+      '<p class="muted small">Public cutoffs apply. Private universities accept all majors above their min score.</p>';
     EDU_MAJORS.forEach(function(m) {
       const cutoff = eduCutoffFor(m.cutoffKey);
       const eligible = score >= cutoff;
       html += '<button class="opt" style="width:100%;margin-top:4px;text-align:left;padding:8px;font-size:.75rem;' + (eligible ? '' : 'opacity:.5') + '" ' + (eligible ? '' : 'disabled') + ' onclick="eduChoosePendingFaculty(\'' + m.id + '\')">' +
-        '<div style="display:flex;justify-content:space-between"><b>' + m.label + '</b><span>Cutoff ' + cutoff + '%</span></div>' +
-        '<div class="muted small">' + (eligible ? 'Eligible' : 'Your score ' + score.toFixed(1) + '% is below cutoff') + '</div></button>';
+        '<div style="display:flex;justify-content:space-between"><b>' + m.label + '</b><span>' + (eligible ? 'Cutoff ' + cutoff + '% ✓' : 'Needs ' + cutoff + '%') + '</span></div>' +
+        '<div class="muted small">' + m.years + ' years · ' + m.desc + '</div></button>';
     });
     html += '</div>';
     return html;
@@ -628,30 +645,64 @@ function eduRenderTansik() {
   const faculty = eduMajorById(facultyId);
   const cutoff = eduCutoffFor(faculty.cutoffKey);
 
-  html += '<div class="card"><h3>Step 2: Choose your University</h3>' +
-    '<div class="muted small">Faculty: ' + faculty.label + ' · Public Cutoff: ' + cutoff + '%</div>' +
+  html += '<div class="card"><h3>Step 2 · Choose your University</h3>' +
+    '<div class="muted small">Faculty: <b>' + faculty.label + '</b> · Public cutoff: ' + cutoff + '% · Score: ' + score.toFixed(1) + '%</div>' +
     '<button class="opt" style="margin-top:6px;padding:4px 8px;font-size:.7rem" onclick="S.uniPendingFaculty=null;render()">← Change faculty</button></div>';
 
-  EDU_UNIVERSITIES.forEach(function(uni) {
+  /* ============ PUBLIC UNIVERSITIES ============ */
+  const publics = EDU_UNIVERSITIES.filter(function(u) { return u.type === 'public'; });
+  const privates = EDU_UNIVERSITIES.filter(function(u) { return u.type === 'private'; });
+
+  html += '<div class="card" style="border-color:#22d3ee"><h3 style="color:#22d3ee">🏛 Public Universities</h3>' +
+    '<p class="muted small">Low fees. Strict cutoff. Government-subsidized.</p>';
+  publics.forEach(function(uni) {
     const tuition = eduEGP(uni.tuitionEGP);
-    const meetsCutoff = uni.type === 'public' ? score >= cutoff : (!uni.cutoffs || score >= uni.cutoffs);
+    const meetsCutoff = score >= cutoff;
     const canPaySelf = S.wealth >= tuition;
-    const canLoan = uni.type === 'private';
+    const canFamilyPay = eduFamilyWealth() >= tuition;
 
     html += '<div class="card" style="padding:10px;' + (meetsCutoff ? '' : 'opacity:.5') + '">' +
-      '<div style="display:flex;justify-content:space-between"><b>' + uni.name + '</b><b>' + (tuition === 0 ? 'Free' : money(tuition) + '/yr') + '</b></div>' +
-      '<div class="muted small">' + uni.city + ' · ' + uni.type + ' · Quality ' + uni.quality + '/10 · ' + faculty.years + ' years</div>' +
-      (!meetsCutoff ? '<div class="bad small" style="margin-top:4px">Your score is below ' + uni.name + ' cutoff</div>' :
+      '<div style="display:flex;justify-content:space-between"><b>' + uni.name + '</b><b>' + money(tuition) + '/yr</b></div>' +
+      '<div class="muted small">' + uni.city + ' · Quality ' + uni.quality + '/10 · ' + faculty.years + ' years</div>' +
+      (!meetsCutoff ? '<div class="bad small" style="margin-top:4px">Needs ' + cutoff + '% (you have ' + score.toFixed(1) + '%)</div>' :
         '<div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">' +
-        (canPaySelf ? '<button class="opt" style="flex:1;padding:6px;font-size:.7rem;background:#34d399;color:#000;font-weight:700" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'self\')">Pay self</button>' : '') +
-        '<button class="opt" style="flex:1;padding:6px;font-size:.7rem" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'family\')">Family pays</button>' +
+        (canPaySelf ? '<button class="opt" style="flex:1;padding:6px;font-size:.7rem;background:#34d399;color:#000;font-weight:700" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'self\')">Pay self</button>' :
+          '<button class="opt" style="flex:1;padding:6px;font-size:.7rem;opacity:.4" disabled>No self funds</button>') +
+        (canFamilyPay ? '<button class="opt" style="flex:1;padding:6px;font-size:.7rem;background:#fbbf24;color:#000;font-weight:700" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'family\')">Family pays</button>' :
+          '<button class="opt" style="flex:1;padding:6px;font-size:.7rem;opacity:.4" disabled>Family can\'t afford</button>') +
+        '</div>') +
+      '</div>';
+  });
+  html += '</div>';
+
+  /* ============ PRIVATE UNIVERSITIES ============ */
+  html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">💼 Private Universities</h3>' +
+    '<p class="muted small">High fees. Lower cutoffs (accept most scores above their min).</p>';
+  privates.forEach(function(uni) {
+    const tuition = eduEGP(uni.tuitionEGP);
+    const minScore = uni.cutoffs || 50;
+    const meetsMin = score >= minScore;
+    const canPaySelf = S.wealth >= tuition;
+    const canFamilyPay = eduFamilyWealth() >= tuition;
+    const canLoan = true;
+
+    html += '<div class="card" style="padding:10px;' + (meetsMin ? '' : 'opacity:.5') + '">' +
+      '<div style="display:flex;justify-content:space-between"><b>' + uni.name + '</b><b>' + money(tuition) + '/yr</b></div>' +
+      '<div class="muted small">' + uni.city + ' · Quality ' + uni.quality + '/10 · Min score ' + minScore + '% · ' + faculty.years + ' years</div>' +
+      (!meetsMin ? '<div class="bad small" style="margin-top:4px">Needs ' + minScore + '% (you have ' + score.toFixed(1) + '%)</div>' :
+        '<div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">' +
+        (canPaySelf ? '<button class="opt" style="flex:1;padding:6px;font-size:.7rem;background:#34d399;color:#000;font-weight:700" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'self\')">Pay self</button>' :
+          '<button class="opt" style="flex:1;padding:6px;font-size:.7rem;opacity:.4" disabled>No self funds</button>') +
+        (canFamilyPay ? '<button class="opt" style="flex:1;padding:6px;font-size:.7rem;background:#fbbf24;color:#000;font-weight:700" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'family\')">Family pays</button>' :
+          '<button class="opt" style="flex:1;padding:6px;font-size:.7rem;opacity:.4" disabled>Family can\'t afford</button>') +
         (canLoan ? '<button class="opt" style="flex:1;padding:6px;font-size:.7rem" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'loan\')">Student loan</button>' : '') +
         '</div>') +
       '</div>';
   });
+  html += '</div>';
+
   return html;
 }
-
 window.eduChoosePendingFaculty = function(facultyId) {
   S.uniPendingFaculty = facultyId;
   render();
@@ -842,6 +893,19 @@ GameHooks.on('year', function() {
   ensureEducationState();
   if (!S) return;
   const year = gameYear();
+  /* Force school enrollment: if age 7+ and still no school, auto-assign by family wealth */
+  if (S.age >= 7 && S.age < 18 && !S.school && !S.thanaweyaScore) {
+    const famW = eduFamilyWealth();
+    let autoSchool = 'national';
+    if (famW >= 50000000) autoSchool = 'ib';
+    else if (famW >= 5000000) autoSchool = 'igcse';
+    else if (famW >= 600000) autoSchool = 'private';
+    else if (famW >= 80000) autoSchool = 'language';
+
+    S.school = autoSchool;
+    const schDef = eduSchoolById(autoSchool);
+    log('📚 Your family enrolled you in ' + (schDef ? schDef.label : autoSchool) + '.');
+  }
 
   /* ===== SCHOOL PHASE (6-18) ===== */
   if (S.school && S.age >= 6 && S.age < 18) {
@@ -905,6 +969,23 @@ GameHooks.on('year', function() {
         }
       }
     }
+  }
+  /* Auto-assign track if age 16 and no track chosen yet */
+  if (S.age >= 16 && S.age < 18 && S.school && !S.educationTrack && !S.uni && !S.degree) {
+    const famW = eduFamilyWealth();
+    let autoTrack = 'thanaweya';
+    if (S.school === 'igcse' || S.school === 'ib') {
+      autoTrack = famW >= 250000 ? 'ib' : 'alevels';
+    } else if (S.school === 'american') {
+      autoTrack = 'act';
+    } else if (S.school === 'national' || S.school === 'language') {
+      autoTrack = (S.smarts >= 85 && famW >= 3000) ? 'stem_school' : 'thanaweya';
+    } else if (S.school === 'private' || S.school === 'private_top') {
+      autoTrack = 'thanaweya';
+    }
+    S.educationTrack = autoTrack;
+    const tDef = eduTrackById(autoTrack);
+    log('📖 Your family placed you in the ' + (tDef ? tDef.label : autoTrack) + ' track.');
   }
 
   /* ===== THANAWEYA GENERATION (age 18) ===== */
