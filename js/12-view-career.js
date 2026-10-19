@@ -123,6 +123,47 @@ function carRate() { return C().rate || 1; }
 function carEGP(n) { return Math.round((n || 0) * carRate()); }
 function carSetTab(tab) { S.career.tab = tab; render(); }
 window.carSetTab = carSetTab;
+function carDetectTrackFromTitle(title) {
+  if (!title) return 'entry';
+  var t = title.toLowerCase();
+  if (t.indexOf('customer service') >= 0 || t.indexOf('call center') >= 0 || t.indexOf('bpo') >= 0) return 'bpo';
+  if (t.indexOf('software') >= 0 || t.indexOf('developer') >= 0 || t.indexOf('programmer') >= 0) return 'tech';
+  if (t.indexOf('data scientist') >= 0 || t.indexOf('machine learning') >= 0) return 'data_science';
+  if (t.indexOf('cyber') >= 0 || t.indexOf('security engineer') >= 0) return 'cybersecurity';
+  if (t.indexOf('designer') >= 0 || t.indexOf('ux') >= 0) return 'product_design';
+  if (t.indexOf('qa') >= 0 || t.indexOf('tester') >= 0) return 'qa_engineering';
+  if (t.indexOf('accountant') >= 0 || t.indexOf('auditor') >= 0) return 'accounting';
+  if (t.indexOf('investment analyst') >= 0 || t.indexOf('private equity') >= 0) return 'investment';
+  if (t.indexOf('financial analyst') >= 0 || t.indexOf('banker') >= 0) return 'business';
+  if (t.indexOf('marketing') >= 0) return 'marketing';
+  if (t.indexOf('sales') >= 0) return 'sales';
+  if (t.indexOf(' hr ') >= 0 || t.indexOf('human resources') >= 0 || t.indexOf('recruiter') >= 0) return 'hr';
+  if (t.indexOf('consultant') >= 0) return 'consulting';
+  if (t.indexOf('product manager') >= 0) return 'product';
+  if (t.indexOf('doctor') >= 0 || t.indexOf('physician') >= 0) return 'medicine';
+  if (t.indexOf('surgeon') >= 0) return 'surgery';
+  if (t.indexOf('pediatrician') >= 0) return 'pediatrics';
+  if (t.indexOf('cardiologist') >= 0) return 'cardiology';
+  if (t.indexOf('nurse') >= 0) return 'nursing';
+  if (t.indexOf('pharmacist') >= 0) return 'pharmacy';
+  if (t.indexOf('dentist') >= 0) return 'dentistry';
+  if (t.indexOf('psychologist') >= 0) return 'psychology';
+  if (t.indexOf('veterinarian') >= 0) return 'veterinary';
+  if (t.indexOf('physio') >= 0) return 'physiotherapy';
+  if (t.indexOf('lawyer') >= 0 || t.indexOf('legal') >= 0) return 'law';
+  if (t.indexOf('prosecutor') >= 0 || t.indexOf('judge') >= 0) return 'prosecutor';
+  if (t.indexOf('architect') >= 0) return 'architect';
+  if (t.indexOf('civil engineer') >= 0) return 'civil_eng';
+  if (t.indexOf('engineer') >= 0) return 'engineering';
+  if (t.indexOf('teacher') >= 0) return 'teaching';
+  if (t.indexOf('lecturer') >= 0 || t.indexOf('professor') >= 0) return 'academia';
+  if (t.indexOf('hotel') >= 0 || t.indexOf('front desk') >= 0) return 'hospitality';
+  if (t.indexOf('pilot') >= 0) return 'aviation';
+  if (t.indexOf('journalist') >= 0 || t.indexOf('reporter') >= 0 || t.indexOf('editor') >= 0) return 'media';
+  if (t.indexOf('civil servant') >= 0 || t.indexOf('government') >= 0) return 'government';
+  if (t.indexOf('electrician') >= 0 || t.indexOf('plumber') >= 0 || t.indexOf('mechanic') >= 0) return 'trades';
+  return 'entry';
+}
 
 function carCompaniesFor(industry) {
   const pool = CAR_COMPANIES[S.country] || CAR_COMPANIES.egy;
