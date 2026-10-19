@@ -395,3 +395,118 @@ const FAMILY_HOLIDAYS = {
     { id: 'easter',    name: 'Easter',    monthHint: 'Spring' }
   ]
 };
+/* ============================================================
+   ADDENDUM — constants used by 19-view-family.js
+   (These existed in the old v2 data file but were dropped
+    from the v3 expansion. Appending them here — no other
+    changes needed.)
+   ============================================================ */
+
+/* Tier resolver */
+function resolveFamilyTier(tier) {
+  return TIER_ALIASES[tier] || 'middle';
+}
+
+/* Sibling names by country */
+const SIBLING_NAMES = {
+  egy: {
+    m: ['Ahmed', 'Omar', 'Youssef', 'Karim', 'Hassan', 'Ali', 'Mohamed', 'Mostafa', 'Tarek', 'Bassem', 'Sherif', 'Amr'],
+    f: ['Sarah', 'Layla', 'Noor', 'Mariam', 'Hana', 'Salma', 'Yasmin', 'Aya', 'Nada', 'Rana', 'Dina', 'Farida']
+  },
+  usa: {
+    m: ['Michael', 'David', 'James', 'Daniel', 'Ryan', 'Ethan', 'Noah', 'Liam', 'Jacob', 'Matthew'],
+    f: ['Emily', 'Sarah', 'Jessica', 'Ashley', 'Olivia', 'Emma', 'Sophia', 'Ava', 'Mia', 'Isabella']
+  },
+  sau: {
+    m: ['Abdullah', 'Faisal', 'Khalid', 'Sultan', 'Fahad', 'Turki', 'Saud', 'Nawaf', 'Bandar', 'Majed'],
+    f: ['Noura', 'Reem', 'Hessa', 'Latifa', 'Maha', 'Aisha', 'Fatima', 'Sara', 'Lulwa', 'Dana']
+  },
+  uae: {
+    m: ['Rashid', 'Hamdan', 'Saeed', 'Ahmed', 'Khalifa', 'Majid', 'Saif', 'Ali', 'Omar', 'Yousef'],
+    f: ['Fatima', 'Mariam', 'Shaikha', 'Latifa', 'Hind', 'Noura', 'Alia', 'Salama', 'Moza', 'Reem']
+  },
+  uk: {
+    m: ['Oliver', 'Harry', 'Jack', 'Charlie', 'George', 'Jacob', 'Thomas', 'James', 'William', 'Henry'],
+    f: ['Olivia', 'Amelia', 'Isla', 'Emily', 'Poppy', 'Ava', 'Isabella', 'Lily', 'Sophie', 'Grace']
+  }
+};
+
+/* Parent aging & death */
+const PARENT_DEATH_CHANCE = [
+  { minAge: 0,  maxAge: 49,  chance: 0.001 },
+  { minAge: 50, maxAge: 59,  chance: 0.005 },
+  { minAge: 60, maxAge: 69,  chance: 0.015 },
+  { minAge: 70, maxAge: 79,  chance: 0.040 },
+  { minAge: 80, maxAge: 89,  chance: 0.100 },
+  { minAge: 90, maxAge: 999, chance: 0.200 }
+];
+
+const PARENT_HEALTH_DECAY = [
+  { minAge: 0,  maxAge: 49,  decay: 0 },
+  { minAge: 50, maxAge: 59,  decay: 1 },
+  { minAge: 60, maxAge: 69,  decay: 2 },
+  { minAge: 70, maxAge: 79,  decay: 3 },
+  { minAge: 80, maxAge: 999, decay: 5 }
+];
+
+/* Sibling milestones */
+const SIBLING_MILESTONES = {
+  schoolStart: 6,
+  uniStart: 18,
+  workStart: 22,
+  marryMin: 22,
+  marryMax: 40,
+  childMin: 23,
+  childMax: 42
+};
+
+/* Contact decay */
+const CONTACT_DECAY_THRESHOLD_YEARS = 2;
+const CONTACT_DECAY_AMOUNT = 1;
+
+/* Sibling success evolution */
+const SIBLING_SUCCESS_EVOLUTION = {
+  poor:       { toPoor: 0.60, toMiddle: 0.35, toSuccess: 0.05 },
+  middle:     { toPoor: 0.15, toMiddle: 0.70, toSuccess: 0.15 },
+  successful: { toPoor: 0.05, toMiddle: 0.35, toSuccess: 0.60 }
+};
+
+/* Sibling chance events */
+const SIBLING_WEDDING_CHANCE = 0.12;
+const SIBLING_CHILD_CHANCE = 0.20;
+
+/* Funeral costs (in home-country local currency) */
+const FUNERAL_COSTS = {
+  egy: 30000,
+  usa: 8000,
+  sau: 15000,
+  uae: 12000,
+  uk: 5000
+};
+
+/* Bond bonuses */
+const FAMILY_BOND_BONUSES = {
+  call:          5,
+  visit:         10,
+  helpMoney:     15,
+  shareHelp:     8,
+  holidayVisit:  15,
+  gift:          10
+};
+
+/* Gift catalog */
+const GIFT_CATALOG = [
+  { id: 'phone',   label: 'New phone',       cost: 30000,  bond: 8  },
+  { id: 'clothes', label: 'New clothes',     cost: 8000,   bond: 5  },
+  { id: 'jewelry', label: 'Jewelry',         cost: 50000,  bond: 10 },
+  { id: 'tech',    label: 'New tech/gadget', cost: 40000,  bond: 8  },
+  { id: 'trip',    label: 'Trip',            cost: 100000, bond: 12 },
+  { id: 'flowers', label: 'Flowers',         cost: 500,    bond: 3  }
+];
+
+/* Visit durations */
+const VISIT_DURATIONS = [
+  { id: 'short',  label: 'Short (5 days)',   days: 5  },
+  { id: 'medium', label: 'Medium (10 days)', days: 10 },
+  { id: 'long',   label: 'Long (14 days)',   days: 14 }
+];
