@@ -660,6 +660,69 @@ gbr: [
 };
 
 /* ============================================================
+   ADDITIONAL REMITTANCE SERVICES — appended to cover missing countries
+   (Original file only had: egy)
+   ============================================================ */
+
+/* DOMESTIC — for each country, local money services */
+REMITTANCE_SERVICES.gbr = [
+  { id: 'barclays_pingit', name: 'Barclays Pingit', feePct: 0.015, speed: 'minutes', maxPerTransfer: 5000 },
+  { id: 'monzo_uk', name: 'Monzo Transfer', feePct: 0.000, speed: 'instant', maxPerTransfer: 10000 },
+  { id: 'wise_uk', name: 'Wise UK', feePct: 0.0041, speed: '1-2 days', maxPerTransfer: 50000 },
+  { id: 'starling_uk', name: 'Starling Transfer', feePct: 0.000, speed: 'instant', maxPerTransfer: 10000 }
+];
+REMITTANCE_SERVICES.deu = [
+  { id: 'sparkasse_ueberweisung', name: 'Sparkasse Überweisung', feePct: 0.000, speed: 'same day', maxPerTransfer: 20000 },
+  { id: 'n26_instant', name: 'N26 MoneyBeam', feePct: 0.000, speed: 'instant', maxPerTransfer: 20000 },
+  { id: 'wise_de', name: 'Wise Germany', feePct: 0.0041, speed: '1-2 days', maxPerTransfer: 50000 },
+  { id: 'dkb_transfer', name: 'DKB Online Transfer', feePct: 0.000, speed: 'same day', maxPerTransfer: 20000 }
+];
+REMITTANCE_SERVICES.can = [
+  { id: 'interac_etransfer', name: 'Interac e-Transfer', feePct: 0.000, speed: 'minutes', maxPerTransfer: 3000 },
+  { id: 'rbc_transfer', name: 'RBC International Transfer', feePct: 0.015, speed: '1-2 days', maxPerTransfer: 50000 },
+  { id: 'wise_can', name: 'Wise Canada', feePct: 0.0041, speed: '1-2 days', maxPerTransfer: 50000 }
+];
+REMITTANCE_SERVICES.aus = [
+  { id: 'payid_aus', name: 'PayID (Osko)', feePct: 0.000, speed: 'instant', maxPerTransfer: 10000 },
+  { id: 'westpac_intl', name: 'Westpac International', feePct: 0.015, speed: '1-2 days', maxPerTransfer: 50000 },
+  { id: 'wise_aus', name: 'Wise Australia', feePct: 0.0041, speed: '1-2 days', maxPerTransfer: 50000 }
+];
+REMITTANCE_SERVICES.nld = [
+  { id: 'tikkie', name: 'Tikkie', feePct: 0.000, speed: 'instant', maxPerTransfer: 500 },
+  { id: 'ing_nl_transfer', name: 'ING Netherlands Transfer', feePct: 0.000, speed: 'same day', maxPerTransfer: 20000 },
+  { id: 'wise_nl', name: 'Wise Netherlands', feePct: 0.0041, speed: '1-2 days', maxPerTransfer: 50000 }
+];
+REMITTANCE_SERVICES.fra = [
+  { id: 'lydia_fr', name: 'Lydia', feePct: 0.000, speed: 'instant', maxPerTransfer: 2000 },
+  { id: 'bnpp_transfer', name: 'BNP Paribas Transfer', feePct: 0.010, speed: '1 day', maxPerTransfer: 30000 },
+  { id: 'wise_fra', name: 'Wise France', feePct: 0.0041, speed: '1-2 days', maxPerTransfer: 50000 }
+];
+REMITTANCE_SERVICES.jpn = [
+  { id: 'japan_post_furikomi', name: 'Japan Post Furikomi', feePct: 0.000, speed: 'same day', maxPerTransfer: 500000 },
+  { id: 'mufg_transfer', name: 'MUFG Transfer', feePct: 0.005, speed: 'same day', maxPerTransfer: 1000000 },
+  { id: 'wise_jpn', name: 'Wise Japan', feePct: 0.0041, speed: '1-2 days', maxPerTransfer: 1000000 }
+];
+REMITTANCE_SERVICES.ita = [
+  { id: 'satispay', name: 'Satispay', feePct: 0.000, speed: 'instant', maxPerTransfer: 500 },
+  { id: 'isp_bonifico', name: 'Intesa Sanpaolo Bonifico', feePct: 0.000, speed: 'same day', maxPerTransfer: 30000 },
+  { id: 'wise_ita', name: 'Wise Italy', feePct: 0.0041, speed: '1-2 days', maxPerTransfer: 50000 }
+];
+REMITTANCE_SERVICES.sgp = [
+  { id: 'paynow_sgp', name: 'PayNow', feePct: 0.000, speed: 'instant', maxPerTransfer: 5000 },
+  { id: 'dbs_transfer', name: 'DBS Remit', feePct: 0.008, speed: '1 day', maxPerTransfer: 50000 },
+  { id: 'wise_sgp', name: 'Wise Singapore', feePct: 0.0041, speed: '1-2 days', maxPerTransfer: 50000 }
+];
+REMITTANCE_SERVICES.bra = [
+  { id: 'pix', name: 'PIX (instant)', feePct: 0.000, speed: 'instant', maxPerTransfer: 5000 },
+  { id: 'itau_transfer', name: 'Itaú International Transfer', feePct: 0.015, speed: '1-2 days', maxPerTransfer: 50000 },
+  { id: 'wise_bra', name: 'Wise Brazil', feePct: 0.0041, speed: '1-2 days', maxPerTransfer: 50000 }
+];
+REMITTANCE_SERVICES.ind = [
+  { id: 'upi', name: 'UPI (instant)', feePct: 0.000, speed: 'instant', maxPerTransfer: 100000 },
+  { id: 'hdfc_transfer', name: 'HDFC International Transfer', feePct: 0.012, speed: '1-2 days', maxPerTransfer: 500000 },
+  { id: 'wise_ind', name: 'Wise India', feePct: 0.0041, speed: '1-2 days', maxPerTransfer: 500000 }
+];
+/* ============================================================
    16. EXPORTS — extended globals
    ============================================================ */
 window.GOLD_PRICES = GOLD_PRICES;
