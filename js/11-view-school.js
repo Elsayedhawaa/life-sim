@@ -21,7 +21,7 @@ function ensureEducationState() {
   if (!Array.isArray(S.scholarshipApps)) S.scholarshipApps = [];
   if (!Array.isArray(S.studyAbroadApps)) S.studyAbroadApps = [];
   if (typeof S.studyAbroad === 'undefined') S.studyAbroad = null;
-  if (typeof S.examStress !== 'number') S.examStress = 0;
+if (typeof S.examStress !== 'number') S.examStress = 0; if (typeof S.studyActionsThisYear !== 'number') S.studyActionsThisYear = 0;
   if (!Array.isArray(S.schoolHistory)) S.schoolHistory = [];
   if (!S.educationTab) S.educationTab = 'overview';
   if (typeof S.tutoring === 'undefined') S.tutoring = false;
@@ -41,9 +41,25 @@ GameHooks.on('newGame', ensureEducationState);
 GameHooks.on('migrate', ensureEducationState);
 
 /* ---------- HELPERS ---------- */
+const EDU_EGP_BASE_RATE = 52.7;
 function eduRate() { return C().rate || 1; }
-function eduEGP(n) { return Math.round((n || 0) * eduRate()); }
-function eduUSD(n) { return Math.round((n || 0) * eduRate()); } // Simplified conversion wrapper
+function eduEGP(n) {
+  const localRate = C().rate || 1;
+  if (localRate === EDU_EGP_BASE_RATE) return Math.round(n || 0);
+  return Math.round((n || 0) * (localRate / EDU_EGP_BASE_RATE));
+}
+function eduUSD(n) { return Math.round((n || 0) * eduRate()); }
+function eduFamilyWealth() {
+  const map = {
+    'poor': 0,
+    'lower-mid': 5000,
+    'middle': 80000,
+    'upper-mid': 600000,
+    'wealthy': 5000000,
+    'ultra': 50000000
+  };
+  return map[S.familyTier] || 0;
+}
 function eduSetTab(tab) { S.educationTab = tab; render(); }
 window.eduSetTab = eduSetTab;
 
@@ -85,7 +101,7 @@ function eduChooseSchool(schoolId) {
       S.wealth -= fee;
     } else {
       /* Family Help Fallback for initial school choice */
-      const familyWealth = S.familyTier === 'wealthy' ? 5000000 : S.familyTier === 'middle' ? 80000 : 5000;
+      const familyWealth = eduFamilyWealth();
       if (familyWealth >= fee) {
          log('👨‍👩‍👧 Your family paid your school fees.');
       } else {
@@ -119,7 +135,7 @@ function eduChooseTrack(trackId) {
      if (S.wealth >= fee) {
        S.wealth -= fee;
      } else {
-       const familyWealth = S.familyTier === 'wealthy' ? 5000000 : S.familyTier === 'middle' ? 80000 : 5000;
+       const familyWealth = eduFamilyWealth();
        if (familyWealth >= fee) {
           log('👨‍👩‍👧 Your family paid for your High School track.');
        } else {
@@ -147,7 +163,7 @@ window.eduHireTutors = function() {
   if (S.wealth >= cost) {
     S.wealth -= cost;
   } else {
-     const familyWealth = S.familyTier === 'wealthy' ? 5000000 : S.familyTier === 'middle' ? 80000 : 5000;
+     const familyWealth = eduFamilyWealth();
      if (familyWealth >= cost) {
         log('👨‍👩‍👧 Your family paid for your private tutors.');
      } else {
@@ -190,7 +206,7 @@ function eduApplyToUni(uniId, facultyId, paymentMode) {
   if (paymentMode === 'family') {
     const familyParents = (S.family || []).filter(function(m) { return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false; });
     if (!familyParents.length) { log('❌ No living parents to pay.'); render(); return; }
-    const familyWealth = S.familyTier === 'wealthy' ? 5000000 : S.familyTier === 'middle' ? 80000 : 5000;
+    const familyWealth = eduFamilyWealth();
     if (familyWealth < tuition) {
       log('❌ Your family cannot afford this tuition.');
       render(); return;
@@ -506,7 +522,7 @@ function eduRenderStudies() {
       const fee = eduEGP(school.annualEGP);
       let canAfford = fee === 0 || S.wealth >= fee;
       if(!canAfford){
-          const familyWealth = S.familyTier === 'wealthy' ? 5000000 : S.familyTier === 'middle' ? 80000 : 5000;
+          const familyWealth = eduFamilyWealth();
           if(familyWealth >= fee) canAfford = true;
       }
       
@@ -530,7 +546,7 @@ function eduRenderStudies() {
       const fee = eduEGP(track.annualEGP);
       let canAfford = fee === 0 || S.wealth >= fee;
       if(!canAfford){
-          const familyWealth = S.familyTier === 'wealthy' ? 5000000 : S.familyTier === 'middle' ? 80000 : 5000;
+          const familyWealth = eduFamilyWealth();
           if(familyWealth >= fee) canAfford = true;
       }
       
@@ -576,9 +592,9 @@ function eduRenderStudies() {
   if (S.degree) {
     return '<div class="card"><h3>🎓 Graduated</h3>' +
       '<div class="row"><span>Degree</span><b>' + S.degree + '</b></div>' +
-      '<div class="row"><span>Major</span><b>' + (S.majorLabel || S.uni?.major || '—') + '</b></div>' +
-      '<div class="row"><span>University</span><b>' + (S.uni?.name || '—') + '</b></div>' +
-      '<div class="row"><span>Final GPA</span><b>' + (S.uni?.gpa?.toFixed(2) || '—') + '</b></div>' +
+      '<div class="row"><span>Major</span><b>' + (S.graduation?.majorLabel || S.majorLabel || '—') + '</b></div>' +
+      '<div class="row"><span>University</span><b>' + (S.graduation?.uniName || '—') + '</b></div>' +
+      '<div class="row"><span>Final GPA</span><b>' + (S.graduation?.gpa?.toFixed(2) || '—') + '</b></div>' +
       '<p class="muted small" style="margin-top:10px">Career unlocked. Head to Career tab to find work.</p>' +
       '</div>';
   }
@@ -674,6 +690,8 @@ function eduRenderCurrentUni() {
 
 window.eduStudyHard = function() {
   if (!S.uni) return;
+  if (S.studyActionsThisYear >= 2) { log('⚠️ Already used your study focus twice this year.'); return; }
+  S.studyActionsThisYear = (S.studyActionsThisYear || 0) + 1;
   S.examStress = Math.min(100, S.examStress + 20);
   S.uni.gpa = Math.min(4.0, S.uni.gpa + 0.15);
   fx({ happiness: -3, smarts: 2 });
@@ -682,6 +700,8 @@ window.eduStudyHard = function() {
 };
 
 window.eduRest = function() {
+  if (S.studyActionsThisYear >= 2) { log('⚠️ Already used your rest focus twice this year.'); return; }
+  S.studyActionsThisYear = (S.studyActionsThisYear || 0) + 1;
   S.examStress = Math.max(0, S.examStress - 25);
   fx({ happiness: 5 });
   log('😴 Hung out with friends and rested. Stress down, happiness up.');
@@ -832,7 +852,7 @@ GameHooks.on('year', function() {
         S.wealth -= schoolFee;
       } else {
          /* Family Help */
-         const familyWealth = S.familyTier === 'wealthy' ? 5000000 : S.familyTier === 'middle' ? 80000 : 5000;
+         const familyWealth = eduFamilyWealth();
          if(familyWealth >= schoolFee){
              // Family pays silently
          } else {
@@ -910,6 +930,18 @@ GameHooks.on('year', function() {
       S.educationEvents.push({year: year, title: 'High School Graduation', text: 'Scored ' + S.thanaweyaScore.toFixed(1) + '%'});
   }
 
+   /* ===== ACTIVITIES (applies during school OR uni) ===== */
+  if (S.educationActivities && S.educationActivities.length > 0) {
+    S.educationActivities.forEach(function(actId) {
+      const act = EDU_ACTIVITIES.find(function(a) { return a.id === actId; });
+      if (!act) return;
+      if (act.social) S.social = Math.min(100, S.social + Math.round(act.social * 0.3));
+      if (act.smarts) S.smarts = Math.min(100, S.smarts + Math.round(act.smarts * 0.3));
+      if (act.happiness) fx({ happiness: Math.round(act.happiness * 0.2) });
+      if (act.cvBoost && S.career && S.career.cv) S.career.cv.skill = Math.min(100, S.career.cv.skill + 2);
+    });
+  }
+
   /* ===== UNIVERSITY PHASE ===== */
   if (S.uni) {
     /* Tuition */
@@ -921,17 +953,6 @@ GameHooks.on('year', function() {
           S.uni.gpa = Math.max(0, S.uni.gpa - 0.5);
       }
     }
-
-    /* Activity effects */
-    S.educationActivities.forEach(function(actId) {
-      const act = EDU_ACTIVITIES.find(function(a) { return a.id === actId; });
-      if (!act) return;
-      if (act.social) S.social = Math.min(100, S.social + Math.round(act.social * 0.3));
-      if (act.smarts) S.smarts = Math.min(100, S.smarts + Math.round(act.smarts * 0.3));
-      if (act.happiness) fx({ happiness: Math.round(act.happiness * 0.2) });
-      if (act.cvBoost && S.career && S.career.cv) S.career.cv.skill = Math.min(100, S.career.cv.skill + 2);
-    });
-
     /* Year advances */
     S.uni.year++;
     S.uni.semestersCompleted += 2;
@@ -967,12 +988,22 @@ GameHooks.on('year', function() {
     if (S.uni.year >= S.uni.yearsTotal) {
       S.degree = S.uni.degree || 'general';
       S.majorLabel = (eduMajorById(S.uni.major) || {}).label || S.uni.major;
+      S.majorId = S.uni.major;
       log('🎓 Graduated from ' + S.uni.name + ' with a degree in ' + S.majorLabel + '. Final GPA: ' + S.uni.gpa.toFixed(2) + '.');
       fx({ happiness: 20, smarts: 5 });
       S.educationEvents.push({year: year, title: 'University Graduation', text: 'Graduated from ' + S.uni.name + ' with GPA ' + S.uni.gpa.toFixed(2)});
-      /* Don't delete S.uni — keep for records */
+      S.graduation = {
+        uniId: S.uni.id,
+        uniName: S.uni.name,
+        major: S.uni.major,
+        majorLabel: S.majorLabel,
+        gpa: S.uni.gpa,
+        degree: S.degree,
+        year: year,
+        isStudyAbroad: S.uni.isStudyAbroad || false
+      };
+      S.uni = null;
     }
-  }
 
   /* ===== SCHOLARSHIP DECISIONS ===== */
   S.scholarshipApps = S.scholarshipApps.filter(function(app) {
@@ -1030,10 +1061,9 @@ GameHooks.on('year', function() {
         startedYear: year
       };
       
-      /* Automatically set S.country to the new country to trigger immigration logic elsewhere if needed */
-      log('✈️ You are moving to ' + uni.country.toUpperCase() + ' for your studies.');
-      S.country = app.country;
-      
+            /* Do NOT change S.country — immigration system handles formal moves.
+         Player is still a citizen of home country, just studying abroad. */
+      log('✈️ You are attending ' + uni.name + ' in ' + uni.country.toUpperCase() + ' on a student visa.');
       S.uni = {
         id: uni.id,
         name: uni.name,
@@ -1060,8 +1090,11 @@ GameHooks.on('year', function() {
     return false;
   });
 
-  /* ===== EXAM STRESS NATURAL DECAY ===== */
+   /* ===== EXAM STRESS NATURAL DECAY ===== */
   S.examStress = Math.max(0, S.examStress - 10);
+
+  /* ===== RESET STUDY COOLDOWN ===== */
+  S.studyActionsThisYear = 0;
 });
 
 /* ---------- REGISTER ---------- */
