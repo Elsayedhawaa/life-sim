@@ -556,7 +556,7 @@ function chRenderChildrenList() {
     html += '<div class="card" style="border-left:3px solid ' + (c.bond > 60 ? '#34d399' : c.bond > 40 ? '#fbbf24' : '#fb7185') + '">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
       '<div><div style="font-weight:700;font-size:1.05rem">' + c.name + (c.movedOut ? ' 🏠' : '') + '</div>' +
-      '<div class="muted small">Age ' + c.age + ' · ' + (c.gender === 'm' ? '👦 Boy' : '👧 Girl') + (trait ? ' · ' + trait.label : '') + '</div>' +
+      '<div class="muted small">Age ' + c.age + ' · ' + (c.gender === 'm' ? '👦 Boy' : '👧 Girl') +  (traitLabels.length ? ' · ' + traitLabels.join(' · ') : '') + '</div>' +
       (school ? '<div class="muted small">' + school.label + '</div>' : '') +
       '</div><div style="text-align:right">' +
       '<div style="font-size:1.4rem">' + (c.age < 3 ? '👶' : c.age < 13 ? '🧒' : c.age < 18 ? '👦' : '🧑') + '</div></div></div>';
