@@ -1040,14 +1040,20 @@ function carRenderOverview() {
       '<p class="muted small" style="margin-top:6px">Mandatory for all Egyptian medical graduates. Low salary but required before specialist licensing.</p></div>';
   }
 
-  /* Annual work expenses */
+  /* Annual work expenses — derived from country prices, not multiplied by rate */
+  var priceBook = C().prices || {};
+  var commuteCost = Math.round(priceBook.transport || 8000);
+  var clothesCost = Math.round((priceBook.food || 54000) * 0.05);
+  var lunchesCost = Math.round((priceBook.food || 54000) * 0.10);
+  var phoneWorkCost = Math.round((priceBook.phone || 4800) * 0.5);
+  var totalWorkExpenses = commuteCost + clothesCost + lunchesCost + phoneWorkCost;
   html += '<div class="card"><h3>💸 Work Expenses</h3>' +
-    '<div class="row"><span>Commute</span><b>' + money(carEGP(5000)) + '/yr</b></div>' +
-    '<div class="row"><span>Work clothes</span><b>' + money(carEGP(3000)) + '/yr</b></div>' +
-    '<div class="row"><span>Lunches</span><b>' + money(carEGP(6000)) + '/yr</b></div>' +
-    '<div class="row"><span>Phone / internet</span><b>' + money(carEGP(2500)) + '/yr</b></div>' +
+    '<div class="row"><span>Commute</span><b>' + money(commuteCost) + '/yr</b></div>' +
+    '<div class="row"><span>Work clothes</span><b>' + money(clothesCost) + '/yr</b></div>' +
+    '<div class="row"><span>Lunches</span><b>' + money(lunchesCost) + '/yr</b></div>' +
+    '<div class="row"><span>Phone / internet</span><b>' + money(phoneWorkCost) + '/yr</b></div>' +
+    '<div class="row" style="border-top:1px solid #1a1a2a;margin-top:6px;padding-top:6px"><b>Total</b><b>' + money(totalWorkExpenses) + '/yr</b></div>' +
     '</div>';
-
   /* Career milestones */
   html += carRenderMilestonesSummary();
 
