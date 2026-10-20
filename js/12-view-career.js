@@ -1808,13 +1808,14 @@ GameHooks.on('year', function() {
     j.performance = Math.max(0, Math.min(100, j.performance + perfChange));
     if (happinessChange !== 0) fx({ happiness: happinessChange });
     if (healthChange !== 0) fx({ health: healthChange });
-         /* Income tax deduction */
-    const taxDue = carComputeTax(j.salary);
-    if (taxDue > 0) {
-      S.wealth -= taxDue;
-      log('💰 Income tax: ' + money(taxDue) + ' on ' + money(j.salary) + ' gross.');
+            /* Income tax deduction (SKIPPED in monthly — settlement handles) */
+    if (!(typeof isMonthly === 'function' && isMonthly())) {
+      const taxDue = carComputeTax(j.salary);
+      if (taxDue > 0) {
+        S.wealth -= taxDue;
+        log('💰 Income tax: ' + money(taxDue) + ' on ' + money(j.salary) + ' gross.');
+      }
     }
-
     /* Mood auto-recovery based on performance */
     if (j.performance >= 75) {
       c.mood = 'satisfied';
