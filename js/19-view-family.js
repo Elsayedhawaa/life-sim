@@ -1006,15 +1006,19 @@ GameHooks.on('year', function() {
     });
   });
 
-  const totalMonthlyUSD = Object.values(S.parentAllowances || {}).reduce(function(s, v) { return s + v; }, 0);
-  if (totalMonthlyUSD > 0) {
-    const yearlyLocal = totalMonthlyUSD * 12 * getExchangeRate();
-    if (S.wealth >= yearlyLocal) {
-      S.wealth -= yearlyLocal;
-      log('💰 Paid ' + money(yearlyLocal) + ' in parent allowances this year.');
-    } else {
-      log('⚠️ Could not afford parent allowances (' + money(yearlyLocal) + '). Bond may suffer.');
-      familyLivingParents().forEach(function(p) { if (S.parentAllowances[p.id]) familyAddBond(p, -5); });
+  if (!(typeof isMonthly === 'function' && isMonthly())) {
+    const totalMonthly = Object.values(S.parentAllowances || {}).reduce(function(s, v) { return s + v; }, 0);
+    if (totalMonthly > 0) {
+      const yearly = totalMonthly * 12;
+      if (S.wealth >= yearly) {
+        S.wealth -= yearly;
+        log('💰 Paid ' + money(yearly) + ' in parent allowances this year.');
+      } else {
+        log('⚠️ Could not afford parent allowances (' + money(yearly) + '). Bond may suffer.');
+        familyLivingParents().forEach(function(p) {
+          if (S.parentAllowances[p.id]) familyAddBond(p, -5);
+        });
+      }
     }
   }
 });
