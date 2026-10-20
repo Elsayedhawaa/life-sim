@@ -11,12 +11,18 @@
 GameHooks.on('month', function() {
   if (!isMonthly()) return;
   if (!S) return;
-  if (S.age < 18) return;
 
   const month = currentMonth();
   const monthStr = monthName(month);
   const c = C();
 
+  /* Skip finance if this year was already settled by yearly tick */
+  const skipFinance = (S.pacingSwitchYear === gameYear());
+
+  /* Kids still fire events, just not money */
+  const skipAll = (S.age < 18);
+     if (!skipFinance && !skipAll) {
+        
   /* ---------- 1. SALARY (1/12 of annual) ---------- */
   if (S.job && S.job.salary) {
     const monthlyPay = Math.round(S.job.salary / 12);
@@ -103,7 +109,7 @@ GameHooks.on('month', function() {
 
   /* ---------- 6. CAR LOAN MONTHLY (if not already in S.bank.loans) ---------- */
   /* Car loans live in S.bank.loans with loanType 'car' — already handled in step 3 */
-
+  } /* end skipFinance guard */
   /* ---------- 7. RANDOM EVENT CHANCE (30% per month) ---------- */
   if (S.pending) return;
   const allEvents = [...GLOBAL_EVENTS, ...(C().events || [])];
@@ -123,16 +129,73 @@ GameHooks.on('month', function() {
 /* ---------- PACING TOGGLE (called from settings/life tab) ---------- */
 window.togglePacing = function() {
   if (!S) return;
+  if (S.pending) {
+    log('Resolve the pending event first.');
+    return;
+  }
+
   if (S.pacing === 'monthly') {
-    if (!confirm('Switch to YEARLY mode? Months will no longer be tracked. Any pending bills this year will be settled at year end.')) return;
+    /* ============ MONTHLY → YEARLY ============ */
+    const currentM = currentMonth();
+
+    /* Case 1: This year was skipped (switched from yearly earlier this year) */
+    if (S.pacingSwitchYear === gameYear()) {
+      if (!confirm('Switch to YEARLY mode?\n\nThis year was already settled by the yearly tick, so no extra charges apply. You will continue in yearly mode.')) return;
+      S.pacing = 'yearly';
+      S.month = 1;
+      S.pacingSwitchYear = 0;
+      log('📅 Switched to yearly mode.');
+      save(); render(); return;
+    }
+
+    /* Case 2: Normal mid-year switch — settle remaining months */
+    const monthsToSettle = 12 - currentM;
+    if (monthsToSettle > 0) {
+      if (!confirm('Switch to YEARLY mode?\n\nYou are in ' + currentMonthName() + ' ' + gameYear() + '.\n\nThis will settle the remaining ' + monthsToSettle + ' month(s) now — applying salary and bills — then switch to yearly. Your next click will advance one full year.')) return;
+
+      /* Calculate 1 month of salary + bills */
+      let monthlySalary = 0;
+      if (S.job && S.job.salary) monthlySalary = Math.round(S.job.salary / 12);
+
+      let monthlyBills = 0;
+      if (typeof lifeCalculate === 'function' && S.lifestyle && S.lifestyle.active) {
+        try { monthlyBills = lifeCalculate().monthly; } catch(e) { monthlyBills = 0; }
+      }
+      if (monthlyBills === 0) {
+        const c = C();
+        let annual = 0;
+        if (S.housing === 'parents') {
+          annual = (c.prices.phone || 0) * 0.5 + (c.prices.transport || 0) * 0.25;
+        } else {
+          annual = (c.prices.food || 0) + (c.prices.phone || 0) + (c.prices.transport || 0);
+          if (S.housing === 'rented') annual += c.prices.rent || 0;
+        }
+        monthlyBills = Math.round(annual / 12);
+      }
+
+      const totalSalary = monthlySalary * monthsToSettle;
+      const totalBills = monthlyBills * monthsToSettle;
+      S.wealth += totalSalary - totalBills;
+
+      log('📅 Settled ' + monthsToSettle + ' remaining month(s): salary +' + money(totalSalary) + ', bills −' + money(totalBills) + '.');
+    } else {
+      if (!confirm('Switch to YEARLY mode?')) return;
+    }
+
     S.pacing = 'yearly';
     S.month = 1;
-    log('📅 Switched to yearly mode.');
+    S.pacingSwitchYear = 0;
+    log('📅 Switched to yearly mode. Ready to advance year by year.');
+    save(); render();
+
   } else {
-    if (!confirm('Switch to MONTHLY mode? You will start in January and bills/events will occur throughout the year.')) return;
+    /* ============ YEARLY → MONTHLY ============ */
+    if (!confirm('Switch to MONTHLY mode?\n\nYou will restart in January ' + gameYear() + '.\n\n⚠️ Your finances for ' + gameYear() + ' were already settled when the year started. No salary or bills will be charged during ' + gameYear() + ' in monthly mode — only events. Full monthly settlement begins January ' + (gameYear() + 1) + '.')) return;
+
     S.pacing = 'monthly';
     S.month = 1;
-    log('🗓 Switched to monthly mode. You are now in January.');
+    S.pacingSwitchYear = gameYear();
+    log('🗓 Switched to monthly mode. Starting January ' + gameYear() + '. Finance already settled this year; monthly cash flow begins January ' + (gameYear() + 1) + '.');
+    save(); render();
   }
-  save(); render();
 };
