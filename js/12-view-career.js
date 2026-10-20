@@ -1150,231 +1150,122 @@ function carStatusLabel() {
 function carRenderOverview() {
   const c = S.career;
 
-  /* ---------- UNEMPLOYED ---------- */
   if (!c.job && !c.partTime) {
-    let html = '<div class="card" style="border-color:#fb7185;text-align:center;padding:24px 16px">' +
-      '<div style="font-size:2.5rem;opacity:.5;margin-bottom:8px">💼</div>' +
-      '<h3 style="color:#fb7185">Currently Unemployed</h3>' +
-      '<p class="muted small" style="margin:8px 0 16px">Search for a job or start part-time work.</p>' +
-      '<button class="opt" style="text-align:center;background:#8b5cf6;color:#fff;font-weight:700;margin-bottom:6px" onclick="carSetTab(\'search\')">🔍 Find a Full-Time Job</button>' +
-      '<button class="opt" style="text-align:center;margin-top:6px" onclick="carSetTab(\'parttime\')">☕ Browse Part-Time</button>' +
-      '</div>';
-    html += carRenderMilestonesSummary();
-    return html;
+    let h = '<div class="card" style="border-color:#fb7185;text-align:center;padding:24px 16px">';
+    h += '<div style="font-size:2.5rem;opacity:.5;margin-bottom:8px">💼</div>';
+    h += '<h3 style="color:#fb7185">Currently Unemployed</h3>';
+    h += '<p class="muted small" style="margin:8px 0 16px">Search for a job or start part-time work.</p>';
+    h += '<button class="opt" style="text-align:center;background:#8b5cf6;color:#fff;font-weight:700" onclick="carSetTab(\'search\')">🔍 Find a Full-Time Job</button>';
+    h += '<button class="opt" style="text-align:center;margin-top:6px" onclick="carSetTab(\'parttime\')">☕ Browse Part-Time</button>';
+    h += '</div>';
+    h += carRenderMilestonesSummary();
+    return h;
   }
 
-  /* ---------- PART-TIME ONLY ---------- */
   if (c.partTime && !c.job) {
-    let html = '<div class="card" style="border-color:#22d3ee"><h3 style="color:#22d3ee">☕ Part-Time: ' + c.partTime.title + '</h3>' +
-      '<div class="row"><span>Monthly salary</span><b>' + money(Math.round(c.partTime.salary / 12)) + '</b></div>' +
-      '<div class="row"><span>Hours per week</span><b>' + c.partTime.hoursPerWeek + '</b></div>' +
-      (c.partTime.affectsGrades ? '<p class="bad small" style="margin-top:8px">⚠️ This job affects your grades while studying.</p>' : '') +
-      '<button class="opt" style="margin-top:8px;text-align:center;border-color:#fb7185;color:#fb7185" onclick="carQuitPartTime()">Quit</button></div>';
-    html += carRenderMilestonesSummary();
-    return html;
+    let h = '<div class="card" style="border-color:#22d3ee">';
+    h += '<h3 style="color:#22d3ee">☕ Part-Time: ' + c.partTime.title + '</h3>';
+    h += '<div class="row"><span>Monthly salary</span><b>' + money(Math.round(c.partTime.salary / 12)) + '</b></div>';
+    h += '<div class="row"><span>Hours per week</span><b>' + c.partTime.hoursPerWeek + '</b></div>';
+    if (c.partTime.affectsGrades) h += '<p class="bad small" style="margin-top:8px">⚠️ Affects grades while studying.</p>';
+    h += '<button class="opt" style="margin-top:8px;text-align:center;border-color:#fb7185;color:#fb7185" onclick="carQuitPartTime()">Quit</button>';
+    h += '</div>';
+    h += carRenderMilestonesSummary();
+    return h;
   }
 
-  /* ---------- FULL-TIME JOB ---------- */
   const j = c.job;
   const track = carTrackById(j.track);
   const perfColor = j.performance >= 80 ? '#34d399' : j.performance >= 50 ? '#fbbf24' : '#fb7185';
   const skill = carSkillLevel();
   const trend = carIndustryTrend(track ? track.industry : 'normal');
   const nextLevel = carNextLevel(j);
-  const market = carComputeMarketSalary(j.track, j.level);
 
-  /* ---------- COMPUTE FINANCES ---------- */
-  const taxAmount = carComputeTax(j.salary);
-  const pensionContrib = Math.round(j.salary * 0.11);
-  const netTakeHome = j.salary - taxAmount - pensionContrib;
+  const tax = (typeof carComputeTax === 'function') ? carComputeTax(j.salary) : 0;
+  const pension = Math.round(j.salary * 0.11);
+  const net = j.salary - tax - pension;
 
-  /* ---------- STAT STRIP ---------- */
-  let html = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#8b5cf610 0%,transparent 100%);border-color:#8b5cf6">' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">' +
-    '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">SALARY</div>' +
-    '<div class="mono" style="font-weight:700;font-size:.9rem">' + money(j.salary) + '</div>' +
-    '<div class="muted" style="font-size:.6rem">per year</div></div>' +
-    '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">LEVEL</div>' +
-    '<div class="mono" style="font-weight:700;font-size:.9rem">' + (j.level + 1) + ' / ' + (track ? track.levels.length : 5) + '</div>' +
-    '<div class="muted" style="font-size:.6rem">' + (j.title.length > 18 ? j.title.slice(0, 15) + '...' : j.title) + '</div></div>' +
-    '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">TENURE</div>' +
-    '<div class="mono" style="font-weight:700;font-size:.9rem">' + (j.tenure || 0) + ' yr</div>' +
-    '<div class="muted" style="font-size:.6rem">since ' + j.hiredYear + '</div></div>' +
-    '</div></div>';
+  let h = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#8b5cf610 0%,transparent 100%);border-color:#8b5cf6">';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">';
+  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">SALARY</div><div class="mono" style="font-weight:700;font-size:.9rem">' + money(j.salary) + '</div><div class="muted" style="font-size:.6rem">per year</div></div>';
+  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">LEVEL</div><div class="mono" style="font-weight:700;font-size:.9rem">' + (j.level + 1) + '/' + (track ? track.levels.length : 5) + '</div><div class="muted" style="font-size:.6rem">' + j.title + '</div></div>';
+  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">TENURE</div><div class="mono" style="font-weight:700;font-size:.9rem">' + (j.tenure || 0) + 'y</div><div class="muted" style="font-size:.6rem">since ' + j.hiredYear + '</div></div>';
+  h += '</div></div>';
 
-  /* ---------- SMART SUGGESTIONS ---------- */
-  const suggestions = carSmartSuggestions();
-  if (suggestions.length > 0) {
-    html += '<div class="card" style="border-color:#fbbf24"><h4 style="font-size:.82rem;color:#fbbf24;margin-bottom:8px">💡 RECOMMENDED ACTIONS</h4>';
-    suggestions.forEach(function(s) {
-      html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a;display:flex;gap:8px;align-items:flex-start">' +
-        '<div style="flex-shrink:0;font-size:1rem">' + s.icon + '</div>' +
-        '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:.78rem;color:' + s.color + ';line-height:1.4">' + s.text + '</div>' +
-        (s.action && s.actionLabel
-          ? '<button class="opt" style="margin-top:6px;padding:4px 10px;font-size:.68rem;background:' + s.color + '20;border-color:' + s.color + ';color:' + s.color + '" onclick="' + s.action + '">' + s.actionLabel + '</button>'
-          : '') +
-        '</div></div>';
-    });
-    html += '</div>';
-  }
+  h += '<div class="card" style="border-color:#8b5cf6">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+  h += '<div><h3 style="color:#8b5cf6;margin-bottom:2px">' + j.title + '</h3><div class="muted small">' + j.company + '</div></div>';
+  h += '<div class="small" style="color:' + trend.color + '">' + trend.icon + ' ' + trend.label + '</div></div>';
+  if (j.boss) h += '<div class="row"><span>Manager</span><b>' + j.boss.name + '</b></div>';
+  h += '<div class="row"><span>Prestige</span><b>' + j.prestige + ' / 5</b></div>';
+  h += '<div class="row"><span>Skill</span><b style="color:' + skill.color + '">' + skill.label + ' (' + S.career.cv.skill + '%)</b></div>';
+  h += '</div>';
 
-  /* ---------- JOB CARD ---------- */
-  html += '<div class="card" style="border-color:#8b5cf6">' +
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">' +
-    '<div style="flex:1"><h3 style="color:#8b5cf6;margin-bottom:2px">' + j.title + '</h3>' +
-    '<div class="muted small">' + j.company + '</div></div>' +
-    '<div class="small" style="color:' + trend.color + ';text-align:right">' + trend.icon + ' ' + trend.label + '</div></div>';
+  h += '<div class="card"><h4 style="font-size:.82rem;color:#34d399;margin-bottom:8px">💰 SALARY BREAKDOWN</h4>';
+  h += '<div class="row"><span>Gross</span><b>' + money(j.salary) + '</b></div>';
+  if (tax > 0) h += '<div class="row"><span>− Tax</span><b class="bad">' + money(tax) + '</b></div>';
+  h += '<div class="row"><span>− Pension (11%)</span><b class="bad">' + money(pension) + '</b></div>';
+  h += '<div class="row" style="border-top:1px solid #25253a;margin-top:6px;padding-top:6px"><b>Take-home</b><b class="good">' + money(net) + '</b></div>';
+  h += '<div class="row"><span>Per month</span><b>' + money(Math.round(net / 12)) + '</b></div>';
+  h += '</div>';
 
-  /* Boss info */
-  if (j.boss) {
-    html += '<div class="row"><span>Manager</span><b>' + j.boss.name + '</b></div>';
-  }
+  h += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:8px">⚙️ WORK MODE</h4>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
+  var modes = [
+    { id: 'slacking', label: '😴 Slacking', desc: '−8% perf' },
+    { id: 'normal', label: '🙂 Normal', desc: '+2% perf' },
+    { id: 'hard', label: '💪 Hard', desc: '+12% perf' },
+    { id: 'overtime', label: '🔥 Overtime', desc: '+18%, +10% pay' }
+  ];
+  modes.forEach(function(m) {
+    var active = c.workMode === m.id;
+    h += '<button class="pill ' + (active ? 'on' : '') + '" style="padding:6px;font-size:.68rem" onclick="carSetWorkMode(\'' + m.id + '\')">' + m.label + '<br><span class="muted" style="font-size:.6rem">' + m.desc + '</span></button>';
+  });
+  h += '</div></div>';
 
-  html += '<div class="row"><span>Prestige</span><b>' + j.prestige + ' / 5</b></div>' +
-    '<div class="row"><span>Stability</span><b>' + Math.round(j.stability * 100) + '%</b></div>' +
-    '<div class="row"><span>Skill level</span><b style="color:' + skill.color + '">' + skill.label + ' (' + S.career.cv.skill + '%)</b></div>' +
-    '</div>';
+  var reqYears = nextLevel ? (nextLevel.requirements.years || 0) : 0;
+  var perfPct = Math.min(100, j.performance / 80 * 100);
+  var tenPct = reqYears > 0 ? Math.min(100, j.tenure / reqYears * 100) : 100;
 
-  /* ---------- SALARY BREAKDOWN ---------- */
-  html += '<div class="card"><h4 style="font-size:.82rem;color:#34d399;margin-bottom:8px">💰 SALARY BREAKDOWN</h4>' +
-    '<div class="row"><span>Gross salary</span><b class="good">' + money(j.salary) + '</b></div>' +
-    (taxAmount > 0 ? '<div class="row"><span>− Income tax</span><b class="bad">' + money(taxAmount) + '</b></div>' : '<div class="row"><span>− Income tax</span><b class="good">' + money(0) + ' (no tax)</b></div>') +
-    '<div class="row"><span>− Pension (11%)</span><b class="bad">' + money(pensionContrib) + '</b></div>' +
-    '<div class="row" style="border-top:1px solid #25253a;margin-top:6px;padding-top:6px">' +
-    '<span><b>Take-home</b></span><b class="good" style="font-size:1rem">' + money(netTakeHome) + '</b></div>' +
-    '<div class="row"><span>Per month</span><b>' + money(Math.round(netTakeHome / 12)) + '</b></div>';
-
-  /* Market comparison */
-  if (market) {
-    const isAbove = j.salary >= market.avg;
-    const isBelow = j.salary < market.avg * 0.85;
-    html += '<div style="margin-top:10px;padding:8px;background:#0f0f1a;border-radius:6px">' +
-      '<div class="muted small" style="margin-bottom:4px">Market comparison (' + j.title + '):</div>' +
-      '<div class="row" style="padding:2px 0;font-size:.78rem"><span>Industry average</span><b>' + money(market.avg) + '</b></div>' +
-      '<div class="row" style="padding:2px 0;font-size:.78rem"><span>Range</span><b>' + money(market.min) + ' – ' + money(market.max) + '</b></div>' +
-      '<div class="row" style="padding:4px 0;font-size:.82rem;border-top:1px solid #1a1a2a;margin-top:4px;padding-top:4px">' +
-      '<span>Your position</span>' +
-      '<b class="' + (isBelow ? 'bad' : isAbove ? 'good' : '') + '">' + (isAbove ? '↑ Above avg' : isBelow ? '↓ Below avg' : '≈ At avg') + '</b></div>' +
-      '</div>';
-  }
-  html += '</div>';
-
-  /* ---------- WORK MODE + PERFORMANCE ---------- */
-  html += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:8px">⚙️ WORK MODE</h4>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">' +
-    [
-      { id: 'slacking', label: '😴 Slacking', desc: '−8% perf, +3 mood' },
-      { id: 'normal',   label: '🙂 Normal',   desc: '+2% perf' },
-      { id: 'hard',     label: '💪 Hard',     desc: '+12% perf, −3 mood' },
-      { id: 'overtime', label: '🔥 Overtime', desc: '+18% perf, +10% bonus' }
-    ].map(function(m) {
-      const active = c.workMode === m.id;
-      return '<button class="pill ' + (active ? 'on' : '') + '" style="padding:6px;font-size:.68rem;text-align:left;line-height:1.3" onclick="carSetWorkMode(\'' + m.id + '\')">' +
-        '<div style="font-weight:700">' + m.label + '</div>' +
-        '<div class="muted" style="font-size:.6rem">' + m.desc + '</div></button>';
-    }).join('') +
-    '</div></div>';
-
-  /* Performance + Promotion progress */
-  const nextReqYears = nextLevel ? (nextLevel.requirements.years || 0) : 0;
-  const perfReady = j.performance >= 80;
-  const tenureReady = j.tenure >= nextReqYears;
-  const canPromote = perfReady && tenureReady && nextLevel;
-  const perfProgressPct = Math.min(100, j.performance / 80 * 100);
-  const tenureProgressPct = nextReqYears > 0 ? Math.min(100, j.tenure / nextReqYears * 100) : 100;
-
-  html += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:8px">📊 PERFORMANCE & PROMOTION</h4>' +
-    '<div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px">' +
-    '<span>Performance</span><b style="color:' + perfColor + '">' + Math.round(j.performance) + '% / 80% needed</b></div>' +
-    '<div style="height:8px;background:#1a1a2a;border-radius:4px;margin-bottom:10px;position:relative;overflow:hidden">' +
-    '<div style="height:100%;width:' + perfProgressPct + '%;background:' + perfColor + ';transition:width .3s"></div>' +
-    '<div style="position:absolute;left:100%;top:0;bottom:0;width:2px;background:#666"></div></div>';
-
+  h += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:8px">📊 PROMOTION PROGRESS</h4>';
+  h += '<div class="muted small" style="margin-bottom:4px">Performance · <b style="color:' + perfColor + '">' + Math.round(j.performance) + '% / 80%</b></div>';
+  h += '<div style="height:8px;background:#1a1a2a;border-radius:4px;margin-bottom:10px;overflow:hidden"><div style="height:100%;width:' + perfPct + '%;background:' + perfColor + '"></div></div>';
   if (nextLevel) {
-    html += '<div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px">' +
-      '<span>Tenure (' + nextReqYears + ' yr required)</span><b style="color:' + (tenureReady ? '#34d399' : '#fbbf24') + '">' + (j.tenure || 0) + ' / ' + nextReqYears + '</b></div>' +
-      '<div style="height:8px;background:#1a1a2a;border-radius:4px;margin-bottom:10px;overflow:hidden">' +
-      '<div style="height:100%;width:' + tenureProgressPct + '%;background:' + (tenureReady ? '#34d399' : '#fbbf24') + '"></div></div>';
-
-    html += '<div style="padding:8px;background:#0f0f1a;border-radius:6px">' +
-      '<div style="font-size:.72rem;color:#8b5cf6;font-weight:700;margin-bottom:4px">NEXT LEVEL: ' + nextLevel.title + '</div>' +
-      '<div class="row" style="padding:2px 0;font-size:.72rem"><span>Base salary</span><b>' + money(nextLevel.baseSalaryEGP) + '</b></div>' +
-      '<div class="row" style="padding:2px 0;font-size:.72rem"><span>With your company (×' + (j.payMult || 1).toFixed(2) + ')</span><b class="good">' + money(Math.round(nextLevel.baseSalaryEGP * (j.payMult || 1))) + '</b></div>' +
-      '<div class="row" style="padding:2px 0;font-size:.72rem"><span>Raises if promoted</span><b class="good">+' + money(Math.max(0, Math.round(nextLevel.baseSalaryEGP * (j.payMult || 1)) - j.salary)) + '</b></div>' +
-      '</div>';
-
-    if (canPromote) {
-      html += '<div style="margin-top:8px;padding:8px;background:#34d39920;border-left:3px solid #34d399;border-radius:6px">' +
-        '<b style="color:#34d399;font-size:.78rem">✅ You meet all requirements!</b>' +
-        '<div class="muted small" style="margin-top:2px">Promotion will happen at year end (35% chance/year).</div></div>';
-    }
+    h += '<div class="muted small" style="margin-bottom:4px">Tenure · <b>' + (j.tenure || 0) + ' / ' + reqYears + ' years</b></div>';
+    h += '<div style="height:8px;background:#1a1a2a;border-radius:4px;margin-bottom:10px;overflow:hidden"><div style="height:100%;width:' + tenPct + '%;background:' + (j.tenure >= reqYears ? '#34d399' : '#fbbf24') + '"></div></div>';
+    h += '<div class="muted small">Next: <b>' + nextLevel.title + '</b> · ' + money(nextLevel.baseSalaryEGP) + ' base</div>';
   } else {
-    html += '<div class="muted small" style="text-align:center;padding:8px">You are at the top of the ladder for this track.</div>';
+    h += '<div class="muted small">You are at the top of this track.</div>';
   }
+  h += '<button class="opt" style="margin-top:8px;width:100%;text-align:center" onclick="carAskForRaise()">💰 Ask for raise</button>';
+  h += '</div>';
 
-  html += '<button class="opt" style="margin-top:8px;width:100%;text-align:center" onclick="carAskForRaise()">💰 Ask for raise</button>' +
-    '</div>';
-
-  /* ---------- LAST REVIEW ---------- */
   if (c.reviews.length) {
-    const r = c.reviews[c.reviews.length - 1];
-    const ratingColor = r.rating >= 4 ? '#34d399' : r.rating === 3 ? '#fbbf24' : '#fb7185';
-    html += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center">' +
-      '<h4 style="font-size:.82rem;color:#8b5cf6">📄 LAST REVIEW · ' + r.year + '</h4>' +
-      '<b style="color:' + ratingColor + ';font-size:1rem">' + r.rating + ' / 5</b></div>' +
-      '<p class="muted small" style="margin-top:6px;font-style:italic">"' + r.comment + '"</p>' +
-      (r.raise > 0 ? '<div class="row" style="margin-top:6px;padding-top:6px;border-top:1px solid #1a1a2a"><span>Raise</span><b class="good">+' + money(r.raise) + '</b></div>' : '') +
-      '</div>';
+    var r = c.reviews[c.reviews.length - 1];
+    var rColor = r.rating >= 4 ? '#34d399' : r.rating === 3 ? '#fbbf24' : '#fb7185';
+    h += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h4 style="font-size:.82rem;color:#8b5cf6">📄 REVIEW · ' + r.year + '</h4><b style="color:' + rColor + '">' + r.rating + '/5</b></div>';
+    h += '<p class="muted small" style="margin-top:4px;font-style:italic">"' + r.comment + '"</p></div>';
   }
 
-  /* ---------- IMTYAZ ---------- */
   if (c.imtyaz && c.imtyaz.monthsLeft > 0) {
-    html += '<div class="card" style="border-color:#fbbf24"><h4 style="font-size:.82rem;color:#fbbf24">🏥 IMTYAZ TRAINING</h4>' +
-      '<div class="row"><span>Months remaining</span><b>' + c.imtyaz.monthsLeft + '</b></div>' +
-      '<div style="height:6px;background:#1a1a2a;border-radius:3px;margin-top:6px;overflow:hidden">' +
-      '<div style="height:100%;width:' + Math.max(0, Math.min(100, (12 - c.imtyaz.monthsLeft) / 12 * 100)) + '%;background:#fbbf24"></div></div>' +
-      '<p class="muted small" style="margin-top:6px">Mandatory for Egyptian medical graduates.</p></div>';
+    h += '<div class="card" style="border-color:#fbbf24"><h4 style="font-size:.82rem;color:#fbbf24">🏥 IMTYAZ · ' + c.imtyaz.monthsLeft + ' months left</h4></div>';
   }
 
-  /* ---------- BENEFITS ---------- */
   if (j.benefits && j.benefits.length) {
-    html += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:6px">🎁 BENEFITS</h4>';
+    h += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:6px">🎁 BENEFITS</h4>';
     j.benefits.forEach(function(b) {
-      const def = CAR_BENEFITS[b];
-      if (def) {
-        html += '<div style="padding:6px 0;border-bottom:1px solid #1a1a2a">' +
-          '<div style="font-weight:600;font-size:.8rem">' + def.label + '</div>' +
-          '<div class="muted" style="font-size:.7rem">' + def.value + '</div></div>';
-      }
+      var def = CAR_BENEFITS[b];
+      if (def) h += '<div style="padding:4px 0;font-size:.78rem"><b>' + def.label + '</b><div class="muted" style="font-size:.7rem">' + def.value + '</div></div>';
     });
-    html += '</div>';
+    h += '</div>';
   }
 
-  /* ---------- WORK EXPENSES ---------- */
-  const priceBook = C().prices || {};
-  const commuteCost = Math.round(priceBook.transport || 8000);
-  const clothesCost = Math.round((priceBook.food || 54000) * 0.05);
-  const lunchesCost = Math.round((priceBook.food || 54000) * 0.10);
-  const phoneWorkCost = Math.round((priceBook.phone || 4800) * 0.5);
-  const totalWorkExpenses = commuteCost + clothesCost + lunchesCost + phoneWorkCost;
-  html += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:6px">💸 WORK EXPENSES</h4>' +
-    '<div class="row" style="font-size:.78rem"><span>Commute</span><b>' + money(commuteCost) + '/yr</b></div>' +
-    '<div class="row" style="font-size:.78rem"><span>Work clothes</span><b>' + money(clothesCost) + '/yr</b></div>' +
-    '<div class="row" style="font-size:.78rem"><span>Lunches</span><b>' + money(lunchesCost) + '/yr</b></div>' +
-    '<div class="row" style="font-size:.78rem"><span>Phone / internet</span><b>' + money(phoneWorkCost) + '/yr</b></div>' +
-    '<div class="row" style="border-top:1px solid #1a1a2a;margin-top:6px;padding-top:6px"><b>Total</b><b class="bad">' + money(totalWorkExpenses) + '/yr</b></div>' +
-    '</div>';
+  h += carRenderMilestonesSummary();
 
-  /* ---------- MILESTONES ---------- */
-  html += carRenderMilestonesSummary();
+  h += '<div class="card"><button class="opt" style="width:100%;text-align:center;border-color:#fb7185;color:#fb7185" onclick="carQuitJob()">🚪 Resign</button></div>';
 
-  /* ---------- RESIGN ---------- */
-  html += '<div class="card"><button class="opt" style="width:100%;text-align:center;border-color:#fb7185;color:#fb7185" onclick="carQuitJob()">🚪 Resign</button></div>';
-
-  return html;
+  return h;
 }
-
 function carRenderMilestonesSummary() {
   if (!S.career.milestones.length) return '';
   let html = '<div class="card"><h3>🏆 Career Milestones</h3>';
