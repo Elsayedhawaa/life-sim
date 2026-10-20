@@ -73,8 +73,13 @@ GameHooks.on('newGame', ensureMarriageState);
 GameHooks.on('migrate', ensureMarriageState);
 
 /* ---------- HELPERS ---------- */
+var MAR_EGP_BASE_RATE = 52.7;
 function marRate() { return C().rate || 1; }
-function marEGP(amountEGP) { return Math.round((amountEGP || 0) * marRate()); }
+function marEGP(amountEGP) {
+  var localRate = C().rate || 1;
+  if (localRate === MAR_EGP_BASE_RATE) return Math.round(amountEGP || 0);
+  return Math.round((amountEGP || 0) * (localRate / MAR_EGP_BASE_RATE));
+}
 function marNamePool(gender) {
   const pool = (typeof MARRIAGE_PARTNER_NAMES !== 'undefined' && MARRIAGE_PARTNER_NAMES[S.country]) || MARRIAGE_PARTNER_NAMES.egy;
   return gender === 'm' ? pool.m : pool.f;
@@ -333,15 +338,19 @@ function marRenderPlan() {
         '</div>';
     }
 
-    /* Wedding planner */
+     /* Wedding planner — only available after engagement is finalized */
     if (m.wedding) {
       html += '<div class="card" style="border-color:#34d399"><h3 style="color:#34d399">🎉 Wedding Planning</h3>';
       html += marRenderWeddingPlanner();
       html += '</div>';
-    } else {
+    } else if (m.engagement && m.engagement.finalized) {
       html += '<div class="card">' +
-        '<p class="muted small">Ready to plan the wedding? This is the biggest expense of the marriage.</p>' +
+        '<p class="muted small">Engagement finalized. Now plan the wedding — the biggest expense of the marriage.</p>' +
         '<button class="opt" style="text-align:center;background:#fbbf24;color:#000;font-weight:700" onclick="marOpenWeddingPlanner()">Start wedding planning</button>' +
+        '</div>';
+    } else {
+      html += '<div class="card" style="border-color:#666;opacity:.6">' +
+        '<p class="muted small">🔒 <b>Locked.</b> Finalize the engagement first (Shabka, Mahr, Party) before planning the wedding.</p>' +
         '</div>';
     }
 
