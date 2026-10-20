@@ -146,10 +146,12 @@ function familyView() {
   if (!S) return '';
   if (S.age < 6) return '<div class="card"><h3>Family</h3><p class="muted">You are too young to understand these complexities.</p></div>';
 
+  const wantsCount = (typeof familyDepthGetActiveWants === 'function') ? familyDepthGetActiveWants().length : 0;
   const tabs = [
     ['relatives', '👨‍👩‍👧 Relatives'],
     ['partner', '❤️ Partner'],
     ['children', '👶 Children'],
+    ['wants', '💭 Wants' + (wantsCount > 0 ? ' (' + wantsCount + ')' : '')],
     ['medical', '🏥 Health'],
     ['vacation', '✈️ Vacations']
   ];
@@ -163,11 +165,28 @@ function familyView() {
     tabs.map(function(t) { return '<button class="pill ' + (S.familySubTab === t[0] ? 'on' : '') + '" style="padding:6px 10px;font-size:.72rem;white-space:nowrap" onclick="familySetTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') +
     '</div></div>';
 
-  if (S.familySubTab === 'relatives') html += renderRelativesTab();
+    if (S.familySubTab === 'relatives') html += renderRelativesTab();
   else if (S.familySubTab === 'partner') html += renderPartnerTab();
   else if (S.familySubTab === 'children') html += renderChildrenTab();
+  else if (S.familySubTab === 'wants') html += (typeof familyDepthRenderWantsPanel === 'function' ? familyDepthRenderWantsPanel() : '<div class="card"><p class="muted small">Wants system not loaded.</p></div>');
   else if (S.familySubTab === 'medical') html += renderMedicalTab();
   else if (S.familySubTab === 'vacation') html += renderVacationTab();
+  /* Show active wants summary at the top */
+  if (typeof familyDepthRenderWantsPanel === 'function') {
+    const activeWants = (typeof familyDepthGetActiveWants === 'function') ? familyDepthGetActiveWants() : [];
+    if (activeWants.length > 0 || S.selfWant) {
+      html += '<div class="card" style="border-color:#8b5cf6;padding:10px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<b style="font-size:.85rem;color:#8b5cf6">💭 ' + (activeWants.length + (S.selfWant ? 1 : 0)) + ' active want' + ((activeWants.length + (S.selfWant ? 1 : 0)) > 1 ? 's' : '') + '</b>' +
+        '<button class="pill" style="padding:4px 10px;font-size:.7rem" onclick="familySetTab(\'wants\')">View →</button>' +
+        '</div></div>';
+    }
+  }
+
+  /* Show move-out refusal if pending */
+  if (typeof familyDepthRenderMoveOutRefusal === 'function') {
+    html += familyDepthRenderMoveOutRefusal();
+  }
 
   return html;
 }
@@ -268,10 +287,24 @@ function familyRenderRelative(p) {
     '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyVisit(\'' + p.id + '\')">☕ Visit</button>' +
     '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyHelpPrompt(\'' + p.id + '\', 500)">💵 Help</button>';
     
-    if(isParent) html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familySetAllowance(\'' + p.id + '\')">💰 Allowance</button>';
+       if(isParent) html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familySetAllowance(\'' + p.id + '\')">💰 Allowance</button>';
     else html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyOpenGiftPicker(\'' + p.id + '\')">🎁 Gift</button>';
     
-  html += '</div></div>';
+  html += '</div>';
+
+  /* Cut ties / reunion buttons */
+  if (typeof familyCutTies === 'function') {
+    if (p.estranged) {
+      html += '<div style="margin-top:8px;padding:8px;background:#1a0a12;border-radius:6px">' +
+        '<div class="small" style="color:#fb7185;font-weight:700">💔 Estranged since ' + (p.estrangedYear || '?') + '</div>' +
+        '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;background:#fbbf24;color:#000;font-weight:700" onclick="familyReunite(\'' + p.id + '\')">🤝 Try to reunite</button>' +
+        '</div>';
+    } else {
+      html += '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.7rem;border-color:#fb7185;color:#fb7185" onclick="familyCutTies(\'' + p.id + '\')">💔 Cut ties</button>';
+    }
+  }
+
+  html += '</div>';
   return html;
 }
 
