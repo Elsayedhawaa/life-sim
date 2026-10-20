@@ -791,6 +791,58 @@ function carAskForRaise() {
   }
   render();
 }
+/* ---------- REQUEST PROMOTION (manual) ---------- */
+window.carRequestPromotion = function() {
+  if (!S.career.job) return;
+  const j = S.career.job;
+  const track = carTrackById(j.track);
+  if (!track || j.level >= track.levels.length - 1) {
+    log('❌ You are at the top of this track.');
+    render(); return;
+  }
+  const nextLevel = track.levels[j.level + 1];
+  const reqYears = nextLevel.requirements.years || 0;
+
+  if (j.performance < 80) {
+    log('❌ Your manager says: "Your performance is ' + Math.round(j.performance) + '%. Come back when you\'re at 80%+."');
+    fx({ happiness: -2 });
+    render(); return;
+  }
+  if (j.tenure < reqYears) {
+    log('❌ Your manager says: "You need ' + reqYears + ' years here. You have ' + j.tenure + '."');
+    fx({ happiness: -2 });
+    render(); return;
+  }
+
+  /* Both conditions met — pitch to manager */
+  if (!confirm('Request promotion to ' + nextLevel.title + '?\n\nYour performance is strong and you meet the tenure requirement. Your manager will likely say yes.\n\nRisk: pushing hard without a top score can annoy them.')) return;
+
+  /* Success based on performance margin */
+  let chance = 0.75;
+  if (j.performance >= 95) chance = 0.95;
+  else if (j.performance >= 90) chance = 0.88;
+  else if (j.performance >= 85) chance = 0.80;
+
+  if (Math.random() < chance) {
+    j.level++;
+    j.baseSalaryEGP = nextLevel.baseSalaryEGP;
+    j.salary = Math.round(nextLevel.baseSalaryEGP * j.payMult);
+    j.title = nextLevel.title;
+    if (S.job) { S.job.title = j.title; S.job.salary = j.salary; S.job.level = j.level; S.job.years = 0; }
+    j.tenure = 0;
+    j.performance = Math.max(60, j.performance - 10);
+    log('🎉 PROMOTED to ' + j.title + '! Salary: ' + money(j.salary) + '/year.');
+    fx({ happiness: 20, social: 5 });
+    S.career.mood = 'satisfied';
+    if (j.level === 1 && S.career.jobHistory.length === 0) carAddMilestone('first_promotion', 'First Promotion');
+    if (j.level === track.levels.length - 1) carAddMilestone('top_of_ladder', 'Reached top of ' + track.label);
+  } else {
+    log('❌ Your manager: "Not this time. Give me another quarter of the same output and we\'ll talk."');
+    fx({ happiness: -5 });
+    j.performance = Math.max(0, j.performance - 3);
+  }
+  render();
+};
 window.carAskForRaise = carAskForRaise;
 
 /* ============================================================
@@ -1239,6 +1291,22 @@ function carRenderOverview() {
     h += '<div class="muted small" style="margin-bottom:4px">Tenure · <b>' + (j.tenure || 0) + ' / ' + reqYears + ' years</b></div>';
     h += '<div style="height:8px;background:#1a1a2a;border-radius:4px;margin-bottom:10px;overflow:hidden"><div style="height:100%;width:' + tenPct + '%;background:' + (j.tenure >= reqYears ? '#34d399' : '#fbbf24') + '"></div></div>';
     h += '<div class="muted small">Next: <b>' + nextLevel.title + '</b> · ' + money(nextLevel.baseSalaryEGP) + ' base</div>';
+
+    /* Show blocking reason if not ready */
+    var _perfOK = j.performance >= 80;
+    var _tenureOK = j.tenure >= reqYears;
+    if (!_perfOK) {
+      h += '<div class="muted small" style="color:#fb7185;margin-top:6px">⚠️ Need +' + Math.round(80 - j.performance) + '% more performance</div>';
+    }
+    if (!_tenureOK) {
+      h += '<div class="muted small" style="color:#fbbf24;margin-top:4px">⏳ Need ' + (reqYears - j.tenure) + ' more year(s) of tenure</div>';
+    }
+    if (_perfOK && _tenureOK) {
+      h += '<div style="margin-top:8px;padding:8px;background:#34d39920;border-left:3px solid #34d399;border-radius:6px">' +
+        '<b style="color:#34d399;font-size:.78rem">✅ Requirements met</b>' +
+        '<div class="muted small" style="margin-top:2px">Guaranteed promotion at year end — or request now for immediate effect.</div></div>';
+      h += '<button class="opt" style="margin-top:8px;width:100%;text-align:center;background:#34d399;color:#000;font-weight:700" onclick="carRequestPromotion()">🚀 Request Promotion to ' + nextLevel.title + '</button>';
+    }
   } else {
     h += '<div class="muted small">You are at the top of this track.</div>';
   }
@@ -1844,27 +1912,38 @@ GameHooks.on('year', function() {
       carConductReview(j);
     }
 
-    /* Promotion check */
+       /* Promotion check — GUARANTEED when requirements met */
     const track = carTrackById(j.track);
     if (track && j.level < track.levels.length - 1) {
       const nextLevel = track.levels[j.level + 1];
       const reqYears = nextLevel.requirements.years || 0;
-      if (j.performance >= 80 && j.tenure >= reqYears) {
-        if (Math.random() < 0.35) {
-          j.level++;
-          j.baseSalaryEGP = nextLevel.baseSalaryEGP;
-          j.salary = Math.round(nextLevel.baseSalaryEGP * j.payMult);
-          j.title = nextLevel.title;
-          if (S.job) { S.job.title = j.title; S.job.salary = j.salary; S.job.level = j.level; }
-          log('🎉 Promoted to ' + j.title + '! New salary: ' + money(j.salary) + '/year.');
-          fx({ happiness: 15 });
-          c.mood = 'satisfied';
-          if (j.level === 1 && c.jobHistory.length === 0) carAddMilestone('first_promotion', 'First Promotion');
-          if (j.level === track.levels.length - 1) carAddMilestone('top_of_ladder', 'Reached top of ' + track.label);
+      const perfOK = j.performance >= 80;
+      const tenureOK = j.tenure >= reqYears;
+
+      if (perfOK && tenureOK) {
+        /* Guaranteed promotion — no random gate */
+        j.level++;
+        j.baseSalaryEGP = nextLevel.baseSalaryEGP;
+        j.salary = Math.round(nextLevel.baseSalaryEGP * j.payMult);
+        j.title = nextLevel.title;
+        if (S.job) { S.job.title = j.title; S.job.salary = j.salary; S.job.level = j.level; }
+        log('🎉 PROMOTED to ' + j.title + '! Salary: ' + money(j.salary) + '/year.');
+        fx({ happiness: 15 });
+        c.mood = 'satisfied';
+        if (j.level === 1 && c.jobHistory.length === 0) carAddMilestone('first_promotion', 'First Promotion');
+        if (j.level === track.levels.length - 1) carAddMilestone('top_of_ladder', 'Reached top of ' + track.label);
+        /* Reset perf slightly after promotion — new role, back to learning */
+        j.performance = Math.max(60, j.performance - 10);
+        j.tenure = 0;
+        if (S.job) S.job.years = 0;
+      } else if (j.tenure >= reqYears + 3 && !perfOK) {
+        /* Long tenure, low performance — manager conversation */
+        if (Math.random() < 0.5) {
+          log('⚠️ Your manager pulled you aside about performance. "You\'ve been here ' + j.tenure + ' years. We need to see more."');
+          j.performance = Math.max(0, j.performance - 5);
         }
       }
     }
-
     /* Firing check */
     if (j.performance < 15) {
       if (Math.random() < 0.5) {
