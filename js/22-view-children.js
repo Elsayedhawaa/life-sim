@@ -756,38 +756,47 @@ GameHooks.on('year', function() {
     c.birthYear = year - c.age;
 
     /* School fees */
-    if (c.school && c.age >= 4 && c.age <= 18) {
-      const s = chBySchoolLabel(c.school);
-      if (s) {
-        const fee = chEGP(s.annualEGP);
-        if (S.wealth >= fee) {
-          S.wealth -= fee;
-        } else {
-          log('⚠️ Could not afford ' + c.name + "'s school fees. Moved to Public School.");
-          c.school = 'Public School';
-          c.smarts = Math.max(0, c.smarts - 5);
+        /* School fees (SKIPPED in monthly — settlement spreads it) */
+    if (!(typeof isMonthly === 'function' && isMonthly())) {
+      if (c.school && c.age >= 4 && c.age <= 18) {
+        const s = chBySchoolLabel(c.school);
+        if (s) {
+          const fee = chEGP(s.annualEGP);
+          if (S.wealth >= fee) {
+            S.wealth -= fee;
+          } else {
+            log('⚠️ Could not afford ' + c.name + "'s school fees. Moved to Public School.");
+            c.school = 'Public School';
+            c.smarts = Math.max(0, c.smarts - 5);
+          }
         }
       }
     }
 
-    /* Lifestyle monthly cost */
-    const ageGroup = chBabyAgeCategory(c.age);
-    const tier = CHILDREN_EXPENSE_TIERS[ageGroup][c.lifestyle] || CHILDREN_EXPENSE_TIERS[ageGroup].standard;
-    const monthlyCost = chEGP(tier.monthlyEGP * 12);
-    if (S.wealth >= monthlyCost) {
-      S.wealth -= monthlyCost;
-    } else {
-      log('⚠️ Cannot afford ' + c.name + "'s lifestyle. Downgraded.");
-      c.lifestyle = 'basic';
-      c.happiness = Math.max(0, c.happiness - 10);
+        /* Lifestyle monthly cost (SKIPPED in monthly — settlement spreads it) */
+    if (!(typeof isMonthly === 'function' && isMonthly())) {
+      const ageGroup = chBabyAgeCategory(c.age);
+      const tier = CHILDREN_EXPENSE_TIERS[ageGroup][c.lifestyle] || CHILDREN_EXPENSE_TIERS[ageGroup].standard;
+      const monthlyCost = chEGP(tier.monthlyEGP * 12);
+      if (S.wealth >= monthlyCost) {
+        S.wealth -= monthlyCost;
+      } else {
+        log('⚠️ Cannot afford ' + c.name + "'s lifestyle. Downgraded.");
+        c.lifestyle = 'basic';
+        c.happiness = Math.max(0, c.happiness - 10);
+      }
     }
-
-    /* Activity effects */
+        /* Activity effects — cash charge SKIPPED in monthly; stat gains stay annual */
     c.activities.forEach(function(aid) {
       const act = CHILDREN_ACTIVITIES.find(function(a) { return a.id === aid; });
       if (!act) return;
       const cost = act.monthlyEGP ? chEGP(act.monthlyEGP * 12) : chEGP(act.annualEGP);
-      if (S.wealth >= cost) {
+      if (typeof isMonthly === 'function' && isMonthly()) {
+        c.smarts = Math.min(100, c.smarts + (act.smarts || 0));
+        c.social = Math.min(100, c.social + (act.social || 0));
+        c.health = Math.min(100, c.health + (act.health || 0));
+        c.happiness = Math.min(100, c.happiness + (act.happiness || 0));
+      } else if (S.wealth >= cost) {
         S.wealth -= cost;
         c.smarts = Math.min(100, c.smarts + (act.smarts || 0));
         c.social = Math.min(100, c.social + (act.social || 0));
