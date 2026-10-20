@@ -525,20 +525,33 @@ function shopBuy(itemId, method, giftTo) {
     extendedWarrantyUntil: extendedYears > 0 ? gameYear() + warrantyYears + extendedYears : 0,
     homeId: homeInfo ? homeInfo.homeId : null,
     homeName: homeInfo ? homeInfo.homeName : null,
-    returnableUntil: gameYear() + 1
+   returnableUntil: gameYear() + 1,
+    cardUsed: null    // ← ADD THIS LINE
   };
+     /* Track which card was used (if any) for proper refund routing */
+  if (method === 'card' && S.bank && Array.isArray(S.bank.creditCards) && S.bank.creditCards.length > 0) {
+    const latest = S.bank.creditCards.find(c => (c.balance || 0) > 0);
+    if (latest) newItem.cardUsed = latest.id;
+  }
+   /* Track which card was used (if any) for proper refund routing */
+  if (method === 'card' && S.bank && Array.isArray(S.bank.creditCards) && S.bank.creditCards.length > 0) {
+    const latest = S.bank.creditCards.find(c => (c.balance || 0) > 0);
+    if (latest) newItem.cardUsed = latest.id;
+  }
   S.shopping.inventory.push(newItem);
 
-  /* Immediate home value/comfort update for furniture/appliances */
+   /* Immediate home value/comfort update for furniture/appliances */
   if (homeInfo && homeInfo.homeId && (item.cat === 'furniture' || item.cat === 'appliances')) {
     const home = (S.ownedHomes || []).find(h => h.id === homeInfo.homeId);
     if (home) {
       home.furnitureValue = (home.furnitureValue || 0) + basePrice;
       home.value = (home.value || 0) + basePrice;
+      /* Wire into 16-view homeComfort so its year tick applies happiness automatically */
+      home.homeComfort = (home.homeComfort || 0) + (item.happiness * 2);
+      /* Track the shopping contribution separately for display purposes */
       home.shoppingComfort = (home.shoppingComfort || 0) + (item.happiness * 2);
     }
   }
-
   S.shopping.history.unshift({ year: gameYear(), action: 'bought', name: item.name, price: grandTotal });
   S.shopping.history = S.shopping.history.slice(0, 30);
 
@@ -639,6 +652,7 @@ function shopSell(uid) {
     if (home) {
       home.furnitureValue = Math.max(0, (home.furnitureValue || 0) - item.currentValue);
       home.value = Math.max(home.baseValue || 0, (home.value || 0) - item.currentValue);
+      home.homeComfort = Math.max(0, (home.homeComfort || 0) - (item.happiness * 2));
       home.shoppingComfort = Math.max(0, (home.shoppingComfort || 0) - (item.happiness * 2));
     }
   }
@@ -658,23 +672,43 @@ window.shopReturn = function(uid) {
     log('❌ Return window expired. Return only available for 1 game year after purchase.');
     render(); return;
   }
-  const refund = Math.round(item.purchasePrice * 0.95); /* 5% restocking fee */
-  if (!confirm('Return ' + item.name + ' for ' + money(refund) + ' (5% restocking fee)?')) return;
+  const refund = Math.round(item.purchasePrice * 0.95);
 
-  /* Remove from home value if furniture/appliance */
+  /* Determine refund destination */
+  let refundTarget = 'cash';
+  let refundCard = null;
+  if (item.cardUsed && S.bank && Array.isArray(S.bank.creditCards)) {
+    refundCard = S.bank.creditCards.find(c => c.id === item.cardUsed);
+    if (refundCard) refundTarget = 'card';
+  }
+
+  const confirmMsg = refundCard
+    ? 'Return ' + item.name + ' for ' + money(refund) + ' refund to ' + refundCard.name + '? (5% restocking fee)'
+    : 'Return ' + item.name + ' for ' + money(refund) + ' cash? (5% restocking fee)';
+  if (!confirm(confirmMsg)) return;
+
+  /* Remove from home value */
   if (item.homeId && (item.cat === 'furniture' || item.cat === 'appliances')) {
     const home = (S.ownedHomes || []).find(h => h.id === item.homeId);
     if (home) {
       home.furnitureValue = Math.max(0, (home.furnitureValue || 0) - item.currentValue);
       home.value = Math.max(home.baseValue || 0, (home.value || 0) - item.currentValue);
+      home.homeComfort = Math.max(0, (home.homeComfort || 0) - (item.happiness * 2));
       home.shoppingComfort = Math.max(0, (home.shoppingComfort || 0) - (item.happiness * 2));
     }
   }
 
-  S.wealth += refund;
+  /* Refund */
+  if (refundTarget === 'card' && refundCard) {
+    refundCard.balance = Math.max(0, (refundCard.balance || 0) - refund);
+    log('↩️ Returned ' + item.name + '. ' + money(refund) + ' refunded to ' + refundCard.name + '. New card balance: ' + money(refundCard.balance) + '.');
+  } else {
+    S.wealth += refund;
+    log('↩️ Returned ' + item.name + ' for ' + money(refund) + ' cash.');
+  }
+
   S.shopping.inventory = S.shopping.inventory.filter(i => i.uid !== uid);
-  S.shopping.history.unshift({ year: gameYear(), action: 'returned', name: item.name, price: refund });
-  log('↩️ Returned ' + item.name + ' for ' + money(refund) + '.');
+  S.shopping.history.unshift({ year: gameYear(), action: 'returned', name: item.name, price: refund, to: refundTarget });
   render();
 };
 /* ---------- REPAIR ---------- */
