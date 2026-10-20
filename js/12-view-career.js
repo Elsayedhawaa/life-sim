@@ -676,6 +676,7 @@ function carHireFromApplication(app) {
   fx({ happiness: 15 });
   S.career.mood = 'satisfied';
   S.career.tab = 'overview';
+   }
 function carAddColleague(companyName) {
   const names = ['Rania', 'Hisham', 'Dina', 'Sherif', 'Mai', 'Khaled', 'Yara', 'Waleed', 'Nour', 'Rami'];
   const roles = ['colleague', 'manager', 'mentor candidate', 'rival', 'team lead'];
