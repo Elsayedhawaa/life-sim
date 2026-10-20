@@ -355,11 +355,12 @@ window.togglePacing = function() {
 
     if (S.pacingSwitchYear === gameYear()) {
       if (!confirm('Switch to YEARLY mode?\n\nThis year was already settled by the yearly tick. No extra charges apply.')) return;
-      S.pacing = 'yearly';
-      S.month = 1;
-      S.pacingSwitchYear = 0;
-      log('📅 Switched to yearly mode.');
-      save(); render(); return;
+         S.pacing = 'yearly';
+    S.month = 1;
+    S.pacingSwitchYear = 0;
+    try { localStorage.setItem('wl_pacing', 'yearly'); } catch(e) {}
+    log('📅 Switched to yearly mode.');
+    save(); render(); return;
     }
 
     const monthsToSettle = 12 - currentM;
@@ -398,9 +399,10 @@ window.togglePacing = function() {
       if (!confirm('Switch to YEARLY mode?')) return;
     }
 
-    S.pacing = 'yearly';
+      S.pacing = 'yearly';
     S.month = 1;
     S.pacingSwitchYear = 0;
+    try { localStorage.setItem('wl_pacing', 'yearly'); } catch(e) {}
     log('📅 Switched to yearly mode. Ready to advance year by year.');
     save(); render();
 
@@ -412,10 +414,11 @@ window.togglePacing = function() {
       ' monthly. Full monthly begins January ' + (gameYear() + 1) + '.';
     if (!confirm(msg)) return;
 
-    S.pacing = 'monthly';
+       S.pacing = 'monthly';
     S.month = 1;
     S.pacingSwitchYear = gameYear();
-    log('🗓 Switched to monthly mode. Starting January ' + gameYear() + '.');
+    try { localStorage.setItem('wl_pacing', 'monthly'); } catch(e) {}
+    log('🗓 Switched to monthly mode. Starting January ' + gameYear() + '. Finance already settled this year; monthly cash flow begins January ' + (gameYear() + 1) + '.');
     save(); render();
   }
 };
