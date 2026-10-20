@@ -973,7 +973,7 @@ GameHooks.on('year', function() {
     }
 
     // Process costs if car is not stolen
-    if(!car.stolen) {
+      if (!car.stolen) {
         if (car.insuranceExpiry < year && car.insurance !== 'none') {
           const cost = carInsuranceYearLocal(car);
           if (S.wealth >= cost) { S.wealth -= cost; car.insuranceExpiry = year + 1; }
@@ -982,10 +982,13 @@ GameHooks.on('year', function() {
           const cost = carRegistrationYearLocal(car);
           if (S.wealth >= cost) { S.wealth -= cost; car.registrationExpiry = year + 2; }
         }
-        const serviceCost = carMaintenanceYearLocal(car);
-        if (S.wealth >= serviceCost) S.wealth -= serviceCost;
-        const fuelCost = carFuelCostYearLocal(car);
-        if (S.wealth >= fuelCost) S.wealth -= fuelCost;
+        /* Service + fuel SKIPPED in monthly — settlement spreads it */
+        if (!(typeof isMonthly === 'function' && isMonthly())) {
+          const serviceCost = carMaintenanceYearLocal(car);
+          if (S.wealth >= serviceCost) S.wealth -= serviceCost;
+          const fuelCost = carFuelCostYearLocal(car);
+          if (S.wealth >= fuelCost) S.wealth -= fuelCost;
+        }
 
         const bChance = 0.02 + car.age * 0.008 + (car.condition < 50 ? 0.10 : 0) + (brand ? (11 - brand.reliability) * 0.01 : 0.03);
         if (!car.broken && Math.random() < bChance) {
