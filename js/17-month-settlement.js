@@ -1,57 +1,54 @@
 /* ============================================================
    MONTHLY SETTLEMENT
    ============================================================
-   Handles per-month cash flow when pacing = monthly.
-   In yearly mode: does nothing (yearly engine handles everything).
-   In monthly mode: engine's advanceYear no longer runs, so this
-   file is what pays salary, charges bills, and rolls events.
+   Restructured to fix unbalanced braces.
+   Each block is now a separate function.
    ============================================================ */
-/* ---------- LOCAL CURRENCY HELPER ---------- */
+
 function localEGP(egp) {
   if (!S) return egp;
   if (S.country === 'egy') return egp;
   const egpRate = (typeof COUNTRIES !== 'undefined' && COUNTRIES.egy && COUNTRIES.egy.rate) || 52.7;
   return Math.round(egp / egpRate * (C().rate || 1));
 }
-/* ---------- MONTH HOOK: CASH FLOW ---------- */
+
 GameHooks.on('month', function() {
-  if (!isMonthly()) return;
-  if (!S) return;
+  if (!isMonthly() || !S) return;
 
   const month = currentMonth();
   const monthStr = monthName(month);
   const c = C();
+  const isSkippedYear = (S.pacingSwitchYear === gameYear());
+  const isMinor = (S.age < 18);
 
-  /* Skip finance if this year was already settled by yearly tick */
-  const skipFinance = (S.pacingSwitchYear === gameYear());
+  if (!isSkippedYear && !isMinor) {
+    monthlyApplyFinance(c, monthStr);
+    monthlyApplySeasonal(c, month);
+  }
 
-  /* Kids still fire events, just not money */
-  const skipAll = (S.age < 18);
-     if (!skipFinance && !skipAll) {
-        
-  /* ---------- 1. SALARY (1/12 of annual) ---------- */
+  monthlyFireRandomEvent();
+});
+
+/* ---------- 1. FINANCE ---------- */
+function monthlyApplyFinance(c, monthStr) {
+
+  /* Salary */
   if (S.job && S.job.salary) {
     const monthlyPay = Math.round(S.job.salary / 12);
     S.wealth += monthlyPay;
-    log(`💰 Salary: +${money(monthlyPay)} · ${monthStr}`);
+    log('💰 Salary: +' + money(monthlyPay) + ' · ' + monthStr);
   }
 
-  /* ---------- 2. LIFESTYLE / BILLS (1/12 of annual) ---------- */
+  /* Lifestyle or fallback base bills */
+  let monthlyBills = 0;
+  let lifestyle = null;
   if (typeof lifeCalculate === 'function' && S.lifestyle && S.lifestyle.active) {
     try {
-      const totals = lifeCalculate();
-      const monthlyBills = Math.round(totals.monthly);
-      if (S.wealth >= monthlyBills) {
-        S.wealth -= monthlyBills;
-      } else {
-        S.wealth -= monthlyBills; // force negative — real life
-      }
-      log(`🏠 Living costs: −${money(monthlyBills)} · ${monthStr}`);
-      if (totals.happiness) fx({ happiness: Math.round(totals.happiness / 12) });
-      if (totals.health) fx({ health: Math.round(totals.health / 12) });
-    } catch (e) { /* lifestyle not ready */ }
-  } else {
-    /* Fallback: engine base charges / 12 */
+      lifestyle = lifeCalculate();
+      monthlyBills = Math.round(lifestyle.monthly);
+    } catch (e) { monthlyBills = 0; }
+  }
+  if (monthlyBills === 0) {
     let baseAnnual = 0;
     if (S.housing === 'parents') {
       baseAnnual = (c.prices.phone || 0) * 0.5 + (c.prices.transport || 0) * 0.25;
@@ -59,18 +56,22 @@ GameHooks.on('month', function() {
       baseAnnual = (c.prices.food || 0) + (c.prices.phone || 0) + (c.prices.transport || 0);
       if (S.housing === 'rented') baseAnnual += c.prices.rent || 0;
     }
-    const monthlyBase = Math.round(baseAnnual / 12);
-    if (monthlyBase > 0) {
-      S.wealth -= monthlyBase;
-      log(`🏠 Base costs: −${money(monthlyBase)} · ${monthStr}`);
+    monthlyBills = Math.round(baseAnnual / 12);
+  }
+  if (monthlyBills > 0) {
+    S.wealth -= monthlyBills;
+    log('🏠 Living costs: −' + money(monthlyBills) + ' · ' + monthStr);
+    if (lifestyle) {
+      if (lifestyle.happiness) fx({ happiness: Math.round(lifestyle.happiness / 12) });
+      if (lifestyle.health) fx({ health: Math.round(lifestyle.health / 12) });
     }
   }
 
-  /* ---------- 3. BANK LOAN MONTHLY PAYMENTS ---------- */
+  /* Bank loans */
   if (S.bank && Array.isArray(S.bank.loans) && S.bank.loans.length > 0) {
-    S.bank.loans.forEach(loan => {
+    S.bank.loans.forEach(function(loan) {
       const mp = loan.monthlyPayment || 0;
-      if (mp <= 0 || loan.monthsLeft <= 0) return;
+      if (mp <= 0 || (loan.monthsLeft || 0) <= 0) return;
       if (S.wealth >= mp) {
         S.wealth -= mp;
         const interest = Math.round((loan.remaining || 0) * (loan.rate || 0) / 12);
@@ -81,30 +82,31 @@ GameHooks.on('month', function() {
       } else {
         loan.missedPayments = (loan.missedPayments || 0) + 1;
         loan.remaining = Math.round((loan.remaining || 0) * 1.01);
-        log(`⚠️ Missed loan payment (${loan.name})`);
+        log('⚠️ Missed loan payment (' + loan.name + ')');
       }
     });
-    S.bank.loans = S.bank.loans.filter(l => (l.remaining || 0) > 0 && (l.monthsLeft || 0) > 0);
+    S.bank.loans = S.bank.loans.filter(function(l) {
+      return (l.remaining || 0) > 0 && (l.monthsLeft || 0) > 0;
+    });
   }
 
-  /* ---------- 4. CREDIT CARD MINIMUM MONTHLY ---------- */
+  /* Credit cards */
   if (S.bank && Array.isArray(S.bank.creditCards)) {
-    S.bank.creditCards.forEach(card => {
+    S.bank.creditCards.forEach(function(card) {
       if (!card.balance || card.balance <= 0) return;
       const minPayment = Math.max(50, Math.round(card.balance * 0.05));
       if (card.autoPay && S.wealth >= minPayment) {
         S.wealth -= minPayment;
         card.balance = Math.max(0, card.balance - minPayment);
       } else {
-        /* Interest accrues monthly on outstanding balance */
         card.balance = Math.round(card.balance * (1 + (card.apr || 0) / 12));
       }
     });
   }
 
-  /* ---------- 5. SHOPPING STORE FINANCING (monthly slice) ---------- */
+  /* Shopping store financing */
   if (S.shopping && Array.isArray(S.shopping.loans) && S.shopping.loans.length > 0) {
-    S.shopping.loans.forEach(loan => {
+    S.shopping.loans.forEach(function(loan) {
       const monthly = Math.round((loan.yearlyPayment || 0) / 12);
       if (S.wealth >= monthly) {
         S.wealth -= monthly;
@@ -113,11 +115,7 @@ GameHooks.on('month', function() {
     });
   }
 
-  /* ---------- 6. CAR LOAN MONTHLY (if not already in S.bank.loans) ---------- */
-  /* Car loans live in S.bank.loans with loanType 'car' — already handled in step 3 */
-        
-    /* ---------- 7. MONTHLY BURDEN: OTHER SYSTEMS ---------- */
-  /* Tax */
+  /* Income tax (1/12 of annual) */
   if (S.job && S.job.salary && typeof carComputeTax === 'function') {
     const taxMonthly = Math.round(carComputeTax(S.job.salary) / 12);
     if (taxMonthly > 0) {
@@ -142,9 +140,12 @@ GameHooks.on('month', function() {
     }
   }
 
-  /* Family allowances (already stored monthly per parent) */
+  /* Family allowances (already monthly amount per parent) */
   if (S.parentAllowances && typeof S.parentAllowances === 'object') {
-    const famMonthly = Object.values(S.parentAllowances).reduce(function(s, v) { return s + (v || 0); }, 0);
+    let famMonthly = 0;
+    Object.keys(S.parentAllowances).forEach(function(k) {
+      famMonthly += (S.parentAllowances[k] || 0);
+    });
     if (famMonthly > 0) {
       S.wealth -= famMonthly;
       log('👨‍👩‍👧 Family allowances: −' + money(famMonthly));
@@ -165,24 +166,24 @@ GameHooks.on('month', function() {
     }
   }
 
-  /* Children — school fees + lifestyle + activities (annual ÷ 12) */
+  /* Children (school + lifestyle + activities ÷ 12) */
   if (Array.isArray(S.childrenList) && S.childrenList.length > 0) {
     let kidsAnnual = 0;
-    S.childrenList.forEach(function(c) {
-      if (c.school && c.age >= 4 && c.age <= 18 &&
+    S.childrenList.forEach(function(child) {
+      if (child.school && child.age >= 4 && child.age <= 18 &&
           typeof chBySchoolLabel === 'function' && typeof chEGP === 'function') {
-        const s = chBySchoolLabel(c.school);
+        const s = chBySchoolLabel(child.school);
         if (s) kidsAnnual += chEGP(s.annualEGP);
       }
       if (typeof chBabyAgeCategory === 'function' &&
           typeof CHILDREN_EXPENSE_TIERS !== 'undefined' && typeof chEGP === 'function') {
-        const ageGroup = chBabyAgeCategory(c.age);
-        const tier = CHILDREN_EXPENSE_TIERS[ageGroup] && CHILDREN_EXPENSE_TIERS[ageGroup][c.lifestyle || 'standard'];
+        const ageGroup = chBabyAgeCategory(child.age);
+        const tier = CHILDREN_EXPENSE_TIERS[ageGroup] && CHILDREN_EXPENSE_TIERS[ageGroup][child.lifestyle || 'standard'];
         if (tier) kidsAnnual += chEGP(tier.monthlyEGP * 12);
       }
-      if (Array.isArray(c.activities) &&
+      if (Array.isArray(child.activities) &&
           typeof CHILDREN_ACTIVITIES !== 'undefined' && typeof chEGP === 'function') {
-        c.activities.forEach(function(aid) {
+        child.activities.forEach(function(aid) {
           const act = CHILDREN_ACTIVITIES.find(function(a) { return a.id === aid; });
           if (act) kidsAnnual += act.monthlyEGP ? chEGP(act.monthlyEGP * 12) : chEGP(act.annualEGP);
         });
@@ -195,7 +196,7 @@ GameHooks.on('month', function() {
     }
   }
 
-  /* Shopping card installments (each has monthlyPayment) */
+  /* Shopping card installments */
   if (S.shopping && Array.isArray(S.shopping.cardInstallments) && S.shopping.cardInstallments.length > 0) {
     let cardMonthly = 0;
     S.shopping.cardInstallments.forEach(function(ci) {
@@ -206,12 +207,16 @@ GameHooks.on('month', function() {
       log('💳 Card installments: −' + money(cardMonthly));
     }
   }
+}
 
-  /* ---------- 8. SEASONAL & MONTH-SPECIFIC EVENTS ---------- */
+/* ---------- 2. SEASONAL ---------- */
+function monthlyApplySeasonal(c, month) {
 
-  /* September — school year starts */
+  /* September — school starts */
   if (month === 9) {
-    const schoolKids = (S.childrenList || []).filter(function(c) { return c.age >= 4 && c.age <= 18; });
+    const schoolKids = (S.childrenList || []).filter(function(child) {
+      return child.age >= 4 && child.age <= 18;
+    });
     if (schoolKids.length > 0) {
       const perKid = localEGP(3000 + Math.floor(Math.random() * 3000));
       const totalCost = perKid * schoolKids.length;
@@ -221,21 +226,21 @@ GameHooks.on('month', function() {
     }
   }
 
-  /* June-August — Summer AC electricity surge */
+  /* Summer AC (June-August) */
   if (month >= 6 && month <= 8) {
     const summerExtra = localEGP(500 + Math.floor(Math.random() * 500));
     S.wealth -= summerExtra;
     log('☀️ Summer AC electricity: −' + money(summerExtra));
   }
 
-  /* December-February — Winter heating surge */
+  /* Winter heating (December-February) */
   if (month === 12 || month === 1 || month === 2) {
     const winterExtra = localEGP(250 + Math.floor(Math.random() * 350));
     S.wealth -= winterExtra;
     log('🥶 Winter heating: −' + money(winterExtra));
   }
 
-  /* Ramadan (via isRamadanMonth helper from engine) */
+  /* Ramadan */
   if (typeof isRamadanMonth === 'function' && isRamadanMonth()) {
     const yameesh = localEGP(2000 + Math.floor(Math.random() * 3000));
     S.wealth -= yameesh;
@@ -243,7 +248,7 @@ GameHooks.on('month', function() {
     fx({ happiness: 4 });
   }
 
-  /* Eid al-Fitr — month after Ramadan */
+  /* Eid (month after Ramadan) */
   if (typeof isRamadanMonth === 'function') {
     const y = gameYear();
     const cycle = (y - 2024) % 33;
@@ -260,7 +265,7 @@ GameHooks.on('month', function() {
     }
   }
 
-  /* December — Christmas (Coptic & general) */
+  /* Christmas (December) */
   if (month === 12) {
     const xmasCost = localEGP(800 + Math.floor(Math.random() * 1500));
     S.wealth -= xmasCost;
@@ -268,33 +273,33 @@ GameHooks.on('month', function() {
     fx({ happiness: 3 });
   }
 
-  /* June-September — Wedding season (25% chance per month) */
+  /* Wedding season (June-September, 25% chance) */
   if (month >= 6 && month <= 9 && Math.random() < 0.25) {
     const weddingGift = localEGP(1500 + Math.floor(Math.random() * 3500));
     S.wealth -= weddingGift;
     log('💍 Wedding season — attended a wedding: −' + money(weddingGift));
     fx({ happiness: 2, social: 3 });
   }
+}
 
-  } /* end skipFinance guard */
-
-  /* ---------- 9. RANDOM EVENT CHANCE (30% per month) ---------- */
+/* ---------- 3. RANDOM EVENT ---------- */
+function monthlyFireRandomEvent() {
   if (S.pending) return;
   const allEvents = [...GLOBAL_EVENTS, ...(C().events || [])];
-  const eligible = allEvents.filter(e =>
-    S.age >= e.minAge && S.age <= e.maxAge &&
-    !S.flags['evt_' + e.id] &&
-    (!e.condition || e.condition(S))
-  );
+  const eligible = allEvents.filter(function(e) {
+    return S.age >= e.minAge && S.age <= e.maxAge &&
+      !S.flags['evt_' + e.id] &&
+      (!e.condition || e.condition(S));
+  });
   if (eligible.length && Math.random() < 0.30) {
     const e = eligible[Math.floor(Math.random() * eligible.length)];
     S.pending = prepareEvent(e);
     S.evId = e.id;
-    log(`📖 ${e.title}`);
+    log('📖 ' + e.title);
   }
-});
+}
 
-/* ---------- PACING TOGGLE (called from settings/life tab) ---------- */
+/* ---------- 4. PACING TOGGLE ---------- */
 window.togglePacing = function() {
   if (!S) return;
   if (S.pending) {
@@ -303,12 +308,11 @@ window.togglePacing = function() {
   }
 
   if (S.pacing === 'monthly') {
-    /* ============ MONTHLY → YEARLY ============ */
+    /* MONTHLY → YEARLY */
     const currentM = currentMonth();
 
-    /* Case 1: This year was skipped (switched from yearly earlier this year) */
     if (S.pacingSwitchYear === gameYear()) {
-      if (!confirm('Switch to YEARLY mode?\n\nThis year was already settled by the yearly tick, so no extra charges apply. You will continue in yearly mode.')) return;
+      if (!confirm('Switch to YEARLY mode?\n\nThis year was already settled by the yearly tick. No extra charges apply.')) return;
       S.pacing = 'yearly';
       S.month = 1;
       S.pacingSwitchYear = 0;
@@ -316,27 +320,28 @@ window.togglePacing = function() {
       save(); render(); return;
     }
 
-    /* Case 2: Normal mid-year switch — settle remaining months */
     const monthsToSettle = 12 - currentM;
     if (monthsToSettle > 0) {
-      if (!confirm('Switch to YEARLY mode?\n\nYou are in ' + currentMonthName() + ' ' + gameYear() + '.\n\nThis will settle the remaining ' + monthsToSettle + ' month(s) now — applying salary and bills — then switch to yearly. Your next click will advance one full year.')) return;
+      const msg = 'Switch to YEARLY mode?\n\nYou are in ' + currentMonthName() + ' ' + gameYear() +
+        '.\n\nThis will settle the remaining ' + monthsToSettle +
+        ' month(s) now (salary, bills), then switch to yearly.';
+      if (!confirm(msg)) return;
 
-      /* Calculate 1 month of salary + bills */
       let monthlySalary = 0;
       if (S.job && S.job.salary) monthlySalary = Math.round(S.job.salary / 12);
 
       let monthlyBills = 0;
       if (typeof lifeCalculate === 'function' && S.lifestyle && S.lifestyle.active) {
-        try { monthlyBills = lifeCalculate().monthly; } catch(e) { monthlyBills = 0; }
+        try { monthlyBills = lifeCalculate().monthly; } catch (e) { monthlyBills = 0; }
       }
       if (monthlyBills === 0) {
-        const c = C();
+        const cc = C();
         let annual = 0;
         if (S.housing === 'parents') {
-          annual = (c.prices.phone || 0) * 0.5 + (c.prices.transport || 0) * 0.25;
+          annual = (cc.prices.phone || 0) * 0.5 + (cc.prices.transport || 0) * 0.25;
         } else {
-          annual = (c.prices.food || 0) + (c.prices.phone || 0) + (c.prices.transport || 0);
-          if (S.housing === 'rented') annual += c.prices.rent || 0;
+          annual = (cc.prices.food || 0) + (cc.prices.phone || 0) + (cc.prices.transport || 0);
+          if (S.housing === 'rented') annual += cc.prices.rent || 0;
         }
         monthlyBills = Math.round(annual / 12);
       }
@@ -345,7 +350,8 @@ window.togglePacing = function() {
       const totalBills = monthlyBills * monthsToSettle;
       S.wealth += totalSalary - totalBills;
 
-      log('📅 Settled ' + monthsToSettle + ' remaining month(s): salary +' + money(totalSalary) + ', bills −' + money(totalBills) + '.');
+      log('📅 Settled ' + monthsToSettle + ' remaining month(s): salary +' +
+        money(totalSalary) + ', bills −' + money(totalBills) + '.');
     } else {
       if (!confirm('Switch to YEARLY mode?')) return;
     }
@@ -357,13 +363,17 @@ window.togglePacing = function() {
     save(); render();
 
   } else {
-    /* ============ YEARLY → MONTHLY ============ */
-    if (!confirm('Switch to MONTHLY mode?\n\nYou will restart in January ' + gameYear() + '.\n\n⚠️ Your finances for ' + gameYear() + ' were already settled when the year started. No salary or bills will be charged during ' + gameYear() + ' in monthly mode — only events. Full monthly settlement begins January ' + (gameYear() + 1) + '.')) return;
+    /* YEARLY → MONTHLY */
+    const msg = 'Switch to MONTHLY mode?\n\nYou will restart in January ' + gameYear() +
+      '.\n\n⚠️ Finances for ' + gameYear() +
+      ' were already settled. No salary/bills will be charged in ' + gameYear() +
+      ' monthly. Full monthly begins January ' + (gameYear() + 1) + '.';
+    if (!confirm(msg)) return;
 
     S.pacing = 'monthly';
     S.month = 1;
     S.pacingSwitchYear = gameYear();
-    log('🗓 Switched to monthly mode. Starting January ' + gameYear() + '. Finance already settled this year; monthly cash flow begins January ' + (gameYear() + 1) + '.');
+    log('🗓 Switched to monthly mode. Starting January ' + gameYear() + '.');
     save(); render();
   }
 };
