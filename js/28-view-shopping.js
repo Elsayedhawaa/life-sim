@@ -146,7 +146,7 @@ function _shopChargeCard(item, price, allowInstallments) {
   const card = _shopPickCard();
   if (!card) {
     log('❌ No credit card with available room.');
-    return { ok: false };
+      return { ok: true, cardId: card.id };
   }
 
   let plan = SHOP_CARD_INSTALLMENTS[0]; /* default full */
@@ -463,10 +463,10 @@ function shopBuy(itemId, method, giftTo) {
     }
     _shopSpend(grandTotal, 'Purchase: ' + item.name);
     paid = true;
-  } else if (method === 'card') {
+    } else if (method === 'card') {
     const result = _shopChargeCard(item, grandTotal, true);
     paid = result.ok;
-    cardCharged = true;
+    if (result.ok && result.cardId) newItem_cardRef = result.cardId;
   } else if (method === 'bank') {
     paid = _shopBankLoan(item, grandTotal);
   } else if (method === 'inst12') {
@@ -529,11 +529,6 @@ function shopBuy(itemId, method, giftTo) {
     cardUsed: null    // ← ADD THIS LINE
   };
      /* Track which card was used (if any) for proper refund routing */
-  if (method === 'card' && S.bank && Array.isArray(S.bank.creditCards) && S.bank.creditCards.length > 0) {
-    const latest = S.bank.creditCards.find(c => (c.balance || 0) > 0);
-    if (latest) newItem.cardUsed = latest.id;
-  }
-   /* Track which card was used (if any) for proper refund routing */
   if (method === 'card' && S.bank && Array.isArray(S.bank.creditCards) && S.bank.creditCards.length > 0) {
     const latest = S.bank.creditCards.find(c => (c.balance || 0) > 0);
     if (latest) newItem.cardUsed = latest.id;
@@ -1043,9 +1038,7 @@ function shopRenderGifts() {
     });
     html += '</div>';
   }
-
-  html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🎁 Gift Registry</h3>' +
-  let html = '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🎁 Gift Registry</h3>' +
+ html = '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🎁 Gift Registry</h3>' +
     '<div class="row"><span>Total gifts given</span><b>' + gifts.length + '</b></div>' +
     '<div class="row"><span>Total spent on gifts</span><b class="bad">' + money(totalSpent) + '</b></div>' +
     '</div>';
