@@ -501,8 +501,7 @@ function carHireFromApplication(app) {
     }
   }
 
-  log('🎉 HIRED at ' + app.companyName + ' as ' + app.title + ' · ' + money(app.baseSalary) + '/year.');
-  /* Milestone tracking */
+   /* Milestone tracking */
   if (S.career.jobHistory.length === 0) {
     carAddMilestone('first_job', 'First Full-Time Job');
   }
@@ -1617,7 +1616,10 @@ GameHooks.on('year', function() {
       S.wealth += overtimePay;
       log('💼 Overtime bonus: ' + money(overtimePay) + '.');
     }
- j.performance 
+    /* Apply work mode effects */
+    j.performance = Math.max(0, Math.min(100, j.performance + perfChange));
+    if (happinessChange !== 0) fx({ happiness: happinessChange });
+    if (healthChange !== 0) fx({ health: healthChange });
 
     /* Imtyaz progress */
     if (c.imtyaz.monthsLeft > 0) {
