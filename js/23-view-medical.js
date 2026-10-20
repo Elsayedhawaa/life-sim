@@ -739,19 +739,21 @@ GameHooks.on('year', function() {
   }
 
   /* Charge monthly medications */
-  let totalMedsCost = 0;
-  m.medications.forEach(function(md) {
-    const def = MED_MEDICATIONS.find(function(d) { return d.id === md.id; });
-    if (def) totalMedsCost += medEGP(def.monthlyEGP) * 12;
-  });
-  if (totalMedsCost > 0) {
-    if (S.wealth >= totalMedsCost) {
-      S.wealth -= totalMedsCost;
-      log('💊 Paid ' + money(totalMedsCost) + ' for medications.');
-    } else {
-      log('⚠️ Could not afford medications. Some stopped.');
-      m.medications = [];
-      m.mentalHealth.medicationActive = false;
+   if (!(typeof isMonthly === 'function' && isMonthly())) {
+    let totalMedsCost = 0;
+    m.medications.forEach(function(md) {
+      const def = MED_MEDICATIONS.find(function(d) { return d.id === md.id; });
+      if (def) totalMedsCost += medEGP(def.monthlyEGP) * 12;
+    });
+    if (totalMedsCost > 0) {
+      if (S.wealth >= totalMedsCost) {
+        S.wealth -= totalMedsCost;
+        log('💊 Paid ' + money(totalMedsCost) + ' for medications.');
+      } else {
+        log('⚠️ Could not afford medications. Some stopped.');
+        m.medications = [];
+        m.mentalHealth.medicationActive = false;
+      }
     }
   }
 
