@@ -569,4 +569,51 @@ window.loadGame = loadGame;
 window.reset = reset;
 window.renderStart = renderStart;
 window.START = START;
+/* ============================================================
+   SIGNAL BUS — cross-system event communication
+   ============================================================
+   Any system emits a signal; any system listens.
+   Signals fire synchronously through GameHooks:
+     emitSignal('jobLost', {company, title})
+     → GameHooks.run('signal_jobLost', data)
+
+   - Every emission logged to S._signalLog (capped 80)
+   - Depth-limited to prevent infinite loops (max 5)
+   - Handlers isolated with try/catch
+   ============================================================ */
+const SIGNAL_LOG_MAX = 80;
+const SIGNAL_MAX_DEPTH = 5;
+let _signalDepth = 0;
+
+function emitSignal(type, data) {
+  if (!S) return;
+  if (_signalDepth >= SIGNAL_MAX_DEPTH) {
+    if (typeof console !== 'undefined') console.warn('[Signal] max depth — skipped:', type);
+    return;
+  }
+  if (!Array.isArray(S._signalLog)) S._signalLog = [];
+  S._signalLog.unshift({ y: gameYear(), m: S.month || null, type: type, data: data || {} });
+  if (S._signalLog.length > SIGNAL_LOG_MAX) S._signalLog.length = SIGNAL_LOG_MAX;
+
+  _signalDepth++;
+  try {
+    GameHooks.run('signal_' + type, data || {});
+  } catch (e) {
+    if (typeof console !== 'undefined') console.error('[Signal]', type, e);
+  } finally {
+    _signalDepth--;
+  }
+}
+
+function onSignal(type, fn) {
+  GameHooks.on('signal_' + type, fn);
+}
+
+window.emitSignal = emitSignal;
+window.onSignal = onSignal;
+window.getSignalHistory = function(type) {
+  if (!S || !Array.isArray(S._signalLog)) return [];
+  if (!type) return S._signalLog.slice();
+  return S._signalLog.filter(function(s) { return s.type === type; });
+};
 window.dataOK = dataOK;
