@@ -109,25 +109,81 @@ function realEstateView() {
 /* ---------- Market sections ---------- */
 function compoundsSection() {
   const list = COMPOUNDS[S.country];
-  if (!list || !list.length) return `<div class="card"><h3>No compounds yet</h3></div>`;
-  
-  return list.map(c => {
-    // Apply market trend to prices
+  if (!list || !list.length) return '<div class="card"><h3>No compounds yet</h3></div>';
+
+  /* Filter state, resetting when country changes */
+  if (!S._reFilters || S._reFilters.country !== S.country) {
+    S._reFilters = { country: S.country, city: null, developer: null };
+  }
+  const f = S._reFilters;
+
+  const cities = [];
+  list.forEach(function(c) { if (cities.indexOf(c.city) < 0) cities.push(c.city); });
+  cities.sort();
+
+  const developers = [];
+  list.forEach(function(c) { if (c.developer && developers.indexOf(c.developer) < 0) developers.push(c.developer); });
+  developers.sort();
+
+  const filtered = list.filter(function(c) {
+    if (f.city && c.city !== f.city) return false;
+    if (f.developer && c.developer !== f.developer) return false;
+    return true;
+  });
+
+  let html = '<div class="card"><h3>🏘 Compounds (' + filtered.length + (filtered.length !== list.length ? ' / ' + list.length : '') + ')</h3>';
+
+  /* City pills */
+  html += '<div style="margin-top:8px"><div class="muted small" style="margin-bottom:4px;letter-spacing:.06em;font-weight:700">CITY</div>' +
+    '<div style="display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px">' +
+    '<button class="pill ' + (!f.city ? 'on' : '') + '" style="padding:4px 10px;font-size:.7rem;white-space:nowrap" onclick="S._reFilters.city=null;render()">All</button>';
+  cities.forEach(function(city) {
+    const safe = city.replace(/'/g, "\\'");
+    html += '<button class="pill ' + (f.city === city ? 'on' : '') + '" style="padding:4px 10px;font-size:.7rem;white-space:nowrap" onclick="S._reFilters.city=\'' + safe + '\';render()">' + city + '</button>';
+  });
+  html += '</div></div>';
+
+  /* Developer pills */
+  html += '<div style="margin-top:8px"><div class="muted small" style="margin-bottom:4px;letter-spacing:.06em;font-weight:700">DEVELOPER</div>' +
+    '<div style="display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px">' +
+    '<button class="pill ' + (!f.developer ? 'on' : '') + '" style="padding:4px 10px;font-size:.7rem;white-space:nowrap" onclick="S._reFilters.developer=null;render()">All</button>';
+  developers.forEach(function(dev) {
+    const safe = dev.replace(/'/g, "\\'");
+    html += '<button class="pill ' + (f.developer === dev ? 'on' : '') + '" style="padding:4px 10px;font-size:.7rem;white-space:nowrap" onclick="S._reFilters.developer=\'' + safe + '\';render()">' + dev + '</button>';
+  });
+  html += '</div></div>';
+
+  /* Clear filters */
+  if (f.city || f.developer) {
+    html += '<button class="opt" style="margin-top:10px;width:100%;text-align:center;font-size:.72rem;padding:6px;border-color:#fb7185;color:#fb7185" onclick="S._reFilters.city=null;S._reFilters.developer=null;render()">✕ Clear filters</button>';
+  }
+  html += '</div>';
+
+  if (!filtered.length) {
+    return html + '<div class="card"><p class="muted small" style="text-align:center">No compounds match these filters.</p></div>';
+  }
+
+  /* Existing compound card renderer (unchanged logic, iterates filtered) */
+  html += filtered.map(function(c) {
     const curPpmLow = Math.round(c.ppmLow * S.marketTrend.multiplier);
     const curPpmHigh = Math.round(c.ppmHigh * S.marketTrend.multiplier);
-    const cheapest = PROPERTY_UNITS.reduce((min, u) => Math.min(min, Math.round(u.area * curPpmLow * u.priceMult)), Infinity);
-    
-    return `<div class="card">
-      <h3>${c.name}</h3>
-      <p class="muted small">${c.loc} · ${c.developer} · ${c.delivery === 'ready' ? 'Ready' : 'Delivery ' + c.delivery}</p>
-      <p class="small" style="margin:6px 0">${c.tag}</p>
-      <div class="row"><span>Current Price / m²</span><b class="mono">${curPpmLow.toLocaleString()}–${curPpmHigh.toLocaleString()} ${C().currency}</b></div>
-      <div class="row"><span>Entry price</span><b class="mono">${cheapest.toLocaleString()} ${C().currency}</b></div>
-      <div class="row"><span>Est. ROI</span><b class="good">${((c.rentalYieldAnnPct || 0.07)*100).toFixed(1)}% Annually</b></div>
-      <div class="row"><span>Amenities</span><b class="small" style="text-align:right">${c.amenities.join(', ')}</b></div>
-      <button class="opt" style="margin-top:8px" onclick="S.pendingBuy={kind:'compound',sourceId:'${c.id}'};render()">Browse units & plans</button>
-    </div>`;
+    const cheapest = PROPERTY_UNITS.reduce(function(min, u) {
+      return Math.min(min, Math.round(u.area * curPpmLow * u.priceMult));
+    }, Infinity);
+
+    return '<div class="card">' +
+      '<h3>' + c.name + '</h3>' +
+      '<p class="muted small">' + c.loc + ' · ' + c.developer + ' · ' + (c.delivery === 'ready' ? 'Ready' : 'Delivery ' + c.delivery) + '</p>' +
+      '<p class="small" style="margin:6px 0">' + c.tag + '</p>' +
+      '<div class="row"><span>Current Price / m²</span><b class="mono">' + curPpmLow.toLocaleString() + '–' + curPpmHigh.toLocaleString() + ' ' + C().currency + '</b></div>' +
+      '<div class="row"><span>Entry price</span><b class="mono">' + cheapest.toLocaleString() + ' ' + C().currency + '</b></div>' +
+      '<div class="row"><span>Est. ROI</span><b class="good">' + ((c.rentalYieldAnnPct || 0.07) * 100).toFixed(1) + '% Annually</b></div>' +
+      '<div class="row"><span>Amenities</span><b class="small" style="text-align:right">' + c.amenities.join(', ') + '</b></div>' +
+      '<button class="opt" style="margin-top:8px" onclick="S.pendingBuy={kind:\'compound\',sourceId:\'' + c.id + '\'};render()">Browse units &amp; plans</button>' +
+      '</div>';
   }).join('');
+
+  return html;
 }
 
 function localSection() {
@@ -360,68 +416,64 @@ window.evictTenant = function(homeId) {
   render();
 }
 /* ---------- Current Home Info & Card ---------- */
-function getCurrentHomeInfo() {
-  if (S.housing === 'parents') {
-    const tier = S.familyTier || 'middle';
-    const tierInfo = {
-      poor:          { area: 55,  rooms: 2,  condition: 60, location: 'Modest family flat' },
-      'lower-mid':   { area: 85,  rooms: 3,  condition: 70, location: 'Family flat' },
-      middle:        { area: 130, rooms: 4,  condition: 80, location: 'Family apartment' },
-      'upper-mid':   { area: 160, rooms: 5,  condition: 85, location: 'Family compound flat' },
-      wealthy:       { area: 320, rooms: 8,  condition: 90, location: 'Family villa' },
-      ultra:         { area: 700, rooms: 15, condition: 95, location: 'Family mansion' }
-    }[tier] || { area: 130, rooms: 4, condition: 80, location: 'Family apartment' };
-    return {
-      type: 'parents',
-      name: "Parents' Home",
-      description: tierInfo.location + ' · ' + C().name,
-      area: tierInfo.area,
-      rooms: tierInfo.rooms,
-      condition: tierInfo.condition,
-      value: 0,
-      homeComfort: 0,
-      shoppingComfort: 0,
-      canManage: false,
-      note: "You live with your parents. They cover utilities and groceries. Buy furniture for your room from the Shopping tab, or save for your own place."
-    };
+function renderCurrentHomeCard(info) {
+  const condColor = info.condition > 70 ? '#34d399' : info.condition > 40 ? '#fbbf24' : '#fb7185';
+  const typeLabels = {
+    parents: { icon: '👨‍👩‍👧', text: 'Living with parents' },
+    rented:  { icon: '🔑', text: 'Renting' },
+    owned:   { icon: '🏠', text: 'Owned home' }
+  };
+  const tl = typeLabels[info.type] || { icon: '📍', text: 'Home' };
+
+  let html = '<div class="card" style="border-color:#22d3ee"><h3 style="color:#22d3ee">📍 Your Current Home</h3>' +
+    '<div class="muted small" style="margin-bottom:8px">' + tl.icon + ' ' + tl.text + '</div>' +
+    '<div style="font-weight:700;font-size:1.05rem">' + info.name + '</div>' +
+    '<div class="muted small" style="margin-bottom:8px">' + info.description + '</div>' +
+    '<div class="row"><span>Area</span><b>' + info.area + ' m²</b></div>' +
+    '<div class="row"><span>Rooms</span><b>' + info.rooms + '</b></div>' +
+    '<div class="row"><span>Condition</span><b style="color:' + condColor + '">' + info.condition + '%</b></div>';
+
+  if (info.type === 'parents' && info.ownershipLabel) {
+    html += '<div class="row"><span>Ownership</span><b class="small" style="text-align:right;max-width:65%">' + info.ownershipLabel + '</b></div>';
   }
-  if (S.housing === 'rented') {
-    const rent = C().prices.rent || 0;
-    return {
-      type: 'rented',
-      name: 'Rented Apartment',
-      description: C().name + ' · ' + money(Math.round(rent / 12)) + '/month',
-      area: 100,
-      rooms: 3,
-      condition: 75,
-      value: 0,
-      rentYearly: rent,
-      homeComfort: 0,
-      shoppingComfort: 0,
-      canManage: false,
-      note: "You can't structurally modify a rental. Buy furniture from the Shopping tab to decorate. Move out or buy your own property for full management."
-    };
+  if (info.yearBuilt) {
+    html += '<div class="row"><span>Year built</span><b>' + info.yearBuilt + '</b></div>';
   }
-  if (S.housing === 'owned') {
-    const h = S.ownedHomes.find(x => x.status === 'occupied');
-    if (h) {
-      return {
-        type: 'owned',
-        name: h.name,
-        description: (h.city || '') + ' · ' + (h.area || 0) + ' m² · ' + (h.location || ''),
-        area: h.area,
-        rooms: h.rooms || Math.max(2, Math.floor((h.area || 100) / 30)),
-        condition: h.condition,
-        value: h.value,
-        homeComfort: h.homeComfort || 0,
-        shoppingComfort: h.shoppingComfort || 0,
-        furnitureValue: h.furnitureValue || 0,
-        canManage: true,
-        home: h
-      };
+
+  if (info.value > 0) {
+    html += '<div class="row"><span>Market value</span><b class="mono">' + money(info.value) + '</b></div>';
+  }
+  if (info.rentYearly > 0) {
+    html += '<div class="row"><span>Rent/year</span><b class="mono bad">-' + money(info.rentYearly) + '</b></div>';
+  }
+  if (info.homeComfort > 0 || info.shoppingComfort > 0) {
+    const total = (info.homeComfort || 0) + (info.shoppingComfort || 0);
+    html += '<div class="row"><span>Home comfort</span><b class="good">+' + total + '</b></div>';
+  }
+
+  const homeId = info.type === 'parents' ? 'parents' : info.type === 'rented' ? 'rented' : (info.home ? info.home.id : null);
+  if (homeId) {
+    const furnItems = (S.shopping && Array.isArray(S.shopping.inventory))
+      ? S.shopping.inventory.filter(function(i) { return i.homeId === homeId && (i.cat === 'furniture' || i.cat === 'appliances'); })
+      : [];
+    if (furnItems.length > 0) {
+      const totalFurnValue = furnItems.reduce(function(s, i) { return s + (i.currentValue || 0); }, 0);
+      html += '<div style="margin-top:10px;padding:8px;background:#0f0f1a;border-radius:6px">' +
+        '<b style="font-size:.78rem;color:#8b5cf6">🛋 Furniture you added (' + furnItems.length + ' · ' + money(totalFurnValue) + ')</b>';
+      furnItems.slice(0, 6).forEach(function(i) {
+        html += '<div class="muted small" style="margin-top:2px">· ' + i.brand + ' ' + i.name + ' · ' + money(i.currentValue) + '</div>';
+      });
+      if (furnItems.length > 6) html += '<div class="muted small" style="margin-top:2px">…and ' + (furnItems.length - 6) + ' more</div>';
+      html += '</div>';
     }
   }
-  return null;
+
+  if (info.note) {
+    html += '<p class="muted small" style="margin-top:8px;padding:8px;background:#0f0f1a;border-radius:6px">' + info.note + '</p>';
+  }
+
+  html += '</div>';
+  return html;
 }
 
 function renderCurrentHomeCard(info) {
