@@ -477,6 +477,11 @@ GameHooks.on('year', function() {
   if (S.age < 18) return;
   if (!S.lifestyle.active) return;
 
+  /* In monthly mode: settlement handles all lifestyle cash flow. Skip entirely. */
+  if (typeof isMonthly === 'function' && isMonthly()) return;
+
+  /* Refund engine's basic charge */
+
   const c = C();
   let engineCharge = 0;
   if (S.housing === 'parents') {
