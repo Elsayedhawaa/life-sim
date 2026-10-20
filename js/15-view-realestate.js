@@ -644,21 +644,53 @@ function realEstateYear() {
       }
     }
   });
-
-  // 3. Process Mortgages / Contracts
+  // 3. Process Mortgages / Contracts (with repossession after 3 consecutive misses)
   S.realestateContracts.forEach(c => {
     if (c.yearsLeft <= 0) return;
+    if (typeof c.missedPayments !== 'number') c.missedPayments = 0;
+
     const payment = Math.min(c.remaining, c.annualPayment);
     if (S.wealth < payment) {
-      c.remaining = Math.round(c.remaining * 1.05); // Penalty
-      log(`Missed bank installment on ${c.name}. Debt grew to ${money(c.remaining)}.`);
+      c.remaining = Math.round(c.remaining * 1.05);
+      c.missedPayments += 1;
+      log(`Missed bank installment on ${c.name} (${c.missedPayments}/3). Debt grew to ${money(c.remaining)}.`);
+
+      /* REPOSSESSION after 3 consecutive missed payments */
+      if (c.missedPayments >= 3) {
+        const home = S.ownedHomes.find(h => h.id === c.homeId);
+        if (home) {
+          const currentValue = home.value || 0;
+          const equity = Math.max(0, currentValue - c.remaining);
+          log(`🚨 BANK REPOSSESSED ${home.name} after 3 missed payments.`);
+          log(`   Bank kept the property to satisfy the ${money(c.remaining)} mortgage.`);
+
+          /* If home value > debt, bank refunds equity to player */
+          if (equity > 0) {
+            /* Refund equity minus 10% bank processing fee */
+            const equityAfterFee = Math.round(equity * 0.90);
+            S.wealth += equityAfterFee;
+            log(`💰 Equity returned: ${money(equityAfterFee)} (after 10% bank processing fee).`);
+            if (home.status === 'occupied') S.housing = 'parents';
+            log(`   You must find new housing. You are now living with parents.`);
+          } else {
+            /* Home underwater — bank takes it, no equity, debt forgiveness on shortfall (or not) */
+            log(`❌ Home was underwater. Bank absorbed the loss. You walk away with nothing.`);
+            if (home.status === 'occupied') S.housing = 'parents';
+          }
+
+          /* Remove home from portfolio + remove contract */
+          S.ownedHomes = S.ownedHomes.filter(h => h.id !== c.homeId);
+          c._repo = true;
+        }
+      }
     } else {
       S.wealth -= payment;
       c.remaining -= payment;
       c.yearsLeft--;
+      c.missedPayments = 0;
     }
   });
-  S.realestateContracts = S.realestateContracts.filter(c => c.yearsLeft > 0 && c.remaining > 0);
+  S.realestateContracts = S.realestateContracts.filter(c => !c._repo && c.yearsLeft > 0 && c.remaining > 0);
 
   // 4. Process Land Construction
   S.land.forEach(l => {
