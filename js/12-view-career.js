@@ -149,8 +149,13 @@ GameHooks.on('migrate', ensureCareerState);
    HELPERS
    ============================================================ */
 
+var CAR_EGP_BASE_RATE = 52.7;
 function carRate() { return C().rate || 1; }
-function carEGP(n) { return Math.round((n || 0) * carRate()); }
+function carEGP(n) {
+  var localRate = C().rate || 1;
+  if (localRate === CAR_EGP_BASE_RATE) return Math.round(n || 0);
+  return Math.round((n || 0) * (localRate / CAR_EGP_BASE_RATE));
+}
 function carSetTab(tab) { S.career.tab = tab; render(); }
 window.carSetTab = carSetTab;
 function carDetectTrackFromTitle(title) {
@@ -808,10 +813,10 @@ function carTakePartTime(id) {
     render(); return;
   }
 
-  S.career.partTime = {
+   S.career.partTime = {
     id: job.id,
     title: job.label,
-    salary: Math.round(job.monthlyEGP * 12 * carRate()),
+    salary: carEGP(job.monthlyEGP * 12),
     hoursPerWeek: job.hoursPerWeek,
     affectsGrades: job.affectsGrades,
     startedYear: gameYear()
@@ -1389,7 +1394,7 @@ function carRenderPartTime() {
     '<p class="muted small">Great for students or while between full-time jobs.</p>';
   CAR_PARTTIME.forEach(function(job) {
     if (S.career.partTime && S.career.partTime.id === job.id) return;
-    const monthlyLocal = Math.round(job.monthlyEGP * carRate());
+    const monthlyLocal = carEGP(job.monthlyEGP);
     html += '<button class="opt" style="width:100%;margin-top:6px;text-align:left;padding:8px;font-size:.75rem" onclick="carTakePartTime(\'' + job.id + '\')">' +
       '<div style="display:flex;justify-content:space-between"><b>' + job.label + '</b><span>' + money(monthlyLocal) + '/mo</span></div>' +
       '<div class="muted small">' + job.hoursPerWeek + 'h/week · Age ' + job.minAge + '+' +
@@ -1754,8 +1759,29 @@ GameHooks.on('year', function() {
     j.tenure = (j.tenure || 0) + 1;
     if (S.job) S.job.years = j.tenure;
 
-       /* Salary already paid by engine's ageUp(). Track for records only. */
+        /* Salary already paid by engine's ageUp(). Track for records only. */
     c.lastSalary = j.salary;
+
+    /* Auto-enroll in mandatory National Social Insurance if not enrolled */
+    if (S.bank && S.bank.pension && Array.isArray(S.bank.pension.active) && S.bank.pension.active.length === 0) {
+      var pPool = (typeof PENSION_PRODUCTS !== 'undefined' && (PENSION_PRODUCTS[S.country] || PENSION_PRODUCTS.egy)) || [];
+      var nationalPlan = pPool.find(function(p) {
+        return p.id === 'national_pension' || (p.name && p.name.toLowerCase().indexOf('national') >= 0);
+      });
+      if (nationalPlan) {
+        var monthlyContrib = Math.round((j.salary / 12) * (nationalPlan.contributionRate || 0.11));
+        S.bank.pension.active.push({
+          id: 'pen_national_' + Math.random().toString(36).slice(2, 6),
+          productId: nationalPlan.id,
+          name: nationalPlan.name,
+          provider: nationalPlan.provider || 'Government',
+          monthlyContribution: monthlyContrib,
+          value: 0,
+          startedYear: gameYear()
+        });
+        log('🏛 Auto-enrolled in ' + nationalPlan.name + ' (mandatory for employees). Monthly: ' + money(monthlyContrib) + '.');
+      }
+    }
     /* Work mode effects */
     let perfChange = 0;
     let happinessChange = 0;
