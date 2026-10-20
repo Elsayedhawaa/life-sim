@@ -265,13 +265,27 @@ window.assetsRenovateHome = function(homeId) {
 };
 
 window.assetsBuyFurniture = function(homeId, category) {
-  if (!S.shopping || typeof shopSetTab !== 'function') {
+  if (typeof ensureShoppingState === 'function') ensureShoppingState();
+  if (!S.shopping) {
     log('❌ Shopping system not available.');
     return;
   }
-  shopSetTab(category || 'furniture');
-  window.activeTab = 'shopping';
-  render();
+
+  /* Set the shop sub-tab BEFORE switching */
+  S.shopping.tab = category || 'furniture';
+
+  /* Log a hint so the player knows the destination */
+  const homeLabel = homeId === 'parents' ? "your parents' home"
+                  : homeId === 'rented'  ? 'your rental'
+                  : 'your home';
+  log('🛍 Opening shopping — items you buy will be placed in ' + homeLabel + '.');
+
+  /* THIS is the actual fix: use switchTab(), not window.activeTab */
+  if (typeof switchTab === 'function') {
+    switchTab('shopping');
+  } else {
+    render();
+  }
 };
 
 /* ---------- MAIN VIEW ---------- */
