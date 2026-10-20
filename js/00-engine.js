@@ -115,6 +115,7 @@ function newLife() {
     currency: c.currency,
          month: 1,
     pacing: START.pacing || 'yearly',
+     pacingSwitchYear: 0,
     age: 6,
     health: 100, happiness: 100, smarts: 50, social: 50,
     wealth: 0,
@@ -360,7 +361,10 @@ function header() {
       <div style="text-align:right">
         <div class="muted" style="font-size:.7rem">WEALTH</div>
         <div class="mono ${S.wealth < 0 ? 'bad' : 'good'}" style="font-weight:bold">${money(S.wealth)}</div>
-        <button onclick="reset()" style="background:none;border:none;color:#666;font-size:.65rem;cursor:pointer;text-decoration:underline;margin-top:4px;padding:0">restart</button>
+                <div style="margin-top:4px;display:flex;gap:6px;justify-content:flex-end;align-items:center">
+          <button onclick="togglePacing()" style="background:none;border:none;color:#8b5cf6;font-size:.65rem;cursor:pointer;padding:0;text-decoration:underline">${isMonthly() ? '🗓 monthly' : '📅 yearly'}</button>
+          <button onclick="reset()" style="background:none;border:none;color:#666;font-size:.65rem;cursor:pointer;text-decoration:underline;padding:0">restart</button>
+        </div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
