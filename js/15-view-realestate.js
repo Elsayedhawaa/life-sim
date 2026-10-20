@@ -605,10 +605,12 @@ function realEstateYear() {
       fx({ happiness: Math.min(10, h.shoppingComfort) });
     }
 
-    // Mandatory HOA / Maintenance
-    const hoa = Math.round(h.value * 0.005);
-    if (hoa > 0 && S.wealth >= hoa) { S.wealth -= hoa; }
-    else if (hoa > 0) { log(`Failed to pay HOA for ${h.name}. Condition worsened.`); h.condition -= 5; }
+        // Mandatory HOA / Maintenance (SKIPPED in monthly — settlement handles)
+    if (!(typeof isMonthly === 'function' && isMonthly())) {
+      const hoa = Math.round(h.value * 0.005);
+      if (hoa > 0 && S.wealth >= hoa) { S.wealth -= hoa; }
+      else if (hoa > 0) { log(`Failed to pay HOA for ${h.name}. Condition worsened.`); h.condition -= 5; }
+    }
 
     // Rental Logic
     if (h.status === 'listed') {
@@ -628,17 +630,16 @@ function realEstateYear() {
       }
     }
 
-    if (h.status === 'rented' && h.tenant) {
+        if (h.status === 'rented' && h.tenant) {
       // Tenant behavior based on reliability score (500-850)
       if (Math.random() > (h.tenant.reliability / 1000)) {
-        // Bad event: Damage or missed rent
         const dmg = Math.round(h.monthlyRent * 3);
         log(`URGENT: ${h.tenant.name} damaged ${h.name}. Repairs cost ${money(dmg)}.`);
         S.wealth -= dmg;
         h.condition -= 10;
         if (Math.random() < 0.3) { h.status = 'vacant'; h.tenant = null; log(`Tenant fled ${h.name}.`); }
-      } else {
-        // Good event: Pays rent
+      } else if (!(typeof isMonthly === 'function' && isMonthly())) {
+        // Rent income — SKIPPED in monthly (settlement handles)
         const annRent = h.monthlyRent * 12;
         S.wealth += annRent;
       }
@@ -648,6 +649,9 @@ function realEstateYear() {
   S.realestateContracts.forEach(c => {
     if (c.yearsLeft <= 0) return;
     if (typeof c.missedPayments !== 'number') c.missedPayments = 0;
+
+    /* Payment + repossession SKIPPED in monthly — settlement handles */
+    if (typeof isMonthly === 'function' && isMonthly()) return;
 
     const payment = Math.min(c.remaining, c.annualPayment);
     if (S.wealth < payment) {
