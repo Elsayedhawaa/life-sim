@@ -1,16 +1,14 @@
 /* ============================================================
-   VIEW: ASSETS — Housing & Assets overview  (v2 overhaul)
+   VIEW: ASSETS — Housing & Assets overview  (v3)
    ============================================================
-   Becomes your "Home Base" tab:
-   - Current housing (parents / rented / owned) with rich details
-   - Parents' home: value, ownership, condition, renovation
-   - Rental options: multiple tiers aligned to game economy
-   - Buy furniture/appliances for your current home
-   - Wealth summary
-   For the full property market, see the Real Estate tab.
+   Home Base tab with:
+   - Parents' home: value, ownership, DETAILED renovation picker
+   - Rental options (10 tiers)
+   - Buy furniture/appliances → switches to Shopping tab correctly
+   - Cosmetic upgrade picker for rentals
    ============================================================ */
 
-/* ---------- GLOBAL HELPER (used by engine, settlement, lifestyle) ---------- */
+/* ---------- GLOBAL HELPER ---------- */
 function currentYearlyRent() {
   if (S && S.rentedHome && typeof S.rentedHome.yearlyRent === 'number') {
     return S.rentedHome.yearlyRent;
@@ -24,10 +22,10 @@ function ensureAssetsState() {
   if (!S) return;
   if (typeof S.parentsHome === 'undefined') S.parentsHome = null;
   if (typeof S.rentedHome === 'undefined') S.rentedHome = null;
+  if (typeof S.assetsRenovateHome === 'undefined') S.assetsRenovateHome = null;
 
   if (S.housing === 'parents' && !S.parentsHome) ensureParentsHome();
   if (S.housing === 'rented' && !S.rentedHome) {
-    // Migrate legacy rented save — matches old behavior (C().prices.rent)
     S.rentedHome = {
       tierId: 'br2',
       yearlyRent: (C().prices && C().prices.rent) || 120000,
@@ -40,40 +38,52 @@ function ensureAssetsState() {
 GameHooks.on('newGame', ensureAssetsState);
 GameHooks.on('migrate', ensureAssetsState);
 
+/* ---------- RENOVATION CATALOG ---------- */
+/* Costs are EGP base — scaled by C().rate / 52.7 at purchase time. */
+const PARENT_RENOVATIONS = [
+  { id: 'bathroom',    label: '🚿 Bathroom Renovation',    baseCost: 25000, cond: 8,  hap: 3, valueAdd: 0.03,  desc: 'New fixtures, tiles, shower head, mirror.' },
+  { id: 'kitchen',     label: '🍳 Kitchen Remodel',        baseCost: 40000, cond: 10, hap: 4, valueAdd: 0.05,  desc: 'New cabinets, counters, sink, backsplash.' },
+  { id: 'walls',       label: '🎨 Walls & Paint',          baseCost: 8000,  cond: 3,  hap: 2, valueAdd: 0.01,  desc: 'Fresh paint throughout the home.' },
+  { id: 'flooring',    label: '🪵 New Flooring',           baseCost: 20000, cond: 5,  hap: 3, valueAdd: 0.02,  desc: 'Replace old tiles or worn carpet.' },
+  { id: 'living_room', label: '🛋 Living Room Refresh',    baseCost: 15000, cond: 4,  hap: 3, valueAdd: 0.015, desc: 'Paint, lighting, minor layout updates.' },
+  { id: 'ac',          label: '❄️ AC System Upgrade',      baseCost: 35000, cond: 4,  hap: 4, valueAdd: 0.04,  desc: 'Modern split ACs installed in all rooms.' },
+  { id: 'doors',       label: '🚪 New Interior Doors',     baseCost: 12000, cond: 3,  hap: 2, valueAdd: 0.01,  desc: 'Replace interior and entry doors.' },
+  { id: 'windows',     label: '🪟 Window Replacement',     baseCost: 18000, cond: 3,  hap: 2, valueAdd: 0.02,  desc: 'Double-glazed windows, better insulation.' },
+  { id: 'electrical',  label: '⚡ Electrical Rewiring',    baseCost: 30000, cond: 6,  hap: 2, valueAdd: 0.02,  desc: 'Safe modern wiring, new outlets.' },
+  { id: 'plumbing',    label: '🚰 Plumbing Overhaul',      baseCost: 22000, cond: 6,  hap: 2, valueAdd: 0.02,  desc: 'Replace old pipes and fixtures.' },
+  { id: 'lighting',    label: '💡 Modern Lighting',        baseCost: 10000, cond: 2,  hap: 2, valueAdd: 0.01,  desc: 'LED fixtures in all rooms.' },
+  { id: 'roof',        label: '🏠 Roof Repair',            baseCost: 28000, cond: 7,  hap: 1, valueAdd: 0.03,  desc: 'Seal leaks, replace damaged tiles.' },
+  { id: 'exterior',    label: '🧱 Exterior Facade',        baseCost: 32000, cond: 5,  hap: 2, valueAdd: 0.03,  desc: 'Repaint building exterior.' },
+  { id: 'balcony',     label: '🌿 Balcony / Terrace',      baseCost: 14000, cond: 3,  hap: 3, valueAdd: 0.02,  desc: 'Tiles, railing, planters.' }
+];
+window.PARENT_RENOVATIONS = PARENT_RENOVATIONS;
+
+/* Rentals only allow cosmetic upgrades — no structural work */
+const RENTAL_RENOVATION_IDS = ['walls', 'lighting', 'balcony'];
+
 /* ---------- PARENTS' HOME GENERATION ---------- */
-const PARENTS_HOME_VALUE_EGP = {
-  poor: 800000,
-  'lower-mid': 1500000,
-  middle: 3000000,
-  'upper-mid': 6000000,
-  wealthy: 18000000,
-  ultra: 60000000
-};
-const PARENTS_HOME_AREA = {
-  poor: 60, 'lower-mid': 90, middle: 130,
-  'upper-mid': 180, wealthy: 400, ultra: 900
-};
-const PARENTS_HOME_ROOMS = {
-  poor: 2, 'lower-mid': 3, middle: 4,
-  'upper-mid': 6, wealthy: 10, ultra: 18
-};
+const PARENTS_HOME_VALUE_EGP = { poor: 800000, 'lower-mid': 1500000, middle: 3000000, 'upper-mid': 6000000, wealthy: 18000000, ultra: 60000000 };
+const PARENTS_HOME_AREA = { poor: 60, 'lower-mid': 90, middle: 130, 'upper-mid': 180, wealthy: 400, ultra: 900 };
+const PARENTS_HOME_ROOMS = { poor: 2, 'lower-mid': 3, middle: 4, 'upper-mid': 6, wealthy: 10, ultra: 18 };
 
 function ensureParentsHome() {
   if (!S) return;
-  if (S.parentsHome) return;
+  if (S.parentsHome) {
+    if (!Array.isArray(S.parentsHome.renovationLog)) S.parentsHome.renovationLog = [];
+    if (!S.parentsHome.renovationsDone || typeof S.parentsHome.renovationsDone !== 'object') S.parentsHome.renovationsDone = {};
+    return;
+  }
   const tier = S.familyTier || 'middle';
   const egpValue = PARENTS_HOME_VALUE_EGP[tier] || 3000000;
   const rate = (typeof C === 'function' && C().rate) ? C().rate : 52.7;
   const value = S.country === 'egy' ? egpValue : Math.round(egpValue / 52.7 * rate);
 
-  /* Ownership pattern — depends on family tier */
   let ownership = 'both_parents';
   const r = Math.random();
   if (tier === 'poor' || tier === 'lower-mid') {
     if (r < 0.40) ownership = 'joint_with_family';
     else if (r < 0.60) ownership = 'father';
     else if (r < 0.75) ownership = 'mother';
-    else ownership = 'both_parents';
   } else if (tier === 'wealthy' || tier === 'ultra') {
     if (r < 0.50) ownership = 'both_parents';
     else if (r < 0.85) ownership = 'father';
@@ -84,7 +94,6 @@ function ensureParentsHome() {
     else ownership = 'mother';
   }
 
-  /* Year built — parents bought/built it well before the player was born */
   const homeAge = 20 + Math.floor(Math.random() * 25);
   const yearBuilt = Math.max(1950, gameYear() - homeAge - S.age + 6);
 
@@ -96,6 +105,8 @@ function ensureParentsHome() {
     ownership: ownership,
     yearBuilt: yearBuilt,
     renovationLevel: 0,
+    renovationLog: [],
+    renovationsDone: {},
     appliancesBought: []
   };
 }
@@ -137,19 +148,10 @@ function rentalTierById(id) {
 /* ---------- HELPERS ---------- */
 function currentHousing() {
   if (!S) return { kind: 'unknown', home: null };
-  if (S.housing === 'parents') {
-    ensureParentsHome();
-    return { kind: 'parents', home: S.parentsHome };
-  }
+  if (S.housing === 'parents') { ensureParentsHome(); return { kind: 'parents', home: S.parentsHome }; }
   if (S.housing === 'rented') {
     if (!S.rentedHome) {
-      S.rentedHome = {
-        tierId: 'br2',
-        yearlyRent: (C().prices && C().prices.rent) || 120000,
-        area: 100,
-        condition: 75,
-        rentedYear: gameYear()
-      };
+      S.rentedHome = { tierId: 'br2', yearlyRent: (C().prices && C().prices.rent) || 120000, area: 100, condition: 75, rentedYear: gameYear() };
     }
     return { kind: 'rented', home: S.rentedHome };
   }
@@ -173,54 +175,34 @@ function housingItemsValue(homeId) {
     .reduce(function(sum, i) { return sum + (i.currentValue || 0); }, 0);
 }
 
-/* ---------- ACTIONS ---------- */
+/* ---------- RENT / MOVE ACTIONS ---------- */
 window.assetsRentHome = function(tierId) {
   ensureAssetsState();
   const tier = rentalTierById(tierId);
   if (!tier) return;
   const yearly = rentalCostForTier(tier);
 
-  /* Moving out of parents' home */
   if (S.housing === 'parents') {
     const moveInCost = Math.round(yearly / 12 * 2);
-    if (S.wealth < moveInCost) {
-      log('❌ Need ' + money(moveInCost) + ' to move in (first month + deposit).');
-      render(); return;
-    }
+    if (S.wealth < moveInCost) { log('❌ Need ' + money(moveInCost) + ' to move in (first month + deposit).'); render(); return; }
     if (!confirm('Move out of your parents\' home into a ' + tier.label + '?\n\nRent: ' + money(yearly) + '/year\nMove-in cost: ' + money(moveInCost) + '\n\nProceed?')) return;
     S.wealth -= moveInCost;
     S.housing = 'rented';
-    S.rentedHome = {
-      tierId: tier.id,
-      yearlyRent: yearly,
-      area: tier.area,
-      condition: tier.cond,
-      rentedYear: gameYear()
-    };
+    S.rentedHome = { tierId: tier.id, yearlyRent: yearly, area: tier.area, condition: tier.cond, rentedYear: gameYear() };
     log('🔑 Rented a ' + tier.label + ' for ' + money(yearly) + '/year. You moved out.');
     fx({ happiness: 8 });
     render(); return;
   }
 
-  /* Changing rental */
   if (S.housing === 'rented') {
     const oldMonthly = Math.round((S.rentedHome.yearlyRent || 0) / 12);
     const newMonthly = Math.round(yearly / 12);
     const diff = newMonthly - oldMonthly;
     const depositNeeded = Math.max(0, diff * 2);
-    if (S.wealth < depositNeeded) {
-      log('❌ Need ' + money(depositNeeded) + ' extra deposit.');
-      render(); return;
-    }
+    if (S.wealth < depositNeeded) { log('❌ Need ' + money(depositNeeded) + ' extra deposit.'); render(); return; }
     if (!confirm('Switch to a ' + tier.label + '?\n\nNew rent: ' + money(yearly) + '/year\n' + (diff > 0 ? 'Extra deposit: ' + money(depositNeeded) : 'No extra deposit required.') + '\n\nProceed?')) return;
     if (depositNeeded > 0) S.wealth -= depositNeeded;
-    S.rentedHome = {
-      tierId: tier.id,
-      yearlyRent: yearly,
-      area: tier.area,
-      condition: tier.cond,
-      rentedYear: gameYear()
-    };
+    S.rentedHome = { tierId: tier.id, yearlyRent: yearly, area: tier.area, condition: tier.cond, rentedYear: gameYear() };
     log('🔑 Moved into a ' + tier.label + '. New rent: ' + money(yearly) + '/year.');
     render(); return;
   }
@@ -234,59 +216,138 @@ window.assetsMoveBackToParents = function() {
   if (!confirm('Move back in with your parents? Your rental contract will end.')) return;
   S.housing = 'parents';
   S.rentedHome = null;
+  S.assetsRenovateHome = null;
   log('🏠 Moved back in with your parents.');
   fx({ happiness: -3 });
   render();
 };
 
-window.assetsRenovateHome = function(homeId) {
-  const rateRatio = (C().rate || 1) / 52.7;
-  const cost = Math.round((homeId === 'parents' ? 30000 : 20000) * rateRatio);
+/* ---------- FIXED: Route through switchTab (was broken) ---------- */
+window.assetsBuyFurniture = function(homeId, category) {
+  if (!S.shopping) { log('❌ Shopping system not available.'); return; }
+  const tab = category || 'furniture';
+  S.shopping.tab = tab;
+  if (typeof ensureShoppingState === 'function') ensureShoppingState();
+  /* The engine's activeTab is a `let` — must use switchTab, not window.activeTab */
+  if (typeof switchTab === 'function') switchTab('shopping');
+  else render();
+};
 
-  if (S.wealth < cost) { log('❌ Need ' + money(cost) + ' for renovation.'); render(); return; }
-  if (!confirm('Renovate this home for ' + money(cost) + '?\n\nImproves condition and comfort.')) return;
+/* ---------- OPEN / CLOSE RENOVATION PICKER ---------- */
+window.assetsRenovateHome = function(homeId) {
+  S.assetsRenovateHome = homeId || 'parents';
+  render();
+};
+window.assetsCloseRenovation = function() {
+  S.assetsRenovateHome = null;
+  render();
+};
+
+/* ---------- BUY RENOVATION ---------- */
+window.assetsBuyRenovation = function(renovationId) {
+  ensureAssetsState();
+  const target = S.assetsRenovateHome;
+  if (!target) return;
+
+  const reno = PARENT_RENOVATIONS.find(function(r) { return r.id === renovationId; });
+  if (!reno) return;
+
+  if (target === 'rented' && RENTAL_RENOVATION_IDS.indexOf(renovationId) < 0) {
+    log('❌ Rentals cannot have structural renovations. Only walls, lighting or balcony.');
+    render(); return;
+  }
+
+  const home = target === 'parents' ? S.parentsHome : S.rentedHome;
+  if (!home) return;
+
+  if (!home.renovationsDone || typeof home.renovationsDone !== 'object') home.renovationsDone = {};
+  if (!Array.isArray(home.renovationLog)) home.renovationLog = [];
+
+  const timesDone = home.renovationsDone[renovationId] || 0;
+  const rateRatio = (C().rate || 1) / 52.7;
+  const cost = Math.round(reno.baseCost * rateRatio * Math.pow(1.30, timesDone));
+
+  if (S.wealth < cost) { log('❌ Need ' + money(cost) + ' for this renovation.'); render(); return; }
+  if (!confirm('Renovate: ' + reno.label + '\n\nCost: ' + money(cost) + '\nCondition +' + reno.cond + '% · Happiness +' + reno.hap + '\n\nProceed?')) return;
 
   S.wealth -= cost;
-  if (homeId === 'parents' && S.parentsHome) {
-    S.parentsHome.condition = Math.min(100, S.parentsHome.condition + 10);
+  home.condition = Math.min(100, (home.condition || 0) + reno.cond);
+  home.renovationLog.push({ year: gameYear(), id: reno.id, label: reno.label, cost: cost });
+  home.renovationsDone[reno.id] = timesDone + 1;
+
+  if (target === 'parents' && S.parentsHome) {
+    S.parentsHome.value = Math.round(S.parentsHome.value * (1 + reno.valueAdd));
     S.parentsHome.renovationLevel = (S.parentsHome.renovationLevel || 0) + 1;
     (S.family || []).forEach(function(m) {
       if ((m.role === 'Mother' || m.role === 'Father') && m.alive !== false) {
         m.bond = Math.min(100, (m.bond || 70) + 3);
       }
     });
-    log('🔧 Renovated the family home for ' + money(cost) + '. Condition +10. Parents appreciate it.');
-  } else if (homeId === 'rented' && S.rentedHome) {
-    S.rentedHome.condition = Math.min(100, S.rentedHome.condition + 10);
-    log('🔧 Renovated your rental for ' + money(cost) + '. Condition +10.');
   }
-  fx({ happiness: 3 });
+
+  fx({ happiness: reno.hap });
+  log('🔧 ' + reno.label + ' completed for ' + money(cost) + '. Condition +' + reno.cond + '%.');
   render();
 };
 
-window.assetsBuyFurniture = function(homeId, category) {
-  if (typeof ensureShoppingState === 'function') ensureShoppingState();
-  if (!S.shopping) {
-    log('❌ Shopping system not available.');
-    return;
+/* ---------- RENOVATION PICKER VIEW ---------- */
+function renderRenovationPicker(target) {
+  const home = target === 'parents' ? S.parentsHome : S.rentedHome;
+  if (!home) return '<div class="card"><h3>No home to renovate</h3></div>';
+
+  const isRental = target === 'rented';
+  const tier = isRental && rentalTierById(home.tierId) ? rentalTierById(home.tierId) : null;
+  const title = isRental ? (tier ? tier.label : 'Rented Home') : "Parents' Home";
+  const rateRatio = (C().rate || 1) / 52.7;
+
+  let html = '<div class="card" style="border-color:#fbbf24">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<h3 style="color:#fbbf24;margin:0">🔧 Renovate — ' + title + '</h3>' +
+    '<button class="pill" style="padding:4px 10px;font-size:.72rem" onclick="assetsCloseRenovation()">← Back</button>' +
+    '</div>' +
+    '<div class="row" style="margin-top:8px"><span>Current condition</span><b>' + (home.condition || 0) + '%</b></div>' +
+    (target === 'parents' ? '<div class="row"><span>Home value</span><b class="mono">' + money(home.value) + '</b></div>' : '') +
+    '<div class="row"><span>Your cash</span><b class="mono">' + money(S.wealth) + '</b></div>' +
+    '</div>';
+
+  if (isRental) {
+    html += '<div class="card" style="border-color:#fb7185;padding:10px"><p class="muted small" style="margin:0">You don\'t own this property. Only cosmetic upgrades are available (paint, lighting, balcony). Structural work belongs to the landlord.</p></div>';
   }
 
-  /* Set the shop sub-tab BEFORE switching */
-  S.shopping.tab = category || 'furniture';
+  html += '<div class="card"><h3>Choose a renovation</h3>';
 
-  /* Log a hint so the player knows the destination */
-  const homeLabel = homeId === 'parents' ? "your parents' home"
-                  : homeId === 'rented'  ? 'your rental'
-                  : 'your home';
-  log('🛍 Opening shopping — items you buy will be placed in ' + homeLabel + '.');
+  const availableList = isRental
+    ? PARENT_RENOVATIONS.filter(function(r) { return RENTAL_RENOVATION_IDS.indexOf(r.id) >= 0; })
+    : PARENT_RENOVATIONS;
 
-  /* THIS is the actual fix: use switchTab(), not window.activeTab */
-  if (typeof switchTab === 'function') {
-    switchTab('shopping');
-  } else {
-    render();
+  availableList.forEach(function(reno) {
+    const timesDone = (home.renovationsDone && home.renovationsDone[reno.id]) || 0;
+    const cost = Math.round(reno.baseCost * rateRatio * Math.pow(1.30, timesDone));
+    const canAfford = S.wealth >= cost;
+
+    html += '<div style="padding:10px 0;border-bottom:1px solid #1a1a2a">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+      '<div style="flex:1"><div style="font-weight:700">' + reno.label + (timesDone > 0 ? ' <span class="muted small">(done ' + timesDone + '×)</span>' : '') + '</div>' +
+      '<div class="muted small">' + reno.desc + '</div>' +
+      '<div class="muted small">Condition +' + reno.cond + '% · Happiness +' + reno.hap + (reno.valueAdd ? ' · Value +' + Math.round(reno.valueAdd * 100) + '%' : '') + '</div></div>' +
+      '<div style="text-align:right;flex-shrink:0;margin-left:8px"><b class="mono">' + money(cost) + '</b></div>' +
+      '</div>' +
+      '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;' + (canAfford ? 'background:#34d39920;border-color:#34d399' : 'opacity:.5') + '" ' + (canAfford ? '' : 'disabled') + ' onclick="assetsBuyRenovation(\'' + reno.id + '\')">' + (canAfford ? 'Renovate' : 'Cannot afford') + '</button>' +
+      '</div>';
+  });
+
+  html += '</div>';
+
+  if (home.renovationLog && home.renovationLog.length) {
+    html += '<div class="card"><h3>📖 Renovation History</h3>';
+    home.renovationLog.slice().reverse().forEach(function(entry) {
+      html += '<div class="row" style="padding:4px 0;font-size:.78rem"><span>' + entry.year + ' · ' + entry.label + '</span><b class="mono">' + money(entry.cost) + '</b></div>';
+    });
+    html += '</div>';
   }
-};
+
+  return html;
+}
 
 /* ---------- MAIN VIEW ---------- */
 function assetsView() {
@@ -295,12 +356,20 @@ function assetsView() {
     return '<div class="card"><h3>Assets</h3><p class="muted">Available from age 18.</p></div>';
   }
 
+  /* Safety: clear picker if housing status changed */
+  if (S.assetsRenovateHome === 'parents' && S.housing !== 'parents') S.assetsRenovateHome = null;
+  if (S.assetsRenovateHome === 'rented' && S.housing !== 'rented') S.assetsRenovateHome = null;
+
+  /* Route to renovation picker if active */
+  if (S.assetsRenovateHome) {
+    return renderRenovationPicker(S.assetsRenovateHome);
+  }
+
   const housing = currentHousing();
   let html = '';
 
   html += renderHousingSection(housing);
 
-  /* Wealth summary */
   const expenses = (function() {
     if (S.housing === 'parents') {
       return Math.round((C().prices.phone || 0) * 0.5 + (C().prices.transport || 0) * 0.25);
@@ -310,8 +379,7 @@ function assetsView() {
     }
     return (C().prices.food || 0) + (C().prices.phone || 0) + (C().prices.transport || 0);
   })();
-  const income = (S.job ? S.job.salary : 0) +
-                 (S.career && S.career.partTime ? S.career.partTime.salary : 0);
+  const income = (S.job ? S.job.salary : 0) + (S.career && S.career.partTime ? S.career.partTime.salary : 0);
   const net = income - expenses;
 
   html += '<div class="card"><h3>💰 Wealth</h3>' +
@@ -329,13 +397,11 @@ function assetsView() {
 function renderHousingSection(housing) {
   let html = '';
 
-  /* ---------- LIVING WITH PARENTS ---------- */
   if (housing.kind === 'parents') {
     const h = housing.home;
     const condColor = h.condition > 80 ? '#34d399' : h.condition > 50 ? '#fbbf24' : '#fb7185';
     const itemsCount = housingItemsCount('parents');
     const itemsValue = housingItemsValue('parents');
-    const renovCost = Math.round(30000 * ((C().rate || 1) / 52.7));
 
     html += '<div class="card" style="border-color:#22d3ee">' +
       '<h3 style="color:#22d3ee">📍 Your Current Home</h3>' +
@@ -351,10 +417,9 @@ function renderHousingSection(housing) {
       '<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">' +
       '<button class="opt" style="text-align:center;font-size:.78rem" onclick="assetsBuyFurniture(\'parents\',\'furniture\')">🛋 Buy furniture for this home</button>' +
       '<button class="opt" style="text-align:center;font-size:.78rem" onclick="assetsBuyFurniture(\'parents\',\'appliances\')">🍳 Buy appliances for this home</button>' +
-      '<button class="opt" style="text-align:center;font-size:.78rem" onclick="assetsRenovateHome(\'parents\')">🔧 Help renovate the family home (' + money(renovCost) + ')</button>' +
+      '<button class="opt" style="text-align:center;font-size:.78rem;background:#fbbf2420;border-color:#fbbf24" onclick="assetsRenovateHome(\'parents\')">🔧 Help renovate the family home</button>' +
       '</div></div>';
 
-    /* Move out — rental picker */
     html += '<div class="card"><h3>🏠 Move Out — Rental Options</h3>' +
       '<p class="muted small" style="margin-bottom:8px">Choose a place to rent. You need first month + deposit (2× monthly) to move in.</p>';
     RENTAL_TIERS.forEach(function(tier) {
@@ -372,14 +437,12 @@ function renderHousingSection(housing) {
     html += '</div>';
   }
 
-  /* ---------- RENTED ---------- */
   else if (housing.kind === 'rented') {
     const h = housing.home;
     const tier = rentalTierById(h.tierId) || rentalTierById('br2');
     const condColor = h.condition > 80 ? '#34d399' : h.condition > 50 ? '#fbbf24' : '#fb7185';
     const itemsCount = housingItemsCount('rented');
     const itemsValue = housingItemsValue('rented');
-    const renovCost = Math.round(20000 * ((C().rate || 1) / 52.7));
 
     html += '<div class="card" style="border-color:#22d3ee">' +
       '<h3 style="color:#22d3ee">📍 Your Current Home</h3>' +
@@ -394,11 +457,10 @@ function renderHousingSection(housing) {
       '<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">' +
       '<button class="opt" style="text-align:center;font-size:.78rem" onclick="assetsBuyFurniture(\'rented\',\'furniture\')">🛋 Buy furniture for this home</button>' +
       '<button class="opt" style="text-align:center;font-size:.78rem" onclick="assetsBuyFurniture(\'rented\',\'appliances\')">🍳 Buy appliances for this home</button>' +
-      '<button class="opt" style="text-align:center;font-size:.78rem" onclick="assetsRenovateHome(\'rented\')">🔧 Improve condition (' + money(renovCost) + ')</button>' +
+      '<button class="opt" style="text-align:center;font-size:.78rem;background:#fbbf2420;border-color:#fbbf24" onclick="assetsRenovateHome(\'rented\')">🔧 Cosmetic upgrades</button>' +
       '<button class="opt" style="text-align:center;font-size:.78rem;border-color:#fb7185;color:#fb7185" onclick="assetsMoveBackToParents()">🏠 Move back to parents</button>' +
       '</div></div>';
 
-    /* Change rental */
     html += '<div class="card"><h3>🏠 Change Your Rental</h3>' +
       '<p class="muted small" style="margin-bottom:8px">Move to a different property. Upgrades may require extra deposit.</p>';
     RENTAL_TIERS.forEach(function(t) {
@@ -421,7 +483,6 @@ function renderHousingSection(housing) {
     html += '</div>';
   }
 
-  /* ---------- OWNED ---------- */
   else if (housing.kind === 'owned') {
     const h = housing.home;
     html += '<div class="card" style="border-color:#34d399">' +
@@ -438,7 +499,7 @@ function renderHousingSection(housing) {
   return html;
 }
 
-/* ---------- YEARLY TICK — parents' home and rented home drift ---------- */
+/* ---------- YEARLY TICK ---------- */
 GameHooks.on('year', function() {
   if (!S) return;
   const appRate = (typeof REAL_ESTATE_CONFIG !== 'undefined' && REAL_ESTATE_CONFIG.appreciationRates && REAL_ESTATE_CONFIG.appreciationRates[S.country]) || 0.05;
@@ -450,7 +511,6 @@ GameHooks.on('year', function() {
   if (S.rentedHome) {
     S.rentedHome.condition = Math.max(30, S.rentedHome.condition - Math.floor(Math.random() * 3));
     if (Math.random() < 0.20) {
-      // Landlord raises rent yearly
       const hike = Math.round(S.rentedHome.yearlyRent * (0.05 + Math.random() * 0.10));
       S.rentedHome.yearlyRent += hike;
       log('⚠️ Your landlord raised the rent by ' + money(hike) + '. New rent: ' + money(S.rentedHome.yearlyRent) + '/year.');
@@ -458,5 +518,5 @@ GameHooks.on('year', function() {
   }
 });
 
-/* ---------- REGISTER TAB (unchanged order) ---------- */
+/* ---------- REGISTER TAB ---------- */
 GameHooks.registerTab({ id: 'assets', label: 'Assets', order: 4, view: assetsView });
