@@ -1041,3 +1041,4 @@ function vacRenderHistory() {
 
 /* ---------- REGISTER TAB ---------- */
 GameHooks.registerTab({ id: 'vacation', label: '✈️ Travel', order: 12, view: vacationsView });
+console.log('[World Life] 26-view-vacations.js loaded');
