@@ -1008,58 +1008,63 @@ function shopRenderGifts() {
     byRecipient[g.to].spent += g.price || 0;
     byRecipient[g.to].items.push(g);
   });
+
   let html = '';
 
-  /* Gift suggestions by trait */
+  /* ---------- Gift suggestions by trait ---------- */
   const allRecipients = [];
   if (S.marriage && S.marriage.partner && S.marriage.partner.alive !== false) {
     allRecipients.push({ name: S.marriage.partner.name, type: 'Spouse', obj: S.marriage.partner });
   }
-  (S.childrenList || []).forEach(c => allRecipients.push({ name: c.name, type: 'Child', obj: c }));
-  (S.family || []).forEach(m => {
+  (S.childrenList || []).forEach(function(c) { allRecipients.push({ name: c.name, type: 'Child', obj: c }); });
+  (S.family || []).forEach(function(m) {
     if (m.alive === false) return;
     if (m.role === 'Mother' || m.role === 'Father') allRecipients.push({ name: m.name, type: 'Parent', obj: m });
     else if (m.isSibling) allRecipients.push({ name: m.name, type: 'Sibling', obj: m });
   });
 
   if (allRecipients.length > 0) {
-    html += '<div class="card" style="border-color:#22d3ee"><h3 style="color:#22d3ee">💡 Gift Suggestions</h3>' +
-      '<p class="muted small">Based on each person\'s traits.</p>';
-    allRecipients.forEach(r => {
+    html += '<div class="card" style="border-color:#22d3ee"><h3 style="color:#22d3ee">💡 Gift Suggestions</h3>';
+    html += '<p class="muted small">Based on each person\'s traits.</p>';
+    allRecipients.forEach(function(r) {
       const suggestions = _suggestGiftFor(r);
       if (suggestions.length === 0) return;
-      const traits = (r.obj.traits || []).slice(0, 2).map(t => t.replace(/_/g, ' ')).join(', ');
-      html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
-        '<div style="font-weight:700">' + r.name + ' <span class="muted small">(' + r.type + (traits ? ' · ' + traits : '') + ')</span></div>';
-      suggestions.slice(0, 3).forEach(s => {
+      const traits = (r.obj.traits || []).slice(0, 2).map(function(t) { return t.replace(/_/g, ' '); }).join(', ');
+      html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">';
+      html += '<div style="font-weight:700">' + r.name + ' <span class="muted small">(' + r.type + (traits ? ' · ' + traits : '') + ')</span></div>';
+      suggestions.slice(0, 3).forEach(function(s) {
         html += '<div class="muted small" style="padding-left:8px">· ' + s.brand + ' ' + s.name + ' — ' + money(s.price) + '</div>';
       });
       html += '</div>';
     });
     html += '</div>';
   }
- html = '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🎁 Gift Registry</h3>' +
-    '<div class="row"><span>Total gifts given</span><b>' + gifts.length + '</b></div>' +
-    '<div class="row"><span>Total spent on gifts</span><b class="bad">' + money(totalSpent) + '</b></div>' +
-    '</div>';
 
+  /* ---------- Registry summary ---------- */
+  html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🎁 Gift Registry</h3>';
+  html += '<div class="row"><span>Total gifts given</span><b>' + gifts.length + '</b></div>';
+  html += '<div class="row"><span>Total spent on gifts</span><b class="bad">' + money(totalSpent) + '</b></div>';
+  html += '</div>';
+
+  /* ---------- By recipient ---------- */
   html += '<div class="card"><h3>By Recipient</h3>';
   Object.keys(byRecipient).forEach(function(name) {
     const r = byRecipient[name];
-    html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
-      '<div style="display:flex;justify-content:space-between"><b>' + r.name + '</b><span class="good">' + money(r.spent) + '</span></div>' +
-      '<div class="muted small">' + r.count + ' gift' + (r.count > 1 ? 's' : '') + '</div>' +
-      '</div>';
+    html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">';
+    html += '<div style="display:flex;justify-content:space-between"><b>' + r.name + '</b><span class="good">' + money(r.spent) + '</span></div>';
+    html += '<div class="muted small">' + r.count + ' gift' + (r.count > 1 ? 's' : '') + '</div>';
+    html += '</div>';
   });
   html += '</div>';
 
+  /* ---------- Gift history ---------- */
   html += '<div class="card"><h3>Gift History</h3>';
   gifts.slice(0, 50).forEach(function(g) {
-    html += '<div style="padding:6px 0;border-bottom:1px solid #1a1a2a;font-size:.82rem">' +
-      '<span class="muted mono" style="font-size:.72rem">' + g.year + '</span> · ' +
-      '<b>' + g.name + '</b> → <span style="color:#fb7185">' + g.to + '</span>' +
-      '<span class="muted" style="float:right">' + money(g.price) + '</span>' +
-      '</div>';
+    html += '<div style="padding:6px 0;border-bottom:1px solid #1a1a2a;font-size:.82rem">';
+    html += '<span class="muted mono" style="font-size:.72rem">' + g.year + '</span> · ';
+    html += '<b>' + g.name + '</b> → <span style="color:#fb7185">' + g.to + '</span>';
+    html += '<span class="muted" style="float:right">' + money(g.price) + '</span>';
+    html += '</div>';
   });
   html += '</div>';
 
