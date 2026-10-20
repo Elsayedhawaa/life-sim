@@ -1124,25 +1124,26 @@ GameHooks.on('year', function() {
     }
   });
 
-  /* Store financing */
-  sp.loans = sp.loans.filter(function(loan) {
-    const payment = loan.yearlyPayment;
-    if (_shopTotalLiquid() >= payment) {
-      _shopSpend(payment, 'Store financing');
-      log('📅 Paid ' + money(payment) + ' store financing for ' + loan.itemName + '.');
-    } else {
-      log('⚠️ Could not pay store financing for ' + loan.itemName + '. Went into debt.');
-      S.wealth -= payment;
-    }
-    loan.totalOwed -= payment;
-    loan.yearsLeft--;
-    if (loan.yearsLeft <= 0) {
-      log('✅ Store financing for ' + loan.itemName + ' fully paid.');
-      return false;
-    }
-    return true;
-  });
-
+  /* Store financing (SKIPPED in monthly mode — settlement handles it) */
+  if (!(typeof isMonthly === 'function' && isMonthly())) {
+    sp.loans = sp.loans.filter(function(loan) {
+      const payment = loan.yearlyPayment;
+      if (_shopTotalLiquid() >= payment) {
+        _shopSpend(payment, 'Store financing');
+        log('📅 Paid ' + money(payment) + ' store financing for ' + loan.itemName + '.');
+      } else {
+        log('⚠️ Could not pay store financing for ' + loan.itemName + '. Went into debt.');
+        S.wealth -= payment;
+      }
+      loan.totalOwed -= payment;
+      loan.yearsLeft--;
+      if (loan.yearsLeft <= 0) {
+        log('✅ Store financing for ' + loan.itemName + ' fully paid.');
+        return false;
+      }
+      return true;
+    });
+  }
   /* ---- Card installment auto-payments ---- */
   sp.cardInstallments = sp.cardInstallments.filter(function(ci) {
     const card = S.bank && Array.isArray(S.bank.creditCards)
