@@ -260,13 +260,12 @@ function advanceYear() {
 }
 
 /* ---------- ADVANCE ONE MONTH (monthly mode) ---------- */
-function advanceMonth() {
+function advanceMonth(silent) {
   if (S.pending) return;
 
   S.month = (S.month || 1) + 1;
 
   if (S.month > 12) {
-    /* Year rollover */
     S.month = 1;
     S.age++;
     S.family.forEach(m => { if (m.alive) m.age++; });
@@ -275,12 +274,10 @@ function advanceMonth() {
     GameHooks.run('year', S);
   }
 
-  /* Fire month hook — ALWAYS, even at year rollover */
   GameHooks.run('month', S, { month: S.month, isYearEnd: S.month === 1 });
 
-  save(); render();
+  if (!silent) { save(); render(); }
 }
-
 /* ---------- THE SINGLE BUTTON HANDLER ---------- */
 function ageUp() {
   if (!S) return;
@@ -333,11 +330,15 @@ function render() {
   const b = document.getElementById('bottom');
   if (S.pending) b.innerHTML = `<button disabled>Choose an option above</button>`;
   else if (S.age >= 100) b.innerHTML = `<button onclick="reset()">Life complete — Start over</button>`;
-   else if (isMonthly()) {
+  else if (isMonthly()) {
     const nextMonth = (currentMonth() % 12) + 1;
     const nextMonthName = monthName(nextMonth);
     const yearLabel = nextMonth === 1 ? ` (Age ${S.age + 1})` : '';
-    b.innerHTML = `<button onclick="ageUp()">Next Month → ${nextMonthName}${yearLabel}</button>`;
+    const canFF = currentMonth() !== 1;
+    b.innerHTML = `<div style="display:flex;gap:6px">
+      <button onclick="ageUp()" style="flex:3">Next Month → ${nextMonthName}${yearLabel}</button>
+      <button onclick="fastForwardToYearEnd()" ${canFF ? '' : 'disabled'} style="flex:0 0 60px;background:#4b5563;padding:14px;border:none;border-radius:10px;color:#fff;font-size:1.1rem;cursor:pointer" title="Fast-forward to January">⏩</button>
+    </div>`;
   }
   else b.innerHTML = `<button onclick="ageUp()">Next Year → Age ${S.age + 1}</button>`;
   GameHooks.run('render', S);
@@ -524,6 +525,24 @@ function reset() {
 /* ============================================================
    WINDOW BINDINGS
    ============================================================ */
+window.fastForwardToYearEnd = function() {
+  if (!isMonthly()) return;
+  if (S.pending) { log('Resolve the pending event first.'); return; }
+  if (currentMonth() === 1) { log('Already in January. Click Next Month or switch to yearly.'); return; }
+
+  let safety = 14;
+  while (S.month !== 1 && safety > 0) {
+    advanceMonth(true);
+    safety--;
+    if (S.pending) {
+      save(); render();
+      log('⏩ Stopped at event in ' + currentMonthName() + '. Resolve it first.');
+      return;
+    }
+  }
+  save(); render();
+  log('⏩ Fast-forwarded to January ' + gameYear() + '.');
+};
 window.ageUp = ageUp;
 window.chooseEvent = chooseEvent;
 window.switchTab = (id) => { activeTab = id; render(); };
