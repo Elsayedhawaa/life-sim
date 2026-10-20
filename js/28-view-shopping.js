@@ -1145,6 +1145,7 @@ GameHooks.on('year', function() {
     });
   }
   /* ---- Card installment auto-payments ---- */
+    if (!(typeof isMonthly === 'function' && isMonthly())) {
   sp.cardInstallments = sp.cardInstallments.filter(function(ci) {
     const card = S.bank && Array.isArray(S.bank.creditCards)
       ? S.bank.creditCards.find(function(c) { return c.id === ci.cardId; })
@@ -1169,12 +1170,13 @@ GameHooks.on('year', function() {
       card.balance = Math.round(card.balance * 1.20); /* 20% interest */
     }
 
-    if (ci.monthsLeft <= 0) {
+       if (ci.monthsLeft <= 0) {
       log('✅ ' + ci.itemName + ' card installment complete.');
       return false;
     }
     return true;
   });
+  } /* end isMonthly guard */
 
   /* Age out of useful life */
   sp.inventory.forEach(function(item) {
