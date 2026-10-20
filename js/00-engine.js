@@ -11,7 +11,12 @@
 const SAVE_KEY = 'world_life_v5';
 let S = null;
 let activeTab = 'life';
-let START = { name: '', gender: 'm', country: 'egy', familyTier: 'middle', parentType: 'balanced', pacing: 'yearly' };
+let START = {
+  name: '', gender: 'm', country: 'egy', familyTier: 'middle', parentType: 'balanced',
+  pacing: (function() {
+    try { return localStorage.getItem('wl_pacing') || 'yearly'; } catch(e) { return 'yearly'; }
+  })()
+};
 
 /* ============================================================
    GAMEHOOKS
@@ -77,7 +82,11 @@ function isRamadanMonth() {
   while (rm > 12) rm -= 12;
   return currentMonth() === rm;
 }
-function log(msg) { if (!S.log) S.log = []; S.log.unshift({ age: S.age, year: gameYear(), msg }); if (S.log.length > 200) S.log.pop(); }
+function log(msg) {
+  if (!S.log) S.log = [];
+  S.log.unshift({ age: S.age, year: gameYear(), month: S.month || null, msg: msg });
+  if (S.log.length > 300) S.log.pop();
+}
 // Apply stat effects. Used by year ticks in views (cars, future systems).
 function fx(effects) {
   if (!effects || !S) return;
@@ -501,7 +510,12 @@ window.COUNTRIES = COUNTRIES;</pre>
 
 function setGender(g) { START.gender = g; renderStart(); }
 function setCountry(c) { START.country = c; renderStart(); }
-function startGame() { newLife(); activeTab = 'life'; render(); }
+function startGame() {
+  try { localStorage.setItem('wl_pacing', START.pacing || 'yearly'); } catch(e) {}
+  newLife();
+  activeTab = 'life';
+  render();
+}
 
 /* ============================================================
    SAVE / LOAD / RESET
