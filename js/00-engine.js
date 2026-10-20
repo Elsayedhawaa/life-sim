@@ -241,8 +241,10 @@ function advanceYear() {
       const personal = Math.round(c.prices.phone * 0.5 + c.prices.transport * 0.25);
       S.wealth -= personal;
     } else {
-      let expenses = c.prices.food + c.prices.phone + c.prices.transport;
-      if (S.housing === 'rented') expenses += c.prices.rent;
+            let expenses = c.prices.food + c.prices.phone + c.prices.transport;
+      if (S.housing === 'rented') {
+        expenses += (typeof currentYearlyRent === 'function' ? currentYearlyRent() : (c.prices.rent || 0));
+      }
       S.wealth -= expenses;
     }
   }
