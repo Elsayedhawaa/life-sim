@@ -455,12 +455,12 @@ const VAC_MANAGER_STYLES = {
 
 /* ---------- NOTICE OPTIONS ---------- */
 const VAC_NOTICE_OPTIONS = [
-  { id: 'tomorrow',    label: 'Tomorrow (urgent)',         approvalMod: -0.40, desc: 'Very short notice. Hard to approve.' },
-  { id: 'few_days',    label: 'A few days notice',         approvalMod: -0.30, desc: 'Frustrating for the team.' },
-  { id: '1week',       label: '1 week notice',             approvalMod: -0.15, desc: 'Short but manageable.' },
-  { id: '1month',      label: '1 month notice',            approvalMod: +0.05, desc: 'Standard.' },
-  { id: '3months',     label: '3+ months notice',          approvalMod: +0.20, desc: 'Plenty of time to plan around.' },
-  { id: '6months',     label: '6+ months notice',          approvalMod: +0.30, desc: 'Perfectly planned. Almost guaranteed approval.' }
+  { id: 'tomorrow',   label: 'Tomorrow (urgent)',    monthsAhead: 0, approvalMod: -0.40, desc: 'Very short notice. Hard to approve.' },
+  { id: 'few_days',   label: 'A few days notice',    monthsAhead: 0, approvalMod: -0.30, desc: 'Frustrating for the team.' },
+  { id: '1week',      label: '1 week notice',        monthsAhead: 0, approvalMod: -0.15, desc: 'Short but manageable.' },
+  { id: '1month',     label: '1 month notice',       monthsAhead: 1, approvalMod: +0.05, desc: 'Standard.' },
+  { id: '3months',    label: '3+ months notice',     monthsAhead: 3, approvalMod: +0.20, desc: 'Plenty of time to plan around.' },
+  { id: '6months',    label: '6+ months notice',     monthsAhead: 6, approvalMod: +0.30, desc: 'Perfectly planned. Almost guaranteed approval.' }
 ];
 
 /* ---------- TRIP STYLES ---------- */
