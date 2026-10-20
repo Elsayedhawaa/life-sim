@@ -58,7 +58,59 @@ function medEGP(n) { return Math.round((n || 0) * medRate()); }
 function medSetTab(tab) { S.medical.tab = tab; render(); }
 window.medSetTab = medSetTab;
 
-function medInsurance() {
+function medInsurance()
+/* ============================================================
+   INSURANCE SYNC — career health benefit ↔ medical insurance
+   ============================================================ */
+function medBestEmployerTier() {
+  if (!S.career || !S.career.job) return null;
+  const benefits = S.career.job.benefits || [];
+  if (benefits.indexOf('health') < 0) return null;
+  return (S.career.job.level >= 2) ? 'employer_premium' : 'employer_basic';
+}
+
+function medSyncInsuranceFromJob() {
+  if (!S || !S.medical) return;
+  const best = medBestEmployerTier();
+  const current = S.medical.insurance || 'none';
+
+  /* Auto-upgrade from worse plans if you have employer coverage */
+  if (best && (current === 'none' || current === 'public_govt' || current === 'private_basic')) {
+    S.medical.insurance = best;
+    S.medical.insuranceExpiryYear = gameYear() + 1;
+    log('🩺 Your employer health coverage is now active: ' + (best === 'employer_premium' ? 'Premium (80% covered)' : 'Basic (55% covered)'));
+  }
+
+  /* Downgrade if you lost mid-level job but still employed */
+  if (best === 'employer_basic' && current === 'employer_premium') {
+    S.medical.insurance = 'employer_basic';
+    log('🩺 Your health coverage downgraded to Basic (job level below mid).');
+  }
+
+  /* Clear employer plan if you lost the job */
+  if (!best && (current === 'employer_basic' || current === 'employer_premium')) {
+    S.medical.insurance = 'public_govt';
+    S.medical.insuranceExpiryYear = gameYear() + 1;
+    log('🩺 You lost your employer health coverage. Defaulting to Government Health Insurance.');
+  }
+}
+window.medSyncInsuranceFromJob = medSyncInsuranceFromJob;
+
+/* Resolves every treatment path for a given condition */
+function medResolveConditionOptions(condId) {
+  const cond = MED_CONDITIONS.find(function(c) { return c.id === condId; });
+  if (!cond) return null;
+  const doctors = MED_DOCTORS.filter(function(d) {
+    return d.canDetect.some(function(cat) {
+      return cond.category === cat || cond.category.indexOf(cat) === 0;
+    });
+  });
+  const meds = MED_MEDICATIONS.filter(function(m) { return m.treats.indexOf(condId) >= 0; });
+  const surgeries = MED_SURGERIES.filter(function(s) { return s.cures.indexOf(condId) >= 0; });
+  const tests = MED_TESTS.filter(function(t) { return t.detects.indexOf(condId) >= 0; });
+  return { cond: cond, doctors: doctors, meds: meds, surgeries: surgeries, tests: tests };
+}
+{
   return MED_INSURANCE.find(function(i) { return i.id === S.medical.insurance; }) || MED_INSURANCE[0];
 }
 
@@ -117,6 +169,7 @@ function medHasMedication(id) {
 /* ---------- MAIN VIEW ---------- */
 function medicalView() {
   ensureMedicalState();
+    medSyncInsuranceFromJob();
   if (!S) return '';
 
   const tabs = [
@@ -153,42 +206,119 @@ function medicalView() {
 function medRenderOverview() {
   const m = S.medical;
   const ins = medInsurance();
-  let html = '<div class="card"><h3>🩺 Your Health</h3>' +
-    '<div class="row"><span>Current health</span><b class="' + (S.health > 70 ? 'good' : S.health > 40 ? '' : 'bad') + '">' + Math.round(S.health) + '%</b></div>' +
-    '<div class="row"><span>Happiness</span><b class="' + (S.happiness > 60 ? 'good' : S.happiness > 30 ? '' : 'bad') + '">' + Math.round(S.happiness) + '%</b></div>' +
-    '<div class="row"><span>Insurance</span><b>' + ins.label + (ins.coveragePct > 0 ? ' · ' + Math.round(ins.coveragePct * 100) + '% covered' : '') + '</b></div>' +
-    '</div>';
+  const currentBestEmployer = medBestEmployerTier();
 
-  /* Active conditions */
-  if (m.conditions.length) {
-    html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">⚠️ Active Conditions (' + m.conditions.length + ')</h3>';
-    m.conditions.forEach(function(c) {
-      const cond = medConditionById(c.id);
-      if (!cond) return;
-      html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
-        '<div style="display:flex;justify-content:space-between"><b>' + cond.label + '</b><span class="muted small">' + cond.severity + '</span></div>' +
-        '<div class="muted small">' + cond.desc + '</div>' +
-        '<div class="muted small">Untreated: -' + cond.annualHealthHit + ' health/yr, -' + cond.annualHappinessHit + ' happiness/yr' +
-        (cond.deathRiskPerYear > 0 ? ', <b class="bad">' + Math.round(cond.deathRiskPerYear * 100) + '% death/yr</b>' : '') + '</div>' +
-        '</div>';
-    });
-    html += '</div>';
-  } else {
-    html += '<div class="card"><h3>✅ No active conditions</h3><p class="muted small">Stay healthy with regular checkups.</p></div>';
+  let html = '';
+
+  /* ---- Auto-sync notice ---- */
+  if (currentBestEmployer && ins.id !== currentBestEmployer) {
+    html += '<div class="card" style="border-color:#fbbf24;background:#fbbf2420">' +
+      '<b style="color:#fbbf24;font-size:.85rem">💡 Employer health coverage available</b>' +
+      '<p class="muted small" style="margin:4px 0">Your job offers ' + (currentBestEmployer === 'employer_premium' ? 'Premium' : 'Basic') + ' health insurance for free. Activate it now?</p>' +
+      '<button class="opt" style="margin-top:6px;width:100%;text-align:center;background:#34d399;color:#000;font-weight:700;font-size:.75rem;padding:8px" onclick="medSyncInsuranceFromJob();render()">Activate employer coverage</button>' +
+      '</div>';
   }
 
-  /* Active medications */
+  /* ---- Health summary ---- */
+  html += '<div class="card"><h3>🩺 Your Health</h3>' +
+    '<div class="row"><span>Current health</span><b class="' + (S.health > 70 ? 'good' : S.health > 40 ? '' : 'bad') + '">' + Math.round(S.health) + '%</b></div>' +
+    '<div class="row"><span>Happiness</span><b class="' + (S.happiness > 60 ? 'good' : S.happiness > 30 ? '' : 'bad') + '">' + Math.round(S.happiness) + '%</b></div>' +
+    '<div class="row"><span>Insurance plan</span><b class="' + (ins.coveragePct > 0 ? 'good' : 'bad') + '">' + ins.label + ' · ' + Math.round(ins.coveragePct * 100) + '% covered</b></div>' +
+    (currentBestEmployer && ins.id === currentBestEmployer ? '<div class="muted small" style="color:#34d399;margin-top:2px">✓ Covered by employer</div>' : '') +
+    '</div>';
+
+  /* ---- Active conditions WITH ACTION PANELS ---- */
+  if (m.conditions.length) {
+    html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">⚠️ Your Conditions (' + m.conditions.length + ')</h3>' +
+      '<p class="muted small">Tap a condition to see doctors, medications, and surgeries that can help.</p></div>';
+
+    m.conditions.forEach(function(c, idx) {
+      const resolved = medResolveConditionOptions(c.id);
+      if (!resolved) return;
+      const cond = resolved.cond;
+      const isOpen = S._medOpenCondition === c.id;
+      const severityColor = cond.severity === 'critical' ? '#fb7185' : cond.severity === 'severe' ? '#fbbf24' : cond.severity === 'moderate' ? '#22d3ee' : '#34d399';
+
+      html += '<div class="card" style="border-left:3px solid ' + severityColor + ';padding:12px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div style="flex:1"><b style="font-size:.95rem">' + cond.label + '</b>' +
+        '<div class="muted small">' + cond.severity + ' · diagnosed ' + (c.diagnosedYear || gameYear()) + (c.treated ? ' · <span class="good">✓ treated</span>' : '') + '</div>' +
+        '<div class="muted small" style="margin-top:2px">' + cond.desc + '</div>' +
+        '<div class="muted small" style="margin-top:4px">Untreated: -' + cond.annualHealthHit + ' health/yr, -' + cond.annualHappinessHit + ' happy/yr' +
+        (cond.deathRiskPerYear > 0 ? ' · <b class="bad">' + (cond.deathRiskPerYear * 100).toFixed(1) + '% death/yr</b>' : '') + '</div>' +
+        '</div></div>' +
+        '<button class="opt" style="margin-top:10px;width:100%;text-align:center;font-size:.75rem;padding:8px;background:' + (isOpen ? '#8b5cf6' : '#25253a') + ';color:' + (isOpen ? '#fff' : '#ccc') + '" onclick="S._medOpenCondition=\'' + (isOpen ? '' : c.id) + '\';render()">' + (isOpen ? '✕ Close' : '🩺 Show treatment options') + '</button>';
+
+      if (isOpen) {
+        /* Doctors */
+        if (resolved.doctors.length) {
+          html += '<div style="margin-top:10px;padding:8px;background:#0f0f1a;border-radius:6px">' +
+            '<b style="font-size:.75rem;color:#22d3ee">👨‍⚕️ SEE A DOCTOR</b>';
+          resolved.doctors.forEach(function(doc) {
+            const cost = medOutOfPocket(doc.visitCostEGP);
+            html += '<div class="row" style="padding:4px 0;font-size:.78rem"><span>' + doc.label + '</span>' +
+              '<button class="pill" style="padding:3px 8px;font-size:.68rem" onclick="medVisitDoctor(\'' + doc.id + '\',\'' + c.id + '\')">Visit · ' + money(cost) + '</button></div>';
+          });
+          html += '</div>';
+        }
+        /* Medications */
+        if (resolved.meds.length) {
+          html += '<div style="margin-top:8px;padding:8px;background:#0f0f1a;border-radius:6px">' +
+            '<b style="font-size:.75rem;color:#34d399">💊 MEDICATIONS</b>';
+          resolved.meds.forEach(function(md) {
+            const already = medHasMedication(md.id);
+            html += '<div class="row" style="padding:4px 0;font-size:.78rem"><span>' + md.label + ' · ' + money(medEGP(md.monthlyEGP)) + '/mo</span>' +
+              (already ? '<b class="good small">✓ Taking</b>' :
+                '<button class="pill" style="padding:3px 8px;font-size:.68rem" onclick="medStartMed(\'' + md.id + '\')">Start</button>') + '</div>';
+          });
+          html += '</div>';
+        }
+        /* Surgeries */
+        if (resolved.surgeries.length) {
+          html += '<div style="margin-top:8px;padding:8px;background:#0f0f1a;border-radius:6px">' +
+            '<b style="font-size:.75rem;color:#fb7185">🔪 SURGERIES</b>';
+          resolved.surgeries.forEach(function(sg) {
+            const cost = medOutOfPocket(sg.baseCostEGP);
+            html += '<div class="row" style="padding:4px 0;font-size:.78rem"><span>' + sg.label + '</span>' +
+              '<button class="pill" style="padding:3px 8px;font-size:.68rem" onclick="medBookSurgery(\'' + sg.id + '\')">Book · ' + money(cost) + '</button></div>';
+          });
+          html += '</div>';
+        }
+        /* Tests */
+        if (resolved.tests.length) {
+          html += '<div style="margin-top:8px;padding:8px;background:#0f0f1a;border-radius:6px">' +
+            '<b style="font-size:.75rem;color:#fbbf24">🧪 CONFIRM WITH TEST</b>';
+          resolved.tests.forEach(function(tt) {
+            const cost = medOutOfPocket(tt.costEGP);
+            html += '<div class="row" style="padding:4px 0;font-size:.78rem"><span>' + tt.label + '</span>' +
+              '<button class="pill" style="padding:3px 8px;font-size:.68rem" onclick="medOrderTest(\'' + tt.id + '\')">Order · ' + money(cost) + '</button></div>';
+          });
+          html += '</div>';
+        }
+      }
+
+      html += '</div>';
+    });
+  } else {
+    html += '<div class="card"><h3>✅ No active conditions</h3><p class="muted small">Stay healthy with regular checkups. Preventive care is cheaper than treatment.</p>' +
+      '<button class="opt" style="margin-top:8px;width:100%;text-align:center;font-size:.78rem" onclick="medSetTab(\'doctor\')">🩺 Book a general checkup</button></div>';
+  }
+
+  /* ---- Active medications ---- */
   if (m.medications.length) {
-    html += '<div class="card"><h3>💊 Medications</h3>';
+    let monthlyCost = 0;
+    html += '<div class="card"><h3>💊 Taking Now</h3>';
     m.medications.forEach(function(md) {
       const def = MED_MEDICATIONS.find(function(d) { return d.id === md.id; });
       if (!def) return;
+      monthlyCost += medEGP(def.monthlyEGP);
       html += '<div class="row"><span>' + def.label + '</span><b>' + money(medEGP(def.monthlyEGP)) + '/mo</b></div>';
     });
+    html += '<div class="row" style="border-top:1px solid #25253a;margin-top:6px;padding-top:6px"><b>Total monthly</b><b>' + money(monthlyCost) + '</b></div>';
     html += '</div>';
   }
 
-  /* Pending tests */
+  /* ---- Pending tests ---- */
   if (m.tests.length) {
     html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">🧪 Pending Tests</h3>';
     m.tests.forEach(function(t) {
@@ -199,11 +329,12 @@ function medRenderOverview() {
     html += '</div>';
   }
 
-  /* Preventive care */
+  /* ---- Preventive care ---- */
   html += '<div class="card"><h3>🛡 Preventive Care</h3>';
   MED_PREVENTIVE.forEach(function(p) {
+    const cost = medOutOfPocket(p.costEGP);
     html += '<button class="opt" style="width:100%;margin-top:4px;text-align:left;padding:8px;font-size:.78rem" onclick="medPreventive(\'' + p.id + '\')">' +
-      '<div style="display:flex;justify-content:space-between"><b>' + p.label + '</b><span>' + money(medEGP(p.costEGP)) + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between"><b>' + p.label + '</b><span>' + money(cost) + '</span></div>' +
       '<div class="muted small">' + p.desc + '</div></button>';
   });
   html += '</div>';
@@ -414,39 +545,53 @@ function medRenderInsurance() {
    ACTIONS
    ============================================================ */
 
-window.medVisitDoctor = function(docId) {
+window.medVisitDoctor = function(docId, targetConditionId) {
   const doc = MED_DOCTORS.find(function(d) { return d.id === docId; });
   if (!doc) return;
   if (!medPay(doc.visitCostEGP, doc.label)) { render(); return; }
 
-  /* Roll chance to detect a condition from the doctor's specialty */
+  /* If a specific condition was targeted, confirm it directly */
+  if (targetConditionId && medHasCondition(targetConditionId)) {
+    const cond = medConditionById(targetConditionId);
+    log('🩺 ' + doc.label + ' confirmed your ' + cond.label + '. They recommend the treatments shown in your Overview tab.');
+    fx({ happiness: 1 });
+    render(); return;
+  }
+
+  /* Otherwise, attempt detection */
   const conds = MED_CONDITIONS.filter(function(c) {
     return doc.canDetect.some(function(cat) {
-      return c.category.indexOf(cat) === 0 || c.category === cat;
+      return c.category === cat || c.category.indexOf(cat) === 0;
     });
   });
+
   if (!conds.length) {
     log('🩺 ' + doc.label + ' found nothing concerning.');
     render(); return;
   }
 
-  /* 40% chance to detect if any undetected condition applies */
   const undetected = conds.filter(function(c) { return !medHasCondition(c.id); });
   if (!undetected.length) {
     log('🩺 ' + doc.label + ' confirms you are already diagnosed.');
     render(); return;
   }
-  if (Math.random() < 0.40) {
+
+  let detectChance = 0.60;
+  if (S.smarts > 70) detectChance += 0.10;
+  if (S.health < 50) detectChance += 0.10;
+  if (S.age > 50) detectChance += 0.05;
+
+  if (Math.random() < detectChance) {
     const found = undetected[Math.floor(Math.random() * undetected.length)];
     medAddCondition(found.id);
     S.medical.records.unshift({ year: gameYear(), type: 'diagnosis', condition: found.label, doctor: doc.label });
     fx({ happiness: -3 });
+    log('🏥 Diagnosed: ' + found.label + '. Check your Overview tab for treatment options.');
   } else {
-    log('🩺 ' + doc.label + ' found nothing new. Try again next time.');
+    log('🩺 ' + doc.label + ' found nothing new. Consider booking a specific checkup.');
   }
   render();
 };
-
 window.medOrderTest = function(testId) {
   const test = MED_TESTS.find(function(t) { return t.id === testId; });
   if (!test) return;
@@ -595,13 +740,15 @@ window.medPreventive = function(prevId) {
 window.medSwitchInsurance = function(insId) {
   const ins = MED_INSURANCE.find(function(i) { return i.id === insId; });
   if (!ins) return;
-  /* Check employer plan eligibility */
-  if (ins.id === 'employer_basic' && !S.job) {
+  const hasJob = !!(S.job || (S.career && S.career.job));
+  const jobLevel = (S.career && S.career.job && S.career.job.level) || (S.job && S.job.level) || 0;
+
+  if (ins.id === 'employer_basic' && !hasJob) {
     log('❌ Employer basic requires a job.');
     render(); return;
   }
-  if (ins.id === 'employer_premium' && (!S.job || S.job.level < 2)) {
-    log('❌ Employer premium requires a mid-level job.');
+  if (ins.id === 'employer_premium' && (!hasJob || jobLevel < 2)) {
+    log('❌ Employer premium requires a mid-level job (level 2+).');
     render(); return;
   }
   const premium = medEGP(ins.premiumAnnualEGP);
@@ -718,6 +865,7 @@ GameHooks.on('year', function() {
   if (!S) return;
   const year = gameYear();
   const m = S.medical;
+    medSyncInsuranceFromJob();
 
   /* Charge insurance premium */
   const ins = medInsurance();
