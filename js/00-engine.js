@@ -11,13 +11,13 @@
 const SAVE_KEY = 'world_life_v5';
 let S = null;
 let activeTab = 'life';
-let START = { name: '', gender: 'm', country: 'egy', familyTier: 'middle', parentType: 'balanced' };
+let START = { name: '', gender: 'm', country: 'egy', familyTier: 'middle', parentType: 'balanced', pacing: 'yearly' };
 
 /* ============================================================
    GAMEHOOKS
    ============================================================ */
 const GameHooks = {
-  year: [], render: [], newGame: [], migrate: [],
+  year: [], month: [], render: [], newGame: [], migrate: [],
   tabs: [],
   on(name, fn) { if (this[name]) this[name].push(fn); },
   run(name, ...args) { if (this[name]) this[name].forEach(fn => { try { fn(...args); } catch(e) { console.error(e); } }); },
@@ -42,6 +42,41 @@ function C() {
 function gameYear() { return 2001 + (S?.age || 6); }
 function money(n) { const c = C(); return Math.round(n).toLocaleString() + ' ' + c.currency; }
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, Math.round(v))); }
+/* ---------- PACING & CALENDAR HELPERS ---------- */
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function isMonthly() { return S && S.pacing === 'monthly'; }
+function currentMonth() { return (S && S.month) ? S.month : 1; }
+function monthName(m) { return MONTH_NAMES[((m || 1) - 1) % 12] || 'January'; }
+function currentMonthName() { return monthName(currentMonth()); }
+function currentSeason() {
+  const m = currentMonth();
+  if (m === 12 || m <= 2) return 'winter';
+  if (m <= 5) return 'spring';
+  if (m <= 8) return 'summer';
+  return 'autumn';
+}
+function isSummer() { return currentSeason() === 'summer'; }
+function isSchoolMonth() { return currentMonth() === 9 || currentMonth() === 1; }
+function monthsUntil(targetMonth) {
+  let diff = (targetMonth - currentMonth() + 12) % 12;
+  return diff === 0 ? 12 : diff;
+}
+function monthlyScale(annual) { return isMonthly() ? (annual || 0) / 12 : (annual || 0); }
+
+/* Islamic calendar approximation — Ramadan drifts ~11 days/year earlier.
+   Approximated as: month = 3 for 2024-2027, month = 2 for 2028-2031, etc.
+   Good enough for a life sim; real dates vary by region. */
+function isRamadanMonth() {
+  if (!isMonthly()) return false;
+  const y = gameYear();
+  const cycle = (y - 2024) % 33; // 33-year Islamic cycle
+  const monthShift = Math.floor(cycle / 3); // ~3 years per month shift
+  let rm = 3 - monthShift; // 2024 ≈ March
+  while (rm < 1) rm += 12;
+  while (rm > 12) rm -= 12;
+  return currentMonth() === rm;
+}
 function log(msg) { if (!S.log) S.log = []; S.log.unshift({ age: S.age, year: gameYear(), msg }); if (S.log.length > 200) S.log.pop(); }
 // Apply stat effects. Used by year ticks in views (cars, future systems).
 function fx(effects) {
@@ -78,6 +113,8 @@ function newLife() {
     gender: START.gender,
     country: START.country,
     currency: c.currency,
+         month: 1,
+    pacing: START.pacing || 'yearly',
     age: 6,
     health: 100, happiness: 100, smarts: 50, social: 50,
     wealth: 0,
@@ -129,24 +166,24 @@ function prepareEvent(e) {
 /* ============================================================
    AGE UP
    ============================================================ */
-function ageUp() {
-  if (!dataOK()) { alert('Game data not loaded.'); return; }
-  if (S.pending) return;
-  S.age++;
+/* ---------- ENGINE YEAR TICK (non-cash annual things) ---------- */
+function engineYearTick() {
+  if (!S) return;
 
-  S.family.forEach(m => { if (m.alive) m.age++; });
-
+  /* School smarts growth */
   if (S.age >= 6 && S.age < 18 && S.school) {
-    const sch = (C().schools || []).find(x => x.id === S.school);
+    const sch = C().schools.find(x => x.id === S.school);
     if (sch) S.smarts = clamp(S.smarts + sch.smarts, 0, 100);
   }
 
+  /* Thanaweya exam at 18 */
   if (S.age === 18 && S.school && !S.uni && !S.degree) {
     const score = clamp(S.smarts + Math.random() * 20 - 10, 0, 100);
     S.thanaweyaScore = score;
     log(`Thanaweya amma result: ${score.toFixed(1)}%`);
   }
 
+  /* University progress */
   if (S.uni) {
     S.uni.year = (S.uni.year || 0) + 1;
     if (S.uni.year >= (S.uni.yearsTotal || 4)) {
@@ -158,6 +195,20 @@ function ageUp() {
     }
   }
 
+  /* Health decay after 50 */
+  if (S.age > 50) S.health = clamp(S.health - 1, 0, 100);
+}
+
+/* ---------- ADVANCE ONE YEAR (yearly mode) ---------- */
+function advanceYear() {
+  if (S.pending) return;
+
+  S.age++;
+  S.family.forEach(m => { if (m.alive) m.age++; });
+
+  engineYearTick();
+
+  /* Salary payment — ONLY in yearly mode (monthly handled by settlement) */
   if (S.job) {
     S.wealth += S.job.salary;
     S.job.years = (S.job.years || 0) + 1;
@@ -173,25 +224,25 @@ function ageUp() {
     }
   }
 
+  /* Base expenses — ONLY in yearly mode */
   if (S.age >= 18) {
     const c = C();
     if (S.housing === 'parents') {
-      const personal = Math.round((c.prices.phone || 0) * 0.5 + (c.prices.transport || 0) * 0.25);
+      const personal = Math.round(c.prices.phone * 0.5 + c.prices.transport * 0.25);
       S.wealth -= personal;
     } else {
-      let expenses = (c.prices.food || 0) + (c.prices.phone || 0) + (c.prices.transport || 0);
-      if (S.housing === 'rented') expenses += (c.prices.rent || 0);
+      let expenses = c.prices.food + c.prices.phone + c.prices.transport;
+      if (S.housing === 'rented') expenses += c.prices.rent;
       S.wealth -= expenses;
     }
   }
-
-  if (S.age > 50) S.health = clamp(S.health - 1, 0, 100);
 
   GameHooks.run('year', S);
 
   ['health', 'happiness', 'smarts', 'social'].forEach(k => { S[k] = clamp(S[k], 0, 100); });
 
-  const allEvents = [...(typeof GLOBAL_EVENTS !== 'undefined' ? GLOBAL_EVENTS : []), ...((C().events) || [])];
+  /* Random event firing */
+  const allEvents = [...GLOBAL_EVENTS, ...(C().events || [])];
   const eligible = allEvents.filter(e =>
     S.age >= e.minAge && S.age <= e.maxAge &&
     !S.flags['evt_' + e.id] &&
@@ -207,6 +258,34 @@ function ageUp() {
   save(); render();
 }
 
+/* ---------- ADVANCE ONE MONTH (monthly mode) ---------- */
+function advanceMonth() {
+  if (S.pending) return;
+
+  S.month = (S.month || 1) + 1;
+
+  if (S.month > 12) {
+    /* Year rollover */
+    S.month = 1;
+    S.age++;
+    S.family.forEach(m => { if (m.alive) m.age++; });
+    engineYearTick();
+    ['health', 'happiness', 'smarts', 'social'].forEach(k => { S[k] = clamp(S[k], 0, 100); });
+    GameHooks.run('year', S);
+  }
+
+  /* Fire month hook — ALWAYS, even at year rollover */
+  GameHooks.run('month', S, { month: S.month, isYearEnd: S.month === 1 });
+
+  save(); render();
+}
+
+/* ---------- THE SINGLE BUTTON HANDLER ---------- */
+function ageUp() {
+  if (!S) return;
+  if (isMonthly()) advanceMonth();
+  else advanceYear();
+}
 function chooseEvent(i) {
   const e = S.pending;
   if (!e || !e.choices[i]) return;
@@ -253,6 +332,12 @@ function render() {
   const b = document.getElementById('bottom');
   if (S.pending) b.innerHTML = `<button disabled>Choose an option above</button>`;
   else if (S.age >= 100) b.innerHTML = `<button onclick="reset()">Life complete — Start over</button>`;
+   else if (isMonthly()) {
+    const nextMonth = (currentMonth() % 12) + 1;
+    const nextMonthName = monthName(nextMonth);
+    const yearLabel = nextMonth === 1 ? ` (Age ${S.age + 1})` : '';
+    b.innerHTML = `<button onclick="ageUp()">Next Month → ${nextMonthName}${yearLabel}</button>`;
+  }
   else b.innerHTML = `<button onclick="ageUp()">Next Year → Age ${S.age + 1}</button>`;
   GameHooks.run('render', S);
 }
@@ -269,7 +354,7 @@ function header() {
   return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
       <div>
-        <div class="muted" style="font-size:.7rem;letter-spacing:.06em">AGE ${S.age} · ${gameYear()} · ${C().flag} ${C().name}</div>
+          <div class="muted" style="font-size:.7rem;letter-spacing:.06em">AGE ${S.age}${isMonthly() ? ' · ' + currentMonthName() : ''} · ${gameYear()} · ${C().flag} ${C().name}</div>
         <div style="font-size:1.15rem;font-weight:bold;margin-top:2px">${S.name} ${S.gender==='f'?'♀':'♂'}</div>
       </div>
       <div style="text-align:right">
@@ -388,6 +473,14 @@ window.COUNTRIES = COUNTRIES;</pre>
     <button class="pill ${START.familyTier === 'ultra' ? 'on' : ''}" style="padding:8px 4px;font-size:.72rem;letter-spacing:-0.5px" onclick="START.familyTier='ultra';renderStart()">Ultra-wealthy</button>
   </div>
 </div>
+    <div class="card">
+      <h3>Game pace</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+        <button class="pill ${START.pacing==='yearly'?'on':''}" onclick="START.pacing='yearly';renderStart()">📅 Yearly</button>
+        <button class="pill ${START.pacing==='monthly'?'on':''}" onclick="START.pacing='monthly';renderStart()">🗓 Monthly</button>
+      </div>
+      <p class="muted small" style="margin-top:6px">Yearly = 1 click per year. Monthly = 12 clicks per year, with seasonal events and monthly bills.</p>
+    </div>
     <div class="card">
       <h3>Parents</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px">
