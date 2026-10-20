@@ -503,7 +503,7 @@ function shopBuy(itemId, method, giftTo) {
   const extendedYears = warranty.years;
   const homeInfo = _shopAskHome(item);
 
-  S.shopping.inventory.push({
+  const newItem = {
     uid: 'i' + (S.uidN++),
     itemId: item.id,
     brand: item.brand,
@@ -512,7 +512,7 @@ function shopBuy(itemId, method, giftTo) {
     subcat: item.subcat,
     priceUSD: item.priceUSD,
     purchasePrice: grandTotal,
-    currentValue: basePrice,   /* warranty is not resellable */
+    currentValue: basePrice,
     purchaseYear: gameYear(),
     age: 0,
     life: item.life,
@@ -524,8 +524,20 @@ function shopBuy(itemId, method, giftTo) {
     extendedWarranty: extendedYears > 0,
     extendedWarrantyUntil: extendedYears > 0 ? gameYear() + warrantyYears + extendedYears : 0,
     homeId: homeInfo ? homeInfo.homeId : null,
-    homeName: homeInfo ? homeInfo.homeName : null
-  });
+    homeName: homeInfo ? homeInfo.homeName : null,
+    returnableUntil: gameYear() + 1
+  };
+  S.shopping.inventory.push(newItem);
+
+  /* Immediate home value/comfort update for furniture/appliances */
+  if (homeInfo && homeInfo.homeId && (item.cat === 'furniture' || item.cat === 'appliances')) {
+    const home = (S.ownedHomes || []).find(h => h.id === homeInfo.homeId);
+    if (home) {
+      home.furnitureValue = (home.furnitureValue || 0) + basePrice;
+      home.value = (home.value || 0) + basePrice;
+      home.shoppingComfort = (home.shoppingComfort || 0) + (item.happiness * 2);
+    }
+  }
 
   S.shopping.history.unshift({ year: gameYear(), action: 'bought', name: item.name, price: grandTotal });
   S.shopping.history = S.shopping.history.slice(0, 30);
@@ -537,6 +549,52 @@ function shopBuy(itemId, method, giftTo) {
   render();
 }
 window.shopBuy = shopBuy;
+/* ---------- Gift suggestions by recipient traits ---------- */
+function _suggestGiftFor(recipient) {
+  if (!recipient || !recipient.obj) return [];
+  const traitMap = {
+    generous: ['fashion', 'bag'],
+    romantic: ['fashion', 'accessory', 'scarf'],
+    ambitious: ['watch', 'laptop'],
+    modern: ['phone', 'audio'],
+    traditional: ['furniture', 'appliances'],
+    religious: ['furniture', 'scarf'],
+    frugal: ['appliances', 'furniture'],
+    adventurous: ['audio'],
+    homebody: ['furniture', 'tv'],
+    kind: ['fashion', 'scarf'],
+    grumpy: ['watch'],
+    moody: ['audio'],
+    pessimistic: ['furniture'],
+    jealous: ['bag', 'watch'],
+    mature: ['watch', 'furniture'],
+    funny: ['fashion', 'audio'],
+    calm: ['furniture'],
+    independent: ['phone', 'laptop']
+  };
+  const traits = (recipient.obj.traits || []);
+  const preferred = new Set();
+  traits.forEach(t => {
+    const cats = traitMap[t] || [];
+    cats.forEach(c => preferred.add(c));
+  });
+  if (preferred.size === 0) return [];
+
+  const year = gameYear();
+  const candidates = SHOP_ALL.filter(row => {
+    if (row[9] && year < row[9]) return false;
+    if (row[10] && year > row[10]) return false;
+    return preferred.has(row[2]) || preferred.has(row[3]);
+  });
+
+  return candidates.slice(0, 5).map(row => ({
+    id: row[0].toLowerCase().replace(/\W/g, '_') + '_' + row[1].toLowerCase().replace(/\W/g, '_'),
+    brand: row[0],
+    name: row[1],
+    cat: row[2],
+    price: Math.round(row[4] * shopMult(row[2]) * (C().rate || 1))
+  }));
+}
 
 /* ---------- GIFT ACTION ---------- */
 window.shopGift = function(itemId) {
@@ -545,8 +603,14 @@ window.shopGift = function(itemId) {
   const item = all.find(function(i) { return i.id === itemId; });
   if (!item) { log('Item not found.'); return; }
 
-  const recipient = _shopPickRecipient();
+    const recipient = _shopPickRecipient();
   if (!recipient) { render(); return; }
+
+  const suggestions = _suggestGiftFor(recipient);
+  if (suggestions.length > 0) {
+    log('💡 ' + recipient.name + ' might love: ' +
+      suggestions.slice(0, 3).map(s => s.brand + ' ' + s.name + ' (' + money(s.price) + ')').join(' · '));
+  }
 
   const payMethod = prompt(
     'Gift "' + item.name + '" to ' + recipient.name + ' (' + money(item.priceLocal) + ')?\n\n' +
@@ -566,8 +630,19 @@ window.shopGift = function(itemId) {
 function shopSell(uid) {
   const idx = S.shopping.inventory.findIndex(function(i) { return i.uid === uid; });
   if (idx < 0) return;
-  const item = S.shopping.inventory[idx];
+   const item = S.shopping.inventory[idx];
   const price = item.currentValue;
+
+  /* Remove from home value if furniture/appliance */
+  if (item.homeId && (item.cat === 'furniture' || item.cat === 'appliances')) {
+    const home = (S.ownedHomes || []).find(h => h.id === item.homeId);
+    if (home) {
+      home.furnitureValue = Math.max(0, (home.furnitureValue || 0) - item.currentValue);
+      home.value = Math.max(home.baseValue || 0, (home.value || 0) - item.currentValue);
+      home.shoppingComfort = Math.max(0, (home.shoppingComfort || 0) - (item.happiness * 2));
+    }
+  }
+
   S.wealth += price;
   S.shopping.inventory.splice(idx, 1);
   S.shopping.history.unshift({ year: gameYear(), action: 'sold', name: item.name, price: price });
@@ -575,7 +650,33 @@ function shopSell(uid) {
   render();
 }
 window.shopSell = shopSell;
+/* ---------- RETURN ---------- */
+window.shopReturn = function(uid) {
+  const item = S.shopping.inventory.find(i => i.uid === uid);
+  if (!item) return;
+  if (!item.returnableUntil || item.returnableUntil < gameYear()) {
+    log('❌ Return window expired. Return only available for 1 game year after purchase.');
+    render(); return;
+  }
+  const refund = Math.round(item.purchasePrice * 0.95); /* 5% restocking fee */
+  if (!confirm('Return ' + item.name + ' for ' + money(refund) + ' (5% restocking fee)?')) return;
 
+  /* Remove from home value if furniture/appliance */
+  if (item.homeId && (item.cat === 'furniture' || item.cat === 'appliances')) {
+    const home = (S.ownedHomes || []).find(h => h.id === item.homeId);
+    if (home) {
+      home.furnitureValue = Math.max(0, (home.furnitureValue || 0) - item.currentValue);
+      home.value = Math.max(home.baseValue || 0, (home.value || 0) - item.currentValue);
+      home.shoppingComfort = Math.max(0, (home.shoppingComfort || 0) - (item.happiness * 2));
+    }
+  }
+
+  S.wealth += refund;
+  S.shopping.inventory = S.shopping.inventory.filter(i => i.uid !== uid);
+  S.shopping.history.unshift({ year: gameYear(), action: 'returned', name: item.name, price: refund });
+  log('↩️ Returned ' + item.name + ' for ' + money(refund) + '.');
+  render();
+};
 /* ---------- REPAIR ---------- */
 function shopRepair(uid) {
   const item = S.shopping.inventory.find(function(i) { return i.uid === uid; });
@@ -829,8 +930,11 @@ function shopRenderMine() {
         '</div></div>' +
         '<div style="text-align:right"><div style="color:#22d3ee;font-weight:bold">' + money(item.currentValue) + '</div>' +
         '<div class="muted small">resale</div></div></div>' +
-        '<div style="display:flex;gap:4px;margin-top:6px">' +
+              '<div style="display:flex;gap:4px;margin-top:6px">' +
         (item.broken ? _repairButton(item) : '') +
+        (item.returnableUntil && item.returnableUntil >= gameYear()
+          ? '<button class="opt" style="flex:1;padding:4px;font-size:.7rem;border-color:#fbbf24;color:#fbbf24" onclick="shopReturn(\'' + item.uid + '\')">↩ Return</button>'
+          : '') +
         '<button class="opt" style="flex:1;padding:4px;font-size:.7rem" onclick="shopSell(\'' + item.uid + '\')">💰 Sell ' + money(item.currentValue) + '</button>' +
         '</div></div>';
     });
@@ -875,7 +979,38 @@ function shopRenderGifts() {
     byRecipient[g.to].spent += g.price || 0;
     byRecipient[g.to].items.push(g);
   });
+  let html = '';
 
+  /* Gift suggestions by trait */
+  const allRecipients = [];
+  if (S.marriage && S.marriage.partner && S.marriage.partner.alive !== false) {
+    allRecipients.push({ name: S.marriage.partner.name, type: 'Spouse', obj: S.marriage.partner });
+  }
+  (S.childrenList || []).forEach(c => allRecipients.push({ name: c.name, type: 'Child', obj: c }));
+  (S.family || []).forEach(m => {
+    if (m.alive === false) return;
+    if (m.role === 'Mother' || m.role === 'Father') allRecipients.push({ name: m.name, type: 'Parent', obj: m });
+    else if (m.isSibling) allRecipients.push({ name: m.name, type: 'Sibling', obj: m });
+  });
+
+  if (allRecipients.length > 0) {
+    html += '<div class="card" style="border-color:#22d3ee"><h3 style="color:#22d3ee">💡 Gift Suggestions</h3>' +
+      '<p class="muted small">Based on each person\'s traits.</p>';
+    allRecipients.forEach(r => {
+      const suggestions = _suggestGiftFor(r);
+      if (suggestions.length === 0) return;
+      const traits = (r.obj.traits || []).slice(0, 2).map(t => t.replace(/_/g, ' ')).join(', ');
+      html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
+        '<div style="font-weight:700">' + r.name + ' <span class="muted small">(' + r.type + (traits ? ' · ' + traits : '') + ')</span></div>';
+      suggestions.slice(0, 3).forEach(s => {
+        html += '<div class="muted small" style="padding-left:8px">· ' + s.brand + ' ' + s.name + ' — ' + money(s.price) + '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🎁 Gift Registry</h3>' +
   let html = '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🎁 Gift Registry</h3>' +
     '<div class="row"><span>Total gifts given</span><b>' + gifts.length + '</b></div>' +
     '<div class="row"><span>Total spent on gifts</span><b class="bad">' + money(totalSpent) + '</b></div>' +
