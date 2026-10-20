@@ -58,7 +58,6 @@ function medEGP(n) { return Math.round((n || 0) * medRate()); }
 function medSetTab(tab) { S.medical.tab = tab; render(); }
 window.medSetTab = medSetTab;
 
-function medInsurance()
 /* ============================================================
    INSURANCE SYNC — career health benefit ↔ medical insurance
    ============================================================ */
@@ -110,7 +109,8 @@ function medResolveConditionOptions(condId) {
   const tests = MED_TESTS.filter(function(t) { return t.detects.indexOf(condId) >= 0; });
   return { cond: cond, doctors: doctors, meds: meds, surgeries: surgeries, tests: tests };
 }
-{
+
+function medInsurance() {
   return MED_INSURANCE.find(function(i) { return i.id === S.medical.insurance; }) || MED_INSURANCE[0];
 }
 
@@ -169,7 +169,7 @@ function medHasMedication(id) {
 /* ---------- MAIN VIEW ---------- */
 function medicalView() {
   ensureMedicalState();
-    medSyncInsuranceFromJob();
+  medSyncInsuranceFromJob();
   if (!S) return '';
 
   const tabs = [
@@ -865,7 +865,7 @@ GameHooks.on('year', function() {
   if (!S) return;
   const year = gameYear();
   const m = S.medical;
-    medSyncInsuranceFromJob();
+  medSyncInsuranceFromJob();
 
   /* Charge insurance premium */
   const ins = medInsurance();
