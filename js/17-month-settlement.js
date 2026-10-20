@@ -209,7 +209,7 @@ function monthlyApplyFinance(c, monthStr) {
   }
 }
   /* Real estate: HOA + mortgage + rent (monthly slice) */
-  if (Array.isArray(S.ownedHomes) && S.ownedHomes.length > 0) {
+  if (S && Array.isArray(S.ownedHomes) && S.ownedHomes.length > 0) {
     let reCash = 0;
     S.ownedHomes.forEach(function(h) {
       /* HOA */
@@ -227,7 +227,7 @@ function monthlyApplyFinance(c, monthStr) {
     }
   }
   /* Real estate mortgages (annualPayment / 12 per contract) */
-  if (Array.isArray(S.realestateContracts) && S.realestateContracts.length > 0) {
+  if (S && Array.isArray(S.realestateContracts) && S.realestateContracts.length > 0) {
     let mortMonthly = 0;
     S.realestateContracts.forEach(function(c) {
       if (c.yearsLeft <= 0) return;
