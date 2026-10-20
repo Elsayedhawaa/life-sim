@@ -115,6 +115,7 @@ GameHooks.on('month', function() {
 
   /* ---------- 6. CAR LOAN MONTHLY (if not already in S.bank.loans) ---------- */
   /* Car loans live in S.bank.loans with loanType 'car' — already handled in step 3 */
+        
     /* ---------- 7. MONTHLY BURDEN: OTHER SYSTEMS ---------- */
   /* Tax */
   if (S.job && S.job.salary && typeof carComputeTax === 'function') {
