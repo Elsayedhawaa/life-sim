@@ -208,7 +208,49 @@ function monthlyApplyFinance(c, monthStr) {
     }
   }
 }
-
+  /* Real estate: HOA + mortgage + rent (monthly slice) */
+  if (Array.isArray(S.ownedHomes) && S.ownedHomes.length > 0) {
+    let reCash = 0;
+    S.ownedHomes.forEach(function(h) {
+      /* HOA */
+      const hoaAnnual = Math.round((h.value || 0) * 0.005);
+      reCash -= Math.round(hoaAnnual / 12);
+      /* Rent income */
+      if (h.status === 'rented' && h.monthlyRent) {
+        reCash += Math.round(h.monthlyRent);
+      }
+    });
+    if (reCash !== 0) {
+      S.wealth += reCash;
+      if (reCash < 0) log('🏠 Property HOA: −' + money(-reCash));
+      else if (reCash > 0) log('🏠 Rental income: +' + money(reCash));
+    }
+  }
+  /* Real estate mortgages (annualPayment / 12 per contract) */
+  if (Array.isArray(S.realestateContracts) && S.realestateContracts.length > 0) {
+    let mortMonthly = 0;
+    S.realestateContracts.forEach(function(c) {
+      if (c.yearsLeft <= 0) return;
+      const slice = Math.round((c.annualPayment || 0) / 12);
+      if (S.wealth >= slice) {
+        S.wealth -= slice;
+        c.remaining = Math.max(0, (c.remaining || 0) - slice);
+        c.missedPayments = 0;
+      } else {
+        c.missedPayments = (c.missedPayments || 0) + 1;
+        c.remaining = Math.round((c.remaining || 0) * 1.01);
+        log('⚠️ Missed mortgage payment on ' + c.name);
+      }
+      mortMonthly += slice;
+    });
+    if (mortMonthly > 0) log('🏠 Mortgage payments: −' + money(mortMonthly));
+    /* Reduce yearsLeft on January rollover */
+    if (currentMonth() === 1) {
+      S.realestateContracts.forEach(function(c) {
+        if (c.yearsLeft > 0) c.yearsLeft--;
+      });
+    }
+  }
 /* ---------- 2. SEASONAL ---------- */
 function monthlyApplySeasonal(c, month) {
 
