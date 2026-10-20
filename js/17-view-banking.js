@@ -1259,36 +1259,41 @@ function bankYearTick() {
     return true;
   });
 
-  b.loans.forEach(l => {
-    if (l.remaining <= 0) return;
-    const annualPayment = l.monthlyPayment * 12;
-    if (S.wealth >= annualPayment) {
-      S.wealth -= annualPayment;
-      const interest = Math.round(l.remaining * l.rate);
-      const principalPaid = annualPayment - interest;
-      l.remaining = Math.max(0, l.remaining - principalPaid);
-      l.monthsLeft = Math.max(0, l.monthsLeft - 12);
-    } else {
-      l.missedPayments = (l.missedPayments || 0) + 1;
-      l.remaining = Math.round(l.remaining * 1.05);
-      bankScoreChange(-50, 'Missed payment on ' + l.name);
-    }
-  });
-  b.loans = b.loans.filter(l => l.remaining > 0 && l.monthsLeft > 0);
+   // 4. Loans: annual payment (SKIPPED in monthly mode — settlement handles it)
+  if (!(typeof isMonthly === 'function' && isMonthly())) {
+    b.loans.forEach(l => {
+      if (l.remaining <= 0) return;
+      const annualPayment = l.monthlyPayment * 12;
+      if (S.wealth >= annualPayment) {
+        S.wealth -= annualPayment;
+        const interest = Math.round(l.remaining * l.rate);
+        const principalPaid = annualPayment - interest;
+        l.remaining = Math.max(0, l.remaining - principalPaid);
+        l.monthsLeft = Math.max(0, l.monthsLeft - 12);
+      } else {
+        l.missedPayments = (l.missedPayments || 0) + 1;
+        l.remaining = Math.round(l.remaining * 1.05);
+        bankScoreChange(-50, 'Missed payment on ' + l.name);
+      }
+    });
+    b.loans = b.loans.filter(l => l.remaining > 0 && l.monthsLeft > 0);
+  }
 
-  b.creditCards.forEach(c => {
-    if (c.balance <= 0) return;
-    const min = BankMath.cardMinPayment(c, c.balance);
-    if (c.autoPay && S.wealth >= min) {
-      S.wealth -= min;
-      c.balance -= min;
-      c.lastPaymentYear = gameYear();
-    } else {
-      c.balance = Math.round(c.balance * (1 + c.apr));
-      if (!c.autoPay) bankScoreChange(-20, 'Card interest accrued: ' + c.name);
-    }
-  });
-
+    // 5. Credit cards: auto-pay or accrue interest (SKIPPED in monthly — settlement handles it)
+  if (!(typeof isMonthly === 'function' && isMonthly())) {
+    b.creditCards.forEach(c => {
+      if (c.balance <= 0) return;
+      const min = BankMath.cardMinPayment(c, c.balance);
+      if (c.autoPay && S.wealth >= min) {
+        S.wealth -= min;
+        c.balance -= min;
+        c.lastPaymentYear = gameYear();
+      } else {
+        c.balance = Math.round(c.balance * (1 + c.apr));
+        if (!c.autoPay) bankScoreChange(-20, 'Card interest accrued: ' + c.name);
+      }
+    });
+  }
   b.investments.forEach(inv => {
     if (!inv.volatility && inv.expectedReturn) {
       inv.currentValue = Math.round(inv.currentValue * (1 + inv.expectedReturn));
