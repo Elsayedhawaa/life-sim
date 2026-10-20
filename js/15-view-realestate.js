@@ -359,40 +359,181 @@ window.evictTenant = function(homeId) {
   log(`Evicted tenant from ${h.name}. Paid ${money(legalFees)} in legal fees.`);
   render();
 }
+/* ---------- Current Home Info & Card ---------- */
+function getCurrentHomeInfo() {
+  if (S.housing === 'parents') {
+    const tier = S.familyTier || 'middle';
+    const tierInfo = {
+      poor:          { area: 55,  rooms: 2,  condition: 60, location: 'Modest family flat' },
+      'lower-mid':   { area: 85,  rooms: 3,  condition: 70, location: 'Family flat' },
+      middle:        { area: 130, rooms: 4,  condition: 80, location: 'Family apartment' },
+      'upper-mid':   { area: 160, rooms: 5,  condition: 85, location: 'Family compound flat' },
+      wealthy:       { area: 320, rooms: 8,  condition: 90, location: 'Family villa' },
+      ultra:         { area: 700, rooms: 15, condition: 95, location: 'Family mansion' }
+    }[tier] || { area: 130, rooms: 4, condition: 80, location: 'Family apartment' };
+    return {
+      type: 'parents',
+      name: "Parents' Home",
+      description: tierInfo.location + ' · ' + C().name,
+      area: tierInfo.area,
+      rooms: tierInfo.rooms,
+      condition: tierInfo.condition,
+      value: 0,
+      homeComfort: 0,
+      shoppingComfort: 0,
+      canManage: false,
+      note: "You live with your parents. They cover utilities and groceries. Buy furniture for your room from the Shopping tab, or save for your own place."
+    };
+  }
+  if (S.housing === 'rented') {
+    const rent = C().prices.rent || 0;
+    return {
+      type: 'rented',
+      name: 'Rented Apartment',
+      description: C().name + ' · ' + money(Math.round(rent / 12)) + '/month',
+      area: 100,
+      rooms: 3,
+      condition: 75,
+      value: 0,
+      rentYearly: rent,
+      homeComfort: 0,
+      shoppingComfort: 0,
+      canManage: false,
+      note: "You can't structurally modify a rental. Buy furniture from the Shopping tab to decorate. Move out or buy your own property for full management."
+    };
+  }
+  if (S.housing === 'owned') {
+    const h = S.ownedHomes.find(x => x.status === 'occupied');
+    if (h) {
+      return {
+        type: 'owned',
+        name: h.name,
+        description: (h.city || '') + ' · ' + (h.area || 0) + ' m² · ' + (h.location || ''),
+        area: h.area,
+        rooms: h.rooms || Math.max(2, Math.floor((h.area || 100) / 30)),
+        condition: h.condition,
+        value: h.value,
+        homeComfort: h.homeComfort || 0,
+        shoppingComfort: h.shoppingComfort || 0,
+        furnitureValue: h.furnitureValue || 0,
+        canManage: true,
+        home: h
+      };
+    }
+  }
+  return null;
+}
+
+function renderCurrentHomeCard(info) {
+  const condColor = info.condition > 70 ? '#34d399' : info.condition > 40 ? '#fbbf24' : '#fb7185';
+  const typeLabels = {
+    parents: { icon: '👨‍👩‍👧', text: 'Living with parents' },
+    rented:  { icon: '🔑', text: 'Renting' },
+    owned:   { icon: '🏠', text: 'Owned home' }
+  };
+  const tl = typeLabels[info.type] || { icon: '📍', text: 'Home' };
+
+  let html = '<div class="card" style="border-color:#22d3ee"><h3 style="color:#22d3ee">📍 Your Current Home</h3>' +
+    '<div class="muted small" style="margin-bottom:8px">' + tl.icon + ' ' + tl.text + '</div>' +
+    '<div style="font-weight:700;font-size:1.05rem">' + info.name + '</div>' +
+    '<div class="muted small" style="margin-bottom:8px">' + info.description + '</div>' +
+    '<div class="row"><span>Area</span><b>' + info.area + ' m²</b></div>' +
+    '<div class="row"><span>Rooms</span><b>' + info.rooms + '</b></div>' +
+    '<div class="row"><span>Condition</span><b style="color:' + condColor + '">' + info.condition + '%</b></div>';
+
+  if (info.value > 0) {
+    html += '<div class="row"><span>Market value</span><b class="mono">' + money(info.value) + '</b></div>';
+  }
+  if (info.rentYearly > 0) {
+    html += '<div class="row"><span>Rent/year</span><b class="mono bad">-' + money(info.rentYearly) + '</b></div>';
+  }
+  if (info.homeComfort > 0 || info.shoppingComfort > 0) {
+    const total = (info.homeComfort || 0) + (info.shoppingComfort || 0);
+    html += '<div class="row"><span>Home comfort</span><b class="good">+' + total + '</b></div>';
+  }
+
+  /* Furniture bought from shopping assigned to this home */
+  const homeId = info.type === 'parents' ? 'parents' : info.type === 'rented' ? 'rented' : (info.home ? info.home.id : null);
+  if (homeId) {
+    const furnItems = (S.shopping && Array.isArray(S.shopping.inventory))
+      ? S.shopping.inventory.filter(i => i.homeId === homeId && (i.cat === 'furniture' || i.cat === 'appliances'))
+      : [];
+    if (furnItems.length > 0) {
+      const totalFurnValue = furnItems.reduce((s, i) => s + (i.currentValue || 0), 0);
+      html += '<div style="margin-top:10px;padding:8px;background:#0f0f1a;border-radius:6px">' +
+        '<b style="font-size:.78rem;color:#8b5cf6">🛋 Furniture you added (' + furnItems.length + ' · ' + money(totalFurnValue) + ')</b>';
+      furnItems.slice(0, 6).forEach(i => {
+        html += '<div class="muted small" style="margin-top:2px">· ' + i.brand + ' ' + i.name + ' · ' + money(i.currentValue) + '</div>';
+      });
+      if (furnItems.length > 6) html += '<div class="muted small" style="margin-top:2px">…and ' + (furnItems.length - 6) + ' more</div>';
+      html += '</div>';
+    }
+  }
+
+  if (info.note) {
+    html += '<p class="muted small" style="margin-top:8px;padding:8px;background:#0f0f1a;border-radius:6px">' + info.note + '</p>';
+  }
+
+  html += '</div>';
+  return html;
+}
 
 function mineSection() {
-  if (!S.ownedHomes.length) return `<div class="card"><h3>No properties owned</h3></div>`;
-  
-  return `<div class="card">
-    <h3>Your Real Estate Portfolio</h3>
-    ${S.ownedHomes.map(h => {
-      const contract = S.realestateContracts.find(c => c.homeId === h.id);
-      let statusHtml = '';
-      if (h.status === 'occupied') statusHtml = '🏠 <b>You live here</b>';
-      else if (h.status === 'listed') statusHtml = `⏳ <b>Listed: ${money(h.listedRent)}/mo</b> (Vacant${h.monthsVacant}mo)`;
-      else if (h.status === 'rented' && h.tenant) {
-        statusHtml = `✅ <b>Rented: ${money(h.monthlyRent)}/mo</b><br>
-        <span class="small muted">Tenant: ${h.tenant.name} (${h.tenant.reliability} credit score)</span>`;
-      } else statusHtml = '<b>Vacant</b>';
-      
-      const netEquity = h.value - (contract ? contract.remaining : 0);
-      
-      return `<div style="padding:15px 0;border-bottom:1px solid #1a1a2a">
-        <b>${h.name}</b> <span class="muted small">${h.area}m²</span>
-        <div class="row"><span>Market Value</span><b class="mono">${h.value.toLocaleString()}</b></div>${contract ? `<div class="row"><span>Bank Loan</span><b class="mono bad">-${contract.remaining.toLocaleString()} (${contract.yearsLeft}y)</b></div>` : ''}
-        <div class="row"><span>Net Equity</span><b class="mono good">${netEquity.toLocaleString()}</b></div>
-        <div class="row" style="align-items:flex-start"><span>Status</span><div style="text-align:right">${statusHtml}</div></div>
-        
-        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:10px">
-          ${h.status !== 'occupied' && h.status !== 'rented' ? `<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="moveIntoHome('${h.id}')">Move in</button>` : ''}
-          ${h.status === 'vacant' ? `<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="setHomeForRent('${h.id}')">List for Rent</button>` : ''}
-          ${h.status === 'listed' ? `<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="stopRenting('${h.id}')">Unlist</button>` : ''}
-          ${h.status === 'rented' ? `<button class="pill" style="padding:4px 8px;font-size:.72rem;color:#fb7185;border-color:#fb7185" onclick="evictTenant('${h.id}')">Evict Tenant</button>` : ''}
-          <button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="sellHome('${h.id}')">Sell Property</button>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
+  const info = getCurrentHomeInfo();
+  let html = '';
+
+  if (info) {
+    html += renderCurrentHomeCard(info);
+  }
+
+  if (!S.ownedHomes.length) {
+    html += '<div class="card"><h3>🏘 Your Property Portfolio</h3>' +
+      '<p class="muted small">You don\'t own any properties yet. Browse <b>Compounds</b> or <b>Local</b> tabs to buy your first home.</p>' +
+      (info && info.type !== 'owned' ? '<p class="muted small" style="margin-top:6px">Tip: Once you buy a place, it will show here. Use the "Move in" button to live in it.</p>' : '') +
+      '</div>';
+    return html;
+  }
+
+  html += '<div class="card"><h3>🏘 Your Property Portfolio (' + S.ownedHomes.length + ')</h3></div>';
+
+  html += S.ownedHomes.map(h => {
+    const contract = S.realestateContracts.find(c => c.homeId === h.id);
+    let statusHtml = '';
+    if (h.status === 'occupied') statusHtml = '🏠 <b>You live here</b>';
+    else if (h.status === 'listed') statusHtml = '⏳ <b>Listed: ' + money(h.listedRent) + '/mo</b> (Vacant ' + h.monthsVacant + 'mo)';
+    else if (h.status === 'rented' && h.tenant) {
+      statusHtml = '✅ <b>Rented: ' + money(h.monthlyRent) + '/mo</b><br>' +
+        '<span class="small muted">Tenant: ' + h.tenant.name + '</span>';
+    } else statusHtml = '<b>Vacant</b>';
+
+    const netEquity = h.value - (contract ? contract.remaining : 0);
+    const furnItems = (S.shopping && Array.isArray(S.shopping.inventory))
+      ? S.shopping.inventory.filter(i => i.homeId === h.id && (i.cat === 'furniture' || i.cat === 'appliances'))
+      : [];
+    const furnValue = furnItems.reduce((s, i) => s + (i.currentValue || 0), 0);
+
+    return '<div class="card" style="padding:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+      '<div><b style="font-size:1rem">' + h.name + '</b> <span class="muted small">' + h.area + 'm² · ' + (h.city || '') + '</span></div>' +
+      (h.status === 'occupied' ? '<span style="color:#34d399;font-size:1.2rem">🏠</span>' : '') +
+      '</div>' +
+      '<div class="row"><span>Market value</span><b class="mono">' + money(h.value) + '</b></div>' +
+      (furnValue > 0 ? '<div class="row"><span>Incl. furniture</span><b class="mono">' + money(furnValue) + '</b></div>' : '') +
+      (contract ? '<div class="row"><span>Bank loan</span><b class="mono bad">-' + money(contract.remaining) + ' (' + contract.yearsLeft + 'y)</b></div>' : '') +
+      '<div class="row"><span>Net equity</span><b class="mono good">' + money(netEquity) + '</b></div>' +
+      '<div class="row"><span>Condition</span><b>' + (h.condition || 100) + '%</b></div>' +
+      '<div class="row"><span>Furniture items</span><b>' + furnItems.length + '</b></div>' +
+      '<div class="row" style="align-items:flex-start"><span>Status</span><div style="text-align:right">' + statusHtml + '</div></div>' +
+      '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:10px">' +
+      (h.status !== 'occupied' && h.status !== 'rented' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="moveIntoHome(\'' + h.id + '\')">Move in</button>' : '') +
+      (h.status === 'vacant' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="setHomeForRent(\'' + h.id + '\')">List for Rent</button>' : '') +
+      (h.status === 'listed' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="stopRenting(\'' + h.id + '\')">Unlist</button>' : '') +
+      (h.status === 'rented' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem;color:#fb7185;border-color:#fb7185" onclick="evictTenant(\'' + h.id + '\')">Evict</button>' : '') +
+      '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="sellHome(\'' + h.id + '\')">Sell</button>' +
+      '</div></div>';
+  }).join('');
+
+  return html;
 }
 
 /* ---------- Selling with Agent Fees ---------- */
@@ -447,9 +588,22 @@ function realEstateYear() {
   // 2. Process Homes
   S.ownedHomes.forEach(h => {
     // Value adjustments (Base appreciation * trend)
-    h.baseValue = Math.round(h.baseValue * (1 + baseAppreciation));
-    h.value = Math.round(h.baseValue * S.marketTrend.multiplier);
+        h.baseValue = Math.round(h.baseValue * (1 + baseAppreciation));
+
+    /* Furniture contribution from shopping */
+    const _furnItems = (S.shopping && Array.isArray(S.shopping.inventory))
+      ? S.shopping.inventory.filter(i => i.homeId === h.id && (i.cat === 'furniture' || i.cat === 'appliances'))
+      : [];
+    h.furnitureValue = _furnItems.reduce((s, i) => s + (i.currentValue || 0), 0);
+    h.shoppingComfort = _furnItems.reduce((s, i) => s + ((i.happiness || 0) * 2), 0);
+
+    h.value = Math.round(h.baseValue * S.marketTrend.multiplier) + h.furnitureValue;
     h.condition = Math.max(10, h.condition - Math.floor(Math.random() * 4) - 1); // Degradation
+
+    /* Shopping furniture comfort for occupied homes */
+    if (h.status === 'occupied' && h.shoppingComfort > 0) {
+      fx({ happiness: Math.min(10, h.shoppingComfort) });
+    }
 
     // Mandatory HOA / Maintenance
     const hoa = Math.round(h.value * 0.005);
@@ -534,6 +688,6 @@ GameHooks.on('year', realEstateYear);
 registerRealEstateTab({ id: 'compounds', label: 'Compounds', order: 0, requiresHome: false, render: compoundsSection });
 registerRealEstateTab({ id: 'local', label: 'Local', order: 1, requiresHome: false, render: localSection });
 registerRealEstateTab({ id: 'lands', label: 'Lands & Build', order: 2, requiresHome: false, render: landsSection });
-registerRealEstateTab({ id: 'mine', label: 'Portfolio', order: 3, requiresHome: false, render: mineSection });
+registerRealEstateTab({ id: 'mine', label: 'My Home & Portfolio', order: 3, requiresHome: false, render: mineSection });
 
 GameHooks.registerTab({ id: 'realestate', label: '🏠 Real Estate', order: 5, view: realEstateView });
