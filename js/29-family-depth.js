@@ -128,7 +128,9 @@ function _fdRollWantFor(relation) {
     bondFulfill: tpl.bondFulfill,
     bondIgnore: tpl.bondIgnore,
     createdYear: gameYear(),
+    createdAbsMonth: (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1),
     expiresYear: gameYear() + 2,
+    expiresAbsMonth: (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1) + 24,
     status: 'active'
   };
 }
@@ -357,10 +359,13 @@ GameHooks.on('year', function() {
     }
   });
 
-  /* ============ EXPIRE WANTS ============ */
+   /* ============ EXPIRE WANTS ============ */
+  const currentAbs = (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1);
   S.familyWants.forEach(function(w) {
     if (w.status !== 'active') return;
-    if (gameYear() > w.expiresYear) {
+    /* Use abs month if present, else fall back to year comparison */
+    const expired = w.expiresAbsMonth ? (currentAbs >= w.expiresAbsMonth) : (gameYear() > w.expiresYear);
+    if (expired) {
       w.status = 'expired';
       const rel = _fdAllRelations().find(function(r) { return r.name === w.relationName; });
       if (rel && rel.obj && typeof rel.obj.bond === 'number') {
@@ -474,15 +479,22 @@ window.familyDepthRenderWantsPanel = function() {
     return '<div class="card"><h3>💭 Wants</h3><p class="muted small">No outstanding wants right now.</p></div>';
   }
 
-  active.forEach(function(w) {
+   active.forEach(function(w) {
     const cost = Math.round(w.costEGP * _fdRate());
-    const expiringIn = Math.max(0, w.expiresYear - gameYear());
+    const currentAbs = (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1);
+    let expiringLabel;
+    if (w.expiresAbsMonth && isMonthly()) {
+      const monthsLeft = Math.max(0, w.expiresAbsMonth - currentAbs);
+      expiringLabel = monthsLeft + ' month' + (monthsLeft !== 1 ? 's' : '');
+    } else {
+      const yearsLeft = Math.max(0, w.expiresYear - gameYear());
+      expiringLabel = yearsLeft + 'y';
+    }
     html += '<div class="card" style="padding:10px">' +
       '<div style="font-weight:700">' + w.relationName + ' <span class="muted small">(' + w.relationKind + ')</span></div>' +
       '<div class="muted small" style="margin-top:2px">Wants ' + w.label + '</div>' +
       '<div class="row" style="margin-top:4px"><span>Cost</span><b class="mono">' + (cost > 0 ? money(cost) : 'Free') + '</b></div>' +
-      '<div class="muted small">Bond +' + w.bondFulfill + ' if fulfilled · ' + w.bondIgnore + ' if ignored · expires in ' + expiringIn + 'y</div>' +
-      '<div style="display:flex;gap:6px;margin-top:8px">' +
+      '<div class="muted small">Bond +' + w.bondFulfill + ' if fulfilled · ' + w.bondIgnore + ' if ignored · expires in ' + expiringLabel + '</div>' +      '<div style="display:flex;gap:6px;margin-top:8px">' +
       '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;background:' + (S.wealth >= cost ? '#34d399' : '#25253a') + ';color:' + (S.wealth >= cost ? '#000' : '#666') + ';font-weight:700" ' + (S.wealth >= cost ? '' : 'disabled') + ' onclick="familyFulfillWant(\'' + w.id + '\')">Fulfill</button>' +
       '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;border-color:#fb7185;color:#fb7185" onclick="familyIgnoreWant(\'' + w.id + '\')">Ignore</button>' +
       '</div></div>';
@@ -505,5 +517,29 @@ window.familyDepthRenderMoveOutRefusal = function() {
     '<button class="opt" style="text-align:center;font-size:.78rem" onclick="familyCancelMoveOut()">← Stay for now</button>' +
     '</div></div>';
 };
-
+/* Monthly expiry check for monthly pace */
+GameHooks.on('month', function() {
+  ensureFamilyDepthState();
+  if (!S || !isMonthly()) return;
+  const currentAbs = (gameYear() - 2001) * 12 + currentMonth();
+  S.familyWants.forEach(function(w) {
+    if (w.status !== 'active') return;
+    if (!w.expiresAbsMonth) return;
+    if (currentAbs >= w.expiresAbsMonth) {
+      w.status = 'expired';
+      const rel = _fdAllRelations().find(function(r) { return r.name === w.relationName; });
+      if (rel && rel.obj && typeof rel.obj.bond === 'number') {
+        rel.obj.bond = Math.max(0, rel.obj.bond + w.bondIgnore);
+      }
+      log('⌛ ' + w.relationName + "'s wish for " + w.label + " expired.");
+      emitSignal('wantExpired', { want: w });
+    }
+  });
+  /* Also expire self-want */
+  if (S.selfWant && S.selfWant.expiresAbsMonth && currentAbs >= S.selfWant.expiresAbsMonth) {
+    fx({ happiness: S.selfWant.happyIgnore });
+    log('😔 You let go of the wish for ' + S.selfWant.label + '.');
+    S.selfWant = null;
+  }
+});
 console.log('[World Life] 29-family-depth.js loaded');
