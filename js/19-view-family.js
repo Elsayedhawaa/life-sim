@@ -1201,38 +1201,25 @@ function familyCall(memberId) {
   render();
 }
 
-function familyVisit(memberId) {
+ffunction familyVisit(memberId) {
   ensureFamilyState();
   const m = familyById(memberId);
   if (!m || m.alive === false) return;
 
-  const memberCountry = m.country || S.homeCountry || S.country;
-
-  if (memberCountry !== S.country) {
-    /* Player is abroad — must travel to visit */
-    const fromName = (COUNTRIES[S.country] && COUNTRIES[S.country].name) || S.country;
-    const toName = (COUNTRIES[memberCountry] && COUNTRIES[memberCountry].name) || memberCountry;
-    const flightUSD = (typeof RELOCATION_COSTS !== 'undefined' && RELOCATION_COSTS[memberCountry] && RELOCATION_COSTS[memberCountry].flight) || 500;
-    const flightLocal = Math.round(flightUSD * (C().rate || 1));
-
-    if (!confirm(m.name + ' is in ' + toName + '.\n\nYou are in ' + fromName + '.\n\nA round-trip flight costs approximately ' + money(flightLocal) + '.\n\nBook a flight and visit?')) return;
-
-    if (S.wealth < flightLocal) {
-      log('❌ Not enough cash for flights (' + money(flightLocal) + ').');
-      render(); return;
+  /* If player is abroad, "visiting" requires travel */
+  const isAbroad = S.homeCountry && S.country !== S.homeCountry;
+  if (isAbroad) {
+    const homeCountryName = COUNTRIES[S.homeCountry] ? COUNTRIES[S.homeCountry].name : S.homeCountry;
+    if (confirm('You live in ' + (C().name || S.country) + '.\nVisiting ' + m.name + ' in ' + homeCountryName + ' requires booking a trip.\n\nOpen Vacations to plan your visit?')) {
+      if (typeof vacSetTab === 'function' && S.vacation) {
+        S.vacation.tab = 'destinations';
+        if (typeof switchTab === 'function') switchTab('vacations');
+        else render();
+      } else render();
     }
-
-    S.wealth -= flightLocal;
-    fx({ happiness: 12, health: 2 });
-    familyMarkContact(m);
-    familyAddBond(m, FAMILY_BOND_BONUSES.visit);
-    log('✈️ Flew to ' + toName + ' to visit ' + m.name + '. Flights: ' + money(flightLocal) + '. Bond +' + FAMILY_BOND_BONUSES.visit + '.');
-    familyLog('✈️ Flew to visit ' + m.name + ' in ' + toName);
-    render();
     return;
   }
 
-  /* Local visit — no flights needed */
   familyMarkContact(m);
   familyAddBond(m, FAMILY_BOND_BONUSES.visit);
   fx({ happiness: 4 });
@@ -1240,7 +1227,6 @@ function familyVisit(memberId) {
   familyLog('☕ Visited ' + m.name);
   render();
 }
-
 function familyHelpMoney(memberId, amount) {
   ensureFamilyState();
   const m = familyById(memberId);
