@@ -173,7 +173,7 @@ function _gulfProfessionTitle(track, level) {
   return 'Worker';
 }
 /* ---------- SPONSOR SELECTION ---------- */
-ffunction _gulfPickSponsor(source) {
+function _gulfPickSponsor(source) {
   const bias = source.sponsorBias || ['fair'];
   const type = bias[Math.floor(Math.random() * bias.length)];
   const typeDef = GULF_SPONSOR_TYPES[type] || GULF_SPONSOR_TYPES.fair;
