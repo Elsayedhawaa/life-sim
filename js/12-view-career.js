@@ -153,20 +153,20 @@ GameHooks.on('render', function() {
   if (S._careerCountryTrack === S.country) return;
   S._careerCountryTrack = S.country;
 
-  /* If job company is from a different country's industry but current country changed, clear it */
   const homeCountry = S.homeCountry || S.country;
-  if (S.country === homeCountry && S.career.job) {
-    /* Player is home — any remaining foreign job is stale */
-    const foreignCompanies = [];
-    Object.keys(CAR_COMPANIES).forEach(function(c) {
-      if (c !== S.country && CAR_COMPANIES[c]) {
-        Object.keys(CAR_COMPANIES[c]).forEach(function(ind) {
-          CAR_COMPANIES[c][ind].forEach(function(co) { foreignCompanies.push(co.name); });
-        });
-      }
-    });
-    if (foreignCompanies.indexOf(S.career.job.company) >= 0) {
-      log('📍 Cleared stale foreign job (' + S.career.job.company + ') — you are now in ' + C().name + '.');
+  
+  if (S.career.job) {
+    /* Check if this job's company belongs to the current country */
+    let validInCurrent = false;
+    const currentCompanies = (typeof CAR_COMPANIES !== 'undefined' && CAR_COMPANIES[S.country]) ? CAR_COMPANIES[S.country] : null;
+    if (currentCompanies) {
+      Object.keys(currentCompanies).forEach(ind => {
+        if (currentCompanies[ind].some(c => c.name === S.career.job.company)) validInCurrent = true;
+      });
+    }
+
+    if (!validInCurrent) {
+      log('📍 Cleared stale foreign job (' + S.career.job.company + '). You are now in ' + C().name + '.');
       S.career.job = null;
       S.job = null;
     }
