@@ -17,6 +17,13 @@ function _reViewCountryRate() {
   const vc = (S && S._reViewCountry) || (S && S.country) || 'egy';
   return (typeof COUNTRIES !== 'undefined' && COUNTRIES[vc] && COUNTRIES[vc].rate) || 1;
 }
+/* Currency-aware money formatter — displays in the property's own currency */
+function moneyIn(amount, countryCode) {
+  const c = COUNTRIES[countryCode];
+  if (!c) return Math.round(amount || 0).toLocaleString();
+  return Math.round(amount || 0).toLocaleString() + ' ' + c.currency;
+}
+window.moneyIn = moneyIn;
 /* ---------- Sub-tab registry ---------- */
 const RealEstateTabs = [];
 function registerRealEstateTab(tab) {
@@ -245,114 +252,148 @@ realEstateView = function() {
 };
 
 function unitPicker(ctx) {
-  const list = ctx.kind === 'compound' ? (COMPOUNDS[S.country] || []) : (LOCAL_MARKET[S.country] || []);
+  const viewCountry = S._reViewCountry || S.country;
+  const list = ctx.kind === 'compound'
+    ? (COMPOUNDS[viewCountry] || [])
+    : (LOCAL_MARKET[viewCountry] || []);
   const prop = list.find(c => c.id === ctx.sourceId);
-  if (!prop) { S.pendingBuy = null; return ''; }
+  if (!prop) {
+    log('❌ Property not found in ' + viewCountry + ' market. Switch markets and try again.');
+    S.pendingBuy = null;
+    return '';
+  }
 
   const plans = ctx.kind === 'compound' ? PAYMENT_PLANS : [PAYMENT_PLANS.find(p => p.id === 'cash')];
-  // Calculate player's debt-to-income limit (can't spend more than 40% of salary on installments)
-  const maxMonthlyInstallment = S.job ? Math.round((S.job.salary / 12) * 0.40) : 0;
-  const currentPpm = ctx.kind === 'compound' ? Math.round(prop.ppm * S.marketTrend.multiplier) : Math.round(prop.ppm * S.marketTrend.multiplier);
+  const maxMonthlyInstallment = S.job ? Math.round((S.job.salary / 12) * 0.40) : (S.career && S.career.job ? Math.round((S.career.job.salary / 12) * 0.40) : 0);
+  const currentPpm = Math.round(prop.ppm * S.marketTrend.multiplier);
+  const currency = COUNTRIES[viewCountry] ? COUNTRIES[viewCountry].currency : 'EGP';
 
-  let html = `<div class="card" style="border-color:#8b5cf6">
-    <h3>${prop.name} - Purchase Hub</h3>
-    <p class="muted small">Banks require your monthly installment to be under 40% of your income. Your limit: <b class="good">${maxMonthlyInstallment.toLocaleString()}/mo</b>.</p>
-    <p class="muted small">Closing costs (Broker, Registry, Maintenance Dep.) apply upon purchase.</p>
-    <button class="pill" style="padding:4px 8px;font-size:.75rem;margin-top:6px" onclick="S.pendingBuy=null;render()">✕ Cancel</button>
-  </div>`;
+  /* Convert to player currency for display */
+  const propRate = (COUNTRIES[viewCountry] && COUNTRIES[viewCountry].rate) || 1;
+  const playerRate = C().rate || 1;
+  const needsConversion = Math.abs(propRate - playerRate) > 0.01;
+  const rateRatio = needsConversion ? (playerRate / propRate) : 1;
+
+  let html = '<div class="card" style="border-color:#8b5cf6">' +
+    '<h3>' + prop.name + ' - Purchase Hub</h3>' +
+    (needsConversion ? '<div class="muted small" style="margin-bottom:6px;padding:6px;background:#0f0f1a;border-radius:4px">💱 Prices in ' + currency + '. Will convert to ' + C().currency + ' at checkout.</div>' : '') +
+    '<p class="muted small">Banks require monthly installment under 40% of income. Your limit: <b class="good">' + maxMonthlyInstallment.toLocaleString() + ' ' + currency + '/mo</b>.</p>' +
+    '<p class="muted small">Closing costs (Broker, Registry, Maintenance Dep.) apply upon purchase.</p>' +
+    '<button class="pill" style="padding:4px 8px;font-size:.75rem;margin-top:6px" onclick="S.pendingBuy=null;render()">✕ Cancel</button>' +
+    '</div>';
 
   PROPERTY_UNITS.forEach(u => {
-       const basePrice = Math.round(u.area * currentPpm * u.priceMult);
-      const playerRate = (typeof C === 'function' && C().rate) || 1;
-      const viewRate = _reViewCountryRate();
-      const basePriceInPlayerCurrency = (Math.abs(playerRate - viewRate) > 0.01)
-        ? Math.round(basePrice / viewRate * playerRate)
-        : basePrice;
-      const showConverted = Math.abs(playerRate - viewRate) > 0.01;
-      html += `<div class="card" style="padding:10px">
-        <b>${u.name}</b> <span class="muted small">· ${u.area} m²</span>
-        <div class="row"><span>Base price</span><b class="mono">${basePrice.toLocaleString()} ${_reViewCurrency()}${showConverted ? `<br><small class="muted" style="font-size:.7rem">≈ ${basePriceInPlayerCurrency.toLocaleString()} ${C().currency}</small>` : ''}</b></div>
-      <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
-        ${plans.map(p => {
-          const finalPrice = Math.round(basePrice * p.totalMarkup);
-          const down = Math.round(finalPrice * p.downPct);
-          const maintDep = Math.round(basePrice * 0.08); // 8% maintenance
-          const brokerFee = Math.round(finalPrice * (ctx.kind === 'local' ? 0.025 : 0.015)); 
-          const totalCashNeeded = down + maintDep + brokerFee;
-          
-          const moPay = p.years > 0 ? Math.round((finalPrice - down) / (p.years * 12)) : 0;
-          const hasCash = S.wealth >= totalCashNeeded;
-          const bankApproves = p.years === 0 || moPay <= maxMonthlyInstallment;
-          
-          let btnState = ''; let failReason = '';
-          if (!hasCash) { btnState = 'disabled;opacity:.5'; failReason = `Need ${money(totalCashNeeded)}`; }
-          else if (!bankApproves) { btnState = 'disabled;opacity:.5'; failReason = `Bank Denied (Income too low)`; }
+    const basePrice = Math.round(u.area * currentPpm * u.priceMult);
+    html += '<div class="card" style="padding:10px">' +
+      '<b>' + u.name + '</b> <span class="muted small">· ' + u.area + ' m²</span>' +
+      '<div class="row"><span>Base price</span><b class="mono">' + basePrice.toLocaleString() + ' ' + currency + '</b></div>' +
+      '<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">';
 
-          return `<button class="pill" style="padding:6px 8px;font-size:.72rem;text-align:left;${btnState}" onclick="buyProperty('${ctx.kind}','${prop.id}','${u.id}','${p.id}', ${totalCashNeeded},${maintDep})">
-            ${p.label} <br>
-            <span class="muted small">Cash to close: ${totalCashNeeded.toLocaleString()} (Down:${down} + Fees/Dep: ${maintDep+brokerFee})</span>${p.years > 0 ? `<br><span class="${bankApproves?'good':'bad'}">Monthly: ${moPay.toLocaleString()} ${C().currency}</span>` : ''}
-            ${failReason ? `<br><b class="bad">${failReason}</b>` : ''}
-          </button>`;
-        }).join('')}
-      </div>
-    </div>`;
+    plans.forEach(p => {
+      const finalPrice = Math.round(basePrice * p.totalMarkup);
+      const down = Math.round(finalPrice * p.downPct);
+      const maintDep = Math.round(basePrice * 0.08);
+      const brokerFee = Math.round(finalPrice * (ctx.kind === 'local' ? 0.025 : 0.015));
+      const totalCashNeeded = down + maintDep + brokerFee;
+      const totalInPlayerCurrency = Math.round(totalCashNeeded * rateRatio);
+
+      const moPay = p.years > 0 ? Math.round((finalPrice - down) / (p.years * 12)) : 0;
+      const hasCash = S.wealth >= totalInPlayerCurrency;
+      const bankApproves = p.years === 0 || moPay <= maxMonthlyInstallment;
+
+      let btnState = '';
+      let failReason = '';
+      if (!hasCash) {
+        btnState = 'disabled;opacity:.5';
+        failReason = needsConversion
+          ? 'Need ' + money(totalInPlayerCurrency) + ' (' + totalCashNeeded.toLocaleString() + ' ' + currency + ')'
+          : 'Need ' + money(totalCashNeeded);
+      } else if (!bankApproves) {
+        btnState = 'disabled;opacity:.5';
+        failReason = 'Bank denied (income too low)';
+      }
+
+      html += '<button class="pill" style="padding:6px 8px;font-size:.72rem;text-align:left;' + btnState + '" onclick="buyProperty(\'' + ctx.kind + '\',\'' + prop.id + '\',\'' + u.id + '\',\'' + p.id + '\', ' + totalCashNeeded + ',' + maintDep + ')">' +
+        p.label + '<br>' +
+        '<span class="muted small">Cash to close: ' + totalCashNeeded.toLocaleString() + ' ' + currency +
+        (needsConversion ? ' (≈ ' + money(totalInPlayerCurrency) + ')' : '') +
+        ' (Down:' + down.toLocaleString() + ' + Fees: ' + (maintDep + brokerFee).toLocaleString() + ')</span>' +
+        (p.years > 0 ? '<br><span class="' + (bankApproves ? 'good' : 'bad') + '">Monthly: ' + moPay.toLocaleString() + ' ' + currency + '</span>' : '') +
+        (failReason ? '<br><b class="bad">' + failReason + '</b>' : '') +
+        '</button>';
+    });
+
+    html += '</div></div>';
   });
   return html;
 }
 
 window.buyProperty = function(kind, sourceId, unitId, planId, totalCashNeeded, maintDep) {
   ensureRealEstateState();
-  const list = kind === 'compound' ? (COMPOUNDS[S.country] || []) : (LOCAL_MARKET[S.country] || []);
+  const viewCountry = S._reViewCountry || S.country;
+  const list = kind === 'compound' ? (COMPOUNDS[viewCountry] || []) : (LOCAL_MARKET[viewCountry] || []);
   const prop = list.find(c => c.id === sourceId);
+  if (!prop) { log('❌ Property not found.'); S.pendingBuy = null; render(); return; }
   const unit = PROPERTY_UNITS.find(u => u.id === unitId);
+  if (!unit) { log('❌ Invalid unit.'); render(); return; }
   const plan = PAYMENT_PLANS.find(p => p.id === planId) || PAYMENT_PLANS[0];
-  
-   /* Convert from viewing country currency to player's current country currency */
-  const viewCountry = kind === 'compound' ? (COMPOUNDS[S.country] ? S.country : homeCountry || 'egy') : (LOCAL_MARKET[S.country] ? S.country : homeCountry || 'egy');
-  const viewCountryReal = S._reViewCountry || S.country;
-  const viewRate = (COUNTRIES[viewCountryReal] && COUNTRIES[viewCountryReal].rate) || 1;
-  const playerRate = C().rate || 1;
-  const paymentInPlayerCurrency = (Math.abs(viewRate - playerRate) > 0.01)
-    ? Math.round(totalCashNeeded / viewRate * playerRate)
-    : totalCashNeeded;
 
-  if (S.wealth < paymentInPlayerCurrency) {
-    log('❌ Need ' + money(paymentInPlayerCurrency) + ' (property is ' + totalCashNeeded.toLocaleString() + ' ' + (COUNTRIES[viewCountryReal] ? COUNTRIES[viewCountryReal].currency : '') + ' at current rate).');
-    return;
+  /* Currency conversion: property country rate vs player country rate */
+  const propRate = (COUNTRIES[viewCountry] && COUNTRIES[viewCountry].rate) || 1;
+  const playerRate = C().rate || 1;
+  const rateRatio = (Math.abs(propRate - playerRate) > 0.01) ? (playerRate / propRate) : 1;
+  const totalInPlayerCurrency = Math.round(totalCashNeeded * rateRatio);
+  const currency = COUNTRIES[viewCountry] ? COUNTRIES[viewCountry].currency : 'EGP';
+
+  if (S.wealth < totalInPlayerCurrency) {
+    log('❌ Need ' + money(totalInPlayerCurrency) +
+      (rateRatio !== 1 ? ' (property costs ' + totalCashNeeded.toLocaleString() + ' ' + currency + ')' : '') + '.');
+    render(); return;
   }
-  S.wealth -= paymentInPlayerCurrency;
-  
-  const currentPpm = kind === 'compound' ? Math.round(prop.ppm * S.marketTrend.multiplier) : Math.round(prop.ppm * S.marketTrend.multiplier);
+  S.wealth -= totalInPlayerCurrency;
+
+  const currentPpm = Math.round(prop.ppm * S.marketTrend.multiplier);
   const basePrice = Math.round(unit.area * currentPpm * unit.priceMult);
   const finalPrice = Math.round(basePrice * plan.totalMarkup);
   const down = Math.round(finalPrice * plan.downPct);
 
-    const home = createHome({
-    name: `${unit.name} · ${prop.name}`,
-    city: prop.city || 'Unknown', location: prop.loc || prop.city,
-    country: S._reViewCountry || S.country,   /* ← store the property's real country */
-    baseValue: basePrice, value: basePrice,
+  const home = createHome({
+    name: unit.name + ' · ' + prop.name,
+    city: prop.city || 'Unknown',
+    location: prop.loc || prop.city,
+    country: viewCountry,  /* ← store the property's real country */
+    baseValue: basePrice,
+    value: basePrice,
     monthlyRent: Math.round(basePrice * (prop.rentalYieldAnnPct || 0.07) / 12),
     hoaFee: Math.round(basePrice * 0.005),
-    hap: prop.hap || 0, hp: prop.hp || 0, area: unit.area,
-    unitId: unit.id, source: kind, compoundId: kind === 'compound' ? prop.id : null,
+    hap: prop.hap || 0,
+    hp: prop.hp || 0,
+    area: unit.area,
+    unitId: unit.id,
+    source: kind,
+    compoundId: kind === 'compound' ? prop.id : null,
+    currency: currency
   });
-  
+
   S.ownedHomes.push(home);
   if (plan.years > 0) {
     S.realestateContracts.push({
-      homeId: home.id, name: home.name,
-      remaining: finalPrice - down, yearsTotal: plan.years, yearsLeft: plan.years,
+      homeId: home.id,
+      name: home.name,
+      remaining: finalPrice - down,
+      yearsTotal: plan.years,
+      yearsLeft: plan.years,
       annualPayment: Math.round((finalPrice - down) / plan.years),
+      currency: currency  /* ← loan denominated in property currency */
     });
   }
-  
-  log(`Signed contract for ${home.name}. Paid ${money(totalCashNeeded)} in closing costs.`);
+
+  log('Signed contract for ' + home.name + '. Paid ' + money(totalInPlayerCurrency) +
+    (rateRatio !== 1 ? ' (' + totalCashNeeded.toLocaleString() + ' ' + currency + ')' : '') + ' in closing costs.');
   S.pendingBuy = null;
   S.realEstateTab = 'mine';
   render();
-}
-
+};
 /* ---------- Land & Deep Construction Flow ---------- */
 function landsSection() {
   const viewCountry = S._reViewCountry || S.country;
@@ -438,33 +479,23 @@ window.promptBuildOnLand = function(landId) {
 window.setHomeForRent = function(homeId) {
   const h = S.ownedHomes.find(x => x.id === homeId);
   if (!h || h.status === 'rented') return;
-  
+  const homeCountry = h.country || 'egy';
+
   const marketRate = Math.round(h.value * (h.rentalYieldAnnPct || 0.06) / 12);
-  const ask = prompt(`Set monthly asking rent:\n(Market rate is approx ${money(marketRate)}/mo)`, marketRate);
+  const ask = prompt(
+    'Set monthly asking rent:\n\nMarket rate: ' + moneyIn(marketRate, homeCountry) + '/mo\n\nEnter amount in ' + (COUNTRIES[homeCountry] ? COUNTRIES[homeCountry].currency : 'local') + ':',
+    String(marketRate)
+  );
   const parsedAsk = parseInt(ask, 10);
-  
+
   if (!parsedAsk || parsedAsk <= 0) return;
   if (h.status === 'occupied') S.housing = 'parents';
   h.status = 'listed';
   h.listedRent = parsedAsk;
   h.monthsVacant = 0;
-  log(`${h.name} listed for rent at ${money(parsedAsk)}/mo. Looking for tenants...`);
+  log(h.name + ' listed for rent at ' + moneyIn(parsedAsk, homeCountry) + '/mo. Looking for tenants...');
   render();
-}
-
-window.evictTenant = function(homeId) {
-  const h = S.ownedHomes.find(x => x.id === homeId);
-  if (!h || !h.tenant) return;
-  
-  const legalFees = Math.round(h.monthlyRent * 2);
-  if (!confirm(`Eviction requires lawyers and courts. Cost: ${money(legalFees)}. Proceed?`)) return;
-  
-  if (S.wealth >= legalFees) S.wealth -= legalFees;
-  h.status = 'vacant';
-  h.tenant = null;
-  log(`Evicted tenant from ${h.name}. Paid ${money(legalFees)} in legal fees.`);
-  render();
-}
+};
 /* ---------- Current Home Info & Card ---------- */
 function renderCurrentHomeCard(info) {
   const condColor = info.condition > 70 ? '#34d399' : info.condition > 40 ? '#fbbf24' : '#fb7185';
@@ -584,9 +615,7 @@ function mineSection() {
   const info = getCurrentHomeInfo();
   let html = '';
 
-  if (info) {
-    html += renderCurrentHomeCard(info);
-  }
+  if (info) html += renderCurrentHomeCard(info);
 
   if (!S.ownedHomes.length) {
     html += '<div class="card"><h3>🏘 Your Property Portfolio</h3>' +
@@ -600,11 +629,20 @@ function mineSection() {
 
   html += S.ownedHomes.map(h => {
     const contract = S.realestateContracts.find(c => c.homeId === h.id);
+    const homeCountry = h.country || 'egy';
+    const currency = (COUNTRIES[homeCountry] && COUNTRIES[homeCountry].currency) || 'EGP';
+
+    /* Show conversion if property is abroad from player's current country */
+    const homeRate = (COUNTRIES[homeCountry] && COUNTRIES[homeCountry].rate) || 1;
+    const playerRate = C().rate || 1;
+    const isForeign = Math.abs(homeRate - playerRate) > 0.01;
+    const valueInPlayerCurrency = isForeign ? Math.round(h.value * (playerRate / homeRate)) : null;
+
     let statusHtml = '';
     if (h.status === 'occupied') statusHtml = '🏠 <b>You live here</b>';
-    else if (h.status === 'listed') statusHtml = '⏳ <b>Listed: ' + money(h.listedRent) + '/mo</b> (Vacant ' + h.monthsVacant + 'mo)';
+    else if (h.status === 'listed') statusHtml = '⏳ <b>Listed: ' + moneyIn(h.listedRent, homeCountry) + '/mo</b> (Vacant ' + h.monthsVacant + 'mo)';
     else if (h.status === 'rented' && h.tenant) {
-      statusHtml = '✅ <b>Rented: ' + money(h.monthlyRent) + '/mo</b><br>' +
+      statusHtml = '✅ <b>Rented: ' + moneyIn(h.monthlyRent, homeCountry) + '/mo</b><br>' +
         '<span class="small muted">Tenant: ' + h.tenant.name + '</span>';
     } else statusHtml = '<b>Vacant</b>';
 
@@ -616,13 +654,14 @@ function mineSection() {
 
     return '<div class="card" style="padding:12px">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-      '<div><b style="font-size:1rem">' + h.name + '</b> <span class="muted small">' + h.area + 'm² · ' + (h.city || '') + '</span></div>' +
+      '<div><b style="font-size:1rem">' + h.name + '</b> <span class="muted small">' + h.area + 'm² · ' + (h.city || '') + ' · ' + (COUNTRIES[homeCountry] ? COUNTRIES[homeCountry].flag : '') + ' ' + (COUNTRIES[homeCountry] ? COUNTRIES[homeCountry].name : homeCountry) + '</span></div>' +
       (h.status === 'occupied' ? '<span style="color:#34d399;font-size:1.2rem">🏠</span>' : '') +
       '</div>' +
-      '<div class="row"><span>Market value</span><b class="mono">' + money(h.value) + '</b></div>' +
-      (furnValue > 0 ? '<div class="row"><span>Incl. furniture</span><b class="mono">' + money(furnValue) + '</b></div>' : '') +
-      (contract ? '<div class="row"><span>Bank loan</span><b class="mono bad">-' + money(contract.remaining) + ' (' + contract.yearsLeft + 'y)</b></div>' : '') +
-      '<div class="row"><span>Net equity</span><b class="mono good">' + money(netEquity) + '</b></div>' +
+      '<div class="row"><span>Market value</span><b class="mono">' + moneyIn(h.value, homeCountry) + '</b></div>' +
+      (isForeign ? '<div class="muted small" style="padding-left:8px;margin-top:-2px">≈ ' + money(valueInPlayerCurrency) + ' at current rate</div>' : '') +
+      (furnValue > 0 ? '<div class="row"><span>Incl. furniture</span><b class="mono">' + moneyIn(furnValue, homeCountry) + '</b></div>' : '') +
+      (contract ? '<div class="row"><span>Bank loan</span><b class="mono bad">-' + moneyIn(contract.remaining, homeCountry) + ' (' + contract.yearsLeft + 'y)</b></div>' : '') +
+      '<div class="row"><span>Net equity</span><b class="mono good">' + moneyIn(netEquity, homeCountry) + '</b></div>' +
       '<div class="row"><span>Condition</span><b>' + (h.condition || 100) + '%</b></div>' +
       '<div class="row"><span>Furniture items</span><b>' + furnItems.length + '</b></div>' +
       '<div class="row" style="align-items:flex-start"><span>Status</span><div style="text-align:right">' + statusHtml + '</div></div>' +
@@ -637,28 +676,44 @@ function mineSection() {
 
   return html;
 }
-
 /* ---------- Selling with Agent Fees ---------- */
 window.sellHome = function(homeId) {
   ensureRealEstateState();
   const idx = S.ownedHomes.findIndex(x => x.id === homeId);
+  if (idx < 0) return;
   const h = S.ownedHomes[idx];
   const contract = S.realestateContracts.find(c => c.homeId === homeId);
-  
-  const brokerFee = Math.round(h.value * 0.025); // 2.5% to agent
-  const netProceeds = h.value - brokerFee - (contract ? contract.remaining : 0);
-  
-  if (!confirm(`Sell ${h.name} for ${money(h.value)}?\n- Broker Fee: ${money(brokerFee)}\n${contract ? `- Loan Payoff: ${money(contract.remaining)}\n` : ''}= Net to you: ${money(netProceeds)}\nProceed?`)) return;
-  
-  if (netProceeds < 0) { log('Cannot sell: Under water on mortgage.'); return; }
-  
-  S.wealth += netProceeds;
+  const homeCountry = h.country || 'egy';
+  const homeCurrency = (COUNTRIES[homeCountry] && COUNTRIES[homeCountry].currency) || 'EGP';
+
+  const brokerFee = Math.round(h.value * 0.025);
+  const netProceedsInHome = h.value - brokerFee - (contract ? contract.remaining : 0);
+
+  /* Convert from home currency to player's currency */
+  const homeRate = (COUNTRIES[homeCountry] && COUNTRIES[homeCountry].rate) || 1;
+  const playerRate = C().rate || 1;
+  const rateRatio = (Math.abs(homeRate - playerRate) > 0.01) ? (playerRate / homeRate) : 1;
+  const netProceedsInPlayer = Math.round(netProceedsInHome * rateRatio);
+
+  const msg = 'Sell ' + h.name + ' for ' + moneyIn(h.value, homeCountry) + '?\n\n' +
+    '- Broker Fee: ' + moneyIn(brokerFee, homeCountry) + '\n' +
+    (contract ? '- Loan Payoff: ' + moneyIn(contract.remaining, homeCountry) + '\n' : '') +
+    '= Net to you: ' + moneyIn(netProceedsInHome, homeCountry) + '\n' +
+    (rateRatio !== 1 ? '≈ ' + money(netProceedsInPlayer) + ' at current rate\n' : '') +
+    '\nProceed?';
+
+  if (!confirm(msg)) return;
+
+  if (netProceedsInHome < 0) { log('❌ Cannot sell: Under water on mortgage.'); return; }
+
+  S.wealth += netProceedsInPlayer;
   if (contract) S.realestateContracts = S.realestateContracts.filter(c => c.homeId !== homeId);
-  log(`Sold ${h.name}. Walked away with ${money(netProceeds)} cash.`);
+  log('Sold ' + h.name + '. Walked away with ' + money(netProceedsInPlayer) + ' cash' +
+    (rateRatio !== 1 ? ' (converted from ' + netProceedsInHome.toLocaleString() + ' ' + homeCurrency + ')' : '') + '.');
   S.ownedHomes.splice(idx, 1);
   if (S.housing === 'owned' && h.status === 'occupied') S.housing = 'parents';
   render();
-}
+};
 window.stopRenting = function(id) { const h=S.ownedHomes.find(x=>x.id===id); if(h){h.status='vacant'; h.listedRent=0; render();} }
 window.moveIntoHome = function(id) {
   const h = S.ownedHomes.find(x=>x.id===id);
