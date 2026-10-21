@@ -36,6 +36,7 @@ const VAC_DESTINATIONS = [
   { id: 'hurghada',      name: 'Hurghada',                 country: 'egy', region: 'mena', baseFlightUSD: 170,  tier: 'mid',      days_typical: 5,  best: ['winter','spring'], safety: 8,  language: 'ar', tag: 'Beaches, diving, nightlife.' },
   { id: 'alexandria',    name: 'Alexandria Weekend',       country: 'egy', region: 'mena', baseFlightUSD: 60,   tier: 'budget',   days_typical: 3,  best: ['spring','autumn'], safety: 7,  language: 'ar', tag: 'Mediterranean charm, Bibliotheca, seafood.' },
   { id: 'luxor_aswan',   name: 'Luxor & Aswan Cruise',     country: 'egy', region: 'mena', baseFlightUSD: 200,  tier: 'premium',  days_typical: 5,  best: ['winter'],    safety: 8,  language: 'ar', tag: 'Ancient temples, Nile cruise.' },
+ { id: 'home',    name: ' (Visit Family)',     country: 'egy', region: 'mena', baseFlightUSD: 180,  tier: 'budget',   days_typical: 10, best: ['any'],      safety: 7,  language: 'ar', tag: 'Stay with family, visit old friends, home cooking.' },
   { id: 'siwa',          name: 'Siwa Oasis',               country: 'egy', region: 'mena', baseFlightUSD: 100,  tier: 'mid',      days_typical: 4,  best: ['winter','spring'], safety: 9, language: 'ar', tag: 'Salt lakes, desert springs, ecolodges.' },
   { id: 'marsa_alam',    name: 'Marsa Alam',               country: 'egy', region: 'mena', baseFlightUSD: 220,  tier: 'premium',  days_typical: 6,  best: ['winter','spring'], safety: 8, language: 'ar', tag: 'Pristine reefs, dugongs, quiet luxury.' },
 
@@ -139,7 +140,14 @@ const VAC_ACTIVITIES = {
     { id: 'museum',     label: 'Grand Egyptian Museum',    costUSD: 70,  happy: 5,  smarts: 4, hours: 5 },
     { id: 'kitesurf',   label: 'Kitesurfing lesson',       costUSD: 100, happy: 6,  health: 3, hours: 4 }
   ],
-  tur: [
+    home: [
+    { id: 'family_time',  label: 'Extended family gathering',  costUSD: 0,   happy: 8,  social: 5, hours: 6 },
+    { id: 'old_friends',  label: 'Meet childhood friends',     costUSD: 40,  happy: 7,  social: 4, hours: 4 },
+    { id: 'home_food',    label: 'Home-cooked feast',          costUSD: 20,  happy: 6,  health: 2, hours: 3 },
+    { id: 'cairo_tour',   label: 'Old Cairo walking tour',     costUSD: 50,  happy: 5,  smarts: 2, hours: 5 },
+    { id: 'grandma_time', label: 'Time with grandparents',     costUSD: 0,   happy: 10, social: 2, hours: 8 }
+  ],
+   tur: [
     { id: 'hagia',      label: 'Hagia Sophia & Blue Mosque', costUSD: 80, happy: 5, smarts: 2, hours: 5 },
     { id: 'balloon',    label: 'Cappadocia hot-air balloon', costUSD: 250, happy: 12, social: 3, hours: 4 },
     { id: 'bosphorus',  label: 'Bosphorus yacht cruise',     costUSD: 120, happy: 6, social: 2, hours: 3 },
@@ -303,6 +311,7 @@ const VAC_VISA_REQUIREMENTS = {
   /* Destination → which passport tiers need visa */
   /* tier: 'strong' (US/UK/EU/JP), 'mid' (Gulf, Saudi, UAE), 'weak' (Egypt, India) */
   north_coast:  { strong: false, mid: false, weak: false, visa: 'domestic' },
+   home:        { strong: false, mid: false, weak: false, visa: 'domestic' },
   sharm:        { strong: false, mid: false, weak: false, visa: 'domestic' },
   dahab:        { strong: false, mid: false, weak: false, visa: 'domestic' },
   gouna:        { strong: false, mid: false, weak: false, visa: 'domestic' },
