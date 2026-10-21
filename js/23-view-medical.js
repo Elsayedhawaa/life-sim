@@ -165,7 +165,37 @@ function medRemoveCondition(id) {
 function medHasMedication(id) {
   return S.medical.medications.some(function(m) { return m.id === id; });
 }
+/* ============================================================
+   CONDITION HEALING — curable conditions self-resolve
+   ============================================================ */
+const MED_HEAL_RULES = {
+  /* Self-limiting: heal without treatment */
+  fracture:            { naturalMonths: 3 },
+  pneumonia:           { naturalMonths: 2 },
+  ulcer:               { medsMonths: 4, medIds: ['augmentin'] },
+  kidney_stones:       { naturalMonths: 6, medsMonths: 3, surgeryImmediate: true },
+  appendicitis:        { surgeryImmediate: true, fatalWithoutSurgery: true },
+  gallstones:          { surgeryImmediate: true },
+  cataract:            { surgeryImmediate: true },
+  head_injury:         { naturalMonths: 2 },
+  stroke_recovery:     { naturalMonths: 12 },
+  fertility_issues:    { surgeryImmediate: true },
+  fert_female_tubes:   { surgeryImmediate: true },
+  fert_male_low_sperm: { surgeryImmediate: true },
+  fert_endometriosis:  { surgeryImmediate: true },
+  pcos:                { surgeryImmediate: true },
+  breast_cancer:       { chemoResolves: true },
+  lung_cancer:         { chemoResolves: true },
+  colon_cancer:        { chemoResolves: true },
+  leukemia:            { chemoResolves: true },
+  anxiety:             { therapyMonths: 6 },
+  depression:          { therapyMonths: 12 },
+  panic_disorder:      { therapyMonths: 6 },
+  severe_depression:   { therapyMonths: 18 }
+};
+window.MED_HEAL_RULES = MED_HEAL_RULES;
 
+function _medGetHealRule(cId) { return MED_HEAL_RULES[cId] || null; }
 /* ---------- MAIN VIEW ---------- */
 function medicalView() {
   ensureMedicalState();
@@ -321,10 +351,17 @@ function medRenderOverview() {
   /* ---- Pending tests ---- */
   if (m.tests.length) {
     html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">🧪 Pending Tests</h3>';
-    m.tests.forEach(function(t) {
+       m.tests.forEach(function(t) {
       const def = MED_TESTS.find(function(d) { return d.id === t.id; });
       if (!def) return;
-      html += '<div class="row"><span>' + def.label + '</span><b>Results: ' + t.resultYear + '</b></div>';
+      var label = 'Results next year';
+      if (t.resultAbsMonth && isMonthly()) {
+        var monthsLeft = Math.max(1, t.resultAbsMonth - ((gameYear() - 2001) * 12 + currentMonth()));
+        label = monthsLeft + ' month' + (monthsLeft > 1 ? 's' : '') + ' from now';
+      } else if (t.resultYear) {
+        label = 'Year ' + t.resultYear;
+      }
+      html += '<div class="row"><span>' + def.label + '</span><b>' + label + '</b></div>';
     });
     html += '</div>';
   }
@@ -596,15 +633,25 @@ window.medOrderTest = function(testId) {
   const test = MED_TESTS.find(function(t) { return t.id === testId; });
   if (!test) return;
   if (!medPay(test.costEGP, test.label)) { render(); return; }
-  S.medical.tests.push({
+
+  const currentAbs = (gameYear() - 2001) * 12 + currentMonth();
+  const entry = {
     id: testId,
     orderedYear: gameYear(),
-    resultYear: gameYear() + Math.max(1, Math.ceil(test.waitMonths / 12))
-  });
-  log('🧪 Ordered: ' + test.label + '. Results ready in ' + (test.waitMonths === 0 ? 'a few days' : test.waitMonths + ' months') + '.');
+    orderedAbsMonth: currentAbs
+  };
+
+  if (isMonthly()) {
+    entry.resultAbsMonth = currentAbs + Math.max(1, test.waitMonths || 1);
+    log('🧪 Ordered: ' + test.label + '. Results in ~' + (test.waitMonths || 1) + ' month' + ((test.waitMonths || 1) > 1 ? 's' : '') + '.');
+  } else {
+    entry.resultYear = gameYear() + 1;
+    log('🧪 Ordered: ' + test.label + '. Results next year.');
+  }
+
+  S.medical.tests.push(entry);
   render();
 };
-
 window.medStartMed = function(medId) {
   const med = MED_MEDICATIONS.find(function(m) { return m.id === medId; });
   if (!med) return;
@@ -906,14 +953,80 @@ GameHooks.on('year', function() {
   }
 
   /* Progress active conditions */
+  const conditionsToRemove = [];
   m.conditions.forEach(function(c) {
     const cond = medConditionById(c.id);
     if (!cond) return;
-    /* If treated via surgery, skip */
+
+    /* Track progress for curable conditions */
+    if (!c.progressMonths) c.progressMonths = 0;
+    const rule = _medGetHealRule(c.id);
+
+    if (rule) {
+      /* Surgery already performed → remove immediately */
+      if (c.treated && !rule.naturalMonths && !rule.medsMonths && !rule.therapyMonths && !rule.chemoResolves) {
+        conditionsToRemove.push(c.id);
+        log('✅ ' + cond.label + ' has been resolved through surgery.');
+        return;
+      }
+      /* Natural healing */
+      if (rule.naturalMonths) {
+        const progress = isMonthly() ? 1 : 12;
+        c.progressMonths += progress;
+        if (c.progressMonths >= rule.naturalMonths) {
+          conditionsToRemove.push(c.id);
+          log('✅ ' + cond.label + ' healed naturally after ' + rule.naturalMonths + ' months.');
+          return;
+        }
+      }
+      /* Meds-required healing */
+      if (rule.medsMonths) {
+        const hasMeds = (rule.medIds || []).some(function(mid) {
+          return m.medications.some(function(x) { return x.id === mid; });
+        });
+        if (hasMeds) {
+          const progress = isMonthly() ? 1 : 12;
+          c.progressMonths += progress;
+          if (c.progressMonths >= rule.medsMonths) {
+            conditionsToRemove.push(c.id);
+            log('✅ ' + cond.label + ' cured by medication after ' + rule.medsMonths + ' months of treatment.');
+            return;
+          }
+        }
+      }
+      /* Therapy-required healing */
+      if (rule.therapyMonths) {
+        const inTherapy = m.mentalHealth && m.mentalHealth.therapyActive;
+        if (inTherapy) {
+          const progress = isMonthly() ? 1 : 12;
+          c.progressMonths += progress;
+          if (c.progressMonths >= rule.therapyMonths) {
+            conditionsToRemove.push(c.id);
+            log('✅ ' + cond.label + ' resolved through therapy.');
+            return;
+          }
+        }
+      }
+      /* Chemo cures cancer */
+      if (rule.chemoResolves) {
+        const onChemo = m.treatments && m.treatments.some(function(t) { return t.id === 'chemo'; });
+        if (onChemo) {
+          const progress = isMonthly() ? 1 : 12;
+          c.progressMonths += progress;
+          if (c.progressMonths >= 3) {
+            conditionsToRemove.push(c.id);
+            log('🎉 ' + cond.label + ' in remission after chemotherapy.');
+            fx({ happiness: 25, health: 10 });
+            return;
+          }
+        }
+      }
+    }
+
+    /* Damage (skip if treated) */
     if (c.treated) return;
     S.health = Math.max(0, S.health - cond.annualHealthHit);
     S.happiness = Math.max(0, S.happiness - cond.annualHappinessHit);
-    /* Medication may reduce impact */
     const hasMed = cond.medications.some(function(mid) {
       return m.medications.some(function(x) { return x.id === mid; });
     });
@@ -921,15 +1034,20 @@ GameHooks.on('year', function() {
       S.health = Math.min(100, S.health + Math.round(cond.annualHealthHit * 0.5));
       S.happiness = Math.min(100, S.happiness + Math.round(cond.annualHappinessHit * 0.4));
     }
-    /* Death risk */
     if (cond.deathRiskPerYear > 0 && Math.random() < cond.deathRiskPerYear) {
       log('💔 The ' + cond.label + ' has become fatal.');
       if (typeof S.alive === 'undefined') S.alive = false;
     }
   });
 
-  /* Process pending tests */
+  /* Remove healed conditions */
+  conditionsToRemove.forEach(function(cid) {
+    m.conditions = m.conditions.filter(function(c) { return c.id !== cid; });
+  });
+
+  /* Process pending tests (yearly pace or legacy results without resultAbsMonth) */
   m.tests = m.tests.filter(function(t) {
+    if (t.resultAbsMonth) return true;  /* handled by month hook */
     if (t.resultYear > year) return true;
     const def = MED_TESTS.find(function(d) { return d.id === t.id; });
     if (!def) return false;
@@ -1032,6 +1150,61 @@ GameHooks.on('year', function() {
   S.happiness = Math.max(0, Math.min(100, S.happiness));
   S.medical.fertility.playerFertility = Math.max(0, Math.min(100, S.medical.fertility.playerFertility));
 });
+/* ============================================================
+   MONTHLY MEDICAL PROGRESS (monthly pace only)
+   ============================================================ */
+GameHooks.on('month', function() {
+  ensureMedicalState();
+  if (!S || !isMonthly()) return;
+  const m = S.medical;
 
+  /* Process tests that are due this month */
+  const currentAbs = (gameYear() - 2001) * 12 + currentMonth();
+  m.tests = m.tests.filter(function(t) {
+    if (!t.resultAbsMonth) return true;  /* not pace-tracked — let year tick handle */
+    if (currentAbs < t.resultAbsMonth) return true;
+    const def = MED_TESTS.find(function(d) { return d.id === t.id; });
+    if (!def) return false;
+    const undetected = def.detects.filter(function(cid) { return !medHasCondition(cid); });
+    if (undetected.length && Math.random() < 0.5) {
+      medAddCondition(undetected[0]);
+    } else {
+      log('🧪 ' + def.label + ' results: normal.');
+    }
+    return false;
+  });
+
+  /* Progress condition healing monthly */
+  m.conditions.forEach(function(c) {
+    if (!c.progressMonths) c.progressMonths = 0;
+    const cond = medConditionById(c.id);
+    if (!cond) return;
+    const rule = _medGetHealRule(c.id);
+    if (!rule) return;
+
+    /* Natural healing */
+    if (rule.naturalMonths && !c.treated) {
+      c.progressMonths += 1;
+      if (c.progressMonths >= rule.naturalMonths) {
+        log('✅ ' + cond.label + ' healed naturally.');
+        m.conditions = m.conditions.filter(function(x) { return x.id !== c.id; });
+        return;
+      }
+    }
+    /* Meds healing */
+    if (rule.medsMonths) {
+      const hasMeds = (rule.medIds || []).some(function(mid) {
+        return m.medications.some(function(x) { return x.id === mid; });
+      });
+      if (hasMeds) {
+        c.progressMonths += 1;
+        if (c.progressMonths >= rule.medsMonths) {
+          log('✅ ' + cond.label + ' cured by medication.');
+          m.conditions = m.conditions.filter(function(x) { return x.id !== c.id; });
+        }
+      }
+    }
+  });
+});
 /* ---------- REGISTER ---------- */
 GameHooks.registerTab({ id: 'medical', label: '🏥 Medical', order: 11, view: medicalView });
