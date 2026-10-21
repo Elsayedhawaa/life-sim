@@ -149,24 +149,39 @@ GameHooks.on('migrate', ensureCareerState);
    ============================================================ */
 GameHooks.on('render', function() {
   if (!S || !S.career) return;
-  if (!S._careerCountryTrack) { S._careerCountryTrack = S.country; return; }
+  
+  if (!S._careerCountryTrack) { 
+    S._careerCountryTrack = S.country;
+    /* Force check on first load */
+    if (S.career.job && S.country === (S.homeCountry || S.country)) {
+      const foreignCompanies = [];
+      Object.keys(CAR_COMPANIES).forEach(function(c) {
+        if (c !== S.country) Object.keys(CAR_COMPANIES[c]).forEach(function(ind) {
+          CAR_COMPANIES[c][ind].forEach(function(co) { foreignCompanies.push(co.name); });
+        });
+      });
+      if (foreignCompanies.indexOf(S.career.job.company) >= 0) {
+        log('📍 Cleared stale foreign job (' + S.career.job.company + '). You are now in ' + C().name + '.');
+        S.career.job = null;
+        S.job = null;
+      }
+    }
+    return; 
+  }
+  
   if (S._careerCountryTrack === S.country) return;
   S._careerCountryTrack = S.country;
 
   const homeCountry = S.homeCountry || S.country;
-  
-  if (S.career.job) {
-    /* Check if this job's company belongs to the current country */
-    let validInCurrent = false;
-    const currentCompanies = (typeof CAR_COMPANIES !== 'undefined' && CAR_COMPANIES[S.country]) ? CAR_COMPANIES[S.country] : null;
-    if (currentCompanies) {
-      Object.keys(currentCompanies).forEach(ind => {
-        if (currentCompanies[ind].some(c => c.name === S.career.job.company)) validInCurrent = true;
+  if (S.country === homeCountry && S.career.job) {
+    const foreignCompanies = [];
+    Object.keys(CAR_COMPANIES).forEach(function(c) {
+      if (c !== S.country) Object.keys(CAR_COMPANIES[c]).forEach(function(ind) {
+        CAR_COMPANIES[c][ind].forEach(function(co) { foreignCompanies.push(co.name); });
       });
-    }
-
-    if (!validInCurrent) {
-      log('📍 Cleared stale foreign job (' + S.career.job.company + '). You are now in ' + C().name + '.');
+    });
+    if (foreignCompanies.indexOf(S.career.job.company) >= 0) {
+      log('📍 Cleared stale foreign job (' + S.career.job.company + '). You are home.');
       S.career.job = null;
       S.job = null;
     }
