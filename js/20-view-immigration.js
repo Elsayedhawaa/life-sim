@@ -140,6 +140,9 @@ function immigrationView() {
 
   const sub = S.immigrationTab;
   const hasMarriageVisa = (S.marriageVisa && (S.marriageVisa.status === 'pending' || (S.marriage && S.marriage.partner && typeof _mvIsCitizen === 'function' && _mvIsCitizen(S.marriage.partner) && isUndocumented())));
+    const hasPropertyVisa = (S.ownedHomes || []).some(function(h) {
+    return h.status !== 'sold' && (h.country === 'uae' || h.country === 'sau');
+  });
   const tabs = [
     ['status', '📋 Status'],
     ['study', '🎓 Study'],
@@ -148,7 +151,10 @@ function immigrationView() {
     ['citizenship', '🌐 Citizenship'],
     ['asylum', '🕊 Asylum']
   ];
+  if (hasPropertyVisa) tabs.push(['property_visa', '🏡 Property Visa']);
   if (hasMarriageVisa) tabs.push(['marriage_visa', '💍 Marriage']);
+     else if (sub === 'asylum') html += immRenderAsylum();
+  else if (sub === 'property_visa') html += immRenderPropertyVisa();
 
   let html = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#22d3ee15 0%,transparent 100%);border-color:#22d3ee">' +
     '<div style="display:flex;justify-content:space-between;align-items:center">' +
@@ -709,10 +715,30 @@ window.immVoluntaryReturn = function() {
 
 /* ---------- YEAR TICK ---------- */
 GameHooks.on('year', function() {
+GameHooks.on('year', function() {
   ensureImmigrationState();
   if (!S) return;
   const im = S.immigration;
   const year = gameYear();
+
+  /* If gulfWork is active and holds a valid iqama, IT owns the visa lifecycle.
+     Skip our own expiry / renewal checks to avoid double-firing contradictions. */
+  const gulfOwnsVisa = !!(S.gulfWork && S.gulfWork.active && S.gulfWork.iqama && typeof GULF_COUNTRIES !== 'undefined' && GULF_COUNTRIES.indexOf(S.country) >= 0);
+
+  if (gulfOwnsVisa) {
+    /* Keep immigration.expiresYear synced to gulfWork.iqama to prevent drift */
+    im.expiresYear = (function(abs) { return 2001 + Math.floor((abs - 1) / 12); })(S.gulfWork.iqama.expiresAbsMonth);
+    im.iqamaRenewalYear = im.expiresYear;
+    /* Ensure status reflects reality */
+    if (im.status === 'undocumented' && im.visaType === 'undocumented') {
+      im.status = 'visa_work';
+      im.visaType = 'work';
+      im.workRights = 'full';
+    }
+    /* Skip the expiry check below */
+    im.expiresYear = null;
+    im.iqamaRenewalYear = null;
+  }
 
   /* PR & citizenship progress */
   if (im.visaType === 'work' && im.destination) {
@@ -845,6 +871,100 @@ GameHooks.on('year', function() {
     }
   }
 });
+/* ============================================================
+   PROPERTY-BASED RESIDENCY
+   ============================================================ */
+function immRenderPropertyVisa() {
+  const relevantHomes = (S.ownedHomes || []).filter(function(h) {
+    return h.status !== 'sold' && (h.country === 'uae' || h.country === 'sau');
+  });
 
+  if (!relevantHomes.length) {
+    return '<div class="card"><h3>🏡 Property Visa</h3><p class="muted small">You do not own property in the UAE or Saudi Arabia.</p></div>';
+  }
+
+  let html = '<div class="card"><h3>🏡 Property-Based Residency</h3>' +
+    '<p class="muted small">Owning property in the Gulf can grant residency — but the rules vary sharply by country.</p></div>';
+
+  relevantHomes.forEach(function(h) {
+    const country = h.country;
+    const countryName = COUNTRIES[country] ? COUNTRIES[country].name : country;
+    const rate = (COUNTRIES[country] && COUNTRIES[country].rate) || 1;
+
+    if (country === 'uae') {
+      /* UAE Golden Visa — property ≥ 2M AED */
+      const valueAED = h.value; /* home.value is in home's native currency (AED) */
+      const qualifies = valueAED >= 2000000;
+      const isPR = S.immigration && S.immigration.propertyVisaUAE && S.immigration.propertyVisaUAE.homeId === h.id;
+
+      html += '<div class="card" style="border-color:' + (qualifies ? '#34d399' : '#fbbf24') + '">' +
+        '<h4 style="font-size:.9rem;color:' + (qualifies ? '#34d399' : '#fbbf24') + '">🇦🇪 UAE — ' + h.name + '</h4>' +
+        '<div class="row"><span>Property value</span><b class="mono">' + valueAED.toLocaleString() + ' AED</b></div>' +
+        '<div class="row"><span>Golden Visa threshold</span><b>AED 2,000,000</b></div>';
+
+      if (isPR) {
+        html += '<div class="row" style="color:#34d399"><b>✅ Golden Visa granted</b></div>' +
+          '<div class="muted small">10-year renewable residency. You can work, sponsor family, and travel freely.</div>';
+      } else if (qualifies) {
+        html += '<div class="row"><b class="good">✓ Qualifies for 10-year Golden Visa</b></div>' +
+          '<p class="muted small">Applying for a Golden Visa via property requires proof of ownership and clean record. One-time application fee.</p>' +
+          '<button class="opt" style="margin-top:8px;width:100%;text-align:center;background:#34d399;color:#000;font-weight:700;font-size:.78rem" onclick="immApplyPropertyVisa(\'' + h.id + '\',\'uae\')">Apply for UAE Golden Visa</button>';
+      } else {
+        const shortfall = 2000000 - valueAED;
+        html += '<div class="row"><b class="bad">Need AED ' + shortfall.toLocaleString() + ' more</b></div>' +
+          '<p class="muted small">UAE grants a 10-year Golden Visa for property ≥ AED 2M. Below that: 2-year investor visa possible at AED 750k, but that requires active business investment.</p>';
+      }
+      html += '</div>';
+    } else if (country === 'sau') {
+      /* Saudi — property does NOT grant residency. Premium Residency is separate */
+      html += '<div class="card"><h4 style="font-size:.9rem;color:#fbbf24">🇸🇦 Saudi Arabia — ' + h.name + '</h4>' +
+        '<p class="muted small">⚠️ <b>Owning property in Saudi does NOT grant residency.</b> Saudi Arabia requires foreign property owners to maintain a separate valid visa (work, business, or Premium Residency) to keep the property.</p>' +
+        '<div class="muted small">Saudi Premium Residency is a separate paid program: SAR 100,000/year, or SAR 800,000 one-time for unlimited residency. Contact the Premium Residency Center — not connected to property ownership.</div>' +
+        '</div>';
+    }
+  });
+
+  return html;
+}
+
+window.immApplyPropertyVisa = function(homeId, country) {
+  const h = (S.ownedHomes || []).find(function(x) { return x.id === homeId; });
+  if (!h) { log('❌ Property not found.'); render(); return; }
+  if (country !== 'uae') { log('❌ Property visa not available for ' + country + '.'); render(); return; }
+  if (h.value < 2000000) { log('❌ Property value below AED 2,000,000 threshold.'); render(); return; }
+
+  const appFeeAED = 15000;
+  const currentCountryRate = (C().rate || 1);
+  const uaeRate = (COUNTRIES.uae && COUNTRIES.uae.rate) || 3.67;
+  const appFeeLocal = Math.round(appFeeAED / uaeRate * currentCountryRate);
+  if (S.wealth < appFeeLocal) { log('❌ Need ' + money(appFeeLocal) + ' for application fee.'); render(); return; }
+
+  if (!confirm('Apply for UAE Golden Visa via property ownership?\n\nFee: ' + money(appFeeLocal) + '\nApproval chance: ~85% (clean record, valid property)\n\nIf approved: 10-year renewable residency.')) return;
+
+  S.wealth -= appFeeLocal;
+
+  if (Math.random() < 0.85) {
+    if (!S.immigration) S.immigration = {};
+    S.immigration.propertyVisaUAE = {
+      homeId: h.id,
+      grantedYear: gameYear(),
+      expiresYear: gameYear() + 10
+    };
+    if (S.immigration.destination !== 'uae' || S.immigration.status === 'citizen_home') {
+      S.immigration.destination = 'uae';
+      S.immigration.visaType = 'pr';
+      S.immigration.status = 'pr';
+      S.immigration.workRights = 'full';
+      S.immigration.expiresYear = null;
+    }
+    log('🎉 UAE Golden Visa granted via property ownership! 10-year residency.');
+    fx({ happiness: 20 });
+    emitSignal('goldenVisaGranted', { country: 'uae', homeId: h.id });
+  } else {
+    log('❌ Golden Visa application denied. You can reapply next year.');
+    fx({ happiness: -5 });
+  }
+  render();
+};
 /* ---------- REGISTER ---------- */
 GameHooks.registerTab({ id: 'immigration', label: '🌍 Immigration', order: 8, view: immigrationView });
