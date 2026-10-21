@@ -187,25 +187,6 @@ GameHooks.on('render', function() {
     }
   }
 });
-  
-  if (S._careerCountryTrack === S.country) return;
-  S._careerCountryTrack = S.country;
-
-  const homeCountry = S.homeCountry || S.country;
-  if (S.country === homeCountry && S.career.job) {
-    const foreignCompanies = [];
-    Object.keys(CAR_COMPANIES).forEach(function(c) {
-      if (c !== S.country) Object.keys(CAR_COMPANIES[c]).forEach(function(ind) {
-        CAR_COMPANIES[c][ind].forEach(function(co) { foreignCompanies.push(co.name); });
-      });
-    });
-    if (foreignCompanies.indexOf(S.career.job.company) >= 0) {
-      log('📍 Cleared stale foreign job (' + S.career.job.company + '). You are home.');
-      S.career.job = null;
-      S.job = null;
-    }
-  }
-});
 /* ============================================================
    HELPERS
    ============================================================ */
@@ -742,7 +723,7 @@ function carHireFromApplication(app) {
   fx({ happiness: 15 });
   S.career.mood = 'satisfied';
   S.career.tab = 'overview';
-   }
+}
 function carAddColleague(companyName) {
   const names = ['Rania', 'Hisham', 'Dina', 'Sherif', 'Mai', 'Khaled', 'Yara', 'Waleed', 'Nour', 'Rami'];
   const roles = ['colleague', 'manager', 'mentor candidate', 'rival', 'team lead'];
