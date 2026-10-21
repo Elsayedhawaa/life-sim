@@ -1178,6 +1178,12 @@ function careerView() {
     tabs.map(function(t) { return '<button class="pill ' + (S.career.tab === t[0] ? 'on' : '') + '" style="padding:6px 10px;font-size:.72rem;white-space:nowrap" onclick="carSetTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') +
     '</div></div>';
 
+ /* Underground section — renders above other career content if undocumented */
+  if (typeof carRenderUnderground === 'function') {
+    var underground = carRenderUnderground();
+    if (underground) html += underground;
+  }
+
   if (S.career.tab === 'overview') html += carRenderOverview();
   else if (S.career.tab === 'search') html += carRenderSearch();
   else if (S.career.tab === 'tracks') html += carRenderTracks();
