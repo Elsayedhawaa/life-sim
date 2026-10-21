@@ -115,7 +115,7 @@ function bankGetTotalAssets() {
   ((S.bank && S.bank.certificates) || []).forEach(c => { a += c.principal || 0; });
   ((S.bank && S.bank.investments) || []).forEach(i => { a += i.currentValue || 0; });
   if (S.bank && S.bank.pension && S.bank.pension.totalValue) a += S.bank.pension.totalValue;
-  (S.ownedHomes || []).forEach(h => { a += h.value || 0; });
+   (S.ownedHomes || []).forEach(h => { a += convertToPlayerCurrency(h.value || 0, h.country || S.country); });
   ((S.bank && S.bank.gold) || []).forEach(g => {
     const prices = (typeof GOLD_PRICES !== 'undefined' ? GOLD_PRICES[S.country] : null) || GOLD_PRICES.egy;
     const perGram = g.karat === '24K' ? prices.perGram24K : g.karat === '21K' ? prices.perGram21K : prices.perGram18K;
