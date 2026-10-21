@@ -720,46 +720,55 @@ function familyChangeSchool(childId, schoolLabel) {
    TAB 4: MEDICAL & HEALTH
    ============================================================ */
 function renderMedicalTab() {
-    let html = '<div class="card"><h3>🏥 Health & Insurance</h3>';
-    
-    const currentIns = MEDICAL_INSURANCE_TIERS.find(i => i.id === S.medical.insurance) || MEDICAL_INSURANCE_TIERS[0];
-    html += '<div class="muted small" style="margin-bottom:4px">Current Medical Insurance:</div>';
-    html += '<select onchange="medicalChangeInsurance(this.value)" style="width:100%;padding:6px;background:#0f0f1a;color:#fff;border:1px solid #25253a">';
-    MEDICAL_INSURANCE_TIERS.forEach(ins => {
-        const costLocal = ins.premiumUSD * getExchangeRate();
-        html += '<option value="' + ins.id + '" ' + (S.medical.insurance === ins.id ? 'selected' : '') + '>' + ins.label + ' - ' + money(costLocal) + '/yr</option>';
+  /* Use the same insurance data as the Medical tab — single source of truth */
+  const currentIns = (typeof MED_INSURANCE !== 'undefined')
+    ? MED_INSURANCE.find(function(i) { return i.id === S.medical.insurance; }) || MED_INSURANCE[0]
+    : { label: 'Unknown', coveragePct: 0, premiumAnnualEGP: 0 };
+
+  const conditions = S.medical.conditions || [];
+  const monthlyMeds = (S.medical.medications || []).reduce(function(s, md) {
+    const def = (typeof MED_MEDICATIONS !== 'undefined') ? MED_MEDICATIONS.find(function(d) { return d.id === md.id; }) : null;
+    return s + (def ? (def.monthlyEGP || 0) : 0);
+  }, 0);
+
+  let html = '<div class="card" style="border-color:#34d399">' +
+    '<h3 style="color:#34d399">🏥 Health & Insurance</h3>' +
+    '<div class="row"><span>Current health</span><b class="' + (S.health > 70 ? 'good' : S.health > 40 ? '' : 'bad') + '">' + Math.round(S.health) + '%</b></div>' +
+    '<div class="row"><span>Insurance plan</span><b class="' + (currentIns.coveragePct > 0 ? 'good' : 'bad') + '">' + currentIns.label + ' · ' + Math.round((currentIns.coveragePct || 0) * 100) + '% covered</b></div>' +
+    (conditions.length ? '<div class="row"><span>Active conditions</span><b>' + conditions.length + '</b></div>' : '<div class="row"><span>Active conditions</span><b class="good">None</b></div>') +
+    (monthlyMeds > 0 ? '<div class="row"><span>Medications</span><b>' + (typeof money === 'function' ? money(monthlyMeds * ((C().rate || 1) / 52.7)) : monthlyMeds) + '/mo</b></div>' : '') +
+    '</div>';
+
+  if (conditions.length > 0) {
+    html += '<div class="card"><h4 style="font-size:.85rem;color:#fb7185">Active Conditions</h4>';
+    conditions.forEach(function(c) {
+      const cond = (typeof medConditionById === 'function') ? medConditionById(c.id) : null;
+      if (cond) {
+        html += '<div class="row" style="padding:4px 0;font-size:.78rem"><span>' + cond.label + '</span><b class="muted small">' + cond.severity + '</b></div>';
+      }
     });
-    html += '</select>';
-    html += '<div class="muted small" style="margin-top:4px">Coverage: ' + currentIns.coveragePct + '% of major medical costs.</div>';
     html += '</div>';
+  }
 
-    html += '<div class="card"><h3>Medical Conditions</h3>';
-    if(S.medical.conditions.length === 0) {
-        html += '<p class="muted small">You are currently healthy with no chronic conditions.</p>';
-    } else {
-        S.medical.conditions.forEach(condId => {
-            const cond = MEDICAL_CONDITIONS.find(c => c.id === condId);
-            if(!cond) return;
-            html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">';
-            html += '<div style="font-weight:700;color:#fb7185">⚠️ ' + cond.label + '</div>';
-            
-            const treats = MEDICAL_TREATMENTS.filter(t => t.condition === cond.type);
-            treats.forEach(t => {
-                const baseCost = getMedicalCost(t.costUSD);
-                html += '<button class="opt" style="margin-top:6px;padding:4px 8px;font-size:.7rem" onclick="medicalTreat(\'' + condId + '\', \'' + t.id + '\')">Get ' + t.label + ' (' + money(baseCost) + ' after ins.)</button>';
-            });
-            html += '</div>';
-        });
-    }
-    html += '</div>';
+  html += '<div class="card"><p class="muted small">All medical management (doctors, tests, treatments, insurance, fertility) is in the dedicated <b>🏥 Medical</b> tab.</p>' +
+    '<button class="opt" style="margin-top:8px;width:100%;text-align:center;background:#34d399;color:#000;font-weight:700;font-size:.78rem" onclick="switchTab(\'medical\')">Open Medical tab →</button>' +
+    '</div>';
 
-    return html;
+  return html;
 }
 
 function medicalChangeInsurance(insId) {
+  if (!S.medical) return;
+  if (typeof MED_INSURANCE === 'undefined') return;
+  const ins = MED_INSURANCE.find(function(i) { return i.id === insId; });
+  if (!ins) return;
+  if (typeof medSwitchInsurance === 'function') {
+    medSwitchInsurance(insId);
+  } else {
     S.medical.insurance = insId;
-    log('🏥 Changed medical insurance to ' + insId + '.');
+    log('🏥 Insurance changed to ' + ins.label + '.');
     render();
+  }
 }
 
 function medicalTreat(condId, treatmentId) {
