@@ -567,5 +567,21 @@ const COUNTRIES = {
   }
 
 };
-
+/* ============================================================
+   HISTORICAL EXCHANGE RATES (Fix flat currency bug)
+   ============================================================ */
+const HISTORICAL_RATES = {
+  egy: [
+    { year: 2001, rate: 3.80 },
+    { year: 2011, rate: 5.95 },
+    { year: 2015, rate: 7.80 },
+    { year: 2016, rate: 18.00 },
+    { year: 2020, rate: 15.70 },
+    { year: 2022, rate: 19.10 },
+    { year: 2023, rate: 30.90 },
+    { year: 2024, rate: 48.50 },
+    { year: 2025, rate: 52.70 }
+  ]
+};
+window.HISTORICAL_RATES = HISTORICAL_RATES;
 window.COUNTRIES = COUNTRIES;
