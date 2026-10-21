@@ -537,7 +537,69 @@ function reset() {
   S = null;
   renderStart();
 }
+/* ============================================================
+   COUNTRY-CHANGE DETECTOR
+   ============================================================
+   Clears stale offers, applications, and pending events
+   when the player's country changes. Runs on first render
+   after any state change.
+   ============================================================ */
+GameHooks.on('render', function() {
+  if (!S) return;
 
+  /* First init — also cleans legacy saves */
+  if (typeof S._lastCountry === 'undefined') {
+    S._lastCountry = S.country;
+    const isAbroad = S.homeCountry && S.country !== S.homeCountry;
+    if (isAbroad) {
+      if (S.career && Array.isArray(S.career.offers)) {
+        const stale = S.career.offers.filter(function(o) { return !o.country; });
+        if (stale.length > 0) {
+          S.career.offers = S.career.offers.filter(function(o) { return o.country === S.country; });
+          log('📍 ' + stale.length + ' legacy offer' + (stale.length > 1 ? 's' : '') + ' cleared (from before you relocated).');
+        }
+      }
+      if (S.pending) {
+        log('📍 Stale pending event cleared (you relocated).');
+        S.pending = null;
+        S.evId = null;
+      }
+    }
+    return;
+  }
+
+  if (S._lastCountry === S.country) return;
+
+  const from = S._lastCountry;
+  const to = S.country;
+  S._lastCountry = to;
+
+  /* Clear stale offers from old country */
+  if (S.career && Array.isArray(S.career.offers)) {
+    const before = S.career.offers.length;
+    S.career.offers = S.career.offers.filter(function(o) {
+      return o.country === to;
+    });
+    const cleared = before - S.career.offers.length;
+    if (cleared > 0) log('📍 ' + cleared + ' pending offer' + (cleared > 1 ? 's' : '') + ' from your previous country expired.');
+  }
+
+  /* Clear stale applications */
+  if (S.career && Array.isArray(S.career.applications)) {
+    S.career.applications = S.career.applications.filter(function(a) {
+      return !a.country || a.country === to;
+    });
+  }
+
+  /* Cancel pending event — was prepared for old country/currency */
+  if (S.pending) {
+    log('📍 Pending event cancelled due to relocation.');
+    S.pending = null;
+    S.evId = null;
+  }
+
+  emitSignal('countryChanged', { from: from, to: to });
+});
 /* ============================================================
    WINDOW BINDINGS
    ============================================================ */
