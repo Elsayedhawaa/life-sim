@@ -42,7 +42,27 @@ function dataOK() {
 function C() {
   const fb = { id: 'unknown', name: 'Unknown', flag: '?', currency: '?', prices: {}, schools: [], universities: [], jobs: [], events: [] };
   if (!dataOK()) return fb;
-  return COUNTRIES[S?.country] || COUNTRIES.egy;
+  
+  const c = COUNTRIES[S?.country] || COUNTRIES.egy;
+  
+  /* Dynamically interpolate currency rate based on game year */
+  if (typeof HISTORICAL_RATES !== 'undefined' && HISTORICAL_RATES[c.id]) {
+    const history = HISTORICAL_RATES[c.id];
+    const y = gameYear();
+    let activeRate = history[0].rate;
+    
+    for (let i = 0; i < history.length; i++) {
+      if (y >= history[i].year) activeRate = history[i].rate;
+      else break;
+    }
+    
+    /* Allow devaluation events (from 36-expat-life.js) to override historical rate */
+    if (c._devalMult) activeRate *= c._devalMult;
+    
+    c.rate = activeRate;
+  }
+  
+  return c;
 }
 function gameYear() { return 2001 + (S?.age || 6); }
 function money(n) { const c = C(); return Math.round(n).toLocaleString() + ' ' + c.currency; }
