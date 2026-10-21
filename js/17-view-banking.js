@@ -333,7 +333,7 @@ function bankView() {
         ${bankRenderNetWorthChart()}
       </div>
       <div style="text-align:right">
-        <div class="muted small">FICO® Score</div>
+           <div class="muted small">${S.country === 'usa' ? 'FICO® Score' : 'Credit Score'}</div>
         <div style="font-size:1.4rem;color:${BankMath.scoreCategory(S.bank.score).color};font-weight:bold;font-family:monospace">${S.bank.score}</div>
       </div>
     </div>
