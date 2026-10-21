@@ -4,7 +4,40 @@
    Loads AFTER all view files, BEFORE 99-boot.js.
    Runs at END of year (after every other system's year hook).
    ============================================================ */
+/* ---------- EXPAT SIGNALS ---------- */
+onSignal('egpDevalued', function(data) {
+  if (!S) return;
+  _sigLog('💱 EGP devalued ' + Math.round(data.pct * 100) + '%. Rate now ' + data.newRate.toFixed(2) + '.');
+});
 
+onSignal('returnedHome', function() {
+  if (!S) return;
+  _sigFx({ happiness: 20, social: 10 });
+  (S.family || []).forEach(function(m) {
+    if (m.alive !== false) m.bond = Math.min(100, (m.bond || 70) + 15);
+  });
+  _sigLog('🏠 You returned home. Family is overjoyed.');
+});
+
+onSignal('hawalaScammed', function(data) {
+  if (!S) return;
+  _sigLog('🚨 Hawala scam — lost ' + money(data.amount) + '.');
+});
+
+onSignal('lifeGoalCompleted', function(data) {
+  if (!S) return;
+  _sigFx({ happiness: 5 });
+});
+
+onSignal('achievementUnlocked', function() {
+  if (!S) return;
+  _sigFx({ happiness: 3 });
+});
+
+onSignal('countryChanged', function(data) {
+  if (!S) return;
+  _sigLog('🌍 Country changed: ' + data.from + ' → ' + data.to);
+});
 /* ---------- SNAPSHOT MANAGEMENT ---------- */
 function ensureSignalSnapshots() {
   if (!S) return;
