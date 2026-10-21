@@ -147,6 +147,7 @@ function familyView() {
   if (S.age < 6) return '<div class="card"><h3>Family</h3><p class="muted">You are too young to understand these complexities.</p></div>';
 
   const wantsCount = (typeof familyDepthGetActiveWants === 'function') ? familyDepthGetActiveWants().length : 0;
+  const inGulf = typeof gulfIsInGulf === 'function' && gulfIsInGulf();
   const tabs = [
     ['relatives', '👨‍👩‍👧 Relatives'],
     ['partner', '❤️ Partner'],
@@ -155,6 +156,7 @@ function familyView() {
     ['medical', '🏥 Health'],
     ['vacation', '✈️ Vacations']
   ];
+  if (inGulf) tabs.push(['visits', '✈️ Visits']);
 
   let html = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#fb718515 0%,transparent 100%);border-color:#fb7185">' +
     '<div style="display:flex;justify-content:space-between;align-items:center">' +
@@ -169,8 +171,9 @@ function familyView() {
   else if (S.familySubTab === 'partner') html += renderPartnerTab();
   else if (S.familySubTab === 'children') html += renderChildrenTab();
   else if (S.familySubTab === 'wants') html += (typeof familyDepthRenderWantsPanel === 'function' ? familyDepthRenderWantsPanel() : '<div class="card"><p class="muted small">Wants system not loaded.</p></div>');
-  else if (S.familySubTab === 'medical') html += renderMedicalTab();
+    else if (S.familySubTab === 'medical') html += renderMedicalTab();
   else if (S.familySubTab === 'vacation') html += renderVacationTab();
+  else if (S.familySubTab === 'visits') html += (typeof familyVisitsRender === 'function' ? familyVisitsRender() : '<div class="card"><p class="muted small">Visits system not loaded.</p></div>');
   /* Show active wants summary at the top */
   if (typeof familyDepthRenderWantsPanel === 'function') {
     const activeWants = (typeof familyDepthGetActiveWants === 'function') ? familyDepthGetActiveWants() : [];
