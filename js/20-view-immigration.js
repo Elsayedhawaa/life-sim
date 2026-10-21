@@ -153,8 +153,6 @@ function immigrationView() {
   ];
   if (hasPropertyVisa) tabs.push(['property_visa', '🏡 Property Visa']);
   if (hasMarriageVisa) tabs.push(['marriage_visa', '💍 Marriage']);
-     else if (sub === 'asylum') html += immRenderAsylum();
-  else if (sub === 'property_visa') html += immRenderPropertyVisa();
 
   let html = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#22d3ee15 0%,transparent 100%);border-color:#22d3ee">' +
     '<div style="display:flex;justify-content:space-between;align-items:center">' +
@@ -171,6 +169,7 @@ if (sub === 'status') html += immRenderStatus();
   else if (sub === 'pr') html += immRenderPR();
   else if (sub === 'citizenship') html += immRenderCitizenship();
   else if (sub === 'asylum') html += immRenderAsylum();
+  else if (sub === 'property_visa') html += immRenderPropertyVisa();
   else if (sub === 'marriage_visa') html += (typeof marryVisaRender === 'function' ? marryVisaRender() : '<div class="card"><p class="muted small">Marriage visa system not loaded.</p></div>');
 
   return html;
@@ -714,7 +713,6 @@ window.immVoluntaryReturn = function() {
 };
 
 /* ---------- YEAR TICK ---------- */
-GameHooks.on('year', function() {
 GameHooks.on('year', function() {
   ensureImmigrationState();
   if (!S) return;
