@@ -61,6 +61,16 @@ function currentSeason() {
   if (m <= 8) return 'summer';
   return 'autumn';
 }
+/* Central integrity helpers */
+function isHomeCountry() {
+  return S && S.country === (S.homeCountry || S.country);
+}
+window.isHomeCountry = isHomeCountry;
+
+function currentAbsMonth() {
+  return (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1);
+}
+window.currentAbsMonth = currentAbsMonth;
 function isSummer() { return currentSeason() === 'summer'; }
 function isSchoolMonth() { return currentMonth() === 9 || currentMonth() === 1; }
 function monthsUntil(targetMonth) {
