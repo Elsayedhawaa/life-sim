@@ -247,49 +247,12 @@ function immRenderStatus() {
 /* ---------- TAB: STUDY ---------- */
 function immRenderStudy() {
   let html = '<div class="card"><h3>🎓 Study Abroad</h3>' +
-    '<p class="muted small">Full degree abroad. Requires language test, funds proof, and acceptance at a university.</p></div>';
-
-  const s = S.languageScores;
-  html += '<div class="card"><h4 style="font-size:.85rem;color:#22d3ee">Language Scores</h4>';
-  Object.keys(LANGUAGE_SCORE_RANGES).forEach(function(testId) {
-    const test = LANGUAGE_TESTS.find(function(t) { return t.id === testId; });
-    if (!test) return;
-    const score = s[testId] || 0;
-    const range = LANGUAGE_SCORE_RANGES[testId];
-    const pass = score >= range.passScore;
-    html += '<div class="row"><span>' + test.label + '</span>' +
-      '<b class="' + (score > 0 ? (pass ? 'good' : 'bad') : 'muted') + '">' + (score > 0 ? score : 'not taken') + '</b></div>';
-  });
-  html += '<button class="opt" style="margin-top:8px;text-align:center" onclick="immOpenLanguageTestPicker()">📝 Book a language test</button></div>';
-
-  html += '<div class="card"><h4 style="font-size:.85rem;color:#22d3ee">Study Destinations</h4>';
-  STUDY_DESTINATIONS.forEach(function(dest) {
-    const approval = immApprovalFor(dest.country, 'student');
-    const fees = immFeesFor(dest.country, 'student');
-    const totalFee = fees.fee + (fees.sevis || 0);
-    const lawyerFee = (VISA_FEES[dest.country] && VISA_FEES[dest.country].lawyer) || 1500;
-
-    html += '<div style="padding:10px 0;border-bottom:1px solid #1a1a2a">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-      '<div><div style="font-weight:700">' + dest.label + '</div>' +
-      '<div class="muted small">' + dest.universities.slice(0, 3).join(' · ') + '</div></div>' +
-      '<div style="text-align:right"><b>' + money((totalFee + lawyerFee) * (C().rate || 1)) + '</b><div class="muted" style="font-size:.7rem">total fees</div></div></div>' +
-      '<div class="muted small" style="margin-top:4px">Approval base: ' + Math.round((approval.baseChance || 0) * 100) + '% · IELTS/Equiv ' + (approval.requiresIELTS || 0) + '+</div>' +
-      '<button class="opt" style="margin-top:6px;text-align:center;font-size:.75rem" onclick="immApplyStudent(\'' + dest.country + '\')">Apply for student visa</button>' +
-      '</div>';
-  });
-  html += '</div>';
-
-  html += '<div class="card"><h4 style="font-size:.85rem;color:#fbbf24">🏆 Scholarships (full tuition + stipend)</h4>';
-  SCHOLARSHIPS.forEach(function(sch) {
-    html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
-      '<div style="font-weight:700">' + sch.name + '</div>' +
-      '<div class="muted small">' + immCountryName(sch.country) + ' · Acceptance ' + Math.round(sch.acceptanceRate * 100) + '%</div>' +
-      '<button class="opt" style="margin-top:4px;padding:4px 8px;font-size:.72rem" onclick="immApplyScholarship(\'' + sch.id + '\')">Apply</button>' +
-      '</div>';
-  });
-  html += '</div>';
-
+    '<p class="muted small">Full degree abroad. Application, visa, and language tests are managed in the Education tab.</p></div>';
+  
+  html += '<div class="card" style="border-color:#34d399">' +
+    '<p class="muted small">Please use the dedicated Education tab to browse universities, take IELTS, and apply for scholarships.</p>' +
+    '<button class="opt" style="margin-top:8px;width:100%;text-align:center;background:#34d399;color:#000;font-weight:700;font-size:.78rem" onclick="switchTab(\'school\');S.educationTab=\'opportunities\';render()">🎓 Go to Study Abroad Hub →</button>' +
+    '</div>';
   return html;
 }
 
