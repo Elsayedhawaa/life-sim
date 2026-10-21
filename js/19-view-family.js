@@ -369,20 +369,24 @@ function familySendRemittance() {
   fx({ happiness: 3 });
   render();
 }
+
 function _fdRollWantFor(relation) {
   const pool = WANT_TEMPLATES[relation.kind];
   if (!pool) return null;
   const eligible = pool.filter(function(t) {
     if (t.ageMin && (relation.obj.age || 0) < t.ageMin) return false;
     if (t.ageMax && (relation.obj.age || 999) > t.ageMax) return false;
-    
+
     /* NEW: If player is young (<25) and broke, siblings shouldn't ask for massive things */
     if (S.age < 25 && t.costEGP > (S.wealth + 20000)) {
-       if (t.costEGP > 50000) return false; 
+      if (t.costEGP > 50000) return false;
     }
     return true;
   });
-   
+  if (!eligible.length) return null;
+  return eligible[Math.floor(Math.random() * eligible.length)];
+}
+
 function familyRenderInheritance() {
   const h = S.inheritedFamilyHome;
   if (!h) return '';
@@ -896,6 +900,7 @@ function vacationBook(destId, needsVisa, costPerDayLocal) {
     fx({happiness: days * 3, health: days});
     render();
 }
+
 function renderFamilySupportTab() {
   if (!S || !S.family) return '';
 
@@ -915,6 +920,7 @@ function renderFamilySupportTab() {
 
   return html;
 }
+
 /* ============================================================
    YEAR TICK LOGIC
    ============================================================ */
