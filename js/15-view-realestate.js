@@ -85,6 +85,12 @@ window.createHome = createHome;
 /* ---------- Main tab & Market Header ---------- */
 function realEstateView() {
   ensureRealEstateState();
+
+  /* Market country — lets you browse your home country from abroad */
+  if (!S._reViewCountry || !COMPOUNDS[S._reViewCountry]) S._reViewCountry = S.country;
+  const viewCountry = S._reViewCountry;
+  const isViewingHome = viewCountry !== S.country;
+
   const availableTabs = RealEstateTabs.filter(t => !t.requiresHome || S.ownedHomes.length > 0);
   const currentTab = availableTabs.find(t => t.id === S.realEstateTab) || availableTabs[0];
   if (currentTab && S.realEstateTab !== currentTab.id) S.realEstateTab = currentTab.id;
@@ -92,14 +98,28 @@ function realEstateView() {
   const trendIcon = S.marketTrend.state === 'boom' ? '🚀' : S.marketTrend.state === 'crash' ? '📉' : '⚖️';
   const trendColor = S.marketTrend.state === 'boom' ? '#34d399' : S.marketTrend.state === 'crash' ? '#fb7185' : '#e8e8f2';
 
+  const homeCountry = S.homeCountry || S.country;
+  const canViewHome = homeCountry !== S.country && COMPOUNDS[homeCountry];
+
   let html = `<div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3>Real Estate · ${C().name}</h3>
-      <div class="small" style="color:${trendColor}">${trendIcon} Market: ${S.marketTrend.state.toUpperCase()}</div>
+      <h3>Real Estate · ${viewCountry === S.country ? C().name : (COUNTRIES[viewCountry] ? COUNTRIES[viewCountry].name : viewCountry)}</h3>
+      <div class="small" style="color:${trendColor}">${trendIcon} ${S.marketTrend.state.toUpperCase()}</div>
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">
       ${availableTabs.map(t => `<button class="pill ${S.realEstateTab === t.id ? 'on' : ''}" style="padding:6px 10px;font-size:.75rem" onclick="S.realEstateTab='${t.id}';render()">${t.label}</button>`).join('')}
     </div>
+    ${canViewHome ? `
+      <div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap">
+        <button class="pill ${viewCountry === S.country ? 'on' : ''}" style="padding:5px 10px;font-size:.72rem" onclick="S._reViewCountry='${S.country}';render()">${COUNTRIES[S.country] ? COUNTRIES[S.country].flag : '📍'} Current market</button>
+        <button class="pill ${viewCountry === homeCountry ? 'on' : ''}" style="padding:5px 10px;font-size:.72rem" onclick="S._reViewCountry='${homeCountry}';render()">${COUNTRIES[homeCountry] ? COUNTRIES[homeCountry].flag : '🏠'} Home market</button>
+      </div>
+    ` : ''}
+    ${isViewingHome ? `
+      <div class="muted small" style="margin-top:6px;padding:8px;background:#0f0f1a;border-radius:6px">
+        💡 Browsing ${COUNTRIES[viewCountry] ? COUNTRIES[viewCountry].name : viewCountry} market from abroad. Prices in ${COUNTRIES[viewCountry] ? COUNTRIES[viewCountry].currency : 'local'} — will be converted at checkout.
+      </div>
+    ` : ''}
   </div>`;
 
   if (currentTab) html += currentTab.render();
@@ -108,7 +128,8 @@ function realEstateView() {
 
 /* ---------- Market sections ---------- */
 function compoundsSection() {
-  const list = COMPOUNDS[S.country];
+  const viewCountry = S._reViewCountry || S.country;
+  const list = COMPOUNDS[viewCountry];
   if (!list || !list.length) return '<div class="card"><h3>No compounds yet</h3></div>';
 
   /* Filter state, resetting when country changes */
@@ -187,7 +208,8 @@ function compoundsSection() {
 }
 
 function localSection() {
-  const list = LOCAL_MARKET[S.country];
+   const viewCountry = S._reViewCountry || S.country;
+  const list = LOCAL_MARKET[viewCountry];
   if (!list || !list.length) return `<div class="card"><h3>No local properties yet</h3></div>`;
   
   return list.map(c => {
@@ -271,20 +293,33 @@ window.buyProperty = function(kind, sourceId, unitId, planId, totalCashNeeded, m
   const unit = PROPERTY_UNITS.find(u => u.id === unitId);
   const plan = PAYMENT_PLANS.find(p => p.id === planId) || PAYMENT_PLANS[0];
   
-  if (S.wealth < totalCashNeeded) return;
-  S.wealth -= totalCashNeeded;
+   /* Convert from viewing country currency to player's current country currency */
+  const viewCountry = kind === 'compound' ? (COMPOUNDS[S.country] ? S.country : homeCountry || 'egy') : (LOCAL_MARKET[S.country] ? S.country : homeCountry || 'egy');
+  const viewCountryReal = S._reViewCountry || S.country;
+  const viewRate = (COUNTRIES[viewCountryReal] && COUNTRIES[viewCountryReal].rate) || 1;
+  const playerRate = C().rate || 1;
+  const paymentInPlayerCurrency = (Math.abs(viewRate - playerRate) > 0.01)
+    ? Math.round(totalCashNeeded / viewRate * playerRate)
+    : totalCashNeeded;
+
+  if (S.wealth < paymentInPlayerCurrency) {
+    log('❌ Need ' + money(paymentInPlayerCurrency) + ' (property is ' + totalCashNeeded.toLocaleString() + ' ' + (COUNTRIES[viewCountryReal] ? COUNTRIES[viewCountryReal].currency : '') + ' at current rate).');
+    return;
+  }
+  S.wealth -= paymentInPlayerCurrency;
   
   const currentPpm = kind === 'compound' ? Math.round(prop.ppm * S.marketTrend.multiplier) : Math.round(prop.ppm * S.marketTrend.multiplier);
   const basePrice = Math.round(unit.area * currentPpm * unit.priceMult);
   const finalPrice = Math.round(basePrice * plan.totalMarkup);
   const down = Math.round(finalPrice * plan.downPct);
 
-  const home = createHome({
+    const home = createHome({
     name: `${unit.name} · ${prop.name}`,
     city: prop.city || 'Unknown', location: prop.loc || prop.city,
-    baseValue: basePrice, value: basePrice, // Installment markup is debt, not property value
+    country: S._reViewCountry || S.country,   /* ← store the property's real country */
+    baseValue: basePrice, value: basePrice,
     monthlyRent: Math.round(basePrice * (prop.rentalYieldAnnPct || 0.07) / 12),
-    hoaFee: Math.round(basePrice * 0.005), // Annual HOA estimate
+    hoaFee: Math.round(basePrice * 0.005),
     hap: prop.hap || 0, hp: prop.hp || 0, area: unit.area,
     unitId: unit.id, source: kind, compoundId: kind === 'compound' ? prop.id : null,
   });
@@ -306,7 +341,8 @@ window.buyProperty = function(kind, sourceId, unitId, planId, totalCashNeeded, m
 
 /* ---------- Land & Deep Construction Flow ---------- */
 function landsSection() {
-  const list = LANDS.filter(l => l.country === S.country);
+  const viewCountry = S._reViewCountry || S.country;
+  const list = LANDS.filter(l => l.country === viewCountry);
   if (!list.length) return `<div class="card"><h3>No land available</h3></div>`;
   
   let html = list.map(l => {
