@@ -625,8 +625,20 @@ function chRenderChildDetail(childId) {
       if (s) html += '<div class="row"><span>Annual fee</span><b>' + money(chEGP(s.annualEGP)) + '</b></div>';
     }
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px">';
-    CHILDREN_SCHOOLS.forEach(function(s) {
-      if (c.school === s.label) return;
+    const schoolsToRender = CHILDREN_SCHOOLS.slice();
+    if (S.country === 'usa') {
+       schoolsToRender.length = 0; // Clear Egyptian schools
+       schoolsToRender.push({ id: 'us_public', label: 'US Public School', annualEGP: 0, quality: 5 });
+       schoolsToRender.push({ id: 'us_private', label: 'US Private School', annualEGP: 1200000, quality: 8 });
+       schoolsToRender.push({ id: 'us_ivy_prep', label: 'Ivy Prep Academy', annualEGP: 3000000, quality: 10 });
+    } else if (S.country === 'gbr' || S.country === 'deu') {
+       schoolsToRender.length = 0;
+       schoolsToRender.push({ id: 'eu_public', label: 'State School', annualEGP: 0, quality: 5 });
+       schoolsToRender.push({ id: 'eu_private', label: 'Private International', annualEGP: 1800000, quality: 8 });
+       schoolsToRender.push({ id: 'eu_boarding', label: 'Elite Boarding School', annualEGP: 4000000, quality: 10 });
+    }
+    
+    schoolsToRender.forEach(function(s) {      if (c.school === s.label) return;
       html += '<button class="pill" style="padding:5px;font-size:.66rem" onclick="chChangeSchool(\'' + c.id + '\',\'' + s.id + '\')">' + s.label + '<br><span class="muted" style="font-size:.6rem">' + money(chEGP(s.annualEGP)) + '/yr</span></button>';
     });
     html += '</div></div>';
