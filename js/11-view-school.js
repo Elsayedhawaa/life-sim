@@ -98,8 +98,13 @@ function eduGetCurrentSchoolFee() {
   return school ? eduEGP(school.annualEGP) : 0;
 }
 
-function eduComputeGPA() { return S.uni && typeof S.uni.gpa === 'number' ? S.uni.gpa : 0; }
-
+function eduComputeGPA() { 
+  if (S.uni && typeof S.uni.gpa === 'number') return S.uni.gpa;
+  if (S.degree && S.graduation && S.graduation.gpa) return S.graduation.gpa;
+  // Convert Thanaweya/IB score to 4.0 scale for high school applicants
+  if (S.thanaweyaScore) return (S.thanaweyaScore / 100) * 4.0;
+  return 0; 
+}
 function eduTrackEligible(track) {
   if (!track || !track.requiresSchool) return true;
   if (!S.school) return false;
@@ -439,7 +444,22 @@ function eduApplyStudyAbroad(uniId, mode) {
   log('📝 Applied to ' + uni.name + '. Decision in ~1 year.');
   render();
 }
-window.eduApplyStudyAbroad = eduApplyStudyAbroad;
+window.eduApplyStudyAbroad = function(uniId, mode) {
+  // ... previous checks ...
+  
+  var appFee = eduUSD(100);
+  if (S.wealth < appFee) {
+    // Check if family is paying
+    if (typeof eduFamilyWealth === 'function' && eduFamilyWealth() > appFee * 52.7 * 2) {
+       log('👨‍👩‍👧 Your family paid the $100 application fee.');
+    } else {
+       log('❌ Need ' + money(appFee) + ' application fee.'); render(); return;
+    }
+  } else {
+    S.wealth -= appFee;
+  }
+  
+  // ...
 
 /* ---------- INTERNSHIPS ---------- */
 function eduApplyInternship(internId) {
