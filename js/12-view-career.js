@@ -1158,11 +1158,13 @@ function careerView() {
   const mood = carMoodLabel();
   const hasGulfOffer = S.gulfWork && S.gulfWork.offer;
   const inGulf = typeof gulfIsInGulf === 'function' && gulfIsInGulf();
+  const isAbroad = typeof expatIsAbroad === 'function' && expatIsAbroad();
   const gulfTabLabel = hasGulfOffer ? '🌍 Gulf 📨' : inGulf ? '🌍 Gulf 🏢' : '🌍 Gulf Jobs';
   const tabs = [
     ['overview', '📋 Overview'],
     ['search', '🔍 Search'],
     ['gulf', gulfTabLabel],
+    ['expat', '🇪🇬 Expat Life'],
     ['tracks', '📈 Tracks'],
     ['parttime', '☕ Part-Time'],
     ['business', '🏪 Business'],
@@ -1191,6 +1193,7 @@ function careerView() {
   if (S.career.tab === 'overview') html += carRenderOverview();
   else if (S.career.tab === 'search') html += carRenderSearch();
   else if (S.career.tab === 'gulf') html += (typeof gulfWorkRender === 'function' ? gulfWorkRender() : '<div class="card"><p class="muted small">Gulf system not loaded.</p></div>');
+ else if (S.career.tab === 'expat') html += (typeof expatRender === 'function' ? expatRender() : '<div class="card"><p class="muted small">Expat system not loaded.</p></div>');
   else if (S.career.tab === 'tracks') html += carRenderTracks();
   else if (S.career.tab === 'parttime') html += carRenderPartTime();
   else if (S.career.tab === 'business') html += carRenderBusiness();
