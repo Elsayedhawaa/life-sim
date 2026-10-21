@@ -147,16 +147,15 @@ function familyView() {
   if (S.age < 6) return '<div class="card"><h3>Family</h3><p class="muted">You are too young to understand these complexities.</p></div>';
 
   const wantsCount = (typeof familyDepthGetActiveWants === 'function') ? familyDepthGetActiveWants().length : 0;
-  const inGulf = typeof gulfIsInGulf === 'function' && gulfIsInGulf();
+  const isAbroad = typeof expatIsAbroad === 'function' && expatIsAbroad();
   const tabs = [
     ['relatives', '👨‍👩‍👧 Relatives'],
     ['partner', '❤️ Partner'],
     ['children', '👶 Children'],
     ['wants', '💭 Wants' + (wantsCount > 0 ? ' (' + wantsCount + ')' : '')],
-    ['medical', '🏥 Health'],
-    ['vacation', '✈️ Vacations']
+    ['medical', '🏥 Health']
   ];
-  if (inGulf) tabs.push(['visits', '✈️ Visits']);
+  if (isAbroad) tabs.push(['visits', '💸 Expat Support']);
 
   let html = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#fb718515 0%,transparent 100%);border-color:#fb7185">' +
     '<div style="display:flex;justify-content:space-between;align-items:center">' +
@@ -172,9 +171,8 @@ function familyView() {
   else if (S.familySubTab === 'children') html += renderChildrenTab();
   else if (S.familySubTab === 'wants') html += (typeof familyDepthRenderWantsPanel === 'function' ? familyDepthRenderWantsPanel() : '<div class="card"><p class="muted small">Wants system not loaded.</p></div>');
     else if (S.familySubTab === 'medical') html += renderMedicalTab();
-  else if (S.familySubTab === 'vacation') html += renderVacationTab();
-  else if (S.familySubTab === 'visits') html += (typeof familyVisitsRender === 'function' ? familyVisitsRender() : '<div class="card"><p class="muted small">Visits system not loaded.</p></div>');
-  /* Show active wants summary at the top */
+  else if (S.familySubTab === 'visits') html += renderFamilySupportTab();
+   /* Show active wants summary at the top */
   if (typeof familyDepthRenderWantsPanel === 'function') {
     const activeWants = (typeof familyDepthGetActiveWants === 'function') ? familyDepthGetActiveWants() : [];
     if (activeWants.length > 0 || S.selfWant) {
@@ -868,7 +866,25 @@ function vacationBook(destId, needsVisa, costPerDayLocal) {
     fx({happiness: days * 3, health: days});
     render();
 }
+function renderFamilySupportTab() {
+  if (!S || !S.family) return '';
 
+  let html = '';
+
+  /* Cross-link to Expat Life */
+  html += '<div class="card" style="border-color:#22d3ee;background:#22d3ee10">' +
+    '<h3 style="color:#22d3ee;margin:0">💸 Family Support</h3>' +
+    '<p class="muted small" style="margin-top:6px">Manage allowances, gifts, and family visit visas from here. For gold savings, hawala, and return planning, see <b>Career → Expat Life</b>.</p>' +
+    '<button class="opt" style="margin-top:8px;width:100%;text-align:center;font-size:.72rem;background:#22d3ee20;border-color:#22d3ee" onclick="switchTab(\'career\');setTimeout(function(){S.career.tab=\'expat\';render();},50)">📊 Open Expat Life dashboard →</button>' +
+    '</div>';
+
+  /* Family visits, gifts, allowances — the existing system from 35-family-visits.js */
+  if (typeof familyVisitsRender === 'function') {
+    html += familyVisitsRender();
+  }
+
+  return html;
+}
 /* ============================================================
    YEAR TICK LOGIC
    ============================================================ */
