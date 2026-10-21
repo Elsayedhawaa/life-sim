@@ -306,7 +306,29 @@ function eduTakeLanguageTest(testId) {
   }
   render();
 }
-window.eduTakeLanguageTest = eduTakeLanguageTest;
+window.eduTakeLanguageTest = function(testId) {
+  var test = EDU_LANGUAGE_TESTS.find(function(t) { return t.id === testId; });
+  if (!test) return;
+  var cost = eduUSD(test.costUSD);
+  var paidByFamily = false;
+
+  if (S.wealth < cost) {
+    var famWealth = typeof getFamilyWealthEGP === 'function' ? getFamilyWealthEGP() : 3000000;
+    var costEGP = cost * 52.7;
+    if (famWealth > costEGP * 2) {
+       if (confirm('You don\'t have enough cash. Your family will pay the ' + money(cost) + ' for the test. Proceed?')) {
+         paidByFamily = true;
+       } else { render(); return; }
+    } else {
+       log('❌ Need ' + money(cost) + '.'); render(); return;
+    }
+  } else {
+    S.wealth -= cost;
+  }
+  // ... rest of the original function
+  var baseScore = 0.3 + (S.smarts / 200);
+  // ...
+  if (paidByFamily) log('👨‍👩‍👧 Your family paid the ' + test.label + ' fee.');
 
 /* ---------- SCHOLARSHIP ---------- */
 function eduApplyScholarship(scholarshipId) {
@@ -408,7 +430,20 @@ function eduApplyInternship(internId) {
   var intern = EDU_INTERNSHIPS.find(function(i) { return i.id === internId; });
   if (!intern) return;
   if (!S.uni && !S.degree) { log('❌ Need university or degree.'); render(); return; }
-
+  var appFee = eduUSD(100);
+  if (S.wealth < appFee) {
+    var famWealth = typeof getFamilyWealthEGP === 'function' ? getFamilyWealthEGP() : 3000000;
+    if (famWealth > appFee * 52.7 * 2) {
+      if (confirm('Your family will pay the $100 application fee. Proceed?')) {
+        // Paid by family
+      } else { render(); return; }
+    } else {
+      log('❌ Need ' + money(appFee) + ' application fee.'); render(); return;
+    }
+  } else {
+    S.wealth -= appFee;
+  }
+  // ... rest of the original function
   var myMajor = S.uni ? S.uni.major : (S.majorId || 'general');
   if (intern.requiresMajor.length && intern.requiresMajor.indexOf(myMajor) < 0) {
     log('❌ Your major is not eligible.'); render(); return;
@@ -699,6 +734,10 @@ function eduRenderTansik() {
       '</div>';
   });
   html += '</div>';
+     html += '<div class="card" style="border-color:#8b5cf6;margin-top:10px">' +
+    '<p class="muted small">Want to study abroad instead of an Egyptian university?</p>' +
+    '<button class="opt" style="width:100%;text-align:center;background:#8b5cf620;border-color:#8b5cf6;font-size:.78rem" onclick="switchTab(\'immigration\');S.immigrationTab=\'study\';render()">✈️ Go to Study Abroad</button>' +
+    '</div>';
   return html;
 }
 
@@ -835,7 +874,36 @@ GameHooks.on('year', function() {
   ensureEducationState();
   if (!S) return;
   var year = gameYear();
+  /* Parent education planning at age 14 */
+  if (S.age === 14 && !S.educationTrack && !S.flags.parent_plan_done) {
+    S.flags.parent_plan_done = true;
+    const tier = S.familyTier || 'middle';
+    let recTrack = 'thanaweya';
+    let recSchool = 'national';
+    
+    if (tier === 'wealthy' || tier === 'ultra') { recTrack = 'ib'; recSchool = 'ib'; }
+    else if (tier === 'upper-mid') { recTrack = 'alevels'; recSchool = 'igcse'; }
+    else if (tier === 'middle') { recTrack = 'thanaweya'; recSchool = 'private'; }
 
+    S.pending = {
+      title: '👨‍👩‍👧 Family Meeting',
+      text: 'Your parents sit you down to discuss your future.\n\n"Based on our situation, we think you should study ' + recTrack.toUpperCase() + ' at ' + recSchool.toUpperCase() + '."',
+      choices: [
+        { label: 'Accept their plan', effect: function(s) {
+           s.educationTrack = recTrack;
+           s.school = recSchool;
+           log('You agreed to study ' + recTrack + ' at ' + recSchool + '.');
+        }},
+        { label: 'I want to choose my own path', effect: function(s) {
+           log('You decided to choose your own path.');
+           s.educationTab = 'studies';
+        }}
+      ]
+    };
+    S.evId = 'parent_plan_14';
+    render();
+    return; /* Wait for player choice */
+  }
   /* Auto-assign school */
   if (S.age >= 7 && S.age < 18 && !S.school && !S.thanaweyaScore) {
     var famW = eduFamilyWealth();
