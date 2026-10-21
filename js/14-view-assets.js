@@ -20,10 +20,21 @@ function ensureAssetsState() {
   if (typeof S.parentsHome === 'undefined') S.parentsHome = null;
   if (typeof S.rentedHome === 'undefined') S.rentedHome = null;
   if (typeof S.assetsRenovateHome === 'undefined') S.assetsRenovateHome = null;
+
   if (S.housing === 'parents' && !S.parentsHome) ensureParentsHome();
   if (S.housing === 'rented' && !S.rentedHome) {
     S.rentedHome = { tierId: 'br2', yearlyRent: (C().prices && C().prices.rent) || 120000, area: 100, condition: 75, rentedYear: gameYear() };
   }
+
+  /* Add contract tracking */
+  if (S.rentedHome) {
+    if (!S.rentedHome.country) S.rentedHome.country = S.country;
+    if (typeof S.rentedHome.contractEndAbs !== 'number') {
+      const currentAbs = (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1);
+      S.rentedHome.contractEndAbs = currentAbs + 12; /* 1 year lease by default */
+    }
+  }
+}
 }
 GameHooks.on('newGame', ensureAssetsState);
 GameHooks.on('migrate', ensureAssetsState);
@@ -202,8 +213,16 @@ window.assetsRentHome = function(tierId) {
     if (S.wealth < moveInCost) { log('❌ Need ' + money(moveInCost) + ' to move in (first month + deposit).'); render(); return; }
     if (!confirm('Move out of your parents\' home into a ' + tier.label + '?\n\nRent: ' + money(yearly) + '/year\nMove-in cost: ' + money(moveInCost) + '\n\nProceed?')) return;
     S.wealth -= moveInCost;
-    S.housing = 'rented';
-    S.rentedHome = { tierId: tier.id, yearlyRent: yearly, area: tier.area, condition: tier.cond, rentedYear: gameYear() };
+        S.housing = 'rented';
+    S.rentedHome = { 
+      tierId: tier.id, 
+      yearlyRent: yearly, 
+      area: tier.area, 
+      condition: tier.cond, 
+      rentedYear: gameYear(),
+      country: S.country, // <-- ADD COUNTRY
+      contractEndAbs: (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1) + 12 // 1 year
+    };
     S.assetsRenovateHome = null;
     log('🔑 Rented a ' + tier.label + ' for ' + money(yearly) + '/year. You moved out.');
     fx({ happiness: 8 });
@@ -568,6 +587,28 @@ GameHooks.on('year', function() {
     }
   }
 });
+/* Auto-terminate lease if you leave the country */
+GameHooks.on('render', function() {
+  if (!S || !S.rentedHome) return;
+  if (S.country === S.rentedHome.country) return;
 
+  const countryName = COUNTRIES[S.rentedHome.country] ? COUNTRIES[S.rentedHome.country].name : S.rentedHome.country;
+  const breakFee = Math.round(S.rentedHome.yearlyRent * 0.5); // 6-month penalty for breaking lease
+  
+  log('🚪 You left ' + countryName + '. Your lease there was automatically terminated.');
+  log('💸 Early termination penalty: ' + money(breakFee));
+
+  if (S.wealth >= breakFee) {
+    S.wealth -= breakFee;
+  } else {
+    S.wealth -= breakFee;
+    log('⚠️ You went into debt to pay the lease break fee.');
+  }
+
+  S.housing = 'parents';
+  S.rentedHome = null;
+  S.assetsRenovateHome = null;
+  render();
+});
 /* ---------- REGISTER ---------- */
 GameHooks.registerTab({ id: 'assets', label: 'Assets', order: 4, view: assetsView });
