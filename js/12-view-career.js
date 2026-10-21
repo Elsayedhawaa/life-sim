@@ -1365,9 +1365,30 @@ function carRenderMilestonesSummary() {
    ============================================================ */
 
 function carRenderSearch() {
+  /* If undocumented, explain and offer alternative */
+  if (typeof isUndocumented === 'function' && isUndocumented()) {
+    let html = '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🔍 Job Search — Blocked</h3>' +
+      '<p class="muted small">You are <b>undocumented</b> in ' + C().name + '. Legal employers cannot hire you — they will be fined and you will be deported.</p>' +
+      '<p class="muted small" style="margin-top:6px">Options to fix this:</p>' +
+      '<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:8px;font-size:.75rem" onclick="switchTab(\'immigration\')">📋 Fix immigration status</button>' +
+      '<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:8px;font-size:.75rem" onclick="S.career.tab=\'overview\';render()">💸 Take cash work (Underground section)</button>' +
+      '<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:8px;font-size:.75rem" onclick="switchTab(\'marriage\')">💍 Marry a citizen</button>' +
+      '</div>';
+
+    /* Fake documents path — high risk, high reward */
+    html += '<div class="card" style="border-color:#fbbf24;background:#fbbf2410">' +
+      '<h4 style="color:#fbbf24;font-size:.85rem">⚠️ Desperate Option: Fake Documents</h4>' +
+      '<p class="muted small">Buy forged work papers and apply for a real job. If caught: permanent record + deportation + 10-year ban.</p>';
+
+    const cost = Math.round(50000 * ((C().rate || 1) / 52.7));
+    const canAfford = S.wealth >= cost;
+    html += '<button class="opt" style="margin-top:8px;width:100%;text-align:center;font-size:.75rem;' + (canAfford ? 'border-color:#fbbf24;color:#fbbf24' : 'opacity:.5') + '" ' + (canAfford ? '' : 'disabled') + ' onclick="carTryFakeDocs()">Buy forged papers (' + money(cost) + ')</button>';
+    html += '</div>';
+    return html;
+  }
+
   let html = '<div class="card"><h3>🔍 Job Search</h3>' +
     '<p class="muted small">Only jobs you qualify for are shown. Applications go through 3 interview rounds.</p></div>';
-
   const visibleTracks = CAR_TRACKS.filter(function(t) {
     if (t.id === 'medicine') return S.degree === 'medicine';
     if (t.id === 'academia') return S.degree && S.uni && S.uni.gpa >= 3.5;
@@ -2194,6 +2215,52 @@ function carFireJobEvent(evt, j) {
     fx({ happiness: -10 });
   }
 }
+window.carTryFakeDocs = function() {
+  if (!S) return;
+  const cost = Math.round(50000 * ((C().rate || 1) / 52.7));
+  if (S.wealth < cost) { log('❌ Need ' + money(cost) + '.'); render(); return; }
+  if (!confirm('Buy forged work papers for ' + money(cost) + '?\n\n• 30% chance employer/trade officer detects them\n• If caught: deportation + 10-year ban + criminal record\n• If successful: you can apply to real jobs\n\nProceed?')) return;
+
+  S.wealth -= cost;
+
+  if (Math.random() < 0.30) {
+    log('🚨 CAUGHT. Your fake papers were flagged. Deportation proceedings begin.');
+    fx({ happiness: -30 });
+    if (!Array.isArray(S.visaBans)) S.visaBans = [];
+    S.visaBans.push({ country: S.country, untilAbsMonth: (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1) + 120 });
+    if (typeof illegalWorkDeport === 'function') {
+      illegalWorkDeport(S, 'fake_docs');
+    }
+    render();
+    return;
+  }
+
+  /* Successful — grant a "fake legal" work visa that will be investigated */
+  if (!S.immigration) S.immigration = {};
+  S.immigration.visaType = 'work';
+  S.immigration.status = 'visa_work';
+  S.immigration.workRights = 'full';
+  S.immigration.expiresYear = gameYear() + 2;
+  S.immigration._isFake = true;
+  log('🎭 Forged papers accepted. You look legal... for now.');
+  log('⚠️ Employers may verify later. Risk of detection each year: 20%.');
+  emitSignal('fakeDocsObtained', {});
+  render();
+};
+
+/* Fake docs detection — fire in year tick */
+GameHooks.on('year', function() {
+  if (!S || !S.immigration || !S.immigration._isFake) return;
+  if (Math.random() < 0.20) {
+    log('🚨 Employer verification revealed your papers are fake. Deportation.');
+    fx({ happiness: -30 });
+    if (!Array.isArray(S.visaBans)) S.visaBans = [];
+    S.visaBans.push({ country: S.country, untilAbsMonth: (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1) + 120 });
+    if (typeof illegalWorkDeport === 'function') {
+      illegalWorkDeport(S, 'fake_docs_detected');
+    }
+  }
+});
 GameHooks.registerTab({ id: 'career', label: '💼 Career', order: 2, view: careerView });
 /* ============================================================
    BULLETPROOF PILL HANDLERS — attach real click listeners
