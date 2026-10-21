@@ -445,8 +445,30 @@ function eduApplyStudyAbroad(uniId, mode) {
   render();
 }
 window.eduApplyStudyAbroad = function(uniId, mode) {
-  // ... previous checks ...
-  
+  var uni = EDU_STUDY_ABROAD_UNIS.find(function(u) { return u.id === uniId; });
+  if (!uni) return;
+
+  if (uni.reqTrack && uni.reqTrack !== 'any') {
+    if (Array.isArray(uni.reqTrack) && uni.reqTrack.indexOf(S.educationTrack) < 0) {
+      log('❌ Your track (' + S.educationTrack + ') not accepted.'); render(); return;
+    }
+  }
+  if (uni.requiresIELTS && (S.languageScores.ielts || 0) < uni.requiresIELTS) {
+    log('❌ Need IELTS ' + uni.requiresIELTS + '+.'); render(); return;
+  }
+  if (uni.requiresTOEFL && (S.languageScores.toefl || 0) < uni.requiresTOEFL) {
+    log('❌ Need TOEFL ' + uni.requiresTOEFL + '+.'); render(); return;
+  }
+  if (uni.requiresGerman && (S.languageScores.goethe || 0) < uni.requiresGerman) {
+    log('❌ Need German B' + uni.requiresGerman + '+.'); render(); return;
+  }
+  if (uni.requiresFrench && (S.languageScores.delf || 0) < uni.requiresFrench) {
+    log('❌ Need French B' + uni.requiresFrench + '+.'); render(); return;
+  }
+  if (uni.requiresGPA && eduComputeGPA() < uni.requiresGPA && S.uni) {
+    log('❌ GPA too low (need ' + uni.requiresGPA + '+).'); render(); return;
+  }
+
   var appFee = eduUSD(100);
   if (S.wealth < appFee) {
     // Check if family is paying
@@ -458,8 +480,34 @@ window.eduApplyStudyAbroad = function(uniId, mode) {
   } else {
     S.wealth -= appFee;
   }
-  
-  // ...
+
+  var majorOpts = (typeof STUDY_ABROAD_MAJORS !== 'undefined') ? STUDY_ABROAD_MAJORS : ['cs','engineering','business','medicine','law','economics','finance','architecture','psychology','nursing'];
+  var majorList = majorOpts.map(function(mid, i) {
+    var m = (typeof EDU_MAJORS !== 'undefined') ? EDU_MAJORS.find(function(x) { return x.id === mid; }) : null;
+    return (i + 1) + '. ' + (m ? m.label : mid);
+  }).join('\n');
+  var pickMajor = prompt('Choose your major:\n\n' + majorList + '\n\nEnter number:', '1');
+  if (!pickMajor) { render(); return; }
+  var majorIdx = parseInt(pickMajor, 10) - 1;
+  if (majorIdx < 0 || majorIdx >= majorOpts.length) { log('❌ Invalid major.'); render(); return; }
+  var chosenMajor = majorOpts[majorIdx];
+
+  S.studyAbroadApps.push({
+    id: 'abroadapp_' + Math.random().toString(36).slice(2, 8),
+    uniId: uniId,
+    uniName: uni.name,
+    country: uni.country,
+    mode: mode,
+    major: chosenMajor,
+    tuitionUSD: uni.tuitionUSD,
+    quality: uni.quality,
+    submittedYear: gameYear(),
+    decisionYear: gameYear() + 1,
+    status: 'pending'
+  });
+  log('📝 Applied to ' + uni.name + '. Decision in ~1 year.');
+  render();
+};
 
 /* ---------- INTERNSHIPS ---------- */
 function eduApplyInternship(internId) {
