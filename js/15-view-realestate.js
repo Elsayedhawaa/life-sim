@@ -556,14 +556,24 @@ window.setHomeForRent = function(homeId) {
 window.evictTenant = function(homeId) {
   const h = S.ownedHomes.find(x => x.id === homeId);
   if (!h || !h.tenant) return;
-  const hc = homeCountry(h);
-  const legalFeesProp = Math.round(h.monthlyRent * 2);
-  const legalFeesPlayer = toPlayerCurrency(legalFeesProp, hc);
-  if (!confirm('Eviction requires lawyers and courts.\n\nCost: ' + moneyIn(legalFeesProp, hc) + '\n≈ ' + money(legalFeesPlayer) + '\n\nProceed?')) return;
-  if (S.wealth >= legalFeesPlayer) S.wealth -= legalFeesPlayer;
-  h.status = 'vacant';
-  h.tenant = null;
-  log('Evicted tenant from ' + h.name + '. Paid ' + money(legalFeesPlayer) + ' in legal fees.');
+  const legalFees = Math.round(h.monthlyRent * 2);
+  S._evictTarget = homeId;
+  S.pending = {
+    title: '⚖️ Evict Tenant',
+    text: 'You want to evict ' + h.tenant.name + ' from ' + h.name + '.\n\nEviction requires lawyers and courts.\n\nCost: ' + money(legalFees),
+    choices: [
+      { label: 'Proceed with eviction', effect: function(s) {
+        if (s.wealth >= legalFees) s.wealth -= legalFees;
+        h.status = 'vacant';
+        h.tenant = null;
+        log('🚪 Evicted tenant from ' + h.name + '. Paid ' + money(legalFees) + ' in legal fees.');
+      }},
+      { label: 'Cancel', effect: function(s) {
+        log('Eviction cancelled.');
+      }}
+    ]
+  };
+  S.evId = 'evict_tenant';
   render();
 };
 
@@ -809,7 +819,8 @@ function mineSection() {
       '<div class="row"><span>Condition</span><b>' + (h.condition || 100) + '%</b></div>' +
       '<div class="row"><span>Furniture items</span><b>' + furnItems.length + '</b></div>' +
       '<div class="row" style="align-items:flex-start"><span>Status</span><div style="text-align:right">' + statusHtml + '</div></div>' +
-      '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:10px">' +
+           '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:10px">' +
+      (contract ? `<button class="pill" style="padding:4px 8px;font-size:.72rem;background:#34d39920;border-color:#34d399;color:#34d399" onclick="payMortgageExtra('${h.id}')">Pay Mortgage Extra</button>` : '') +
       (h.status !== 'occupied' && h.status !== 'rented' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="moveIntoHome(\'' + h.id + '\')">Move in</button>' : '') +
       (h.status === 'vacant' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="setHomeForRent(\'' + h.id + '\')">List for Rent</button>' : '') +
       (h.status === 'listed' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="stopRenting(\'' + h.id + '\')">Unlist</button>' : '') +
@@ -855,7 +866,44 @@ window.sellHome = function(homeId) {
   if (S.housing === 'owned' && h.status === 'occupied') S.housing = 'parents';
   render();
 };
+window.payMortgageExtra = function(homeId) {
+  const h = S.ownedHomes.find(x => x.id === homeId);
+  const contract = S.realestateContracts.find(c => c.homeId === homeId);
+  if (!contract || !h) return;
 
+  const currentCountryRate = C().rate || 1;
+  const propertyCountryRate = (COUNTRIES[h.country] && COUNTRIES[h.country].rate) || 1;
+  const rateRatio = currentCountryRate / propertyCountryRate;
+
+  const input = prompt(`Current remaining loan: ${money(contract.remaining)}\n\nHow much extra do you want to pay? (Enter in ${C().currency})`, String(Math.round(contract.remaining * 0.1)));
+  if (!input) return;
+  
+  const payLocal = Math.round(Number(input));
+  if (payLocal <= 0 || S.wealth < payLocal) {
+    log('❌ Not enough cash.');
+    render();
+    return;
+  }
+
+  // Convert payment to property's currency
+  const payPropertyCurrency = Math.round(payLocal / rateRatio);
+  const actualPay = Math.min(contract.remaining, payPropertyCurrency);
+
+  if (actualPay <= 0) return;
+  if (!confirm(`Pay ${money(actualPay)} toward ${h.name} mortgage?`)) return;
+
+  S.wealth -= Math.round(actualPay * rateRatio);
+  contract.remaining -= actualPay;
+
+  if (contract.remaining <= 0) {
+    S.realestateContracts = S.realestateContracts.filter(c => c.homeId !== homeId);
+    log(`🎉 Mortgage fully paid off! ${h.name} is now 100% yours.`);
+    fx({ happiness: 15 });
+  } else {
+    log(`💸 Extra payment made: ${money(actualPay)}. Remaining: ${money(contract.remaining)}.`);
+  }
+  render();
+};
 /* ============================================================
    YEAR TICK — with FULL currency conversion
    ============================================================ */
