@@ -36,10 +36,6 @@ function lifeView() {
 
   return `
     <div class="card">
-      <h3>Life</h3>
-      <p class="muted small">${status}</p>
-    </div>
-    <div class="card">
       <h3>Life Log</h3>
       <div style="max-height:400px;overflow-y:auto;font-size:.85rem">
         ${grouped.map(function(g) {
@@ -50,8 +46,9 @@ function lifeView() {
           return '<div style="padding:4px 0;border-bottom:1px solid #1a1a2a"><span class="muted mono" style="font-size:.7rem">' + (r.month && isMonthlyPace ? monthName(r.month).slice(0,3) + ' ' + (r.year || '') : 'Age ' + r.age) + '</span> · ' + r.msg + '</div>';
         }).join('')}
       </div>
-    </div>`;
-       ${(typeof lifeGoalsRender === 'function') ? lifeGoalsRender() : ''}
+    </div>
+    ${(typeof lifeGoalsRender === 'function') ? lifeGoalsRender() : ''}
+  `;
 }
 
 GameHooks.registerTab({ id: 'life', label: 'Life', order: 0, view: lifeView });
