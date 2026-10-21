@@ -558,7 +558,8 @@ window.bankDoBuyCert = function(certId) {
   if (!bankSpend(amt, 'CD: ' + cert.name)) { log('Insufficient funds across accounts.'); return; }
   S.bank.certificates.push({
     id: 'cert_' + Math.random().toString(36).slice(2), bankId: cert.bankId, certId: cert.id, name: cert.name, principal: amt, term: cert.term,
-    rates: cert.rates.slice(), payout: cert.payout, earlyPenalty: cert.earlyPenalty, yearsHeld: 0, totalInterestPaid: 0, startYear: gameYear(), autoRenew: false
+    rates: cert.rates.slice(), payout: cert.payout, earlyPenalty: cert.earlyPenalty, yearsHeld: 0, totalInterestPaid: 0, startYear: gameYear(), autoRenew: false,
+    buyCurrency: C().currency, buyRate: C().rate || 1
   });
   render();
 };
@@ -568,7 +569,12 @@ window.bankDoRedeemCert = function(certId) {
   const penalty = Math.round(c.principal * c.earlyPenalty);
   const proceeds = c.principal - penalty;
   if (!confirm(`Break certificate early?\nPenalty: ${money(penalty)}\nReturns to cash: ${money(proceeds)}`)) return;
-  S.wealth += proceeds;
+  const cdRate = c.buyRate || 1;
+  const currentRate = C().rate || 1;
+  const convertedProceeds = (Math.abs(cdRate - currentRate) > 0.01)
+    ? Math.round(proceeds / cdRate * currentRate)
+    : proceeds;
+  S.wealth += convertedProceeds;
   S.bank.certificates.splice(idx, 1);
   bankLogTransaction('Broke CD: ' + c.name, proceeds, 'income');
   render();
@@ -1237,18 +1243,29 @@ function bankYearTick() {
       if (interest > 0) acc.balance += interest;
     }
   });
-
   b.certificates = b.certificates.filter(c => {
     if (c.yearsHeld >= c.term) {
-      const proceeds = c.principal + c.totalInterestPaid;
+      const rawProceeds = c.principal + c.totalInterestPaid;
+      const cdRate = c.buyRate || 1;
+      const currentRate = C().rate || 1;
+      const convertedProceeds = (Math.abs(cdRate - currentRate) > 0.01)
+        ? Math.round(rawProceeds / cdRate * currentRate)
+        : rawProceeds;
+      const conversionNote = (Math.abs(cdRate - currentRate) > 0.01)
+        ? ` (converted from ${c.buyCurrency || 'original'}: ${rawProceeds.toLocaleString()})`
+        : '';
+
       if (c.autoRenew) {
         c.yearsHeld = 0;
         c.totalInterestPaid = 0;
-        log(`🔄 Certificate auto-renewed: ${c.name}.`);
+        c.principal = convertedProceeds;
+        c.buyRate = currentRate;
+        c.buyCurrency = C().currency;
+        log(`🔄 Certificate auto-renewed: ${c.name} at ${C().currency}.`);
         return true;
       } else {
-        S.wealth += proceeds;
-        log(`✅ Certificate matured: ${c.name} returned ${money(proceeds)} to cash.`);
+        S.wealth += convertedProceeds;
+        log(`✅ Certificate matured: ${c.name} returned ${money(convertedProceeds)} to cash${conversionNote}.`);
         return false;
       }
     }
