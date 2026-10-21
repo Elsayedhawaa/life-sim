@@ -109,9 +109,12 @@ function _fdPickTraitBias(templates, traits) {
 function _fdRollWantFor(relation) {
   const pool = WANT_TEMPLATES[relation.kind];
   if (!pool) return null;
-  const eligible = pool.filter(function(t) {
+   const eligible = pool.filter(function(t) {
     if (t.ageMin && (relation.obj.age || 0) < t.ageMin) return false;
     if (t.ageMax && (relation.obj.age || 999) > t.ageMax) return false;
+    // NEW: If player is young and broke, siblings shouldn't ask for huge gifts
+    if (S.age < 25 && t.costEGP > 5000) return false;
+    if (S.wealth < t.costEGP && t.costEGP > 20000) return false;
     return true;
   });
   if (!eligible.length) return null;
