@@ -651,6 +651,15 @@ window.fastForwardToYearEnd = function() {
   save(); render();
   log('⏩ Fast-forwarded to January ' + gameYear() + '.');
 };
+/* ============================================================
+   CURRENCY CONVERTER (Cross-border chemistry)
+   ============================================================ */
+window.convertToPlayerCurrency = function(amount, fromCountryCode) {
+  if (!amount) return 0;
+  const fromRate = (COUNTRIES[fromCountryCode] && COUNTRIES[fromCountryCode].rate) || 1;
+  const toRate = C().rate || 1;
+  return Math.round((amount / fromRate) * toRate);
+};
 window.ageUp = ageUp;
 window.chooseEvent = chooseEvent;
 window.switchTab = (id) => { activeTab = id; render(); };
