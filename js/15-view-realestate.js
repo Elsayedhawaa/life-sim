@@ -819,7 +819,7 @@ function mineSection() {
       '<div class="row"><span>Condition</span><b>' + (h.condition || 100) + '%</b></div>' +
       '<div class="row"><span>Furniture items</span><b>' + furnItems.length + '</b></div>' +
       '<div class="row" style="align-items:flex-start"><span>Status</span><div style="text-align:right">' + statusHtml + '</div></div>' +
-           '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:10px">' +
+             '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:10px">' +
       (contract ? `<button class="pill" style="padding:4px 8px;font-size:.72rem;background:#34d39920;border-color:#34d399;color:#34d399" onclick="payMortgageExtra('${h.id}')">Pay Mortgage Extra</button>` : '') +
       (h.status !== 'occupied' && h.status !== 'rented' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="moveIntoHome(\'' + h.id + '\')">Move in</button>' : '') +
       (h.status === 'vacant' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="setHomeForRent(\'' + h.id + '\')">List for Rent</button>' : '') +
@@ -1065,7 +1065,43 @@ function realEstateYear() {
   S.land = S.land.filter(l => !l.transferred);
 }
 GameHooks.on('year', realEstateYear);
+window.payMortgageExtra = function(homeId) {
+  const h = S.ownedHomes.find(x => x.id === homeId);
+  const contract = S.realestateContracts.find(c => c.homeId === homeId);
+  if (!contract || !h) return;
 
+  const currentCountryRate = C().rate || 1;
+  const propertyCountryRate = (COUNTRIES[h.country] && COUNTRIES[h.country].rate) || 1;
+  const rateRatio = currentCountryRate / propertyCountryRate;
+
+  const input = prompt(`Current remaining loan: ${money(contract.remaining)}\n\nHow much extra do you want to pay? (Enter in ${C().currency})`, String(Math.round(contract.remaining * 0.1)));
+  if (!input) return;
+  
+  const payLocal = Math.round(Number(input));
+  if (payLocal <= 0 || S.wealth < payLocal) {
+    log('❌ Not enough cash.');
+    render();
+    return;
+  }
+
+  const payPropertyCurrency = Math.round(payLocal / rateRatio);
+  const actualPay = Math.min(contract.remaining, payPropertyCurrency);
+
+  if (actualPay <= 0) return;
+  if (!confirm(`Pay ${money(actualPay)} toward ${h.name} mortgage?`)) return;
+
+  S.wealth -= Math.round(actualPay * rateRatio);
+  contract.remaining -= actualPay;
+
+  if (contract.remaining <= 0) {
+    S.realestateContracts = S.realestateContracts.filter(c => c.homeId !== homeId);
+    log(`🎉 Mortgage fully paid off! ${h.name} is now 100% yours.`);
+    fx({ happiness: 15 });
+  } else {
+    log(`💸 Extra payment made: ${money(actualPay)}. Remaining: ${money(contract.remaining)}.`);
+  }
+  render();
+};
 /* ============================================================
    SUB-TAB REGISTRATION
    ============================================================ */
