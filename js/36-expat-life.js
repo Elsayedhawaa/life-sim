@@ -569,7 +569,7 @@ window.expatReturnHome = function() {
 
   const oldRate = C().rate || 1;
   const newRate = (COUNTRIES[homeCountry] && COUNTRIES[homeCountry].rate) || 1;
-    if (typeof S.wealth === 'number') S.wealth = Math.round(S.wealth / oldRate * newRate);
+  if (typeof S.wealth === 'number') S.wealth = Math.round(S.wealth / oldRate * newRate);
 
   /* Bank accounts: convert balances AND clear foreign accounts — they are now foreign to you */
   if (S.bank && Array.isArray(S.bank.accounts)) {
@@ -595,7 +595,7 @@ window.expatReturnHome = function() {
   }
 
   /* Also migrate S.expat.egyptAccount into main wealth */
-    if (S.expat && S.expat.egyptAccount && S.country !== 'egy') { {
+  if (S.expat && S.expat.egyptAccount && S.country !== 'egy') {
     S.wealth += S.expat.egyptAccount.balanceEGP;
     log('🏦 Transferred ' + S.expat.egyptAccount.balanceEGP.toLocaleString() + ' EGP from offshore account to main wealth.');
     S.expat.egyptAccount.balanceEGP = 0;
