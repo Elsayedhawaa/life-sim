@@ -960,26 +960,27 @@ function billsSection() {
   let html = homeSelector();
 
   const bills = calculateAnnualBills(h);
+  const isMon = (typeof isMonthly === 'function') && isMonthly();
+  const p = (amt) => isMon ? Math.round(amt / 12) : amt;
+  const label = isMon ? 'Monthly' : 'Annual';
 
   html += `<div class="card">
-    <h3>Annual Operations · ${h.name}</h3>
+    <h3>${label} Operations · ${h.name}</h3>
     <p class="muted small">Property in ${country.toUpperCase()} · ${h.area} m²</p>
-    <div class="row"><span>Utilities (water/electricity/gas)</span><b class="mono bad">−${money(bills.util)}</b></div>
-    <div class="row"><span>Property Taxes</span><b class="mono bad">−${money(bills.tax)}</b></div>
-    <div class="row"><span>HOA / Compound fees</span><b class="mono bad">−${money(bills.hoa)}</b></div>
-    <div class="row"><span>Staff Payroll</span><b class="mono bad">−${money(bills.staff)}</b></div>
-    <div class="row"><span>Upgrade maintenance</span><b class="mono bad">−${money(bills.upgradeMaint)}</b></div>
-    <div class="row"><span>Furniture maintenance</span><b class="mono bad">−${money(bills.furnMaint)}</b></div>
+    <div class="row"><span>Utilities</span><b class="mono bad">−${money(p(bills.util))}</b></div>
+    <div class="row"><span>Property Taxes</span><b class="mono bad">−${money(p(bills.tax))}</b></div>
+    <div class="row"><span>HOA / Compound fees</span><b class="mono bad">−${money(p(bills.hoa))}</b></div>
+    <div class="row"><span>Staff Payroll</span><b class="mono bad">−${money(p(bills.staff))}</b></div>
+    <div class="row"><span>Upgrade maintenance</span><b class="mono bad">−${money(p(bills.upgradeMaint))}</b></div>
+    <div class="row"><span>Furniture maintenance</span><b class="mono bad">−${money(p(bills.furnMaint))}</b></div>
     <div class="row" style="border-top:2px solid #1a1a2a;margin-top:10px;padding-top:10px">
-      <b>Total Annual Cost</b><b class="mono bad" style="font-size:1.1rem">−${money(bills.total)}</b>
+      <b>Total ${label} Cost</b><b class="mono bad" style="font-size:1.1rem">−${money(p(bills.total))}</b>
     </div>
-    ${h.status === 'rented' ? `<div class="row" style="border-top:1px solid #1a1a2a;margin-top:10px;padding-top:6px"><span>Rental income</span><b class="mono good">+${money(h.monthlyRent * 12)}</b></div>
-    <div class="row"><b>Net</b><b class="mono ${(h.monthlyRent * 12 - bills.total) >= 0 ? 'good' : 'bad'}">${money(h.monthlyRent * 12 - bills.total)}</b></div>` : ''}
+    ${h.status === 'rented' ? `<div class="row" style="border-top:1px solid #1a1a2a;margin-top:10px;padding-top:6px"><span>Rental income</span><b class="mono good">+${money(p(h.monthlyRent * 12))}</b></div>
+    <div class="row"><b>Net</b><b class="mono ${(h.monthlyRent * 12 - bills.total) >= 0 ? 'good' : 'bad'}">${money(p(h.monthlyRent * 12 - bills.total))}</b></div>` : ''}
   </div>`;
-
   return html;
 }
-
 function calculateAnnualBills(h) {
   const country = homeCountry(h);
 
