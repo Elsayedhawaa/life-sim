@@ -979,6 +979,7 @@ function billsSection() {
     ${h.status === 'rented' ? `<div class="row" style="border-top:1px solid #1a1a2a;margin-top:10px;padding-top:6px"><span>Rental income</span><b class="mono good">+${money(p(h.monthlyRent * 12))}</b></div>
     <div class="row"><b>Net</b><b class="mono ${(h.monthlyRent * 12 - bills.total) >= 0 ? 'good' : 'bad'}">${money(p(h.monthlyRent * 12 - bills.total))}</b></div>` : ''}
   </div>`;
+
   return html;
 }
 function calculateAnnualBills(h) {
