@@ -961,7 +961,15 @@ function billsSection() {
 
   const bills = calculateAnnualBills(h);
   const isMon = (typeof isMonthly === 'function') && isMonthly();
-  const p = (amt) => isMon ? Math.round(amt / 12) : amt;
+  
+  // Convert bills to player currency
+  const p = (amt) => {
+    const converted = convertToPlayerCurrency(amt, country);
+    return isMon ? Math.round(converted / 12) : converted;
+  };
+  
+  const rentConverted = p(h.monthlyRent * 12);
+  const totalConverted = p(bills.total);
   const label = isMon ? 'Monthly' : 'Annual';
 
   html += `<div class="card">
@@ -974,10 +982,10 @@ function billsSection() {
     <div class="row"><span>Upgrade maintenance</span><b class="mono bad">−${money(p(bills.upgradeMaint))}</b></div>
     <div class="row"><span>Furniture maintenance</span><b class="mono bad">−${money(p(bills.furnMaint))}</b></div>
     <div class="row" style="border-top:2px solid #1a1a2a;margin-top:10px;padding-top:10px">
-      <b>Total ${label} Cost</b><b class="mono bad" style="font-size:1.1rem">−${money(p(bills.total))}</b>
+      <b>Total ${label} Cost</b><b class="mono bad" style="font-size:1.1rem">−${money(totalConverted)}</b>
     </div>
-    ${h.status === 'rented' ? `<div class="row" style="border-top:1px solid #1a1a2a;margin-top:10px;padding-top:6px"><span>Rental income</span><b class="mono good">+${money(p(h.monthlyRent * 12))}</b></div>
-    <div class="row"><b>Net</b><b class="mono ${(h.monthlyRent * 12 - bills.total) >= 0 ? 'good' : 'bad'}">${money(p(h.monthlyRent * 12 - bills.total))}</b></div>` : ''}
+    ${h.status === 'rented' ? `<div class="row" style="border-top:1px solid #1a1a2a;margin-top:10px;padding-top:6px"><span>Rental income</span><b class="mono good">+${money(rentConverted)}</b></div>
+    <div class="row"><b>Net</b><b class="mono ${(rentConverted - totalConverted) >= 0 ? 'good' : 'bad'}">${money(rentConverted - totalConverted)}</b></div>` : ''}
   </div>`;
 
   return html;
@@ -1063,7 +1071,7 @@ GameHooks.on('year', () => {
 
     // 3. Bills
     const bills = calculateAnnualBills(h);
-    S.wealth -= bills.total;
+      S.wealth -= convertToPlayerCurrency(bills.total, country);
 
     // 4. Staff broke check
     if (S.wealth < 0 && h.staff.length > 0) {
