@@ -209,41 +209,58 @@ function monthlyApplyFinance(c, monthStr) {
   }
 }
   /* Real estate: HOA + mortgage + rent (monthly slice) */
+  /* Real estate: HOA + rent (monthly slice, currency-aware) */
   if (S && Array.isArray(S.ownedHomes) && S.ownedHomes.length > 0) {
-    let reCash = 0;
+    let reCashInPlayer = 0;
     S.ownedHomes.forEach(function(h) {
-      /* HOA */
-      const hoaAnnual = Math.round((h.value || 0) * 0.005);
-      reCash -= Math.round(hoaAnnual / 12);
-      /* Rent income */
+      const hc = h.country || 'egy';
+      const hcRate = (COUNTRIES[hc] && COUNTRIES[hc].rate) || 1;
+      const playerRate = (typeof C === 'function' && C().rate) || 1;
+      const conv = hcRate !== playerRate ? (playerRate / hcRate) : 1;
+
+      /* HOA in home currency, converted */
+      const hoaAnnualInHome = Math.round((h.value || 0) * 0.005);
+      reCashInPlayer -= Math.round((hoaAnnualInHome / 12) * conv);
+
+      /* Rent income in home currency, converted */
       if (h.status === 'rented' && h.monthlyRent) {
-        reCash += Math.round(h.monthlyRent);
+        reCashInPlayer += Math.round(h.monthlyRent * conv);
       }
     });
-    if (reCash !== 0) {
-      S.wealth += reCash;
-      if (reCash < 0) log('🏠 Property HOA: −' + money(-reCash));
-      else if (reCash > 0) log('🏠 Rental income: +' + money(reCash));
+    if (reCashInPlayer !== 0) {
+      S.wealth += reCashInPlayer;
+      if (reCashInPlayer < 0) log('🏠 Property HOA: −' + money(-reCashInPlayer));
+      else if (reCashInPlayer > 0) log('🏠 Rental income: +' + money(reCashInPlayer));
     }
   }
   /* Real estate mortgages (annualPayment / 12 per contract) */
+   /* Real estate mortgages (currency-aware) */
   if (S && Array.isArray(S.realestateContracts) && S.realestateContracts.length > 0) {
-    let mortMonthly = 0;
+    let mortMonthlyInPlayer = 0;
     S.realestateContracts.forEach(function(c) {
       if (c.yearsLeft <= 0) return;
-      const slice = Math.round((c.annualPayment || 0) / 12);
-      if (S.wealth >= slice) {
-        S.wealth -= slice;
-        c.remaining = Math.max(0, (c.remaining || 0) - slice);
+      /* Look up home country for conversion */
+      const home = S.ownedHomes.find(function(h) { return h.id === c.homeId; });
+      const hc = (home && home.country) || 'egy';
+      const hcRate = (COUNTRIES[hc] && COUNTRIES[hc].rate) || 1;
+      const playerRate = (typeof C === 'function' && C().rate) || 1;
+      const conv = hcRate !== playerRate ? (playerRate / hcRate) : 1;
+
+      const sliceInHome = Math.round((c.annualPayment || 0) / 12);
+      const sliceInPlayer = Math.round(sliceInHome * conv);
+
+      if (S.wealth >= sliceInPlayer) {
+        S.wealth -= sliceInPlayer;
+        c.remaining = Math.max(0, (c.remaining || 0) - sliceInHome);
         c.missedPayments = 0;
       } else {
         c.missedPayments = (c.missedPayments || 0) + 1;
         c.remaining = Math.round((c.remaining || 0) * 1.01);
         log('⚠️ Missed mortgage payment on ' + c.name);
       }
-      mortMonthly += slice;
+      mortMonthlyInPlayer += sliceInPlayer;
     });
-    if (mortMonthly > 0) log('🏠 Mortgage payments: −' + money(mortMonthly));
+    if (mortMonthlyInPlayer > 0) log('🏠 Mortgage payments: −' + money(mortMonthlyInPlayer));
     /* Reduce yearsLeft on January rollover */
     if (currentMonth() === 1) {
       S.realestateContracts.forEach(function(c) {
