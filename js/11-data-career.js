@@ -1492,7 +1492,11 @@ const CAR_BENEFITS = {
   meals:     { label: 'Meal allowance',               value: 'Free meals or meal stipend.' },
   travel:    { label: 'Travel benefits',              value: 'Free or discounted airline tickets.' }
 };
-
+/* Fix flat EGP base salary for foreign countries */
+window.CAR_COUNTRY_MULT = {
+  egy: 1.0, sau: 3.5, uae: 3.5, kwt: 3.5, qat: 3.5,
+  usa: 10.0, gbr: 8.0, deu: 8.0, can: 8.5, aus: 9.0, nld: 8.0, fra: 7.5, jpn: 8.0, sgp: 9.0, ita: 6.0
+};
 /* ============================================================
    END OF CAREER DATA
    ============================================================ */
