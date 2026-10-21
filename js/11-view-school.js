@@ -373,12 +373,25 @@ function eduApplyStudyAbroad(uniId, mode) {
   if (S.wealth < appFee) { log('❌ Need ' + money(appFee) + ' application fee.'); render(); return; }
   S.wealth -= appFee;
 
+  /* Pick a major */
+  var majorOpts = (typeof STUDY_ABROAD_MAJORS !== 'undefined') ? STUDY_ABROAD_MAJORS : ['cs','engineering','business','medicine','law','economics','finance','architecture','psychology','nursing'];
+  var majorList = majorOpts.map(function(mid, i) {
+    var m = (typeof EDU_MAJORS !== 'undefined') ? EDU_MAJORS.find(function(x) { return x.id === mid; }) : null;
+    return (i + 1) + '. ' + (m ? m.label : mid);
+  }).join('\n');
+  var pickMajor = prompt('Choose your major:\n\n' + majorList + '\n\nEnter number:', '1');
+  if (!pickMajor) { render(); return; }
+  var majorIdx = parseInt(pickMajor, 10) - 1;
+  if (majorIdx < 0 || majorIdx >= majorOpts.length) { log('❌ Invalid major.'); render(); return; }
+  var chosenMajor = majorOpts[majorIdx];
+
   S.studyAbroadApps.push({
     id: 'abroadapp_' + Math.random().toString(36).slice(2, 8),
     uniId: uniId,
     uniName: uni.name,
     country: uni.country,
     mode: mode,
+    major: chosenMajor,
     tuitionUSD: uni.tuitionUSD,
     quality: uni.quality,
     submittedYear: gameYear(),
@@ -456,6 +469,11 @@ function schoolView() {
     ['opportunities', '🏆 Opportunities'],
     ['events', '📖 Events']
   ];
+  
+  if (S.studyAbroad) {
+    var saLabels = { studying: '🌍 Abroad', job_search: '🌍 Abroad ⏳', illegal: '🌍 Abroad 🚨', working_abroad: '🌍 Abroad ✓', married_citizen: '🌍 Abroad 💍', returned: '🌍 Abroad' };
+    tabs.splice(2, 0, ['abroad', saLabels[S.studyAbroad.status] || '🌍 Abroad']);
+  }
 
   var html = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#f59e0b15 0%,transparent 100%);border-color:#f59e0b">' +
     '<div style="display:flex;justify-content:space-between;align-items:center">' +
@@ -470,6 +488,7 @@ function schoolView() {
 
   if (S.educationTab === 'overview') html += eduRenderOverview();
   else if (S.educationTab === 'studies') html += eduRenderStudies();
+  else if (S.educationTab === 'abroad') html += (typeof studyAbroadRender === 'function' ? studyAbroadRender() : '<div class="card"><p class="muted small">Abroad system not loaded.</p></div>');
   else if (S.educationTab === 'activities') html += eduRenderActivities();
   else if (S.educationTab === 'languages') html += eduRenderLanguages();
   else if (S.educationTab === 'opportunities') html += eduRenderOpportunities();
@@ -999,38 +1018,29 @@ GameHooks.on('year', function() {
     var gpa = eduComputeGPA();
     var chance = 0.4 + (gpa - (uni.requiresGPA || 0)) * 0.4;
     chance = Math.max(0.05, Math.min(0.95, chance));
+    
     if (Math.random() < chance) {
       log('🎉 ADMITTED to ' + uni.name + ' in ' + (uni.country || '').toUpperCase() + '!');
       fx({ happiness: 25 });
       S.educationEvents.push({ year: year, title: 'Study Abroad Admission', text: 'Admitted to ' + uni.name });
-      S.studyAbroad = {
-        country: app.country,
-        university: uni.name,
-        uniId: uni.id,
-        tuitionUSD: uni.tuitionUSD,
-        mode: app.mode,
-        startedYear: year
-      };
-      /* Do NOT change S.country — player stays citizen of home country, just studying abroad */
-      S.uni = {
-        id: uni.id,
-        name: uni.name,
-        type: 'study_abroad',
-        city: (uni.country || '').toUpperCase(),
-        quality: uni.quality,
-        tuition: Math.round(uni.tuitionUSD),
-        year: 0,
-        yearsTotal: 4,
-        major: 'general',
-        degree: 'general',
-        faculty: 'general',
-        gpa: 3.0,
-        semestersCompleted: 0,
-        credits: 0,
-        startedYear: year,
-        paymentMode: app.mode,
-        isStudyAbroad: true
-      };
+      if (typeof studyAbroadArrive === 'function') {
+        studyAbroadArrive(app, uni);
+      } else {
+        /* Fallback if 30-study-abroad.js did not load */
+        S.studyAbroad = {
+          country: app.country, university: uni.name, uniId: uni.id,
+          tuitionUSD: uni.tuitionUSD, mode: app.mode, startedYear: year
+        };
+        S.uni = {
+          id: uni.id, name: uni.name, type: 'study_abroad',
+          city: (uni.country || '').toUpperCase(), quality: uni.quality,
+          tuition: Math.round(uni.tuitionUSD * 52.7),
+          year: 0, yearsTotal: 4, major: app.major || 'general',
+          degree: app.major || 'general', faculty: app.major || 'general',
+          gpa: 3.0, semestersCompleted: 0, credits: 0,
+          startedYear: year, paymentMode: app.mode, isStudyAbroad: true
+        };
+      }
     } else {
       log('❌ Not admitted to ' + uni.name + '.');
       fx({ happiness: -8 });
