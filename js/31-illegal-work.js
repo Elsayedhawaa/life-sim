@@ -31,6 +31,15 @@ GameHooks.on('migrate', ensureIllegalWorkState);
 /* ---------- UNIFIED UNDOCUMENTED CHECK ---------- */
 function isUndocumented() {
   if (!S) return false;
+
+  /* Gulf work is authoritative — if active iqama is valid, you're legal */
+  if (S.gulfWork && S.gulfWork.active && S.gulfWork.iqama) {
+    const currentAbs = (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1);
+    if (S.gulfWork.iqama.expiresAbsMonth > currentAbs) return false;
+    return true; /* iqama expired */
+  }
+
+  /* Otherwise trust immigration + studyAbroad */
   if (S.immigration && S.immigration.status === 'undocumented') return true;
   if (S.studyAbroad && S.studyAbroad.status === 'illegal') return true;
   return false;
