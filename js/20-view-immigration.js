@@ -138,7 +138,7 @@ function immigrationView() {
   if (!S) return '';
   if (S.age < 16) return '<div class="card"><h3>🌍 Immigration</h3><p class="muted">Available from age 16+.</p></div>';
 
-  const sub = S.immigrationTab;
+  const hasMarriageVisa = (S.marriageVisa && (S.marriageVisa.status === 'pending' || (S.marriage && S.marriage.partner && typeof _mvIsCitizen === 'function' && _mvIsCitizen(S.marriage.partner) && isUndocumented())));
   const tabs = [
     ['status', '📋 Status'],
     ['study', '🎓 Study'],
@@ -147,6 +147,7 @@ function immigrationView() {
     ['citizenship', '🌐 Citizenship'],
     ['asylum', '🕊 Asylum']
   ];
+  if (hasMarriageVisa) tabs.push(['marriage_visa', '💍 Marriage']);
 
   let html = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#22d3ee15 0%,transparent 100%);border-color:#22d3ee">' +
     '<div style="display:flex;justify-content:space-between;align-items:center">' +
@@ -157,12 +158,13 @@ function immigrationView() {
     tabs.map(function(t) { return '<button class="pill ' + (sub === t[0] ? 'on' : '') + '" style="padding:6px 10px;font-size:.72rem;white-space:nowrap" onclick="immSetTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') +
     '</div></div>';
 
-  if (sub === 'status') html += immRenderStatus();
+if (sub === 'status') html += immRenderStatus();
   else if (sub === 'study') html += immRenderStudy();
   else if (sub === 'work') html += immRenderWork();
   else if (sub === 'pr') html += immRenderPR();
   else if (sub === 'citizenship') html += immRenderCitizenship();
   else if (sub === 'asylum') html += immRenderAsylum();
+  else if (sub === 'marriage_visa') html += (typeof marryVisaRender === 'function' ? marryVisaRender() : '<div class="card"><p class="muted small">Marriage visa system not loaded.</p></div>');
 
   return html;
 }
