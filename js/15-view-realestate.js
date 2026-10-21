@@ -557,20 +557,19 @@ window.evictTenant = function(homeId) {
   const h = S.ownedHomes.find(x => x.id === homeId);
   if (!h || !h.tenant) return;
   const legalFees = Math.round(h.monthlyRent * 2);
-  S._evictTarget = homeId;
+  const localFee = convertToPlayerCurrency(legalFees, h.country || S.country);
+  
   S.pending = {
     title: '⚖️ Evict Tenant',
-    text: 'You want to evict ' + h.tenant.name + ' from ' + h.name + '.\n\nEviction requires lawyers and courts.\n\nCost: ' + money(legalFees),
+    text: 'You want to evict ' + h.tenant.name + ' from ' + h.name + '.\n\nEviction requires lawyers and courts.\n\nCost: ' + money(localFee),
     choices: [
       { label: 'Proceed with eviction', effect: function(s) {
-        if (s.wealth >= legalFees) s.wealth -= legalFees;
+        if (s.wealth >= localFee) s.wealth -= localFee;
         h.status = 'vacant';
         h.tenant = null;
-        log('🚪 Evicted tenant from ' + h.name + '. Paid ' + money(legalFees) + ' in legal fees.');
+        log('🚪 Evicted tenant from ' + h.name + '. Paid ' + money(localFee) + ' in legal fees.');
       }},
-      { label: 'Cancel', effect: function(s) {
-        log('Eviction cancelled.');
-      }}
+      { label: 'Cancel', effect: function(s) {} }
     ]
   };
   S.evId = 'evict_tenant';
@@ -811,9 +810,9 @@ function mineSection() {
       '<div><b style="font-size:1rem">' + h.name + '</b> <span class="muted small">' + h.area + 'm² · ' + (h.city || '') + ' · ' + flag + ' ' + countryName + '</span></div>' +
       (h.status === 'occupied' ? '<span style="color:#34d399;font-size:1.2rem">🏠</span>' : '') +
       '</div>' +
-      '<div class="row"><span>Market value</span><b class="mono">' + moneyIn(h.value, hc) + '</b></div>' +
+            '<div class="row"><span>Market value</span><b class="mono">' + money(convertToPlayerCurrency(h.value, h.country || S.country)) + '</b></div>' +
+      (furnValue > 0 ? '<div class="row"><span>Incl. furniture</span><b class="mono">' + money(convertToPlayerCurrency(furnValue, h.country || S.country)) + '</b></div>' : '') +
       (isForeign ? '<div class="muted small" style="padding-left:8px;margin-top:-2px">≈ ' + money(valueInPlayer) + ' at current rate</div>' : '') +
-      (furnValue > 0 ? '<div class="row"><span>Incl. furniture</span><b class="mono">' + moneyIn(furnValue, hc) + '</b></div>' : '') +
       (contract ? '<div class="row"><span>Bank loan</span><b class="mono bad">-' + moneyIn(contract.remaining, hc) + ' (' + contract.yearsLeft + 'y)</b></div>' : '') +
       '<div class="row"><span>Net equity</span><b class="mono good">' + moneyIn(netEquity, hc) + '</b></div>' +
       '<div class="row"><span>Condition</span><b>' + (h.condition || 100) + '%</b></div>' +
@@ -981,10 +980,8 @@ function realEstateYear() {
         h.condition -= 10;
         if (Math.random() < 0.3) { h.status = 'vacant'; h.tenant = null; log('Tenant fled ' + h.name + '.'); }
       } else if (!(typeof isMonthly === 'function' && isMonthly())) {
-        /* Rental income — convert from property currency to player currency */
-        const annRentInHome = h.monthlyRent * 12;
-        const annRentInPlayer = toPlayerCurrency(annRentInHome, hc);
-        S.wealth += annRentInPlayer;
+                const annRent = h.monthlyRent * 12;
+        S.wealth += convertToPlayerCurrency(annRent, h.country || S.country);
       }
     }
   });
