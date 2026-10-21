@@ -51,6 +51,7 @@ function lifeView() {
         }).join('')}
       </div>
     </div>`;
+       ${(typeof lifeGoalsRender === 'function') ? lifeGoalsRender() : ''}
 }
 
 GameHooks.registerTab({ id: 'life', label: 'Life', order: 0, view: lifeView });
