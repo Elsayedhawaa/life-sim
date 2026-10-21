@@ -14,6 +14,7 @@
 function ensureFamilyState() {
   if (!S) return;
   if (!Array.isArray(S.family)) S.family = [];
+ if (!S.familySupport) S.familySupport = { lastAskYear: 0, lastGiftYear: 0 };
   if (!S.homeCountry) S.homeCountry = S.country || 'egy';
   if (!S.familySubTab) S.familySubTab = 'relatives';
 
@@ -295,7 +296,14 @@ function familyRenderRelative(p) {
     '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyCall(\'' + p.id + '\')">📞 Call</button>' +
     '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyVisit(\'' + p.id + '\')">☕ Visit</button>' +
     '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyHelpPrompt(\'' + p.id + '\', 500)">💵 Help</button>';
+        if(isParent) html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familySetAllowance(\'' + p.id + '\')">💰 Allowance</button>';
+    else html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyOpenGiftPicker(\'' + p.id + '\')">🎁 Gift</button>';
     
+    // ADD THIS:
+    if (isParent) {
+      html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;background:#34d39920;border-color:#34d399;color:#34d399" onclick="askFamilyForMoney()">💸 Ask for Cash</button>';
+    }
+  html += '</div></div>';
        if(isParent) html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familySetAllowance(\'' + p.id + '\')">💰 Allowance</button>';
     else html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyOpenGiftPicker(\'' + p.id + '\')">🎁 Gift</button>';
     
@@ -1324,7 +1332,51 @@ function familyOpenGiftPicker(memberId) {
   if (!choice) return;
   familySendGift(memberId, choice.trim());
 }
+window.askFamilyForMoney = function() {
+  if (!S.familySupport) S.familySupport = { lastAskYear: 0 };
+  if (S.familySupport.lastAskYear === gameYear()) {
+    log('❌ You already asked your family for money this year.');
+    render();
+    return;
+  }
+  
+  const getWealth = function() {
+    const tier = S.familyTier || 'middle';
+    const map = { poor: 800000, 'lower-mid': 1500000, middle: 3000000, 'upper-mid': 6000000, wealthy: 18000000, ultra: 60000000 };
+    return map[tier] || 3000000;
+  };
 
+  const famWealth = getWealth();
+  const maxGiveEGP = Math.round(famWealth * 0.05); 
+  const maxGiveLocal = Math.round(maxGiveEGP * ((C().rate || 1) / 52.7));
+  
+  const parents = (S.family || []).filter(function(m) { return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false; });
+  if (!parents.length) { log('❌ No living parents to ask.'); render(); return; }
+  
+  const avgBond = parents.reduce(function(s, p) { return s + (p.bond || 70); }, 0) / parents.length;
+  if (avgBond < 30) { log('❌ Your parents are too upset with you right now.'); render(); return; }
+
+  const input = prompt(
+    'Ask your parents for money.\n\nMax they can give: ' + money(maxGiveLocal) + '\nCurrent cash: ' + money(S.wealth) + '\n\nHow much?', 
+    String(Math.round(maxGiveLocal * 0.5))
+  );
+  if (!input) return;
+  const amt = Math.round(Number(input));
+  
+  if (amt <= 0 || amt > maxGiveLocal) { log('❌ Invalid amount.'); render(); return; }
+
+  S.familySupport.lastAskYear = gameYear();
+  
+  if (Math.random() < 0.80) {
+    S.wealth += amt;
+    log('💸 Parents gave you ' + money(amt) + '.');
+    parents.forEach(function(p) { p.bond = Math.max(0, p.bond - 5); });
+  } else {
+    log('❌ Parents refused. "We don\'t have that kind of money right now."');
+    fx({ happiness: -3 });
+  }
+  render();
+};
 /* ---------- REGISTER TAB & WINDOW EXPORTS ---------- */
 GameHooks.registerTab({ id: 'family', label: '❤️ Family', order: 3, view: familyView });
 
