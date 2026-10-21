@@ -322,6 +322,14 @@ const CAR_COMPANIES = {
       { name: 'King Faisal Hospital',                 payMult: 1.20, benefits: ['health','housing'], stability: 0.95, prestige: 5 },
       { name: 'King Fahd Medical City',               payMult: 1.15, benefits: ['health','housing'], stability: 0.95, prestige: 5 }
     ],
+         schools: [
+      { name: 'American International School Riyadh',   payMult: 1.80, benefits: ['health','housing','flights','bonus'], stability: 0.95, prestige: 5 },
+      { name: 'British International School Riyadh',    payMult: 1.70, benefits: ['health','housing','flights'], stability: 0.95, prestige: 5 },
+      { name: 'Riyadh International School',            payMult: 1.60, benefits: ['health','housing','flights'], stability: 0.95, prestige: 5 },
+      { name: 'Dhahran British Grammar School',         payMult: 1.65, benefits: ['health','housing','flights'], stability: 0.90, prestige: 5 },
+      { name: 'Continental School Jeddah',              payMult: 1.40, benefits: ['health','housing'],          stability: 0.90, prestige: 4 },
+      { name: 'Jeddah International School',            payMult: 1.50, benefits: ['health','housing'],          stability: 0.95, prestige: 4 }
+    ],
     tech: [
       { name: 'Google KSA',                           payMult: 1.55, benefits: ['health','stock','housing'], stability: 0.85, prestige: 5 },
       { name: 'Microsoft KSA',                        payMult: 1.45, benefits: ['health','stock','housing'], stability: 0.90, prestige: 5 },
@@ -567,6 +575,14 @@ const CAR_COMPANIES = {
       { name: 'Emirates NBD',                         payMult: 1.20, benefits: ['health','bonus','housing'], stability: 0.90, prestige: 5 },
       { name: 'First Abu Dhabi Bank (FAB)',           payMult: 1.20, benefits: ['health','bonus','housing'], stability: 0.90, prestige: 5 },
       { name: 'Mashreq Bank',                         payMult: 1.15, benefits: ['health','bonus','housing'], stability: 0.85, prestige: 4 }
+    ],
+         schools: [
+      { name: 'GEMS Wellington International School',   payMult: 1.60, benefits: ['health','housing','flights'], stability: 0.95, prestige: 5 },
+      { name: 'Dubai American Academy',                 payMult: 1.80, benefits: ['health','housing','flights','bonus'], stability: 0.95, prestige: 5 },
+      { name: 'Dubai College',                          payMult: 1.90, benefits: ['health','housing','flights'], stability: 0.95, prestige: 5 },
+      { name: 'Repton School Dubai',                    payMult: 1.70, benefits: ['health','housing'],          stability: 0.95, prestige: 5 },
+      { name: 'The English College Dubai',              payMult: 1.50, benefits: ['health','housing'],          stability: 0.90, prestige: 4 },
+      { name: 'Jumeirah College',                       payMult: 1.55, benefits: ['health','housing'],          stability: 0.90, prestige: 4 }
     ],
     tech: [
       { name: 'Google UAE',                           payMult: 1.50, benefits: ['health','stock','housing'], stability: 0.85, prestige: 5 },
