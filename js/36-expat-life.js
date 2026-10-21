@@ -660,8 +660,9 @@ window.expatRender = function() {
   }
 
   /* Gold section — always visible */
-  html += '<div class="card"><h4 style="font-size:.85rem;color:#fbbf24">🪙 Gold Savings</h4>' +
-    '<p class="muted small">Buy in any country. Sell anywhere. Prices auto-update with market.</p>';
+   html += '<div class="card"><h4 style="font-size:.85rem;color:#fbbf24">🪙 Gold Savings</h4>' +
+    '<p class="muted small">Buy in any country. Sell anywhere. Prices auto-update with market.</p>' +
+    '<button class="opt" style="margin-top:6px;width:100%;text-align:center;background:#fbbf2420;border-color:#fbbf24;font-size:.75rem" onclick="switchTab(\'shopping\');if(S.shopping)S.shopping.tab=\'luxury\';render()">Browse Full Gold & Jewelry Shop →</button>';
 
   /* Karat selector */
   html += '<div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">';
