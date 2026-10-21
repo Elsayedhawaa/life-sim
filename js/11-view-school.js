@@ -325,10 +325,26 @@ window.eduTakeLanguageTest = function(testId) {
   } else {
     S.wealth -= cost;
   }
-  // ... rest of the original function
+
   var baseScore = 0.3 + (S.smarts / 200);
-  // ...
+  if (S.school === 'igcse' || S.school === 'american' || S.school === 'ib' || S.school === 'boarding') baseScore += 0.20;
+  else if (S.school === 'language' || S.school === 'private' || S.school === 'private_top') baseScore += 0.10;
+  baseScore += Math.random() * 0.35;
+
+  var score = Math.round(Math.min(1, baseScore) * test.maxScore * 10) / 10;
+  if (testId === 'goethe' || testId === 'delf') score = Math.round(score);
+
+  S.languageScores[testId] = Math.max(score, (S.languageScores[testId] || 0));
   if (paidByFamily) log('👨‍👩‍👧 Your family paid the ' + test.label + ' fee.');
+  if (score >= test.passScore) {
+    log('✅ ' + test.label + ': ' + score + ' — PASSED!');
+    fx({ happiness: 8 });
+  } else {
+    log('❌ ' + test.label + ': ' + score + ' — Failed (need ' + test.passScore + '+).');
+    fx({ happiness: -4 });
+  }
+  render();
+};
 
 /* ---------- SCHOLARSHIP ---------- */
 function eduApplyScholarship(scholarshipId) {
@@ -443,7 +459,6 @@ function eduApplyInternship(internId) {
   } else {
     S.wealth -= appFee;
   }
-  // ... rest of the original function
   var myMajor = S.uni ? S.uni.major : (S.majorId || 'general');
   if (intern.requiresMajor.length && intern.requiresMajor.indexOf(myMajor) < 0) {
     log('❌ Your major is not eligible.'); render(); return;
