@@ -32,6 +32,10 @@ GameHooks.on('migrate', ensureIllegalWorkState);
 function isUndocumented() {
   if (!S) return false;
 
+  /* CRITICAL: You are a citizen of your home country — never undocumented there */
+  const homeCountry = S.homeCountry || S.country;
+  if (S.country === homeCountry) return false;
+
   /* Gulf work is authoritative — if active iqama is valid, you're legal */
   if (S.gulfWork && S.gulfWork.active && S.gulfWork.iqama) {
     const currentAbs = (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1);
