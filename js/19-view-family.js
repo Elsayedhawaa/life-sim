@@ -199,7 +199,15 @@ function renderRelativesTab() {
   let html = '';
   const livingParents = familyLivingParents();
   const deadParents = familyParents().filter(function(m) { return m.alive === false; });
-  const siblings = familySiblings();
+  const siblings = familySiblings(); 
+   /* Family Financial Support */
+  const parentsAlive = familyLivingParents();
+  if (parentsAlive.length > 0) {
+    html += '<div class="card" style="border-color:#34d399"><h3 style="color:#34d399">💰 Family Financial Support</h3>' +
+      '<p class="muted small">Ask your parents for cash or support.</p>' +
+      '<button class="opt" style="margin-top:6px;width:100%;text-align:center;background:#34d39920;border-color:#34d399;font-size:.78rem" onclick="askFamilyForMoney()">💸 Ask parents for cash</button>' +
+      '</div>';
+  }
   const pendingReq = S.familyRequests || [];
 
   if (pendingReq.length) {
@@ -361,7 +369,20 @@ function familySendRemittance() {
   fx({ happiness: 3 });
   render();
 }
-
+function _fdRollWantFor(relation) {
+  const pool = WANT_TEMPLATES[relation.kind];
+  if (!pool) return null;
+  const eligible = pool.filter(function(t) {
+    if (t.ageMin && (relation.obj.age || 0) < t.ageMin) return false;
+    if (t.ageMax && (relation.obj.age || 999) > t.ageMax) return false;
+    
+    /* NEW: If player is young (<25) and broke, siblings shouldn't ask for massive things */
+    if (S.age < 25 && t.costEGP > (S.wealth + 20000)) {
+       if (t.costEGP > 50000) return false; 
+    }
+    return true;
+  });
+   
 function familyRenderInheritance() {
   const h = S.inheritedFamilyHome;
   if (!h) return '';
