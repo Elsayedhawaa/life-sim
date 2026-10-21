@@ -138,6 +138,7 @@ function immigrationView() {
   if (!S) return '';
   if (S.age < 16) return '<div class="card"><h3>🌍 Immigration</h3><p class="muted">Available from age 16+.</p></div>';
 
+  const sub = S.immigrationTab;
   const hasMarriageVisa = (S.marriageVisa && (S.marriageVisa.status === 'pending' || (S.marriage && S.marriage.partner && typeof _mvIsCitizen === 'function' && _mvIsCitizen(S.marriage.partner) && isUndocumented())));
   const tabs = [
     ['status', '📋 Status'],
