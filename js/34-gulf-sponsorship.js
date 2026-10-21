@@ -1090,12 +1090,16 @@ window.gulfWorkRender = function() {
   const noc = g.noc;
   const exit = g.exitVisa;
 
-  let html = '';
+    let html = '';
+
+  /* Determine TRUE legal status — gulfWork wins */
+  const currentAbsForStatus = (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1);
+  const iqamaValid = g.iqama && g.iqama.expiresAbsMonth > currentAbsForStatus;
 
   if (g.absconded) {
     html += '<div class="card" style="border-color:#fb7185;background:#fb718515"><h3 style="color:#fb7185">🚨 Absconded</h3><p class="muted small">Your sponsor filed an absconding report. You are undocumented in ' + C().name + '.</p></div>';
-  } else if (S.immigration && S.immigration.status === 'undocumented') {
-    html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🚨 Undocumented</h3><p class="muted small">You are no longer legally employed. See Career → Underground section.</p></div>';
+  } else if (!iqamaValid) {
+    html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🚨 Undocumented</h3><p class="muted small">Your iqama expired and was not renewed. See Career → Underground section.</p></div>';
   } else {
     html += '<div class="card" style="border-color:' + sponsorColor + '">' +
       '<h3 style="color:' + sponsorColor + '">🏢 Your Sponsor</h3>' +
