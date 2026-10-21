@@ -421,3 +421,75 @@ const GULF_FAMILY_VISIT_TYPES = [
 window.GULF_FAMILY_VISIT_TYPES = GULF_FAMILY_VISIT_TYPES;
 
 console.log('[World Life] 33-data-gulf-work.js loaded (Expanded Events & Costs)');
+/* ============================================================
+   REAL GULF SALARY DATA (v2 — appended)
+   ============================================================ */
+
+/* Nationality multipliers — real pay gap */
+const GULF_NATIONALITY_MULT = {
+  // Western — premium
+  usa: 1.6, gbr: 1.6, uk: 1.6, can: 1.6, aus: 1.6, nzl: 1.6,
+  deu: 1.55, fra: 1.55, ita: 1.55, esp: 1.55, nld: 1.55, che: 1.55, aut: 1.55, bel: 1.55, swe: 1.55, nor: 1.55, den: 1.55, fin: 1.55, irl: 1.55, prt: 1.5, grc: 1.5,
+  // Gulf citizens
+  sau: 1.4, uae: 1.4, kwt: 1.4, qat: 1.4, omn: 1.4, bhr: 1.4,
+  // Arab (Levant, Egypt, Maghreb)
+  egy: 1.0, jor: 1.0, lbn: 1.0, syr: 1.0, irq: 1.0, mar: 1.0, tun: 1.0, alg: 1.0, lib: 1.0,
+  // South Asian
+  ind: 0.75, pak: 0.75, bng: 0.75, lka: 0.75, nep: 0.75,
+  // Southeast Asian
+  phl: 0.65, idn: 0.65, vnm: 0.65, tha: 0.7, mly: 0.75, mmr: 0.6,
+  // African
+  ken: 0.7, nga: 0.7, eth: 0.65, sud: 0.7, som: 0.6
+};
+
+/* Base salary in USD/month at ENTRY level (level 0) per career track */
+const GULF_TRACK_BASE_USD_MONTH = {
+  teaching: 2200, medicine: 4500, surgery: 5500, nursing: 1400, pharmacy: 1800,
+  dentistry: 3200, engineering: 2500, civil_eng: 2200, architect: 2200,
+  law: 3000, accounting: 1600, business: 1700, investment: 3500, marketing: 1600,
+  sales: 1400, hr: 1500, consulting: 2800, tech: 3000, data_science: 3400,
+  cybersecurity: 2800, product: 2600, product_design: 2000, qa_engineering: 2000,
+  bpo: 900, hospitality: 900, aviation: 3500, media: 1200, government: 1300,
+  trades: 900, entry: 700
+};
+
+/* Level multiplier — grows with career level */
+const GULF_LEVEL_MULT = [1.0, 1.3, 1.6, 2.0, 2.5, 3.0];
+
+/* Source multipliers — reflected in offer salary */
+const GULF_SOURCE_SALARY_MULT = {
+  friend: 1.05,        // referral bonus
+  relative: 0.95,      // family discount
+  agency: 0.85,        // agency cut
+  internal_transfer: 1.25, // retention premium
+  direct_apply: 1.00
+};
+
+/* Housing options in Gulf (multiplier of basic monthly salary) */
+const GULF_HOUSING_TIERS = [
+  { id: 'worker_camp', label: 'Worker Camp', rentPct: 0.06, area: 15,  happiness: -10, condition: 40, desc: 'Shared room, 4-6 workers, no privacy.' },
+  { id: 'basic_flat',  label: 'Basic 1BR Flat', rentPct: 0.20, area: 65, happiness: -2, condition: 65, desc: 'Modest 1-bedroom in a working-class building.' },
+  { id: 'mid_flat',    label: 'Standard 2BR', rentPct: 0.28, area: 100, happiness: 2, condition: 78, desc: 'Comfortable 2-bedroom apartment.' },
+  { id: 'compound',    label: 'Compound Flat', rentPct: 0.40, area: 130, happiness: 5, condition: 88, desc: 'Gated expat compound with amenities.' }
+];
+
+/* Allowances (per Saudi/UAE labor law, common practice) */
+const GULF_ALLOWANCES = {
+  housingPct: 0.25,   // if housing not provided
+  transportPct: 0.10, // always
+  mobilePct: 0.02     // usually company sim card
+};
+
+/* EOSB (End of Service Benefits) rules */
+const GULF_EOSB = {
+  first5Years: 0.5,   // half month basic per year
+  after5Years: 1.0    // full month basic per year
+};
+
+window.GULF_NATIONALITY_MULT = GULF_NATIONALITY_MULT;
+window.GULF_TRACK_BASE_USD_MONTH = GULF_TRACK_BASE_USD_MONTH;
+window.GULF_LEVEL_MULT = GULF_LEVEL_MULT;
+window.GULF_SOURCE_SALARY_MULT = GULF_SOURCE_SALARY_MULT;
+window.GULF_HOUSING_TIERS = GULF_HOUSING_TIERS;
+window.GULF_ALLOWANCES = GULF_ALLOWANCES;
+window.GULF_EOSB = GULF_EOSB;
