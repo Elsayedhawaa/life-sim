@@ -569,9 +569,41 @@ window.expatReturnHome = function() {
 
   const oldRate = C().rate || 1;
   const newRate = (COUNTRIES[homeCountry] && COUNTRIES[homeCountry].rate) || 1;
-  if (typeof S.wealth === 'number') S.wealth = Math.round(S.wealth / oldRate * newRate);
-  /* Egyptian account is already in EGP — no conversion */
-  if (S.bank && Array.isArray(S.bank.accounts)) S.bank.accounts.forEach(function(a) { if (typeof a.balance === 'number') a.balance = Math.round(a.balance / oldRate * newRate); });
+    if (typeof S.wealth === 'number') S.wealth = Math.round(S.wealth / oldRate * newRate);
+
+  /* Bank accounts: convert balances AND clear foreign accounts — they are now foreign to you */
+  if (S.bank && Array.isArray(S.bank.accounts)) {
+    S.bank.accounts.forEach(function(a) {
+      if (typeof a.balance === 'number') a.balance = Math.round(a.balance / oldRate * newRate);
+    });
+    /* Add an Egyptian bank account with converted balances */
+    const totalBanked = S.bank.accounts.reduce(function(s, a) { return s + (a.balance || 0); }, 0);
+    if (totalBanked > 0) {
+      /* Migrate to a fresh Egyptian account */
+      if (typeof BANKS !== 'undefined' && BANKS.egy && BANKS.egy.length > 0) {
+        S.bank.accounts = [{
+          id: 'acc_return_' + Math.random().toString(36).slice(2, 8),
+          bankId: BANKS.egy[0].id,
+          type: 'savings',
+          balance: totalBanked,
+          openedYear: gameYear()
+        }];
+      }
+    } else {
+      S.bank.accounts = [];
+    }
+  }
+
+  /* Also migrate S.expat.egyptAccount into main wealth */
+    if (S.expat && S.expat.egyptAccount && S.country !== 'egy') { {
+    S.wealth += S.expat.egyptAccount.balanceEGP;
+    log('🏦 Transferred ' + S.expat.egyptAccount.balanceEGP.toLocaleString() + ' EGP from offshore account to main wealth.');
+    S.expat.egyptAccount.balanceEGP = 0;
+  }
+
+  /* Reset net worth history — mixed currencies */
+  if (S.bank) S.bank.netWorthHistory = [];
+  S._bankMigrationCountry = homeCountry;
 
   S.country = homeCountry;
   S._lastCountry = homeCountry;
