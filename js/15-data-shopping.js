@@ -757,11 +757,50 @@ const SHOP_FASHION = [
   ['Creed','Aventus','fashion','accessory',450,7,7,1,'Status men\'s fragrance'],
   ['Le Labo','Santal 33','fashion','accessory',230,6,6,1,'Trendy cult scent']
 ];
+/* ---------- GOLD & BULLION ---------- */
+const SHOP_GOLD = [
+  /* --- ORIGINAL ITEMS --- */
+  ['Valcambi','1g Gold Bar (24K)','luxury','gold_bar',70,2,4,9999,'999.9 fine gold.',0,9999],
+  ['Valcambi','5g Gold Bar (24K)','luxury','gold_bar',340,4,5,9999,'999.9 fine gold.',0,9999],
+  ['Valcambi','10g Gold Bar (24K)','luxury','gold_bar',670,6,6,9999,'999.9 fine gold.',0,9999],
+  ['PAMP Suisse','50g Gold Bar (24K)','luxury','gold_bar',3300,8,8,9999,'Certified investment bar.',0,9999],
+  ['PAMP Suisse','100g Gold Bar (24K)','luxury','gold_bar',6600,10,10,9999,'Heavy investment bar.',0,9999],
+  ['South African','Krugerrand 1oz Coin','luxury','gold_coin',2000,5,5,9999,'Classic gold bullion coin.',0,9999],
+  ['Canadian','Maple Leaf 1oz Coin','luxury','gold_coin',2000,5,5,9999,'.9999 pure gold coin.',0,9999],
+  ['American','Gold Eagle 1oz Coin','luxury','gold_coin',2000,5,5,9999,'US bullion coin.',0,9999],
+  ['Tiffany & Co','Gold Chain 18K','fashion','jewelry',1500,8,9,9999,'Iconic gold chain.',0,9999],
+  ['Cartier','Love Bracelet 18K','fashion','jewelry',6500,10,10,9999,'Iconic luxury gold.',0,9999],
 
+  /* --- NEW: EXPANDED INVESTMENT BARS --- */
+  ['BTC','10g Gold Bar (24K)','luxury','gold_bar',750,5,5,9999,'Billion Trade Co. 999.9 bar, highly liquid in MENA markets.',0,9999],
+  ['BTC','20g Gold Bar (24K)','luxury','gold_bar',1500,7,7,9999,'Billion Trade Co. 999.9 investment bar.',0,9999],
+  ['PAMP Suisse','1 oz Gold Bar (24K)','luxury','gold_bar',2300,6,7,9999,'World-renowned 31.1g minted gold bar with Lady Fortuna motif.',0,9999],
+  ['Valcambi','250g Cast Gold Bar (24K)','luxury','gold_bar',18500,10,12,9999,'Heavy cast investment bar for serious wealth storage.',0,9999],
+  ['Credit Suisse','1kg Gold Bar (24K)','luxury','gold_bar',75000,20,20,9999,'The ultimate wealth preserver. A massive 1 kilo gold brick.',0,9999],
+
+  /* --- NEW: GLOBAL & REGIONAL GOLD COINS --- */
+  ['Egyptian Mint','Gold Guineh (8g 21K)','luxury','gold_coin',550,4,4,9999,'Traditional Egyptian sovereign. 8 grams of 21-karat gold.',0,9999],
+  ['Egyptian Mint','Half Gold Guineh (4g 21K)','luxury','gold_coin',280,2,3,9999,'Traditional 4-gram 21-karat gold coin. Easy to trade.',0,9999],
+  ['British Royal Mint','Gold Sovereign (22K)','luxury','gold_coin',500,4,5,9999,'Classic 7.98g British gold coin, historically trusted worldwide.',0,9999],
+  ['Austrian Mint','Philharmonic 1oz Coin','luxury','gold_coin',2050,5,5,9999,'Beautiful European .9999 gold coin featuring instruments.',0,9999],
+  ['Perth Mint','Kangaroo 1oz Coin','luxury','gold_coin',2050,5,5,9999,'Australian pure gold bullion coin.',0,9999],
+  ['Chinese Mint','Gold Panda (30g 24K)','luxury','gold_coin',2000,5,5,9999,'Highly collectible 30-gram Chinese gold coin.',0,9999],
+
+  /* --- NEW: JEWELRY & CULTURAL ASSETS --- */
+  ['Generic','18K Gold Wedding Band','fashion','jewelry',350,5,4,9999,'A simple, classic 18K gold wedding ring.',0,9999],
+  ['L\'azurde','21K Gold Bangle (Ghaweisha)','fashion','jewelry',1200,8,7,9999,'Traditional 21K gold bangle, heavily traded and gifted in the Middle East.',0,9999],
+  ['L\'azurde','21K Bridal Gold Set (Shabka)','fashion','jewelry',4500,15,12,9999,'A complete 21-karat necklace, ring, and earring set for weddings.',0,9999],
+  
+  /* --- NEW: HIGH-END DESIGNER JEWELRY --- */
+  ['Van Cleef & Arpels','Vintage Alhambra Necklace','fashion','jewelry',2900,12,11,9999,'Iconic 18K yellow gold and onyx clover motif.',0,9999],
+  ['Cartier','Juste un Clou Bracelet 18K','fashion','jewelry',7300,10,12,9999,'The famous Cartier nail bracelet in 18K yellow gold.',0,9999],
+  ['Bvlgari','B.zero1 18K Gold Ring','fashion','jewelry',1800,9,10,9999,'Architectural 18K yellow gold band inspired by the Colosseum.',0,9999],
+  ['Rolex','Day-Date 36mm (18K Gold)','luxury','watch',35000,18,20,9999,'The "President". Solid 18K yellow gold luxury timepiece.',0,9999]
+];
 /* ---------- AUTO-COMBINE ---------- */
 const SHOP_ALL = [].concat(
   SHOP_PHONES, SHOP_AUDIO, SHOP_WATCHES, SHOP_TABLETS, SHOP_COMPUTERS, SHOP_TVS,
-  SHOP_APPLIANCES, SHOP_FURNITURE, SHOP_FASHION
+  SHOP_APPLIANCES, SHOP_FURNITURE, SHOP_FASHION, SHOP_GOLD
 );
 
 /* ============================================================
