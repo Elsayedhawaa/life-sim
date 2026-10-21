@@ -463,7 +463,40 @@ window.gulfDeclineOffer = function() {
   S.gulfWork.pendingCountry = null;
   render();
 };
+window.gulfManualRenewIqama = function() {
+  ensureGulfWorkState();
+  const g = S.gulfWork;
+  if (!g.active || !g.iqama) { log('❌ No active iqama to renew.'); render(); return; }
+  const rules = GULF_IQAMA_RULES[S.country] || { renewalYears: 2, costEGP: 28000 };
+  const cost = _gulfLocal(rules.costEGP);
+  if (S.wealth < cost) { log('❌ Need ' + money(cost) + '.'); render(); return; }
+  if (!confirm('Renew iqama manually?\n\nCost: ' + money(cost) + '\nNew expiry: +' + rules.renewalYears + ' years\n\n⚠️ Your sponsor may resist — requires their signature.')) return;
+  S.wealth -= cost;
 
+  /* Sponsor must still cooperate — some resistance */
+  const sponsorBlocks = g.sponsor && Math.random() < (1 - g.sponsor.renewsIqama) * 0.5;
+  if (sponsorBlocks) {
+    log('🚨 Your sponsor refused to sign the renewal. Money partially lost. Try again or bribe.');
+    /* Half refund */
+    S.wealth += Math.round(cost * 0.5);
+    render(); return;
+  }
+
+  g.iqama.expiresAbsMonth = _gulfAbsMonth() + rules.renewalYears * 12;
+  g._renewalWarned = false;
+  if (S.immigration) {
+    S.immigration.expiresYear = _gulfAbsToYear(g.iqama.expiresAbsMonth);
+    S.immigration.iqamaRenewalYear = _gulfAbsToYear(g.iqama.expiresAbsMonth);
+    if (S.immigration.status === 'undocumented' || S.immigration.visaType === 'undocumented') {
+      S.immigration.visaType = 'work';
+      S.immigration.status = 'visa_work';
+      S.immigration.workRights = 'full';
+      log('✅ Immigration status restored to work visa.');
+    }
+  }
+  log('🪪 Iqama manually renewed. New expiry ' + _gulfAbsToLabel(g.iqama.expiresAbsMonth) + '.');
+  render();
+};
 /* ---------- NOC REQUEST ---------- */
 window.gulfRequestNOC = function() {
   ensureGulfWorkState();
@@ -671,17 +704,38 @@ GameHooks.on('year', function() {
   const g = S.gulfWork;
   if (!g.active || !_gulfIsInGulf()) return;
 
-  /* Iqama expiry */
+   /* Iqama expiry — SYNC to immigration so both systems agree */
   if (g.iqama) {
     const currentAbs = _gulfAbsMonth();
+    const daysUntilExpiry = g.iqama.expiresAbsMonth - currentAbs;
+
+    /* Pre-expiry warning */
+    if (daysUntilExpiry > 0 && daysUntilExpiry <= 12 && !g._renewalWarned) {
+      log('⚠️ Iqama expires in ' + daysUntilExpiry + ' months. Your sponsor should renew it — or you can renew it yourself.');
+      g._renewalWarned = true;
+    }
+
     if (currentAbs >= g.iqama.expiresAbsMonth) {
-      /* Try renewal */
+      /* Try automatic sponsor renewal */
       if (Math.random() < (g.sponsor ? g.sponsor.renewsIqama : 0.8)) {
         const rules = GULF_IQAMA_RULES[S.country] || { renewalYears: 2 };
         g.iqama.expiresAbsMonth = currentAbs + rules.renewalYears * 12;
+        g._renewalWarned = false;
+
+        /* CRITICAL: sync to immigration so expiry check does not fire */
+        if (S.immigration) {
+          S.immigration.expiresYear = _gulfAbsToYear(g.iqama.expiresAbsMonth);
+          S.immigration.iqamaRenewalYear = _gulfAbsToYear(g.iqama.expiresAbsMonth);
+          if (S.immigration.status === 'undocumented' || S.immigration.visaType === 'undocumented') {
+            S.immigration.visaType = 'work';
+            S.immigration.status = 'visa_work';
+            S.immigration.workRights = 'full';
+            log('✅ Immigration status restored to work visa.');
+          }
+        }
         log('🪪 Iqama renewed by sponsor. New expiry ' + _gulfAbsToLabel(g.iqama.expiresAbsMonth) + '.');
       } else {
-        log('🚨 Sponsor failed to renew your iqama. You are now undocumented.');
+        log('🚨 Sponsor did not renew your iqama. You are now undocumented.');
         if (S.immigration) {
           S.immigration.visaType = 'undocumented';
           S.immigration.status = 'undocumented';
@@ -1055,12 +1109,22 @@ window.gulfWorkRender = function() {
 
   if (iqama) {
     const iqamaColor = iqamaMonthsLeft < 3 ? '#fb7185' : iqamaMonthsLeft < 6 ? '#fbbf24' : '#34d399';
+    const rules = GULF_IQAMA_RULES[S.country] || { renewalYears: 2, costEGP: 28000 };
+    const manualRenewCost = _gulfLocal(rules.costEGP);
+    const canManualRenew = iqamaMonthsLeft <= 6;
+
     html += '<div class="card"><h4 style="font-size:.85rem;color:#22d3ee">🪪 Iqama (Residence Permit)</h4>' +
       '<div class="row"><span>Number</span><b class="mono">' + iqama.number + '</b></div>' +
       '<div class="row"><span>Profession</span><b>' + iqama.profession + '</b></div>' +
       '<div class="row"><span>Sponsor</span><b>' + iqama.sponsorCompany + '</b></div>' +
       '<div class="row"><span>Expires</span><b style="color:' + iqamaColor + '">' + _gulfAbsToLabel(iqama.expiresAbsMonth) + ' (' + iqamaMonthsLeft + ' mo)</b></div>' +
-      '</div>';
+      '<div class="row"><span>Auto-renewal</span><b>' + (iqamaMonthsLeft > 6 ? 'Sponsor handles at renewal' : (g.sponsor && g.sponsor.renewsIqama >= 0.9 ? 'Likely' : 'Uncertain — sponsor has missed before')) + '</b></div>' +
+      '<p class="muted small" style="margin-top:6px">Iqama renewals are normally handled by your sponsor (kafeel). If they fail, you can renew it yourself — but it costs money and requires an NOC that they cooperate with.</p>';
+
+    if (canManualRenew) {
+      html += '<button class="opt" style="margin-top:8px;width:100%;text-align:center;font-size:.75rem;background:' + (S.wealth >= manualRenewCost ? '#34d39920;border-color:#34d399' : 'opacity:.5') + '" ' + (S.wealth >= manualRenewCost ? '' : 'disabled') + ' onclick="gulfManualRenewIqama()">🔧 Renew manually (' + money(manualRenewCost) + ')</button>';
+    }
+    html += '</div>';
   }
 
   /* EOSB tracker */
