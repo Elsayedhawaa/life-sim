@@ -1167,8 +1167,7 @@ window.gulfWorkRender = function() {
     const usedDays = S.vacationDaysUsedThisYear || 0;
     const daysLeft = vacationDays - usedDays;
     html += '<div class="muted small" style="margin-top:6px">Vacation days remaining: ' + daysLeft + '</div>';
-    if (daysLeft >= 7) html += '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;background:#fbbf2420;border-color:#fbbf24" onclick="gulfVisitHomePrompt()">✈️ Visit home (uses vacation days)</button>';
-  }
+if (daysLeft >= 7) html += '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;background:#fbbf2420;border-color:#fbbf24" onclick="gulfVisitHomePrompt()">✈️ Book visit home via Vacations →</button>';  }
   html += '</div>';
 
   if (g.wageArrears > 0) {
@@ -1256,12 +1255,20 @@ function _gulfRenderApplyUI() {
 }
 
 window.gulfVisitHomePrompt = function() {
+  /* Route through the full Vacations system — manager approval, flight classes, events, and destination choice */
+  const homeCountryName = COUNTRIES[S.homeCountry] ? COUNTRIES[S.homeCountry].name : S.homeCountry;
+  if (typeof switchTab === 'function' && S.vacation) {
+    S.vacation.tab = 'destinations';
+    log('✈️ Opening Vacations — pick your home destination in ' + homeCountryName + ' to book a family visit.');
+    switchTab('vacations');
+    return;
+  }
+  /* Fallback if Vacations system not loaded */
   const vacationDays = S.vacationDays || 21;
   const usedDays = S.vacationDaysUsedThisYear || 0;
   const daysLeft = vacationDays - usedDays;
-  const days = parseInt(prompt('How many days will you visit home?\n\nVacation days available: ' + daysLeft + '\nTypical: 7-14 days', '7'), 10);
+  const days = parseInt(prompt('How many days will you visit home?\n\nVacation days available: ' + daysLeft, '7'), 10);
   if (!days || days < 1) return;
   gulfVisitHome(days);
 };
-
 console.log('[World Life] 34-gulf-sponsorship.js loaded');
