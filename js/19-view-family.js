@@ -1201,7 +1201,7 @@ function familyCall(memberId) {
   render();
 }
 
-ffunction familyVisit(memberId) {
+function familyVisit(memberId) {
   ensureFamilyState();
   const m = familyById(memberId);
   if (!m || m.alive === false) return;
