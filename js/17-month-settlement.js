@@ -233,35 +233,33 @@ function monthlyApplyFinance(c, monthStr) {
       else if (reCashInPlayer > 0) log('🏠 Rental income: +' + money(reCashInPlayer));
     }
   }
-  /* Real estate mortgages (annualPayment / 12 per contract) */
-   /* Real estate mortgages (currency-aware) */
+   /* Real estate mortgages (annualPayment / 12 per contract) */
   if (S && Array.isArray(S.realestateContracts) && S.realestateContracts.length > 0) {
-    let mortMonthlyInPlayer = 0;
+    let mortMonthly = 0;
     S.realestateContracts.forEach(function(c) {
       if (c.yearsLeft <= 0) return;
-      /* Look up home country for conversion */
-      const home = S.ownedHomes.find(function(h) { return h.id === c.homeId; });
-      const hc = (home && home.country) || 'egy';
-      const hcRate = (COUNTRIES[hc] && COUNTRIES[hc].rate) || 1;
-      const playerRate = (typeof C === 'function' && C().rate) || 1;
-      const conv = hcRate !== playerRate ? (playerRate / hcRate) : 1;
+      
+      const home = (S.ownedHomes || []).find(h => h.id === c.homeId);
+      const homeCountry = home ? (home.country || S.country) : S.country;
+      
+      // Convert mortgage slice to player's current currency
+      const sliceLocal = Math.round((c.annualPayment || 0) / 12);
+      const slice = typeof convertToPlayerCurrency === 'function' 
+        ? convertToPlayerCurrency(sliceLocal, homeCountry)
+        : sliceLocal;
 
-      const sliceInHome = Math.round((c.annualPayment || 0) / 12);
-      const sliceInPlayer = Math.round(sliceInHome * conv);
-
-      if (S.wealth >= sliceInPlayer) {
-        S.wealth -= sliceInPlayer;
-        c.remaining = Math.max(0, (c.remaining || 0) - sliceInHome);
+      if (S.wealth >= slice) {
+        S.wealth -= slice;
+        c.remaining = Math.max(0, (c.remaining || 0) - sliceLocal); // Deduct in home currency
         c.missedPayments = 0;
       } else {
         c.missedPayments = (c.missedPayments || 0) + 1;
         c.remaining = Math.round((c.remaining || 0) * 1.01);
         log('⚠️ Missed mortgage payment on ' + c.name);
       }
-      mortMonthlyInPlayer += sliceInPlayer;
+      mortMonthly += slice;
     });
-    if (mortMonthlyInPlayer > 0) log('🏠 Mortgage payments: −' + money(mortMonthlyInPlayer));
-    /* Reduce yearsLeft on January rollover */
+    if (mortMonthly > 0) log('🏠 Mortgage payments: −' + money(mortMonthly));
     if (currentMonth() === 1) {
       S.realestateContracts.forEach(function(c) {
         if (c.yearsLeft > 0) c.yearsLeft--;
