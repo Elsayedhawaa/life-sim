@@ -1639,27 +1639,38 @@ function carRenderInterviews() {
    ============================================================ */
 
 function carRenderOffers() {
+  const currentCountry = S.country;
+  const allOffers = S.career.offers || [];
+  const validOffers = allOffers.filter(function(o) { return !o.country || o.country === currentCountry; });
+  const staleOffers = allOffers.filter(function(o) { return o.country && o.country !== currentCountry; });
+
   let html = '<div class="card"><h3>💼 Offers</h3>';
-  if (S.career.offers.length === 0) {
+  if (validOffers.length === 0 && staleOffers.length === 0) {
     html += '<p class="muted small">No pending offers. Perform well to attract competitors.</p></div>';
     return html;
   }
-  S.career.offers.forEach(function(offer) {
+  if (validOffers.length === 0) {
+    html += '<p class="muted small">No pending offers in your current country.</p></div>';
+    return html;
+  }
+  html += '</div>';
+
+  validOffers.forEach(function(offer) {
     const current = S.career.job;
     const diff = current ? offer.salary - current.salary : offer.salary;
     const diffColor = diff > 0 ? '#34d399' : '#fb7185';
+    const diffPct = current && current.salary > 0 ? Math.round((diff / current.salary) * 100) : 0;
 
     html += '<div class="card" style="padding:10px;border-color:#34d399">' +
       '<div style="display:flex;justify-content:space-between"><b>' + offer.company + '</b><span class="good">' + money(offer.salary) + '/yr</span></div>' +
       '<div class="muted small">' + offer.title + ' · Level ' + (offer.level + 1) + '</div>' +
       '<div class="muted small">' + offer.message + '</div>';
 
-    /* Comparison */
     if (current) {
       html += '<div style="margin-top:8px;padding:6px;background:#0f0f1a;border-radius:6px">' +
         '<div class="row" style="font-size:.72rem"><span>Current salary</span><b>' + money(current.salary) + '</b></div>' +
         '<div class="row" style="font-size:.72rem"><span>New offer</span><b>' + money(offer.salary) + '</b></div>' +
-        '<div class="row" style="font-size:.72rem"><span>Difference</span><b style="color:' + diffColor + '">' + (diff > 0 ? '+' : '') + money(diff) + '/yr</b></div>' +
+        '<div class="row" style="font-size:.72rem"><span>Difference</span><b style="color:' + diffColor + '">' + (diff > 0 ? '+' : '') + money(diff) + ' (' + (diffPct > 0 ? '+' : '') + diffPct + '%)</b></div>' +
         '</div>';
     }
 
@@ -1669,7 +1680,16 @@ function carRenderOffers() {
       '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;border-color:#fb7185;color:#fb7185" onclick="carDeclineOffer(\'' + offer.id + '\')">Decline</button>' +
       '</div></div>';
   });
-  html += '</div>';
+
+  if (staleOffers.length > 0) {
+    html += '<div class="card" style="border-color:#666;opacity:.6"><h4 style="font-size:.8rem;color:#888">📮 Offers from other countries (' + staleOffers.length + ')</h4>' +
+      '<p class="muted small">You must relocate to accept these. They will expire automatically.</p>';
+    staleOffers.forEach(function(offer) {
+      const cName = COUNTRIES[offer.country] ? COUNTRIES[offer.country].name : offer.country;
+      html += '<div class="row" style="font-size:.75rem"><span>' + offer.company + '</span><b class="muted">' + cName + '</b></div>';
+    });
+    html += '</div>';
+  }
   return html;
 }
 
@@ -1987,34 +2007,36 @@ GameHooks.on('year', function() {
       }
     }
 
-    /* Competitor offer */
-    if (j.performance >= 65 && j.tenure >= 1 && Math.random() < 0.15) {
-      const track2 = carTrackById(j.track);
-      if (track2) {
-        const competitors = carCompaniesFor(track2.industry).filter(function(comp) { return comp.name !== j.company; });
-        if (competitors.length > 0) {
-          const comp = competitors[Math.floor(Math.random() * competitors.length)];
-          const level = track2.levels[j.level];
-          const bump = 15 + Math.floor(Math.random() * 20);
-          const offerSalary = Math.round(level.baseSalaryEGP * comp.payMult * (1 + bump / 100));
-          c.offers.push({
-            id: 'off_' + Math.random().toString(36).slice(2, 8),
-            company: comp.name,
-            title: j.title,
-            track: j.track,
-            level: j.level,
-            salary: offerSalary,
-            baseSalaryEGP: level.baseSalaryEGP,
-            payMult: comp.payMult,
-            benefits: comp.benefits.slice(),
-            prestige: comp.prestige,
-            message: 'Offering ' + bump + '% more than your current salary.'
-          });
-          log('💼 Competitor offer from ' + comp.name + ' (' + bump + '% raise).');
-        }
-      }
+  /* Competitor offer — based on CURRENT salary, tagged with current country */
+if (j.performance >= 65 && j.tenure >= 1 && Math.random() < 0.15) {
+  const track2 = carTrackById(j.track);
+  if (track2) {
+    const competitors = carCompaniesFor(track2.industry).filter(function(comp) { return comp.name !== j.company; });
+    if (competitors.length > 0) {
+      const comp = competitors[Math.floor(Math.random() * competitors.length)];
+      const bump = 15 + Math.floor(Math.random() * 20);
+      /* FIX: base the offer on the player's CURRENT salary, not the track's base */
+      const currentSalary = j.salary;
+      const offerSalary = Math.round(currentSalary * (1 + bump / 100));
+      c.offers.push({
+        id: 'off_' + Math.random().toString(36).slice(2, 8),
+        company: comp.name,
+        title: j.title,
+        track: j.track,
+        level: j.level,
+        salary: offerSalary,
+        baseSalaryEGP: j.baseSalaryEGP,
+        payMult: comp.payMult,
+        benefits: comp.benefits.slice(),
+        prestige: comp.prestige,
+        country: S.country,
+        salaryCurrency: C().currency,
+        message: 'Offering ' + bump + '% more than your current salary.'
+      });
+      log('💼 Competitor offer from ' + comp.name + ' (' + bump + '% raise).');
     }
-
+  }
+}
     /* Bonus */
     if (j.benefits.indexOf('bonus') >= 0 && Math.random() < 0.7) {
       const bonus = Math.round(j.salary * (0.10 + Math.random() * 0.10));
