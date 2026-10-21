@@ -1121,7 +1121,7 @@ window.gulfWorkRender = function() {
 
   return html;
 };
-ffunction _gulfRenderApplyUI() {
+function _gulfRenderApplyUI() {
   const eligibleCountries = GULF_COUNTRIES.filter(function(c) { return COUNTRIES[c]; });
   const career = _gulfCareerInfo();
 
