@@ -68,21 +68,138 @@ function _gulfConvertWealth(oldCountry, newCountry) {
     if (typeof c.limit === 'number') c.limit = Math.round(c.limit / oldRate * newRate);
   });
 }
+/* ---------- SALARY / CAREER HELPERS (v2) ---------- */
+function _gulfNationalityMult() {
+  const origin = (S.passports && S.passports[0]) || S.homeCountry || S.country || 'egy';
+  return GULF_NATIONALITY_MULT[origin] || 1.0;
+}
 
+function _gulfOriginCountry() {
+  return (S.passports && S.passports[0]) || S.homeCountry || 'egy';
+}
+
+function _gulfCareerInfo() {
+  const cj = S.career && S.career.job;
+  if (!cj) return { track: 'entry', title: 'Entry Worker', industry: 'retail', level: 0, careerLevel: 0 };
+  const track = (typeof CAR_TRACKS !== 'undefined') ? CAR_TRACKS.find(function(t) { return t.id === cj.track; }) : null;
+  if (!track) return { track: 'entry', title: 'Entry Worker', industry: 'retail', level: 0, careerLevel: 0 };
+  const lvl = Math.min(cj.level || 0, track.levels.length - 1);
+  return {
+    track: track.id,
+    title: track.levels[lvl].title,
+    industry: track.industry,
+    level: lvl,
+    careerLevel: cj.level || 0,
+    requiresDegree: track.requiresDegree
+  };
+}
+
+function _gulfSalaryBreakdown(sourceId, destCountry) {
+  const career = _gulfCareerInfo();
+  const baseUSD = GULF_TRACK_BASE_USD_MONTH[career.track] || GULF_TRACK_BASE_USD_MONTH.entry;
+  const levelMult = GULF_LEVEL_MULT[Math.min(career.level, GULF_LEVEL_MULT.length - 1)];
+  const natMult = _gulfNationalityMult();
+  const srcMult = GULF_SOURCE_SALARY_MULT[sourceId] || 1.0;
+  const monthlyUSD = baseUSD * levelMult * natMult * srcMult;
+  const annualUSD = monthlyUSD * 12;
+  const destRate = (COUNTRIES[destCountry] && COUNTRIES[destCountry].rate) || 1;
+  const basicAnnualLocal = Math.round(annualUSD * destRate);
+
+  /* Allowances (added on top of basic) */
+  const housingAllowance = Math.round(basicAnnualLocal * GULF_ALLOWANCES.housingPct);
+  const transportAllowance = Math.round(basicAnnualLocal * GULF_ALLOWANCES.transportPct);
+  const mobileAllowance = Math.round(basicAnnualLocal * GULF_ALLOWANCES.mobilePct);
+
+  return {
+    career: career,
+    basicAnnualLocal: basicAnnualLocal,
+    housingAllowance: housingAllowance,
+    transportAllowance: transportAllowance,
+    mobileAllowance: mobileAllowance,
+    baseUSD: Math.round(monthlyUSD),
+    levelMult: levelMult,
+    natMult: natMult,
+    srcMult: srcMult
+  };
+}
+
+function _gulfMoneyFor(amountLocal, countryCode) {
+  const c = COUNTRIES[countryCode];
+  if (!c) return Math.round(amountLocal).toLocaleString();
+  const monthly = Math.round(amountLocal / 12);
+  const isMon = (typeof isMonthly === 'function') && isMonthly();
+  if (isMon) return monthly.toLocaleString() + ' ' + c.currency + '/mo (' + Math.round(amountLocal).toLocaleString() + '/yr)';
+  return Math.round(amountLocal).toLocaleString() + ' ' + c.currency + '/yr (' + monthly.toLocaleString() + '/mo)';
+}
+
+function _gulfMoneyShort(amountLocal, countryCode) {
+  const c = COUNTRIES[countryCode];
+  if (!c) return Math.round(amountLocal).toLocaleString();
+  const isMon = (typeof isMonthly === 'function') && isMonthly();
+  if (isMon) return Math.round(amountLocal / 12).toLocaleString() + ' ' + c.currency + '/mo';
+  return Math.round(amountLocal).toLocaleString() + ' ' + c.currency + '/yr';
+}
+
+function _gulfConvertToHome(amountLocal, destCountry) {
+  const dest = COUNTRIES[destCountry];
+  const home = COUNTRIES[S.homeCountry || 'egy'];
+  if (!dest || !home) return amountLocal;
+  return Math.round(amountLocal / dest.rate * home.rate);
+}
+
+function _gulfIndustryForTrack(track) {
+  const map = {
+    teaching: 'schools', academia: 'universities', medicine: 'hospitals',
+    surgery: 'hospitals', pediatrics: 'hospitals', cardiology: 'hospitals',
+    nursing: 'hospitals', psychology: 'hospitals', pharmacy: 'pharma',
+    dentistry: 'dental', veterinary: 'veterinary', physiotherapy: 'hospitals',
+    law: 'law', prosecutor: 'government', engineering: 'engineering',
+    civil_eng: 'engineering', architect: 'architecture', tech: 'tech',
+    data_science: 'tech', cybersecurity: 'tech', product_design: 'tech',
+    qa_engineering: 'tech', product: 'tech', business: 'banking',
+    accounting: 'consulting', investment: 'banking', marketing: 'fmcg',
+    sales: 'retail', hr: 'fmcg', consulting: 'consulting', bpo: 'bpo',
+    hospitality: 'hotels', aviation: 'aviation', media: 'media',
+    government: 'government', trades: 'trades', entry: 'retail'
+  };
+  return map[track] || 'retail';
+}
+
+function _gulfProfessionTitle(track, level) {
+  const trackDef = (typeof CAR_TRACKS !== 'undefined') ? CAR_TRACKS.find(function(t) { return t.id === track; }) : null;
+  if (trackDef && trackDef.levels[Math.min(level, trackDef.levels.length - 1)]) {
+    return trackDef.levels[Math.min(level, trackDef.levels.length - 1)].title;
+  }
+  return 'Worker';
+}
 /* ---------- SPONSOR SELECTION ---------- */
-function _gulfPickSponsor(source) {
+ffunction _gulfPickSponsor(source) {
   const bias = source.sponsorBias || ['fair'];
   const type = bias[Math.floor(Math.random() * bias.length)];
   const typeDef = GULF_SPONSOR_TYPES[type] || GULF_SPONSOR_TYPES.fair;
 
-  /* Real company name from existing car companies if available, else generic */
   const gulfCountry = S.gulfWork.pendingCountry || 'sau';
+  const career = _gulfCareerInfo();
+  const industry = _gulfIndustryForTrack(career.track);
+
+  /* Pick company from the CORRECT industry for the player's career */
   let companyName = 'Gulf Employer ' + Math.floor(Math.random() * 900 + 100);
   const pools = (typeof CAR_COMPANIES !== 'undefined' && CAR_COMPANIES[gulfCountry]) ? CAR_COMPANIES[gulfCountry] : null;
   if (pools) {
-    const industries = Object.keys(pools);
-    const industry = industries[Math.floor(Math.random() * industries.length)];
-    const list = pools[industry];
+    let list = pools[industry] || null;
+    /* If exact industry missing, try sensible fallbacks */
+    if (!list || !list.length) {
+      const fallbacks = ['hospitals', 'schools', 'universities', 'tech', 'banking', 'engineering', 'retail', 'hotels'];
+      for (const fb of fallbacks) {
+        if (pools[fb] && pools[fb].length) { list = pools[fb]; break; }
+      }
+    }
+    /* Final fallback: any company */
+    if (!list || !list.length) {
+      for (const k of Object.keys(pools)) {
+        if (pools[k] && pools[k].length) { list = pools[k]; break; }
+      }
+    }
     if (list && list.length) {
       const c = list[Math.floor(Math.random() * list.length)];
       companyName = c.name;
@@ -93,6 +210,7 @@ function _gulfPickSponsor(source) {
     type: type,
     label: typeDef.label,
     company: companyName,
+    industry: industry,
     control: typeDef.control,
     paysOnTime: typeDef.paysOnTime,
     exitVisaGrant: typeDef.exitVisaGrant,
@@ -113,18 +231,14 @@ window.gulfStartApplication = function(sourceId, countryId) {
   const source = GULF_JOB_SOURCES.find(function(s) { return s.id === sourceId; });
   if (!source) return;
 
-  if (source.requiresFriend && (!S.friends || !S.friends.length)) {
-    log('❌ You need at least one friend to refer you.'); render(); return;
-  }
+  if (source.requiresFriend && (!S.friends || !S.friends.length)) { log('❌ You need at least one friend to refer you.'); render(); return; }
   if (source.requiresRelative) {
     const rels = (S.family || []).filter(function(m) { return m.alive !== false && (m.isSibling || m.role === 'Brother' || m.role === 'Sister'); });
     if (!rels.length) { log('❌ No sibling/relative to refer you.'); render(); return; }
   }
-  if (source.requiresJob && !(S.career && S.career.job)) {
-    log('❌ You need a current job for internal transfer.'); render(); return;
-  }
+  if (source.requiresJob && !(S.career && S.career.job)) { log('❌ You need a current job for internal transfer.'); render(); return; }
 
-  /* Agency commission upfront */
+  /* Agency commission */
   if (source.commissionCost > 0) {
     const costLocal = _gulfLocal(source.commissionCost);
     if (S.wealth < costLocal) { log('❌ Agency commission is ' + money(costLocal) + '. You cannot afford it.'); render(); return; }
@@ -132,7 +246,6 @@ window.gulfStartApplication = function(sourceId, countryId) {
     S.wealth -= costLocal;
   }
 
-  /* Determine success */
   let successChance = source.successChance;
   if (source.id === 'friend') successChance += 0.10;
   if (S.smarts > 70) successChance += 0.10;
@@ -152,34 +265,54 @@ window.gulfStartApplication = function(sourceId, countryId) {
     render(); return;
   }
 
-  /* Build offer */
   S.gulfWork.pendingCountry = countryId;
   const sponsor = _gulfPickSponsor(source);
 
-  /* Base salary — use Gulf company pay multiplier if available */
-  let baseEGP = 180000; /* fallback */
-  if (source.requiresJob && S.career && S.career.job) baseEGP = S.career.job.baseSalaryEGP || 180000;
-  const salaryLocal = Math.round(baseEGP / 52.7 * (COUNTRIES[countryId].rate || 1) * source.salaryMult * 1.4);
+  /* ---- REAL SALARY (Gulf-appropriate, career-matched, nationality-adjusted) ---- */
+  const salary = _gulfSalaryBreakdown(sourceId, countryId);
 
-  /* Iqama profession */
-  const professions = ['engineer', 'accountant', 'technician', 'sales associate', 'manager', 'teacher', 'nurse', 'driver', 'cleaner', 'clerk'];
-  const profession = professions[Math.floor(Math.random() * professions.length)];
+  /* Iqama profession reflects actual career, not random */
+  const career = salary.career;
+  const iqamaProfession = career.track === 'teaching' ? 'teacher'
+    : career.track === 'medicine' ? 'physician'
+    : career.track === 'nursing' ? 'nurse'
+    : career.track === 'engineering' ? 'engineer'
+    : career.track === 'tech' ? 'software engineer'
+    : career.track === 'accounting' ? 'accountant'
+    : career.track === 'law' ? 'lawyer'
+    : career.track === 'bpo' ? 'customer service agent'
+    : 'worker';
+
+  const housingIncluded = Math.random() < 0.45; /* 45% get housing included */
 
   S.gulfWork.offer = {
     country: countryId,
     source: sourceId,
     sourceLabel: source.label,
     sponsor: sponsor,
-    salaryLocal: salaryLocal,
-    profession: profession,
+    track: career.track,
+    careerLevel: career.careerLevel,
+    title: career.title,
+    profession: iqamaProfession,
+    basicAnnualLocal: salary.basicAnnualLocal,
+    housingAllowance: housingIncluded ? 0 : salary.housingAllowance,
+    transportAllowance: salary.transportAllowance,
+    mobileAllowance: salary.mobileAllowance,
+    totalAnnualLocal: salary.basicAnnualLocal + (housingIncluded ? 0 : salary.housingAllowance) + salary.transportAllowance + salary.mobileAllowance,
+    salaryLocal: salary.basicAnnualLocal + (housingIncluded ? 0 : salary.housingAllowance) + salary.transportAllowance + salary.mobileAllowance,
+    breakdown: salary,
+    housingIncluded: housingIncluded,
+    flightsIncluded: Math.random() < 0.7,
+    medicalInsuranceProvided: true,
     expiresAbsMonth: _gulfAbsMonth() + 3,
-    iqamaYears: GULF_IQAMA_RULES[countryId] ? GULF_IQAMA_RULES[countryId].renewalYears : 2,
-    housingIncluded: Math.random() < 0.60,
-    flightsIncluded: Math.random() < 0.50,
+    iqamaYears: (GULF_IQAMA_RULES[countryId] && GULF_IQAMA_RULES[countryId].renewalYears) || 2,
     contractYears: 2 + Math.floor(Math.random() * 2)
   };
 
-  log('📨 Job offer received! ' + sponsor.company + ' (' + sponsor.label + ') · ' + money(salaryLocal) + '/year.');
+  const natLabel = _gulfOriginCountry().toUpperCase();
+  log('📨 Job offer from ' + sponsor.company + ' (' + sponsor.label + ')');
+  log('💼 ' + career.title + ' · ' + _gulfMoneyShort(S.gulfWork.offer.totalAnnualLocal, countryId));
+  log('🌍 Nationality bracket: ' + natLabel + ' (×' + salary.natMult.toFixed(2) + ' market rate)');
   log('📅 Offer expires ' + _gulfAbsToLabel(S.gulfWork.offer.expiresAbsMonth) + '.');
   render();
 };
@@ -189,14 +322,9 @@ window.gulfAcceptOffer = function() {
   ensureGulfWorkState();
   const offer = S.gulfWork.offer;
   if (!offer) { log('❌ No offer to accept.'); render(); return; }
+  if (_gulfAbsMonth() > offer.expiresAbsMonth) { log('❌ Offer expired.'); S.gulfWork.offer = null; render(); return; }
 
-  if (_gulfAbsMonth() > offer.expiresAbsMonth) {
-    log('❌ Offer expired.');
-    S.gulfWork.offer = null;
-    render(); return;
-  }
-
-  if (!confirm('Accept the offer at ' + offer.sponsor.company + '?\n\n• Relocate to ' + COUNTRIES[offer.country].name + '\n• Salary: ' + money(offer.salaryLocal) + '/year\n• Sponsor: ' + offer.sponsor.label + '\n• Profession on iqama: ' + offer.profession + '\n\nYou will be bound to this sponsor.')) return;
+  if (!confirm('Accept the offer from ' + offer.sponsor.company + '?\n\n• Relocate to ' + COUNTRIES[offer.country].name + '\n• Role: ' + offer.title + '\n• Total package: ' + _gulfMoneyShort(offer.totalAnnualLocal, offer.country) + '\n• Sponsorship: ' + offer.sponsor.label + '\n\nYou will be bound to this sponsor.')) return;
 
   const oldCountry = S.country;
 
@@ -207,39 +335,30 @@ window.gulfAcceptOffer = function() {
   }
 
   /* End rental */
-  if (S.housing === 'rented') {
-    S.housing = 'parents';
-    S.rentedHome = null;
-  }
+  if (S.housing === 'rented') { S.housing = 'parents'; S.rentedHome = null; }
 
   /* Convert wealth */
   _gulfConvertWealth(oldCountry, offer.country);
   S.country = offer.country;
   if (!S.homeCountry) S.homeCountry = oldCountry;
 
-  /* Set new job */
-  S.job = {
-    company: offer.sponsor.company,
-    title: 'Contract worker (' + offer.profession + ')',
-    salary: offer.salaryLocal,
-    level: 0,
-    years: 0
-  };
+  /* Job with career track preserved (for career ladder to work) */
+  S.job = { company: offer.sponsor.company, title: offer.title, salary: offer.totalAnnualLocal, level: offer.careerLevel, years: 0 };
   if (S.career) {
     S.career.job = {
       company: offer.sponsor.company,
-      title: 'Contract worker (' + offer.profession + ')',
-      track: 'entry',
-      level: 0,
-      salary: offer.salaryLocal,
-      baseSalaryEGP: 180000,
-      payMult: 1,
+      title: offer.title,
+      track: offer.track, /* SAME track as before! Career ladder intact */
+      level: offer.careerLevel,
+      salary: offer.totalAnnualLocal,
+      baseSalaryEGP: offer.breakdown.basicAnnualLocal / (C().rate / 52.7), /* correct base */
+      payMult: 1.0,
       performance: 50,
       hiredYear: gameYear(),
       tenure: 0,
-      benefits: [],
+      benefits: ['health', 'bonus'],
       stability: offer.sponsor.paysOnTime >= 0.9 ? 0.85 : 0.6,
-      prestige: 2,
+      prestige: 3,
       salaryCurrency: C().currency
     };
     S.career.mood = 'satisfied';
@@ -260,6 +379,9 @@ window.gulfAcceptOffer = function() {
   const iqamaExpiryAbs = _gulfAbsMonth() + offer.iqamaYears * 12;
   S.gulfWork.active = true;
   S.gulfWork.sponsor = offer.sponsor;
+  S.gulfWork.contractStartAbs = _gulfAbsMonth();
+  S.gulfWork.basicAnnualLocal = offer.basicAnnualLocal;
+  S.gulfWork.eosbAccrued = 0;
   S.gulfWork.iqama = {
     number: 'IQ' + Math.floor(Math.random() * 900000000 + 100000000),
     profession: offer.profession,
@@ -275,16 +397,65 @@ window.gulfAcceptOffer = function() {
   S.gulfWork.passportHeld = (offer.sponsor.control >= 0.7);
   if (S.gulfWork.passportHeld) log('🚨 Your employer took your passport "for safekeeping."');
 
-  S.gulfWork.history.push({ year: gameYear(), event: 'Arrived in ' + COUNTRIES[offer.country].name + ' for ' + offer.sponsor.company });
+  /* ---- ACCOMMODATION ---- */
+  if (offer.housingIncluded) {
+    /* Company housing */
+    S.housing = 'rented';
+    S.rentedHome = {
+      tierId: 'company_housing',
+      yearlyRent: 0,
+      area: 60,
+      condition: 70,
+      rentedYear: gameYear(),
+      isCompanyProvided: true
+    };
+    log('🏠 Company housing provided — rent-free.');
+  } else {
+    /* Must choose accommodation */
+    S.pending = _gulfBuildHousingChoice(offer);
+    S.evId = 'gulf_housing_choice';
+  }
 
-  log('✈️ Arrived in ' + COUNTRIES[offer.country].name + '. New job: ' + offer.sponsor.company + '.');
-  log('💼 Salary: ' + money(offer.salaryLocal) + '/year · Profession on iqama: ' + offer.profession + '.');
+  S.gulfWork.history.push({ year: gameYear(), event: 'Arrived in ' + COUNTRIES[offer.country].name + ' for ' + offer.sponsor.company });
+  log('✈️ Arrived in ' + COUNTRIES[offer.country].name + '. Joined ' + offer.sponsor.company + ' as ' + offer.title + '.');
+  log('💼 Total package: ' + _gulfMoneyShort(offer.totalAnnualLocal, offer.country) + '.');
   log('🪪 Iqama issued. Expires ' + _gulfAbsToLabel(iqamaExpiryAbs) + '.');
 
   emitSignal('gulfWorkArrived', { country: offer.country, company: offer.sponsor.company });
   render();
 };
 
+function _gulfBuildHousingChoice(offer) {
+  const basic = offer.basicAnnualLocal;
+  const country = offer.country;
+  const currency = COUNTRIES[country].currency;
+
+  const options = GULF_HOUSING_TIERS.map(function(tier) {
+    const yearly = Math.round(basic * tier.rentPct);
+    const monthly = Math.round(yearly / 12);
+    return {
+      label: tier.label + ' · ' + monthly.toLocaleString() + ' ' + currency + '/mo · ' + tier.desc,
+      effect: function(s) {
+        s.housing = 'rented';
+        s.rentedHome = {
+          tierId: tier.id,
+          yearlyRent: yearly,
+          area: tier.area,
+          condition: tier.condition,
+          rentedYear: gameYear()
+        };
+        if (tier.happiness) fx({ happiness: tier.happiness });
+        log('🏠 Moved into ' + tier.label + ' — ' + Math.round(yearly / 12).toLocaleString() + ' ' + currency + '/month.');
+      }
+    };
+  });
+
+  return {
+    title: '🏠 Find Accommodation',
+    text: 'Your employer does not provide housing. Choose where to live in ' + COUNTRIES[country].name + '.\n\nBasic salary: ' + Math.round(basic / 12).toLocaleString() + ' ' + currency + '/month.',
+    choices: options
+  };
+}
 window.gulfDeclineOffer = function() {
   if (!S.gulfWork.offer) return;
   log('❌ Offer declined.');
@@ -372,35 +543,27 @@ window.gulfTryChangeJob = function() {
   ensureGulfWorkState();
   const g = S.gulfWork;
   if (!g.active) return;
+  if (g.noc.status !== 'granted') { log('❌ You need a granted NOC to change jobs legally.'); render(); return; }
 
-  if (g.noc.status !== 'granted') {
-    log('❌ You need a granted NOC to change jobs legally.');
-    render(); return;
-  }
-  if (g.noc.requestedAbsMonth && _gulfAbsMonth() - g.noc.requestedAbsMonth < 12 && g.noc.status !== 'granted') {
-    log('❌ NOC granted but not yet valid — wait for next year.'); render(); return;
-  }
-
-  /* Find a competitor offer */
   const country = S.country;
+  const career = _gulfCareerInfo();
+  const industry = _gulfIndustryForTrack(career.track);
   const pools = (typeof CAR_COMPANIES !== 'undefined' && CAR_COMPANIES[country]) ? CAR_COMPANIES[country] : null;
   if (!pools) { log('❌ No job market here.'); render(); return; }
 
-  const industries = Object.keys(pools);
-  const industry = industries[Math.floor(Math.random() * industries.length)];
-  const list = pools[industry];
-  if (!list || !list.length) { log('❌ No job market here.'); render(); return; }
+  let list = pools[industry];
+  if (!list || !list.length) { log('❌ No companies in your industry here.'); render(); return; }
   const newCompany = list[Math.floor(Math.random() * list.length)];
 
   const currentSalary = (S.career && S.career.job ? S.career.job.salary : 0) || (S.job ? S.job.salary : 0);
-  const bumpPct = 0.10 + Math.random() * 0.30;
+  const bumpPct = 0.10 + Math.random() * 0.25;
   const newSalary = Math.round(currentSalary * (1 + bumpPct));
 
-  if (!confirm('Transfer to ' + newCompany.name + '?\n\nNew salary: ' + money(newSalary) + '/year (+' + Math.round(bumpPct * 100) + '%)\n\nSponsorship transfers to the new employer.')) return;
+  if (!confirm('Transfer to ' + newCompany.name + '?\n\nSame role: ' + career.title + '\nNew salary: ' + _gulfMoneyShort(newSalary, country) + ' (+' + Math.round(bumpPct * 100) + '%)\n\nSponsorship transfers to the new employer.')) return;
 
-  /* Update sponsor & company */
   const newSponsor = _gulfPickSponsor({ sponsorBias: ['fair', 'strict', 'generous'] });
   newSponsor.company = newCompany.name;
+  newSponsor.industry = industry;
   g.sponsor = newSponsor;
 
   if (S.career && S.career.job) {
@@ -415,19 +578,16 @@ window.gulfTryChangeJob = function() {
     S.job.years = 0;
   }
 
-  /* NOC consumed */
   g.noc = { status: 'not_requested', requestedAbsMonth: null };
-  /* New iqama */
   const rules = GULF_IQAMA_RULES[S.country] || { renewalYears: 2 };
   g.iqama.expiresAbsMonth = _gulfAbsMonth() + rules.renewalYears * 12;
   g.iqama.sponsorCompany = newCompany.name;
   g.numJobsInGulf = (g.numJobsInGulf || 0) + 1;
 
-  log('🔄 Transferred to ' + newCompany.name + '. New salary: ' + money(newSalary) + '/year.');
+  log('🔄 Transferred to ' + newCompany.name + '. New salary: ' + _gulfMoneyShort(newSalary, country) + '.');
   emitSignal('gulfJobTransferred', { company: newCompany.name, salary: newSalary });
   render();
 };
-
 /* ---------- ABSCOND (leave job without NOC) ---------- */
 window.gulfAbscond = function() {
   ensureGulfWorkState();
@@ -789,30 +949,86 @@ window.gulfWorkRender = function() {
   const g = S.gulfWork;
 
   /* Not in Gulf, no offer */
-  if (!_gulfIsInGulf() && !g.offer) {
-    return _gulfRenderApplyUI();
-  }
+  if (!_gulfIsInGulf() && !g.offer) return _gulfRenderApplyUI();
 
-  /* Offer pending */
+  /* Offer pending — FULL REWRITE with correct currency + pace + career match */
   if (g.offer) {
     const offer = g.offer;
-    return '<div class="card" style="border-color:#34d399"><h3 style="color:#34d399">📨 Job Offer Pending</h3>' +
-      '<div class="row"><span>Country</span><b>' + COUNTRIES[offer.country].flag + ' ' + COUNTRIES[offer.country].name + '</b></div>' +
+    const country = COUNTRIES[offer.country];
+    const currency = country.currency;
+    const monthlyBasic = Math.round(offer.basicAnnualLocal / 12);
+    const monthlyTotal = Math.round(offer.totalAnnualLocal / 12);
+    const homeEquivalent = _gulfConvertToHome(offer.totalAnnualLocal, offer.country);
+    const homeCurrency = COUNTRIES[S.homeCountry || 'egy'].currency;
+    const homeMonthly = Math.round(homeEquivalent / 12);
+
+    const isMon = (typeof isMonthly === 'function') && isMonthly();
+    const monthlySalary = isMon ? monthlyBasic : monthlyBasic;
+    const natLabel = _gulfOriginCountry().toUpperCase();
+    const natMult = offer.breakdown.natMult;
+
+    let html = '<div class="card" style="border-color:#34d399"><h3 style="color:#34d399">📨 Job Offer Pending</h3>' +
+      '<div class="row"><span>Country</span><b>' + country.flag + ' ' + country.name + '</b></div>' +
       '<div class="row"><span>Company</span><b>' + offer.sponsor.company + '</b></div>' +
+      '<div class="row"><span>Your role</span><b>' + offer.title + '</b></div>' +
+      '<div class="row"><span>Industry</span><b>' + (offer.sponsor.industry || 'General').toUpperCase() + '</b></div>' +
       '<div class="row"><span>Sponsor type</span><b>' + offer.sponsor.label + '</b></div>' +
       '<div class="muted small" style="margin-top:2px">' + offer.sponsor.desc + '</div>' +
-      '<div class="row"><span>Salary</span><b class="mono">' + money(offer.salaryLocal) + '/year</b></div>' +
+      '</div>';
+
+    /* Salary breakdown — the whole point */
+    html += '<div class="card" style="border-color:#22d3ee"><h4 style="color:#22d3ee">💰 Salary Package</h4>' +
+      '<div class="row"><span>Basic salary</span><b class="mono">' + monthlyBasic.toLocaleString() + ' ' + currency + '/mo</b></div>' +
+      (offer.housingIncluded
+        ? '<div class="row"><span>Housing</span><b class="good">Free (company provided)</b></div>'
+        : '<div class="row"><span>Housing allowance (25%)</span><b class="mono">+' + Math.round(offer.housingAllowance / 12).toLocaleString() + ' ' + currency + '/mo</b></div>') +
+      '<div class="row"><span>Transport (10%)</span><b class="mono">+' + Math.round(offer.transportAllowance / 12).toLocaleString() + ' ' + currency + '/mo</b></div>' +
+      '<div class="row" style="border-top:1px solid #25253a;margin-top:6px;padding-top:6px"><b>Total package</b><b class="good mono" style="font-size:1.05rem">' + monthlyTotal.toLocaleString() + ' ' + currency + '/mo</b></div>' +
+      '<div class="muted small" style="margin-top:2px">≈ ' + homeMonthly.toLocaleString() + ' ' + homeCurrency + '/month equivalent</div>' +
+      '</div>';
+
+    /* Nationality disclosure */
+    html += '<div class="card" style="border-color:#fbbf24;background:#fbbf2410">' +
+      '<div class="row"><span>Passport</span><b>' + natLabel + '</b></div>' +
+      '<div class="row"><span>Market rate for your nationality</span><b>×' + natMult.toFixed(2) + '</b></div>' +
+      '<p class="muted small" style="margin-top:4px">' + 
+        (natMult >= 1.4 ? '🌍 Western passport — premium pay bracket.' :
+         natMult >= 1.0 ? '🌍 Arab passport — standard market rate.' :
+         natMult >= 0.8 ? '🌍 South Asian passport — reduced market rate.' :
+         '🌍 Non-Arab passport — entry-tier market rate.') +
+      '</div>';
+
+    /* Contract terms */
+    html += '<div class="card"><h4 style="font-size:.85rem;color:#22d3ee">📋 Contract Terms</h4>' +
       '<div class="row"><span>Iqama profession</span><b>' + offer.profession + '</b></div>' +
       '<div class="row"><span>Contract length</span><b>' + offer.contractYears + ' years</b></div>' +
-      '<div class="row"><span>Housing</span><b>' + (offer.housingIncluded ? 'Included' : 'Not included') + '</b></div>' +
-      '<div class="row"><span>Flights</span><b>' + (offer.flightsIncluded ? 'Paid by employer' : 'You pay') + '</b></div>' +
+      '<div class="row"><span>Housing</span><b>' + (offer.housingIncluded ? '✓ Included' : '✗ Not included (allowance provided)') + '</b></div>' +
+      '<div class="row"><span>Flights home</span><b>' + (offer.flightsIncluded ? '✓ Annual round-trip' : '✗ You pay') + '</b></div>' +
+      '<div class="row"><span>Medical insurance</span><b>✓ Provided</b></div>' +
+      '<div class="row"><span>Annual vacation</span><b>30 days</b></div>' +
+      '<div class="row"><span>EOSB</span><b>Half-month basic per year (first 5 years)</b></div>' +
       '<div class="row"><span>Offer expires</span><b class="' + (_gulfAbsMonth() > offer.expiresAbsMonth ? 'bad' : '') + '">' + _gulfAbsToLabel(offer.expiresAbsMonth) + '</b></div>' +
-      '<button class="opt" style="margin-top:10px;width:100%;text-align:center;background:#34d399;color:#000;font-weight:700" onclick="gulfAcceptOffer()">✅ Accept & Relocate</button>' +
-      '<button class="opt" style="margin-top:6px;width:100%;text-align:center;border-color:#fb7185;color:#fb7185" onclick="gulfDeclineOffer()">✕ Decline</button>' +
       '</div>';
+
+    /* Career ladder preview */
+    const trackDef = (typeof CAR_TRACKS !== 'undefined') ? CAR_TRACKS.find(function(t) { return t.id === offer.track; }) : null;
+    if (trackDef && trackDef.levels.length > offer.careerLevel + 1) {
+      const nextLevel = trackDef.levels[offer.careerLevel + 1];
+      html += '<div class="card"><h4 style="font-size:.85rem;color:#8b5cf6">📈 Career Ladder</h4>' +
+        '<div class="row"><span>Current</span><b>' + offer.title + '</b></div>' +
+        '<div class="row"><span>Next level</span><b>' + nextLevel.title + '</b></div>' +
+        '<div class="muted small">Your Gulf job preserves your career track — promotions continue normally.</div>' +
+        '</div>';
+    }
+
+    html += '<button class="opt" style="margin-top:10px;width:100%;text-align:center;background:#34d399;color:#000;font-weight:700;padding:12px" onclick="gulfAcceptOffer()">✅ Accept & Relocate</button>';
+    html += '<button class="opt" style="margin-top:6px;width:100%;text-align:center;border-color:#fb7185;color:#fb7185" onclick="gulfDeclineOffer()">✕ Decline</button>';
+    html += '</div>';
+
+    return html;
   }
 
-  /* In Gulf — sponsorship dashboard */
+  /* In Gulf — sponsorship dashboard (unchanged structurally, but add EOSB display) */
   const sponsor = g.sponsor;
   const sponsorColor = sponsor.type === 'exploitative' ? '#fb7185' : sponsor.type === 'generous' || sponsor.type === 'fair' ? '#34d399' : '#fbbf24';
   const iqama = g.iqama;
@@ -822,13 +1038,10 @@ window.gulfWorkRender = function() {
 
   let html = '';
 
-  /* Status banner */
   if (g.absconded) {
-    html += '<div class="card" style="border-color:#fb7185;background:#fb718515"><h3 style="color:#fb7185">🚨 Absconded</h3>' +
-      '<p class="muted small">Your sponsor filed an absconding report. You are undocumented in ' + C().name + '. Check the Immigration tab for options.</p></div>';
+    html += '<div class="card" style="border-color:#fb7185;background:#fb718515"><h3 style="color:#fb7185">🚨 Absconded</h3><p class="muted small">Your sponsor filed an absconding report. You are undocumented in ' + C().name + '.</p></div>';
   } else if (S.immigration && S.immigration.status === 'undocumented') {
-    html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🚨 Undocumented</h3>' +
-      '<p class="muted small">You are no longer legally employed. See Career → Underground section.</p></div>';
+    html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🚨 Undocumented</h3><p class="muted small">You are no longer legally employed. See Career → Underground section.</p></div>';
   } else {
     html += '<div class="card" style="border-color:' + sponsorColor + '">' +
       '<h3 style="color:' + sponsorColor + '">🏢 Your Sponsor</h3>' +
@@ -836,10 +1049,10 @@ window.gulfWorkRender = function() {
       '<div class="row"><span>Type</span><b>' + sponsor.label + '</b></div>' +
       '<div class="muted small" style="margin-top:2px">' + sponsor.desc + '</div>' +
       '<div class="row"><span>Control level</span><b>' + Math.round(sponsor.control * 100) + '%</b></div>' +
+      (S.career && S.career.job ? '<div class="row"><span>Your role</span><b>' + S.career.job.title + '</b></div>' : '') +
       '</div>';
   }
 
-  /* Iqama */
   if (iqama) {
     const iqamaColor = iqamaMonthsLeft < 3 ? '#fb7185' : iqamaMonthsLeft < 6 ? '#fbbf24' : '#34d399';
     html += '<div class="card"><h4 style="font-size:.85rem;color:#22d3ee">🪪 Iqama (Residence Permit)</h4>' +
@@ -850,29 +1063,35 @@ window.gulfWorkRender = function() {
       '</div>';
   }
 
-  /* NOC */
-  html += '<div class="card"><h4 style="font-size:.85rem;color:#22d3ee">📄 NOC (No-Objection Certificate)</h4>' +
+  /* EOSB tracker */
+  if (g.eosbAccrued > 0 || g.contractStartAbs) {
+    const monthsIn = g.contractStartAbs ? (_gulfAbsMonth() - g.contractStartAbs) : 0;
+    const basicMonthly = Math.round((g.basicAnnualLocal || 0) / 12);
+    const years = Math.floor(monthsIn / 12);
+    let eosb = 0;
+    for (let i = 1; i <= years; i++) eosb += i <= 5 ? basicMonthly * GULF_EOSB.first5Years : basicMonthly * GULF_EOSB.after5Years;
+    html += '<div class="card" style="border-color:#34d399"><h4 style="color:#34d399">💰 End of Service Benefits</h4>' +
+      '<div class="row"><span>Years of service</span><b>' + years + '</b></div>' +
+      '<div class="row"><span>Accrued EOSB</span><b class="good mono">' + (eosb + (g.eosbAccrued || 0)).toLocaleString() + ' ' + C().currency + '</b></div>' +
+      '<p class="muted small">Paid when you leave Gulf employment (contract end or resignation).</p>' +
+      '</div>';
+  }
+
+  html += '<div class="card"><h4 style="font-size:.85rem;color:#22d3ee">📄 NOC</h4>' +
     '<div class="row"><span>Status</span><b>' +
     (noc.status === 'granted' ? '<span class="good">Granted</span>' :
       noc.status === 'refused' ? '<span class="bad">Refused</span>' :
-        noc.status === 'requested' ? 'Requested' : 'Not requested') + '</b></div>' +
-    '<p class="muted small">Required to change employers. Your sponsor can refuse — and often does.</p>';
-
+        noc.status === 'requested' ? 'Requested' : 'Not requested') + '</b></div>';
   if (noc.status !== 'granted') {
-    html += '<button class="opt" style="margin-top:8px;width:100%;text-align:center;font-size:.75rem" onclick="gulfRequestNOC()">📄 Request NOC from sponsor</button>';
-    if (noc.status === 'refused') {
-      html += '<button class="opt" style="margin-top:4px;width:100%;text-align:center;font-size:.72rem;border-color:#fb7185;color:#fb7185" onclick="gulfBribeForNOC()">💰 Offer bribe for NOC</button>';
-    }
+    html += '<button class="opt" style="margin-top:8px;width:100%;text-align:center;font-size:.75rem" onclick="gulfRequestNOC()">📄 Request NOC</button>';
+    if (noc.status === 'refused') html += '<button class="opt" style="margin-top:4px;width:100%;text-align:center;font-size:.72rem;border-color:#fb7185;color:#fb7185" onclick="gulfBribeForNOC()">💰 Offer bribe</button>';
   } else {
-    html += '<button class="opt" style="margin-top:8px;width:100%;text-align:center;background:#34d399;color:#000;font-weight:700;font-size:.75rem" onclick="gulfTryChangeJob()">🔄 Transfer to another sponsor</button>';
+    html += '<button class="opt" style="margin-top:8px;width:100%;text-align:center;background:#34d399;color:#000;font-weight:700;font-size:.75rem" onclick="gulfTryChangeJob()">🔄 Transfer</button>';
   }
   html += '</div>';
 
-  /* Exit visa */
   html += '<div class="card"><h4 style="font-size:.85rem;color:#22d3ee">🚪 Exit Visa</h4>' +
-    '<div class="row"><span>Status</span><b>' + (exit && exit.status === 'valid' ? '<span class="good">Valid</span>' : exit && exit.status === 'denied' ? '<span class="bad">Denied</span>' : exit && exit.status === 'consumed' ? 'Used' : 'None') + '</b></div>' +
-    '<p class="muted small">Required to leave the country (even to visit home).</p>';
-
+    '<div class="row"><span>Status</span><b>' + (exit && exit.status === 'valid' ? '<span class="good">Valid</span>' : exit && exit.status === 'denied' ? '<span class="bad">Denied</span>' : exit && exit.status === 'consumed' ? 'Used' : 'None') + '</b></div>';
   if (!exit || exit.status !== 'valid') {
     html += '<button class="opt" style="margin-top:8px;width:100%;text-align:center;font-size:.75rem" onclick="gulfRequestExitVisa()">🚪 Request exit visa</button>';
   } else {
@@ -880,57 +1099,60 @@ window.gulfWorkRender = function() {
     const usedDays = S.vacationDaysUsedThisYear || 0;
     const daysLeft = vacationDays - usedDays;
     html += '<div class="muted small" style="margin-top:6px">Vacation days remaining: ' + daysLeft + '</div>';
-    if (daysLeft >= 7) {
-      html += '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;background:#fbbf2420;border-color:#fbbf24" onclick="gulfVisitHomePrompt()">✈️ Visit home (uses vacation days)</button>';
-    }
+    if (daysLeft >= 7) html += '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;background:#fbbf2420;border-color:#fbbf24" onclick="gulfVisitHomePrompt()">✈️ Visit home (uses vacation days)</button>';
   }
   html += '</div>';
 
-  /* Wage arrears */
   if (g.wageArrears > 0) {
     html += '<div class="card" style="border-color:#fb7185"><h4 style="color:#fb7185">💸 Wage Arrears</h4>' +
       '<div class="row"><span>Total owed</span><b class="bad mono">' + money(g.wageArrears) + '</b></div>' +
-      '<div class="row"><span>Months behind</span><b>' + Math.round(g.arrearsMonths / 12) + '</b></div>' +
-      '<p class="muted small">Complain to your employer or escalate to the labor office.</p>' +
-      '</div>';
+      '<div class="row"><span>Months behind</span><b>' + Math.round(g.arrearsMonths / 12) + '</b></div></div>';
   }
 
-  /* Passport status */
   if (g.passportHeld) {
-    html += '<div class="card" style="border-color:#fb7185"><h4 style="color:#fb7185">🛂 Passport</h4>' +
-      '<p class="muted small">Your employer holds your passport. This is illegal but common.</p></div>';
+    html += '<div class="card" style="border-color:#fb7185"><h4 style="color:#fb7185">🛂 Passport</h4><p class="muted small">Your employer holds your passport.</p></div>';
   }
 
-  /* Abscond option */
   if (!g.absconded && S.immigration && S.immigration.status !== 'undocumented') {
     html += '<div class="card" style="border-color:#fb7185;background:#fb718510"><h4 style="color:#fb7185">🚨 Emergency Exit</h4>' +
       '<p class="muted small">Leave your job without NOC. You will be reported.</p>' +
-      '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;border-color:#fb7185;color:#fb7185" onclick="gulfAbscond()">Abscond (no return)</button>' +
-      '</div>';
+      '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;border-color:#fb7185;color:#fb7185" onclick="gulfAbscond()">Abscond</button></div>';
   }
 
   return html;
 };
-
-function _gulfRenderApplyUI() {
+ffunction _gulfRenderApplyUI() {
   const eligibleCountries = GULF_COUNTRIES.filter(function(c) { return COUNTRIES[c]; });
+  const career = _gulfCareerInfo();
+
   let html = '<div class="card" style="border-color:#22d3ee">' +
     '<h3 style="color:#22d3ee">🌍 Gulf Work Migration</h3>' +
     '<p class="muted small">Real Gulf jobs, sponsorship (kafala), and the drama that comes with it.</p>' +
+    '<div class="row"><span>Your current career</span><b>' + career.title + '</b></div>' +
+    '<div class="row"><span>Industry</span><b>' + career.industry.toUpperCase() + '</b></div>' +
+    '<div class="row"><span>Passport bracket</span><b>' + _gulfOriginCountry().toUpperCase() + ' (×' + _gulfNationalityMult().toFixed(2) + ')</b></div>' +
     '</div>';
 
   html += '<div class="card"><h4 style="font-size:.85rem;color:#8b5cf6">1. Choose Destination</h4>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">';
   eligibleCountries.forEach(function(c) {
-    html += '<button class="pill" style="padding:10px;font-size:.78rem" onclick="S._gulfPickCountry=\'' + c + '\';render()">' + COUNTRIES[c].flag + ' ' + COUNTRIES[c].name + '</button>';
+    html += '<button class="pill ' + (S._gulfPickCountry === c ? 'on' : '') + '" style="padding:10px;font-size:.78rem" onclick="S._gulfPickCountry=\'' + c + '\';render()">' + COUNTRIES[c].flag + ' ' + COUNTRIES[c].name + '</button>';
   });
   html += '</div>';
-  html += '<div class="muted small" style="margin-top:6px">Selected: ' + (S._gulfPickCountry ? COUNTRIES[S._gulfPickCountry].name : 'none') + '</div>';
+  if (S._gulfPickCountry) {
+    const est = _gulfSalaryBreakdown('direct_apply', S._gulfPickCountry);
+    const estMonthly = Math.round(est.basicAnnualLocal / 12);
+    const currency = COUNTRIES[S._gulfPickCountry].currency;
+    html += '<div class="muted small" style="margin-top:8px;padding:8px;background:#0f0f1a;border-radius:6px">' +
+      '<b>Estimated basic salary</b>: ' + estMonthly.toLocaleString() + ' ' + currency + '/month<br>' +
+      '<span class="muted">Based on your career, level, and ' + _gulfOriginCountry().toUpperCase() + ' passport.</span>' +
+      '</div>';
+  }
   html += '</div>';
 
   if (!S._gulfPickCountry) return html;
 
-  html += '<div class="card"><h4 style="font-size:.85rem;color:#8b5cf6">2. Choose How to Find a Job</h4>';
+  html += '<div class="card"><h4 style="font-size:.85rem;color:#8b5cf6">2. How to Find a Job</h4>';
   GULF_JOB_SOURCES.forEach(function(src) {
     const blocked = (src.requiresFriend && (!S.friends || !S.friends.length)) ||
                     (src.requiresRelative && !(S.family || []).some(function(m) { return m.alive !== false && m.isSibling; })) ||
@@ -940,13 +1162,14 @@ function _gulfRenderApplyUI() {
     if (src.requiresRelative && !(S.family || []).some(function(m) { return m.alive !== false && m.isSibling; })) reason = 'Needs sibling/relative';
     if (src.requiresJob && !(S.career && S.career.job)) reason = 'Needs current job';
     const commission = src.commissionCost > 0 ? _gulfLocal(src.commissionCost) : 0;
+    const srcMult = GULF_SOURCE_SALARY_MULT[src.id] || 1.0;
 
     html += '<div style="padding:10px 0;border-bottom:1px solid #1a1a2a;' + (blocked ? 'opacity:.5' : '') + '">' +
       '<div style="font-weight:700">' + src.label + '</div>' +
       '<div class="muted small">' + src.desc + '</div>' +
-      '<div class="muted small">Success chance: ' + Math.round(src.successChance * 100) + '%' +
+      '<div class="muted small">Success: ' + Math.round(src.successChance * 100) + '% · Salary ×' + srcMult.toFixed(2) +
       (commission > 0 ? ' · Commission: ' + money(commission) : '') +
-      (src.scamRisk ? ' · ⚠️ Scam risk ' + Math.round(src.scamRisk * 100) + '%' : '') + '</div>' +
+      (src.scamRisk ? ' · ⚠️ Scam ' + Math.round(src.scamRisk * 100) + '%' : '') + '</div>' +
       (blocked ? '<div class="bad small">' + reason + '</div>' :
         '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;background:#22d3ee20;border-color:#22d3ee" onclick="gulfStartApplication(\'' + src.id + '\',\'' + S._gulfPickCountry + '\')">Apply via ' + src.label + '</button>') +
       '</div>';
