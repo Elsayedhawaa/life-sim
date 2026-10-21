@@ -507,7 +507,35 @@ window.bankDoSweepCash = function() {
   }
   render();
 };
-
+  /* Foreign accounts section */
+  const foreignInfo = (typeof bankForeignAccountsInfo === 'function') ? bankForeignAccountsInfo() : { foreign: [] };
+  if (foreignInfo.foreign.length > 0) {
+    html += `<div class="card" style="border-color:#fbbf24">
+      <h4 style="color:#fbbf24;font-size:.85rem">🌍 Foreign Accounts (${foreignInfo.foreign.length})</h4>
+      <p class="muted small">Accounts held in other countries. Balances stay in the origin currency.</p>`;
+    foreignInfo.foreign.forEach(function(acc) {
+      const originCountry = (function() {
+        for (const cc of Object.keys(BANKS)) {
+          if (BANKS[cc].some(function(b) { return b.id === acc.bankId; })) return cc;
+        }
+        return S.country;
+      })();
+      const originCurrency = (COUNTRIES[originCountry] && COUNTRIES[originCountry].currency) || C().currency;
+      const originBank = (BANKS[originCountry] || []).find(function(b) { return b.id === acc.bankId; });
+      html += `<div style="padding:10px 0;border-bottom:1px solid #1a1a2a">
+        <div style="display:flex;justify-content:space-between">
+          <b>${originBank ? originBank.shortName : acc.bankId} · ${COUNTRIES[originCountry] ? COUNTRIES[originCountry].flag : ''} ${COUNTRIES[originCountry] ? COUNTRIES[originCountry].name : originCountry}</b>
+          <b class="mono good">${acc.balance.toLocaleString()} ${originCurrency}</b>
+        </div>
+        <div class="muted small">Type: ${acc.type}</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="bankDoForeignDeposit('${acc.id}')">Deposit</button>
+          <button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="bankDoForeignWithdraw('${acc.id}')">Withdraw</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
 /* ---------- 2. CERTIFICATES ---------- */
 function bankCertificatesSection() {
   const b = S.bank;
@@ -585,34 +613,60 @@ function bankCardsSection() {
   const b = S.bank;
   const available = CREDIT_CARDS[S.country] || [];
 
+  const localCards = b.creditCards.filter(function(c) { return !_cardIsForeign(c); });
+  const foreignCards = b.creditCards.filter(function(c) { return _cardIsForeign(c); });
+
   let html = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center">
     <h3>Your Credit Cards (${b.creditCards.length})</h3>
     ${b.cashbackBal > 0 ? `<button class="pill" style="padding:4px 8px;font-size:.7rem;border-color:#fbbf24;color:#fbbf24" onclick="bankRedeemCashback()">Redeem ${money(b.cashbackBal)}</button>` : ''}
   </div></div>`;
 
-  b.creditCards.forEach(c => {
+  /* Render a card with correct currency */
+  function renderCard(c) {
     const util = c.limit > 0 ? Math.round((c.balance / c.limit) * 100) : 0;
     const utilColor = util > 80 ? '#fb7185' : util > 30 ? '#fbbf24' : '#34d399';
     const min = BankMath.cardMinPayment(c, c.balance);
-    html += `<div class="card" style="border-left:4px solid ${utilColor}">
-      <div style="display:flex;justify-content:space-between"><b>${c.name}</b><b class="mono ${c.balance > 0 ? 'bad' : 'good'}">${money(c.balance)}</b></div>
-      <div class="muted small">Limit: ${money(c.limit)} · APR: ${(c.apr * 100).toFixed(1)}% · Util: <span style="color:${utilColor}">${util}%</span></div>
+    const isForeign = _cardIsForeign(c);
+    const originCountry = _cardOriginCountry(c);
+    const originData = (COUNTRIES && COUNTRIES[originCountry]) || null;
+    const displayCurrency = _cardOriginCurrency(c);
+
+    return `<div class="card" style="border-left:4px solid ${utilColor};${isForeign ? 'background:#0f0f1a' : ''}">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
+        <b>${c.name}${isForeign ? ` <span class="small muted">(${originData ? originData.name : originCountry})</span>` : ''}</b>
+        <b class="mono ${c.balance > 0 ? 'bad' : 'good'}">${c.balance.toLocaleString()} ${displayCurrency}</b>
+      </div>
+      <div class="muted small">Limit: ${c.limit.toLocaleString()} ${displayCurrency} · APR: ${(c.apr * 100).toFixed(1)}% · Util: <span style="color:${utilColor}">${util}%</span></div>
+      ${isForeign ? `<div class="muted small" style="color:#fbbf24;margin-top:2px">⚠️ Foreign card (${originData ? originData.name : originCountry}). Uses ${displayCurrency} for transactions.</div>` : ''}
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
         <button class="opt" style="flex:1;font-size:.72rem;padding:6px;${c.balance === 0 ? 'opacity:.5' : ''}" ${c.balance === 0 ? 'disabled' : ''} onclick="bankDoPayCard('${c.id}','full')">Pay Full</button>
-        <button class="opt" style="flex:1;font-size:.72rem;padding:6px;${c.balance === 0 ? 'opacity:.5' : ''}" ${c.balance === 0 ? 'disabled' : ''} onclick="bankDoPayCard('${c.id}','min')">Pay Min (${money(min)})</button>
+        <button class="opt" style="flex:1;font-size:.72rem;padding:6px;${c.balance === 0 ? 'opacity:.5' : ''}" ${c.balance === 0 ? 'disabled' : ''} onclick="bankDoPayCard('${c.id}','min')">Pay Min (${min.toLocaleString()} ${displayCurrency})</button>
         <button class="opt" style="flex:1;font-size:.72rem;padding:6px;${c.autoPay ? 'background:#34d39920;border-color:#34d399;color:#34d399' : ''}" onclick="bankToggleAutoPay('${c.id}')">Auto-Pay: ${c.autoPay ? 'ON' : 'OFF'}</button>
-        <button class="opt" style="flex:1;font-size:.72rem;padding:6px" onclick="bankReqLimitInc('${c.id}')">Req. Increase</button>
+        ${!isForeign ? `<button class="opt" style="flex:1;font-size:.72rem;padding:6px" onclick="bankReqLimitInc('${c.id}')">Req. Increase</button>` : ''}
       </div>
     </div>`;
-  });
+  }
 
-  html += `<div class="card"><h3>Card Offers</h3><p class="muted small">Applying causes a Hard Inquiry (-5 points for 1 year).</p>`;
+  if (localCards.length > 0) {
+    html += `<div class="card"><h4 style="font-size:.82rem;color:#22d3ee">🏦 ${C().name} Cards</h4>`;
+    localCards.forEach(function(c) { html += renderCard(c); });
+    html += `</div>`;
+  }
+
+  if (foreignCards.length > 0) {
+    html += `<div class="card"><h4 style="font-size:.82rem;color:#fbbf24">🌍 Foreign Cards</h4>
+      <p class="muted small">Cards from other countries. Balances stay in their origin currency.</p>`;
+    foreignCards.forEach(function(c) { html += renderCard(c); });
+    html += `</div>`;
+  }
+
+  html += `<div class="card"><h3>${C().name} Card Offers</h3><p class="muted small">Applying causes a Hard Inquiry (-5 points for 1 year).</p>`;
   available.forEach(card => {
     const owned = b.creditCards.some(c => c.cardId === card.id);
     const scoreOK = b.score >= card.reqScore;
     const incomeOK = bankGetAnnualIncome() >= card.reqIncome;
     const blocked = !scoreOK || !incomeOK;
-    const reason = !scoreOK ? `Needs Score ${card.reqScore}` : !incomeOK ? `Needs Income ${money(card.reqIncome)}/yr` : '';
+    const reason = !scoreOK ? `Needs Score ${card.reqScore} (you have ${b.score})` : !incomeOK ? `Needs Income ${money(card.reqIncome)}/yr` : '';
     html += `<div style="padding:10px 0;border-bottom:1px solid #1a1a2a; opacity:${owned ? 0.5 : 1}">
       <div style="display:flex;justify-content:space-between"><b>${card.name}</b><b class="mono good">${(card.cashbackRate * 100).toFixed(1)}% CB</b></div>
       <div class="muted small">Limits: ${money(card.minLimit)} - ${money(card.maxLimit)} · ${card.tier.toUpperCase()} Tier</div>
@@ -646,8 +700,7 @@ window.bankDoApplyCard = function(cardId) {
   S.bank.hardInquiries++;
   bankScoreChange(-5, 'Hard Inquiry');
   const limit = BankMath.creditLimit(bankGetAnnualIncome(), S.bank.score, card);
-  S.bank.creditCards.push({ id: 'card_' + Math.random().toString(36).slice(2), cardId: card.id, name: card.name, limit, balance: 0, apr: card.apr, minPaymentPct: card.minPaymentPct, cashbackRate: card.cashbackRate, openedYear: gameYear(), lastPaymentYear: -1, autoPay: false });
-  bankScoreChange(10, 'New credit account added');
+  S.bank.creditCards.push({ id: 'card_' + Math.random().toString(36).slice(2), cardId: card.id, name: card.name, limit, balance: 0, apr: card.apr, minPaymentPct: card.minPaymentPct, cashbackRate: card.cashbackRate, openedYear: gameYear(), lastPaymentYear: -1, autoPay: false, originCountry: S.country });  bankScoreChange(10, 'New credit account added');
   log(`✅ Approved: ${card.name} · ${money(limit)} limit.`);
   render();
 };
@@ -662,7 +715,35 @@ window.bankDoPayCard = function(cardId, mode) {
   log(`Paid ${money(pay)} to ${card.name}. Remaining: ${money(card.balance)}.`);
   render();
 };
+/* ---------- FOREIGN CARD DETECTION ---------- */
+function _cardOriginCountry(card) {
+  if (!card) return S.country;
+  if (card.originCountry) return card.originCountry;
+  /* Legacy fallback: detect from bankId */
+  if (typeof BANKS !== 'undefined') {
+    for (const countryCode of Object.keys(BANKS)) {
+      if (Array.isArray(BANKS[countryCode]) && BANKS[countryCode].some(function(bank) { return bank.id === card.bankId; })) {
+        return countryCode;
+      }
+    }
+  }
+  return S.country;
+}
 
+function _cardOriginCurrency(card) {
+  const origin = _cardOriginCountry(card);
+  const data = (typeof COUNTRIES !== 'undefined' && COUNTRIES[origin]) || null;
+  return data ? data.currency : C().currency;
+}
+
+function _cardIsForeign(card) {
+  return _cardOriginCountry(card) !== S.country;
+}
+
+function _bankIsForeign(bankId) {
+  if (!Array.isArray(BANKS[S.country])) return false;
+  return !BANKS[S.country].some(function(bank) { return bank.id === bankId; });
+}
 /* ---------- 4. LOANS & CONSOLIDATION ---------- */
 function bankLoansSection() {
   const b = S.bank;
@@ -1220,7 +1301,82 @@ window.bankPensionStop = function(idx) {
   log(`Stopped contributions to ${p.name}.`);
   render();
 };
+/* ============================================================
+   FOREIGN BANK ACCOUNTS VIEW
+   Allows viewing/accessing accounts held in other countries
+   ============================================================ */
+window.bankForeignAccountsInfo = function() {
+  if (!S || !S.bank || !Array.isArray(S.bank.accounts)) return { local: [], foreign: [] };
+  const local = [];
+  const foreign = [];
+  S.bank.accounts.forEach(function(acc) {
+    const isForeign = _bankIsForeign(acc.bankId);
+    if (isForeign) foreign.push(acc);
+    else local.push(acc);
+  });
+  return { local: local, foreign: foreign };
+};
 
+window.bankDoForeignDeposit = function(accId) {
+  const acc = S.bank.accounts.find(function(a) { return a.id === accId; });
+  if (!acc) return;
+  const originCountry = (function() {
+    for (const cc of Object.keys(BANKS)) {
+      if (BANKS[cc].some(function(b) { return b.id === acc.bankId; })) return cc;
+    }
+    return S.country;
+  })();
+  const originCurrency = (COUNTRIES[originCountry] && COUNTRIES[originCountry].currency) || C().currency;
+  const originRate = (COUNTRIES[originCountry] && COUNTRIES[originCountry].rate) || 1;
+  const playerRate = C().rate || 1;
+
+  const input = prompt('Deposit to your ' + (COUNTRIES[originCountry] ? COUNTRIES[originCountry].name : originCountry) + ' account\n\nAccount balance: ' + acc.balance.toLocaleString() + ' ' + originCurrency + '\nYour pocket: ' + money(S.wealth) + '\n\nEnter amount to deposit (in ' + C().currency + '):', String(Math.min(1000, S.wealth)));
+  if (!input) return;
+  const amtLocal = Math.round(Number(input) || 0);
+  if (amtLocal <= 0) return;
+  if (S.wealth < amtLocal) { log('❌ Not enough cash.'); render(); return; }
+
+  /* Convert from player currency to account origin currency */
+  const amtInAccountCurrency = (Math.abs(playerRate - originRate) > 0.01)
+    ? Math.round(amtLocal / playerRate * originRate)
+    : amtLocal;
+
+  S.wealth -= amtLocal;
+  acc.balance += amtInAccountCurrency;
+  bankLogTransaction('Deposit to ' + originCountry + ' account', amtLocal, 'transfer');
+  log('💸 Deposited ' + money(amtLocal) + ' → ' + amtInAccountCurrency.toLocaleString() + ' ' + originCurrency + '.');
+  render();
+};
+
+window.bankDoForeignWithdraw = function(accId) {
+  const acc = S.bank.accounts.find(function(a) { return a.id === accId; });
+  if (!acc) return;
+  const originCountry = (function() {
+    for (const cc of Object.keys(BANKS)) {
+      if (BANKS[cc].some(function(b) { return b.id === acc.bankId; })) return cc;
+    }
+    return S.country;
+  })();
+  const originCurrency = (COUNTRIES[originCountry] && COUNTRIES[originCountry].currency) || C().currency;
+  const originRate = (COUNTRIES[originCountry] && COUNTRIES[originCountry].rate) || 1;
+  const playerRate = C().rate || 1;
+
+  const input = prompt('Withdraw from your ' + (COUNTRIES[originCountry] ? COUNTRIES[originCountry].name : originCountry) + ' account\n\nBalance: ' + acc.balance.toLocaleString() + ' ' + originCurrency + '\n\nEnter amount (' + originCurrency + '):', String(Math.min(acc.balance, 1000)));
+  if (!input) return;
+  const amtInAccountCurrency = Math.round(Number(input) || 0);
+  if (amtInAccountCurrency <= 0 || amtInAccountCurrency > acc.balance) return;
+
+  /* Convert to player currency */
+  const amtInPlayerCurrency = (Math.abs(playerRate - originRate) > 0.01)
+    ? Math.round(amtInAccountCurrency / originRate * playerRate)
+    : amtInAccountCurrency;
+
+  acc.balance -= amtInAccountCurrency;
+  S.wealth += amtInPlayerCurrency;
+  bankLogTransaction('Withdraw from ' + originCountry + ' account', amtInPlayerCurrency, 'transfer');
+  log('💸 Withdrew ' + amtInAccountCurrency.toLocaleString() + ' ' + originCurrency + ' → ' + money(amtInPlayerCurrency) + '.');
+  render();
+};
 /* ============================================================
    YEAR TICK — banking
    ============================================================ */
