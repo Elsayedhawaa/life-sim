@@ -144,7 +144,34 @@ function ensureCareerState() {
 
 GameHooks.on('newGame', ensureCareerState);
 GameHooks.on('migrate', ensureCareerState);
+/* ============================================================
+   CLEAR STALE JOB DATA ON COUNTRY CHANGE
+   ============================================================ */
+GameHooks.on('render', function() {
+  if (!S || !S.career) return;
+  if (!S._careerCountryTrack) { S._careerCountryTrack = S.country; return; }
+  if (S._careerCountryTrack === S.country) return;
+  S._careerCountryTrack = S.country;
 
+  /* If job company is from a different country's industry but current country changed, clear it */
+  const homeCountry = S.homeCountry || S.country;
+  if (S.country === homeCountry && S.career.job) {
+    /* Player is home — any remaining foreign job is stale */
+    const foreignCompanies = [];
+    Object.keys(CAR_COMPANIES).forEach(function(c) {
+      if (c !== S.country && CAR_COMPANIES[c]) {
+        Object.keys(CAR_COMPANIES[c]).forEach(function(ind) {
+          CAR_COMPANIES[c][ind].forEach(function(co) { foreignCompanies.push(co.name); });
+        });
+      }
+    });
+    if (foreignCompanies.indexOf(S.career.job.company) >= 0) {
+      log('📍 Cleared stale foreign job (' + S.career.job.company + ') — you are now in ' + C().name + '.');
+      S.career.job = null;
+      S.job = null;
+    }
+  }
+});
 /* ============================================================
    HELPERS
    ============================================================ */
@@ -1999,17 +2026,27 @@ GameHooks.on('year', function() {
         }
       }
     }
-    /* Firing check */
+       /* Firing check — now with a pending event */
     if (j.performance < 15) {
       if (Math.random() < 0.5) {
+        const companyName = j.company;
+        const titleName = j.title;
         carLeaveCurrentJob('fired');
-        log('❌ You were FIRED from ' + j.company + '. Performance too low.');
         fx({ happiness: -20 });
         c.mood = 'frustrated';
         carAddMilestone('fired', 'First Time Fired');
+        S.pending = {
+          title: '🚨 You Have Been Fired',
+          text: 'Your manager at ' + companyName + ' (' + titleName + ') called you in. "We\'re letting you go. Performance has been poor for too long."\n\nYou are now unemployed. Check the Job Search tab to find new work.',
+          choices: [
+            { label: 'Accept it and move on', effect: function(s) { fx({ happiness: 3 }); } },
+            { label: 'Ask for another chance', effect: function(s) { log('😔 They refused. The decision was final.'); fx({ happiness: -5 }); } }
+          ]
+        };
+        S.evId = 'fired_event_' + gameYear();
+        return;
       }
     }
-
   /* Competitor offer — based on CURRENT salary, tagged with current country */
 if (j.performance >= 65 && j.tenure >= 1 && Math.random() < 0.15) {
   const track2 = carTrackById(j.track);
@@ -2078,13 +2115,21 @@ if (j.performance >= 65 && j.tenure >= 1 && Math.random() < 0.15) {
 
   /* Global macro events */
   const globalEvent = CAR_GLOBAL_EVENTS.find(function(e) { return e.year === year; });
-  if (globalEvent && c.job) {
+    if (globalEvent && c.job) {
     log('🌍 ' + globalEvent.label + ' affected the economy.');
     if (Math.random() < globalEvent.layoffChance) {
+      const companyName = c.job.company;
       carLeaveCurrentJob('laid off due to ' + globalEvent.label);
-      log('❌ You were LAID OFF during the ' + globalEvent.label + '.');
       fx({ happiness: -25 });
       c.mood = 'frustrated';
+      S.pending = {
+        title: '🌍 Laid Off — ' + globalEvent.label,
+        text: 'The ' + globalEvent.label + ' has hit your company hard. You were let go from ' + companyName + '. This was not your fault.\n\nYou are now unemployed. Use the Job Search tab to find new work.',
+        choices: [
+          { label: 'I understand', effect: function(s) { fx({ happiness: 2 }); } }
+        ]
+      };
+      S.evId = 'layoff_' + gameYear();
     }
   }
 
