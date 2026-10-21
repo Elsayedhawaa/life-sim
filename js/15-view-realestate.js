@@ -8,7 +8,15 @@
    - Deep Landlord System (Tenant screening, vacancy, damages, eviction)
    - Raw Land Development (Zoning laws, architects, multi-year construction)
    ============================================================ */
-
+/* ---------- CURRENCY HELPER ---------- */
+function _reViewCurrency() {
+  const vc = (S && S._reViewCountry) || (S && S.country) || 'egy';
+  return (typeof COUNTRIES !== 'undefined' && COUNTRIES[vc] && COUNTRIES[vc].currency) || (typeof C === 'function' && C().currency) || 'EGP';
+}
+function _reViewCountryRate() {
+  const vc = (S && S._reViewCountry) || (S && S.country) || 'egy';
+  return (typeof COUNTRIES !== 'undefined' && COUNTRIES[vc] && COUNTRIES[vc].rate) || 1;
+}
 /* ---------- Sub-tab registry ---------- */
 const RealEstateTabs = [];
 function registerRealEstateTab(tab) {
@@ -196,8 +204,8 @@ function compoundsSection() {
       '<h3>' + c.name + '</h3>' +
       '<p class="muted small">' + c.loc + ' · ' + c.developer + ' · ' + (c.delivery === 'ready' ? 'Ready' : 'Delivery ' + c.delivery) + '</p>' +
       '<p class="small" style="margin:6px 0">' + c.tag + '</p>' +
-      '<div class="row"><span>Current Price / m²</span><b class="mono">' + curPpmLow.toLocaleString() + '–' + curPpmHigh.toLocaleString() + ' ' + C().currency + '</b></div>' +
-      '<div class="row"><span>Entry price</span><b class="mono">' + cheapest.toLocaleString() + ' ' + C().currency + '</b></div>' +
+        '<div class="row"><span>Current Price / m²</span><b class="mono">' + curPpmLow.toLocaleString() + '–' + curPpmHigh.toLocaleString() + ' ' + _reViewCurrency() + '</b></div>' +
+      '<div class="row"><span>Entry price</span><b class="mono">' + cheapest.toLocaleString() + ' ' + _reViewCurrency() + '</b></div>' +
       '<div class="row"><span>Est. ROI</span><b class="good">' + ((c.rentalYieldAnnPct || 0.07) * 100).toFixed(1) + '% Annually</b></div>' +
       '<div class="row"><span>Amenities</span><b class="small" style="text-align:right">' + c.amenities.join(', ') + '</b></div>' +
       '<button class="opt" style="margin-top:8px" onclick="S.pendingBuy={kind:\'compound\',sourceId:\'' + c.id + '\'};render()">Browse units &amp; plans</button>' +
@@ -219,8 +227,8 @@ function localSection() {
       <h3>${c.name}</h3>
       <p class="muted small">${c.loc}, ${c.city} · <b class="bad">CASH ONLY</b></p>
       <p class="small" style="margin:6px 0">${c.tag}</p>
-      <div class="row"><span>Price / m²</span><b class="mono">${curPpm.toLocaleString()} ${C().currency}</b></div>
-      <div class="row"><span>Entry price</span><b class="mono">${cheapest.toLocaleString()} ${C().currency}</b></div>
+          '<div class="row"><span>Price / m²</span><b class="mono">' + curPpm.toLocaleString() + ' ' + _reViewCurrency() + '</b></div>' +
+      '<div class="row"><span>Entry price</span><b class="mono">' + cheapest.toLocaleString() + ' ' + _reViewCurrency() + '</b></div>' +
       <div class="row"><span>Legal Fees / Broker</span><b class="mono bad">4.5% at closing</b></div>
       <button class="opt" style="margin-top:8px" onclick="S.pendingBuy={kind:'local',sourceId:'${c.id}'};render()">Browse units (Cash)</button>
     </div>`;
@@ -254,10 +262,16 @@ function unitPicker(ctx) {
   </div>`;
 
   PROPERTY_UNITS.forEach(u => {
-    const basePrice = Math.round(u.area * currentPpm * u.priceMult);
-    html += `<div class="card" style="padding:10px">
-      <b>${u.name}</b> <span class="muted small">· ${u.area} m²</span>
-      <div class="row"><span>Base price</span><b class="mono">${basePrice.toLocaleString()} ${C().currency}</b></div>
+       const basePrice = Math.round(u.area * currentPpm * u.priceMult);
+      const playerRate = (typeof C === 'function' && C().rate) || 1;
+      const viewRate = _reViewCountryRate();
+      const basePriceInPlayerCurrency = (Math.abs(playerRate - viewRate) > 0.01)
+        ? Math.round(basePrice / viewRate * playerRate)
+        : basePrice;
+      const showConverted = Math.abs(playerRate - viewRate) > 0.01;
+      html += `<div class="card" style="padding:10px">
+        <b>${u.name}</b> <span class="muted small">· ${u.area} m²</span>
+        <div class="row"><span>Base price</span><b class="mono">${basePrice.toLocaleString()} ${_reViewCurrency()}${showConverted ? `<br><small class="muted" style="font-size:.7rem">≈ ${basePriceInPlayerCurrency.toLocaleString()} ${C().currency}</small>` : ''}</b></div>
       <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
         ${plans.map(p => {
           const finalPrice = Math.round(basePrice * p.totalMarkup);
@@ -351,8 +365,8 @@ function landsSection() {
     return `<div class="card">
       <h3>${l.name}</h3>
       <p class="muted small">${l.city} · Zoning: ${l.zoning.toUpperCase()}</p>
-      <div class="row"><span>Price / m²</span><b class="mono">${curPpm.toLocaleString()} ${C().currency}</b></div>
-      <div class="row"><span>Cost range</span><b class="mono">${minPrice.toLocaleString()} - ${(l.maxSize*curPpm).toLocaleString()}</b></div>
+       <div class="row"><span>Price / m²</span><b class="mono">${curPpm.toLocaleString()} ${_reViewCurrency()}</b></div>
+      <div class="row"><span>Cost range</span><b class="mono">${minPrice.toLocaleString()} - ${(l.maxSize*curPpm).toLocaleString()} ${_reViewCurrency()}</b></div>
       <button class="opt" style="margin-top:8px" onclick="promptBuyLand('${l.id}')">Acquire Land</button>
     </div>`;
   }).join('');
