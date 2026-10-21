@@ -251,18 +251,31 @@ function bankScoreChange(delta, reason) {
 function bankRenderNetWorthChart() {
   const hist = (S.bank && S.bank.netWorthHistory) || [];
   if (hist.length < 2) return '';
-  const values = hist.map(h => h.value);
-  const max = Math.max(...values);
-  const min = Math.min(...values);
+
+  /* Filter to same-currency entries (or entries without explicit currency) */
+  const currentCurrency = C().currency;
+  const validHist = hist.filter(function(h) {
+    return !h.currency || h.currency === currentCurrency;
+  });
+
+  if (validHist.length < 2) {
+    return '<div class="muted small" style="margin-top:4px;font-size:.7rem">📊 Chart restarts after currency change</div>';
+  }
+
+  const values = validHist.map(function(h) { return h.value; });
+  const max = Math.max.apply(null, values);
+  const min = Math.min.apply(null, values);
   const range = Math.max(1, max - min);
   const bars = '▁▂▃▄▅▆▇█';
-  const spark = values.map(v => bars[Math.min(7, Math.floor(((v - min) / range) * 8))]).join('');
+  const spark = values.map(function(v) {
+    return bars[Math.min(7, Math.floor(((v - min) / range) * 8))];
+  }).join('');
   const first = values[0];
   const last = values[values.length - 1];
   const pct = first !== 0 ? Math.round(((last - first) / Math.abs(first)) * 100) : 0;
-  return `<div style="font-family:monospace;font-size:.9rem;color:${pct >= 0 ? '#34d399' : '#fb7185'};letter-spacing:1px;margin-top:4px">
-    ${spark} <span style="font-size:.75rem">${pct >= 0 ? '+' : ''}${pct}% over ${hist.length} yr</span>
-  </div>`;
+  return '<div style="font-family:monospace;font-size:.9rem;color:' + (pct >= 0 ? '#34d399' : '#fb7185') + ';letter-spacing:1px;margin-top:4px">' +
+    spark + ' <span style="font-size:.75rem">' + (pct >= 0 ? '+' : '') + pct + '% over ' + validHist.length + ' yr</span>' +
+    '</div>';
 }
 
 /* ---------- PUBLIC API FOR EXTERNAL MODULES ---------- */
@@ -1521,10 +1534,63 @@ function bankYearTick() {
 
   const nw = bankGetTotalAssets() - bankGetTotalDebt();
   if (!Array.isArray(b.netWorthHistory)) b.netWorthHistory = [];
-  b.netWorthHistory.unshift({ year: gameYear(), value: nw });
+  b.netWorthHistory.unshift({ year: gameYear(), value: nw, currency: C().currency });
   b.netWorthHistory = b.netWorthHistory.slice(0, 20);
 }
 GameHooks.on('year', bankYearTick);
+/* ============================================================
+   BANK ACCOUNT MIGRATION ON COUNTRY CHANGE
+   ============================================================ */
+GameHooks.on('render', function() {
+  if (!S || !S.bank || !Array.isArray(S.bank.accounts)) return;
+  if (!S._bankMigrationCountry) { S._bankMigrationCountry = S.country; return; }
+  if (S._bankMigrationCountry === S.country) return;
+
+  const fromCountry = S._bankMigrationCountry;
+  S._bankMigrationCountry = S.country;
+  const currentBanks = (typeof BANKS !== 'undefined' && BANKS[S.country]) ? BANKS[S.country] : [];
+  const currentBankIds = currentBanks.map(function(b) { return b.id; });
+
+  const toMigrate = [];
+  const keep = [];
+
+  S.bank.accounts.forEach(function(a) {
+    if (currentBankIds.indexOf(a.bankId) >= 0) {
+      /* Same country bank — keep, but convert balance */
+      const fromRate = (COUNTRIES[fromCountry] && COUNTRIES[fromCountry].rate) || 1;
+      const toRate = (C().rate || 1);
+      if (Math.abs(fromRate - toRate) > 0.01 && typeof a.balance === 'number') {
+        a.balance = Math.round(a.balance / fromRate * toRate);
+      }
+      keep.push(a);
+    } else {
+      /* Foreign account — migrate to egyptAccount if Egyptian, else keep as legacy */
+      const isEgyptBank = (typeof BANKS !== 'undefined' && BANKS.egy) && BANKS.egy.some(function(b) { return b.id === a.bankId; });
+      if (isEgyptBank) {
+        /* Move to Egyptian offshore account */
+        const egpBalance = a.balanceEGP || a.balance || 0;
+        if (!S.expat) S.expat = { egyptAccount: { balanceEGP: 0, openedYear: null, totalDeposited: 0 }, goldStash: [], yearsAbroad: 0, remittancePressure: 0, communityBond: 50, homeCrashes: [], returnChecklist: { apartment: false, savingsGoal: false, income: false, familyApproved: false } };
+        if (!S.expat.egyptAccount) S.expat.egyptAccount = { balanceEGP: 0, openedYear: null, totalDeposited: 0 };
+        S.expat.egyptAccount.balanceEGP += Math.round(egpBalance);
+        S.expat.egyptAccount.totalDeposited += Math.round(egpBalance);
+        if (!S.expat.egyptAccount.openedYear) S.expat.egyptAccount.openedYear = gameYear();
+        log('🏦 Migrated Egyptian account (' + Math.round(egpBalance).toLocaleString() + ' EGP) to offshore Egyptian savings.');
+      } else {
+        /* Foreign bank from a country we don't track — keep with note */
+        a._foreign = fromCountry;
+        keep.push(a);
+      }
+    }
+  });
+
+  S.bank.accounts = keep;
+
+  /* Reset net worth chart on currency change (otherwise chart mixes currency) */
+  if (S.bank.netWorthHistory && S.bank.netWorthHistory.length > 0) {
+    S.bank.netWorthHistory = [];
+    log('📊 Net worth chart reset (currency changed).');
+  }
+});
 
 /* ============================================================
    REGISTER TAB
