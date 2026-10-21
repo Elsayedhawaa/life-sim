@@ -35,7 +35,6 @@ function ensureAssetsState() {
     }
   }
 }
-}
 GameHooks.on('newGame', ensureAssetsState);
 GameHooks.on('migrate', ensureAssetsState);
 
@@ -213,15 +212,15 @@ window.assetsRentHome = function(tierId) {
     if (S.wealth < moveInCost) { log('❌ Need ' + money(moveInCost) + ' to move in (first month + deposit).'); render(); return; }
     if (!confirm('Move out of your parents\' home into a ' + tier.label + '?\n\nRent: ' + money(yearly) + '/year\nMove-in cost: ' + money(moveInCost) + '\n\nProceed?')) return;
     S.wealth -= moveInCost;
-        S.housing = 'rented';
-    S.rentedHome = { 
-      tierId: tier.id, 
-      yearlyRent: yearly, 
-      area: tier.area, 
-      condition: tier.cond, 
+    S.housing = 'rented';
+    S.rentedHome = {
+      tierId: tier.id,
+      yearlyRent: yearly,
+      area: tier.area,
+      condition: tier.cond,
       rentedYear: gameYear(),
-      country: S.country, // <-- ADD COUNTRY
-      contractEndAbs: (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1) + 12 // 1 year
+      country: S.country,
+      contractEndAbs: (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1) + 12
     };
     S.assetsRenovateHome = null;
     log('🔑 Rented a ' + tier.label + ' for ' + money(yearly) + '/year. You moved out.');
@@ -594,7 +593,7 @@ GameHooks.on('render', function() {
 
   const countryName = COUNTRIES[S.rentedHome.country] ? COUNTRIES[S.rentedHome.country].name : S.rentedHome.country;
   const breakFee = Math.round(S.rentedHome.yearlyRent * 0.5); // 6-month penalty for breaking lease
-  
+
   log('🚪 You left ' + countryName + '. Your lease there was automatically terminated.');
   log('💸 Early termination penalty: ' + money(breakFee));
 
