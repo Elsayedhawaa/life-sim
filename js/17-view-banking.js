@@ -357,7 +357,20 @@ function bankAccountsSection() {
   const b = S.bank;
   const banksHere = BANKS[S.country] || [];
 
-  let html = `<div class="card">
+  /* Egyptian account cross-display */
+  let egyptAccountHTML = '';
+  if (S.expat && S.expat.egyptAccount && S.expat.egyptAccount.balanceEGP > 0 && S.country !== 'egy') {
+    const localEq = Math.round(S.expat.egyptAccount.balanceEGP / ((COUNTRIES.egy && COUNTRIES.egy.rate) || 52.7) * (C().rate || 1));
+    egyptAccountHTML = `<div class="card" style="border-color:#fbbf24">
+      <h4 style="font-size:.85rem;color:#fbbf24">🏦 Egyptian Bank Account (Offshore)</h4>
+      <div class="row"><span>Balance</span><b class="mono good">${S.expat.egyptAccount.balanceEGP.toLocaleString()} EGP</b></div>
+      <div class="row"><span>≈ in ${C().currency}</span><b class="mono">${localEq.toLocaleString()} ${C().currency}</b></div>
+      <div class="muted small" style="margin-top:4px">Manage deposits/withdrawals from Career → Expat Life</div>
+      <button class="opt" style="margin-top:8px;width:100%;text-align:center;font-size:.72rem" onclick="switchTab('career');setTimeout(function(){S.career.tab='expat';render();},50)">Open Expat Life →</button>
+    </div>`;
+  }
+
+  let html = egyptAccountHTML + `<div class="card">
     <h3>Wealth Dashboard</h3>
     <div class="row"><span>Cash in Pocket (Unbanked)</span><b class="mono ${S.wealth < 0 ? 'bad' : 'good'}">${money(S.wealth)}</b></div>
     <div class="row"><span>Total Banked Cash</span><b class="mono good">${money(bankGetTotalLiquidCash() - S.wealth)}</b></div>
