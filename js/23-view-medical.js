@@ -124,7 +124,12 @@ function medOutOfPocket(baseCostEGP) {
 
 /* Try to pay — falls back to credit card if available and wealth insufficient */
 function medPay(baseCostEGP, label) {
-  const actual = medOutOfPocket(baseCostEGP);
+  const isUSA = S.country === 'usa';
+  const countryMult = isUSA ? 50 : (S.country === 'deu' || S.country === 'gbr' || S.country === 'can' ? 10 : 1);
+  const adjustedCostEGP = baseCostEGP * countryMult;
+  
+  const actual = medOutOfPocket(adjustedCostEGP);
+  // ... rest of the function stays the same
   if (actual === 0) { log('💰 ' + (label || 'Procedure') + ' fully covered by insurance.'); return true; }
   if (S.wealth >= actual) {
     S.wealth -= actual;
