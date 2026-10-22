@@ -38,9 +38,12 @@ const GLOBAL_EVENTS = [
       { label: 'Skip studying', effect: s => { s.smarts -= 2; s.happiness += 4; } },
     ]
   },
-  { id: 'gender_expectations', minAge: 22, maxAge: 28,
+    { id: 'gender_expectations', minAge: 22, maxAge: 37,
+    condition: s => !s.spouse && !(s.marriage && (s.marriage.status === 'married' || s.marriage.status === 'engaged' || s.marriage.status === 'dating')),
     title: 'Family expectations',
-    text: s => s.gender === 'f' ? 'Your mother asks when you will marry. Your career matters less to her than your future husband.' : 'Your father asks when you will buy an apartment. He says a man with no property cannot marry.',
+    text: s => s.gender === 'f'
+      ? 'Your mother keeps asking when you will marry. Your career matters less to her than finding a husband.'
+      : 'Your father asks when you will buy an apartment. He says a man with no property cannot marry.',
     choices: [
       { label: 'Push back', effect: s => { s.happiness += 2; s.social -= 2; } },
       { label: 'Stay quiet', effect: s => { s.happiness -= 3; } },
