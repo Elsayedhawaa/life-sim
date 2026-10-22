@@ -457,6 +457,16 @@ function tabs() {
 
   return primaryHtml;
 }
+
+  // Add the "More" button to the primary dock
+  const moreIsActive = !primaryTabs.includes(activeTab);
+  primaryHtml += `<button class="${moreIsActive?'on':''}" onclick="document.getElementById('more-menu').classList.add('active'); document.getElementById('more-grid-content').innerHTML = \`${moreHtml.replace(/`/g, '\\`')}\`">
+      <span class="icon">☰</span>
+      <span>More</span>
+    </button>`;
+
+  return primaryHtml;
+}
 /* ============================================================
    START SCREEN
    ============================================================ */
@@ -681,6 +691,101 @@ window.convertToPlayerCurrency = function(amount, fromCountryCode) {
   const toRate = C().rate || 1;
   return Math.round((amount / fromRate) * toRate);
 };
+/* ============================================================
+   CAR SHIPPING / SELLING / STORAGE ON COUNTRY CHANGE
+   ============================================================ */
+onSignal('countryChanged', function(data) {
+  if (!S || !S.cars || S.cars.length === 0) return;
+
+  const fromCountry = data.from;
+  const toCountry = data.to;
+  const homeCountry = S.homeCountry || 'egy';
+  const fromName = COUNTRIES[fromCountry] ? COUNTRIES[fromCountry].name : fromCountry;
+  const toName   = COUNTRIES[toCountry]   ? COUNTRIES[toCountry].name   : toCountry;
+
+  /* ---------- STEP 1: Reactivate cars already parked in the destination ---------- */
+  let reactivated = 0;
+  S.cars.forEach(function(c) {
+    if (c.storedIn === toCountry) {
+      c.storedIn = null;
+      reactivated++;
+    }
+  });
+  if (reactivated > 0) {
+    log('🚗 ' + reactivated + ' car' + (reactivated > 1 ? 's are' : ' is') +
+        ' back in use — waiting for you in ' + toName + '.');
+  }
+
+  /* ---------- STEP 2: Handle cars currently with the player in fromCountry ---------- */
+  // Only deal with cars that are actually "here" (not already stored elsewhere).
+  const activeCars = S.cars.filter(function(c) {
+    return !c.storedIn || c.storedIn === fromCountry;
+  });
+  if (activeCars.length === 0) return;
+
+  const totalValue = activeCars.reduce(function(sum, c) { return sum + (c.value || 0); }, 0);
+  const shipCost   = Math.round(totalValue * 0.40); // 40% of value in customs & freight
+  const canStore   = fromCountry !== toCountry;
+  const storageLabel = (fromCountry === homeCountry)
+    ? ('your home garage in ' + fromName)
+    : ('a garage in ' + fromName);
+
+  let text = 'You moved to ' + toName + '. What do you want to do with your ' +
+             activeCars.length + ' car(s)?';
+  if (canStore) {
+    text += '\n\nYou can leave them in ' + storageLabel +
+            ' for free — they\'ll be waiting when you return.';
+  }
+
+  const choices = [
+    {
+      label: '💰 Sell them before leaving',
+      effect: function(s) {
+        const net = Math.round(totalValue * 0.8); // 20% dealer commission
+        s.wealth += net;
+        // Remove only the active cars; keep anything already stored elsewhere
+        s.cars = s.cars.filter(function(c) {
+          return c.storedIn && c.storedIn !== fromCountry;
+        });
+        log('💰 You sold your cars for ' + money(net) + ' before moving.');
+      }
+    },
+    {
+      label: '🚢 Ship them to ' + toName + ' (' + money(shipCost) + ')',
+      effect: function(s) {
+        if (s.wealth >= shipCost) {
+          s.wealth -= shipCost;
+          activeCars.forEach(function(c) { c.storedIn = null; });
+          log('🚢 You shipped your cars to ' + toName +
+              ' (' + money(shipCost) + ' in customs & freight).');
+        } else {
+          log('❌ You couldn\'t afford shipping. The cars were abandoned at the port and auctioned.');
+          s.cars = s.cars.filter(function(c) {
+            return c.storedIn && c.storedIn !== fromCountry;
+          });
+        }
+      }
+    }
+  ];
+
+  if (canStore) {
+    choices.push({
+      label: '🏠 Leave in ' + storageLabel + ' (free)',
+      effect: function(s) {
+        activeCars.forEach(function(c) { c.storedIn = fromCountry; });
+        log('🏠 Your cars are parked in ' + storageLabel +
+            '. They\'ll be waiting when you return.');
+      }
+    });
+  }
+
+  S.pending = {
+    title: '🚗 International Move: Your Cars',
+    text: text,
+    choices: choices
+  };
+  S.evId = 'car_move_' + gameYear();
+});
 window.ageUp = ageUp;
 window.chooseEvent = chooseEvent;
 window.switchTab = (id) => { activeTab = id; render(); };
