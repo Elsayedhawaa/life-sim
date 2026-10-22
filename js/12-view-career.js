@@ -978,8 +978,8 @@ function carOpenBusiness(typeId) {
   if (type.requiresDegree && S.degree !== type.requiresDegree) {
     log('❌ Requires ' + type.requiresDegree + ' degree.'); render(); return;
   }
-  const cost = carEGP(type.startupEGP);
-  if (S.wealth < cost) { log('❌ Need ' + money(cost) + ' to start.'); render(); return; }
+   const countryMult = (typeof CAR_COUNTRY_MULT !== 'undefined' && CAR_COUNTRY_MULT[S.country]) || 1.0;
+  const cost = carEGP(type.startupEGP * countryMult);
 
   const name = prompt('Name your ' + type.label + ':', 'My ' + type.label);
   if (!name) return;
