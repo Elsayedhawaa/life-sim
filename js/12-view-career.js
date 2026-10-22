@@ -968,6 +968,13 @@ window.carTakeInternship = carTakeInternship;
 function carOpenBusiness(typeId) {
   const type = CAR_BUSINESS_TYPES.find(function(t) { return t.id === typeId; });
   if (!type) return;
+   /* Immigration Check */
+  const isHome = S.country === (S.homeCountry || S.country);
+  const imStatus = S.immigration ? S.immigration.status : 'citizen_home';
+  if (!isHome && imStatus !== 'visa_work' && imStatus !== 'pr' && imStatus !== 'citizen') {
+    log('❌ You cannot open a business here. You need work authorization or permanent residency.');
+    render();
+    return;
   if (type.requiresDegree && S.degree !== type.requiresDegree) {
     log('❌ Requires ' + type.requiresDegree + ' degree.'); render(); return;
   }
