@@ -424,18 +424,39 @@ function stat(n, v, color) {
 
 function tabs() {
   const sorted = [...GameHooks.tabs].sort((a, b) => a.order - b.order);
-  return sorted.map(t => `<button class="${activeTab===t.id?'on':''}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('');
-}
+  
+  const primaryTabs = ['life', 'career', 'bank', 'family'];
+  let primaryHtml = '';
+  let moreHtml = '';
 
-function eventCard(e) {
-  const text = typeof e.text === 'function' ? e.text(S) : e.text;
-  return `<div class="card" style="border-color:#8b5cf6">
-    <h3>${e.title}</h3>
-    <p class="muted small" style="line-height:1.5;margin-bottom:10px">${text}</p>
-    ${e.choices.map((c,i) => `<button class="opt" onclick="chooseEvent(${i})">${c.label}</button>`).join('')}
-  </div>`;
-}
+  sorted.forEach(t => {
+    // Extract emoji if it exists
+    const parts = t.label.split(' ');
+    const icon = parts.length > 1 && parts[0].length <= 3 ? parts[0] : '📄';
+    const text = parts.length > 1 && parts[0].length <= 3 ? parts.slice(1).join(' ') : t.label;
+    
+    if (primaryTabs.includes(t.id)) {
+      primaryHtml += `<button class="${activeTab===t.id?'on':''}" onclick="switchTab('${t.id}')">
+        <span class="icon">${icon}</span>
+        <span>${text}</span>
+      </button>`;
+    } else {
+      moreHtml += `<button class="${activeTab===t.id?'on':''}" onclick="document.getElementById('more-menu').classList.remove('active');switchTab('${t.id}')">
+        <span class="icon">${icon}</span>
+        <span>${text}</span>
+      </button>`;
+    }
+  });
 
+  // Add the "More" button to the primary dock
+  const moreIsActive = !primaryTabs.includes(activeTab);
+  primaryHtml += `<button class="${moreIsActive?'on':''}" onclick="document.getElementById('more-menu').classList.add('active'); document.getElementById('more-grid-content').innerHTML = \`${moreHtml.replace(/`/g, '\\`')}\`">
+      <span class="icon">☰</span>
+      <span>More</span>
+    </button>`;
+
+  return primaryHtml;
+}
 /* ============================================================
    START SCREEN
    ============================================================ */
