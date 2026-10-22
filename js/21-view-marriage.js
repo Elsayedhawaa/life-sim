@@ -519,36 +519,64 @@ window.marAskForHand = function() {
   const m = S.marriage;
   const p = m.partner;
   if (!p || m.status !== 'dating') return;
-  
-  const isTraditionalWoman = marIsTraditionalWoman();
-  
-  if (isTraditionalWoman) {
-    log('👨 As the man, you must ask her father for her hand in marriage.');
-  } else {
-    log('👩 He must ask your father for your hand in marriage.');
+
+  /* In traditional cultures, the man asks the woman's father. She must wait for his proposal. */
+  if (marIsTraditionalWoman()) {
+    log('❌ In your culture, the man and his family approach your father. You must wait for him to propose.');
+    return;
   }
-  
+
   const fatherApproval = marFamilyApproval(p);
-  
+
   if (fatherApproval < 0.6) {
     log('❌ The father refused. "You are not ready to take care of my daughter/son." (Need 60% family approval).');
     return;
   }
-  
+
   if (!confirm('Ask for the hand in marriage?\n\nThis is the traditional step before the engagement. Proceed?')) return;
-  
+
   log('🎉 The father said yes! You are officially permitted to proceed with the engagement.');
   m.engagement = {
     proposal: 'family',
     shabkaTier: 'standard',
     mahrTier: 'standard',
     partyTier: 'nice_hall',
-    payer: isTraditionalWoman ? 'partner' : 'self'
+    payer: 'self'
   };
   m.status = 'engaged';
   render();
 };
+/* Hint at marriage (traditional woman only — encourages HIM to propose) */
+window.marHintAtProposal = function() {
+  const m = S.marriage;
+  const p = m.partner;
+  if (!p || m.status !== 'dating') return;
 
+  const readiness = marPremaritalReadiness(p);
+  if (!readiness.ready) {
+    log('The relationship is not ready yet. ' + readiness.reasons.join(' '));
+    return;
+  }
+
+  let chance = 0.25 + Math.max(0, readiness.score - 75) * 0.01;
+  if (marHasTrait(p, 'confident')) chance += 0.05;
+  if (marHasTrait(p, 'romantic')) chance += 0.05;
+  if (marHasTrait(p, 'traditional')) chance += 0.10;
+  if (marHasTrait(p, 'family_oriented')) chance += 0.05;
+  chance = Math.max(0.15, Math.min(0.90, chance));
+
+  if (Math.random() < chance) {
+    p.partnerProposalOffered = true;
+    p.pendingPartnerProposal = { year: gameYear(), kind: 'engagement' };
+    marRecordMemory('partner_proposal', p.name + ' decided to ask whether you would like to become engaged.', 5);
+    log('💍 ' + p.name + ' noticed your hint. He is ready to propose!');
+    fx({ happiness: 10 });
+  } else {
+    log('💬 You hinted at marriage, but ' + p.name + ' did not pick up on it yet. Keep building the relationship.');
+    p.bond = Math.max(0, p.bond - 1);
+  }
+  render();
+};
 /* ============================================================
    FIND TAB
    ============================================================ */
@@ -632,15 +660,18 @@ function marRenderPlan() {
 
   const p = m.partner;
   if (!p) return '';
+  const isTraditionalWoman = marIsTraditionalWoman();
   let html = '';
 
-  if (m.status === 'dating' && p.bond >= 60) {
+  /* Traditional Ask — MAN asks HER father. Hidden from women in traditional cultures. */
+  if (!isTraditionalWoman && m.status === 'dating' && p.bond >= 60) {
     html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">👨‍👩‍👧 Traditional Ask</h3>' +
       '<p class="muted small">Go directly to the family to ask for their blessing to get engaged.</p>' +
       '<button class="opt" style="margin-top:6px;width:100%;text-align:center;background:#8b5cf6;color:#fff;font-weight:700;font-size:.75rem" onclick="marAskForHand()">🤝 Ask for Hand in Marriage</button>' +
       '</div>';
   }
 
+  /* Partner's pending proposal (mostly fires for traditional women, but available to all) */
   if (m.status === 'dating' && p.pendingPartnerProposal) {
     html += '<div class="card" style="border-color:#fbbf24"><h3>💍 ' + p.name + ' Wants to Ask You Something</h3>' +
       '<p class="muted small">After thinking about your conversations, ' + p.name + ' is ready to ask whether you want to become engaged. This is their decision, and you can accept, ask for more time, or decline.</p>' +
@@ -649,31 +680,51 @@ function marRenderPlan() {
       '<button class="opt" style="width:100%;margin-top:5px;text-align:center;border-color:#fb7185;color:#fb7185" onclick="marRespondToPartnerProposal(\'decline\')">Decline respectfully</button></div>';
   }
 
+  /* Proposal phase */
   if (m.status === 'dating' && !p.pendingPartnerProposal) {
     const readiness = marPremaritalReadiness(p);
-    html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">💍 Proposal</h3>';
-    if (!m.engagement || !m.engagement.proposal) {
+
+    if (isTraditionalWoman) {
+      /* WOMAN in traditional culture: HE proposes, SHE waits + can hint */
+      html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">💍 Waiting for the Proposal</h3>' +
+        '<p class="muted small">In your culture, the man proposes to the woman. He will ask for your hand when the relationship feels ready — keep building trust, communication, and compatibility.</p>' +
+        '<div class="row"><span>Relationship readiness</span><b>' + readiness.score + '%</b></div>';
+
       if (!readiness.ready) {
-        html += '<p class="muted small">A proposal is a major decision. Your partner needs to feel that the relationship is ready.</p>' +
-          '<div class="row"><span>Current readiness</span><b>' + readiness.score + '%</b></div>' +
-          '<ul class="muted small" style="margin:6px 0 0 18px">' + readiness.reasons.map(function(r) { return '<li>' + r + '</li>'; }).join('') + '</ul>';
+        html += '<div class="muted small" style="margin-top:8px"><b>What he is still waiting for:</b><ul style="margin:4px 0 0 18px">' +
+          readiness.reasons.map(function(r) { return '<li>' + r + '</li>'; }).join('') + '</ul></div>';
       } else {
-        html += '<p class="muted small">Choose a proposal style that reflects your partner’s personality and preferences. Either a male or female player can initiate the proposal.</p>';
-        if (typeof MARRIAGE_PROPOSAL_OPTIONS !== 'undefined') {
-          MARRIAGE_PROPOSAL_OPTIONS.forEach(function(opt) {
-            const fit = marProposalStyleFit(p, opt);
-            html += '<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:8px;font-size:.75rem" onclick="marSelectProposal(\'' + opt.id + '\')">' +
-              '<div style="display:flex;justify-content:space-between"><b>' + opt.label + '</b><span>' + money(marEGP(opt.costEGP)) + '</span></div>' +
-              '<div class="muted small">Romance +' + opt.romance + ' · Social +' + opt.social + ' · ' + opt.desc + (fit > 5 ? ' · Likely to suit your partner' : fit < -5 ? ' · May not suit your partner’s preferences' : '') + '</div></button>';
-          });
-        }
+        html += '<p class="good small" style="margin-top:8px">The relationship feels ready — he may propose soon. Hint at your hopes to encourage him.</p>' +
+          '<button class="opt" style="margin-top:10px;width:100%;text-align:center;background:#8b5cf6;color:#fff;font-weight:700" onclick="marHintAtProposal()">💬 Hint at Marriage</button>';
       }
+      html += '</div>';
     } else {
-      html += marRenderProposalReview();
+      /* MAN (or woman in non-traditional culture): chooses proposal style */
+      html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">💍 Proposal</h3>';
+      if (!m.engagement || !m.engagement.proposal) {
+        if (!readiness.ready) {
+          html += '<p class="muted small">A proposal is a major decision. Your partner needs to feel that the relationship is ready.</p>' +
+            '<div class="row"><span>Current readiness</span><b>' + readiness.score + '%</b></div>' +
+            '<ul class="muted small" style="margin:6px 0 0 18px">' + readiness.reasons.map(function(r) { return '<li>' + r + '</li>'; }).join('') + '</ul>';
+        } else {
+          html += '<p class="muted small">Choose a proposal style that reflects your partner\'s personality and preferences.</p>';
+          if (typeof MARRIAGE_PROPOSAL_OPTIONS !== 'undefined') {
+            MARRIAGE_PROPOSAL_OPTIONS.forEach(function(opt) {
+              const fit = marProposalStyleFit(p, opt);
+              html += '<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:8px;font-size:.75rem" onclick="marSelectProposal(\'' + opt.id + '\')">' +
+                '<div style="display:flex;justify-content:space-between"><b>' + opt.label + '</b><span>' + money(marEGP(opt.costEGP)) + '</span></div>' +
+                '<div class="muted small">Romance +' + opt.romance + ' · Social +' + opt.social + ' · ' + opt.desc + (fit > 5 ? ' · Likely to suit your partner' : fit < -5 ? ' · May not suit your partner\'s preferences' : '') + '</div></button>';
+            });
+          }
+        }
+      } else {
+        html += marRenderProposalReview();
+      }
+      html += '</div>';
     }
-    html += '</div>';
   }
 
+  /* Engagement phase */
   if (m.status === 'engaged') {
     if (!m.engagement || !m.engagement.finalized) {
       html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">💍 Engagement Planning</h3>';
