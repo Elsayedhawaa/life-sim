@@ -2604,7 +2604,40 @@ const MARRIAGE_MILESTONES = [
   }
 ];
 
+/* ============================================================
+   MARRIAGE SYSTEM V3 — Social Classes, Negotiation, & Gender
+   ============================================================ */
 
+/* Father's Negotiation Demands (Based on social class gap) */
+const MARRIAGE_NEGOTIATION_DEMANDS = [
+  { id: 'apartment',   label: 'A fully furnished apartment',        costEGP: 0,     tierReq: 'middle', desc: '"My daughter cannot live in a rental or with your parents. You must provide a home."' },
+  { id: 'furniture',   label: 'Furnish the apartment (50/50)',      costEGP: 40000, tierReq: 'middle', desc: '"I will pay for half the furniture, but you must cover the rest."' },
+  { id: 'gold_upgrade',label: 'Upgrade the Shabka to a heavier set',costEGP: 50000, tierReq: 'upper-mid', desc: '"This gold is too light. She deserves a heavier set for her wedding day."' },
+  { id: 'mahr_upgrade',label: 'Increase the Mahr',                  costEGP: 80000, tierReq: 'upper-mid', desc: '"The Mahr is a symbol of your commitment. It must reflect her worth."' },
+  { id: 'wedding_size',label: 'A bigger wedding venue',             costEGP: 150000,tierReq: 'wealthy', desc: '"Our family has a reputation. A small hall is not acceptable."' }
+];
+
+/* Cost Sharing Models for Engagement & Wedding */
+const MARRIAGE_COST_SHARING = [
+  { id: 'groom_pays',  label: 'Groom & his family pay for everything', mult: 1.0,    desc: 'Traditional Arab expectation.' },
+  { id: 'bride_pays',  label: 'Bride & her family pay for everything', mult: 1.0,    desc: 'Rare, but happens if the bride is wealthier.' },
+  { id: 'split_50',    label: 'Split 50/50',                          mult: 0.5,    desc: 'Modern, egalitarian approach.' },
+  { id: 'proportional',label: 'Split by income/wealth',               mult: 0.6,    desc: 'Whoever earns more pays more.' }
+];
+
+/* New Culturally Aware Proposal Options */
+const MARRIAGE_CULTURAL_PROPOSALS = {
+  western: [
+    { id: 'w_ring', label: 'Buy an Engagement Ring', costEGP: 30000, romance: 8, desc: 'Standard Western tradition. You propose with a diamond ring.' },
+    { id: 'w_dinner', label: 'Fancy Dinner Proposal', costEGP: 5000, romance: 6, desc: 'A classic romantic setup.' },
+    { id: 'w_casual', label: 'Casual Intimate Proposal', costEGP: 0, romance: 5, desc: 'Just the two of you at home.' }
+  ],
+  arab: [
+    { id: 'a_family', label: 'Family-Attended Proposal', costEGP: 10000, romance: 3, social: 8, desc: 'Formal proposal with your parents present.' },
+    { id: 'a_private', label: 'Private Proposal', costEGP: 2000, romance: 6, social: 1, desc: 'A quiet moment before the family meeting.' },
+    { id: 'a_trip', label: 'Proposal During a Trip', costEGP: 40000, romance: 10, social: 3, desc: 'A modern, memorable proposal.' }
+  ]
+};
 /* ============================================================
    END OF EXPANDED MARRIAGE DATA
    ============================================================ */
