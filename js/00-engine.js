@@ -185,15 +185,15 @@ function prepareEvent(e) {
     };
   }
 
-  // Execute text if it's a function
   var prepared = Object.assign({}, e);
   if (typeof prepared.text === 'function') {
-    try { prepared.text = prepared.text(S); }
-    catch (err) { prepared.text = '...'; }
+    try { prepared.text = prepared.text(S); } catch (err) { prepared.text = '...'; }
+  }
+  if (typeof prepared.title === 'function') {
+    try { prepared.title = prepared.title(S); } catch (err) { prepared.title = 'Event'; }
   }
   return prepared;
 }
-
 /* ============================================================
    AGE UP
    ============================================================ */
@@ -265,20 +265,15 @@ function advanceYear() {
   GameHooks.run('year', S);
 
   ['health', 'happiness', 'smarts', 'social'].forEach(k => { S[k] = clamp(S[k], 0, 100); });
-
-  const allEvents = [...GLOBAL_EVENTS, ...(C().events || [])];
-  const eligible = allEvents.filter(e =>
-    S.age >= e.minAge && S.age <= e.maxAge &&
-    !S.flags['evt_' + e.id] &&
-    (!e.condition || e.condition(S))
-  );
-    if (eligible.length && Math.random() < 0.7 && !S.pending) {
-    const e = eligible[Math.floor(Math.random() * eligible.length)];
-    S.pending = prepareEvent(e);
-    S.evId = e.id;
-    log(`📖 ${e.title}`);
+ 
+   if (!S.pending) {
+    var _evt = pickEligibleEvent();
+    if (_evt && Math.random() < 0.95) {
+      S.pending = prepareEvent(_evt);
+      S.evId = _evt.id;
+      log('📖 ' + (_evt.title || 'Event'));
+    }
   }
-
   save(); render();
 }
 
@@ -308,13 +303,18 @@ function ageUp() {
 }
 
 function chooseEvent(i) {
-  const e = S.pending;
+  var e = S.pending;
   if (!e || !e.choices[i]) return;
-  const choice = e.choices[i];
+  var choice = e.choices[i];
+  if (typeof choice.available === 'function' && !choice.available(S)) return;
   if (typeof choice.effect === 'function') choice.effect(S);
-  ['health', 'happiness', 'smarts', 'social'].forEach(k => { S[k] = clamp(S[k], 0, 100); });
-  if (S.evId) S.flags['evt_' + S.evId] = true;
-  log(`→ ${choice.label}`);
+  ['health', 'happiness', 'smarts', 'social'].forEach(function(k) { S[k] = clamp(S[k], 0, 100); });
+  if (S.evId) {
+    S.flags['evt_' + S.evId] = true;
+    S.flags['evt_count_' + S.evId] = (S.flags['evt_count_' + S.evId] || 0) + 1;
+  }
+  var label = typeof choice.label === 'function' ? choice.label(S) : choice.label;
+  log('→ ' + label);
   S.pending = null;
   S.evId = null;
   save(); render();
@@ -324,15 +324,17 @@ function chooseEvent(i) {
    ============================================================ */
 function eventCard(pending) {
   if (!pending) return '';
-  let html = '<div class="card" style="border-color:#8b5cf6; background:#14141f;">' +
+  var html = '<div class="card" style="border-color:#8b5cf6; background:#14141f;">' +
     '<h3 style="color:#8b5cf6">' + pending.title + '</h3>' +
     '<p class="small" style="white-space:pre-wrap; margin-bottom:12px;">' + pending.text + '</p>' +
     '<div style="display:flex; flex-direction:column; gap:8px;">';
-  
+
   pending.choices.forEach(function(choice, index) {
-    html += '<button class="opt" style="text-align:center; background:#25253a; border-color:#8b5cf6; font-weight:bold;" onclick="chooseEvent(' + index + ')">' + choice.label + '</button>';
+    if (typeof choice.available === 'function' && !choice.available(S)) return;
+    var label = typeof choice.label === 'function' ? choice.label(S) : choice.label;
+    html += '<button class="opt" style="text-align:center; background:#25253a; border-color:#8b5cf6; font-weight:bold;" onclick="chooseEvent(' + index + ')">' + label + '</button>';
   });
-  
+
   html += '</div></div>';
   return html;
 }
@@ -812,6 +814,36 @@ window.reset = reset;
 window.renderStart = renderStart;
 window.dataOK = dataOK;
 window.START = START;
+/* ============================================================
+   EVENT SELECTOR — gender-aware, weighted, respects maxFires
+   ============================================================ */
+function pickEligibleEvent() {
+  if (!S) return null;
+  var allEvents = [];
+  if (typeof GLOBAL_EVENTS !== 'undefined') allEvents = allEvents.concat(GLOBAL_EVENTS);
+  if (typeof GENDER_EVENTS !== 'undefined') allEvents = allEvents.concat(GENDER_EVENTS);
+  if (C() && C().events) allEvents = allEvents.concat(C().events);
+
+  var eligible = allEvents.filter(function(e) {
+    if (S.age < (e.minAge || 0) || S.age > (e.maxAge || 200)) return false;
+    if (e.genderOnly && e.genderOnly !== S.gender) return false;
+    var fired = S.flags['evt_count_' + e.id] || 0;
+    var maxFires = (typeof e.maxFires === 'number') ? e.maxFires : 1;
+    if (fired >= maxFires) return false;
+    if (e.condition && !e.condition(S)) return false;
+    return true;
+  });
+  if (!eligible.length) return null;
+
+  var totalWeight = eligible.reduce(function(sum, e) { return sum + (e.weight || 1); }, 0);
+  var roll = Math.random() * totalWeight;
+  for (var i = 0; i < eligible.length; i++) {
+    roll -= (eligible[i].weight || 1);
+    if (roll <= 0) return eligible[i];
+  }
+  return eligible[eligible.length - 1];
+}
+window.pickEligibleEvent = pickEligibleEvent;
 /* ============================================================
    CHARACTER DIALOGUE & VOICE ENGINE (EXPANDED & REALISTIC)
    ============================================================ */
