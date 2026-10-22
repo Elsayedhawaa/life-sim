@@ -1340,7 +1340,6 @@ window.marAcceptSalonat = function() {
   /* Give gold to player */
   if (!S.expat) S.expat = { goldStash: [] };
   if (!Array.isArray(S.expat.goldStash)) S.expat.goldStash = [];
- marGrantShabkaJewelry(p.shabkaGrams, 21);
 
   S.wealth += p.mahrLocal;
 
