@@ -1664,9 +1664,12 @@ window.marDoActivity = function(activityId) {
     p.bond = marClamp(Number(p.bond || 0) + Number(act.bond || 0), 0, 100);
     marBumpChem(p, 2);
     fx({ happiness: Number(act.happiness || 0) });
-    log('💞 ' + act.label + ' with ' + p.name + '. Bond +' + act.bond + ', Happiness +' + act.happiness + '.');
-    render(); return;
-  }
+      log('💞 ' + act.label + ' with ' + p.name + '.');
+  // husband reacts
+  var reaction = characterSay(p, p.bond > 75 ? 'affection' : p.bond > 45 ? 'happy' : 'greeting');
+  if (reaction) log(p.name + ': "' + reaction + '"');
+  render();
+};
 
   if (!p.activityCounts || typeof p.activityCounts !== 'object') p.activityCounts = {};
   const count = Number(p.activityCounts[activityId] || 0);
@@ -2946,21 +2949,266 @@ function marFireYearEvent(evt) {
   const p = S.marriage.partner;
   if (!p || !evt) return;
 
+  /* ---------- Flavor / automated events ---------- */
   if (evt.id === 'partner_promotion') {
     p.income = Math.round((p.income || 50000) * 1.15);
     log('🎉 ' + p.name + ' got promoted. Income now ' + money(p.income) + '/yr.');
+    log(p.name + ': "I got the promotion! We should celebrate this weekend."');
     p.bond = Math.min(100, p.bond + 5);
-  } else if (evt.id === 'partner_lost_job') {
+    fx({ happiness: 5 });
+    return;
+  }
+
+  if (evt.id === 'partner_lost_job') {
     p.income = 0;
-    log('😔 ' + p.name + ' lost their job. Money will be tight.');
+    log('😔 ' + p.name + ' lost their job.');
+    log(p.name + ': "I do not know what to say. They just let me go."');
     p.bond = Math.max(0, p.bond - 5);
-  } else if (evt.id === 'anniversary') {
-    log('💍 It is your anniversary with ' + p.name + '. Consider a gift or date.');
-  } else if (evt.id === 'inlaws_visit') {
-    if (S.pending) return;
+    fx({ happiness: -5 });
+    return;
+  }
+
+  if (evt.id === 'unexpected_bill') {
+    const cost = marEGP(20000);
+    if (S.wealth >= cost) {
+      S.wealth -= cost;
+      log('💸 Unexpected household bill: ' + money(cost) + '.');
+      log(p.name + ': "Of course it happened this month. Just our luck."');
+    }
+    return;
+  }
+
+  if (evt.id === 'home_upgrade') {
+    log('🏠 ' + p.name + ' wants more space. "We should look at bigger places."');
+    return;
+  }
+
+  if (evt.id === 'career_move') {
+    log('💼 ' + p.name + ' received a career offer in another city.');
+    log(p.name + ': "It is a big opportunity. But it means we would have to move."');
+    return;
+  }
+
+  if (evt.id === 'family_pressure') {
+    log('👵 Relatives are asking questions about your private plans.');
+    log(p.name + ': "My mother called again. She wants to know everything."');
+    return;
+  }
+
+  if (evt.id === 'forgotten_anniversary') {
+    if (p.bond > 30) {
+      p.bond = Math.max(0, p.bond - 5);
+      log('😞 You forgot an important date. ' + p.name + ': "I guess it did not matter."');
+      fx({ happiness: -4 });
+    }
+    return;
+  }
+
+  if (evt.id === 'shared_goal') {
+    log('🎯 ' + p.name + ': "I have been thinking about saving toward something real. Together."');
+    return;
+  }
+
+  if (evt.id === 'partner_study') {
+    log('📚 ' + p.name + ': "I want to go back and study. Would you support that?"');
+    return;
+  }
+
+  if (evt.id === 'holiday_planning') {
+    log('🎉 You and ' + p.name + ' planned the upcoming holidays together.');
+    return;
+  }
+
+  if (evt.id === 'household_chores') {
+    if (p.bond > 25) {
+      p.bond = Math.max(0, p.bond - 2);
+      log('🧹 ' + p.name + ': "Can you help more around the house? I am exhausted."');
+      fx({ happiness: -2 });
+    }
+    return;
+  }
+
+  if (evt.id === 'old_friend') {
+    log('👥 An old friend contacted ' + p.name + '. He seemed happy about it.');
+    return;
+  }
+
+  if (evt.id === 'financial_review') {
+    log('💰 You and ' + p.name + ' sat down for an annual financial review.');
+    return;
+  }
+
+  if (evt.id === 'relationship_milestone') {
+    log('💞 ' + p.name + ': "You know... we have come a long way. I am glad it is you."');
+    p.bond = Math.min(100, p.bond + 2);
+    return;
+  }
+
+  /* ---------- INTERACTIVE events with husband dialogue ---------- */
+  if (S.pending) return;
+
+  if (evt.id === 'anniversary') {
+    S.pending = {
+      title: '💍 Your Anniversary with ' + p.name,
+      text: p.name + ' has been hinting at this day for weeks.\n\n' + p.name + ': "So... do you remember what today is?"',
+      choices: [
+        { label: 'Buy a gift + take him somewhere special (' + money(marEGP(8000)) + ')', effect: function(s) {
+            if (s.wealth >= marEGP(8000)) {
+              s.wealth -= marEGP(8000);
+              p.bond = Math.min(100, p.bond + 15);
+              fx({ happiness: 10 });
+              log(p.name + ': "You remembered. I love you so much."');
+            } else {
+              log(p.name + ': "You forgot? And you cannot even make it up to me?"');
+              p.bond = Math.max(0, p.bond - 8);
+            }
+          }
+        },
+        { label: 'Homemade dinner + handwritten card (' + money(marEGP(500)) + ')', effect: function(s) {
+            if (s.wealth >= marEGP(500)) {
+              s.wealth -= marEGP(500);
+              p.bond = Math.min(100, p.bond + 8);
+              fx({ happiness: 4 });
+              log(p.name + ': "This is so sweet. Thank you."');
+            }
+          }
+        },
+        { label: 'Admit you forgot', effect: function(s) {
+            p.bond = Math.max(0, p.bond - 18);
+            fx({ happiness: -6 });
+            log(p.name + ': "I cannot believe you forgot our anniversary."');
+          }
+        }
+      ]
+    };
+    return;
+  }
+
+  if (evt.id === 'partner_bond_warning') {
+    S.pending = {
+      title: '💬 ' + p.name + ' Seems Distant',
+      text: 'Conversations have been short lately. He is quieter than usual.\n\n' + p.name + ': "I am fine." (He is clearly not fine.)',
+      choices: [
+        { label: 'Sit down and really listen', effect: function(s) {
+            p.bond = Math.min(100, p.bond + 10);
+            p.trust = Math.min(100, (p.trust || 50) + 5);
+            fx({ happiness: 4 });
+            log(p.name + ': "Thank you for listening. I feel lighter."');
+          }
+        },
+        { label: 'Give him space', effect: function(s) {
+            p.bond = Math.max(0, p.bond - 4);
+            log(p.name + ': "I just need to be alone for a bit."');
+          }
+        },
+        { label: 'Push him to talk now', effect: function(s) {
+            p.bond = Math.max(0, p.bond - 8);
+            fx({ happiness: -3 });
+            log(p.name + ': "Not everything has to be a conversation. Give me a minute!"');
+          }
+        }
+      ]
+    };
+    return;
+  }
+
+  if (evt.id === 'partner_wants_gift') {
+    S.pending = {
+      title: '🎁 ' + p.name + ' Hints at a Gift',
+      text: p.name + ': "I saw this thing at the mall... it is not that expensive. What do you think?"',
+      choices: [
+        { label: 'Buy it (' + money(marEGP(15000)) + ')', effect: function(s) {
+            if (s.wealth >= marEGP(15000)) {
+              s.wealth -= marEGP(15000);
+              p.bond = Math.min(100, p.bond + 12);
+              fx({ happiness: 6 });
+              log(p.name + ': "You got it! You are the best."');
+            } else {
+              log(p.name + ': "You cannot afford it? I see."');
+              p.bond = Math.max(0, p.bond - 3);
+            }
+          }
+        },
+        { label: 'Acknowledge the hint but defer', effect: function(s) {
+            p.bond = Math.max(0, p.bond - 2);
+            log(p.name + ': "Maybe next time."');
+          }
+        },
+        { label: 'Ignore the hint', effect: function(s) {
+            p.bond = Math.max(0, p.bond - 6);
+            log(p.name + ': "Never mind. Forget I said anything."');
+          }
+        }
+      ]
+    };
+    return;
+  }
+
+  if (evt.id === 'partner_wants_trip') {
+    S.pending = {
+      title: '✈️ ' + p.name + ' Wants a Vacation',
+      text: p.name + ': "We never go anywhere. Just us, a weekend away somewhere. Please?"',
+      choices: [
+        { label: 'Book a weekend trip (' + money(marEGP(20000)) + ')', effect: function(s) {
+            if (s.wealth >= marEGP(20000)) {
+              s.wealth -= marEGP(20000);
+              p.bond = Math.min(100, p.bond + 14);
+              p.chemistry = Math.min(100, (p.chemistry || 50) + 8);
+              fx({ happiness: 10 });
+              log(p.name + ': "Best weekend ever. I feel so close to you."');
+            } else {
+              log(p.name + ': "Okay. Someday, I guess."');
+            }
+          }
+        },
+        { label: 'Suggest a staycation', effect: function(s) {
+            p.bond = Math.min(100, p.bond + 4);
+            log(p.name + ': "I suppose a staycation works. For now."');
+          }
+        },
+        { label: 'Say no, we cannot afford it', effect: function(s) {
+            p.bond = Math.max(0, p.bond - 7);
+            log(p.name + ': "Fine. Forget I asked."');
+          }
+        }
+      ]
+    };
+    return;
+  }
+
+  if (evt.id === 'partner_wants_child') {
+    S.pending = {
+      title: '👶 ' + p.name + ' Wants a Child',
+      text: p.name + ': "I have been thinking about this for a while. Maybe we are ready? A baby."',
+      choices: [
+        { label: 'Yes — let us try', effect: function(s) {
+            p.bond = Math.min(100, p.bond + 12);
+            fx({ happiness: 8 });
+            log(p.name + ': "You have made me the happiest man alive."');
+            log('💡 Try for a baby from the Children tab.');
+          }
+        },
+        { label: 'Not yet — but soon', effect: function(s) {
+            p.bond = Math.max(0, p.bond - 4);
+            log(p.name + ': "I understand. But please, do not make me wait forever."');
+          }
+        },
+        { label: 'I do not want children', effect: function(s) {
+            p.bond = Math.max(0, p.bond - 20);
+            s.marriage.pendingConflict = 'children';
+            fx({ happiness: -6 });
+            log(p.name + ': "Then maybe we are not the right fit. I need time to think."');
+          }
+        }
+      ]
+    };
+    return;
+  }
+
+  if (evt.id === 'inlaws_visit') {
     S.pending = {
       title: '👵 In-Laws Visit',
-      text: 'Your mother-in-law announces she is coming to stay with you for a week.',
+      text: 'Your mother-in-law announces she is coming to stay for a week.\n\n' + p.name + ': "It is only a week. She misses us."',
       choices: [
         { label: '🏠 Host her graciously', effect: function(s) {
             s.marriage.motherInLawBond = Math.min(100, s.marriage.motherInLawBond + 15);
@@ -2972,51 +3220,20 @@ function marFireYearEvent(evt) {
         { label: '😤 Push back on her comments', effect: function(s) {
             s.marriage.motherInLawBond = Math.max(0, s.marriage.motherInLawBond - 20);
             p.bond = Math.min(100, p.bond + 5);
-            log('😤 You pushed back on her criticism.');
+            log(p.name + ': "Thank you for defending us. I know she can be a lot."');
             fx({ happiness: 3 });
           }
         },
         { label: '🤐 Stay silent, keep the peace', effect: function(s) {
             s.marriage.motherInLawBond = Math.min(100, s.marriage.motherInLawBond + 5);
-            fx({ happiness: -5 });
+            p.bond = Math.max(0, p.bond - 2);
+            log(p.name + ': "You barely said anything. It is fine, I guess."');
+            fx({ happiness: -3 });
           }
         }
       ]
     };
-    S.evId = 'inlaws_visit_' + gameYear();
-  } else if (evt.id === 'partner_bond_warning') {
-    log('💬 ' + p.name + ' seems distant. Spend time together.');
-  } else if (evt.id === 'partner_wants_gift') {
-    log('🎁 ' + p.name + ' hints at wanting a gift.');
-  } else if (evt.id === 'partner_wants_trip') {
-    log('✈️ ' + p.name + ' wants to plan a trip together.');
-  } else if (evt.id === 'partner_wants_child') {
-    log('👶 ' + p.name + ' brings up having a baby.');
-  } else if (evt.id === 'unexpected_bill') {
-    const cost = marEGP(20000);
-    if (S.wealth >= cost) { S.wealth -= cost; log('💸 Unexpected bill: ' + money(cost) + '.'); }
-  } else if (evt.id === 'home_upgrade') {
-    log('🏠 You discuss moving to a larger home.');
-  } else if (evt.id === 'career_move') {
-    log('💼 Your partner received a career offer in another city.');
-  } else if (evt.id === 'family_pressure') {
-    log('👵 Relatives are asking questions about your private plans.');
-  } else if (evt.id === 'forgotten_anniversary') {
-    if (p.bond > 30) { p.bond = Math.max(0, p.bond - 5); log('😞 You forgot an important date. Bond -5.'); }
-  } else if (evt.id === 'shared_goal') {
-    log('🎯 Your partner wants to work toward a shared goal.');
-  } else if (evt.id === 'partner_study') {
-    log('📚 Your partner wants to study or take a course.');
-  } else if (evt.id === 'holiday_planning') {
-    log('🎉 You plan holiday arrangements together.');
-  } else if (evt.id === 'household_chores') {
-    if (p.bond > 25) { p.bond = Math.max(0, p.bond - 2); log('🧹 Chore distribution felt unfair. Bond -2.'); }
-  } else if (evt.id === 'old_friend') {
-    log('👥 An old friend contacted ' + p.name + '.');
-  } else if (evt.id === 'financial_review') {
-    log('💰 Annual financial review. You discussed savings and spending.');
-  } else if (evt.id === 'relationship_milestone') {
-    log('💞 A milestone. You appreciate how far you have come.');
+    return;
   }
 }
 
