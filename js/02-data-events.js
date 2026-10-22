@@ -566,19 +566,21 @@ const GENDER_EVENTS = [
   },
   choices: [
     { label: s => 'Pay ' + evtMoney(15000).toLocaleString() + ' (cash)',
+        { label: 'Pay from savings',
       available: s => s.wealth >= evtMoney(15000),
-      effect: s => { s.wealth -= evtMoney(15000); evtBumpFamily(null, 15); fx({ happiness: 3 }); } },
+      effect: s => { s.wealth -= evtMoney(15000); evtBumpFamily(null, 15); fx({ happiness: 3 }); log('💰 You paid for the surgery. The family is grateful.'); if (typeof evtRemember === 'function') evtRemember('paidParentSurgery', true, 15); } },
     { label: s => 'Charge ' + evtMoney(15000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(15000),
-      effect: s => { evtChargeCredit(evtMoney(15000)); evtBumpFamily(null, 12); fx({ happiness: 2 }); } },
+      effect: s => { evtChargeCredit(evtMoney(15000)); evtBumpFamily(null, 12); fx({ happiness: 2 }); } }, if (typeof evtRemember === 'function') evtRemember('paidParentSurgery', true, 15)
     { label: s => 'Ask ' + evtPartnerName() + ' to help',
       available: s => evtIsMarried(),
       effect: s => {
-        var r = evtAskPartner(evtMoney(15000));
-        if (r.ok) { evtBumpFamily(null, 10); fx({ happiness: 3 }); log('💍 ' + r.name + ': "Your family is my family."'); }
+        var r = evtAskPartner(evtMoney(15000)); if (typeof evtRemember === 'function') evtRemember('paidParentSurgery', true, 15)
+        if (r.ok) { evtBumpFamily(null, 10); fx({ happiness: 3 }); log('💍 ' + r.name + ': "Your family is my family."'); 
+     if (typeof evtRemember === 'function') evtRemember('paidParentSurgery', true, 15)} 
         else { fx({ happiness: -12 }); log('💔 ' + r.name + ' refused.'); }
       } },
-    { label: 'Say you cannot afford it',
+    { label: 'Say you cannot afford it', evtRemember('refusedParentSurgery', true, 15);
       effect: s => { evtBumpFamily(null, -25); fx({ happiness: -20, health: -5 }); } }
   ]
 },
