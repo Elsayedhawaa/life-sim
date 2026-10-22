@@ -152,8 +152,10 @@ function newLife() {
     parentType: START.parentType,
     log: [],
     flags: {},
-    pending: null,
+       pending: null,
     evId: null,
+    evtMemory: {},
+    pendingQueue: [],
   };
   S.family.push({ role: 'Mother', name: 'Mother', age: 30, bond: 70, alive: true });
   S.family.push({ role: 'Father', name: 'Father', age: 32, bond: 70, alive: true });
@@ -232,6 +234,41 @@ function advanceYear() {
   S.family.forEach(m => { if (m.alive) m.age++; });
 
   engineYearTick();
+
+   /* Keep legacy S.job and S.career.job in sync */
+  if (S.career && S.career.job && S.job) {
+    S.job.title = S.career.job.title || S.job.title;
+    S.job.salary = S.career.job.salary || S.job.salary;
+    S.job.level = S.career.job.level || S.job.level || 0;
+    S.job.company = S.career.job.company || S.job.company;
+  } else if (S.career && S.career.job && !S.job) {
+    S.job = {
+      title: S.career.job.title,
+      salary: S.career.job.salary,
+      level: S.career.job.level || 0,
+      company: S.career.job.company,
+      years: S.career.job.tenure || 0
+    };
+  } else if (S.job && (!S.career || !S.career.job)) {
+    if (S.career) {
+      S.career.job = {
+        title: S.job.title,
+        salary: S.job.salary,
+        company: S.job.company,
+        track: 'entry',
+        level: S.job.level || 0,
+        baseSalaryEGP: S.job.salary,
+        payMult: 1.0,
+        performance: 50,
+        hiredYear: gameYear() - (S.job.years || 0),
+        tenure: S.job.years || 0,
+        benefits: [],
+        stability: 0.85,
+        prestige: 3,
+        salaryCurrency: C().currency
+      };
+    }
+  }
 
   if (S.job) {
     S.wealth += S.job.salary;
@@ -580,7 +617,17 @@ function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } cat
 function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (raw) { S = JSON.parse(raw); activeTab = 'life'; render(); return true; }
+    if (raw) {
+      S = JSON.parse(raw);
+      /* Migration: ensure new fields exist on old saves */
+      if (!S.evtMemory) S.evtMemory = {};
+      if (typeof S.gulfWork === 'undefined' && typeof ensureGulfWorkState === 'function') ensureGulfWorkState();
+      if (typeof S.studyAbroad === 'undefined') S.studyAbroad = null;
+      if (!Array.isArray(S.pendingQueue)) S.pendingQueue = [];
+      activeTab = 'life';
+      render();
+      return true;
+    }
   } catch(e) { console.error(e); }
   renderStart();
   return false;
