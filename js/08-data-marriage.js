@@ -529,7 +529,32 @@ const MARRIAGE_PARTNER_NAMES = {
    ============================================================ */
 
 const MARRIAGE_COUNTRY_PROFILES = {
-  egy: {
+   egy: {
+    label: 'Egypt',
+    // ... existing fields ...
+    traditionalGenderRoles: true, // <-- ADD THIS
+  },
+  sau: {
+    label: 'Saudi Arabia',
+    // ... existing fields ...
+    traditionalGenderRoles: true, // <-- ADD THIS
+  },
+  uae: {
+    label: 'United Arab Emirates',
+    // ... existing fields ...
+    traditionalGenderRoles: true, // <-- ADD THIS
+  },
+  ind: {
+    label: 'India',
+    // ... existing fields ...
+    traditionalGenderRoles: true, // <-- ADD THIS
+  },
+  // For Western countries (usa, gbr, deu, can, fra, etc.) add:
+  usa: {
+    // ...
+    traditionalGenderRoles: false,
+  }
+   egy: {
     label: 'Egypt',
     currency: 'EGP',
     datingStyle: ['Family Introduction', 'Mutual Friends', 'University', 'Dating Apps'],
