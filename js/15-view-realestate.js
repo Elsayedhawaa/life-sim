@@ -820,11 +820,10 @@ function mineSection() {
       '<div class="row" style="align-items:flex-start"><span>Status</span><div style="text-align:right">' + statusHtml + '</div></div>' +
              '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:10px">' +
       (contract ? `<button class="pill" style="padding:4px 8px;font-size:.72rem;background:#34d39920;border-color:#34d399;color:#34d399" onclick="payMortgageExtra('${h.id}')">Pay Mortgage Extra</button>` : '') +
-      (h.status !== 'occupied' && h.status !== 'rented' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="moveIntoHome(\'' + h.id + '\')">Move in</button>' : '') +
-      (h.status === 'vacant' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="setHomeForRent(\'' + h.id + '\')">List for Rent</button>' : '') +
+      (h.isHusbandOwned ? '<div class="muted small" style="color:#fbbf24;width:100%;margin-bottom:4px">⚠️ Owned by your husband. You can live here and renovate, but cannot sell.</div>' : '') +      (h.status === 'vacant' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="setHomeForRent(\'' + h.id + '\')">List for Rent</button>' : '') +
       (h.status === 'listed' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="stopRenting(\'' + h.id + '\')">Unlist</button>' : '') +
       (h.status === 'rented' ? '<button class="pill" style="padding:4px 8px;font-size:.72rem;color:#fb7185;border-color:#fb7185" onclick="evictTenant(\'' + h.id + '\')">Evict</button>' : '') +
-      '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="sellHome(\'' + h.id + '\')">Sell</button>' +
+      (!h.isHusbandOwned ? '<button class="pill" style="padding:4px 8px;font-size:.72rem" onclick="sellHome(\'' + h.id + '\')">Sell</button>' : '') +
       '</div></div>';
   }).join('');
 
