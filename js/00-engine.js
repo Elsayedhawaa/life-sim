@@ -171,6 +171,8 @@ function newLife() {
    EVENT PREPARATION
    ============================================================ */
 function prepareEvent(e) {
+  if (!e) return null;
+
   if (e.dynamic === 'school') {
     const c = C();
     return {
@@ -182,7 +184,14 @@ function prepareEvent(e) {
       }))
     };
   }
-  return e;
+
+  // Execute text if it's a function
+  var prepared = Object.assign({}, e);
+  if (typeof prepared.text === 'function') {
+    try { prepared.text = prepared.text(S); }
+    catch (err) { prepared.text = '...'; }
+  }
+  return prepared;
 }
 
 /* ============================================================
