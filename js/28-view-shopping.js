@@ -1,12 +1,14 @@
 /* ============================================================
-   VIEW: SHOPPING — v3
+   VIEW: SHOPPING — v4
    ============================================================
    Adds:
    - Credit card visibility (balance + available + pay from shopping)
    - Card installment plans at checkout (full / 3mo / 6mo / 12mo)
    - Extended warranty at checkout (basic / premium)
    - Gift registry tab (history of gifts by year + recipient)
-   - All prior features preserved (bank loans, store finance, home association)
+   - Jewelry & Gold tab with smart filtering
+   - Gold appreciation logic in year tick
+   - Gift chemistry for spouses
    ============================================================ */
 
 /* ---------- STATE ---------- */
@@ -93,6 +95,12 @@ function _shopWarrantyYears(item) {
   return base;
 }
 
+/* ---------- CATEGORY MATCH ---------- */
+function _shopCatMatch(row, f) {
+  if (f === 'jewelry') return row[2] === 'jewelry' || row[3] === 'jewelry' || row[2] === 'luxury';
+  return row[2] === f;
+}
+
 /* ---------- FINANCIAL STATE READERS ---------- */
 function _shopCashOnly() { return S.wealth || 0; }
 function _shopSavingsTotal() {
@@ -146,7 +154,7 @@ function _shopChargeCard(item, price, allowInstallments) {
   const card = _shopPickCard();
   if (!card) {
     log('❌ No credit card with available room.');
-      return { ok: true, cardId: card.id };
+    return { ok: false };
   }
 
   let plan = SHOP_CARD_INSTALLMENTS[0]; /* default full */
@@ -326,6 +334,10 @@ function _shopDeliverGift(item, recipient) {
     if (typeof recipient.obj.health === 'number' && item.cat === 'appliances') {
       recipient.obj.health = Math.min(100, recipient.obj.health + Math.floor(boost / 2));
     }
+    /* Gift chemistry for spouses */
+    if (recipient.type === 'spouse') {
+      recipient.obj.chemistry = Math.min(100, (recipient.obj.chemistry || 40) + (item.cat === 'jewelry' ? 8 : 3));
+    }
   }
   fx({ happiness: Math.floor(boost / 2), social: 2 });
 }
@@ -361,7 +373,7 @@ function shopBuildCatalog(catFilter) {
 
   SHOP_ALL.forEach(function(row) {
     const cat = row[2];
-    if (catFilter && cat !== catFilter) return;
+    if (catFilter && !_shopCatMatch(row, catFilter)) return;
     const subcat = row[3];
     const fromYear = row[9] || 0;
     const untilYear = row[10] || 9999;
@@ -391,8 +403,9 @@ function shopBuildCatalog(catFilter) {
       happiness: row[5], social: row[6], life: row[7],
       desc: tag + row[8],
       age: age, discount: discount,
-      fromYear: fromYear, untilYear: untilYear
-       grams: row[11] || 0, karat: row[12] || 0,.
+      fromYear: fromYear, untilYear: untilYear,
+      grams: row[11] || 0,
+      karat: row[12] || 0
     });
   });
 
@@ -455,7 +468,6 @@ function shopBuy(itemId, method, giftTo) {
 
   /* ---- PROCESS PAYMENT ---- */
   let paid = false;
-  let cardCharged = null;
 
   if (method === 'cash') {
     if (_shopTotalLiquid() < grandTotal) {
@@ -464,10 +476,9 @@ function shopBuy(itemId, method, giftTo) {
     }
     _shopSpend(grandTotal, 'Purchase: ' + item.name);
     paid = true;
-    } else if (method === 'card') {
+  } else if (method === 'card') {
     const result = _shopChargeCard(item, grandTotal, true);
     paid = result.ok;
-    if (result.ok && result.cardId) newItem_cardRef = result.cardId;
   } else if (method === 'bank') {
     paid = _shopBankLoan(item, grandTotal);
   } else if (method === 'inst12') {
@@ -526,25 +537,26 @@ function shopBuy(itemId, method, giftTo) {
     extendedWarrantyUntil: extendedYears > 0 ? gameYear() + warrantyYears + extendedYears : 0,
     homeId: homeInfo ? homeInfo.homeId : null,
     homeName: homeInfo ? homeInfo.homeName : null,
-   returnableUntil: gameYear() + 1,
-    cardUsed: null    // ← ADD THIS LINE
+    returnableUntil: gameYear() + 1,
+    cardUsed: null,
+    grams: item.grams || 0,
+    karat: item.karat || 0
   };
-     /* Track which card was used (if any) for proper refund routing */
+
+  /* Track which card was used (if any) for proper refund routing */
   if (method === 'card' && S.bank && Array.isArray(S.bank.creditCards) && S.bank.creditCards.length > 0) {
     const latest = S.bank.creditCards.find(c => (c.balance || 0) > 0);
     if (latest) newItem.cardUsed = latest.id;
   }
   S.shopping.inventory.push(newItem);
 
-   /* Immediate home value/comfort update for furniture/appliances */
+  /* Immediate home value/comfort update for furniture/appliances */
   if (homeInfo && homeInfo.homeId && (item.cat === 'furniture' || item.cat === 'appliances')) {
     const home = (S.ownedHomes || []).find(h => h.id === homeInfo.homeId);
     if (home) {
       home.furnitureValue = (home.furnitureValue || 0) + basePrice;
       home.value = (home.value || 0) + basePrice;
-      /* Wire into 16-view homeComfort so its year tick applies happiness automatically */
       home.homeComfort = (home.homeComfort || 0) + (item.happiness * 2);
-      /* Track the shopping contribution separately for display purposes */
       home.shoppingComfort = (home.shoppingComfort || 0) + (item.happiness * 2);
     }
   }
@@ -558,6 +570,7 @@ function shopBuy(itemId, method, giftTo) {
   render();
 }
 window.shopBuy = shopBuy;
+
 /* ---------- Gift suggestions by recipient traits ---------- */
 function _suggestGiftFor(recipient) {
   if (!recipient || !recipient.obj) return [];
@@ -612,7 +625,7 @@ window.shopGift = function(itemId) {
   const item = all.find(function(i) { return i.id === itemId; });
   if (!item) { log('Item not found.'); return; }
 
-    const recipient = _shopPickRecipient();
+  const recipient = _shopPickRecipient();
   if (!recipient) { render(); return; }
 
   const suggestions = _suggestGiftFor(recipient);
@@ -631,7 +644,7 @@ window.shopGift = function(itemId) {
   );
   if (payMethod === '1') shopBuy(itemId, 'cash', recipient);
   else if (payMethod === '2') shopBuy(itemId, 'card', recipient);
-  else if (payMethod === '3') shopBuy(itemId, 'card', recipient); /* Card function handles plan */
+  else if (payMethod === '3') shopBuy(itemId, 'card', recipient);
   else render();
 };
 
@@ -639,7 +652,7 @@ window.shopGift = function(itemId) {
 function shopSell(uid) {
   const idx = S.shopping.inventory.findIndex(function(i) { return i.uid === uid; });
   if (idx < 0) return;
-   const item = S.shopping.inventory[idx];
+  const item = S.shopping.inventory[idx];
   const price = item.currentValue;
 
   /* Remove from home value if furniture/appliance */
@@ -660,6 +673,7 @@ function shopSell(uid) {
   render();
 }
 window.shopSell = shopSell;
+
 /* ---------- RETURN ---------- */
 window.shopReturn = function(uid) {
   const item = S.shopping.inventory.find(i => i.uid === uid);
@@ -707,6 +721,7 @@ window.shopReturn = function(uid) {
   S.shopping.history.unshift({ year: gameYear(), action: 'returned', name: item.name, price: refund, to: refundTarget });
   render();
 };
+
 /* ---------- REPAIR ---------- */
 function shopRepair(uid) {
   const item = S.shopping.inventory.find(function(i) { return i.uid === uid; });
@@ -778,9 +793,9 @@ function shoppingView() {
     ['appliances', '🍳 Appliances'],
     ['furniture', '🛋 Furniture'],
     ['fashion', '👕 Fashion'],
+    ['jewelry', '💍 Jewelry & Gold'],
     ['mine', '🏷 My Items'],
     ['gifts', '🎁 Gifts']
-     ['jewelry', '💍 Jewelry & Gold'],
   ];
 
   const sale = S.shopping.activeSale;
@@ -844,12 +859,7 @@ function shopRenderCategory(cat) {
     if (!subcats[i.subcat]) subcats[i.subcat] = [];
     subcats[i.subcat].push(i);
   });
-function _shopCatMatch(row, f) {
-  if (f === 'jewelry') return row[2] === 'jewelry' || row[3] === 'jewelry' || row[2] === 'luxury';
-  return row[2] === f;
-}
-/* replace:  if (catFilter && cat !== catFilter) return;   with: */
-if (catFilter && !_shopCatMatch(row, catFilter)) return;
+
   Object.keys(subcats).forEach(function(sub) {
     html += '<div class="card"><h4 style="font-size:.85rem;color:#8b5cf6">' + sub.replace(/_/g, ' ').toUpperCase() + '</h4>';
     subcats[sub].forEach(function(item) {
@@ -953,20 +963,20 @@ function shopRenderMine() {
     byCat[cat].forEach(function(item) {
       const condColor = item.condition > 70 ? '#34d399' : item.condition > 40 ? '#fbbf24' : '#fb7185';
       const w = _warrantyStatusText(item);
-      const ext = item.extendedWarranty ? ' (extended)' : '';
 
       html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
         '<div style="display:flex;justify-content:space-between">' +
         '<div><div style="font-weight:700">' + item.brand + ' · ' + item.name + (item.broken ? ' 🔧' : '') + '</div>' +
         '<div class="muted small">' + item.age + 'y old · ' + item.life + 'yr life</div>' +
         (item.homeName ? '<div class="muted small">🏠 ' + item.homeName + '</div>' : '') +
+        (item.grams > 0 ? '<div class="muted small">💍 ' + item.grams + 'g ' + (item.karat || '') + '</div>' : '') +
         '<div style="display:flex;gap:6px;align-items:center;margin-top:2px;font-size:.7rem">' +
         '<span style="color:' + condColor + '">Condition ' + item.condition + '%</span>' +
         '<span class="muted">·</span>' + w +
         '</div></div>' +
         '<div style="text-align:right"><div style="color:#22d3ee;font-weight:bold">' + money(item.currentValue) + '</div>' +
         '<div class="muted small">resale</div></div></div>' +
-              '<div style="display:flex;gap:4px;margin-top:6px">' +
+        '<div style="display:flex;gap:4px;margin-top:6px">' +
         (item.broken ? _repairButton(item) : '') +
         (item.returnableUntil && item.returnableUntil >= gameYear()
           ? '<button class="opt" style="flex:1;padding:4px;font-size:.7rem;border-color:#fbbf24;color:#fbbf24" onclick="shopReturn(\'' + item.uid + '\')">↩ Return</button>'
@@ -1100,12 +1110,14 @@ GameHooks.on('year', function() {
     }
   }
 
-  /* Age inventory + depreciation (all 4 fixes intact) */
+  /* Age inventory + depreciation */
   sp.inventory.forEach(function(item) {
     item.age++;
 
     let depreciation = 0.15;
-    if (item.cat === 'phone') depreciation = 0.25;
+    const isGold = item.cat === 'jewelry' || item.subcat === 'jewelry' || item.subcat === 'gold_bar' || item.subcat === 'gold_coin';
+    if (isGold) depreciation = -0.05;            /* gold appreciates ~5%/yr */
+    else if (item.cat === 'phone') depreciation = 0.25;
     else if (item.cat === 'laptop' || item.cat === 'tablet' || item.cat === 'desktop') depreciation = 0.20;
     else if (item.cat === 'tv') depreciation = 0.15;
     else if (item.cat === 'watch') depreciation = ((item.priceUSD || 0) > 5000) ? -0.03 : 0.08;
@@ -1119,7 +1131,7 @@ GameHooks.on('year', function() {
     item.currentValue = Math.max(item.purchasePrice * 0.05, Math.round(item.currentValue * (1 - depreciation)));
     item.condition = Math.max(0, item.condition - Math.floor(Math.random() * 5 + 2));
 
-    if (!item.broken && item.age > item.life / 2 && item.cat !== 'fashion') {
+    if (!item.broken && item.age > item.life / 2 && item.cat !== 'fashion' && item.cat !== 'jewelry') {
       const breakChance = 0.05 + item.age * 0.02;
       if (Math.random() < breakChance) {
         item.broken = true;
@@ -1151,39 +1163,39 @@ GameHooks.on('year', function() {
       return true;
     });
   }
-  /* ---- Card installment auto-payments ---- */
-    if (!(typeof isMonthly === 'function' && isMonthly())) {
-  sp.cardInstallments = sp.cardInstallments.filter(function(ci) {
-    const card = S.bank && Array.isArray(S.bank.creditCards)
-      ? S.bank.creditCards.find(function(c) { return c.id === ci.cardId; })
-      : null;
 
-    if (!card) {
-      log('⚠️ Card for ' + ci.itemName + ' installment no longer exists. Installment dropped.');
-      return false;
-    }
+  /* Card installment auto-payments */
+  if (!(typeof isMonthly === 'function' && isMonthly())) {
+    sp.cardInstallments = sp.cardInstallments.filter(function(ci) {
+      const card = S.bank && Array.isArray(S.bank.creditCards)
+        ? S.bank.creditCards.find(function(c) { return c.id === ci.cardId; })
+        : null;
 
-    const yearPayment = ci.monthlyPayment * 12;
+      if (!card) {
+        log('⚠️ Card for ' + ci.itemName + ' installment no longer exists. Installment dropped.');
+        return false;
+      }
 
-    if (_shopTotalLiquid() >= yearPayment) {
-      _shopSpend(yearPayment, 'Card installment: ' + ci.itemName);
-      card.balance = Math.max(0, card.balance - yearPayment);
-      ci.remaining = Math.max(0, ci.remaining - yearPayment);
-      ci.monthsLeft -= 12;
-      log('💳 Auto-paid ' + money(yearPayment) + ' toward ' + ci.itemName + ' card installment. Balance left: ' + money(card.balance) + '.');
-    } else {
-      /* Missed — card accrues interest on remaining */
-      log('⚠️ Could not pay card installment for ' + ci.itemName + '. Card interest accrues.');
-      card.balance = Math.round(card.balance * 1.20); /* 20% interest */
-    }
+      const yearPayment = ci.monthlyPayment * 12;
 
-       if (ci.monthsLeft <= 0) {
-      log('✅ ' + ci.itemName + ' card installment complete.');
-      return false;
-    }
-    return true;
-  });
-  } /* end isMonthly guard */
+      if (_shopTotalLiquid() >= yearPayment) {
+        _shopSpend(yearPayment, 'Card installment: ' + ci.itemName);
+        card.balance = Math.max(0, card.balance - yearPayment);
+        ci.remaining = Math.max(0, ci.remaining - yearPayment);
+        ci.monthsLeft -= 12;
+        log('💳 Auto-paid ' + money(yearPayment) + ' toward ' + ci.itemName + ' card installment. Balance left: ' + money(card.balance) + '.');
+      } else {
+        log('⚠️ Could not pay card installment for ' + ci.itemName + '. Card interest accrues.');
+        card.balance = Math.round(card.balance * 1.20);
+      }
+
+      if (ci.monthsLeft <= 0) {
+        log('✅ ' + ci.itemName + ' card installment complete.');
+        return false;
+      }
+      return true;
+    });
+  }
 
   /* Age out of useful life */
   sp.inventory.forEach(function(item) {
