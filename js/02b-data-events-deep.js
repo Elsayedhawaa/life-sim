@@ -7,6 +7,121 @@
 /* ============================================================
    CONNECTED PUZZLE MEMORY SYSTEM
    ============================================================ */
+/* ============================================================
+   SESSION 5 — REAL STATE MUTATORS for Gulf / Study / Migration
+   ============================================================ */
+
+/* --- Push a real Gulf job offer into S.gulfWork.offer --- */
+function evtPushGulfOffer(countryId) {
+  if (!S) return false;
+  if (typeof ensureGulfWorkState === 'function') ensureGulfWorkState();
+  if (!S.gulfWork) return false;
+  if (S.gulfWork.active) return false;
+  if (S.gulfWork.offer) return false;
+
+  if (typeof _gulfSalaryBreakdown !== 'function' || typeof _gulfPickSponsor !== 'function') return false;
+
+  S.gulfWork.pendingCountry = countryId;
+  var sponsor = _gulfPickSponsor({ sponsorBias: ['fair', 'generous', 'multinational'] });
+  var salary = _gulfSalaryBreakdown('linkedin', countryId);
+  var career = salary.career || { track: 'entry', title: 'Worker', careerLevel: 0 };
+  var housingIncluded = Math.random() < 0.45;
+  var total = salary.basicAnnualLocal +
+    (housingIncluded ? 0 : salary.housingAllowance) +
+    salary.transportAllowance +
+    salary.mobileAllowance;
+
+  S.gulfWork.offer = {
+    country: countryId,
+    source: 'event',
+    sourceLabel: 'Direct Recruiter Offer',
+    sponsor: sponsor,
+    track: career.track,
+    careerLevel: career.careerLevel,
+    title: career.title,
+    profession: career.track === 'teaching' ? 'teacher'
+      : career.track === 'medicine' ? 'physician'
+      : career.track === 'engineering' ? 'engineer'
+      : career.track === 'tech' ? 'software engineer'
+      : career.track === 'nursing' ? 'nurse'
+      : 'professional',
+    basicAnnualLocal: salary.basicAnnualLocal,
+    housingAllowance: housingIncluded ? 0 : salary.housingAllowance,
+    transportAllowance: salary.transportAllowance,
+    mobileAllowance: salary.mobileAllowance,
+    totalAnnualLocal: total,
+    salaryLocal: total,
+    breakdown: salary,
+    housingIncluded: housingIncluded,
+    flightsIncluded: Math.random() < 0.7,
+    medicalInsuranceProvided: true,
+    expiresAbsMonth: (typeof _gulfAbsMonth === 'function') ? _gulfAbsMonth() + 3 : 0,
+    iqamaYears: 2,
+    contractYears: 2 + Math.floor(Math.random() * 2)
+  };
+  return true;
+}
+window.evtPushGulfOffer = evtPushGulfOffer;
+
+/* --- Push a real study abroad acceptance --- */
+function evtPushStudyAbroad(uniId, majorId) {
+  if (!S) return false;
+  if (S.studyAbroad && S.studyAbroad.status !== 'returned') return false;
+  if (S.uni) return false;
+  if (typeof EDU_STUDY_ABROAD_UNIS === 'undefined') return false;
+
+  var uni = EDU_STUDY_ABROAD_UNIS.find(function(u) { return u.id === uniId; });
+  if (!uni) return false;
+
+  if (typeof studyAbroadArrive === 'function') {
+    var app = { country: uni.country, major: majorId || 'cs', mode: 'self' };
+    var uniData = {
+      id: uni.id,
+      name: uni.name,
+      country: uni.country,
+      quality: uni.quality,
+      tuitionUSD: uni.tuitionUSD
+    };
+    studyAbroadArrive(app, uniData);
+    return true;
+  }
+  return false;
+}
+window.evtPushStudyAbroad = evtPushStudyAbroad;
+
+/* --- Actually migrate country (converts wealth) --- */
+function evtMigrateTo(newCountry) {
+  if (!S || !newCountry) return false;
+  if (newCountry === S.country) return false;
+  if (typeof COUNTRIES === 'undefined' || !COUNTRIES[newCountry]) return false;
+
+  var oldCountry = S.country;
+  var oldRate = (COUNTRIES[oldCountry] && COUNTRIES[oldCountry].rate) || 1;
+  var newRate = (COUNTRIES[newCountry] && COUNTRIES[newCountry].rate) || 1;
+
+  if (typeof S.wealth === 'number' && oldRate !== newRate) {
+    S.wealth = Math.round(S.wealth / oldRate * newRate);
+  }
+  if (S.job && typeof S.job.salary === 'number') {
+    S.job.salary = Math.round(S.job.salary / oldRate * newRate);
+  }
+  if (S.career && S.career.job && typeof S.career.job.salary === 'number') {
+    S.career.job.salary = Math.round(S.career.job.salary / oldRate * newRate);
+  }
+  if (S.bank && Array.isArray(S.bank.accounts)) {
+    S.bank.accounts.forEach(function(a) {
+      if (typeof a.balance === 'number') a.balance = Math.round(a.balance / oldRate * newRate);
+    });
+  }
+
+  S.country = newCountry;
+  S.homeCountry = S.homeCountry || oldCountry;
+  log('✈️ You moved from ' + (COUNTRIES[oldCountry] ? COUNTRIES[oldCountry].name : oldCountry) +
+      ' to ' + (COUNTRIES[newCountry] ? COUNTRIES[newCountry].name : newCountry) + '.');
+  return true;
+}
+window.evtMigrateTo = evtMigrateTo;
+
 function evtRemember(key, value, yearsValid) {
   if (!S) return;
   if (!S.evtMemory) S.evtMemory = {};
@@ -1307,6 +1422,283 @@ const DEEP_EVENTS = [
         evtRemember('refusedParentSurgery', true, 15);
         log('💔 The surgery was delayed. The family is shattered.');
         fx({ happiness: -20, health: -5 });
+      }
+    }
+  ]
+}
+
+/* ============================================================
+   SESSION 5 — GULF OFFERS / STUDY ABROAD / MIGRATION EVENTS
+   ============================================================ */
+
+/* ---------- Gulf Job Offer Events ---------- */
+
+{ id: 'gulf_recruiter_offer_sau', minAge: 22, maxAge: 55, weight: 6, maxFires: 2,
+  condition: s => S.gulfWork && !S.gulfWork.active && !S.gulfWork.offer && s.country !== 'sau',
+  title: '🇸🇦 Saudi Recruiter Called',
+  text: s => {
+    var job = (s.career && s.career.job) ? s.career.job : s.job;
+    var cur = job ? money(job.salary) : 'your current salary';
+    return 'A Saudi recruiter found your profile on LinkedIn. They are impressed and want to fly you out for an interview. Their offer would nearly double your salary of ' + cur + '.\n\n"Your skills are exactly what the Kingdom needs."';
+  },
+  choices: [
+    { label: 'Accept the interview — show me the offer',
+      effect: s => {
+        if (evtPushGulfOffer('sau')) {
+          log('🇸🇦 Offer loaded into Career → Gulf tab.');
+          log('💼 Go to Career → Gulf Jobs to review and accept.');
+          fx({ happiness: 8 });
+        } else {
+          log('❌ The offer could not be processed.');
+        }
+      }
+    },
+    { label: 'Decline — happy where you are',
+      effect: s => { fx({ happiness: 2 }); }
+    }
+  ]
+},
+
+{ id: 'gulf_recruiter_offer_uae', minAge: 22, maxAge: 55, weight: 5, maxFires: 2,
+  condition: s => S.gulfWork && !S.gulfWork.active && !S.gulfWork.offer && s.country !== 'uae',
+  title: '🇦🇪 Dubai Wants You',
+  text: s => 'A Dubai-based firm reached out through a mutual contact. They have a role reserved for you if you are interested. No tax. Housing allowance. Flights home once a year.\n\n"You can double your savings within 2 years."',
+  choices: [
+    { label: 'Show me the offer',
+      effect: s => {
+        if (evtPushGulfOffer('uae')) {
+          log('🇦🇪 Offer loaded. Check Career → Gulf Jobs.');
+          fx({ happiness: 8 });
+        } else {
+          log('❌ Could not process the offer.');
+        }
+      }
+    },
+    { label: 'Not interested',
+      effect: s => { fx({ happiness: 1 }); }
+    }
+  ]
+},
+
+{ id: 'gulf_visit_offer', minAge: 26, maxAge: 50, weight: 4, maxFires: 1,
+  condition: s => S.gulfWork && !S.gulfWork.active && !S.gulfWork.offer && (S.job || (S.career && S.career.job)),
+  title: '🇸🇦 Former Colleague Wants You Back',
+  text: s => 'Someone you used to work with is now a hiring manager in Saudi Arabia. They called you directly: "You were the best. Come work with me. I will make it worth your while."',
+  choices: [
+    { label: 'Accept the offer',
+      effect: s => {
+        if (evtPushGulfOffer('sau')) {
+          log('🇸🇦 Offer ready in Career → Gulf Jobs.');
+          fx({ happiness: 10 });
+        } else {
+          log('❌ Offer could not be generated.');
+        }
+      }
+    },
+    { label: 'Politely decline',
+      effect: s => { fx({ happiness: 1 }); }
+    }
+  ]
+},
+
+/* ---------- Study Abroad Acceptance Events ---------- */
+
+{ id: 'study_abroad_oxford', minAge: 17, maxAge: 24, weight: 3, maxFires: 1,
+  condition: s => {
+    if (S.uni || S.studyAbroad) return false;
+    var ielts = (S.languageScores && S.languageScores.ielts) || 0;
+    var toefl = (S.languageScores && S.languageScores.toefl) || 0;
+    return (ielts >= 7.5 || toefl >= 110) && S.smarts >= 85;
+  },
+  title: '🎓 Oxford Letter Arrived',
+  text: s => 'An envelope arrived from the UK with that familiar blue crest. You got in. The University of Oxford has offered you a place.\n\nTuition alone is £45,000 a year. You have to decide.',
+  choices: [
+    { label: 'Accept — move to Oxford (self-funded)',
+      effect: s => {
+        if (evtPushStudyAbroad('oxford', 'economics')) {
+          log('✈️ You moved to Oxford. A new life begins.');
+          fx({ happiness: 25, smarts: 5 });
+        } else {
+          log('❌ Move failed.');
+        }
+      }
+    },
+    { label: 'Decline — cannot afford it',
+      effect: s => { fx({ happiness: -10 }); }
+    }
+  ]
+},
+
+{ id: 'study_abroad_germany', minAge: 17, maxAge: 24, weight: 4, maxFires: 1,
+  condition: s => {
+    if (S.uni || S.studyAbroad) return false;
+    var goethe = (S.languageScores && S.languageScores.goethe) || 0;
+    return goethe >= 3 && S.smarts >= 70;
+  },
+  title: '🎓 TU Munich Accepts You',
+  text: s => 'Germany offers almost-free tuition if you speak the language. You do. TU Munich just sent you an admission letter.\n\nThis is your chance. The cost of living is the only real hurdle.',
+  choices: [
+    { label: 'Accept — move to Munich',
+      effect: s => {
+        if (evtPushStudyAbroad('tum', 'engineering')) {
+          log('✈️ You moved to Munich. Free tuition. New life.');
+          fx({ happiness: 20, smarts: 3 });
+        } else {
+          log('❌ Move failed.');
+        }
+      }
+    },
+    { label: 'Decline — cannot leave family',
+      effect: s => { fx({ happiness: -5 }); }
+    }
+  ]
+},
+
+{ id: 'study_abroad_toronto', minAge: 17, maxAge: 24, weight: 3, maxFires: 1,
+  condition: s => {
+    if (S.uni || S.studyAbroad) return false;
+    var ielts = (S.languageScores && S.languageScores.ielts) || 0;
+    return ielts >= 6.5 && S.smarts >= 70;
+  },
+  title: '🎓 Toronto Admission',
+  text: s => 'The University of Toronto has accepted you. Canada. Cold, but full of opportunity. And a pathway to permanent residency after graduation.\n\nThis is the move that changes the trajectory of your life.',
+  choices: [
+    { label: 'Accept — move to Toronto',
+      effect: s => {
+        if (evtPushStudyAbroad('toronto', 'cs')) {
+          log('✈️ You moved to Toronto. A new chapter.');
+          fx({ happiness: 20, smarts: 3 });
+        } else {
+          log('❌ Move failed.');
+        }
+      }
+    },
+    { label: 'Decline — stay close to home',
+      effect: s => { fx({ happiness: -3 }); }
+    }
+  ]
+},
+
+/* ---------- Migration Decision Events ---------- */
+
+{ id: 'migration_job_abroad', minAge: 25, maxAge: 50, weight: 5, maxFires: 2,
+  condition: s => {
+    if (s.country !== 'egy') return false;
+    if (!evtHasJob()) return false;
+    if (S.immigration && S.immigration.status === 'visa_work') return false;
+    return true;
+  },
+  title: '🌍 International Job Offer',
+  text: s => {
+    var target = (s.career && s.career.job && s.career.job.track === 'tech') ? 'deu' :
+                 (s.career && s.career.job && s.career.job.track === 'medicine') ? 'gbr' :
+                 (s.career && s.career.job && s.career.job.track === 'engineering') ? 'can' :
+                 'gbr';
+    var countryName = (COUNTRIES[target] && COUNTRIES[target].name) || target;
+    return 'A recruiter from ' + countryName + ' reached out. They want you. They will handle relocation and the work visa.\n\nA move like this changes everything — your salary, your lifestyle, your children\'s future.';
+  },
+  choices: [
+    { label: 'Accept — move abroad',
+      effect: s => {
+        var target = (s.career && s.career.job && s.career.job.track === 'tech') ? 'deu' :
+                     (s.career && s.career.job && s.career.job.track === 'medicine') ? 'gbr' :
+                     (s.career && s.career.job && s.career.job.track === 'engineering') ? 'can' :
+                     'gbr';
+        var success = evtMigrateTo(target);
+        if (success) {
+          if (S.immigration) {
+            S.immigration.status = 'visa_work';
+            S.immigration.visaType = 'work';
+            S.immigration.destination = target;
+            S.immigration.workRights = 'full';
+            S.immigration.sponsor = 'employer';
+            S.immigration.expiresYear = gameYear() + 3;
+          }
+          log('🌍 You emigrated to ' + (COUNTRIES[target] ? COUNTRIES[target].name : target) + '.');
+          log('💼 Check the Immigration tab for your new status.');
+          fx({ happiness: 20, social: -10 });
+        } else {
+          log('❌ Move failed.');
+        }
+      }
+    },
+    { label: 'Decline — family and home matter more',
+      effect: s => { fx({ happiness: 3, social: 2 }); evtBumpFamily(null, 5); }
+    }
+  ]
+},
+
+{ id: 'migration_marriage_abroad', minAge: 24, maxAge: 45, weight: 4, maxFires: 1,
+  condition: s => {
+    if (s.country !== 'egy') return false;
+    if (!evtIsMarried()) return false;
+    var p = evtPartner();
+    return p && ((p.income || 0) > 500000 || (p.traits && p.traits.indexOf('ambitious') >= 0));
+  },
+  title: '💼 Partner\'s Job Abroad',
+  text: s => {
+    var p = evtPartnerName();
+    return p + ' has been offered a senior role in the Gulf. The pay is triple what they make here. But it means leaving Egypt. Leaving family. Starting over.\n\n"What do you think?"';
+  },
+  choices: [
+    { label: 'Support the move — we go together',
+      effect: s => {
+        if (evtMigrateTo('uae')) {
+          if (S.immigration) {
+            S.immigration.status = 'visa_work';
+            S.immigration.visaType = 'work';
+            S.immigration.destination = 'uae';
+            S.immigration.workRights = 'full';
+            S.immigration.expiresYear = gameYear() + 3;
+          }
+          evtBumpPartner(15);
+          log('🌍 You moved to the UAE with your spouse.');
+          fx({ happiness: 8 });
+        }
+      }
+    },
+    { label: 'Refuse — you will stay here',
+      effect: s => {
+        evtBumpPartner(-20);
+        fx({ happiness: -10 });
+        log('💔 The fight that followed was brutal.');
+      }
+    }
+  ]
+},
+
+{ id: 'migration_return_home', minAge: 30, maxAge: 60, weight: 5, maxFires: 2,
+  condition: s => {
+    if (s.country === (s.homeCountry || s.country)) return false;
+    return true;
+  },
+  title: '🏠 Home Is Calling',
+  text: s => {
+    var homeName = (COUNTRIES[S.homeCountry] && COUNTRIES[S.homeCountry].name) || 'home';
+    return 'You have been away from ' + homeName + ' for years. Your parents are getting older. Your friends have moved on. The pull to go back is strong.\n\nWould you leave your career abroad to return home?';
+  },
+  choices: [
+    { label: 'Return home — money is not everything',
+      effect: s => {
+        var home = S.homeCountry || 'egy';
+        if (evtMigrateTo(home)) {
+          if (S.immigration) {
+            S.immigration.status = 'citizen_home';
+            S.immigration.visaType = null;
+            S.immigration.destination = null;
+            S.immigration.workRights = 'full';
+          }
+          evtBumpFamily(null, 20);
+          log('🏠 You returned to ' + (COUNTRIES[home] ? COUNTRIES[home].name : home) + '. Family is overjoyed.');
+          fx({ happiness: 20, social: 15 });
+        }
+      }
+    },
+    { label: 'Stay abroad — you have built a life here',
+      effect: s => {
+        evtBumpFamily(null, -10);
+        fx({ happiness: -5 });
+        log('💔 Your parents understood. But you felt the distance.');
       }
     }
   ]
