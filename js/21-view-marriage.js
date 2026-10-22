@@ -1044,35 +1044,34 @@ window.marTryDate = function(sourceId) {
   const names = marNamePool(targetGender) || [];
   const name = names.length ? names[Math.floor(Math.random() * names.length)] : (targetGender === 'f' ? 'Alexandra' : 'Alex');
   const age = Math.max(18, S.age + Math.floor(Math.random() * 7) - 3);
-  const traits  const traits = marRollTraits();
+  
+  const traits = marRollTraits();
   const isArranged = src.id === 'salonat';
   
   // Arrange marriage dynamic setup
   const initialBond = isArranged ? 25 : (42 + Math.floor(Math.random() * 17));
   const initialTrust = isArranged ? 20 : (38 + Math.floor(Math.random() * 18));
-  const initialFamilyApproval = isArranged ? 1.0 : src.familyApproval;= marRollTraits();
+  const initialFamilyApproval = isArranged ? 1.0 : src.familyApproval;
+  
   const compatibility = marClamp(45 + Math.floor(Math.random() * 36) +
     (traits.indexOf('communicative') >= 0 ? 4 : 0) +
     (traits.indexOf('mature') >= 0 ? 4 : 0) -
     (traits.indexOf('stubborn') >= 0 ? 4 : 0), 25, 92);
+    
   m.partner = {
     name: name,
     age: age,
     gender: targetGender,
-    bond: 42 + Math.floor(Math.random() * 17),
-    trust: 38 + Math.floor(Math.random() * 18),
+    bond: initialBond,
+    trust: initialTrust,
     communication: 35 + Math.floor(Math.random() * 21),
     compatibility: compatibility,
     traits: traits,
     income: 0,
     source: src.label,
-    familyApproval: src.familyApproval,
+    familyApproval: initialFamilyApproval,
     metYear: gameYear(),
     relationshipStage: 'getting_to_know_you',
-         bond: initialBond,
-    trust: initialTrust,
-    // ...
-    familyApproval: initialFamilyApproval,
     exclusive: false,
     memories: [],
     talkedTopics: [],
