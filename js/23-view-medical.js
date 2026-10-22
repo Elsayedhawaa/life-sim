@@ -129,14 +129,16 @@ function medPay(baseCostEGP, label) {
   const adjustedCostEGP = baseCostEGP * countryMult;
   
   const actual = medOutOfPocket(adjustedCostEGP);
-  // ... rest of the function stays the same
   if (actual === 0) { log('💰 ' + (label || 'Procedure') + ' fully covered by insurance.'); return true; }
+  
+  /* 1. Pay Cash */
   if (S.wealth >= actual) {
     S.wealth -= actual;
     log('💸 Paid ' + money(actual) + ' for ' + (label || 'medical') + '.');
     return true;
   }
-  /* Try credit card */
+  
+  /* 2. Try Credit Card */
   if (S.bank && Array.isArray(S.bank.creditCards) && S.bank.creditCards.length > 0) {
     const card = S.bank.creditCards.find(function(c) { return c.balance + actual <= c.limit; });
     if (card) {
@@ -145,30 +147,32 @@ function medPay(baseCostEGP, label) {
       return true;
     }
   }
-  log('❌ Cannot afford ' + money(actual) + ' for ' + (label || 'medical') + '.');
-  return false;
-}
 
-function medHasCondition(id) {
-  return S.medical.conditions.some(function(c) { return c.id === id; });
-}
-function medConditionById(id) {
-  return MED_CONDITIONS.find(function(c) { return c.id === id; });
-}
-function medAddCondition(id) {
-  if (medHasCondition(id)) return;
-  S.medical.conditions.push({ id: id, diagnosedYear: gameYear(), treated: false, severity: 5 });
-  const cond = medConditionById(id);
-  if (cond) {
-    log('🏥 Diagnosed with ' + cond.label + '.');
-    fx({ happiness: -8 });
-  }
-}
-function medRemoveCondition(id) {
-  S.medical.conditions = S.medical.conditions.filter(function(c) { return c.id !== id; });
-}
-function medHasMedication(id) {
-  return S.medical.medications.some(function(m) { return m.id === id; });
+  /* 3. Hospital forces a Medical Debt Loan */
+  if (!S.bank) S.bank = {};
+  if (!Array.isArray(S.bank.loans)) S.bank.loans = [];
+  
+  const rate = 0.12; // 12% Medical Loan
+  const years = 3;
+  const totalOwed = Math.round(actual * (1 + rate * years));
+  const monthlyPayment = Math.ceil(totalOwed / (years * 12));
+  
+  S.bank.loans.push({
+    id: 'med_loan_' + Math.random().toString(36).slice(2, 8),
+    name: 'Medical Debt: ' + (label || 'Emergency'),
+    loanType: 'medical',
+    principal: actual,
+    remaining: totalOwed,
+    rate: rate,
+    monthsLeft: years * 12,
+    monthsTotal: years * 12,
+    monthlyPayment: monthlyPayment,
+    startYear: gameYear(),
+    missedPayments: 0
+  });
+  
+  log('🏥 You couldn\'t afford the bill. The hospital forced a Medical Loan of ' + money(actual) + ' (' + money(monthlyPayment) + '/mo).');
+  return true; 
 }
 /* ============================================================
    CONDITION HEALING — curable conditions self-resolve
