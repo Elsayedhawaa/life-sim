@@ -11,7 +11,16 @@
 <div id="tabs"></div>
 <div id="view"></div>
 <div id="bottom"></div>
-  
+
+<!-- "More" menu overlay — populated by engine, opened from the bottom nav -->
+<div id="more-menu" onclick="document.getElementById('more-menu').classList.remove('active')">
+  <h3 style="color:#8b5cf6;text-align:center;margin-top:20px">All Sections</h3>
+  <div class="more-grid" id="more-grid-content" onclick="event.stopPropagation()">
+    <!-- Filled by engine -->
+  </div>
+  <button onclick="document.getElementById('more-menu').classList.remove('active')" style="margin: 30px auto; display: block; background: #25253a; border: none; padding: 12px 24px; border-radius: 8px; color: #fff;">Close</button>
+</div>
+
 <!-- 1. Engine first -->
 <script src="js/00-engine.js"></script>
 
