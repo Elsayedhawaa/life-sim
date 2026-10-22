@@ -7,6 +7,12 @@
         S.carsBrandFocus, S.carsUsedMarket, S.carsUsedMarketYear.
    Registers tab 'cars' at order 7.
    Year tick: depreciation, service, fuel, insurance, breakdown, events.
+
+   v2: Cars can be stored abroad (S.cars[i].storedIn = country code).
+       Stored cars incur NO ongoing costs and are frozen in the year tick
+       (only age increments). They reactivate automatically when the
+       player returns to that country (handled by the countryChanged
+       hook in 00-engine.js).
    ============================================================ */
 
 /* ---------- STATE ---------- */
@@ -44,10 +50,17 @@ function ensureCarsState() {
     if (typeof c.stolen !== 'boolean') c.stolen = false;
     if (typeof c.hpModded !== 'number') c.hpModded = 0;
     if (typeof c.batteryHealth !== 'number') c.batteryHealth = 100;
+    if (typeof c.storedIn === 'undefined') c.storedIn = null;   /* country code or null */
   });
 }
 GameHooks.on('newGame', ensureCarsState);
 GameHooks.on('migrate', ensureCarsState);
+
+/* ---------- STORAGE HELPERS (v2) ---------- */
+function carIsActive(car) { return car && !car.storedIn; }
+function carActiveCount() {
+  return (S.cars || []).filter(function(c) { return !c.storedIn; }).length;
+}
 
 /* ---------- HELPERS ---------- */
 function carCurrency() { return C().currency; }
@@ -81,7 +94,7 @@ function carDepreciationFactor(age) {
     else if (i === 2) f *= 0.90;
     else f *= 0.92;
   }
-  return Math.max(0.05, f); // Cars don't go to zero
+  return Math.max(0.05, f);
 }
 function carCurrentValueLocal(car) {
   const model = carModelById(car.brand, car.model);
@@ -90,7 +103,7 @@ function carCurrentValueLocal(car) {
   if (car.mods && car.mods.length) {
      car.mods.forEach(mid => {
         let mObj = CAR_MODS.find(m => m.id === mid);
-        if(mObj) modValueAdd += (mObj.usd * carRate() * 0.25); // Mods don't retain much value
+        if(mObj) modValueAdd += (mObj.usd * carRate() * 0.25);
      });
   }
   return Math.round(carBasePriceLocal(model) * carDepreciationFactor(car.age) * (0.6 + 0.4 * car.condition / 100)) + Math.round(modValueAdd);
@@ -109,8 +122,8 @@ function carFuelCostYearLocal(car) {
   if (!model) return 0;
   const prices = CAR_FUEL_PRICES[carCountry()] || CAR_FUEL_PRICES.egy;
   const km = S.carsKmPerYear || 12000;
-  if (model[17]) { // EV
-    const degMult = (120 - car.batteryHealth) / 100; // less efficient as it degrades
+  if (model[17]) {
+    const degMult = (120 - car.batteryHealth) / 100;
     const kwh = (km / 6) * degMult;
     return Math.round(kwh * prices.electricity);
   }
@@ -123,7 +136,7 @@ function carInsuranceYearLocal(car) {
   const tier = CAR_INSURANCE[car.insurance] || CAR_INSURANCE.compreh;
   const valueLocal = carCurrentValueLocal(car);
   let mult = tier.mult;
-  if(S.carsLicense && S.carsLicense.points > 0) mult += (S.carsLicense.points * 0.002); // Bad drivers pay more
+  if(S.carsLicense && S.carsLicense.points > 0) mult += (S.carsLicense.points * 0.002);
   return Math.round(valueLocal * mult);
 }
 function carRegistrationYearLocal(car) {
@@ -207,12 +220,11 @@ function carRenewLicence() {
   if (S.wealth < cost) { log('Renewal costs ' + money(cost) + '.'); render(); return; }
   S.wealth -= cost;
   S.carsLicense.expiresYear = gameYear() + 10;
-  S.carsLicense.points = Math.max(0, S.carsLicense.points - 2); // Forgive some points on renewal
+  S.carsLicense.points = Math.max(0, S.carsLicense.points - 2);
   log('🎫 Licence renewed until ' + S.carsLicense.expiresYear + '.');
   render();
 }
 function carPayTicketScore() {
-    // If they have a lot of points, let them take a class to reduce them
     if(S.carsLicense.points <= 0) return;
     const cost = 800 * carRate();
     if(S.wealth < cost) { log('Defensive driving class costs ' + money(cost) + '.'); return; }
@@ -296,8 +308,9 @@ function carPurchase(method) {
   if (!S.carsLicense.hasLicense || S.carsLicense.expiresYear < gameYear() || S.carsLicense.suspendedUntil > gameYear()) {
     log('You need a valid, unsuspended licence first.'); render(); return;
   }
-  if (S.cars.length >= 4) {
-    log('Garage full (4 cars max). Sell one first.'); render(); return;
+  /* v2: garage cap counts only ACTIVE cars (stored cars don't occupy the current garage) */
+  if (carActiveCount() >= 4) {
+    log('Garage full (4 cars max here). Sell or store one first.'); render(); return;
   }
   const price = carConfigPrice();
   if (!price) { log('No configuration.'); render(); return; }
@@ -321,7 +334,6 @@ function carPurchase(method) {
   const financedLocal = price.car - downLocal;
   const monthlyPayment = carAmortizedMonthly(financedLocal, 0.16, months);
 
-  // Bank approval
   const monthlyIncome = ((S.job && S.job.salary) || S.income || 0) / 12;
   const creditScore = (S.bank && S.bank.score) || 680;
   const employed = !!S.job;
@@ -367,7 +379,8 @@ function carRegisterOwned(model, cfg, price, method, paid, loanId) {
     insuranceExpiry: gameYear() + 1, registrationExpiry: gameYear() + 1,
     mileage: 0, condition: 100, age: 0,
     hasLoan: method === 'loan', loanId: loanId || null,
-    mods: [], broken: false, repairCost: 0, stolen: false, hpModded: 0, batteryHealth: 100
+    mods: [], broken: false, repairCost: 0, stolen: false, hpModded: 0, batteryHealth: 100,
+    storedIn: null   /* v2: new cars are active in current country */
   };
   if (loanId && S.bank && Array.isArray(S.bank.loans)) {
     const loan = S.bank.loans.find(function(l) { return l.id === loanId; });
@@ -386,8 +399,19 @@ function carSell(uid, method) {
   const idx = S.cars.findIndex(function(c) { return c.uid === uid; });
   if (idx < 0) { log('Car not found.'); render(); return; }
   const car = S.cars[idx];
-  
+
   if (car.stolen) { log('Cannot sell a stolen car. Wait for police recovery or insurance payout.'); render(); return; }
+
+  /* v2: allow remote sale of stored cars via dealer/auction (private needs the car in person) */
+  if (car.storedIn && method === 'private') {
+    const cName = COUNTRIES[car.storedIn] ? COUNTRIES[car.storedIn].name : car.storedIn;
+    log('❌ Cannot arrange a private sale from ' + cName + '. Use dealer or auction.');
+    render(); return;
+  }
+  if (car.storedIn) {
+    const cName = COUNTRIES[car.storedIn] ? COUNTRIES[car.storedIn].name : car.storedIn;
+    log('📦 Selling car remotely from ' + cName + '.');
+  }
 
   const valueLocal = carCurrentValueLocal(car);
   let proceedsLocal, successChance;
@@ -419,11 +443,16 @@ function carSellPrompt(uid) {
 }
 window.carSellPrompt = carSellPrompt;
 
-/* ---------- REPAIR / RENEW ---------- */
+/* ---------- REPAIR / RENEW (v2: refuse for stored cars) ---------- */
 function carRepair(uid) {
   ensureCarsState();
   const car = S.cars.find(function(c) { return c.uid === uid; });
   if (!car || !car.broken) return;
+  if (car.storedIn) {
+    const cName = COUNTRIES[car.storedIn] ? COUNTRIES[car.storedIn].name : car.storedIn;
+    log('❌ This car is stored in ' + cName + '. Travel there to repair it.');
+    render(); return;
+  }
   if (S.wealth < car.repairCost) { log('Not enough cash for repair (' + money(car.repairCost) + ').'); render(); return; }
   const cost = car.repairCost;
   S.wealth -= cost;
@@ -439,6 +468,11 @@ function carRenewInsurance(uid) {
   ensureCarsState();
   const car = S.cars.find(function(c) { return c.uid === uid; });
   if (!car) return;
+  if (car.storedIn) {
+    const cName = COUNTRIES[car.storedIn] ? COUNTRIES[car.storedIn].name : car.storedIn;
+    log('❌ This car is stored in ' + cName + '. Insurance renews automatically when you return.');
+    render(); return;
+  }
   const costLocal = carInsuranceYearLocal(car);
   if (S.wealth < costLocal) { log('Not enough for insurance (' + money(costLocal) + ').'); render(); return; }
   S.wealth -= costLocal;
@@ -452,6 +486,11 @@ function carRenewRegistration(uid) {
   ensureCarsState();
   const car = S.cars.find(function(c) { return c.uid === uid; });
   if (!car) return;
+  if (car.storedIn) {
+    const cName = COUNTRIES[car.storedIn] ? COUNTRIES[car.storedIn].name : car.storedIn;
+    log('❌ This car is stored in ' + cName + '. Registration renews when you return.');
+    render(); return;
+  }
   const costLocal = carRegistrationYearLocal(car);
   if (S.wealth < costLocal) { log('Not enough for registration (' + money(costLocal) + ').'); render(); return; }
   S.wealth -= costLocal;
@@ -466,11 +505,16 @@ function carInstallMod(uid, modId) {
     ensureCarsState();
     const car = S.cars.find(c => c.uid === uid);
     if (!car) return;
+    if (car.storedIn) {
+      const cName = COUNTRIES[car.storedIn] ? COUNTRIES[car.storedIn].name : car.storedIn;
+      log('❌ This car is stored in ' + cName + '. Travel there to install mods.');
+      render(); return;
+    }
     const mod = CAR_MODS.find(m => m.id === modId);
     if (!mod) return;
 
     if (car.mods.includes(modId)) { log('Mod already installed.'); return; }
-    
+
     const isEV = carIsEV(car);
     if(isEV && (modId === 'ecu_tune' || modId === 'intake' || modId === 'exhaust_after' || modId === 'turbo_kit' || modId === 'supercharger' || modId === 'nitrous' || modId === 'engine_swap' || modId === 'forged_internals' || modId === 'perf_camshaft' || modId === 'meth_inject')) {
          log('Cannot install this mod on an Electric Vehicle.'); render(); return;
@@ -482,9 +526,9 @@ function carInstallMod(uid, modId) {
     S.wealth -= costLocal;
     car.mods.push(modId);
     if(mod.hpGain) car.hpModded += mod.hpGain;
-    
+
     if(mod.hap || mod.soc) fx({ happiness: mod.hap || 0, social: mod.soc || 0 });
-    
+
     log('🛠 Installed ' + mod.label + ' on ' + car.model + ' for ' + money(costLocal) + '.');
     render();
 }
@@ -503,16 +547,15 @@ function carGenerateUsedMarket() {
     if (!models.length) continue;
     const model = models[Math.floor(Math.random() * models.length)];
     const age = 2 + Math.floor(Math.random() * 15);
-    if (year - age < model[14]) continue; // Didn't exist yet
-    const condition = 40 + Math.floor(Math.random() * 55); // 40-95
+    if (year - age < model[14]) continue;
+    const condition = 40 + Math.floor(Math.random() * 55);
     const mileage = age * (8000 + Math.floor(Math.random() * 12000));
     const baseLocal = carBasePriceLocal(model);
     let priceLocal = Math.round(baseLocal * carDepreciationFactor(age) * (0.6 + 0.4 * condition / 100) * (0.85 + Math.random() * 0.25));
     if (priceLocal < 1000) priceLocal = 1000;
-    
-    // Random chance for an existing mod
+
     let preModded = [];
-    if(Math.random() < 0.2 && !model[17]) { // 20% chance ICE car has a mod
+    if(Math.random() < 0.2 && !model[17]) {
          const possibleMods = ['tint_premium', 'exhaust_after', 'wheels_custom', 'wrap'];
          preModded.push(possibleMods[Math.floor(Math.random() * possibleMods.length)]);
          priceLocal += 500 * carRate();
@@ -527,7 +570,8 @@ function carGenerateUsedMarket() {
   return listings;
 }
 function carBuyUsed(listingId) {
-  if (S.cars.length >= 4) { log('Garage full.'); render(); return; }
+  /* v2: active-only garage cap */
+  if (carActiveCount() >= 4) { log('Garage full.'); render(); return; }
   if (!S.carsLicense.hasLicense || S.carsLicense.suspendedUntil > gameYear()) { log('You need a valid licence first.'); render(); return; }
   const idx = S.carsUsedMarket.findIndex(function(l) { return l.id === listingId; });
   if (idx < 0) return;
@@ -545,7 +589,8 @@ function carBuyUsed(listingId) {
     insuranceExpiry: gameYear() + 1, registrationExpiry: gameYear() + 1,
     mileage: listing.mileage, condition: listing.condition, age: listing.age,
     hasLoan: false, loanId: null, mods: listing.mods || [], broken: false, repairCost: 0,
-    hpModded: 0, batteryHealth: model[17] ? Math.max(50, 100 - (listing.age * 2)) : 100
+    hpModded: 0, batteryHealth: model[17] ? Math.max(50, 100 - (listing.age * 2)) : 100,
+    storedIn: null
   });
   S.carsUsedMarket.splice(idx, 1);
   fx({ happiness: 5 });
@@ -595,10 +640,16 @@ function carsView() {
   if(S.carsLicense.suspendedUntil > gameYear()) statusStr = '🚫 Suspended';
   else if (isLicensed) statusStr = '🎫 Licensed driver';
 
+  /* v2: show storage breakdown in header */
+  const activeCount = carActiveCount();
+  const storedCount = S.cars.length - activeCount;
+
   let html = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#3b82f615 0%,transparent 100%);border-color:#3b82f6">' +
     '<div style="display:flex;justify-content:space-between;align-items:center">' +
     '<div><div class="muted small" style="letter-spacing:.06em;font-weight:700">CARS · ' + C().name.toUpperCase() + ' ' + gameYear() + '</div>' +
-    '<div style="font-weight:700;font-size:1.05rem;margin-top:2px">' + statusStr + '</div></div>' +
+    '<div style="font-weight:700;font-size:1.05rem;margin-top:2px">' + statusStr + '</div>' +
+    (storedCount > 0 ? '<div class="muted small" style="margin-top:2px">' + activeCount + ' here · ' + storedCount + ' stored abroad</div>' : '') +
+    '</div>' +
     '<div style="font-size:2rem">🚗</div></div>' +
     '<div style="display:flex;gap:4px;overflow-x:auto;margin-top:10px;scrollbar-width:none">' +
     tabs.map(function(t) { return '<button class="pill ' + (S.carsTab === t[0] && !S.carsConfig && !S.carsBrandFocus ? 'on' : '') + '" style="padding:6px 10px;font-size:.72rem;white-space:nowrap" onclick="carSetTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') +
@@ -638,7 +689,7 @@ function carRenderLicense() {
     html += '<div class="row"><span>Issued</span><b>' + S.carsLicense.issuedYear + '</b></div>';
     html += '<div class="row"><span>Expires</span><b>' + S.carsLicense.expiresYear + '</b></div>';
     html += '<div class="row"><span>Penalty Points</span><b style="color:' + (S.carsLicense.points > 6 ? '#fb7185' : (S.carsLicense.points > 0 ? '#fbbf24' : '#34d399')) + '">' + S.carsLicense.points + ' / 12</b></div>';
-    
+
     if(S.carsLicense.points > 0) {
         html += '<p class="muted small" style="margin-top:8px">Points increase your insurance rates. Reach 12 points and your licence will be suspended.</p>';
         html += '<button class="opt" style="margin-top:6px;text-align:center" onclick="carPayTicketScore()">Take Defensive Driving Class (-3 pts, ' + money(800 * carRate()) + ')</button>';
@@ -650,7 +701,8 @@ function carRenderLicense() {
 
 /* ---------- BROWSE ---------- */
 function carRenderBrowse() {
-  if (S.cars.length >= 4) return '<div class="card"><h3>🅿️ Garage full</h3><p class="muted">You own 4 cars. Sell one to buy another.</p></div>';
+  /* v2: only active cars count toward garage cap */
+  if (carActiveCount() >= 4) return '<div class="card"><h3>🅿️ Garage full</h3><p class="muted">You have 4 active cars in ' + C().name + '. Sell or store one to buy another. (Stored cars elsewhere don\'t count toward this limit.)</p></div>';
   const year = gameYear();
   const brandKeys = Object.keys(CAR_BRANDS).filter(function(k) {
     return carModelsByBrand(k, year).filter(function(m) { return carModelInMarket(m, carCountry()); }).length > 0;
@@ -721,10 +773,9 @@ function carRenderConfigurator() {
   const optChecks = CAR_OPTIONS.filter(function(o) {
     return gameYear() >= o.fromYear && (!o.untilYear || gameYear() <= o.untilYear);
   }).map(function(o) {
-    // Only show EV options for EVs
     if(o.cat === 'EV' && !model[17]) return '';
-    if(o.cat !== 'EV' && model[17] && (o.id === 'sport_exhaust')) return ''; // No exhaust for EV
-    
+    if(o.cat !== 'EV' && model[17] && (o.id === 'sport_exhaust')) return '';
+
     const on = cfg.options.indexOf(o.id) >= 0;
     const cost = o.usd * carRate() * carTierMult(cfg.brand);
     return '<label class="muted small" style="display:flex;align-items:center;gap:6px;padding:6px;border:1px solid #25253a;border-radius:6px;margin-top:4px;cursor:pointer">' +
@@ -827,13 +878,13 @@ function carRenderRent() {
   return html;
 }
 
-/* ---------- GARAGE & MODS ---------- */
+/* ---------- GARAGE & MODS (v2: split active vs stored) ---------- */
 function carRenderModMenu(car) {
-    if(!car) return '';
+    if(!car || car.storedIn) return '';
     let html = '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed #25253a"><h4 style="font-size:.85rem;color:#8b5cf6">🛠 Modifications</h4>';
     const installed = car.mods || [];
     const isEV = carIsEV(car);
-    
+
     if(installed.length > 0) {
         html += '<div class="muted small">Installed:</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
         installed.forEach(mid => {
@@ -850,7 +901,6 @@ function carRenderModMenu(car) {
         html += '<select id="mod_select_' + car.uid + '" style="width:100%;margin-bottom:6px;background:#0f0f1a;color:#fff;border:1px solid #25253a;padding:6px;border-radius:4px">';
         html += '<option value="">-- Select Mod to Install --</option>';
         available.forEach(m => {
-            // Filter out ICE mods for EVs
             if(isEV && (m.id === 'ecu_tune' || m.id === 'intake' || m.id === 'exhaust_after' || m.id === 'turbo_kit' || m.id === 'supercharger' || m.id === 'nitrous' || m.id === 'engine_swap' || m.id === 'forged_internals' || m.id === 'perf_camshaft' || m.id === 'meth_inject')) {
                 return;
             }
@@ -863,65 +913,117 @@ function carRenderModMenu(car) {
     return html;
 }
 
-function carRenderGarage() {
-  if (!S.cars.length) return '<div class="card"><h3>🅿️ Garage</h3><p class="muted">Empty. Browse new or used to buy.</p></div>';
-  let html = '';
-  S.cars.forEach(function(car) {
-    const brand = CAR_BRANDS[car.brand];
-    const modelDef = carModelById(car.brand, car.model);
-    const valueLocal = carCurrentValueLocal(car);
+/* v2: render a single garage card — with `isStored` flag controlling visible actions */
+function carRenderGarageCard(car, isStored) {
+  const brand = CAR_BRANDS[car.brand];
+  const modelDef = carModelById(car.brand, car.model);
+  const valueLocal = carCurrentValueLocal(car);
+  const loan = car.hasLoan && car.loanId && S.bank && Array.isArray(S.bank.loans)
+    ? S.bank.loans.find(function(l) { return l.id === car.loanId; }) : null;
+  const condColor = car.condition > 70 ? '#34d399' : car.condition > 40 ? '#fbbf24' : '#fb7185';
+  const trimLabel = (CAR_TRIMS.find(function(t) { return t.id === car.trim; }) || CAR_TRIMS[0]).label;
+  const storedName = isStored && COUNTRIES[car.storedIn] ? COUNTRIES[car.storedIn].name : car.storedIn;
+
+  let html = '<div class="card" style="border-left:3px solid ' + condColor + (isStored ? ';opacity:.9' : '') + '">' +
+    '<div style="display:flex;align-items:center;gap:10px">' +
+    carBrandBadge(car.brand, 40) +
+    '<div style="flex:1"><div style="font-weight:700">' + car.year + ' ' + (brand ? brand.name : car.brand) + ' ' + car.model + '</div>' +
+    '<div class="muted small">' + trimLabel + ' · ' + car.age + 'y · ' + car.mileage.toLocaleString() + ' km</div></div>' +
+    '<div style="text-align:right"><div style="font-weight:700;color:' + condColor + '">' + car.condition + '%</div>' +
+    '<div class="muted" style="font-size:.68rem">condition</div></div></div>' +
+    '<div style="margin-top:10px;height:5px;background:#25253a;border-radius:3px;overflow:hidden">' +
+    '<div style="height:100%;width:' + car.condition + '%;background:' + condColor + '"></div></div>';
+
+  /* Stored banner */
+  if (isStored) {
+    html += '<div style="margin-top:10px;padding:8px;background:#0f0f1a;border:1px dashed #444;border-radius:6px">' +
+      '<b style="color:#fbbf24;font-size:.8rem">📦 Parked in ' + storedName + '</b>' +
+      '<div class="muted small" style="margin-top:2px">No ongoing costs. Reactivates when you return to ' + storedName + '.</div>' +
+      '</div>';
+  }
+
+  if(car.stolen) {
+      html += '<div style="margin-top:12px;padding:12px;background:#fb718520;border:1px solid #fb7185;border-radius:6px;text-align:center"><b style="color:#fb7185">🚨 STOLEN</b><p class="muted small">Police have been notified. Awaiting recovery or insurance payout.</p></div></div>';
+      return html;
+  }
+
+  html += '<div class="row" style="margin-top:10px"><span>Market value</span><b>' + money(valueLocal) + '</b></div>';
+
+  if (!isStored) {
     const insuranceCost = carInsuranceYearLocal(car);
     const maintCost = carMaintenanceYearLocal(car);
     const fuelCost = carFuelCostYearLocal(car);
-    const loan = car.hasLoan && car.loanId && S.bank && Array.isArray(S.bank.loans)
-      ? S.bank.loans.find(function(l) { return l.id === car.loanId; }) : null;
-    const condColor = car.condition > 70 ? '#34d399' : car.condition > 40 ? '#fbbf24' : '#fb7185';
-    const trimLabel = (CAR_TRIMS.find(function(t) { return t.id === car.trim; }) || CAR_TRIMS[0]).label;
-    
-    html += '<div class="card" style="border-left:3px solid ' + condColor + '">' +
-      '<div style="display:flex;align-items:center;gap:10px">' +
-      carBrandBadge(car.brand, 40) +
-      '<div style="flex:1"><div style="font-weight:700">' + car.year + ' ' + (brand ? brand.name : car.brand) + ' ' + car.model + '</div>' +
-      '<div class="muted small">' + trimLabel + ' · ' + car.age + 'y · ' + car.mileage.toLocaleString() + ' km</div></div>' +
-      '<div style="text-align:right"><div style="font-weight:700;color:' + condColor + '">' + car.condition + '%</div>' +
-      '<div class="muted" style="font-size:.68rem">condition</div></div></div>' +
-      '<div style="margin-top:10px;height:5px;background:#25253a;border-radius:3px;overflow:hidden">' +
-      '<div style="height:100%;width:' + car.condition + '%;background:' + condColor + '"></div></div>';
-      
-    if(car.stolen) {
-        html += '<div style="margin-top:12px;padding:12px;background:#fb718520;border:1px solid #fb7185;border-radius:6px;text-align:center"><b style="color:#fb7185">🚨 STOLEN</b><p class="muted small">Police have been notified. Awaiting recovery or insurance payout.</p></div></div>';
-        return; // Don't show rest of details if stolen
-    }
+    html += '<div class="row"><span>Annual costs (maint + ins + fuel)</span><b>' + money(maintCost + insuranceCost + fuelCost) + '</b></div>';
+  } else {
+    html += '<div class="row"><span>Annual costs</span><b class="good">None (stored)</b></div>';
+  }
 
-    html += '<div class="row" style="margin-top:10px"><span>Market value</span><b>' + money(valueLocal) + '</b></div>' +
-      '<div class="row"><span>Annual costs (maint + ins + fuel)</span><b>' + money(maintCost + insuranceCost + fuelCost) + '</b></div>' +
-      '<div class="row"><span>Total Power</span><b>' + carTotalHP(car) + ' hp' + (car.hpModded ? ' <span style="color:#fbbf24">(+' + car.hpModded + ' mod)</span>' : '') + '</b></div>';
-      
-    if(modelDef && modelDef[17]) { // EV Battery Health
-        const batColor = car.batteryHealth > 80 ? '#34d399' : car.batteryHealth > 60 ? '#fbbf24' : '#fb7185';
-        html += '<div class="row"><span>Battery Health</span><b style="color:' + batColor + '">' + Math.round(car.batteryHealth) + '%</b></div>';
-    }
+  html += '<div class="row"><span>Total Power</span><b>' + carTotalHP(car) + ' hp' + (car.hpModded ? ' <span style="color:#fbbf24">(+' + car.hpModded + ' mod)</span>' : '') + '</b></div>';
 
-    html += '<div class="row"><span>Insurance</span><b>' + (CAR_INSURANCE[car.insurance] || CAR_INSURANCE.compreh).label + '</b></div>' +
-      '<div class="row"><span>Insurance expires</span><b style="color:' + (car.insuranceExpiry <= gameYear() ? '#fb7185' : 'inherit') + '">' + car.insuranceExpiry + '</b></div>' +
+  if(modelDef && modelDef[17]) {
+      const batColor = car.batteryHealth > 80 ? '#34d399' : car.batteryHealth > 60 ? '#fbbf24' : '#fb7185';
+      html += '<div class="row"><span>Battery Health</span><b style="color:' + batColor + '">' + Math.round(car.batteryHealth) + '%</b></div>';
+  }
+
+  html += '<div class="row"><span>Insurance</span><b>' + (CAR_INSURANCE[car.insurance] || CAR_INSURANCE.compreh).label + '</b></div>';
+
+  if (!isStored) {
+    html += '<div class="row"><span>Insurance expires</span><b style="color:' + (car.insuranceExpiry <= gameYear() ? '#fb7185' : 'inherit') + '">' + car.insuranceExpiry + '</b></div>' +
       '<div class="row"><span>Registration expires</span><b style="color:' + (car.registrationExpiry <= gameYear() ? '#fb7185' : 'inherit') + '">' + car.registrationExpiry + '</b></div>';
+  }
 
-      if(car.broken) {
+  if(car.broken) {
+      if (isStored) {
+          html += '<div style="margin-top:8px;padding:8px;background:#fb718520;border-left:3px solid #fb7185;border-radius:6px"><b style="font-size:.82rem;color:#fb7185">🔧 Broken down</b><div class="muted small">Travel to ' + storedName + ' to repair.</div></div>';
+      } else {
           html += '<div style="margin-top:8px;padding:8px;background:#fb718520;border-left:3px solid #fb7185;border-radius:6px"><b style="font-size:.82rem;color:#fb7185">🔧 Broken down</b><div class="muted small">Repair: ' + money(car.repairCost) + '</div><button class="opt" style="margin-top:6px;background:#fb7185;color:#fff" onclick="carRepair(\'' + car.uid + '\')">Repair</button></div>';
       }
-      
-      if(loan) {
-          html += '<div style="margin-top:8px;padding:8px;background:#fbbf2420;border-left:3px solid #fbbf24;border-radius:6px"><b style="font-size:.82rem;color:#fbbf24">💳 Active loan</b><div class="muted small">' + money(loan.remaining) + ' remaining · ' + money(loan.monthlyPayment) + '/mo · ' + loan.monthsLeft + ' months left</div></div>';
-      }
+  }
 
+  if(loan) {
+      html += '<div style="margin-top:8px;padding:8px;background:#fbbf2420;border-left:3px solid #fbbf24;border-radius:6px"><b style="font-size:.82rem;color:#fbbf24">💳 Active loan</b><div class="muted small">' + money(loan.remaining) + ' remaining · ' + money(loan.monthlyPayment) + '/mo · ' + loan.monthsLeft + ' months left</div></div>';
+  }
+
+  if (!isStored) {
     html += carRenderModMenu(car);
-
     html += '<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">' +
       '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="carRenewRegistration(\'' + car.uid + '\')">Renew Reg.</button>' +
       '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="carRenewInsurance(\'' + car.uid + '\')">Renew Ins.</button>' +
       '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;background:#451a1f;color:#fb7185;border-color:#fb7185" onclick="carSellPrompt(\'' + car.uid + '\')">Sell</button>' +
-      '</div></div>';
-  });
+      '</div>';
+  } else {
+    html += '<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">' +
+      '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;background:#451a1f;color:#fb7185;border-color:#fb7185" onclick="carSellPrompt(\'' + car.uid + '\')">Sell remotely</button>' +
+      '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function carRenderGarage() {
+  if (!S.cars.length) return '<div class="card"><h3>🅿️ Garage</h3><p class="muted">Empty. Browse new or used to buy.</p></div>';
+
+  const active = S.cars.filter(function(c) { return !c.storedIn; });
+  const stored = S.cars.filter(function(c) { return !!c.storedIn; });
+
+  let html = '';
+
+  if (active.length) {
+    if (stored.length) {
+      html += '<div class="card" style="padding:8px;border-color:#3b82f6"><b style="color:#3b82f6;font-size:.85rem">🅿️ In Your Garage Here (' + active.length + ')</b></div>';
+    }
+    active.forEach(function(car) { html += carRenderGarageCard(car, false); });
+  }
+
+  if (stored.length) {
+    html += '<div class="card" style="padding:10px;border-color:#666;background:#0a0a12">' +
+      '<b style="color:#fbbf24;font-size:.85rem">📦 Parked Abroad (' + stored.length + ')</b>' +
+      '<p class="muted small" style="margin-top:4px">Cars stored in other countries. They incur no costs while parked. Travel to a country to reactivate its cars.</p>' +
+      '</div>';
+    stored.forEach(function(car) { html += carRenderGarageCard(car, true); });
+  }
+
   return html;
 }
 
@@ -940,20 +1042,28 @@ GameHooks.on('year', function() {
   }
 
   S.cars.forEach(function(car) {
-    
+
+    /* v2: Stored cars are frozen — only age increments. No mileage,
+       no condition decay, no insurance/registration renewal, no
+       breakdown checks, no random events, no costs. Reactivated
+       automatically when the player returns to that country
+       (countryChanged hook in 00-engine.js sets storedIn = null). */
+    if (car.storedIn) {
+      car.age++;
+      return;
+    }
+
     if(car.stolen) {
-        // Chance to recover or get insurance payout
         if(Math.random() < 0.3) {
             car.stolen = false;
-            car.condition -= 20; // It was joyridden
+            car.condition -= 20;
             log('🚓 Police recovered your stolen ' + car.model + '! It has some damage.');
         } else if (car.insurance === 'compreh' || car.insurance === 'compreh_pl' || car.insurance === 'tp_fire') {
              const val = carCurrentValueLocal(car);
              S.wealth += val;
              log('🛡 Insurance paid out ' + money(val) + ' for your unrecovered stolen ' + car.model + '.');
-             // Remove car
              S.cars = S.cars.filter(c => c.uid !== car.uid);
-             return; // Skip rest of tick
+             return;
         } else {
              log('Your stolen ' + car.model + ' is still missing. No insurance coverage.');
         }
@@ -965,14 +1075,12 @@ GameHooks.on('year', function() {
     const relFactor = brand ? (11 - brand.reliability) / 10 : 0.5;
     const decay = 1 + Math.floor(Math.random() * 2) + (car.age > 8 ? 2 : 0) + relFactor * 2;
     car.condition = Math.max(10, car.condition - decay);
-    
-    // EV Battery Degradation
+
     if(carIsEV(car)) {
-        car.batteryHealth -= (0.5 + Math.random() * 1.5); // 0.5% to 2% a year
-        if(car.batteryHealth < 50) car.batteryHealth = 50; // Floors at 50%
+        car.batteryHealth -= (0.5 + Math.random() * 1.5);
+        if(car.batteryHealth < 50) car.batteryHealth = 50;
     }
 
-    // Process costs if car is not stolen
       if (!car.stolen) {
         if (car.insuranceExpiry < year && car.insurance !== 'none') {
           const cost = carInsuranceYearLocal(car);
@@ -982,7 +1090,6 @@ GameHooks.on('year', function() {
           const cost = carRegistrationYearLocal(car);
           if (S.wealth >= cost) { S.wealth -= cost; car.registrationExpiry = year + 2; }
         }
-        /* Service + fuel SKIPPED in monthly — settlement spreads it */
         if (!(typeof isMonthly === 'function' && isMonthly())) {
           const serviceCost = carMaintenanceYearLocal(car);
           if (S.wealth >= serviceCost) S.wealth -= serviceCost;
@@ -998,8 +1105,7 @@ GameHooks.on('year', function() {
           log('⚠️ ' + (brand ? brand.name : car.brand) + ' ' + car.model + ' broke down. Repair: ' + money(car.repairCost));
         }
 
-        // Random Car Events
-        if(Math.random() < 0.15) { // 15% chance per car per year for a specific event
+        if(Math.random() < 0.15) {
             const validEvents = CAR_EVENTS.filter(e => {
                 if(e.requiresClass && !e.requiresClass.includes(car.cls)) return false;
                 if(e.requiresSpouse && !S.hasSpouse) return false;
@@ -1011,7 +1117,6 @@ GameHooks.on('year', function() {
             });
 
             if(validEvents.length > 0) {
-                // Weighted selection
                 let totalWeight = validEvents.reduce((sum, e) => sum + e.weight, 0);
                 let rand = Math.random() * totalWeight;
                 let selectedEvent = validEvents[0];
@@ -1021,7 +1126,6 @@ GameHooks.on('year', function() {
                 }
 
                 if(selectedEvent.choice) {
-                     // In a full implementation this would trigger a prompt, but for automated ticks we just log the thought
                      log('🚗 Event: ' + selectedEvent.title + ' - ' + selectedEvent.text);
                 } else {
                      log('🚗 Event: ' + selectedEvent.title + ' - ' + selectedEvent.text);
@@ -1038,11 +1142,8 @@ GameHooks.on('year', function() {
                      }
                      if(selectedEvent.hap) fx({happiness: selectedEvent.hap});
                      if(selectedEvent.soc) fx({social: selectedEvent.soc});
-                     if(selectedEvent.stolen) {
-                         car.stolen = true;
-                     }
-                     
-                     // Driving offenses add points
+                     if(selectedEvent.stolen) { car.stolen = true; }
+
                      if(selectedEvent.id === 'fine_speed') S.carsLicense.points += 2;
                      if(selectedEvent.id === 'red_light_cam') S.carsLicense.points += 3;
                      if(selectedEvent.id === 'road_rage' || selectedEvent.id === 'race_challenge') S.carsLicense.points += 4;
@@ -1052,10 +1153,9 @@ GameHooks.on('year', function() {
     }
   });
 
-  // Check Licence Suspension
   if(S.carsLicense.points >= 12 && S.carsLicense.suspendedUntil <= year) {
-      S.carsLicense.suspendedUntil = year + 2; // 2 year suspension
-      S.carsLicense.points = 0; // Reset points after suspension
+      S.carsLicense.suspendedUntil = year + 2;
+      S.carsLicense.points = 0;
       fx({happiness: -20});
       log('🚨 DRIVING LICENCE SUSPENDED! You accumulated too many points. You cannot drive for 2 years.');
   }
