@@ -26,12 +26,11 @@ function ensureAssetsState() {
     S.rentedHome = { tierId: 'br2', yearlyRent: (C().prices && C().prices.rent) || 120000, area: 100, condition: 75, rentedYear: gameYear() };
   }
 
-  /* Add contract tracking */
   if (S.rentedHome) {
     if (!S.rentedHome.country) S.rentedHome.country = S.country;
     if (typeof S.rentedHome.contractEndAbs !== 'number') {
       const currentAbs = (gameYear() - 2001) * 12 + (isMonthly() ? currentMonth() : 1);
-      S.rentedHome.contractEndAbs = currentAbs + 12; /* 1 year lease by default */
+      S.rentedHome.contractEndAbs = currentAbs + 12;
     }
   }
 }
@@ -44,49 +43,41 @@ GameHooks.on('migrate', ensureAssetsState);
    Each repeat costs ×1.30 more (diminishing returns)
    ============================================================ */
 const PARENT_RENOVATIONS = [
-  /* ---------- BATHROOMS ---------- */
-  { id: 'bathroom_basic',   category: 'Bathrooms', label: '🚿 Bathroom Renovation',         baseCost: 25000, cond: 8,  hap: 3, valueAdd: 0.030, desc: 'New fixtures, tiles, shower head, mirror.' },
-  { id: 'bathroom_master',  category: 'Bathrooms', label: '🛁 Master Bathroom Upgrade',     baseCost: 45000, cond: 10, hap: 4, valueAdd: 0.050, desc: 'Larger tub, double vanity, premium tiles.' },
-  { id: 'bathroom_guest',   category: 'Bathrooms', label: '🚽 Guest Bathroom Refresh',      baseCost: 12000, cond: 5,  hap: 2, valueAdd: 0.020, desc: 'Quick refresh — paint, seal, small fixtures.' },
+  { id: 'bathroom_basic', category: 'Bathrooms', label: '🚿 Bathroom Renovation', baseCost: 25000, cond: 8, hap: 3, valueAdd: 0.030, desc: 'New fixtures, tiles, shower head, mirror.' },
+  { id: 'bathroom_master', category: 'Bathrooms', label: '🛁 Master Bathroom Upgrade', baseCost: 45000, cond: 10, hap: 4, valueAdd: 0.050, desc: 'Larger tub, double vanity, premium tiles.' },
+  { id: 'bathroom_guest', category: 'Bathrooms', label: '🚽 Guest Bathroom Refresh', baseCost: 12000, cond: 5, hap: 2, valueAdd: 0.020, desc: 'Quick refresh — paint, seal, small fixtures.' },
 
-  /* ---------- KITCHEN ---------- */
-  { id: 'kitchen_remodel',  category: 'Kitchen',   label: '🍳 Kitchen Remodel',             baseCost: 40000, cond: 10, hap: 4, valueAdd: 0.050, desc: 'New cabinets, counters, sink, backsplash.' },
-  { id: 'kitchen_appliances', category: 'Kitchen', label: '🍽 Built-in Appliance Upgrade',  baseCost: 55000, cond: 8,  hap: 5, valueAdd: 0.055, desc: 'Modern oven, hob, extractor, dishwasher.' },
-  { id: 'kitchen_island',   category: 'Kitchen',   label: '🏝 Kitchen Island Addition',     baseCost: 30000, cond: 5,  hap: 4, valueAdd: 0.040, desc: 'Extra prep space, doubles as breakfast bar.' },
+  { id: 'kitchen_remodel', category: 'Kitchen', label: '🍳 Kitchen Remodel', baseCost: 40000, cond: 10, hap: 4, valueAdd: 0.050, desc: 'New cabinets, counters, sink, backsplash.' },
+  { id: 'kitchen_appliances', category: 'Kitchen', label: '🍽 Built-in Appliance Upgrade', baseCost: 55000, cond: 8, hap: 5, valueAdd: 0.055, desc: 'Modern oven, hob, extractor, dishwasher.' },
+  { id: 'kitchen_island', category: 'Kitchen', label: '🏝 Kitchen Island Addition', baseCost: 30000, cond: 5, hap: 4, valueAdd: 0.040, desc: 'Extra prep space, doubles as breakfast bar.' },
 
-  /* ---------- LIVING AREAS ---------- */
-  { id: 'living_room',      category: 'Living Areas', label: '🛋 Living Room Refresh',      baseCost: 15000, cond: 4,  hap: 3, valueAdd: 0.015, desc: 'Paint, lighting, minor layout updates.' },
-  { id: 'dining_room',      category: 'Living Areas', label: '🍽 Dining Room Update',       baseCost: 10000, cond: 3,  hap: 2, valueAdd: 0.010, desc: 'Fresh paint and lighting for the dining space.' },
-  { id: 'balcony',          category: 'Living Areas', label: '🌿 Balcony / Terrace',        baseCost: 14000, cond: 3,  hap: 3, valueAdd: 0.020, desc: 'Tiles, railing, planters, small seating.' },
+  { id: 'living_room', category: 'Living Areas', label: '🛋 Living Room Refresh', baseCost: 15000, cond: 4, hap: 3, valueAdd: 0.015, desc: 'Paint, lighting, minor layout updates.' },
+  { id: 'dining_room', category: 'Living Areas', label: '🍽 Dining Room Update', baseCost: 10000, cond: 3, hap: 2, valueAdd: 0.010, desc: 'Fresh paint and lighting for the dining space.' },
+  { id: 'balcony', category: 'Living Areas', label: '🌿 Balcony / Terrace', baseCost: 14000, cond: 3, hap: 3, valueAdd: 0.020, desc: 'Tiles, railing, planters, small seating.' },
 
-  /* ---------- BEDROOMS ---------- */
-  { id: 'bedroom_master',   category: 'Bedrooms',  label: '🛏 Master Bedroom Update',       baseCost: 20000, cond: 5,  hap: 3, valueAdd: 0.020, desc: 'Paint, new bedding, wardrobe refresh.' },
-  { id: 'bedroom_kids',     category: 'Bedrooms',  label: '🧸 Children\'s Room Refresh',    baseCost: 12000, cond: 4,  hap: 3, valueAdd: 0.015, desc: 'Paint, study desk, playful decor.' },
+  { id: 'bedroom_master', category: 'Bedrooms', label: '🛏 Master Bedroom Update', baseCost: 20000, cond: 5, hap: 3, valueAdd: 0.020, desc: 'Paint, new bedding, wardrobe refresh.' },
+  { id: 'bedroom_kids', category: 'Bedrooms', label: '🧸 Children\'s Room Refresh', baseCost: 12000, cond: 4, hap: 3, valueAdd: 0.015, desc: 'Paint, study desk, playful decor.' },
 
-  /* ---------- SYSTEMS ---------- */
-  { id: 'ac',               category: 'Systems',   label: '❄️ AC System Upgrade',           baseCost: 35000, cond: 4,  hap: 4, health: 2, valueAdd: 0.040, desc: 'Modern split ACs installed in all rooms.' },
-  { id: 'heating',          category: 'Systems',   label: '🔥 Heating System',              baseCost: 28000, cond: 4,  hap: 3, health: 2, valueAdd: 0.035, desc: 'Gas heater or heat pump for cold months.' },
-  { id: 'electrical',       category: 'Systems',   label: '⚡ Electrical Rewiring',         baseCost: 30000, cond: 6,  hap: 2, valueAdd: 0.020, desc: 'Safe modern wiring, new outlets.' },
-  { id: 'plumbing',         category: 'Systems',   label: '🚰 Plumbing Overhaul',           baseCost: 22000, cond: 6,  hap: 2, valueAdd: 0.020, desc: 'Replace old pipes and fixtures.' },
-  { id: 'water_heater',     category: 'Systems',   label: '💧 Water Heater Replacement',    baseCost: 8000,  cond: 3,  hap: 2, valueAdd: 0.010, desc: 'New efficient water heater — reliable hot water.' },
-  { id: 'insulation',       category: 'Systems',   label: '🌡 Insulation Upgrade',          baseCost: 18000, cond: 3,  hap: 2, health: 1, valueAdd: 0.025, desc: 'Wall and attic insulation — warmer home.' },
-  { id: 'lighting',         category: 'Systems',   label: '💡 Modern Lighting',             baseCost: 10000, cond: 2,  hap: 2, valueAdd: 0.010, desc: 'LED fixtures in all rooms.' },
+  { id: 'ac', category: 'Systems', label: '❄️ AC System Upgrade', baseCost: 35000, cond: 4, hap: 4, health: 2, valueAdd: 0.040, desc: 'Modern split ACs installed in all rooms.' },
+  { id: 'heating', category: 'Systems', label: '🔥 Heating System', baseCost: 28000, cond: 4, hap: 3, health: 2, valueAdd: 0.035, desc: 'Gas heater or heat pump for cold months.' },
+  { id: 'electrical', category: 'Systems', label: '⚡ Electrical Rewiring', baseCost: 30000, cond: 6, hap: 2, valueAdd: 0.020, desc: 'Safe modern wiring, new outlets.' },
+  { id: 'plumbing', category: 'Systems', label: '🚰 Plumbing Overhaul', baseCost: 22000, cond: 6, hap: 2, valueAdd: 0.020, desc: 'Replace old pipes and fixtures.' },
+  { id: 'water_heater', category: 'Systems', label: '💧 Water Heater Replacement', baseCost: 8000, cond: 3, hap: 2, valueAdd: 0.010, desc: 'New efficient water heater — reliable hot water.' },
+  { id: 'insulation', category: 'Systems', label: '🌡 Insulation Upgrade', baseCost: 18000, cond: 3, hap: 2, health: 1, valueAdd: 0.025, desc: 'Wall and attic insulation — warmer home.' },
+  { id: 'lighting', category: 'Systems', label: '💡 Modern Lighting', baseCost: 10000, cond: 2, hap: 2, valueAdd: 0.010, desc: 'LED fixtures in all rooms.' },
 
-  /* ---------- COSMETIC ---------- */
-  { id: 'walls',            category: 'Cosmetic',  label: '🎨 Walls & Paint',               baseCost: 8000,  cond: 3,  hap: 2, valueAdd: 0.010, desc: 'Fresh paint throughout the home.' },
-  { id: 'flooring',         category: 'Cosmetic',  label: '🪵 New Flooring',                baseCost: 20000, cond: 5,  hap: 3, valueAdd: 0.020, desc: 'Replace old tiles or worn carpet.' },
-  { id: 'doors',            category: 'Cosmetic',  label: '🚪 New Interior Doors',          baseCost: 12000, cond: 3,  hap: 2, valueAdd: 0.010, desc: 'Replace interior and entry doors.' },
-  { id: 'windows',          category: 'Cosmetic',  label: '🪟 Window Replacement',          baseCost: 18000, cond: 3,  hap: 2, valueAdd: 0.020, desc: 'Double-glazed windows, better insulation.' },
-  { id: 'exterior_paint',   category: 'Cosmetic',  label: '🧱 Exterior Facade Painting',    baseCost: 32000, cond: 5,  hap: 2, valueAdd: 0.030, desc: 'Repaint building exterior — curb appeal.' },
+  { id: 'walls', category: 'Cosmetic', label: '🎨 Walls & Paint', baseCost: 8000, cond: 3, hap: 2, valueAdd: 0.010, desc: 'Fresh paint throughout the home.' },
+  { id: 'flooring', category: 'Cosmetic', label: '🪵 New Flooring', baseCost: 20000, cond: 5, hap: 3, valueAdd: 0.020, desc: 'Replace old tiles or worn carpet.' },
+  { id: 'doors', category: 'Cosmetic', label: '🚪 New Interior Doors', baseCost: 12000, cond: 3, hap: 2, valueAdd: 0.010, desc: 'Replace interior and entry doors.' },
+  { id: 'windows', category: 'Cosmetic', label: '🪟 Window Replacement', baseCost: 18000, cond: 3, hap: 2, valueAdd: 0.020, desc: 'Double-glazed windows, better insulation.' },
+  { id: 'exterior_paint', category: 'Cosmetic', label: '🧱 Exterior Facade Painting', baseCost: 32000, cond: 5, hap: 2, valueAdd: 0.030, desc: 'Repaint building exterior — curb appeal.' },
 
-  /* ---------- STRUCTURAL ---------- */
-  { id: 'roof',             category: 'Structural', label: '🏠 Roof Repair',                baseCost: 28000, cond: 7,  hap: 1, valueAdd: 0.030, desc: 'Seal leaks, replace damaged tiles.' },
-  { id: 'foundation',       category: 'Structural', label: '🏗 Foundation Check & Repair',   baseCost: 40000, cond: 10, hap: 1, valueAdd: 0.040, desc: 'Structural integrity check + minor repairs.' },
+  { id: 'roof', category: 'Structural', label: '🏠 Roof Repair', baseCost: 28000, cond: 7, hap: 1, valueAdd: 0.030, desc: 'Seal leaks, replace damaged tiles.' },
+  { id: 'foundation', category: 'Structural', label: '🏗 Foundation Check & Repair', baseCost: 40000, cond: 10, hap: 1, valueAdd: 0.040, desc: 'Structural integrity check + minor repairs.' },
 
-  /* ---------- EXTRAS ---------- */
-  { id: 'security',         category: 'Extras',    label: '🔒 Home Security System',        baseCost: 15000, cond: 2,  hap: 4, valueAdd: 0.020, desc: 'Cameras, alarms, smart locks.' },
-  { id: 'smart_home',       category: 'Extras',    label: '📱 Smart Home Setup',            baseCost: 25000, cond: 2,  hap: 5, valueAdd: 0.030, desc: 'Smart thermostat, lights, plugs, hub.' },
-  { id: 'garden',           category: 'Extras',    label: '🌳 Garden / Landscape',          baseCost: 20000, cond: 3,  hap: 4, valueAdd: 0.025, desc: 'Landscaping, plants, small patio.' }
+  { id: 'security', category: 'Extras', label: '🔒 Home Security System', baseCost: 15000, cond: 2, hap: 4, valueAdd: 0.020, desc: 'Cameras, alarms, smart locks.' },
+  { id: 'smart_home', category: 'Extras', label: '📱 Smart Home Setup', baseCost: 25000, cond: 2, hap: 5, valueAdd: 0.030, desc: 'Smart thermostat, lights, plugs, hub.' },
+  { id: 'garden', category: 'Extras', label: '🌳 Garden / Landscape', baseCost: 20000, cond: 3, hap: 4, valueAdd: 0.025, desc: 'Landscaping, plants, small patio.' }
 ];
 window.PARENT_RENOVATIONS = PARENT_RENOVATIONS;
 
@@ -146,9 +137,9 @@ window.ensureParentsHome = ensureParentsHome;
 
 function ownershipLabel(ownership) {
   return {
-    both_parents:      'Co-owned by both parents',
-    father:            "Registered under your father's name",
-    mother:            "Registered under your mother's name",
+    both_parents: 'Co-owned by both parents',
+    father: "Registered under your father's name",
+    mother: "Registered under your mother's name",
     joint_with_family: 'Shared with extended family (grandparents / uncles)'
   }[ownership] || 'Ownership unclear';
 }
@@ -156,16 +147,16 @@ window.ownershipLabel = ownershipLabel;
 
 /* ---------- RENTAL TIERS ---------- */
 const RENTAL_TIERS = [
-  { id: 'shared_room',  label: 'Shared Room',         yearlyMult: 0.30, area: 15,  cond: 55, desc: 'A room in a shared flat with strangers.' },
-  { id: 'studio_small', label: 'Small Studio',        yearlyMult: 0.50, area: 30,  cond: 65, desc: 'Compact studio, basic amenities.' },
-  { id: 'studio',       label: 'Studio Apartment',    yearlyMult: 0.70, area: 45,  cond: 70, desc: 'Open-plan studio, private bath.' },
-  { id: 'br1',          label: '1-Bedroom Apartment', yearlyMult: 0.85, area: 75,  cond: 72, desc: '1BR flat with separate living room.' },
-  { id: 'br2',          label: '2-Bedroom Apartment', yearlyMult: 1.00, area: 110, cond: 75, desc: 'Standard 2BR apartment.' },
-  { id: 'br2_l',        label: 'Large 2-Bedroom',     yearlyMult: 1.35, area: 145, cond: 78, desc: 'Spacious 2BR with balcony.' },
-  { id: 'br3',          label: '3-Bedroom Apartment', yearlyMult: 1.75, area: 175, cond: 80, desc: 'Family-sized 3BR.' },
-  { id: 'furnished',    label: 'Furnished 2-Bedroom', yearlyMult: 1.65, area: 120, cond: 85, desc: 'Fully furnished, move-in ready.' },
-  { id: 'compound',     label: 'Compound Flat',       yearlyMult: 2.80, area: 145, cond: 90, desc: 'Gated compound, amenities included.' },
-  { id: 'villa',        label: 'Rented Villa',        yearlyMult: 5.50, area: 380, cond: 85, desc: 'Standalone villa with garden.' }
+  { id: 'shared_room', label: 'Shared Room', yearlyMult: 0.30, area: 15, cond: 55, desc: 'A room in a shared flat with strangers.' },
+  { id: 'studio_small', label: 'Small Studio', yearlyMult: 0.50, area: 30, cond: 65, desc: 'Compact studio, basic amenities.' },
+  { id: 'studio', label: 'Studio Apartment', yearlyMult: 0.70, area: 45, cond: 70, desc: 'Open-plan studio, private bath.' },
+  { id: 'br1', label: '1-Bedroom Apartment', yearlyMult: 0.85, area: 75, cond: 72, desc: '1BR flat with separate living room.' },
+  { id: 'br2', label: '2-Bedroom Apartment', yearlyMult: 1.00, area: 110, cond: 75, desc: 'Standard 2BR apartment.' },
+  { id: 'br2_l', label: 'Large 2-Bedroom', yearlyMult: 1.35, area: 145, cond: 78, desc: 'Spacious 2BR with balcony.' },
+  { id: 'br3', label: '3-Bedroom Apartment', yearlyMult: 1.75, area: 175, cond: 80, desc: 'Family-sized 3BR.' },
+  { id: 'furnished', label: 'Furnished 2-Bedroom', yearlyMult: 1.65, area: 120, cond: 85, desc: 'Fully furnished, move-in ready.' },
+  { id: 'compound', label: 'Compound Flat', yearlyMult: 2.80, area: 145, cond: 90, desc: 'Gated compound, amenities included.' },
+  { id: 'villa', label: 'Rented Villa', yearlyMult: 5.50, area: 380, cond: 85, desc: 'Standalone villa with garden.' }
 ];
 window.RENTAL_TIERS = RENTAL_TIERS;
 
@@ -278,7 +269,7 @@ window.assetsBuyFurniture = function(homeId, category) {
   else render();
 };
 
-/* ---------- OPEN RENOVATION PICKER (this is the fixed function) ---------- */
+/* ---------- OPEN RENOVATION PICKER ---------- */
 window.assetsRenovateHome = function(homeId) {
   S.assetsRenovateHome = homeId || 'parents';
   console.log('[World Life] Opening renovation picker for:', S.assetsRenovateHome);
@@ -315,7 +306,6 @@ window.assetsBuyRenovation = function(renovationId) {
 
   if (S.wealth < cost) { log('❌ Need ' + money(cost) + ' for this renovation.'); render(); return; }
 
-  /* Build the confirm dialog with rich detail */
   const effectLines = [];
   if (reno.cond) effectLines.push('• Condition +' + reno.cond + '%');
   if (reno.hap) effectLines.push('• Happiness +' + reno.hap);
@@ -386,10 +376,9 @@ function renderRenovationPicker(target) {
     '</div>';
 
   if (isRental) {
-    html += '<div class="card" style="border-color:#fb7185;padding:10px"><p class="muted small" style="margin:0">You rent this property — only cosmetic upgrades are available. Structural work belongs in the Real Estate market, not the rental catalog.</p></div>';
+    html += '<div class="card" style="border-color:#fb7185;padding:10px"><p class="muted small" style="margin:0">You rent this property — only cosmetic upgrades are available. Structural work belongs to the landlord.</p></div>';
   }
 
-  /* Group by category */
   RENOVATION_CATEGORIES.forEach(function(cat) {
     const catRenos = PARENT_RENOVATIONS.filter(function(r) {
       if (r.category !== cat) return false;
@@ -452,7 +441,6 @@ function assetsView() {
     return '<div class="card"><h3>Assets</h3><p class="muted">Available from age 18.</p></div>';
   }
 
-  /* Route to renovation picker if active */
   if (S.assetsRenovateHome) {
     return renderRenovationPicker(S.assetsRenovateHome);
   }
@@ -487,11 +475,6 @@ function renderHousingSection(housing) {
     const condColor = h.condition > 80 ? '#34d399' : h.condition > 50 ? '#fbbf24' : '#fb7185';
     const itemsCount = housingItemsCount('parents');
     const itemsValue = housingItemsValue('parents');
-    let gehazText = '';
-    if (S.marriage && S.marriage.trousseau && S.marriage.trousseau.completed && housing.home && housing.home.id === S.realEstateActiveHomeId) {
-      const tierDef = MARRIAGE_TROUSSEAU_TIERS.find(t => t.id === S.marriage.trousseau.tier);
-      gehazText = `<div class="row"><span>Gehaz (Trousseau)</span><b class="good">${tierDef.label}</b></div>`;
-    }
     const renoCount = Object.keys(h.renovationsDone || {}).reduce(function(s, k) { return s + h.renovationsDone[k]; }, 0);
 
     html += '<div class="card" style="border-color:#22d3ee">' +
@@ -504,7 +487,7 @@ function renderHousingSection(housing) {
       '<div class="row"><span>Condition</span><b style="color:' + condColor + '">' + h.condition + '%</b></div>' +
       (renoCount > 0 ? '<div class="row"><span>Renovations made</span><b>' + renoCount + ' upgrade' + (renoCount > 1 ? 's' : '') + '</b></div>' : '') +
       (itemsCount > 0 ? '<div class="row"><span>Your furniture/appliances</span><b>' + itemsCount + ' item' + (itemsCount > 1 ? 's' : '') + ' · ' + money(itemsValue) + '</b></div>' : '') +
-      '<p class="muted small" style="margin-top:10px;padding:8px;background:#0f0f1a;border-radius:6px">You live with your parents. They cover utilities and groceries. Buy furniture or appliances for your room or renovate the family home.</p>' +
+      '<p class="muted small" style="margin-top:10px;padding:8px;background:#0f0f1a;border-radius:6px">You live with your parents. They cover utilities and groceries. Buy furniture or appliances for your room, or renovate the home.</p>' +
       '<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">' +
       '<button class="opt" style="text-align:center;font-size:.78rem" onclick="assetsBuyFurniture(\'parents\',\'furniture\')">🛋 Buy furniture for this home</button>' +
       '<button class="opt" style="text-align:center;font-size:.78rem" onclick="assetsBuyFurniture(\'parents\',\'appliances\')">🍳 Buy appliances for this home</button>' +
@@ -609,13 +592,14 @@ GameHooks.on('year', function() {
     }
   }
 });
+
 /* Auto-terminate lease if you leave the country */
 GameHooks.on('render', function() {
   if (!S || !S.rentedHome) return;
   if (S.country === S.rentedHome.country) return;
 
   const countryName = COUNTRIES[S.rentedHome.country] ? COUNTRIES[S.rentedHome.country].name : S.rentedHome.country;
-  const breakFee = Math.round(S.rentedHome.yearlyRent * 0.5); // 6-month penalty for breaking lease
+  const breakFee = Math.round(S.rentedHome.yearlyRent * 0.5);
 
   log('🚪 You left ' + countryName + '. Your lease there was automatically terminated.');
   log('💸 Early termination penalty: ' + money(breakFee));
@@ -632,5 +616,6 @@ GameHooks.on('render', function() {
   S.assetsRenovateHome = null;
   render();
 });
+
 /* ---------- REGISTER ---------- */
 GameHooks.registerTab({ id: 'assets', label: 'Assets', order: 4, view: assetsView });
