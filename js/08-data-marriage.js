@@ -237,6 +237,21 @@ const MARRIAGE_PARTNER_TRAITS = {
     happinessMod: 2,
     desc: 'Thoughtful, warm, and considerate.'
   },
+     mamas_boy: {
+    label: 'Mama\'s Boy',
+    bondPerYear: -1,
+    desc: 'Heavily influenced by his mother. She will be very involved in your lives.'
+  },
+  stingy: {
+    label: 'Stingy',
+    bondPerYear: -1,
+    desc: 'Hates spending money. Will complain about every wedding expense.'
+  },
+  protector: {
+    label: 'Protective',
+    bondPerYear: 2,
+    desc: 'Will defend you against family interference.'
+  }
   ambitious: {
     label: 'Ambitious',
     bondPerYear: 0,
@@ -2251,6 +2266,27 @@ const MARRIAGE_YEAR_EVENTS = [
     text: 'Your partner keeps mentioning something they saw at the mall.',
     choice: true
   },
+     {
+    id: 'mother_in_law_visit',
+    weight: 20,
+    title: 'Mother-in-Law Visits',
+    text: 'Your future mother-in-law comes over and criticizes the way you organized the kitchen.',
+    choice: true
+  },
+  {
+    id: 'furniture_dispute',
+    weight: 15,
+    title: 'Furniture Shopping Dispute',
+    text: 'You and your partner are buying the bedroom set. They want a completely different style than you.',
+    choice: true
+  },
+  {
+    id: 'mahr_negotiation',
+    weight: 10,
+    title: 'Dowry Negotiation',
+    text: 'The families are sitting together to finalize the Mahr. Someone suggests changing the agreed amount.',
+    choice: true
+  }
   {
     id: 'partner_wants_trip',
     weight: 10,
