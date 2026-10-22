@@ -1433,7 +1433,119 @@ window.marBuyGehazItem = function(cat, subcat) {
   log(`✅ Purchased ${brand} ${name} for the marital home.`);
   render();
 };
-
+/* ============================================================
+   HUSBAND PROVIDES MARITAL HOME (traditional cultures only)
+   ============================================================
+   In Egypt/Gulf/India, the man and his family provide the
+   marital home. The bride never has to buy it.
+   ============================================================ */
+window.marHusbandProvidesHome = function() {
+  const m = S.marriage;
+  const p = m.partner;
+  if (!p) return null;
+  
+  if (m.husbandHomeProvided) return null;
+  if (!Array.isArray(S.ownedHomes)) S.ownedHomes = [];
+  m.husbandHomeProvided = true;
+  
+  const husbandIncome = p.income || 0;
+  const husbandWealth = p.wealth || (husbandIncome * 5);
+  
+  // Home quality by husband's income
+  let ppm, area, homeType, homeDesc;
+  if (husbandIncome >= 1000000) {
+    ppm = 150000; area = 400; homeType = 'Luxury Villa';
+    homeDesc = 'a stunning luxury villa with private gardens and a pool';
+  } else if (husbandIncome >= 500000) {
+    ppm = 80000; area = 250; homeType = 'Villa';
+    homeDesc = 'a spacious villa in a quiet neighborhood';
+  } else if (husbandIncome >= 200000) {
+    ppm = 55000; area = 160; homeType = 'Apartment';
+    homeDesc = 'a comfortable 3-bedroom apartment in a good neighborhood';
+  } else if (husbandIncome >= 100000) {
+    ppm = 35000; area = 120; homeType = 'Apartment';
+    homeDesc = 'a cozy 2-bedroom apartment';
+  } else {
+    ppm = 25000; area = 90; homeType = 'Modest Apartment';
+    homeDesc = 'a modest starter apartment';
+  }
+  
+  // Family contribution (common in Arab culture)
+  let familyContribution = false;
+  if (marHasTrait(p, 'family_oriented') || marHasTrait(p, 'traditional')) {
+    if (Math.random() < 0.6) familyContribution = true;
+  }
+  
+  // Does he put it in her name?
+  let giveHouseToBride = false;
+  if (marHasTrait(p, 'generous') || marHasTrait(p, 'protector')) giveHouseToBride = true;
+  if (marHasTrait(p, 'traditional') || marHasTrait(p, 'family_oriented')) {
+    if (Math.random() < 0.35) giveHouseToBride = true;
+  }
+  if (p.bond >= 90 && Math.random() < 0.6) giveHouseToBride = true;
+  const homeValue = ppm * area;
+  if (husbandWealth >= homeValue * 3 && Math.random() < 0.5) giveHouseToBride = true;
+  
+  const homeName = homeType + (giveHouseToBride ? ' — Your Name' : ' — His Name');
+  
+  const newHome = createHome({
+    name: homeName,
+    city: p.city || 'Cairo',
+    location: 'Family Neighborhood',
+    country: S.country,
+    baseValue: homeValue,
+    value: homeValue,
+    area: area,
+    rooms: Math.max(2, Math.floor(area / 30)),
+    condition: 85,
+    status: 'occupied',
+    source: 'husband_provided',
+    isHusbandOwned: !giveHouseToBride
+  });
+  
+  S.ownedHomes.push(newHome);
+  S.realEstateActiveHomeId = newHome.id;
+  S.housing = 'owned';
+  
+  // Build the narrative
+  let text = p.name + ' takes your hand one evening. "Come, I have something to show you."\n\nHe drives you to ' + homeDesc + ' in ' + (p.city || 'Cairo') + '.';
+  
+  if (familyContribution) {
+    text += '\n\nHis family helped him prepare it — as is tradition in your country.';
+  }
+  
+  if (giveHouseToBride) {
+    text += '\n\n"I put it in your name," he says quietly. "Whatever happens, you will always have a home of your own."';
+  } else {
+    text += '\n\n"This is where we will build our life together," he says. The home remains in his name, but it is yours to make your own.';
+  }
+  
+  S.pending = {
+    title: '🏠 Your Marital Home',
+    text: text,
+    choices: [
+      { label: giveHouseToBride ? '💍 Accept with tears in your eyes' : '💍 Accept with joy',
+        effect: function(s) {
+          if (giveHouseToBride) {
+            log('🏠 ' + p.name + ' gave you ' + homeDesc + ' under YOUR name — worth ' + money(homeValue) + '.');
+            fx({ happiness: 25, social: 8 });
+            s.marriage.motherInLawBond = Math.min(100, s.marriage.motherInLawBond + 20);
+            p.bond = Math.min(100, p.bond + 15);
+          } else {
+            log('🏠 You and ' + p.name + ' will live in ' + homeDesc + ' (his property).');
+            fx({ happiness: 12, social: 4 });
+            s.marriage.motherInLawBond = Math.min(100, s.marriage.motherInLawBond + 8);
+            p.bond = Math.min(100, p.bond + 8);
+          }
+          marRecordMemory('home_provided', p.name + ' provided the marital home: ' + homeName + ' worth ' + money(homeValue) + '.', 4);
+        }
+      }
+    ]
+  };
+  S.evId = 'husband_home_' + gameYear();
+  
+  return newHome;
+};
 window.marRejectSalonat = function() {
   log('❌ You declined the Salonat proposal. Your family is disappointed.');
   S.marriage.salonatProspect = null;
@@ -2172,6 +2284,13 @@ window.marOpenWeddingPlanner = function() {
   if (m.status !== 'engaged' || !m.partner || !m.engagement || !m.engagement.finalized) {
     log('Finalize the engagement before starting wedding planning.'); render(); return;
   }
+  
+  // HUSBAND PROVIDES HOME for traditional women without any property
+  if (marIsTraditionalWoman() && S.ownedHomes.length === 0 && !m.husbandHomeProvided) {
+    marHusbandProvidesHome();
+    if (S.pending) return; // Wait for player to acknowledge the reveal
+  }
+  
   if (!m.wedding) {
     const pref = m.partner.preferences || {};
     m.wedding = {
@@ -2191,7 +2310,6 @@ window.marOpenWeddingPlanner = function() {
   }
   render();
 };
-
 window.marWeddingSet = function(key, value) {
   const m = S.marriage;
   if (m.status !== 'engaged' || !m.engagement || !m.engagement.finalized || !m.wedding) return;
@@ -2234,6 +2352,12 @@ window.marConfirmWedding = function() {
   const w = m.wedding;
   if (!w) return;
   const isTraditionalWoman = marIsTraditionalWoman();
+
+  // HUSBAND PROVIDES HOME for traditional women without any property
+  if (isTraditionalWoman && m.partner && S.ownedHomes.length === 0 && !m.husbandHomeProvided) {
+    marHusbandProvidesHome();
+    if (S.pending) return; // Wait for player to acknowledge the reveal
+  }
 
   const h = S.ownedHomes.find(x => x.status === 'occupied') || S.ownedHomes[0];
   if (!h) {
