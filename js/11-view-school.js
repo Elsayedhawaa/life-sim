@@ -209,6 +209,14 @@ function eduApplyToUni(uniId, facultyId, paymentMode) {
       log('❌ Family cannot afford ' + money(tuition) + '/year (tier: ' + S.familyTier + ').');
       render(); return;
     }
+       if (paymentMode === 'family') {
+    if (eduFamilyWealth() < tuition) {
+      log('❌ Family cannot afford ' + money(tuition) + '/year (tier: ' + S.familyTier + ').');
+      render(); return;
+    }
+    log('👨‍👩‍👧 Family paying ' + money(tuition) + '/year.');
+    // The family pays directly, S.wealth is not deducted
+  }
     log('👨‍👩‍👧 Family paying ' + money(tuition) + '/year.');
   } else if (paymentMode === 'loan') {
     if (!S.bank) { log('❌ No banking system available.'); render(); return; }
