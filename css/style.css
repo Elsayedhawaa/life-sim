@@ -6,9 +6,48 @@ h4{font-size:.85rem;margin:10px 0 6px;color:#8b5cf6}
 input,select{width:100%;padding:10px;background:#0a0a12;color:#e8e8f2;border:1px solid #25253a;border-radius:8px;font:inherit}
 .pill{padding:10px;border:1px solid #25253a;border-radius:8px;cursor:pointer;background:transparent;color:#888;font:inherit;text-align:center}
 .pill.on{background:#8b5cf6;color:#fff;border-color:#8b5cf6}
-#tabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:10px}
-#tabs button{padding:8px 12px;border:1px solid #25253a;border-radius:6px;font-size:.8rem;cursor:pointer;white-space:nowrap;font:inherit;background:#14141f;color:#888}
-#tabs button.on{background:#8b5cf6;color:#fff;border-color:#8b5cf6}
+
+/* ---------- TABS (grouped) ---------- */
+#tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.tab-group {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.tab-group::-webkit-scrollbar { display: none; }
+.tab-group-label {
+  font-size: .65rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 700;
+  margin-bottom: 2px;
+  padding-left: 4px;
+}
+#tabs button {
+  padding: 8px 12px;
+  border: 1px solid #25253a;
+  border-radius: 6px;
+  font-size: .8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  font: inherit;
+  background: #14141f;
+  color: #888;
+}
+#tabs button.on {
+  background: #8b5cf6;
+  color: #fff;
+  border-color: #8b5cf6;
+}
+
 #bottom button{width:100%;padding:14px;background:#8b5cf6;color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer}
 #bottom button:disabled{background:#25253a;color:#666;cursor:not-allowed}
 .opt{width:100%;margin-top:6px;padding:11px;background:#1a1a2a;border:1px solid #333;color:#fff;border-radius:6px;text-align:left;cursor:pointer;font:inherit}
