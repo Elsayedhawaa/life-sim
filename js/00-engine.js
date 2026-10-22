@@ -1,11 +1,5 @@
 /* ============================================================
    WORLD LIFE — ENGINE (hardened)
-   ============================================================
-   This file owns: S, GameHooks, helpers, ageUp, render,
-   start screen, save/load/reset, event system.
-
-   Defensive: if a data file (js/01-data-*.js etc.) fails to load,
-   the game shows a friendly error screen instead of crashing.
    ============================================================ */
 
 const SAVE_KEY = 'world_life_v5';
@@ -30,7 +24,7 @@ const GameHooks = {
 };
 
 /* ============================================================
-   DATA GUARD — true if COUNTRIES loaded correctly
+   DATA GUARD
    ============================================================ */
 function dataOK() {
   return typeof COUNTRIES !== 'undefined' && COUNTRIES && COUNTRIES.egy;
@@ -45,7 +39,6 @@ function C() {
   
   const c = COUNTRIES[S?.country] || COUNTRIES.egy;
   
-  /* Dynamically interpolate currency rate based on game year */
   if (typeof HISTORICAL_RATES !== 'undefined' && HISTORICAL_RATES[c.id]) {
     const history = HISTORICAL_RATES[c.id];
     const y = gameYear();
@@ -56,9 +49,7 @@ function C() {
       else break;
     }
     
-    /* Allow devaluation events (from 36-expat-life.js) to override historical rate */
     if (c._devalMult) activeRate *= c._devalMult;
-    
     c.rate = activeRate;
   }
   
@@ -67,6 +58,7 @@ function C() {
 function gameYear() { return 2001 + (S?.age || 6); }
 function money(n) { const c = C(); return Math.round(n).toLocaleString() + ' ' + c.currency; }
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, Math.round(v))); }
+
 /* ---------- PACING & CALENDAR HELPERS ---------- */
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -81,7 +73,7 @@ function currentSeason() {
   if (m <= 8) return 'summer';
   return 'autumn';
 }
-/* Central integrity helpers */
+
 function isHomeCountry() {
   return S && S.country === (S.homeCountry || S.country);
 }
@@ -99,31 +91,21 @@ function monthsUntil(targetMonth) {
 }
 function monthlyScale(annual) { return isMonthly() ? (annual || 0) / 12 : (annual || 0); }
 
-/* Islamic calendar approximation — Ramadan drifts ~11 days/year earlier.
-   Approximated as: month = 3 for 2024-2027, month = 2 for 2028-2031, etc.
-   Good enough for a life sim; real dates vary by region. */
 function isRamadanMonth() {
   if (!isMonthly()) return false;
   const y = gameYear();
-  const cycle = (y - 2024) % 33; // 33-year Islamic cycle
-  const monthShift = Math.floor(cycle / 3); // ~3 years per month shift
-  let rm = 3 - monthShift; // 2024 ≈ March
+  const cycle = (y - 2024) % 33;
+  const monthShift = Math.floor(cycle / 3);
+  let rm = 3 - monthShift;
   while (rm < 1) rm += 12;
   while (rm > 12) rm -= 12;
   return currentMonth() === rm;
 }
+
 function log(msg) {
   if (!S.log) S.log = [];
   S.log.unshift({ age: S.age, year: gameYear(), month: S.month || null, msg: msg });
   if (S.log.length > 300) S.log.pop();
-}
-// Apply stat effects. Used by year ticks in views (cars, future systems).
-function fx(effects) {
-  if (!effects || !S) return;
-  ['happiness', 'health', 'smarts', 'social'].forEach(function(k) {
-    if (typeof effects[k] === 'number') S[k] = clamp(S[k] + effects[k], 0, 100);
-  });
-  if (typeof effects.wealth === 'number') S.wealth += effects.wealth;
 }
 
 function fx(effects) {
@@ -152,9 +134,9 @@ function newLife() {
     gender: START.gender,
     country: START.country,
     currency: c.currency,
-         month: 1,
+    month: 1,
     pacing: START.pacing || 'yearly',
-     pacingSwitchYear: 0,
+    pacingSwitchYear: 0,
     age: 6,
     health: 100, happiness: 100, smarts: 50, social: 50,
     wealth: 0,
@@ -206,24 +188,20 @@ function prepareEvent(e) {
 /* ============================================================
    AGE UP
    ============================================================ */
-/* ---------- ENGINE YEAR TICK (non-cash annual things) ---------- */
 function engineYearTick() {
   if (!S) return;
 
-  /* School smarts growth */
   if (S.age >= 6 && S.age < 18 && S.school) {
     const sch = C().schools.find(x => x.id === S.school);
     if (sch) S.smarts = clamp(S.smarts + sch.smarts, 0, 100);
   }
 
-  /* Thanaweya exam at 18 */
   if (S.age === 18 && S.school && !S.uni && !S.degree) {
     const score = clamp(S.smarts + Math.random() * 20 - 10, 0, 100);
     S.thanaweyaScore = score;
     log(`Thanaweya amma result: ${score.toFixed(1)}%`);
   }
 
-  /* University progress */
   if (S.uni) {
     S.uni.year = (S.uni.year || 0) + 1;
     if (S.uni.year >= (S.uni.yearsTotal || 4)) {
@@ -235,11 +213,9 @@ function engineYearTick() {
     }
   }
 
-  /* Health decay after 50 */
   if (S.age > 50) S.health = clamp(S.health - 1, 0, 100);
 }
 
-/* ---------- ADVANCE ONE YEAR (yearly mode) ---------- */
 function advanceYear() {
   if (S.pending) return;
 
@@ -248,7 +224,6 @@ function advanceYear() {
 
   engineYearTick();
 
-  /* Salary payment — ONLY in yearly mode (monthly handled by settlement) */
   if (S.job) {
     S.wealth += S.job.salary;
     S.job.years = (S.job.years || 0) + 1;
@@ -264,14 +239,13 @@ function advanceYear() {
     }
   }
 
-  /* Base expenses — ONLY in yearly mode */
   if (S.age >= 18) {
     const c = C();
     if (S.housing === 'parents') {
       const personal = Math.round(c.prices.phone * 0.5 + c.prices.transport * 0.25);
       S.wealth -= personal;
     } else {
-            let expenses = c.prices.food + c.prices.phone + c.prices.transport;
+      let expenses = c.prices.food + c.prices.phone + c.prices.transport;
       if (S.housing === 'rented') {
         expenses += (typeof currentYearlyRent === 'function' ? currentYearlyRent() : (c.prices.rent || 0));
       }
@@ -283,7 +257,6 @@ function advanceYear() {
 
   ['health', 'happiness', 'smarts', 'social'].forEach(k => { S[k] = clamp(S[k], 0, 100); });
 
-  /* Random event firing */
   const allEvents = [...GLOBAL_EVENTS, ...(C().events || [])];
   const eligible = allEvents.filter(e =>
     S.age >= e.minAge && S.age <= e.maxAge &&
@@ -300,7 +273,6 @@ function advanceYear() {
   save(); render();
 }
 
-/* ---------- ADVANCE ONE MONTH (monthly mode) ---------- */
 function advanceMonth(silent) {
   if (S.pending) return;
 
@@ -319,12 +291,13 @@ function advanceMonth(silent) {
 
   if (!silent) { save(); render(); }
 }
-/* ---------- THE SINGLE BUTTON HANDLER ---------- */
+
 function ageUp() {
   if (!S) return;
   if (isMonthly()) advanceMonth();
   else advanceYear();
 }
+
 function chooseEvent(i) {
   const e = S.pending;
   if (!e || !e.choices[i]) return;
@@ -422,51 +395,62 @@ function stat(n, v, color) {
   return `<div><div style="display:flex;justify-content:space-between;font-size:.7rem;color:#888"><span>${n}</span><span>${v}%</span></div><div style="height:4px;background:#25253a;border-radius:2px;margin-top:3px"><div style="height:100%;width:${v}%;background:${color};border-radius:2px"></div></div></div>`;
 }
 
+/* ============================================================
+   NAVIGATION TABS & MORE MENU
+   ============================================================ */
 function tabs() {
   const sorted = [...GameHooks.tabs].sort((a, b) => a.order - b.order);
   
-  const primaryTabs = ['life', 'career', 'bank', 'family'];
+  // We choose 4 core tabs to live in the bottom bar
+  const primaryTabs = ['life', 'career', 'family', 'bank'];
   let primaryHtml = '';
   let moreHtml = '';
 
   sorted.forEach(t => {
-    // Extract emoji if it exists
+    // Extract emoji from label (e.g., "🎓 Education" -> icon: "🎓", text: "Education")
     const parts = t.label.split(' ');
     const icon = parts.length > 1 && parts[0].length <= 3 ? parts[0] : '📄';
     const text = parts.length > 1 && parts[0].length <= 3 ? parts.slice(1).join(' ') : t.label;
     
     if (primaryTabs.includes(t.id)) {
-      primaryHtml += `<button class="${activeTab===t.id?'on':''}" onclick="switchTab('${t.id}')">
+      primaryHtml += `<button class="${activeTab === t.id ? 'on' : ''}" onclick="switchTab('${t.id}')">
         <span class="icon">${icon}</span>
         <span>${text}</span>
       </button>`;
     } else {
-      moreHtml += `<button class="${activeTab===t.id?'on':''}" onclick="document.getElementById('more-menu').classList.remove('active');switchTab('${t.id}')">
+      moreHtml += `<button class="${activeTab === t.id ? 'on' : ''}" onclick="switchTab('${t.id}'); closeMoreMenu();">
         <span class="icon">${icon}</span>
-        <span>${text}</span>
+        <span class="label">${text}</span>
       </button>`;
     }
   });
 
   // Add the "More" button to the primary dock
   const moreIsActive = !primaryTabs.includes(activeTab);
-  primaryHtml += `<button class="${moreIsActive?'on':''}" onclick="document.getElementById('more-menu').classList.add('active'); document.getElementById('more-grid-content').innerHTML = \`${moreHtml.replace(/`/g, '\\`')}\`">
+  primaryHtml += `<button class="${moreIsActive ? 'on' : ''}" onclick="openMoreMenu()">
       <span class="icon">☰</span>
       <span>More</span>
     </button>`;
 
-  return primaryHtml;
-}
-
-  // Add the "More" button to the primary dock
-  const moreIsActive = !primaryTabs.includes(activeTab);
-  primaryHtml += `<button class="${moreIsActive?'on':''}" onclick="document.getElementById('more-menu').classList.add('active'); document.getElementById('more-grid-content').innerHTML = \`${moreHtml.replace(/`/g, '\\`')}\`">
-      <span class="icon">☰</span>
-      <span>More</span>
-    </button>`;
+  // Inject the HTML into the "More" modal grid
+  const moreGrid = document.getElementById('more-grid-content');
+  if (moreGrid) {
+    moreGrid.innerHTML = moreHtml;
+  }
 
   return primaryHtml;
 }
+
+window.openMoreMenu = function() {
+  const menu = document.getElementById('more-menu');
+  if (menu) menu.classList.add('active');
+};
+
+window.closeMoreMenu = function() {
+  const menu = document.getElementById('more-menu');
+  if (menu) menu.classList.remove('active');
+};
+
 /* ============================================================
    START SCREEN
    ============================================================ */
@@ -481,31 +465,6 @@ function renderStart() {
         <h2 style="color:#fb7185;margin-bottom:8px">⚠️ Game data failed to load</h2>
         <p class="muted small" style="line-height:1.6">
           <b>js/01-data-countries.js</b> has a syntax error and was skipped by the browser.
-          The <b>COUNTRIES</b> object was never created.
-        </p>
-        <p class="muted small" style="margin-top:14px;line-height:1.6;color:#fbbf24">
-          <b>Most common cause — extra <code>};</code> at the bottom of the file.</b>
-        </p>
-        <p class="muted small" style="margin-top:8px;line-height:1.6">
-          Open <b>js/01-data-countries.js</b> in Notepad and scroll to the very bottom.
-          The file must end like this:
-        </p>
-        <pre style="background:#0a0a12;padding:10px;border-radius:6px;margin:8px 0;font-size:.75rem;overflow-x:auto;color:#34d399">  sau: {
-    ...
-  },
-  /* 👇 ADD NEW COUNTRIES HERE 👇 */
-};
-
-window.COUNTRIES = COUNTRIES;</pre>
-        <p class="muted small" style="line-height:1.6">
-          If you see <b>TWO</b> <code>};</code> lines with a comment between them, delete the extra one.
-        </p>
-        <p class="muted small" style="margin-top:14px;padding:10px;background:#0a0a12;border-radius:6px;line-height:1.7">
-          <b>Not sure what's wrong?</b><br>
-          1. Press <b>F12</b> in your browser<br>
-          2. Click the <b>Console</b> tab<br>
-          3. Look for a <span style="color:#fb7185">red</span> error mentioning <b>01-data-countries.js</b><br>
-          4. It will say the exact line number that's broken
         </p>
         <button onclick="location.reload(true)" class="opt" style="margin-top:14px;background:#8b5cf6;color:#fff;font-weight:700;text-align:center">Reload page</button>
       </div>`;
@@ -598,17 +557,13 @@ function reset() {
   S = null;
   renderStart();
 }
+
 /* ============================================================
    COUNTRY-CHANGE DETECTOR
-   ============================================================
-   Clears stale offers, applications, and pending events
-   when the player's country changes. Runs on first render
-   after any state change.
    ============================================================ */
 GameHooks.on('render', function() {
   if (!S) return;
 
-  /* First init — also cleans legacy saves */
   if (typeof S._lastCountry === 'undefined') {
     S._lastCountry = S.country;
     const isAbroad = S.homeCountry && S.country !== S.homeCountry;
@@ -635,24 +590,19 @@ GameHooks.on('render', function() {
   const to = S.country;
   S._lastCountry = to;
 
-  /* Clear stale offers from old country */
   if (S.career && Array.isArray(S.career.offers)) {
     const before = S.career.offers.length;
-    S.career.offers = S.career.offers.filter(function(o) {
-      return o.country === to;
-    });
+    S.career.offers = S.career.offers.filter(function(o) { return o.country === to; });
     const cleared = before - S.career.offers.length;
     if (cleared > 0) log('📍 ' + cleared + ' pending offer' + (cleared > 1 ? 's' : '') + ' from your previous country expired.');
   }
 
-  /* Clear stale applications */
   if (S.career && Array.isArray(S.career.applications)) {
     S.career.applications = S.career.applications.filter(function(a) {
       return !a.country || a.country === to;
     });
   }
 
-  /* Cancel pending event — was prepared for old country/currency */
   if (S.pending) {
     log('📍 Pending event cancelled due to relocation.');
     S.pending = null;
@@ -661,8 +611,9 @@ GameHooks.on('render', function() {
 
   emitSignal('countryChanged', { from: from, to: to });
 });
+
 /* ============================================================
-   WINDOW BINDINGS
+   WINDOW BINDINGS & UTILS
    ============================================================ */
 window.fastForwardToYearEnd = function() {
   if (!isMonthly()) return;
@@ -682,15 +633,14 @@ window.fastForwardToYearEnd = function() {
   save(); render();
   log('⏩ Fast-forwarded to January ' + gameYear() + '.');
 };
-/* ============================================================
-   CURRENCY CONVERTER (Cross-border chemistry)
-   ============================================================ */
+
 window.convertToPlayerCurrency = function(amount, fromCountryCode) {
   if (!amount) return 0;
   const fromRate = (COUNTRIES[fromCountryCode] && COUNTRIES[fromCountryCode].rate) || 1;
   const toRate = C().rate || 1;
   return Math.round((amount / fromRate) * toRate);
 };
+
 /* ============================================================
    CAR SHIPPING / SELLING / STORAGE ON COUNTRY CHANGE
    ============================================================ */
@@ -786,27 +736,9 @@ onSignal('countryChanged', function(data) {
   };
   S.evId = 'car_move_' + gameYear();
 });
-window.ageUp = ageUp;
-window.chooseEvent = chooseEvent;
-window.switchTab = (id) => { activeTab = id; render(); };
-window.startGame = startGame;
-window.setGender = setGender;
-window.setCountry = setCountry;
-window.loadGame = loadGame;
-window.reset = reset;
-window.renderStart = renderStart;
-window.START = START;
-/* ============================================================
-   SIGNAL BUS — cross-system event communication
-   ============================================================
-   Any system emits a signal; any system listens.
-   Signals fire synchronously through GameHooks:
-     emitSignal('jobLost', {company, title})
-     → GameHooks.run('signal_jobLost', data)
 
-   - Every emission logged to S._signalLog (capped 80)
-   - Depth-limited to prevent infinite loops (max 5)
-   - Handlers isolated with try/catch
+/* ============================================================
+   SIGNAL BUS
    ============================================================ */
 const SIGNAL_LOG_MAX = 80;
 const SIGNAL_MAX_DEPTH = 5;
@@ -843,4 +775,15 @@ window.getSignalHistory = function(type) {
   if (!type) return S._signalLog.slice();
   return S._signalLog.filter(function(s) { return s.type === type; });
 };
+
+window.ageUp = ageUp;
+window.chooseEvent = chooseEvent;
+window.switchTab = (id) => { activeTab = id; render(); };
+window.startGame = startGame;
+window.setGender = setGender;
+window.setCountry = setCountry;
+window.loadGame = loadGame;
+window.reset = reset;
+window.renderStart = renderStart;
 window.dataOK = dataOK;
+window.START = START;
