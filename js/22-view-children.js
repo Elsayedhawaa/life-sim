@@ -430,7 +430,7 @@ window.chKickOut = function(childId) {
 function childrenView() {
   ensureChildrenState();
   if (!S) return '';
-  if (S.age < 18 && !S.childrenList.length && !S.pregnancy) {
+  if (S.age < 16 && !S.childrenList.length && !S.pregnancy) {
     return '<div class="card"><h3>👶 Children</h3><p class="muted">Available once you are an adult or have children.</p></div>';
   }
 
