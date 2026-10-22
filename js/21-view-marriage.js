@@ -39,6 +39,7 @@ function ensureMarriageState() {
   const m = S.marriage;
   if (!Array.isArray(m.exSpouses)) m.exSpouses = [];
   if (typeof m.sharedAccountBalance !== 'number') m.sharedAccountBalance = 0;
+   if (!m.trousseau) m.trousseau = { tier: null, payer: null, cost: 0, completed: false };
   if (typeof m.datingAttempts !== 'number') m.datingAttempts = 0;
   if (typeof m.lastDateYear !== 'number') m.lastDateYear = 0;
   if (typeof m.home === 'undefined') m.home = null;
@@ -711,7 +712,35 @@ function marRenderPlan() {
 
     html += '<div class="card"><button class="opt" style="text-align:center;border-color:#fb7185;color:#fb7185" onclick="marCancelEngagement()">Cancel engagement</button></div>';
   }
+  /* --- GEHAZ NEGOTIATION --- */
+  html += '<div class="card" style="border-color:#22d3ee;margin-top:10px"><h4 style="color:#22d3ee">🛋 Gehaz (Trousseau & Furniture)</h4>';
+  if (S.marriage.trousseau.completed) {
+    const tierDef = MARRIAGE_TROUSSEAU_TIERS.find(t => t.id === S.marriage.trousseau.tier);
+    html += `<p class="small good">✅ Gehaz completed: ${tierDef.label}</p>`;
+  } else {
+    html += '<p class="muted small">A marriage cannot happen without a furnished home. Negotiate who pays for the furniture.</p>';
+    
+    // Tier Selection
+    html += '<div style="display:grid;grid-template-columns:1fr;gap:4px;margin-top:8px">';
+    MARRIAGE_TROUSSEAU_TIERS.forEach(t => {
+      html += `<button class="opt" style="text-align:left;padding:8px;font-size:.75rem" onclick="S.marriage._tempTier='${t.id}';render()">
+        <div style="display:flex;justify-content:space-between"><b>${t.label}</b><span>${money(marEGP(t.costEGP))}</span></div>
+        <div class="muted small">${t.desc}</div>
+      </button>`;
+    });
+    html += '</div>';
 
+    // Payer Selection (if tier is selected)
+    if (S.marriage._tempTier) {
+      html += '<h5 style="font-size:.75rem;color:#fbbf24;margin-top:10px">Who pays?</h5>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
+      MARRIAGE_TROUSSEAU_PAYERS.forEach(p => {
+        html += `<button class="pill" style="padding:6px;font-size:.7rem" onclick="marBuyTrousseau('${S.marriage._tempTier}', '${p.id}')">${p.label}</button>`;
+      });
+      html += '</div>';
+    }
+  }
+  html += '</div>';
   return html;
 }
 
@@ -1284,7 +1313,76 @@ window.marSetMahrSplit = function(pct) {
   S.marriage.engagement.mahrAdvancedPct = pct;
   render();
 };
+window.marBuyTrousseau = function(tierId, payerId) {
+  const m = S.marriage;
+  const tier = MARRIAGE_TROUSSEAU_TIERS.find(t => t.id === tierId);
+  if (!tier) return;
 
+  const h = S.ownedHomes.find(x => x.status === 'occupied') || S.ownedHomes[0];
+  if (!h) {
+    log('❌ You don\'t have a home yet! You must buy or rent a place first.');
+    return;
+  }
+
+  const costLocal = marEGP(tier.costEGP);
+  let playerPays = 0;
+  let familyPays = 0;
+
+  if (payerId === 'groom') playerPays = costLocal;
+  else if (payerId === 'bride_family') familyPays = costLocal;
+  else if (payerId === 'groom_family') familyPays = costLocal;
+  else if (payerId === 'split') { playerPays = costLocal / 2; familyPays = costLocal / 2; }
+
+  // Check if the player can afford their share
+  if (playerPays > S.wealth) {
+    log(`❌ You need ${money(playerPays)} for your share of the Gehaz.`);
+    return;
+  }
+
+  // Check if the family can afford their share (Roughly checking family wealth)
+  const famWealth = eduFamilyWealth ? eduFamilyWealth() : 3000000;
+  if (familyPays > 0 && famWealth < familyPays * 2) {
+    log(`❌ The family cannot afford ${money(familyPays)} for the Gehaz.`);
+    return;
+  }
+
+  if (!confirm(`Confirm Gehaz purchase: ${tier.label}?\n\nPayer: ${payerId}\nYour cost: ${money(playerPays)}`)) return;
+
+  // Deduct money
+  S.wealth -= playerPays;
+  
+  // Simulate family paying by logging it
+  if (familyPays > 0) log(`👨‍👩‍👧 The family paid ${money(familyPays)} for the Gehaz.`);
+
+  // Apply to the home
+  m.trousseau = { tier: tierId, payer: payerId, cost: tier.costEGP, completed: true };
+  h.homeComfort = (h.homeComfort || 0) + (tier.id === 'luxury' ? 30 : tier.id === 'standard' ? 15 : 5);
+  h.furnitureValue = (h.furnitureValue || 0) + costLocal;
+  
+  // Add to Real Estate tab via shopping inventory
+  if (!S.shopping) S.shopping = { inventory: [] };
+  if (!Array.isArray(S.shopping.inventory)) S.shopping.inventory = [];
+  
+  // Simulate buying the items into the house
+  S.shopping.inventory.push({
+    uid: 'trousseau_' + Math.random().toString(36).slice(2, 8),
+    itemId: 'trousseau_package',
+    brand: 'Gehaz',
+    name: tier.label + ' Package',
+    cat: 'furniture',
+    subcat: 'package',
+    purchasePrice: costLocal,
+    currentValue: costLocal,
+    purchaseYear: gameYear(),
+    homeId: h.id,
+    homeName: h.name
+  });
+
+  m.motherInLawBond = Math.min(100, m.motherInLawBond + tier.hamaBond);
+  
+  log(`✅ Gehaz complete! The home is furnished. Mother-in-law bond ${tier.hamaBond > 0 ? '+' : ''}${tier.hamaBond}.`);
+  render();
+};
 window.marRejectSalonat = function() {
   log('❌ You declined the Salonat proposal. Your family is disappointed.');
   S.marriage.salonatProspect = null;
@@ -1941,6 +2039,12 @@ window.marConfirmWedding = function() {
     log('🚨 Your mother-in-law interfered! She added 50 unwanted guests to the wedding list.');
     selection.baseTotalEGP += marEGP(250000); // Cost of 50 extra guests
     fx({ happiness: -10 });
+  }
+     // HARD CHECK FOR GEHAZ
+  if (!m.trousseau || !m.trousseau.completed) {
+    log('🚨 The wedding is cancelled! The home is empty. You must complete the Gehaz (Furniture) negotiation first.');
+    fx({ happiness: -15 });
+    return;
   }
 
   // Trousseau penalty (If not done)
