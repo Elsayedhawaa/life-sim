@@ -310,7 +310,23 @@ function chooseEvent(i) {
   S.evId = null;
   save(); render();
 }
-
+/* ============================================================
+   EVENT CARD (UI for pending events)
+   ============================================================ */
+function eventCard(pending) {
+  if (!pending) return '';
+  let html = '<div class="card" style="border-color:#8b5cf6; background:#14141f;">' +
+    '<h3 style="color:#8b5cf6">' + pending.title + '</h3>' +
+    '<p class="small" style="white-space:pre-wrap; margin-bottom:12px;">' + pending.text + '</p>' +
+    '<div style="display:flex; flex-direction:column; gap:8px;">';
+  
+  pending.choices.forEach(function(choice, index) {
+    html += '<button class="opt" style="text-align:center; background:#25253a; border-color:#8b5cf6; font-weight:bold;" onclick="chooseEvent(' + index + ')">' + choice.label + '</button>';
+  });
+  
+  html += '</div></div>';
+  return html;
+}
 /* ============================================================
    RENDER
    ============================================================ */
