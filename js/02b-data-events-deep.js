@@ -1014,7 +1014,7 @@ const DEEP_EVENTS = [
         fx({ happiness: 3 });
       }
     },
-    { label: 'Tell ' + p + ' to choose between you and her',
+       { label: s => 'Tell ' + evtPartnerName() + ' to choose between you and her',
       effect: s => {
         if (Math.random() < 0.5) {
           evtBumpPartner(-20);
@@ -1078,7 +1078,7 @@ const DEEP_EVENTS = [
     { label: 'Ignore it',
       effect: s => { evtBumpPartner(-3); fx({ happiness: -4, social: -3 }); }
     },
-    { label: 'Ask ' + p + ' if it is true',
+     { label: s => 'Ask ' + evtPartnerName() + ' if it is true',
       effect: s => {
         if (Math.random() < 0.85) {
           evtBumpPartner(-8);
