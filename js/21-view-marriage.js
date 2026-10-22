@@ -1340,11 +1340,7 @@ window.marAcceptSalonat = function() {
   /* Give gold to player */
   if (!S.expat) S.expat = { goldStash: [] };
   if (!Array.isArray(S.expat.goldStash)) S.expat.goldStash = [];
-  S.expat.goldStash.push({
-    id: 'gold_s_' + Math.random().toString(36).slice(2, 6),
-    karat: '21K', grams: p.shabkaGrams, buyPricePerGram: 4500,
-    buyLocal: 0, buyYear: gameYear(), buyCountry: S.country
-  });
+ marGrantShabkaJewelry(p.shabkaGrams, 21);
 
   S.wealth += p.mahrLocal;
 
@@ -1366,7 +1362,7 @@ window.marAcceptSalonat = function() {
     S.realEstateActiveHomeId = h.id;
   }
 
-  log(`💍 You accepted the proposal from ${p.name}. You received ${p.shabkaGrams}g of gold and ${money(p.mahrLocal)} Mahr.`);
+  log(`💍 You accepted the proposal from ${p.name}.${money(p.mahrLocal)} Mahr.`);
   if (p.giveHouseToBride) {
     log(`🏠 The house (${p.houseType}) was put under YOUR name. Check the Real Estate tab.`);
   } else {
@@ -3666,3 +3662,565 @@ marFireYearEvent = function(evt) {
 };
 
 /* ===================== PATCH BLOCK END ===================== */
+/* ============================================================
+   PATCH 2: Father negotiation · property deals · gold shabka ·
+   groom furnishing · chemistry
+   ============================================================ */
+
+/* ---------- Gold helpers ---------- */
+function marGoldLocalPerGram(karat) {
+  const m = ((typeof SHOP_MULT !== 'undefined' && SHOP_MULT[S.country]) || SHOP_MULT.egy).luxury || 1;
+  return Math.round(SHOP_GOLD_USD_PER_GRAM * (karat / 24) * m * (C().rate || 1));
+}
+
+function marGiveJewelry(it, paidBy, priceLocal) {
+  if (typeof ensureShoppingState === 'function') ensureShoppingState();
+  const price = priceLocal || it.priceLocal;
+  S.shopping.inventory.push({
+    uid: 'i' + (S.uidN++), itemId: it.id, brand: it.brand, name: it.name,
+    cat: 'jewelry', subcat: it.subcat, priceUSD: it.priceUSD || 0,
+    purchasePrice: price, currentValue: Math.round(price * 0.9),
+    purchaseYear: gameYear(), age: 0, life: 9999,
+    happiness: it.happiness || 5, social: it.social || 5,
+    grams: it.grams, karat: it.karat,
+    broken: false, condition: 100,
+    warrantyUntil: 0, extendedWarranty: false, extendedWarrantyUntil: 0,
+    homeId: null, homeName: null, returnableUntil: 0, cardUsed: null,
+    paidBy: paidBy || 'self'
+  });
+}
+
+/* Salonat / fallback: turn raw grams into real jewelry pieces */
+function marGrantShabkaJewelry(totalGrams, karat) {
+  karat = karat || 21;
+  const per = marGoldLocalPerGram(karat);
+  const parts = [
+    ['Bridal Necklace Set', 'necklace', 0.40, 0.25],
+    ['Gold Bangles (Ghawayesh)', 'bracelet', 0.25, 0.15],
+    ['Big Bridal Ring', 'ring', 0.20, 0.25],
+    ['Gold Earrings', 'earrings', 0.15, 0.20]
+  ];
+  parts.forEach(function(p) {
+    const g = Math.max(1, Math.round(totalGrams * p[2]));
+    const price = Math.round(g * per * (1 + p[3]));
+    marGiveJewelry({
+      id: 'shabka_' + p[1] + '_' + Math.random().toString(36).slice(2, 6),
+      brand: 'Shabka', name: p[0], subcat: p[1], priceUSD: 0,
+      happiness: 6, social: 6, grams: g, karat: karat
+    }, 'groom', price);
+  });
+  log('💍 Your shabka (' + totalGrams + 'g of ' + karat + 'K gold) was made into jewelry. Check My Items.');
+}
+
+/* ---------- Shabka picker (choose pieces from the gold budget) ---------- */
+function marPlayerShare(e) {
+  const payer = (e && e.payer) || 'self';
+  return payer === 'partner' ? 0 : payer === 'split' ? 0.5 : 1;
+}
+
+window.marOpenShabkaPicker = function() {
+  const m = S.marriage, e = m.engagement;
+  if (!e || !e.finalized) { log('Finalize the engagement first.'); render(); return; }
+  if (m.shabkaChosen) { log('You already chose your shabka.'); render(); return; }
+  m.shabkaPick = { budget: marEGP(e.shabkaCost || 0), items: [] };
+  m.tab = 'plan';
+  render();
+};
+/* the old gold-souk popup now opens the picker instead */
+window.marShabkaGoldSoukTrip = function() { marOpenShabkaPicker(); };
+
+function _marShabkaCatalog() {
+  return shopBuildCatalog('jewelry').filter(function(i) { return i.cat === 'jewelry' && i.grams > 0; });
+}
+
+window.marShabkaAdd = function(id) {
+  const pk = S.marriage.shabkaPick; if (!pk) return;
+  const it = _marShabkaCatalog().find(function(i) { return i.id === id; });
+  if (!it) return;
+  const left = pk.budget - pk.items.reduce(function(s, x) { return s + x.priceLocal; }, 0);
+  if (it.priceLocal > left) { log('❌ That piece is over your remaining gold budget.'); render(); return; }
+  pk.items.push(it);
+  render();
+};
+window.marShabkaRemove = function(i) {
+  const pk = S.marriage.shabkaPick; if (!pk) return;
+  pk.items.splice(i, 1); render();
+};
+
+window.marShabkaFinish = function() {
+  const m = S.marriage, pk = m.shabkaPick, p = m.partner, e = m.engagement;
+  if (!pk || !pk.items.length) { log('Choose at least one piece.'); render(); return; }
+  ensureShoppingState();
+  const spent = pk.items.reduce(function(s, x) { return s + x.priceLocal; }, 0);
+  const left = pk.budget - spent;
+  const toMe = S.gender === 'f';
+  pk.items.forEach(function(it) {
+    if (toMe) marGiveJewelry(it, 'groom');
+    else S.shopping.gifts.unshift({ year: gameYear(), itemId: it.id, name: it.brand + ' ' + it.name, price: it.priceLocal, to: p.name, toType: 'spouse' });
+  });
+  if (left > 0) {
+    if (toMe) { S.wealth += left; log('💰 The unspent gold budget (' + money(left) + ') was given to you in cash.'); }
+    else { const back = Math.round(left * marPlayerShare(e)); if (back > 0) { S.wealth += back; log('💰 Unspent gold budget refunded: ' + money(back) + '.'); } }
+  }
+  const grams = pk.items.reduce(function(s, x) { return s + x.grams; }, 0);
+  p.chemistry = Math.min(100, (p.chemistry || 40) + 8);
+  p.bond = Math.min(100, p.bond + 6);
+  m.motherInLawBond = Math.min(100, (m.motherInLawBond || 50) + (grams >= 40 ? 5 : 0));
+  m.shabkaChosen = true; m.shabkaPick = null;
+  log(toMe
+    ? '🪙 You chose your shabka: ' + pk.items.map(function(i) { return i.name; }).join(', ') + ' (' + grams + 'g of gold). It is in My Items and keeps its value.'
+    : '🪙 You gave ' + p.name + ' the shabka (' + grams + 'g of gold). It appears in the Gift Registry.');
+  fx({ happiness: 10 });
+  render();
+};
+
+function marRenderShabkaPicker() {
+  const m = S.marriage, pk = m.shabkaPick;
+  if (!pk) {
+    return '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">🪙 The Shabka</h3>' +
+      '<p class="muted small">Go to the gold souk and choose your pieces (rings, a big ring, necklaces, bangles, earrings, sets) from the shabka budget. They become real gold items that keep their value.</p>' +
+      '<button class="opt" style="width:100%;text-align:center;background:#fbbf24;color:#000;font-weight:700" onclick="marOpenShabkaPicker()">🪙 Visit the gold souk</button></div>';
+  }
+  const spent = pk.items.reduce(function(s, x) { return s + x.priceLocal; }, 0);
+  const left = pk.budget - spent;
+  let html = '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">🪙 Gold Souk</h3>' +
+    '<div class="row"><span>Gold budget</span><b>' + money(pk.budget) + '</b></div>' +
+    '<div class="row"><span>Selected</span><b>' + money(spent) + '</b></div>' +
+    '<div class="row"><span>Remaining</span><b class="' + (left > 0 ? 'good' : 'bad') + '">' + money(left) + '</b></div>';
+  if (pk.items.length) {
+    html += '<div style="margin-top:8px;padding:8px;background:#0f0f1a;border-radius:6px"><b class="small">Your pieces</b>';
+    pk.items.forEach(function(it, i) {
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:.75rem"><span>' + it.name + ' · ' + it.grams + 'g ' + it.karat + 'K</span>' +
+        '<span>' + money(it.priceLocal) + ' <button class="pill" style="padding:1px 6px;font-size:.65rem" onclick="marShabkaRemove(' + i + ')">✕</button></span></div>';
+    });
+    html += '</div>';
+  }
+  const subs = {};
+  _marShabkaCatalog().forEach(function(i) { (subs[i.subcat] = subs[i.subcat] || []).push(i); });
+  Object.keys(subs).forEach(function(sub) {
+    html += '<h4 style="font-size:.78rem;color:#fbbf24;margin-top:10px">' + sub.replace(/_/g, ' ').toUpperCase() + '</h4>';
+    subs[sub].forEach(function(it) {
+      const ok = it.priceLocal <= left;
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #1a1a2a">' +
+        '<div style="font-size:.75rem"><b>' + it.brand + ' · ' + it.name + '</b><div class="muted small">' + it.desc + '</div></div>' +
+        '<button class="pill" style="padding:3px 8px;font-size:.68rem;' + (ok ? '' : 'opacity:.4') + '" ' + (ok ? '' : 'disabled') + ' onclick="marShabkaAdd(\'' + it.id + '\')">' + money(it.priceLocal) + ' +</button></div>';
+    });
+  });
+  html += '<button class="opt" style="margin-top:12px;width:100%;text-align:center;background:#34d399;color:#000;font-weight:700" onclick="marShabkaFinish()">✅ Take the shabka home</button></div>';
+  return html;
+}
+
+var _marRenderPlanBase2 = marRenderPlan;
+marRenderPlan = function() {
+  let html = _marRenderPlanBase2();
+  const m = S.marriage;
+  if (m.status === 'engaged' && m.engagement && m.engagement.finalized && !m.shabkaChosen) {
+    html = marRenderShabkaPicker() + html;
+  }
+  return html;
+};
+
+/* ---------- Chemistry ---------- */
+function marEnsureChem(p) {
+  if (!p) return 0;
+  if (typeof p.chemistry !== 'number') {
+    p.chemistry = marClamp(30 + Math.round((p.compatibility || 50) * 0.3) + Math.floor(Math.random() * 15), 0, 100);
+  }
+  return p.chemistry;
+}
+function marBumpChem(p, n) { if (p) p.chemistry = marClamp(marEnsureChem(p) + n, 0, 100); }
+
+var _marDoActivityBase = window.marDoActivity;
+window.marDoActivity = function(id) {
+  const p = S.marriage && S.marriage.partner;
+  const before = p ? (p.dateCount || 0) : 0;
+  _marDoActivityBase(id);
+  if (p && S.marriage.partner === p && (p.dateCount || 0) > before) {
+    marBumpChem(p, (p.preferences && p.preferences.preferredActivity === id) ? 4 : 1);
+    if (marHasTrait(p, 'romantic') && (id === 'gift' || id === 'restaurant')) marBumpChem(p, 1);
+    render();
+  }
+};
+var _marTalkBase = window.marPremaritalTalk;
+window.marPremaritalTalk = function(id) {
+  const p = S.marriage && S.marriage.partner;
+  const before = p ? Object.keys(p.topicCounts || {}).reduce(function(s, k) { return s + p.topicCounts[k]; }, 0) : 0;
+  _marTalkBase(id);
+  if (p && S.marriage.partner === p) {
+    const after = Object.keys(p.topicCounts || {}).reduce(function(s, k) { return s + p.topicCounts[k]; }, 0);
+    if (after > before) { marBumpChem(p, marHasTrait(p, 'communicative') ? 3 : 2); render(); }
+  }
+};
+
+var _marReadinessBase = marPremaritalReadiness;
+marPremaritalReadiness = function(partner) {
+  const r = _marReadinessBase(partner);
+  const p = partner || (S && S.marriage && S.marriage.partner);
+  if (!p) return r;
+  const chem = marEnsureChem(p);
+  r.score = Math.round(r.score * 0.9 + chem * 0.1);
+  if (chem < 35) { r.reasons.push('The chemistry is not there yet. Spend more quality time together.'); r.ready = false; }
+  return r;
+};
+
+var _marPremaritalPanelBase = marRenderPremaritalPanel;
+marRenderPremaritalPanel = function() {
+  const base = _marPremaritalPanelBase();
+  const p = S.marriage.partner; if (!p) return base;
+  const c = marEnsureChem(p);
+  const col = c > 70 ? '#34d399' : c > 40 ? '#fbbf24' : '#fb7185';
+  const label = c > 80 ? 'Inseparable' : c > 60 ? 'Strong spark' : c > 40 ? 'Warming up' : 'Awkward';
+  return base + '<div class="card"><div style="display:flex;justify-content:space-between;font-size:.8rem"><b>✨ Chemistry</b><b style="color:' + col + '">' + c + '% · ' + label + '</b></div>' +
+    '<div style="height:5px;background:#1a1a2a;border-radius:3px;margin-top:4px"><div style="height:100%;width:' + c + '%;background:' + col + ';border-radius:3px"></div></div>' +
+    '<p class="muted small" style="margin-top:6px">Grows with shared activities, honest talks, their favourite things and thoughtful gifts (especially gold).</p></div>';
+};
+
+var _marRenderLifeBase2 = marRenderLife;
+marRenderLife = function() {
+  let html = _marRenderLifeBase2();
+  const p = S.marriage.partner;
+  if (S.marriage.status === 'married' && p) {
+    const c = Math.round(marEnsureChem(p));
+    html += '<div class="card"><div class="row"><span>✨ Chemistry</span><b>' + c + '%</b></div>' +
+      '<p class="muted small">High chemistry strengthens the bond each year; low chemistry wears it down. Date nights and gifts help.</p></div>';
+  }
+  return html;
+};
+
+GameHooks.on('year', function() {
+  if (!S || !S.marriage || !S.marriage.partner) return;
+  const m = S.marriage, p = m.partner;
+  if (m.status !== 'married') return;
+  const c = marEnsureChem(p);
+  marBumpChem(p, p.bond > 70 ? 1 : -2);
+  if (c > 75) p.bond = marClamp(p.bond + 2, 0, 100);
+  else if (c < 25) p.bond = marClamp(p.bond - 2, 0, 100);
+});
+
+/* ---------- Father negotiation ---------- */
+function marTierByFrac(arr, f) {
+  const s = arr.slice().sort(function(a, b) { return a.costEGP - b.costEGP; });
+  return s[Math.min(s.length - 1, Math.max(0, Math.round(f * (s.length - 1))))];
+}
+function marTierStep(arr, tier, step) {
+  const s = arr.slice().sort(function(a, b) { return a.costEGP - b.costEGP; });
+  const i = s.findIndex(function(x) { return x.id === tier.id; });
+  return s[Math.min(s.length - 1, Math.max(0, i + step))];
+}
+var MAR_PROPERTY_TEXT = {
+  bride_name: 'a home registered in his daughter\'s name',
+  his_name: 'a fully prepared home in his name, where his daughter will live with full right of residence',
+  none: 'no property (they will start in a rented home)'
+};
+var MAR_FURNISH_TEXT = {
+  groom_full: 'The groom furnishes and equips the home completely before the wedding.',
+  shared: 'The groom will furnish the home but may ask his bride to share the cost and choose pieces together.'
+};
+
+/* income = groom's yearly income, famTier = bride's family wealth tier */
+function marBuildFatherDemands(income, famTier, traits) {
+  traits = traits || [];
+  const lvl = income >= 1000000 ? 'rich' : income >= 400000 ? 'comfortable' : income >= 150000 ? 'middle' : 'modest';
+  const base = { modest: 0.15, middle: 0.4, comfortable: 0.65, rich: 0.9 }[lvl];
+  const fam = { poor: -0.1, 'lower-mid': -0.05, middle: 0, 'upper-mid': 0.1, wealthy: 0.2, ultra: 0.3 }[famTier || 'middle'] || 0;
+  const f = Math.max(0, Math.min(1, base + fam + (Math.random() * 0.1 - 0.05)));
+  let property = 'his_name';
+  if (lvl === 'rich') property = Math.random() < 0.7 ? 'bride_name' : 'his_name';
+  else if (lvl === 'comfortable') property = (f > 0.7 || Math.random() < 0.4) ? 'bride_name' : 'his_name';
+  else if ((famTier === 'wealthy' || famTier === 'ultra') && lvl === 'middle' && Math.random() < 0.35) property = 'bride_name';
+  const generous = traits.indexOf('generous') >= 0 || traits.indexOf('traditional') >= 0 || traits.indexOf('family_oriented') >= 0;
+  const furnishing = (lvl === 'rich' || lvl === 'comfortable' || (generous && lvl !== 'modest')) ? 'groom_full' : 'shared';
+  return {
+    level: lvl,
+    shabka: marTierByFrac(MARRIAGE_SHABKA_TIERS, f),
+    mahr: marTierByFrac(MARRIAGE_MAHR_TIERS, f),
+    property: property, furnishing: furnishing
+  };
+}
+
+function marApplyFatherDeal(p, d) {
+  const m = S.marriage;
+  m.partner = p; m.status = 'engaged';
+  p.exclusive = true; p.relationshipStage = 'engaged'; p.pendingPartnerProposal = null;
+  p.bond = Math.min(100, p.bond + 5); marBumpChem(p, 5);
+  m.fatherDemands = d; m.propertyDeal = d.property; m.gehazModel = d.furnishing;
+  m.gehazPayer = d.furnishing === 'groom_full' ? 'groom' : 'split';
+  m.engagement = {
+    proposal: 'family', shabkaTier: d.shabka.id, mahrTier: d.mahr.id, partyTier: 'nice_hall',
+    payer: S.gender === 'f' ? 'partner' : 'self', mahrAdvancedPct: 0.5, fatherTerms: true, finalized: false
+  };
+  marRecordMemory('family_blessing', 'The fathers agreed on the terms: ' + d.shabka.label + ' shabka, ' + d.mahr.label + ' mahr, ' + (MAR_PROPERTY_TEXT[d.property]) + '.', 5);
+  marUnlockAchievement('engaged'); marReachMilestone('proposal'); marReachMilestone('engagement');
+  fx({ happiness: 22 });
+}
+
+function marDemandsText(d) {
+  return '• Shabka: ' + d.shabka.label + '\n• Mahr: ' + d.mahr.label + '\n• Property: ' + MAR_PROPERTY_TEXT[d.property] + '\n• ' + MAR_FURNISH_TEXT[d.furnishing];
+}
+
+/* Woman (traditional): he comes with his family and sits with your father */
+window.marStartFatherMeeting = function(p) {
+  if (S.pending) return;
+  const father = (S.family || []).find(function(f) { return f.role === 'Father' && f.alive !== false; });
+  const fname = father ? father.name : 'Your father';
+  const d = marBuildFatherDemands(Number(p.income || 0) || 250000, S.familyTier, p.traits);
+  S.pending = {
+    title: '☕ ' + p.name + ' Comes for Your Hand',
+    text: p.name + ' arrives with his family. Over tea, ' + fname + ' listens, then names his conditions for his daughter\'s security:\n\n' + marDemandsText(d) +
+      '\n\nThe room goes quiet. ' + p.name + ' looks at you.',
+    choices: [
+      { label: '✅ Accept the terms', effect: function() {
+          marApplyFatherDeal(p, d);
+          log('💍 The families shook hands. Engagement terms were set by ' + fname + '. Finalize them in the Plan tab.');
+        } },
+      { label: '🕊 Ask Baba to be a little flexible', effect: function() {
+          if (Math.random() < 0.35 + p.bond / 250) {
+            const soft = Object.assign({}, d, {
+              shabka: marTierStep(MARRIAGE_SHABKA_TIERS, d.shabka, -1),
+              mahr: marTierStep(MARRIAGE_MAHR_TIERS, d.mahr, -1),
+              property: d.property === 'bride_name' ? 'his_name' : d.property
+            });
+            marApplyFatherDeal(p, soft);
+            log('🕊 ' + fname + ' softened his terms out of love for you. ' + p.name + ' was grateful.');
+          } else {
+            marApplyFatherDeal(p, d);
+            S.marriage.motherInLawBond = Math.max(0, S.marriage.motherInLawBond - 10);
+            log('😬 ' + fname + ' refused to bend. His family felt pressured. The terms stand.');
+          }
+        } },
+      { label: '⏳ Ask for more time', effect: function() {
+          p.trust = Math.max(0, p.trust - 2);
+          log('💬 You asked for time. The families left politely.');
+        } },
+      { label: '❌ Refuse', effect: function(s) {
+          s.marriage.partner = null; s.marriage.status = 'single';
+          log('💔 You refused the proposal.'); fx({ happiness: -10 });
+        } }
+    ]
+  };
+  S.evId = 'father_meeting_' + gameYear();
+  render();
+};
+
+var _marTriggerProposalOrig = window.marTriggerProposalEvent;
+window.marTriggerProposalEvent = function(p) {
+  if (S && S.pending) return;
+  if (marIsTraditionalWoman()) return marStartFatherMeeting(p);
+  return _marTriggerProposalOrig.apply(this, arguments);
+};
+var _marRespondOrig = window.marRespondToPartnerProposal;
+window.marRespondToPartnerProposal = function(choice) {
+  const p = S.marriage.partner;
+  if (choice === 'accept' && p && marIsTraditionalWoman() && S.marriage.status === 'dating' && p.pendingPartnerProposal) {
+    p.pendingPartnerProposal = null;
+    return marStartFatherMeeting(p);
+  }
+  return _marRespondOrig(choice);
+};
+
+/* Man (or non-traditional): YOU go to HER father and he sets conditions for you */
+window.marAskForHand = function() {
+  ensureMarriageState();
+  const m = S.marriage, p = m.partner;
+  if (!p || m.status !== 'dating' || S.pending) return;
+  if (marIsTraditionalWoman()) { log('❌ In your culture, he and his family approach your father.'); render(); return; }
+  const r = marPremaritalReadiness(p);
+  if (!r.ready) { log('Not ready yet. ' + r.reasons.join(' ')); render(); return; }
+  const approval = marFamilyApproval(p);
+  if (approval < 0.6) { log('❌ The family wants more stability first (need 60% approval).'); render(); return; }
+  const cost = marEGP(5000);
+  if (S.wealth < cost) { log('Not enough cash for the family visit (' + money(cost) + ').'); render(); return; }
+  const income = (S.job ? Number(S.job.salary || 0) : 0) + Math.round(S.wealth / 10);
+  const d = marBuildFatherDemands(income, 'middle', p.traits);
+  S.wealth -= cost;
+  S.pending = {
+    title: '☕ You Visit ' + p.name + '\'s Father',
+    text: 'You sit with her father and her family. After questions about your work and plans, he names his conditions:\n\n' + marDemandsText(d) +
+      '\n\nYou will have to provide these before the wedding.',
+    choices: [
+      { label: '✅ Agree to the terms', effect: function() {
+          marApplyFatherDeal(p, d);
+          log('💍 Agreed. Finalize the engagement in the Plan tab. ' + (d.property === 'bride_name' ? 'You must own a home to put in her name before the wedding.' : ''));
+        } },
+      { label: '🤝 Negotiate (property in your name instead)', effect: function() {
+          if (Math.random() < 0.40 + p.bond / 300) {
+            marApplyFatherDeal(p, Object.assign({}, d, { property: 'his_name', furnishing: 'shared' }));
+            log('🤝 Her father agreed to a lighter arrangement.');
+          } else {
+            p.familyApproval = marClamp((p.familyApproval || 0.7) - 0.05, 0.1, 1);
+            log('💬 Her father held firm and asked you to come back when you are ready.');
+          }
+        } },
+      { label: '🚪 Walk away', effect: function() { p.bond = Math.max(0, p.bond - 10); log('You left the meeting. ' + p.name + ' is hurt.'); } }
+    ]
+  };
+  S.evId = 'hand_meeting_' + gameYear();
+  render();
+};
+
+/* Father's terms are fixed in the engagement planner */
+var _marEngagementSetBase = window.marEngagementSet;
+window.marEngagementSet = function(key, value) {
+  const e = S.marriage.engagement;
+  if (e && e.fatherTerms && (key === 'shabkaTier' || key === 'mahrTier')) {
+    log('📜 These terms were set by the fathers and cannot be changed here.'); render(); return;
+  }
+  return _marEngagementSetBase(key, value);
+};
+
+/* ---------- Home + furnishing before marriage ---------- */
+function marAddGehazItem(home, item, payer) {
+  const pool = SHOP_ALL.filter(function(r) { return r[2] === item.cat && (!item.subcat || r[3] === item.subcat); });
+  if (!pool.length) return 0;
+  const r = pool[Math.floor(pool.length / 2)];
+  const mult = SHOP_MULT[S.country] ? (SHOP_MULT[S.country][item.cat] || 1) : 1;
+  const price = Math.round(r[4] * mult * (C().rate || 1));
+  S.shopping.inventory.push({
+    uid: 'i' + (S.uidN++), itemId: r[0].toLowerCase() + '_' + r[1].toLowerCase().replace(/\W/g, '_'),
+    brand: r[0], name: r[1], cat: item.cat, subcat: r[3], priceUSD: r[4],
+    purchasePrice: price, currentValue: price, purchaseYear: gameYear(), age: 0, life: r[7],
+    happiness: r[5], social: r[6], broken: false, condition: 100, warrantyUntil: 0,
+    homeId: home.id, homeName: home.name, paidBy: payer
+  });
+  home.furnitureValue = (home.furnitureValue || 0) + price;
+  home.value = (home.value || 0) + price;
+  home.homeComfort = (home.homeComfort || 0) + r[5] * 2;
+  home.shoppingComfort = (home.shoppingComfort || 0) + r[5] * 2;
+  return price;
+}
+
+function marApplyGehazModel(home) {
+  const m = S.marriage, p = m.partner;
+  if (!home || !p) return;
+  ensureShoppingState();
+  const missing = marMissingGehaz(home);
+  if (!missing.length) return;
+  if (m.gehazModel === 'groom_full') {
+    missing.forEach(function(it) { marAddGehazItem(home, it, 'husband'); });
+    p.bond = Math.min(100, p.bond + 8); marBumpChem(p, 5);
+    log('🛋 ' + p.name + ' and his family furnished and equipped the whole home before the wedding (' + missing.length + ' items). You only need to enjoy it.');
+  } else {
+    const half = Math.ceil(missing.length / 2);
+    missing.slice(0, half).forEach(function(it) { marAddGehazItem(home, it, 'husband'); });
+    m.gehazPayer = 'split';
+    log('🛋 ' + p.name + ' furnished ' + half + ' items and asked for your help with the rest: "Let us finish our home together." Use the Buy now buttons in the Plan tab (cost is shared).');
+    marBumpChem(p, 3);
+  }
+}
+
+window.marHusbandProvidesHome = function() {
+  const m = S.marriage, p = m.partner;
+  if (!p || m.husbandHomeProvided) return null;
+  if (!Array.isArray(S.ownedHomes)) S.ownedHomes = [];
+  const existing = S.ownedHomes.find(function(h) { return h.status === 'occupied'; });
+  if (existing) { m.husbandHomeProvided = true; log('🏠 You will live in your existing home (' + existing.name + ').'); marApplyGehazModel(existing); return existing; }
+  m.husbandHomeProvided = true;
+
+  const inc = p.income || 0;
+  let ppm, area, type, desc;
+  if (inc >= 1000000) { ppm = 150000; area = 400; type = 'Luxury Villa'; desc = 'a stunning luxury villa with private gardens and a pool'; }
+  else if (inc >= 500000) { ppm = 80000; area = 250; type = 'Villa'; desc = 'a spacious villa in a quiet neighborhood'; }
+  else if (inc >= 200000) { ppm = 55000; area = 160; type = 'Apartment'; desc = 'a comfortable 3-bedroom apartment'; }
+  else if (inc >= 100000) { ppm = 35000; area = 120; type = 'Apartment'; desc = 'a cozy 2-bedroom apartment'; }
+  else { ppm = 25000; area = 90; type = 'Modest Apartment'; desc = 'a modest starter apartment'; }
+
+  const toBride = m.propertyDeal ? m.propertyDeal === 'bride_name' : (marHasTrait(p, 'generous') || marHasTrait(p, 'protector') || p.bond >= 90);
+  const value = ppm * area;
+  S.ownedHomes.forEach(function(o) { if (o.status === 'occupied') o.status = 'vacant'; });
+  const home = createHome({
+    name: type + (toBride ? ' — In Your Name' : ' — ' + p.name + '\'s Property'),
+    city: p.city || 'Cairo', location: 'Family Neighborhood', country: S.country,
+    baseValue: value, value: value, area: area, rooms: Math.max(2, Math.floor(area / 30)),
+    condition: 85, status: 'occupied', source: 'husband_provided',
+    isHusbandOwned: !toBride, husbandName: p.name
+  });
+  S.ownedHomes.push(home);
+  S.realEstateActiveHomeId = home.id; S.housing = 'owned';
+
+  let text = p.name + ' takes you to see ' + desc + '.';
+  text += toBride
+    ? '\n\n"As your father asked, and as I wanted: it is registered in your name. Whatever happens, this home is yours."'
+    : '\n\n"This is where we will build our life. It is in my name, but it is your home, and no one can ever make you leave."';
+  S.pending = {
+    title: '🏠 Your Marital Home', text: text,
+    choices: [{
+      label: toBride ? '💍 Accept with tears in your eyes' : '💍 Accept with joy',
+      effect: function(s) {
+        if (toBride) { log('🏠 ' + desc + ' is registered in YOUR name, worth ' + money(value) + '. It appears in your assets and is yours to keep or sell.'); fx({ happiness: 25, social: 8 }); p.bond = Math.min(100, p.bond + 15); marBumpChem(p, 6); }
+        else { log('🏠 You will live in ' + desc + '. It stays in ' + p.name + '\'s name: it shows in your assets but you cannot sell it.'); fx({ happiness: 12, social: 4 }); p.bond = Math.min(100, p.bond + 8); }
+        marRecordMemory('home_provided', p.name + ' provided the marital home worth ' + money(value) + '.', 4);
+        marApplyGehazModel(home);
+      }
+    }]
+  };
+  S.evId = 'husband_home_' + gameYear();
+  return home;
+};
+
+/* Home is provided as soon as the engagement is finalized (not at the wedding) */
+var _marFinalizeBase = window.marFinalizeEngagement;
+window.marFinalizeEngagement = function() {
+  const wasFinal = S.marriage.engagement && S.marriage.engagement.finalized;
+  _marFinalizeBase();
+  const m = S.marriage;
+  if (!wasFinal && m.engagement && m.engagement.finalized && marIsTraditionalWoman() && !m.husbandHomeProvided && !S.pending) {
+    marHusbandProvidesHome();
+  }
+  render();
+};
+
+/* Traditional bride: respect the "shared" model when buying gehaz pieces.
+   In marBuyGehazItem change:  if (marIsTraditionalWoman()) {
+   to:                         if (marIsTraditionalWoman() && m.gehazModel !== 'shared') {  */
+
+var _marGehazCardBase = marRenderGehazCard;
+marRenderGehazCard = function() {
+  let html = _marGehazCardBase();
+  const m = S.marriage;
+  const note = m.gehazModel === 'shared'
+    ? '💡 He furnishes part of the home and asked for your help with the rest. Costs are shared.'
+    : '💡 The groom and his family furnish the home completely before the wedding.';
+  if (m.gehazModel) html = html.replace('💡 In your culture the groom and his family provide the furniture.', note);
+  return html;
+};
+
+/* ---------- Wedding gates + property transfer (male player) ---------- */
+var _marConfirmWeddingBase = window.marConfirmWedding;
+window.marConfirmWedding = function() {
+  const m = S.marriage;
+  if (S.pending) return;
+  if (marIsTraditionalWoman() && m.engagement && m.engagement.finalized && !m.shabkaChosen) {
+    log('🪙 Choose your shabka at the gold souk before the wedding (Plan tab).'); render(); return;
+  }
+  if (S.gender === 'm' && m.propertyDeal === 'bride_name' && !m.propertyDelivered) {
+    const h = (S.ownedHomes || []).find(function(x) { return !x.isHusbandOwned; });
+    if (!h) { log('🏠 Her father requires a home in her name. Buy one first (Real Estate tab).'); render(); return; }
+  }
+  _marConfirmWeddingBase();
+  if (m.status === 'married' && S.gender === 'm' && m.propertyDeal === 'bride_name' && !m.propertyDelivered) {
+    const idx = (S.ownedHomes || []).findIndex(function(x) { return !x.isHusbandOwned; });
+    if (idx >= 0) {
+      const h = S.ownedHomes[idx];
+      m.propertyDelivered = true;
+      S.ownedHomes.splice(idx, 1);
+      if (h.status === 'occupied') S.housing = 'parents';
+      m.homeInWifeName = h.name;
+      log('🏠 As agreed, ' + h.name + ' was registered in your wife\'s name. It is no longer in your assets, but you live there together.');
+    }
+  }
+};
+
+/* ---------- Divorce: his-name house is not yours to keep ---------- */
+var _marDivorceBase = window.marAskForDivorce;
+window.marAskForDivorce = function() {
+  _marDivorceBase();
+  if (S.marriage.status === 'divorced') {
+    const lost = (S.ownedHomes || []).filter(function(h) { return h.isHusbandOwned; });
+    if (lost.length) {
+      S.ownedHomes = S.ownedHomes.filter(function(h) { return !h.isHusbandOwned; });
+      if (!S.ownedHomes.some(function(h) { return h.status === 'occupied'; })) S.housing = 'parents';
+      log('🏠 You moved out of the home that was in his name. Your shabka and any property in your name stay yours.');
+      render();
+    }
+  }
+};
