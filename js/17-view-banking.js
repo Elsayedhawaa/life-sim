@@ -486,6 +486,12 @@ window.bankDoOpenAccount = function(bankId) {
 window.bankDoDepositAcc = function(idx) {
   const acc = S.bank.accounts[idx];
   const input = prompt(`Deposit cash into ${acc.bankId}?\n(Pocket Cash: ${money(S.wealth)})`, '1000');
+    const currentBanks = BANKS[S.country] || [];
+  const isForeignBank = !currentBanks.some(b => b.id === acc.bankId);
+  if (isForeignBank) {
+    log('❌ You cannot deposit cash directly into a foreign bank account while abroad. Use international transfer.');
+    render(); return;
+  }
   if (!input) return;
   const amt = Math.round(Number(input));
   if (amt <= 0 || S.wealth < amt) return;
