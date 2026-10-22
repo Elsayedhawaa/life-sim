@@ -2678,42 +2678,24 @@ GameHooks.on('year', function() {
       else log('⚠️ Could not pay home costs (' + money(yearly) + ').');
     }
   }
+
   if (m.status === 'dating' && Math.random() < 0.30) {
     marFamilyIntervention();
   }
-     /* Traditional women wait to be proposed to. If ready, the man may propose. */
+
+  /* Traditional women wait to be proposed to. If ready, the man may propose. */
   if (m.status === 'dating' && marIsTraditionalWoman() && p.bond >= 65 && p.trust >= 60 && p.commitmentTalks >= 1 && !p.pendingPartnerProposal) {
     if (Math.random() < 0.20) {
       marTriggerProposalEvent(p);
-      return; // Stop other events this year, the popup needs resolving
+      return;
     }
   }
-     /* Cheating discovery (when trust is low and traits match) */
+
+  /* Cheating discovery (when trust is low and traits match) */
   if (m.status === 'married' && !S.pending && p.trust < 40 && Math.random() < 0.10) {
     if (marHasTrait(p, 'jealous') || marHasTrait(p, 'impulsive') || marHasTrait(p, 'moody')) {
       marCheatingDiscovery();
       return;
-    }
-  }
-  i  /* Child support from exes */
-  m.exSpouses.forEach(function(ex) {
-    if (ex.childSupportAnnual > 0) {
-      const annual = ex.childSupportAnnual;
-      // If the player is the mother (female), she RECEIVES child support from the father
-      if (S.gender === 'f') {
-        S.wealth += annual;
-        log('💸 Received child support from ' + ex.name + ': +' + money(annual) + '.');
-      } else {
-        // If the player is the father (male), he PAYS child support
-        if (S.wealth >= annual) {
-          S.wealth -= annual;
-          log('💸 Child support paid to ' + ex.name + ': -' + money(annual) + '.');
-        } else {
-          log('⚠️ Could not pay child support to ' + ex.name + '.');
-        }
-      }
-    }
-  });
     }
   }
 
@@ -2765,6 +2747,7 @@ GameHooks.on('year', function() {
     fx({ happiness: -25 });
     return;
   }
+
   /* Polygamy threat (traditional cultures only, after 3+ years married) */
   if (m.status === 'married' && marIsTraditionalWoman() && p.marriedYear && (gameYear() - p.marriedYear) >= 3) {
     if (!m.pendingSecondWife && m.motherInLawBond < 40 && Math.random() < 0.08) {
@@ -2772,6 +2755,7 @@ GameHooks.on('year', function() {
       return;
     }
   }
+
   /* Partner's ex reappears (rare drama) */
   if (m.status === 'married' && !S.pending && p.trust < 70 && Math.random() < 0.05) {
     const exNames = ['Layla', 'Sara', 'Nadia', 'Dina', 'Rania', 'Mona', 'Huda', 'Yasmin'];
@@ -2779,6 +2763,7 @@ GameHooks.on('year', function() {
     marExAppears(exName);
     return;
   }
+
   if (m.status === 'married' && p.marriedYear) {
     const years = gameYear() - p.marriedYear;
     if (years >= 1) marReachMilestone('first_anniversary');
@@ -2790,14 +2775,20 @@ GameHooks.on('year', function() {
     if (years >= 25) marReachMilestone('twenty_five_years');
   }
 
+  /* Child support from exes — woman RECEIVES, man PAYS */
   m.exSpouses.forEach(function(ex) {
     if (ex.childSupportAnnual > 0) {
       const annual = ex.childSupportAnnual;
-      if (S.wealth >= annual) {
-        S.wealth -= annual;
-        log('💸 Child support paid to ' + ex.name + ': ' + money(annual) + '.');
+      if (S.gender === 'f') {
+        S.wealth += annual;
+        log('💸 Received child support from ' + ex.name + ': +' + money(annual) + '.');
       } else {
-        log('⚠️ Could not pay child support to ' + ex.name + '.');
+        if (S.wealth >= annual) {
+          S.wealth -= annual;
+          log('💸 Child support paid to ' + ex.name + ': -' + money(annual) + '.');
+        } else {
+          log('⚠️ Could not pay child support to ' + ex.name + '.');
+        }
       }
     }
   });
