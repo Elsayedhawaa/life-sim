@@ -2641,3 +2641,21 @@ const MARRIAGE_CULTURAL_PROPOSALS = {
 /* ============================================================
    END OF EXPANDED MARRIAGE DATA
    ============================================================ */
+/* ============================================================
+   REALISM EXTENSIONS: EXCLUSIVITY & FAMILY MEETINGS
+   ============================================================ */
+
+const MARRIAGE_FAMILY_MEETING_OUTCOMES = [
+  { id: 'perfect', label: 'Perfect Match', text: 'Your family absolutely loves your partner. They think you found the one.', bond: 10, familyApproval: 0.15 },
+  { id: 'awkward', label: 'Awkward Silence', text: 'Your parents asked invasive questions about money and kids. It was tense, but survivable.', bond: -2, familyApproval: -0.05 },
+  { id: 'class_clash', label: 'Class Clash', text: 'Your family subtly judged their background and lifestyle. Your partner noticed.', bond: -8, familyApproval: -0.10 },
+  { id: 'overprotective', label: 'Overprotective Parents', text: 'Your father grilled them relentlessly. Your partner feels intimidated.', bond: -5, familyApproval: -0.05 },
+  { id: 'drama', label: 'Family Drama', text: 'A relative brought up an embarrassing childhood story that ruined the mood.', bond: -4, familyApproval: 0 }
+];
+
+const MARRIAGE_DATING_TIMELINE_RULES = {
+  exclusivityMinBond: 60,
+  parentsMeetingMinBond: 70,
+  yearsBeforePressure: 3,
+  yearsBeforeUltimatum: 5
+};
