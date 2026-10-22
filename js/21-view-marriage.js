@@ -162,6 +162,8 @@ function marStatusLabel() {
   const m = S.marriage;
   if (m.status === 'single') return 'Single';
   if (m.status === 'dating') return 'Dating ' + (m.partner ? m.partner.name : '');
+   
+  if (m.status === 'exclusive') return 'In a relationship with ' + (m.partner ? m.partner.name : '');
   if (m.status === 'engaged') return 'Engaged to ' + (m.partner ? m.partner.name : '');
   if (m.status === 'married') return 'Married to ' + (m.partner ? m.partner.name : '');
   if (m.status === 'divorced') return 'Divorced';
@@ -290,6 +292,59 @@ function marRenderPlan() {
   if (m.status === 'dating') {
     const bond = p.bond || 0;
     const canPropose = bond >= 40;
+       if (m.status === 'dating' || m.status === 'exclusive') {
+    const bond = p.bond || 0;
+    const canPropose = bond >= 40;
+
+    /* NEW: Exclusivity Talk */
+    if (m.status === 'dating' && bond >= MARRIAGE_DATING_TIMELINE_RULES.exclusivityMinBond) {
+      html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">🤝 Define the Relationship</h3>' +
+        '<p class="muted small">You\'ve been seeing ' + p.name + ' for a while. Where is this going?</p>' +
+        '<button class="opt" style="width:100%;text-align:center;background:#fbbf24;color:#000;font-weight:700;font-size:.78rem" onclick="marAskExclusive()">💬 "Will you be my girlfriend/boyfriend?"</button></div>';
+    }
+
+    /* NEW: Meet the Parents */
+    if (bond >= MARRIAGE_DATING_TIMELINE_RULES.parentsMeetingMinBond && !m.parentsMet) {
+      html += '<div class="card" style="border-color:#22d3ee"><h3 style="color:#22d3ee">👨‍👩‍👧 Meet the Parents</h3>' +
+        '<p class="muted small">It\'s time to introduce ' + p.name + ' to your family. This can make or break a relationship.</p>' +
+        '<button class="opt" style="width:100%;text-align:center;background:#22d3ee;color:#000;font-weight:700;font-size:.78rem" onclick="marMeetParents()">🍽 Host a family dinner</button></div>';
+    } else if (m.parentsMet) {
+      html += '<div class="card"><p class="muted small" style="color:#34d399">✓ You have introduced ' + p.name + ' to your family.</p></div>';
+    }
+
+    /* Readiness Discussions */
+    html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">🛡️ Discuss the Future</h3>' +
+      '<p class="muted small">Ensure you are aligned on major life decisions before proposing.</p>';
+    
+    if (typeof MARRIAGE_READINESS_TOPICS !== 'undefined') {
+      MARRIAGE_READINESS_TOPICS.forEach(function(topic) {
+        const discussed = m.readiness[topic.id];
+        html += '<div class="row" style="padding:6px 0;border-bottom:1px solid #1a1a2a">' +
+          '<div><b>' + topic.label + '</b><div class="muted small">' + topic.desc + '</div></div>' +
+          (discussed ? '<b class="good">✓ Discussed</b>' : '<button class="pill" style="padding:4px 8px;font-size:.7rem" onclick="marDiscussReadiness(\'' + topic.id + '\')">Discuss</button>') +
+          '</div>';
+      });
+    }
+    html += '</div>';
+
+    /* Proposal */
+    html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">💍 Proposal</h3>';
+    if (!canPropose) {
+      html += '<p class="muted small">Bond needs 40%+ before proposing. Currently ' + bond + '%.</p>';
+    } else {
+      html += '<p class="muted small">Choose how you want to propose. The style affects their answer.</p>';
+      if (typeof MARRIAGE_PROPOSAL_OPTIONS !== 'undefined') {
+        MARRIAGE_PROPOSAL_OPTIONS.forEach(function(opt) {
+          html += '<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:8px;font-size:.75rem" onclick="marSelectProposal(\'' + opt.id + '\')">' +
+            '<div style="display:flex;justify-content:space-between"><b>' + opt.label + '</b><span>' + money(marEGP(opt.costEGP)) + '</span></div></button>';
+        });
+      }
+      if (m.engagement && m.engagement.proposal) {
+        html += marRenderProposalReview();
+      }
+    }
+    html += '</div>';
+  }
 
     /* Readiness Discussions */
     html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">🛡️ Discuss the Future</h3>' +
@@ -666,7 +721,57 @@ window.marDoDialogue = function(topicId) {
   log('💬 ' + topic.label + ': ' + text + ' (Bond ' + (bondChange >= 0 ? '+' : '') + bondChange + ')');
   render();
 };
+window.marAskExclusive = function() {
+  const m = S.marriage;
+  const p = m.partner;
+  if (!p) return;
 
+  const traits = p.traits || [];
+  let chance = 0.6 + (p.bond / 200); 
+  if (traits.includes('independent') || traits.includes('avoidant')) chance -= 0.2;
+  if (traits.includes('romantic') || traits.includes('loyal')) chance += 0.1;
+
+  if (Math.random() < chance) {
+    m.status = 'exclusive';
+    p.bond = Math.min(100, p.bond + 10);
+    log('❤️ ' + p.name + ' said yes! You are now officially together.');
+    marAddMemory('You and ' + p.name + ' became an exclusive couple.');
+    fx({ happiness: 10 });
+  } else {
+    log('😬 ' + p.name + ' said they aren\'t ready to put a label on it yet. They need space.');
+    p.bond = Math.max(0, p.bond - 5);
+    fx({ happiness: -5 });
+  }
+  render();
+};
+
+window.marMeetParents = function() {
+  const m = S.marriage;
+  const p = m.partner;
+  if (!p) return;
+  const cost = marEGP(2000);
+  if (S.wealth < cost) { log('Need ' + money(cost) + ' to host a nice dinner.'); return; }
+  S.wealth -= cost;
+  
+  m.parentsMet = true;
+  const approval = marFamilyApproval(p);
+  
+  let outcome;
+  const roll = Math.random();
+  
+  if (approval > 0.7 && roll < 0.8) outcome = MARRIAGE_FAMILY_MEETING_OUTCOMES.find(o => o.id === 'perfect');
+  else if (approval < 0.4 && roll > 0.5) outcome = MARRIAGE_FAMILY_MEETING_OUTCOMES.find(o => o.id === 'class_clash');
+  else if (p.traits.includes('shy') && roll > 0.6) outcome = MARRIAGE_FAMILY_MEETING_OUTCOMES.find(o => o.id === 'awkward');
+  else if (p.traits.includes('independent') && roll > 0.7) outcome = MARRIAGE_FAMILY_MEETING_OUTCOMES.find(o => o.id === 'overprotective');
+  else outcome = MARRIAGE_FAMILY_MEETING_OUTCOMES.find(o => o.id === 'awkward');
+
+  p.bond = Math.max(0, Math.min(100, p.bond + outcome.bond));
+  p.familyApproval = Math.max(0.1, Math.min(1.0, p.familyApproval + outcome.familyApproval));
+  
+  log('🍽 Family Dinner: ' + outcome.text + ' (Bond ' + (outcome.bond > 0 ? '+' : '') + outcome.bond + ')');
+  marAddMemory(outcome.text);
+  render();
+};
 window.marDiscussReadiness = function(topicId) {
   const topic = MARRIAGE_READINESS_TOPICS.find(t => t.id === topicId);
   const p = S.marriage.partner;
@@ -1072,6 +1177,39 @@ GameHooks.on('year', function() {
   (p.traits || []).forEach(function(tid) {
     const t = marTrait(tid);
     if (t) bondChange += (t.bondPerYear || 0);
+       /* --- DATING TIMELINE PRESSURE & BREAKUPS --- */
+  if (m.status === 'dating' || m.status === 'exclusive') {
+    if (!p.metYear) p.metYear = gameYear();
+    const yearsDating = gameYear() - p.metYear;
+
+    /* Natural Breakup */
+    if (p.bond <= 15) {
+      log('💔 ' + p.name + ' broke up with you. The relationship just wasn\'t working.');
+      m.status = 'single';
+      m.partner = null;
+      m.engagement = null;
+      fx({ happiness: -20 });
+      return;
+    }
+
+    /* Timeline Pressure */
+    if (yearsDating >= MARRIAGE_DATING_TIMELINE_RULES.yearsBeforeUltimatum && (m.status === 'dating' || m.status === 'exclusive')) {
+      log('⏳ ' + p.name + ' is frustrated. "Where is this going? We\'ve been together for ' + yearsDating + ' years without a ring."');
+      p.bond = Math.max(0, p.bond - 15);
+      if (p.bond <= 15) {
+        log('💔 ' + p.name + ' left you. They wanted marriage and you kept them waiting.');
+        m.status = 'single';
+        m.partner = null;
+        fx({ happiness: -25 });
+        return;
+      }
+    } else if (yearsDating >= MARRIAGE_DATING_TIMELINE_RULES.yearsBeforePressure) {
+      if (Math.random() < 0.3) {
+        log('💬 ' + p.name + ' gently hints that their friends are all getting engaged.');
+        p.bond = Math.max(0, p.bond - 3);
+      }
+    }
+  }
   });
   p.bond = Math.max(0, Math.min(100, p.bond + bondChange));
 
