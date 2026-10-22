@@ -753,7 +753,10 @@ const MARRIAGE_SHABKA_TIERS = [
   }
 ];
 
-
+window.MARRIAGE_COUNTRY_MULT = {
+  egy: 1.0, sau: 2.0, uae: 2.0,
+  usa: 15.0, gbr: 10.0, deu: 8.0, can: 12.0, aus: 12.0, nld: 8.0, fra: 8.0, jpn: 8.0, ita: 6.0
+};
 /* ============================================================
    6. MAHR / DEFERRED DOWRY
    ============================================================ */
