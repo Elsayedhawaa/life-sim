@@ -251,7 +251,7 @@ const MARRIAGE_PARTNER_TRAITS = {
     label: 'Protective',
     bondPerYear: 2,
     desc: 'Will defend you against family interference.'
-  }
+  },
   ambitious: {
     label: 'Ambitious',
     bondPerYear: 0,
