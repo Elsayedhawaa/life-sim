@@ -779,7 +779,7 @@ function marRenderEngagementPlanner() {
     e.mahrNegotiationTriggered = true;
     S.pending = {
       title: '💬 Mahr Negotiation',
-      text: 'Before finalizing the Mahr, ' + (m.partner.name) + '’s mother pulls you aside.\n\n"Habibti, we are all family now. Perhaps we can lower the Mahr slightly? ' + m.partner.name + ' doesn\'t need to know."',
+      text: 'Before finalizing the Mahr, ' + (S.marriage.partner.name) + '’s mother pulls you aside.\n\n"Habibti, we are all family now. Perhaps we can lower the Mahr slightly? ' + S.marriage.partner.name + ' doesn\'t need to know."',
       choices: [
         { label: '💪 Hold firm on the agreed Mahr', effect: function(s) {
             s.marriage.motherInLawBond = Math.max(0, s.marriage.motherInLawBond - 15);
@@ -1695,13 +1695,12 @@ window.marPremaritalTalk = function(topicId) {
 
       const partnerInitiationChance = marClamp(baseChance, 0.12, 0.90);
       
-            if (Math.random() < partnerInitiationChance) {
+      if (Math.random() < partnerInitiationChance) {
         p.partnerProposalOffered = true;
         marRecordMemory('partner_proposal', p.name + ' decided to ask whether you would like to become engaged.', 5);
         marTriggerProposalEvent(p);
       }
-      }
-    }
+  }
   render();
 };
 
