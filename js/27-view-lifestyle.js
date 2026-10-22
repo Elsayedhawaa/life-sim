@@ -250,6 +250,19 @@ function lifestyleView() {
   const totals = lifeCalculate();
   S.lifestyle.monthlyTotal = totals.monthly;
   S.lifestyle.yearlyTotal = totals.yearly;
+     /* Warn if lifestyle exceeds 60% of income */
+  const monthlyIncome = ((S.job ? S.job.salary : 0) + (S.career && S.career.partTime ? S.career.partTime.salary : 0)) / 12;
+  if (monthlyIncome > 0 && totals.monthly > monthlyIncome * 0.60) {
+    S.pending = {
+      title: '⚠️ Lifestyle Inflation',
+      text: 'Your lifestyle costs are ' + Math.round((totals.monthly / monthlyIncome) * 100) + '% of your income in ' + C().name + '.\n\nYou need to downgrade to survive.',
+      choices: [
+        { label: 'Apply "Budget" preset', effect: function(s) { lifeApplyPreset('budget_conscious'); } },
+        { label: 'Ignore (risk bankruptcy)', effect: function(s) { fx({ happiness: -5 }); } }
+      ]
+    };
+    S.evId = 'lifestyle_warning';
+  }
 
   let html = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#f59e0b15 0%,transparent 100%);border-color:#f59e0b">' +
     '<div style="display:flex;justify-content:space-between;align-items:center">' +
