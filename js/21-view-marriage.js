@@ -38,7 +38,16 @@ function ensureMarriageState() {
   if (typeof m.pendingConflict === 'undefined') m.pendingConflict = null;
   if (!Array.isArray(m.premaritalHistory)) m.premaritalHistory = [];
   if (!m.tab) m.tab = 'overview';
-
+  if (typeof m.motherInLawBond !== 'number') m.motherInLawBond = 50;
+  if (typeof m.mahrAdvanced !== 'number') m.mahrAdvanced = 0;
+  if (typeof m.mahrDeferred !== 'number') m.mahrDeferred = 0;
+  if (typeof m.trousseauComplete !== 'boolean') m.trousseauComplete = false;
+  if (typeof m.stress !== 'number') m.stress = 20;
+  if (typeof m.lastInLawVisitYear !== 'number') m.lastInLawVisitYear = 0;
+  if (typeof m.lastStressReliefYear !== 'number') m.lastStressReliefYear = 0;
+  if (!Array.isArray(S.ownedHomes)) S.ownedHomes = [];
+  if (!S.shopping) S.shopping = { inventory: [] };
+  if (!Array.isArray(S.shopping.inventory)) S.shopping.inventory = [];
   /* Reset husbandHomeProvided if not currently engaged/married (fresh start after divorce/breakup) */
   if (m.status === 'single' || m.status === 'divorced') {
     m.husbandHomeProvided = false;
@@ -376,7 +385,7 @@ function marRenderOverview() {
 
   const p = m.partner;
   if (!p) return html;
-  const bond = p.bond || 70;
+const bond = (typeof p.bond === 'number') ? p.bond : 70;
   const traitsList = (p.traits || []).map(function(t) { const tt = marTrait(t); return tt ? tt.label : t; });
   const approval = marFamilyApproval(p);
 
@@ -722,6 +731,7 @@ function marRenderPlan() {
       html += marRenderEngagementPlanner();
       html += '</div>';
     } else {
+            html += marRenderGehazCard();
       html += '<div class="card"><h3>💍 Engagement Review</h3>' +
         '<div class="row"><span>Shabka</span><b>' + money(marEGP(m.engagement.shabkaCost)) + '</b></div>' +
         '<div class="row"><span>Mahr</span><b>' + money(marEGP(m.engagement.mahrCost)) + '</b></div>' +
@@ -765,7 +775,9 @@ function marRenderProposalReview() {
 }
 
 function marRenderEngagementPlanner() {
+  const m = S.marriage;
   const e = S.marriage.engagement;
+   
   if (!e) return '';
   const isTraditionalWoman = marIsTraditionalWoman();
      /* Mother-in-law mahr negotiation (traditional only, once per engagement) */
@@ -826,7 +838,7 @@ function marRenderEngagementPlanner() {
   const mahrAdv = Math.round(totalMahr * advancedPct);
   const mahrDef = Math.round(totalMahr * (1 - advancedPct));
 
-  const totalEGP = shabka.costEGP + mahr.costEGP + party.costEGP;
+  const totalEGP = shabka.costEGP + mahrAdv + party.costEGP;
   const totalLocal = marEGP(totalEGP);
 
   let playerShare = 1;
@@ -837,6 +849,8 @@ function marRenderEngagementPlanner() {
   const canAfford = S.wealth >= playerTotalLocal;
 
   let html = '';
+  html += marRenderGehazCard();
+  if (false) {
   html += '<div class="card" style="border-color:#22d3ee;margin-top:10px"><h4 style="color:#22d3ee">🛋 Gehaz (Trousseau & Furniture)</h4>';
   
   const maritalHome = S.ownedHomes.find(x => x.status === 'occupied') || S.ownedHomes[0];
@@ -892,6 +906,7 @@ function marRenderEngagementPlanner() {
   }
   html += '</div>';
   
+ } /* end of old Gehaz block (switched off) */
   /* Mahr Structure */
   html += '<div style="margin-top:10px; padding:10px; background:#0f0f1a; border-radius:6px">' +
     '<b class="small" style="color:#fbbf24">Mahr Structure</b>' +
@@ -1031,8 +1046,7 @@ function marRenderLife() {
   let html = '<div class="card"><h3>❤️ Married to ' + p.name + '</h3>' +
     '<div class="muted small">Age ' + p.age + ' · Married ' + (p.marriedYear || '?') + '</div>' +
     (p.income > 0 ? '<div class="row"><span>Partner income</span><b>' + money(p.income) + '/yr</b></div>' : '<div class="row"><span>Partner income</span><b class="muted">None (home)</b></div>') +
-    '<div class="row"><span>Finance model</span><b>' + (MARRIAGE_FINANCE_MODELS.find(function(x) { return x.id === m.financeModel; }) || {}).label || '—' + '</b></div>' +
-    '<div class="row"><span>Prenup</span><b>' + (m.prenup ? m.prenup.type : 'None') + '</b></div>' +
+    '<div class="row"><span>Finance model</span><b>' + marFinanceLabel() + '</b></div>' +    '<div class="row"><span>Prenup</span><b>' + (m.prenup ? m.prenup.type : 'None') + '</b></div>' +
     '<div class="row"><span>Shared account</span><b>' + money(m.sharedAccountBalance) + '</b></div>' +
     '<div class="row"><span>Children</span><b>' + ((S.childrenList || []).length) + '</b></div>' +
     '</div>';
@@ -1207,6 +1221,7 @@ function marRenderRecords() {
    ============================================================ */
 
 window.marStartSalonat = function() {
+  if (S.gender !== 'f') { log('Arranged Salonat meetings are only available for female characters. Use the other ways to meet someone.'); render(); return; }
   ensureMarriageState();
   const m = S.marriage;
   if (m.status !== 'single' && m.status !== 'divorced') {
@@ -2330,7 +2345,11 @@ window.marFinalizeEngagement = function() {
   if (S.wealth < playerTotal) { log('Not enough cash.'); render(); return; }
   S.wealth -= playerTotal;
      // If the PLAYER is the woman in a traditional culture, she receives the gold
-  if (marIsTraditionalWoman() && e.payer === 'partner') {
+if (marIsTraditionalWoman()) {
+    S.wealth += marEGP(mahrAdvCost);
+    log('💰 You received the advanced Mahr: ' + money(marEGP(mahrAdvCost)) + '.');
+  }
+  if (false && marIsTraditionalWoman() && e.payer === 'partner') {
     if (!S.expat) S.expat = { goldStash: [] };
     if (!Array.isArray(S.expat.goldStash)) S.expat.goldStash = [];
     S.expat.goldStash.push({
@@ -2509,7 +2528,9 @@ window.marConfirmWedding = function() {
   }
 
   if (missing.length > 0) {
-    log(`🚨 The wedding is cancelled! The home is missing: ${missing.join(', ')}. Complete the Gehaz first.`);
+       log('⚠️ The wedding cannot go ahead yet. Still missing in the marital home: ' + missing.join(', ') + '. Finish the Gehaz in the Plan tab first.');
+    render();
+    return;
     fx({ happiness: -15 });
     return;
   }
@@ -2523,14 +2544,14 @@ window.marConfirmWedding = function() {
 
   if (S.marriage.motherInLawBond < 30 && Math.random() < 0.5) {
     log('🚨 Your mother-in-law interfered! She added 50 unwanted guests to the wedding list.');
-    selection.baseTotalEGP += marEGP(250000);
+    selection.baseTotalEGP += 250000;
     fx({ happiness: -10 });
   }
 
   const playerTotalLocal = marEGP(selection.baseTotalEGP * share) + selection.prenupCostLocal;
   
   if (S.wealth < playerTotalLocal) { log('Not enough cash.'); render(); return; }
-  S.wealth -= playerTotalLocal;
+S.wealth -= selection.prenupCostLocal; /* the lawyer fee is non-refundable */
 
   let prenupRecord = null;
   if (w.prenup !== 'none') {
@@ -2551,6 +2572,8 @@ window.marConfirmWedding = function() {
     honeymoon: w.honeymoon, planner: w.planner,
     totalCost: selection.baseTotalEGP, payer: w.payer
   };
+ S.wealth -= (playerTotalLocal - selection.prenupCostLocal);
+  m.wealthAtMarriage = Math.max(0, S.wealth);
   m.prenup = prenupRecord;
   m.financeModel = w.financeModel;
   m.status = 'married';
@@ -2563,6 +2586,13 @@ window.marConfirmWedding = function() {
   marUnlockAchievement('financial_planners');
   marReachMilestone('marriage');
 
+ /* Complete the marriage records BEFORE any pop-up appears */
+  log('🎉 You married ' + m.partner.name + '! Your share of the cost was ' + money(playerTotalLocal) + '.');
+  fx({ happiness: 30 });
+  S.spouse = {
+    name: m.partner.name, age: m.partner.age, gender: m.partner.gender,
+    bond: m.partner.bond, income: m.partner.income, works: m.partner.income > 0
+  };
   /* Trigger a wedding-day popup event */
   const weddingEventChoices = {
     vendor_late: [
@@ -2597,9 +2627,7 @@ window.marConfirmWedding = function() {
     log('💒 ' + ev.title + ': ' + ev.text);
   }
 
-  log('🎉 You married ' + m.partner.name + '! You paid ' + money(playerTotalLocal) + '.');
-  fx({ happiness: 30 });
-
+    /* (marriage completion now happens above) */
   S.spouse = {
     name: m.partner.name,
     age: m.partner.age,
@@ -3187,3 +3215,454 @@ function marFireYearEvent(evt) {
    REGISTER
    ============================================================ */
 GameHooks.registerTab({ id: 'marriage', label: '💍 Marriage', order: 9, view: marriageView });
+/* ===================== PATCH BLOCK START ===================== */
+
+/* ---------- Small helpers ---------- */
+function marFinanceLabel() {
+  var list = (typeof MARRIAGE_FINANCE_MODELS !== 'undefined') ? MARRIAGE_FINANCE_MODELS : [];
+  var fm = list.find(function(x) { return x.id === S.marriage.financeModel; });
+  return fm ? fm.label : 'Not set';
+}
+
+function marMaritalHome() {
+  if (!Array.isArray(S.ownedHomes)) S.ownedHomes = [];
+  return S.ownedHomes.find(function(x) { return x.status === 'occupied'; }) || S.ownedHomes[0] || null;
+}
+
+function marMissingGehaz(home) {
+  var missing = [];
+  if (!home || typeof MARRIAGE_GEHAZ_CHECKLIST === 'undefined') return missing;
+  var inv = (S.shopping && S.shopping.inventory) || [];
+  MARRIAGE_GEHAZ_CHECKLIST.forEach(function(item) {
+    var has = inv.some(function(i) {
+      return i.homeId === home.id && i.cat === item.cat && (!item.subcat || i.subcat === item.subcat);
+    });
+    if (!has) missing.push(item);
+  });
+  return missing;
+}
+
+/* ---------- Traits: the game checks for these but never created them ---------- */
+(function() {
+  if (typeof MARRIAGE_PARTNER_TRAITS === 'undefined') return;
+  var extra = {
+    traditional: { label: 'Traditional', bondPerYear: 0 },
+    protector:   { label: 'Protective',  bondPerYear: 1 },
+    mamas_boy:   { label: "Mama's boy",  bondPerYear: -1 }
+  };
+  Object.keys(extra).forEach(function(id) {
+    if (!MARRIAGE_PARTNER_TRAITS[id]) MARRIAGE_PARTNER_TRAITS[id] = extra[id];
+  });
+})();
+
+/* New trait roller: adds the missing traits and stops contradictions
+   (for example "frugal" and "extravagant" on the same person). */
+function marRollTraits() {
+  var positive = ['kind', 'funny', 'romantic', 'calm', 'ambitious', 'religious', 'generous', 'loyal', 'independent', 'family_oriented', 'patient', 'supportive', 'communicative', 'adventurous', 'homebody', 'mature', 'frugal', 'career_focused', 'shy', 'outgoing', 'private', 'sentimental', 'financially_cautious', 'confident', 'traditional', 'protector'];
+  var negative = ['grumpy', 'moody', 'pessimistic', 'greedy', 'jealous', 'impulsive', 'extravagant', 'avoidant', 'stubborn', 'insecure'];
+  if (S.gender !== 'm') negative.push('mamas_boy'); /* partner is male */
+  var prof = marCountryProfile();
+  if (prof && prof.traditionalGenderRoles === true) positive.push('traditional', 'traditional', 'family_oriented', 'religious');
+  var clashes = [['frugal', 'extravagant'], ['shy', 'outgoing'], ['homebody', 'adventurous'], ['calm', 'moody'], ['kind', 'grumpy'], ['generous', 'greedy'], ['patient', 'impulsive'], ['communicative', 'avoidant'], ['confident', 'insecure'], ['independent', 'mamas_boy'], ['mature', 'impulsive'], ['private', 'outgoing'], ['optimistic', 'pessimistic'], ['loyal', 'jealous'], ['financially_cautious', 'extravagant']];
+  var traits = [];
+  function allowed(t) {
+    if (traits.indexOf(t) >= 0) return false;
+    return !clashes.some(function(c) {
+      return (c[0] === t && traits.indexOf(c[1]) >= 0) || (c[1] === t && traits.indexOf(c[0]) >= 0);
+    });
+  }
+  function draw(list, count) {
+    var added = 0, tries = 0;
+    while (added < count && tries < 40) {
+      tries++;
+      var t = list[Math.floor(Math.random() * list.length)];
+      if (allowed(t)) { traits.push(t); added++; }
+    }
+  }
+  draw(positive, 1 + Math.floor(Math.random() * 2));
+  draw(negative, Math.floor(Math.random() * 3));
+  if (!traits.length) traits.push('kind');
+  return traits;
+}
+
+/* ---------- Family approval: the old version cancelled itself out ----------
+   Now the country's family influence makes the factors (job, degree, age gap)
+   matter MORE in family-centred countries and less elsewhere. */
+function marFamilyApproval(partner) {
+  var a = partner.familyApproval || 0.7;
+  if (S.job && S.job.salary > 200000) a += 0.15;
+  else if (!S.job) a -= 0.30;
+  if (S.degree) a += 0.10;
+  if (Math.abs(S.age - partner.age) > 10) a -= 0.15;
+  var prof = marCountryProfile();
+  if (prof) a = 0.7 + (a - 0.7) * (0.6 + prof.familyInfluence);
+  return Math.max(0.1, Math.min(1.0, a));
+}
+
+/* ---------- Mother-in-law visit: now costs money, once per year ---------- */
+window.marVisitMotherInLaw = function() {
+  ensureMarriageState();
+  var m = S.marriage, p = m.partner;
+  if (!p || (m.status !== 'engaged' && m.status !== 'married')) return;
+  var year = gameYear();
+  if (m.lastInLawVisitYear === year) {
+    log('👵 You already visited her this year. Going again so soon would feel forced.');
+    render(); return;
+  }
+  var cost = marEGP(1500);
+  if (S.wealth < cost) { log('Not enough cash for a proper visit (' + money(cost) + ').'); render(); return; }
+  S.wealth -= cost;
+  m.lastInLawVisitYear = year;
+  var badChance = m.motherInLawBond > 70 ? 0.15 : 0.30;
+  if (Math.random() < badChance) {
+    m.motherInLawBond = marClamp(m.motherInLawBond - 5, 0, 100);
+    if (marHasTrait(p, 'mamas_boy')) p.bond = marClamp(p.bond - 3, 0, 100);
+    log('👵 You brought sweets and visited. She criticized your outfit and the visit felt tense. (' + money(cost) + ')');
+    fx({ happiness: -3 });
+  } else {
+    var gain = 5 + (marHasTrait(p, 'family_oriented') ? 2 : 0);
+    m.motherInLawBond = marClamp(m.motherInLawBond + gain, 0, 100);
+    if (marHasTrait(p, 'mamas_boy')) p.bond = marClamp(p.bond + 2, 0, 100);
+    log('👵 You brought sweets and helped with chores. She appreciated it. (' + money(cost) + ')');
+    fx({ happiness: 2 });
+  }
+  render();
+};
+
+/* ---------- Trousseau check: uses the SAME checklist as the wedding ---------- */
+window.marCheckTrousseau = function() {
+  ensureMarriageState();
+  var m = S.marriage;
+  if (m.status !== 'engaged') return;
+  var home = marMaritalHome();
+  if (!home) { log('❌ You need a home before the trousseau can be checked.'); render(); return; }
+  var missing = marMissingGehaz(home);
+  if (missing.length === 0) {
+    if (!m.trousseauComplete) {
+      m.trousseauComplete = true;
+      m.motherInLawBond = marClamp(m.motherInLawBond + 10, 0, 100);
+      log('✅ The marital home is fully furnished! Your mother-in-law is impressed (+10 bond).');
+    } else {
+      log('✅ The trousseau is already complete.');
+    }
+  } else {
+    log('⚠️ Still missing: ' + missing.map(function(i) { return i.label; }).join(', ') + '.');
+  }
+  render();
+};
+
+/* ---------- Ask for the hand: now needs readiness, costs money, can fail ---------- */
+window.marAskForHand = function() {
+  ensureMarriageState();
+  var m = S.marriage, p = m.partner;
+  if (!p || m.status !== 'dating') return;
+  if (marIsTraditionalWoman()) {
+    log('❌ In your culture, the man and his family approach your father. You must wait for him to propose.');
+    render(); return;
+  }
+  var readiness = marPremaritalReadiness(p);
+  if (!readiness.ready) { log('Your partner is not ready for this step. ' + readiness.reasons.join(' ')); render(); return; }
+  var approval = marFamilyApproval(p);
+  if (approval < 0.6) {
+    log('❌ The family refused for now. They want to see more stability (need 60% family approval).');
+    render(); return;
+  }
+  var cost = marEGP(5000);
+  if (S.wealth < cost) { log('Not enough cash for the family visit (' + money(cost) + ').'); render(); return; }
+  if (!confirm('Visit the family to ask for the hand in marriage?\n\nCost: ' + money(cost) + '\nThey may still say no.')) return;
+  S.wealth -= cost;
+  var chance = marClamp(approval * 0.9 + (p.familyIntroduced ? 0.08 : -0.10), 0.20, 0.95);
+  if (Math.random() > chance) {
+    p.familyApproval = marClamp((p.familyApproval || 0.7) - 0.05, 0.1, 1);
+    marRecordMemory('family_refusal', 'The family asked for more time before agreeing to an engagement with ' + p.name + '.', 3);
+    log('💬 The family asked for more time. Building their trust may help (introduce the families first).');
+    fx({ happiness: -4 });
+    render(); return;
+  }
+  p.exclusive = true;
+  p.relationshipStage = 'engaged';
+  p.bond = marClamp(p.bond + 5, 0, 100);
+  p.trust = marClamp(p.trust + 5, 0, 100);
+  m.engagement = { proposal: 'family', shabkaTier: 'standard', mahrTier: 'standard', partyTier: 'nice_hall', payer: 'self', finalized: false };
+  m.status = 'engaged';
+  marRecordMemory('family_blessing', 'The family blessed the engagement with ' + p.name + '.', 5);
+  marUnlockAchievement('engaged');
+  marReachMilestone('proposal');
+  marReachMilestone('engagement');
+  log('🎉 The family said yes! You are engaged. Now plan the engagement in the Plan tab.');
+  fx({ happiness: 18 });
+  render();
+};
+
+/* ---------- Gehaz card (shown during AND after engagement planning) ---------- */
+window.marSetGehazPayer = function(id) {
+  S.marriage.gehazPayer = id;
+  render();
+};
+
+window.marRequestHome = function() {
+  ensureMarriageState();
+  if (!marIsTraditionalWoman()) return;
+  if (typeof createHome !== 'function') { log('Home system not available.'); render(); return; }
+  marHusbandProvidesHome();
+  render();
+};
+
+function marRenderGehazCard() {
+  ensureMarriageState();
+  var m = S.marriage, p = m.partner;
+  if (!p) return '';
+  var home = marMaritalHome();
+  var html = '<div class="card" style="border-color:#22d3ee;margin-top:10px"><h4 style="color:#22d3ee">🛋 Gehaz (Trousseau & Furniture)</h4>';
+  if (!home) {
+    html += '<p class="bad small">⚠️ No marital home yet.</p>';
+    if (marIsTraditionalWoman() && !m.husbandHomeProvided) {
+      html += '<p class="muted small">In your culture the groom provides the home. Ask ' + p.name + ' and his family about it.</p>' +
+        '<button class="opt" style="width:100%;text-align:center;font-size:.75rem" onclick="marRequestHome()">🏠 Ask about the marital home</button>';
+    } else {
+      html += '<p class="muted small">Buy or rent a home in the Real Estate tab, then come back here.</p>';
+    }
+    return html + '</div>';
+  }
+  html += '<div class="muted small">Home: <b>' + home.name + '</b></div>';
+  html += '<div style="margin:8px 0;padding:8px;background:#0f0f1a;border-radius:6px"><b class="small" style="color:#fbbf24">Who pays for the Gehaz?</b>';
+  if (marIsTraditionalWoman()) {
+    html += '<p class="muted small" style="margin-top:4px">💡 In your culture the groom and his family provide the furniture.</p>';
+  } else {
+    var opts = S.gender === 'm'
+      ? [['self', 'You pay'], ['groom_family', 'Your family'], ['split', 'Split']]
+      : [['partner', 'Partner pays'], ['split', 'Split 50/50']];
+    html += '<div style="display:flex;gap:4px;margin-top:4px">';
+    opts.forEach(function(o) {
+      html += '<button class="pill ' + (m.gehazPayer === o[0] ? 'on' : '') + '" style="flex:1;font-size:.65rem;padding:4px" onclick="marSetGehazPayer(\'' + o[0] + '\')">' + o[1] + '</button>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  if (m.status === 'engaged') {
+    html += '<button class="opt" style="margin-bottom:8px;width:100%;text-align:center;background:#8b5cf6;color:#fff;font-weight:700;font-size:.75rem;padding:8px" onclick="marDiscussGehaz()">💬 Discuss Gehaz with ' + p.name + '</button>';
+  }
+  var missing = marMissingGehaz(home);
+  var total = (typeof MARRIAGE_GEHAZ_CHECKLIST !== 'undefined') ? MARRIAGE_GEHAZ_CHECKLIST.length : 0;
+  if (typeof MARRIAGE_GEHAZ_CHECKLIST !== 'undefined') {
+    MARRIAGE_GEHAZ_CHECKLIST.forEach(function(item) {
+      var isMissing = missing.some(function(x) { return x === item; });
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1a1a2a"><span style="font-size:.8rem">' + (isMissing ? '❌' : '✅') + ' ' + item.label + '</span>';
+      if (isMissing) html += '<button class="pill" style="padding:2px 8px;font-size:.65rem" onclick="marBuyGehazItem(\'' + item.cat + '\',\'' + (item.subcat || '') + '\')">Buy now</button>';
+      html += '</div>';
+    });
+  }
+  html += '<div class="row" style="margin-top:8px"><span>Progress</span><b>' + (total - missing.length) + ' / ' + total + '</b></div>';
+  html += missing.length === 0
+    ? '<p class="good small">✅ The marital home is fully furnished.</p>'
+    : '<p class="bad small">⚠️ The wedding cannot go ahead until every item is in place.</p>';
+  return html + '</div>';
+}
+
+/* ---------- Divorce: realistic settlement, custody and child support ---------- */
+window.marAskForDivorce = function() {
+  ensureMarriageState();
+  var m = S.marriage, p = m.partner;
+  if (!p || m.status !== 'married') return;
+  var causes = MARRIAGE_DIVORCE_CAUSES.map(function(c) { return c.id + ' = ' + c.label; }).join('\n');
+  var choice = prompt('Why divorce?\n\n' + causes + '\n\nEnter cause id:', 'boredom');
+  if (!choice) return;
+  var cause = MARRIAGE_DIVORCE_CAUSES.find(function(c) { return c.id === choice.trim(); });
+  if (!cause) { log('Unknown cause.'); return; }
+
+  var law = MARRIAGE_DIVORCE_LAWS[S.country] || MARRIAGE_DIVORCE_LAWS.egy;
+  var courtFee = marEGP(law.courtFeeEGP);
+  var prof = marCountryProfile();
+  var trad = !!(prof && prof.traditionalGenderRoles);
+  var fullPrenup = !!(m.prenup && m.prenup.type === 'Comprehensive Financial Agreement');
+  var myInc = S.job ? Number(S.job.salary || 0) : 0;
+  var herInc = Number(p.income || 0);
+  var lines = [];
+  var net = 0; /* positive = you pay, negative = you receive */
+
+  /* 1. Shared account is split in half */
+  var sharedBack = Math.round((m.sharedAccountBalance || 0) * 0.5);
+
+  /* 2. Assets gained during the marriage (not everything you own) */
+  if (law.assetSplit === '50_50' && !fullPrenup) {
+    var base = (typeof m.wealthAtMarriage === 'number') ? m.wealthAtMarriage : Math.round(S.wealth * 0.5);
+    var gained = Math.max(0, S.wealth - base);
+    var split = Math.floor(gained * 0.5);
+    if (split > 0) { net += split; lines.push('Asset split: ' + money(split)); }
+  }
+
+  /* 3. Deferred mahr: the husband owes it, the wife receives it */
+  var mahrDef = Number(m.mahrDeferred || 0);
+  if (mahrDef > 0) {
+    if (S.gender === 'm') { net += mahrDef; lines.push('Deferred mahr you owe: ' + money(mahrDef)); }
+    else { net -= mahrDef; lines.push('Deferred mahr you receive: ' + money(mahrDef)); }
+  }
+
+  /* 4. Alimony: traditional countries = husband pays, otherwise the higher earner pays */
+  var years = typeof law.alimonyYears === 'number' ? law.alimonyYears : 0;
+  if (years > 0) {
+    var iPay = trad ? (S.gender === 'm') : (myInc > herInc);
+    var payerInc = iPay ? myInc : herInc;
+    var otherInc = iPay ? herInc : myInc;
+    if (trad || payerInc > otherInc) {
+      var alimony = Math.round(payerInc * 0.15 * years);
+      if (alimony > 0) {
+        net += iPay ? alimony : -alimony;
+        lines.push((iPay ? 'Alimony you pay: ' : 'Alimony you receive: ') + money(alimony));
+      }
+    }
+  }
+
+  /* 5. Custody and child support (ends when the youngest child turns 18) */
+  var children = S.childrenList || [];
+  var custody = null, support = null;
+  if (children.length > 0) {
+    var joint = law.custody === 'joint';
+    var iHaveCustody = S.gender === 'f';
+    custody = joint ? 'Joint custody' : (iHaveCustody ? 'You have primary custody' : p.name + ' has primary custody');
+    var youngest = Math.min.apply(null, children.map(function(c) { return Number(c.age) || 0; }));
+    var untilYear = gameYear() + Math.max(1, 18 - youngest);
+    var pct = Math.min(0.5, Number(law.childSupportPct || 0.15) * children.length);
+    var amount = 0, direction = 'receive';
+    if (!joint) {
+      if (iHaveCustody) { amount = Math.round(herInc * pct); direction = 'receive'; }
+      else { amount = Math.round(myInc * pct); direction = 'pay'; }
+    } else {
+      var diff = myInc - herInc;
+      amount = Math.round(Math.abs(diff) * pct);
+      direction = diff > 0 ? 'pay' : 'receive';
+    }
+    if (amount > 0) {
+      support = { direction: direction, amount: amount, untilYear: untilYear, arrears: 0 };
+      lines.push('Child support you ' + direction + ': ' + money(amount) + '/yr until ' + untilYear);
+    }
+  }
+
+  var upfront = courtFee + net - sharedBack;
+  var msg = 'Divorce under ' + law.label + ':\n\nCourt fee: ' + money(courtFee) + '\n' +
+    (lines.length ? lines.join('\n') + '\n' : '') +
+    (sharedBack > 0 ? 'Your half of the shared account: +' + money(sharedBack) + '\n' : '') +
+    'Custody: ' + (custody || 'N/A') + '\n\nNet upfront ' + (upfront >= 0 ? 'cost' : 'gain') + ': ' + money(Math.abs(upfront)) + '\n\nProceed?';
+  if (!confirm(msg)) return;
+  if (upfront > 0 && S.wealth < upfront) { log('Not enough cash for the divorce (' + money(upfront) + ').'); render(); return; }
+  S.wealth -= upfront;
+
+  m.exSpouses.push({
+    name: p.name, marriedYear: p.marriedYear || gameYear(), divorcedYear: gameYear(),
+    reason: cause.label, childSupportAnnual: 0, support: support, custody: custody, remarried: false
+  });
+  m.partner = null; m.status = 'divorced'; m.wedding = null; m.engagement = null;
+  m.financeModel = null; m.sharedAccountBalance = 0; m.home = null; m.homeSetupPaid = false;
+  m.prenup = null; m.pendingConflict = null; m.trousseauComplete = false;
+  m.motherInLawBond = 50; m.stress = 20; m.mahrAdvanced = 0; m.mahrDeferred = 0;
+  delete m.wealthAtMarriage;
+  m.tab = 'overview';
+  S.spouse = null;
+  log('💔 Divorced ' + p.name + '. Reason: ' + cause.label + '. Net upfront ' + (upfront >= 0 ? 'cost ' : 'gain ') + money(Math.abs(upfront)) + '.');
+  fx({ happiness: -25 });
+  render();
+};
+
+/* ---------- Yearly rules: child support + marital stress ---------- */
+GameHooks.on('year', function() {
+  ensureMarriageState();
+  if (!S || !S.marriage) return;
+  var m = S.marriage;
+
+  /* Child support (ends at 18, unpaid amounts carry over as arrears) */
+  (m.exSpouses || []).forEach(function(ex) {
+    var s = ex.support;
+    if (!s || !s.amount) return;
+    if (gameYear() > s.untilYear) {
+      log('✅ Child support involving ' + ex.name + ' has ended. The children are now adults.');
+      ex.support = null; return;
+    }
+    if (s.direction === 'receive') {
+      S.wealth += s.amount;
+      log('💸 Received child support from ' + ex.name + ': +' + money(s.amount) + '.');
+    } else {
+      var due = s.amount + (s.arrears || 0);
+      if (S.wealth >= due) {
+        S.wealth -= due; s.arrears = 0;
+        log('💸 Child support paid to ' + ex.name + ': -' + money(due) + '.');
+      } else {
+        s.arrears = due;
+        log('⚠️ Could not pay child support to ' + ex.name + '. ' + money(due) + ' is now overdue.');
+        fx({ happiness: -4 });
+      }
+    }
+  });
+
+  /* Marital stress */
+  var p = m.partner;
+  if (m.status !== 'married' || !p) return;
+  var kids = (S.childrenList || []).length;
+  var income = (S.job ? Number(S.job.salary || 0) : 0) + Number(p.income || 0);
+  var delta = -3;
+  if (income <= 0) delta += 15;
+  delta += 2 * Math.min(kids, 4);
+  if (m.motherInLawBond < 35) delta += 4;
+  if (!marMaritalHome() && !m.home) delta += 4;
+  if (p.bond > 75) delta -= 5;
+  m.stress = marClamp((m.stress || 20) + delta, 0, 100);
+  if (m.stress > 70) {
+    p.bond = marClamp(p.bond - 3, 0, 100);
+    if (!m.pendingConflict && Math.random() < 0.20 && typeof MARRIAGE_CONFLICT_TOPICS !== 'undefined' && MARRIAGE_CONFLICT_TOPICS.length) {
+      var topic = MARRIAGE_CONFLICT_TOPICS[Math.floor(Math.random() * MARRIAGE_CONFLICT_TOPICS.length)];
+      m.pendingConflict = topic.id;
+      log('⚔️ The pressure at home led to a conflict: ' + topic.label + '.');
+    }
+  }
+});
+
+window.marReduceStress = function() {
+  ensureMarriageState();
+  var m = S.marriage, p = m.partner;
+  if (m.status !== 'married' || !p) return;
+  if (m.lastStressReliefYear === gameYear()) { log('You already took a family break this year.'); render(); return; }
+  var cost = marEGP(8000);
+  if (S.wealth < cost) { log('Not enough cash for a family break (' + money(cost) + ').'); render(); return; }
+  S.wealth -= cost;
+  m.lastStressReliefYear = gameYear();
+  m.stress = marClamp(m.stress - 20, 0, 100);
+  p.bond = marClamp(p.bond + 2, 0, 100);
+  log('🌿 You took a short family break with ' + p.name + '. Stress is lower. (' + money(cost) + ')');
+  fx({ happiness: 4 });
+  render();
+};
+
+/* Add a stress + in-laws card to the Married Life tab */
+var _marRenderLifeBase = marRenderLife;
+marRenderLife = function() {
+  var html = _marRenderLifeBase();
+  var m = S.marriage;
+  if (m.status !== 'married' || !m.partner) return html;
+  var st = Math.round(m.stress || 0);
+  var col = st > 70 ? '#fb7185' : st > 40 ? '#fbbf24' : '#34d399';
+  var mil = Math.round(m.motherInLawBond || 0);
+  html += '<div class="card" style="border-color:' + col + '"><h3 style="color:' + col + '">🌡 Household Pressure</h3>' +
+    '<div class="row"><span>Stress</span><b style="color:' + col + '">' + st + '%</b></div>' +
+    '<div class="row"><span>Mother-in-law bond</span><b>' + mil + '%</b></div>' +
+    '<p class="muted small" style="margin-top:6px">Stress rises with no income, children, a poor in-law relationship and no home. Above 70% it hurts your bond and triggers conflicts.</p>' +
+    '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem" onclick="marReduceStress()">🌿 Take a family break · ' + money(marEGP(8000)) + '</button>' +
+    '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem" onclick="marVisitMotherInLaw()">☕ Visit your mother-in-law · ' + money(marEGP(1500)) + '</button>' +
+    '</div>';
+  return html;
+};
+
+/* ---------- Only one pop-up at a time ---------- */
+['marFamilyIntervention', 'marTriggerProposalEvent', 'marExAppears', 'marPolygamyThreat', 'marCheatingDiscovery'].forEach(function(name) {
+  var orig = window[name];
+  if (typeof orig !== 'function') return;
+  window[name] = function() {
+    if (S && S.pending) return;
+    return orig.apply(this, arguments);
+  };
+});
+var _marFireYearEventBase = marFireYearEvent;
+marFireYearEvent = function(evt) {
+  if (S && S.pending && evt && evt.id === 'inlaws_visit') return;
+  return _marFireYearEventBase(evt);
+};
+
+/* ===================== PATCH BLOCK END ===================== */
