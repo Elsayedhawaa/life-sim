@@ -69,7 +69,7 @@ const PARENT_RENOVATIONS = [
   { id: 'electrical',       category: 'Systems',   label: '⚡ Electrical Rewiring',         baseCost: 30000, cond: 6,  hap: 2, valueAdd: 0.020, desc: 'Safe modern wiring, new outlets.' },
   { id: 'plumbing',         category: 'Systems',   label: '🚰 Plumbing Overhaul',           baseCost: 22000, cond: 6,  hap: 2, valueAdd: 0.020, desc: 'Replace old pipes and fixtures.' },
   { id: 'water_heater',     category: 'Systems',   label: '💧 Water Heater Replacement',    baseCost: 8000,  cond: 3,  hap: 2, valueAdd: 0.010, desc: 'New efficient water heater — reliable hot water.' },
-  { id: 'insulation',       category: 'Systems',   label: '🌡 Insulation Upgrade',          baseCost: 18000, cond: 3,  hap: 2, health: 1, valueAdd: 0.025, desc: 'Wall and attic insulation — warmer winters, cooler summers.' },
+  { id: 'insulation',       category: 'Systems',   label: '🌡 Insulation Upgrade',          baseCost: 18000, cond: 3,  hap: 2, health: 1, valueAdd: 0.025, desc: 'Wall and attic insulation — warmer home.' },
   { id: 'lighting',         category: 'Systems',   label: '💡 Modern Lighting',             baseCost: 10000, cond: 2,  hap: 2, valueAdd: 0.010, desc: 'LED fixtures in all rooms.' },
 
   /* ---------- COSMETIC ---------- */
@@ -183,7 +183,7 @@ function currentHousing() {
     if (!S.rentedHome) S.rentedHome = { tierId: 'br2', yearlyRent: (C().prices && C().prices.rent) || 120000, area: 100, condition: 75, rentedYear: gameYear() };
     return { kind: 'rented', home: S.rentedHome };
   }
-   if (S.housing === 'owned') {
+  if (S.housing === 'owned') {
     const h = S.ownedHomes.find(function(x) { return x.status === 'occupied'; });
     if (h) {
       return {
@@ -203,6 +203,8 @@ function currentHousing() {
       };
     }
   }
+  return { kind: 'unknown', home: null };
+}
 
 function housingItemsCount(homeId) {
   if (!S.shopping || !Array.isArray(S.shopping.inventory)) return 0;
@@ -384,7 +386,7 @@ function renderRenovationPicker(target) {
     '</div>';
 
   if (isRental) {
-    html += '<div class="card" style="border-color:#fb7185;padding:10px"><p class="muted small" style="margin:0">You rent this property — only cosmetic upgrades are available. Structural work belongs to the landlord.</p></div>';
+    html += '<div class="card" style="border-color:#fb7185;padding:10px"><p class="muted small" style="margin:0">You rent this property — only cosmetic upgrades are available. Structural work belongs in the Real Estate market, not the rental catalog.</p></div>';
   }
 
   /* Group by category */
@@ -485,7 +487,6 @@ function renderHousingSection(housing) {
     const condColor = h.condition > 80 ? '#34d399' : h.condition > 50 ? '#fbbf24' : '#fb7185';
     const itemsCount = housingItemsCount('parents');
     const itemsValue = housingItemsValue('parents');
-         // Include Gehaz in assets display
     let gehazText = '';
     if (S.marriage && S.marriage.trousseau && S.marriage.trousseau.completed && housing.home && housing.home.id === S.realEstateActiveHomeId) {
       const tierDef = MARRIAGE_TROUSSEAU_TIERS.find(t => t.id === S.marriage.trousseau.tier);
@@ -503,7 +504,7 @@ function renderHousingSection(housing) {
       '<div class="row"><span>Condition</span><b style="color:' + condColor + '">' + h.condition + '%</b></div>' +
       (renoCount > 0 ? '<div class="row"><span>Renovations made</span><b>' + renoCount + ' upgrade' + (renoCount > 1 ? 's' : '') + '</b></div>' : '') +
       (itemsCount > 0 ? '<div class="row"><span>Your furniture/appliances</span><b>' + itemsCount + ' item' + (itemsCount > 1 ? 's' : '') + ' · ' + money(itemsValue) + '</b></div>' : '') +
-      '<p class="muted small" style="margin-top:10px;padding:8px;background:#0f0f1a;border-radius:6px">You live with your parents. They cover utilities and groceries. Buy furniture or appliances for your room, or help renovate the family home.</p>' +
+      '<p class="muted small" style="margin-top:10px;padding:8px;background:#0f0f1a;border-radius:6px">You live with your parents. They cover utilities and groceries. Buy furniture or appliances for your room or renovate the family home.</p>' +
       '<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">' +
       '<button class="opt" style="text-align:center;font-size:.78rem" onclick="assetsBuyFurniture(\'parents\',\'furniture\')">🛋 Buy furniture for this home</button>' +
       '<button class="opt" style="text-align:center;font-size:.78rem" onclick="assetsBuyFurniture(\'parents\',\'appliances\')">🍳 Buy appliances for this home</button>' +
@@ -521,7 +522,9 @@ function renderHousingSection(housing) {
         '<div style="display:flex;justify-content:space-between"><b>' + tier.label + '</b><b class="mono">' + money(yearly) + '/yr</b></div>' +
         '<div class="muted small">' + tier.area + ' m² · ' + money(monthly) + '/mo · Move-in: ' + money(moveIn) + '</div>' +
         '<div class="muted small" style="font-style:italic">' + tier.desc + '</div>' +
-        '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;' + (canAfford ? 'background:#34d39920;border-color:#34d399' : 'opacity:.5') + '" ' + (canAfford ? '' : 'disabled') + ' onclick="assetsRentHome(\'' + tier.id + '\')">' + (canAfford ? 'Rent this' : 'Cannot afford deposit') + '</button>' +
+        '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;' + (canAfford ? 'background:#34d39920;border-color:#34d399' : 'opacity:.5') + '" ' + (canAfford ? '' : 'disabled') + ' onclick="assetsRentHome(\'' + tier.id + '\')">' +
+        (canAfford ? 'Move in · ' + money(moveIn) : 'Need ' + money(moveIn)) +
+        '</button>' +
         '</div>';
     });
     html += '</div>';
@@ -560,13 +563,13 @@ function renderHousingSection(housing) {
       const diff = monthly - oldMonthly;
       const depositNeeded = Math.max(0, diff * 2);
       const canAfford = S.wealth >= depositNeeded;
-      const diffLabel = diff > 0 ? '+' + money(depositNeeded) + ' deposit'
-                       : diff < 0 ? 'Save ' + money(-diff) + '/mo'
-                       : 'Same monthly cost';
+      const diffLabel = diff > 0 ? '+' + money(depositNeeded) + ' deposit' : diff < 0 ? 'Save ' + money(-diff) + '/mo' : 'Same monthly cost';
       html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
         '<div style="display:flex;justify-content:space-between"><b>' + t.label + '</b><b class="mono">' + money(yearly) + '/yr</b></div>' +
         '<div class="muted small">' + t.area + ' m² · ' + money(monthly) + '/mo · ' + diffLabel + '</div>' +
-        '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;' + (canAfford ? '' : 'opacity:.5') + '" ' + (canAfford ? '' : 'disabled') + ' onclick="assetsRentHome(\'' + t.id + '\')">' + (canAfford ? 'Move here' : 'Cannot afford deposit') + '</button>' +
+        '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem;' + (canAfford ? '' : 'opacity:.5') + '" ' + (canAfford ? '' : 'disabled') + ' onclick="assetsRentHome(\'' + t.id + '\')">' +
+        (canAfford ? 'Switch · ' + money(yearly) + '/yr' : 'Need more cash') +
+        '</button>' +
         '</div>';
     });
     html += '</div>';
