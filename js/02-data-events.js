@@ -6,7 +6,7 @@
    Events with `dynamic: 'school'` get their choices built by prepareEvent in engine.
    ============================================================ */
 
- const GLOBAL_EVENTS = [
+const GLOBAL_EVENTS = [
   { id: 'school_choice', minAge: 6, maxAge: 6,
     title: 'First day of school',
     text: 'Your family must choose a school for you.',
@@ -87,8 +87,7 @@
       } },
       { label: 'Not yet', effect: s => { s.happiness += 2; } },
     ]
-  },
-];
+  }
 
   /* 👇 ADD NEW EVENTS HERE 👇 */
 ];
