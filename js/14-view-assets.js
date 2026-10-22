@@ -485,6 +485,12 @@ function renderHousingSection(housing) {
     const condColor = h.condition > 80 ? '#34d399' : h.condition > 50 ? '#fbbf24' : '#fb7185';
     const itemsCount = housingItemsCount('parents');
     const itemsValue = housingItemsValue('parents');
+         // Include Gehaz in assets display
+    let gehazText = '';
+    if (S.marriage && S.marriage.trousseau && S.marriage.trousseau.completed && housing.home && housing.home.id === S.realEstateActiveHomeId) {
+      const tierDef = MARRIAGE_TROUSSEAU_TIERS.find(t => t.id === S.marriage.trousseau.tier);
+      gehazText = `<div class="row"><span>Gehaz (Trousseau)</span><b class="good">${tierDef.label}</b></div>`;
+    }
     const renoCount = Object.keys(h.renovationsDone || {}).reduce(function(s, k) { return s + h.renovationsDone[k]; }, 0);
 
     html += '<div class="card" style="border-color:#22d3ee">' +
