@@ -4306,3 +4306,190 @@ marRenderPlan = function() {
   }
   return _marRenderPlanBase3();
 };
+/* ============================================================
+   PATCH 4: Engagement party step · engagement events ·
+   Gehaz popup fix · UK country aliases
+   ============================================================ */
+
+/* ---------- Helpers ---------- */
+function marPartyTier(id) {
+  return (MARRIAGE_ENGAGEMENT_PARTY_TIERS || []).find(function(x) { return x.id === id; }) || null;
+}
+/* Older saves: normal-path engagements already paid for the party. Salonat ones did not. */
+function marPartyIsPaid(e) {
+  if (!e) return false;
+  if (e.partyPaid === true) return true;
+  return (e.partyPaid === undefined && !e.salonatShabka);
+}
+function marPartyShare(e) {
+  const who = e.partyPayer || (marIsTraditionalWoman() ? 'other' : 'self');
+  if (who === 'self') return 1;
+  if (who === 'split') return 0.5;
+  return marIsTraditionalWoman() ? 0 : 0.25;
+}
+
+/* Mark new engagements as "party already paid" when they are confirmed the normal way */
+var _marFinalizeBase4 = window.marFinalizeEngagement;
+window.marFinalizeEngagement = function() {
+  const was = S.marriage.engagement && S.marriage.engagement.finalized;
+  _marFinalizeBase4();
+  const e = S.marriage.engagement;
+  if (!was && e && e.finalized) { e.partyPaid = true; e.partyHeld = false; }
+};
+
+/* ---------- Party card (Plan tab) ---------- */
+window.marPartySet = function(key, value) {
+  const e = S.marriage.engagement;
+  if (!e || e.partyHeld) return;
+  if (key === 'partyTier' && marPartyIsPaid(e)) { log('The party was already booked and paid for.'); render(); return; }
+  e[key] = value;
+  render();
+};
+
+function marRenderPartyCard() {
+  const m = S.marriage, p = m.partner, e = m.engagement;
+  const paid = marPartyIsPaid(e);
+  const tier = marPartyTier(e.partyTier) || MARRIAGE_ENGAGEMENT_PARTY_TIERS[0];
+  const share = paid ? 0 : marPartyShare(e);
+  const mine = Math.round(marEGP(tier.costEGP) * share);
+  const can = S.wealth >= mine;
+  const payerNow = e.partyPayer || (marIsTraditionalWoman() ? 'other' : 'self');
+
+  let html = '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">🎉 Engagement Party</h3>' +
+    '<p class="muted small">The families gather, the shabka is shown to the guests and the engagement becomes public. ' +
+    'It builds family approval, the in-law bond, your social life and your chemistry. You must hold it before wedding planning.</p>';
+
+  if (paid) {
+    html += '<div class="row"><span>Booked</span><b>' + tier.label + '</b></div>' +
+      '<div class="row"><span>Guests</span><b>' + tier.guests + '</b></div>' +
+      '<p class="good small">The cost was already covered when the engagement was confirmed.</p>';
+  } else {
+    html += '<h4 style="font-size:.8rem;color:#fb7185;margin-top:10px">Style</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
+    MARRIAGE_ENGAGEMENT_PARTY_TIERS.forEach(function(t) {
+      html += '<button class="pill ' + (tier.id === t.id ? 'on' : '') + '" style="padding:6px;font-size:.68rem" onclick="marPartySet(\'partyTier\',\'' + t.id + '\')">' +
+        t.label + '<br><span class="muted" style="font-size:.62rem">' + money(marEGP(t.costEGP)) + ' · ' + t.guests + ' guests</span></button>';
+    });
+    html += '</div><h4 style="font-size:.8rem;color:#34d399;margin-top:10px">Who pays?</h4><div style="display:flex;gap:4px">';
+    const opts = marIsTraditionalWoman()
+      ? [['other', 'His family hosts'], ['split', 'Split 50/50'], ['self', 'I pay']]
+      : [['self', 'I pay'], ['split', 'Split 50/50'], ['other', 'Families help']];
+    opts.forEach(function(o) {
+      html += '<button class="pill ' + (payerNow === o[0] ? 'on' : '') + '" style="flex:1;padding:6px;font-size:.68rem" onclick="marPartySet(\'partyPayer\',\'' + o[0] + '\')">' + o[1] + '</button>';
+    });
+    html += '</div><div class="row" style="margin-top:8px"><span>Total cost</span><b>' + money(marEGP(tier.costEGP)) + '</b></div>' +
+      '<div class="row"><span>Your share</span><b style="color:' + (can ? '#34d399' : '#fb7185') + '">' + money(mine) + '</b></div>';
+  }
+  html += '<button class="opt" style="margin-top:10px;width:100%;text-align:center;background:' + (can ? '#fb7185' : '#25253a') + ';color:' + (can ? '#fff' : '#666') + ';font-weight:700" ' +
+    (can ? '' : 'disabled') + ' onclick="marHoldEngagementParty()">🎉 Hold the party' + (mine > 0 ? ' · ' + money(mine) : '') + '</button></div>';
+  return html;
+}
+
+var _marRenderPlanBase4 = marRenderPlan;
+marRenderPlan = function() {
+  const html = _marRenderPlanBase4();
+  const m = S.marriage, e = m.engagement;
+  if (m.status === 'engaged' && e && e.finalized && !e.partyHeld) return marRenderPartyCard() + html;
+  return html;
+};
+
+/* ---------- Holding the party ---------- */
+window.marHoldEngagementParty = function() {
+  ensureMarriageState();
+  const m = S.marriage, p = m.partner, e = m.engagement;
+  if (S.pending || m.status !== 'engaged' || !p || !e || !e.finalized || e.partyHeld) return;
+  const tier = marPartyTier(e.partyTier) || MARRIAGE_ENGAGEMENT_PARTY_TIERS[0];
+  if (!marPartyIsPaid(e)) {
+    const cost = Math.round(marEGP(tier.costEGP) * marPartyShare(e));
+    if (S.wealth < cost) { log('Not enough cash for the party (' + money(cost) + ').'); render(); return; }
+    S.wealth -= cost;
+  }
+  e.partyPaid = true; e.partyHeld = true; e.partyCost = tier.costEGP;
+
+  const s = tier.social || 0;
+  fx({ happiness: 4 + Math.round(s / 2), social: s });
+  p.bond = marClamp(p.bond + 2 + Math.floor(s / 4), 0, 100);
+  p.trust = marClamp((p.trust || 50) + 2, 0, 100);
+  marBumpChem(p, 2 + Math.floor(s / 6));
+
+  if (tier.id === 'none') {
+    p.familyApproval = marClamp((p.familyApproval || 0.7) - 0.08, 0.1, 1);
+    m.motherInLawBond = marClamp((m.motherInLawBond || 50) - 10, 0, 100);
+    log('😕 You skipped the engagement party. Both families were disappointed that the news was not celebrated.');
+  } else {
+    m.motherInLawBond = marClamp((m.motherInLawBond || 50) + (tier.guests >= 150 ? 8 : 4), 0, 100);
+    p.familyApproval = marClamp((p.familyApproval || 0.7) + 0.04, 0.1, 1);
+    log('🎉 The engagement party (' + tier.label + ', ' + tier.guests + ' guests) was a success. ' +
+      (m.shabkaChosen ? 'Your shabka was shown to the guests. ' : '') + 'Both families are closer.');
+  }
+  marRecordMemory('engagement_party', 'You held the engagement party with ' + p.name + ': ' + tier.label + '.', 4);
+  marPartyEvent(p);
+  render();
+};
+
+/* ---------- Engagement events (uses MARRIAGE_ENGAGEMENT_EVENTS from the data file) ---------- */
+function marPartyEvent(p) {
+  const list = (typeof MARRIAGE_ENGAGEMENT_EVENTS !== 'undefined') ? MARRIAGE_ENGAGEMENT_EVENTS : [];
+  if (!list.length || S.pending || Math.random() > 0.65) return;
+  let r = Math.random() * list.reduce(function(s, x) { return s + x.weight; }, 0), ev = list[0];
+  for (let i = 0; i < list.length; i++) { r -= list[i].weight; if (r <= 0) { ev = list[i]; break; } }
+  const m = S.marriage;
+  const fee = marEGP(15000);
+  const sets = {
+    family_disagreement: [
+      ['🕊 Calm both sides', function() { m.motherInLawBond = marClamp(m.motherInLawBond + 5, 0, 100); log('🕊 You calmed both families. They respect your maturity.'); }],
+      ['🙊 Stay out of it', function() { m.motherInLawBond = marClamp(m.motherInLawBond - 6, 0, 100); log('The argument faded, but feelings were hurt.'); }]
+    ],
+    budget_overrun: [
+      ['💸 Cover the extras (' + money(fee) + ')', function() {
+        if (S.wealth >= fee) { S.wealth -= fee; p.bond = marClamp(p.bond + 3, 0, 100); log('💸 You paid the extras. Everyone enjoyed the evening.'); }
+        else log('❌ You could not afford the extras and the evening felt tight.');
+      }],
+      ['✂️ Cut the extras', function() { fx({ happiness: -3 }); log('You trimmed the extras. A few guests noticed.'); }]
+    ],
+    partner_nervous: [
+      ['💬 Reassure ' + p.name, function() { p.trust = marClamp(p.trust + 4, 0, 100); marBumpChem(p, 3); log('💬 You talked it through. ' + p.name + ' felt much calmer.'); }],
+      ['😅 Make a joke of it', function() { marBumpChem(p, marHasTrait(p, 'funny') ? 3 : -1); log('😅 The joke landed ' + (marHasTrait(p, 'funny') ? 'well.' : 'a little flat.')); }]
+    ],
+    guest_list_dispute: [
+      ['➕ Invite the extra relatives', function() { m.motherInLawBond = marClamp(m.motherInLawBond + 6, 0, 100); fx({ social: 3 }); log('➕ The relatives were delighted to be included.'); }],
+      ['✋ Keep the list small', function() { m.motherInLawBond = marClamp(m.motherInLawBond - 4, 0, 100); p.trust = marClamp(p.trust + 2, 0, 100); log('✋ You stood by your plan. Some relatives sulked.'); }]
+    ]
+  };
+  if (sets[ev.id]) {
+    S.pending = {
+      title: '📖 ' + ev.title, text: ev.text,
+      choices: sets[ev.id].map(function(c) { return { label: c[0], effect: c[1] }; })
+    };
+    S.evId = 'party_event_' + ev.id + '_' + gameYear();
+  } else {
+    log('📖 ' + ev.title + ': ' + ev.text);
+  }
+}
+
+/* ---------- Wedding planning needs the party first ---------- */
+var _marOpenWeddingBase4 = window.marOpenWeddingPlanner;
+window.marOpenWeddingPlanner = function() {
+  const e = S.marriage.engagement;
+  if (e && e.finalized && !e.partyHeld) {
+    log('🎉 Hold the engagement party first (Plan tab) before planning the wedding.'); render(); return;
+  }
+  _marOpenWeddingBase4();
+};
+
+/* ---------- Gehaz popup: do not offer it when the home is already furnished ---------- */
+var _marDiscussGehazBase4 = window.marDiscussGehaz;
+window.marDiscussGehaz = function() {
+  const home = marMaritalHome();
+  if (home && marMissingGehaz(home).length === 0) {
+    log('✅ ' + (S.marriage.partner ? S.marriage.partner.name : 'Your partner') + ' smiles: "The home is fully furnished. Nothing left to discuss."');
+    render(); return;
+  }
+  _marDiscussGehazBase4();
+};
+
+/* ---------- UK country code: the data file uses "gbr", the game uses "uk" ---------- */
+if (MARRIAGE_COUNTRY_MULT && !MARRIAGE_COUNTRY_MULT.uk) MARRIAGE_COUNTRY_MULT.uk = MARRIAGE_COUNTRY_MULT.gbr;
+if (!MARRIAGE_PARTNER_NAMES.uk) MARRIAGE_PARTNER_NAMES.uk = MARRIAGE_PARTNER_NAMES.gbr;
+if (!MARRIAGE_COUNTRY_PROFILES.uk) MARRIAGE_COUNTRY_PROFILES.uk = MARRIAGE_COUNTRY_PROFILES.gbr;
+if (!MARRIAGE_DIVORCE_LAWS.uk) MARRIAGE_DIVORCE_LAWS.uk = MARRIAGE_DIVORCE_LAWS.gbr;
+if (!MARRIAGE_COUNTRY_DATE_IDEAS.uk) MARRIAGE_COUNTRY_DATE_IDEAS.uk = MARRIAGE_COUNTRY_DATE_IDEAS.gbr;
