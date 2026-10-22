@@ -424,16 +424,12 @@ function familyRenderInheritance() {
    TAB 2: PARTNER (Dating, Marriage, Divorce)
    ============================================================ */
 function renderPartnerTab() {
-    let html = '';
-    
-    if (S.datingStatus === 'single') {
-        html += '<div class="card"><h3>Find a Partner</h3><p class="muted small">You are currently single.</p>';
-        DATING_SOURCES.forEach(src => {
-             const costLocal = 200 * getExchangeRate();
-             html += '<div class="row"><span>' + src.label + '</span>' +
-                     '<button class="opt" style="padding:4px 8px" onclick="familyDate(\'' + src.id + '\')">Try (' + money(costLocal) + ')</button></div>';
-        });
-        html += '</div>';
+    return `<div class="card" style="border-color:#fb7185">
+      <h3 style="color:#fb7185">💍 Marriage & Relationships</h3>
+      <p class="muted small">To ensure full details for Shabka, Mahr, weddings, and divorce, please use the dedicated Marriage tab.</p>
+      <button class="opt" style="margin-top:10px;width:100%;text-align:center;background:#fb7185;color:#fff;font-weight:700" onclick="switchTab('marriage')">Go to Marriage Tab →</button>
+    </div>`;
+}
     } 
     else if (S.datingStatus === 'dating') {
         html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">In a Relationship</h3>';
@@ -1138,7 +1134,10 @@ function familyParentDies(p) {
   const totalChildren = 1 + children.length;
   const perChild = Math.floor((p.wealth || 0) / totalChildren);
   if (perChild > 0) {
-    S.wealth += perChild;
+    const convertedInheritance = typeof convertToPlayerCurrency === 'function' 
+    ? convertToPlayerCurrency(perChild, S.homeCountry || 'egy') 
+    : perChild;
+  S.wealth += convertedInheritance;
     log('💰 Inherited ' + money(perChild) + ' from ' + p.name + ' (split with ' + children.length + ' sibling(s)).');
     children.forEach(function(sib) { sib.wealth = (sib.wealth || 0) + perChild; });
   }
