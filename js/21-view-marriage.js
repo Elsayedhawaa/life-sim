@@ -308,6 +308,10 @@ function marriageView() {
   ensureMarriageState();
   if (!S) return '';
   if (S.age < 16) return '<div class="card"><h3>💍 Marriage</h3><p class="muted">Available from age 16+.</p></div>';
+     if (typeof m.motherInLawBond !== 'number') m.motherInLawBond = 50;
+  if (typeof m.mahrAdvanced !== 'number') m.mahrAdvanced = 0;
+  if (typeof m.mahrDeferred !== 'number') m.mahrDeferred = 0;
+  if (typeof m.trousseauComplete !== 'boolean') m.trousseauComplete = false;
 
   const m = S.marriage;
   const tabs = [
@@ -439,7 +443,17 @@ function marRenderPremaritalPanel() {
       '<button class="opt" style="margin-top:6px;width:100%;text-align:center;background:#fbbf24;color:#000;font-weight:700;font-size:.75rem" onclick="marSetTab(\'plan\')">Proceed to Engagement →</button>' +
       '</div>';
   }
-
+  const m = S.marriage;
+  if (m.status === 'engaged') {
+    const hamaColor = m.motherInLawBond > 70 ? '#34d399' : m.motherInLawBond > 40 ? '#fbbf24' : '#fb7185';
+    html += '<div class="card" style="border-color:' + hamaColor + '">' +
+      '<h3 style="color:' + hamaColor + '">👵 Mother-in-Law</h3>' +
+      '<div class="row"><span>Bond</span><b style="color:' + hamaColor + '">' + m.motherInLawBond + '%</b></div>' +
+      '<p class="muted small">Your relationship with his mother matters. A low bond will cause drama during the wedding.</p>' +
+      '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem" onclick="marVisitMotherInLaw()">☕ Visit her for tea</button>' +
+      '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem" onclick="marCheckTrousseau()">🛋 Check Trousseau (Gehaz) Status</button>' +
+      '</div>';
+  }
   if (m.status === 'dating') {
     if (!p.exclusive) {
       const nextAttempt = Number(p.lastExclusiveAttemptDateCount || -99) + 2;
@@ -476,6 +490,33 @@ function marRenderPremaritalPanel() {
   html += '</div>';
   return html;
 }
+window.marVisitMotherInLaw = function() {
+  const m = S.marriage;
+  if (!m.partner) return;
+  
+  const traits = m.partner.traits || [];
+  let change = 5;
+  
+  if (traits.includes('mamas_boy')) {
+    change += 5; // She loves when you visit
+  }
+  if (marHasTrait(m.partner, 'protector')) {
+    change += 3; // He appreciates it
+  }
+
+  // Random outcome
+  if (Math.random() < 0.3) {
+    log('👵 You visited your mother-in-law. She criticized your outfit.');
+    change = -5;
+    fx({ happiness: -3 });
+  } else {
+    log('👵 You visited your mother-in-law. You helped her with chores. She appreciated it.');
+    fx({ happiness: 2 });
+  }
+  
+  m.motherInLawBond = Math.max(0, Math.min(100, m.motherInLawBond + change));
+  render();
+};
 window.marAskForHand = function() {
   const m = S.marriage;
   const p = m.partner;
@@ -693,6 +734,23 @@ function marRenderEngagementPlanner() {
   const e = S.marriage.engagement;
   if (!e) return '';
   const isTraditionalWoman = marIsTraditionalWoman();
+     // Inside marRenderEngagementPlanner, before the picker:
+  const mahr = MARRIAGE_MAHR_TIERS.find(function(x) { return x.id === e.mahrTier; }) || MARRIAGE_MAHR_TIERS[0];
+  const totalMahr = mahr.costEGP;
+  const advancedPct = (e.mahrAdvancedPct || 0.5); // 50% upfront by default
+  const mahrAdv = Math.round(totalMahr * advancedPct);
+  const mahrDef = Math.round(totalMahr * (1 - advancedPct));
+
+  // Update the picker UI to show the split
+  html += '<div style="margin-top:10px; padding:10px; background:#0f0f1a; border-radius:6px">' +
+    '<b class="small" style="color:#fbbf24">Mahr Structure</b>' +
+    '<div class="row small"><span>Muqaddam (Advanced)</span><b>' + money(marEGP(mahrAdv)) + '</b></div>' +
+    '<div class="row small"><span>Mu\'akhar (Deferred)</span><b>' + money(marEGP(mahrDef)) + '</b></div>' +
+    '<div style="display:flex;gap:4px;margin-top:6px">' +
+    '<button class="pill ' + (advancedPct === 1 ? 'on' : '') + '" style="flex:1;font-size:.65rem" onclick="marSetMahrSplit(1)">100% Upfront</button>' +
+    '<button class="pill ' + (advancedPct === 0.5 ? 'on' : '') + '" style="flex:1;font-size:.65rem" onclick="marSetMahrSplit(0.5)">50/50 Split</button>' +
+    '<button class="pill ' + (advancedPct === 0.1 ? 'on' : '') + '" style="flex:1;font-size:.65rem" onclick="marSetMahrSplit(0.1)">10% Upfront (Traditional)</button>' +
+    '</div></div>';
   
   // Default payer logic for new engagements
   if (typeof e.payer === 'undefined') {
@@ -1107,7 +1165,34 @@ window.marStartSalonat = function() {
   m.tab = 'find'; // Switch to a special view
   render();
 };
+window.marCheckTrousseau = function() {
+  const m = S.marriage;
+  if (m.status !== 'engaged') return;
+  
+  // Find the marital home (either the owned one or the one we designated)
+  const h = (S.ownedHomes || []).find(function(x) { return x.status === 'occupied' || x.source === 'salonat'; });
+  
+  if (!h) {
+    log('❌ You don\'t have a house yet! You must secure a home before the wedding.');
+    return;
+  }
 
+  // Count the furniture in the home
+  const furnItems = (S.shopping && Array.isArray(S.shopping.inventory))
+    ? S.shopping.inventory.filter(i => i.homeId === h.id && (i.cat === 'furniture' || i.cat === 'appliances'))
+    : [];
+
+  // We need at least 3 major items (Bed, Sofa, Fridge/Appliances) to consider it "ready"
+  if (furnItems.length >= 3) {
+    m.trousseauComplete = true;
+    m.motherInLawBond = Math.min(100, m.motherInLawBond + 10);
+    log('✅ The marital home is fully furnished! Your mother-in-law is impressed (+10 Bond).');
+  } else {
+    log('⚠️ The home needs furniture. Buy at least ' + (3 - furnItems.length) + ' more items from the Shopping tab and place them in the home.');
+    m.motherInLawBond = Math.max(0, m.motherInLawBond - 5);
+  }
+  render();
+};
 window.marAcceptSalonat = function() {
   const p = S.marriage.salonatProspect;
   if (!p) return;
@@ -1192,6 +1277,11 @@ window.marAcceptSalonat = function() {
   fx({ happiness: 15, social: 10 });
   S.marriage.salonatProspect = null;
   S.marriage.tab = 'plan';
+  render();
+};
+window.marSetMahrSplit = function(pct) {
+  if (!S.marriage.engagement) return;
+  S.marriage.engagement.mahrAdvancedPct = pct;
   render();
 };
 
@@ -1721,7 +1811,18 @@ window.marFinalizeEngagement = function() {
   const mahr = MARRIAGE_MAHR_TIERS.find(function(x) { return x.id === e.mahrTier; });
   const party = MARRIAGE_ENGAGEMENT_PARTY_TIERS.find(function(x) { return x.id === e.partyTier; });
   if (!shabka || !mahr || !party) return;
-  
+  const mahrDef = MARRIAGE_MAHR_TIERS.find(function(x) { return x.id === e.mahrTier; });
+const totalMahr = mahrDef.costEGP;
+const advancedPct = e.mahrAdvancedPct || 0.5;
+const mahrAdvCost = Math.round(totalMahr * advancedPct);
+const mahrDefCost = totalMahr - mahrAdvCost;
+
+const totalEGP = shabka.costEGP + mahrAdvCost + party.costEGP; // Only charge advanced!
+// ... inside deduction
+S.wealth -= playerTotal;
+// Set state
+m.mahrAdvanced = marEGP(mahrAdvCost);
+m.mahrDeferred = marEGP(mahrDefCost);
   const totalEGP = shabka.costEGP + mahr.costEGP + party.costEGP;
   const totalLocal = marEGP(totalEGP);
   
@@ -1835,6 +1936,31 @@ window.marConfirmWedding = function() {
   if (w.payer === 'split') share = 0.5;
   else if (w.payer === 'partner_family') share = isTraditionalWoman ? 0.15 : 0.25;
   else if (w.payer === 'own_family') share = 0.5;
+     // Mother-in-law interference
+  if (S.marriage.motherInLawBond < 30 && Math.random() < 0.5) {
+    log('🚨 Your mother-in-law interfered! She added 50 unwanted guests to the wedding list.');
+    selection.baseTotalEGP += marEGP(250000); // Cost of 50 extra guests
+    fx({ happiness: -10 });
+  }
+
+  // Trousseau penalty (If not done)
+  if (!S.marriage.trousseauComplete && S.marriage.gender === 'f') {
+    if (confirm('Your marital home is empty! Your mother-in-law is threatening to cancel the wedding unless you furnish it.\n\nDo you want to rush-buy basic furniture for ' + money(marEGP(50000)) + '?')) {
+      if (S.wealth >= marEGP(50000)) {
+        S.wealth -= marEGP(50000);
+        S.marriage.trousseauComplete = true;
+        log('You rushed to buy basic furniture to save the wedding.');
+      } else {
+        log('❌ You don\'t have the money. The wedding is postponed!');
+        S.marriage.wedding = null;
+        render(); return;
+      }
+    } else {
+      log('❌ The wedding was cancelled by the bride\'s family due to lack of preparation.');
+      S.marriage.wedding = null;
+      render(); return;
+    }
+  }
 
   const playerTotalLocal = marEGP(selection.baseTotalEGP * share) + selection.prenupCostLocal;
   
