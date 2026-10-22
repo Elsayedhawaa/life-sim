@@ -797,6 +797,48 @@ const SHOP_GOLD = [
   ['Bvlgari','B.zero1 18K Gold Ring','fashion','jewelry',1800,9,10,9999,'Architectural 18K yellow gold band inspired by the Colosseum.',0,9999],
   ['Rolex','Day-Date 36mm (18K Gold)','luxury','watch',35000,18,20,9999,'The "President". Solid 18K yellow gold luxury timepiece.',0,9999]
 ];
+/* ---------- JEWELRY & GOLD (price = grams × gold price × purity × making charge) ---------- */
+const SHOP_GOLD_USD_PER_GRAM = 75; /* 24K */
+function _gj(brand, name, sub, grams, karat, making, hap, soc, desc) {
+  const price = Math.round(grams * SHOP_GOLD_USD_PER_GRAM * (karat / 24) * (1 + making));
+  return [brand, name, 'jewelry', sub, price, hap, soc, 9999, desc + ' (' + grams + 'g ' + karat + 'K)', 0, 9999, grams, karat];
+}
+const SHOP_JEWELRY = [
+  /* Rings */
+  _gj('L\'azurde', 'Simple Gold Band', 'ring', 3, 21, 0.15, 3, 2, 'Everyday band'),
+  _gj('L\'azurde', 'Solitaire-Style Ring', 'ring', 5, 21, 0.20, 5, 4, 'Classic engagement style'),
+  _gj('Local Goldsmith', 'Twisted Rope Ring', 'ring', 6, 21, 0.15, 4, 3, 'Traditional Egyptian pattern'),
+  _gj('L\'azurde', 'Big Cocktail Ring', 'ring', 14, 21, 0.25, 7, 7, 'Large statement ring'),
+  _gj('Damas', 'Grand Bridal Ring', 'ring', 20, 21, 0.28, 8, 8, 'Oversized bridal statement ring'),
+  _gj('Bvlgari', 'Serpenti Gold Ring', 'ring', 9, 18, 0.90, 8, 9, 'Designer ring'),
+  /* Necklaces & chains */
+  _gj('Local Goldsmith', 'Fine Chain Necklace', 'necklace', 6, 21, 0.12, 3, 3, 'Thin everyday chain'),
+  _gj('L\'azurde', 'Pendant Necklace', 'necklace', 8, 21, 0.22, 5, 5, 'Gold pendant with chain'),
+  _gj('Damas', 'Layered Choker Necklace', 'necklace', 22, 21, 0.28, 7, 7, 'Wide bridal choker'),
+  _gj('L\'azurde', 'Heavy Bridal Necklace', 'necklace', 40, 21, 0.30, 9, 9, 'Statement bridal necklace'),
+  _gj('Local Goldsmith', 'Cuban Link Chain', 'necklace', 30, 18, 0.15, 5, 6, 'Heavy chain'),
+  /* Bangles / bracelets */
+  _gj('Local Goldsmith', 'Single Bangle (Ghawaysha)', 'bracelet', 8, 21, 0.15, 4, 4, 'One traditional bangle'),
+  _gj('L\'azurde', 'Set of 4 Bangles', 'bracelet', 32, 21, 0.20, 7, 7, 'Four matching bangles'),
+  _gj('Damas', 'Wide Cuff Bracelet', 'bracelet', 25, 21, 0.28, 7, 7, 'Wide gold cuff'),
+  _gj('Cartier', 'Love-Style Bracelet', 'bracelet', 33, 18, 1.40, 9, 10, 'Designer bracelet'),
+  /* Earrings */
+  _gj('Local Goldsmith', 'Gold Studs', 'earrings', 2, 21, 0.15, 2, 2, 'Simple studs'),
+  _gj('L\'azurde', 'Drop Earrings', 'earrings', 6, 21, 0.22, 5, 5, 'Elegant drops'),
+  _gj('Damas', 'Chandelier Earrings', 'earrings', 12, 21, 0.28, 6, 7, 'Large bridal earrings'),
+  /* Anklet & brooch */
+  _gj('Local Goldsmith', 'Gold Anklet', 'anklet', 5, 21, 0.15, 3, 3, 'Delicate anklet'),
+  /* Full bridal sets */
+  _gj('L\'azurde', 'Small Shabka Set', 'bridal_set', 30, 21, 0.20, 8, 7, 'Necklace, ring, earrings'),
+  _gj('L\'azurde', 'Classic Shabka Set', 'bridal_set', 60, 21, 0.22, 10, 9, 'Necklace, bangles, ring, earrings'),
+  _gj('Damas', 'Royal Shabka Set', 'bridal_set', 110, 21, 0.28, 13, 12, 'Full heavy bridal set'),
+  _gj('Damas', 'Grand Royal Shabka Set', 'bridal_set', 200, 21, 0.32, 16, 15, 'Palace-grade bridal set')
+];
+
+const SHOP_ALL = [].concat(
+  SHOP_PHONES, SHOP_AUDIO, SHOP_WATCHES, SHOP_TABLETS, SHOP_COMPUTERS, SHOP_TVS,
+  SHOP_APPLIANCES, SHOP_FURNITURE, SHOP_FASHION, SHOP_GOLD, SHOP_JEWELRY
+);
 /* ---------- AUTO-COMBINE ---------- */
 const SHOP_ALL = [].concat(
   SHOP_PHONES, SHOP_AUDIO, SHOP_WATCHES, SHOP_TABLETS, SHOP_COMPUTERS, SHOP_TVS,
