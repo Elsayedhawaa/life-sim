@@ -49,8 +49,8 @@ const GLOBAL_EVENTS = [
       { label: 'Stay quiet', effect: s => { s.happiness -= 3; } },
     ]
   },
-  { id: 'marriage_opportunity', minAge: 24, maxAge: 35,
-    condition: s => !s.spouse,
+   { id: 'marriage_opportunity', minAge: 24, maxAge: 37,
+    condition: s => !s.spouse && !(s.marriage && s.marriage.partner),
     title: 'Someone special',
     text: 'You meet someone you could see yourself with.',
     choices: [
@@ -77,8 +77,8 @@ const GLOBAL_EVENTS = [
       { label: 'Stay focused on career', effect: s => { s.happiness -= 2; s.smarts += 2; } },
     ]
   },
-  { id: 'child_opportunity', minAge: 27, maxAge: 40,
-    condition: s => !!s.spouse,
+  {   { id: 'child_opportunity', minAge: 27, maxAge: 40,
+    condition: s => !!(s.spouse || (s.marriage && s.marriage.status === 'married' && s.marriage.partner)),
     title: 'Starting a family',
     text: 'You and your spouse talk about having a child.',
     choices: [
