@@ -1216,8 +1216,10 @@ function familyCall(memberId) {
   familyMarkContact(m);
   familyAddBond(m, FAMILY_BOND_BONUSES.call);
   fx({ happiness: 2 });
-  log('📞 You called your ' + m.role.toLowerCase() + ', ' + m.name + '.');
-  familyLog('📞 Called ' + m.name);
+    log('📞 You called your ' + m.role.toLowerCase() + ', ' + m.name + '.');
+  var line = characterSay(m, m.bond < 30 ? 'upset' : m.bond > 75 ? 'happy' : 'greeting');
+  if (line) log(m.name + ': "' + line + '"');
+  familyLog('📞 Called ' + m.name + ' — "' + line + '"');
   render();
 }
 
