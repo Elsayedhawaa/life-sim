@@ -167,6 +167,7 @@ function rentalCostForTier(tier) {
 function rentalTierById(id) { return RENTAL_TIERS.find(function(t) { return t.id === id; }) || null; }
 
 /* ---------- HELPERS ---------- */
+/* ---------- HELPERS ---------- */
 function currentHousing() {
   if (!S) return { kind: 'unknown', home: null };
   if (S.housing === 'parents') { ensureParentsHome(); return { kind: 'parents', home: S.parentsHome }; }
@@ -178,6 +179,7 @@ function currentHousing() {
     const h = S.ownedHomes.find(function(x) { return x.status === 'occupied'; });
     if (h) {
       return {
+        kind: 'owned',
         type: 'owned',
         name: h.name + (h.isHusbandOwned ? ' (Husband\'s)' : ''),
         description: (h.city || '') + ' · ' + (h.area || 0) + ' m² · ' + (h.location || ''),
@@ -194,6 +196,7 @@ function currentHousing() {
       };
     }
   }
+  
   return { kind: 'unknown', home: null };
 }
 
