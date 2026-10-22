@@ -2840,8 +2840,21 @@ const MARRIAGE_WEDDING_DAY_EVENTS = [
   { id: 'weather', title: 'Bad Weather', text: 'Rain starts unexpectedly. Tents are brought out.', effect: 'costEGP', costEGP: 8000 },
   { id: 'drama', title: 'Family Drama', text: 'Two relatives get into a heated argument at the reception.', effect: 'happiness', happiness: -5 }
 ];
+/* ============================================================
+   TROUSSEAU (GEHAZ) NEGOTIATION
+   ============================================================ */
+const MARRIAGE_TROUSSEAU_TIERS = [
+  { id: 'basic', label: 'Basic Furnishing', costEGP: 50000, desc: 'A simple bed, basic sofa, fridge, and washing machine.', hamaBond: -5 },
+  { id: 'standard', label: 'Standard Gehaz', costEGP: 150000, desc: 'Good quality bedroom set, living room, TV, and full appliances.', hamaBond: 5 },
+  { id: 'luxury', label: 'Luxury Gehaz', costEGP: 400000, desc: 'Imported furniture, 75" TV, high-end kitchen appliances, and rugs.', hamaBond: 15 }
+];
 
-
+const MARRIAGE_TROUSSEAU_PAYERS = [
+  { id: 'groom', label: 'Groom pays', desc: 'You (or your partner) pay the full cost.' },
+  { id: 'bride_family', label: 'Bride\'s family pays', desc: 'The bride\'s family covers the Gehaz.' },
+  { id: 'groom_family', label: 'Groom\'s family pays', desc: 'The groom\'s family covers the Gehaz.' },
+  { id: 'split', label: 'Split 50/50', desc: 'Both families split the cost equally.' }
+];
 /* ============================================================
    END OF EXPANDED MARRIAGE DATA
    ============================================================ */
