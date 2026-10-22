@@ -544,32 +544,7 @@ const MARRIAGE_PARTNER_NAMES = {
    ============================================================ */
 
 const MARRIAGE_COUNTRY_PROFILES = {
-   egy: {
-    label: 'Egypt',
-    // ... existing fields ...
-    traditionalGenderRoles: true, // <-- ADD THIS
-  },
-  sau: {
-    label: 'Saudi Arabia',
-    // ... existing fields ...
-    traditionalGenderRoles: true, // <-- ADD THIS
-  },
-  uae: {
-    label: 'United Arab Emirates',
-    // ... existing fields ...
-    traditionalGenderRoles: true, // <-- ADD THIS
-  },
-  ind: {
-    label: 'India',
-    // ... existing fields ...
-    traditionalGenderRoles: true, // <-- ADD THIS
-  },
-  // For Western countries (usa, gbr, deu, can, fra, etc.) add:
-  usa: {
-    // ...
-    traditionalGenderRoles: false,
-  }
-   egy: {
+  egy: {
     label: 'Egypt',
     currency: 'EGP',
     datingStyle: ['Family Introduction', 'Mutual Friends', 'University', 'Dating Apps'],
@@ -581,7 +556,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.85,
     typicalConcerns: ['Shabka', 'Mahr', 'Apartment', 'Furniture', 'Wedding Costs', 'Family Expectations'],
     activities: ['Nile Dinner', 'Alexandria Corniche Walk', 'Family Lunch', 'Café Date', 'Red Sea Trip'],
-    notes: 'Family involvement and housing costs may strongly influence the relationship.'
+    notes: 'Family involvement and housing costs may strongly influence the relationship.',
+    traditionalGenderRoles: true
   },
   usa: {
     label: 'United States',
@@ -595,7 +571,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.45,
     typicalConcerns: ['Rent', 'Student Loans', 'Health Insurance', 'Career Moves', 'Wedding Budget'],
     activities: ['Road Trip', 'Coffee Date', 'Concert', 'Camping Weekend', 'City Break'],
-    notes: 'Housing, healthcare expenses, debt, and work-life balance can affect household plans.'
+    notes: 'Housing, healthcare expenses, debt, and work-life balance can affect household plans.',
+    traditionalGenderRoles: false
   },
   sau: {
     label: 'Saudi Arabia',
@@ -609,7 +586,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.90,
     typicalConcerns: ['Family Approval', 'Housing', 'Wedding Budget', 'Work Location', 'Family Commitments'],
     activities: ['Restaurant Dinner', 'Desert Weekend', 'Shopping Trip', 'Family Gathering', 'Coastal Holiday'],
-    notes: 'Family expectations, location, and personal values can shape relationship decisions.'
+    notes: 'Family expectations, location, and personal values can shape relationship decisions.',
+    traditionalGenderRoles: true
   },
   uae: {
     label: 'United Arab Emirates',
@@ -623,7 +601,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.60,
     typicalConcerns: ['Rent', 'Living in Different Emirates', 'Career Ambition', 'Family Travel', 'Wedding Costs'],
     activities: ['Dubai Marina Dinner', 'Beach Day', 'Desert Safari', 'Abu Dhabi Weekend', 'Staycation'],
-    notes: 'High housing costs and long commutes can become major relationship challenges.'
+    notes: 'High housing costs and long commutes can become major relationship challenges.',
+    traditionalGenderRoles: true
   },
   gbr: {
     label: 'United Kingdom',
@@ -637,7 +616,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.50,
     typicalConcerns: ['Rent', 'Energy Bills', 'Commuting', 'Career Changes', 'Wedding Budget'],
     activities: ['Pub Dinner', 'Countryside Weekend', 'Museum Date', 'Football Match', 'Coastal Trip'],
-    notes: 'Housing costs, commuting, and work demands may affect time together.'
+    notes: 'Housing costs, commuting, and work demands may affect time together.',
+    traditionalGenderRoles: false
   },
   deu: {
     label: 'Germany',
@@ -651,7 +631,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.45,
     typicalConcerns: ['Apartment Search', 'Work-Life Balance', 'Relocation', 'Savings', 'Family Planning'],
     activities: ['Cycling Trip', 'Christmas Market', 'Hiking', 'Café Date', 'Weekend Train Trip'],
-    notes: 'Relocation, apartment searches, and balancing work with personal life may matter.'
+    notes: 'Relocation, apartment searches, and balancing work with personal life may matter.',
+    traditionalGenderRoles: false
   },
   can: {
     label: 'Canada',
@@ -665,7 +646,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.50,
     typicalConcerns: ['Housing', 'Winter Expenses', 'Immigration Paperwork', 'Long-Distance Family', 'Childcare'],
     activities: ['Lake Weekend', 'Hiking', 'Ice Skating', 'Café Date', 'Road Trip'],
-    notes: 'Housing affordability, winter costs, and distance from relatives can create pressure.'
+    notes: 'Housing affordability, winter costs, and distance from relatives can create pressure.',
+    traditionalGenderRoles: false
   },
   aus: {
     label: 'Australia',
@@ -679,7 +661,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.45,
     typicalConcerns: ['Rent', 'Mortgage', 'Long Commutes', 'Career Relocation', 'Family Distance'],
     activities: ['Beach Day', 'Barbecue', 'National Park Trip', 'Brunch', 'Coastal Road Trip'],
-    notes: 'Housing, distance, and work schedules can affect relationship stability.'
+    notes: 'Housing, distance, and work schedules can affect relationship stability.',
+    traditionalGenderRoles: false
   },
   nld: {
     label: 'Netherlands',
@@ -693,7 +676,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.40,
     typicalConcerns: ['Housing', 'Cycling Commute', 'Work-Life Balance', 'Savings', 'Childcare'],
     activities: ['Canal Walk', 'Cycling Date', 'Museum Visit', 'Weekend Train Trip', 'Coffee Date'],
-    notes: 'Housing availability, shared responsibilities, and personal independence may matter.'
+    notes: 'Housing availability, shared responsibilities, and personal independence may matter.',
+    traditionalGenderRoles: false
   },
   fra: {
     label: 'France',
@@ -707,7 +691,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.50,
     typicalConcerns: ['Housing', 'Work Schedules', 'Family Time', 'Wedding Costs', 'Relocation'],
     activities: ['Bakery Breakfast', 'Museum Date', 'Picnic', 'Coastal Weekend', 'Restaurant Dinner'],
-    notes: 'Lifestyle preferences, work schedules, and family expectations can influence plans.'
+    notes: 'Lifestyle preferences, work schedules, and family expectations can influence plans.',
+    traditionalGenderRoles: false
   },
   jpn: {
     label: 'Japan',
@@ -721,7 +706,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.55,
     typicalConcerns: ['Work Hours', 'Commuting', 'Housing Size', 'Family Planning', 'Career Timing'],
     activities: ['Ramen Date', 'Karaoke', 'Cherry Blossom Walk', 'Hot Spring Trip', 'Train Journey'],
-    notes: 'Long work hours, commuting, and balancing career and family life can become challenges.'
+    notes: 'Long work hours, commuting, and balancing career and family life can become challenges.',
+    traditionalGenderRoles: false
   },
   ita: {
     label: 'Italy',
@@ -735,7 +721,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.75,
     typicalConcerns: ['Family Expectations', 'Housing', 'Career Stability', 'Wedding Budget', 'Living Near Relatives'],
     activities: ['Pasta Dinner', 'Seaside Walk', 'Village Weekend', 'Coffee Date', 'Food Festival'],
-    notes: 'Family relationships, regional differences, and career stability can influence decisions.'
+    notes: 'Family relationships, regional differences, and career stability can influence decisions.',
+    traditionalGenderRoles: false
   },
   sgp: {
     label: 'Singapore',
@@ -749,7 +736,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.65,
     typicalConcerns: ['Housing Eligibility', 'Cost of Living', 'Career Competition', 'Family Duties', 'Childcare'],
     activities: ['Hawker Centre Dinner', 'Gardens Walk', 'Sentosa Day', 'Night Safari', 'City Staycation'],
-    notes: 'Housing, work pressure, and family obligations may affect future plans.'
+    notes: 'Housing, work pressure, and family obligations may affect future plans.',
+    traditionalGenderRoles: false
   },
   bra: {
     label: 'Brazil',
@@ -763,7 +751,8 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.70,
     typicalConcerns: ['Family Support', 'Income Stability', 'Housing', 'Travel Safety', 'Wedding Budget'],
     activities: ['Beach Day', 'Barbecue', 'Music Festival', 'Football Match', 'Weekend Trip'],
-    notes: 'Family support, finances, and lifestyle preferences may affect relationship decisions.'
+    notes: 'Family support, finances, and lifestyle preferences may affect relationship decisions.',
+    traditionalGenderRoles: false
   },
   ind: {
     label: 'India',
@@ -777,11 +766,10 @@ const MARRIAGE_COUNTRY_PROFILES = {
     familyVisitFrequency: 0.90,
     typicalConcerns: ['Family Approval', 'Wedding Budget', 'Career Plans', 'Living Arrangements', 'Family Responsibilities'],
     activities: ['Street Food Date', 'Festival Visit', 'Restaurant Dinner', 'Family Celebration', 'Weekend Trip'],
-    notes: 'Family involvement, regional traditions, and personal preferences vary widely between households.'
+    notes: 'Family involvement, regional traditions, and personal preferences vary widely between households.',
+    traditionalGenderRoles: true
   }
 };
-
-
 /* ============================================================
    5. SHABKA — BRIDE'S GOLD / JEWELLERY
    ============================================================ */
@@ -2286,7 +2274,7 @@ const MARRIAGE_YEAR_EVENTS = [
     title: 'Dowry Negotiation',
     text: 'The families are sitting together to finalize the Mahr. Someone suggests changing the agreed amount.',
     choice: true
-  }
+  },
   {
     id: 'partner_wants_trip',
     weight: 10,
