@@ -44,7 +44,7 @@ function ensureLifestyleState() {
   if (!lf.domestic_staff) lf.domestic_staff = 'none';
   if (!lf.healthcare_insurance) lf.healthcare_insurance = 'public';
 
-    if (lf.country !== S.country) {
+  if (lf.country !== S.country) {
     lf.country = S.country;
     lf.active = false; // Force the player to reconfigure their lifestyle in the new country
     lf.phone = 'basic';
@@ -64,6 +64,7 @@ function ensureLifestyleState() {
       log('🌍 You moved to ' + (COUNTRIES[S.country] ? COUNTRIES[S.country].name : S.country) + '. Your lifestyle needs to be reconfigured.');
     }
   }
+}
 GameHooks.on('newGame', ensureLifestyleState);
 GameHooks.on('migrate', ensureLifestyleState);
 
