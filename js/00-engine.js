@@ -819,9 +819,10 @@ window.START = START;
    ============================================================ */
 function pickEligibleEvent() {
   if (!S) return null;
-  var allEvents = [];
+   var allEvents = [];
   if (typeof GLOBAL_EVENTS !== 'undefined') allEvents = allEvents.concat(GLOBAL_EVENTS);
   if (typeof GENDER_EVENTS !== 'undefined') allEvents = allEvents.concat(GENDER_EVENTS);
+  if (typeof DEEP_EVENTS !== 'undefined') allEvents = allEvents.concat(DEEP_EVENTS);
   if (C() && C().events) allEvents = allEvents.concat(C().events);
 
   var eligible = allEvents.filter(function(e) {
