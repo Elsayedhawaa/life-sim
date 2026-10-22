@@ -77,8 +77,11 @@ var MAR_EGP_BASE_RATE = 52.7;
 function marRate() { return C().rate || 1; }
 function marEGP(amountEGP) {
   var localRate = C().rate || 1;
-  if (localRate === MAR_EGP_BASE_RATE) return Math.round(amountEGP || 0);
-  return Math.round((amountEGP || 0) * (localRate / MAR_EGP_BASE_RATE));
+  var countryMult = (typeof MARRIAGE_COUNTRY_MULT !== 'undefined' && MARRIAGE_COUNTRY_MULT[S.country]) || 1.0;
+  var adjustedEGP = amountEGP * countryMult;
+  
+  if (localRate === MAR_EGP_BASE_RATE && countryMult === 1.0) return Math.round(adjustedEGP || 0);
+  return Math.round((adjustedEGP || 0) * (localRate / MAR_EGP_BASE_RATE));
 }
 function marNamePool(gender) {
   const pool = (typeof MARRIAGE_PARTNER_NAMES !== 'undefined' && MARRIAGE_PARTNER_NAMES[S.country]) || MARRIAGE_PARTNER_NAMES.egy;
