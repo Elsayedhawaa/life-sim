@@ -263,7 +263,7 @@ function advanceYear() {
     !S.flags['evt_' + e.id] &&
     (!e.condition || e.condition(S))
   );
-  if (eligible.length && Math.random() < 0.7) {
+    if (eligible.length && Math.random() < 0.7 && !S.pending) {
     const e = eligible[Math.floor(Math.random() * eligible.length)];
     S.pending = prepareEvent(e);
     S.evId = e.id;
