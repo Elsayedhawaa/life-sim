@@ -899,7 +899,10 @@ function carTakePartTime(id) {
   if (!job) return;
 
   if (S.age < job.minAge) { log('❌ Age ' + job.minAge + '+ only.'); render(); return; }
-  if (job.requiresCar && !(S.cars && S.cars.length > 0)) { log('❌ You need a car for this job.'); render(); return; }
+ if (job.requiresCar && !(S.cars && S.cars.some(function(c) { return !c.storedIn; }))) {
+  log('❌ You need a car for this job (in this country).');
+  render(); return;
+}
   if (job.requiresBike && !(S.cars && S.cars.length > 0)) { log('❌ You need a bike or car for delivery.'); render(); return; }
   if (job.requiresSmart && S.smarts < job.requiresSmart) { log('❌ Requires smarts ' + job.requiresSmart + '+.'); render(); return; }
   if (job.requiresEnglish && (S.languageScores?.ielts || 0) < job.requiresEnglish) {
