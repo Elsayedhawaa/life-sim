@@ -39,6 +39,7 @@ function ensureMarriageState() {
   const m = S.marriage;
   if (!Array.isArray(m.exSpouses)) m.exSpouses = [];
   if (typeof m.sharedAccountBalance !== 'number') m.sharedAccountBalance = 0;
+     if (!m.gehazPayer) m.gehazPayer = null;
    if (!m.trousseau) m.trousseau = { tier: null, payer: null, cost: 0, completed: false };
   if (typeof m.datingAttempts !== 'number') m.datingAttempts = 0;
   if (typeof m.lastDateYear !== 'number') m.lastDateYear = 0;
@@ -799,7 +800,46 @@ function marRenderEngagementPlanner() {
   const canAfford = S.wealth >= playerTotalLocal;
 
   let html = '';
+  /* --- GEHAZ NEGOTIATION & CHECKLIST --- */
+  html += '<div class="card" style="border-color:#22d3ee;margin-top:10px"><h4 style="color:#22d3ee">🛋 Gehaz (Trousseau & Furniture)</h4>';
+  
+  const maritalHome = S.ownedHomes.find(x => x.status === 'occupied') || S.ownedHomes[0];
+  
+  if (!maritalHome) {
+    html += '<p class="bad small">⚠️ You need a home first! Go to Real Estate to buy or rent.</p>';
+  } else {
+    // Payer Selection
+    html += '<div style="margin-bottom:10px;padding:8px;background:#0f0f1a;border-radius:6px">' +
+      '<b class="small" style="color:#fbbf24">Who pays for the Gehaz?</b>' +
+      '<div style="display:flex;gap:4px;margin-top:4px">' +
+      ['groom', 'bride_family', 'groom_family', 'split'].map(p => 
+        `<button class="pill ${S.marriage.gehazPayer === p ? 'on' : ''}" style="flex:1;font-size:.65rem;padding:4px" onclick="S.marriage.gehazPayer='${p}';render()">${p.replace('_', ' ')}</button>`
+      ).join('') +
+      '</div></div>';
 
+    // Checklist
+    let allDone = true;
+    MARRIAGE_GEHAZ_CHECKLIST.forEach(item => {
+      const hasItem = S.shopping.inventory.some(i => i.homeId === maritalHome.id && i.cat === item.cat && (!item.subcat || i.subcat === item.subcat));
+      
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1a1a2a">' +
+        '<span style="font-size:.8rem">' + (hasItem ? '✅' : '❌') + ' ' + item.label + '</span>';
+      
+      if (!hasItem) {
+        allDone = false;
+        html += `<button class="pill" style="padding:2px 8px;font-size:.65rem" onclick="marBuyGehazItem('${item.cat}', '${item.subcat || ''}')">Buy Now</button>`;
+      }
+      html += '</div>';
+    });
+
+    if (allDone) {
+      html += '<p class="good small" style="margin-top:8px">✅ The marital home is fully furnished!</p>';
+      S.marriage.trousseauCompleted = true;
+    } else {
+      S.marriage.trousseauCompleted = false;
+    }
+  }
+  html += '</div>';
   // Mahr Structure display (moved to top of return)
   html += '<div style="margin-top:10px; padding:10px; background:#0f0f1a; border-radius:6px">' +
     '<b class="small" style="color:#fbbf24">Mahr Structure</b>' +
@@ -1312,74 +1352,77 @@ window.marSetMahrSplit = function(pct) {
   S.marriage.engagement.mahrAdvancedPct = pct;
   render();
 };
-window.marBuyTrousseau = function(tierId, payerId) {
+window.marBuyGehazItem = function(cat, subcat) {
   const m = S.marriage;
-  const tier = MARRIAGE_TROUSSEAU_TIERS.find(t => t.id === tierId);
-  if (!tier) return;
-
   const h = S.ownedHomes.find(x => x.status === 'occupied') || S.ownedHomes[0];
-  if (!h) {
-    log('❌ You don\'t have a home yet! You must buy or rent a place first.');
-    return;
+  if (!h) { log('❌ You need a house first.'); return; }
+
+  // Find the cheapest or standard real item in this category
+  let pool = SHOP_ALL.filter(item => item[2] === cat && (!subcat || item[3] === subcat));
+  if (pool.length === 0) { log('❌ No items found in this category.'); return; }
+
+  // Pick a mid-tier real item (e.g., Samsung fridge, IKEA sofa)
+  const itemData = pool[Math.floor(pool.length / 2)];
+  const brand = itemData[0];
+  const name = itemData[1];
+  const priceUSD = itemData[4];
+  
+  // Calculate local price
+  const shopMultVal = SHOP_MULT[S.country] ? (SHOP_MULT[S.country][cat] || 1) : 1;
+  const priceLocal = Math.round(priceUSD * shopMultVal * (C().rate || 1));
+
+  let payerName = "You";
+  let canAfford = false;
+
+  if (m.gehazPayer === 'groom' || m.gehazPayer === 'split') {
+    let yourShare = m.gehazPayer === 'split' ? priceLocal / 2 : priceLocal;
+    if (S.wealth >= yourShare) canAfford = true;
+  } 
+  if (!canAfford && m.gehazPayer !== 'self') {
+    // Check if family or partner can pay
+    const famWealth = eduFamilyWealth ? eduFamilyWealth() : 3000000;
+    const partnerWealth = m.partner ? (m.partner.wealth || 1000000) : 0;
+    
+    if (m.gehazPayer === 'partner' && partnerWealth >= priceLocal) canAfford = true;
+    else if ((m.gehazPayer === 'bride_family' || m.gehazPayer === 'groom_family') && famWealth >= priceLocal) canAfford = true;
+    else if (m.gehazPayer === 'split' && (famWealth + S.wealth) >= priceLocal) canAfford = true;
   }
 
-  const costLocal = marEGP(tier.costEGP);
-  let playerPays = 0;
-  let familyPays = 0;
-
-  if (payerId === 'groom') playerPays = costLocal;
-  else if (payerId === 'bride_family') familyPays = costLocal;
-  else if (payerId === 'groom_family') familyPays = costLocal;
-  else if (payerId === 'split') { playerPays = costLocal / 2; familyPays = costLocal / 2; }
-
-  // Check if the player can afford their share
-  if (playerPays > S.wealth) {
-    log(`❌ You need ${money(playerPays)} for your share of the Gehaz.`);
-    return;
-  }
-
-  // Check if the family can afford their share (Roughly checking family wealth)
-  const famWealth = eduFamilyWealth ? eduFamilyWealth() : 3000000;
-  if (familyPays > 0 && famWealth < familyPays * 2) {
-    log(`❌ The family cannot afford ${money(familyPays)} for the Gehaz.`);
-    return;
-  }
-
-  if (!confirm(`Confirm Gehaz purchase: ${tier.label}?\n\nPayer: ${payerId}\nYour cost: ${money(playerPays)}`)) return;
+  if (!canAfford) { log('❌ Neither you nor the payer has ' + money(priceLocal) + ' for ' + name + '.'); return; }
 
   // Deduct money
-  S.wealth -= playerPays;
-  
-  // Simulate family paying by logging it
-  if (familyPays > 0) log(`👨‍👩‍👧 The family paid ${money(familyPays)} for the Gehaz.`);
+  if (m.gehazPayer === 'groom' || m.gehazPayer === 'self' || m.gehazPayer === 'split') {
+    let yourShare = m.gehazPayer === 'split' ? priceLocal / 2 : priceLocal;
+    S.wealth -= yourShare;
+  }
+  if (m.gehazPayer === 'bride_family' || m.gehazPayer === 'groom_family' || m.gehazPayer === 'split') {
+    if (S.familyTier === 'wealthy' || S.familyTier === 'ultra') { /* family pays, no player wealth hit */ }
+    else { /* family pays, simulated by not hitting player wealth */ }
+    log('👨‍👩‍👧 The family paid for the ' + name + '.');
+  }
 
-  // Apply to the home
-  m.trousseau = { tier: tierId, payer: payerId, cost: tier.costEGP, completed: true };
-  h.homeComfort = (h.homeComfort || 0) + (tier.id === 'luxury' ? 30 : tier.id === 'standard' ? 15 : 5);
-  h.furnitureValue = (h.furnitureValue || 0) + costLocal;
-  
-  // Add to Real Estate tab via shopping inventory
-  if (!S.shopping) S.shopping = { inventory: [] };
-  if (!Array.isArray(S.shopping.inventory)) S.shopping.inventory = [];
-  
-  // Simulate buying the items into the house
+  // Create the REAL item in inventory
+  if (!S.shopping.inventory) S.shopping.inventory = [];
+  const uid = 'i' + (S.uidN++);
   S.shopping.inventory.push({
-    uid: 'trousseau_' + Math.random().toString(36).slice(2, 8),
-    itemId: 'trousseau_package',
-    brand: 'Gehaz',
-    name: tier.label + ' Package',
-    cat: 'furniture',
-    subcat: 'package',
-    purchasePrice: costLocal,
-    currentValue: costLocal,
-    purchaseYear: gameYear(),
-    homeId: h.id,
-    homeName: h.name
+    uid: uid,
+    itemId: itemData[0].toLowerCase() + '_' + itemData[1].toLowerCase().replace(/\W/g, '_'),
+    brand: brand, name: name, cat: cat, subcat: subcat || 'standard',
+    priceUSD: priceUSD, purchasePrice: priceLocal, currentValue: priceLocal,
+    purchaseYear: gameYear(), age: 0, life: itemData[7],
+    happiness: itemData[5], social: itemData[6],
+    broken: false, condition: 100, warrantyUntil: 0,
+    homeId: h.id, homeName: h.name
   });
 
-  m.motherInLawBond = Math.min(100, m.motherInLawBond + tier.hamaBond);
-  
-  log(`✅ Gehaz complete! The home is furnished. Mother-in-law bond ${tier.hamaBond > 0 ? '+' : ''}${tier.hamaBond}.`);
+  // Update home value
+  if (h) {
+    h.furnitureValue = (h.furnitureValue || 0) + priceLocal;
+    h.value = (h.value || 0) + priceLocal;
+    h.homeComfort = (h.homeComfort || 0) + (itemData[5] * 2);
+  }
+
+  log(`✅ Purchased ${brand} ${name} for the marital home.`);
   render();
 };
 window.marRejectSalonat = function() {
@@ -2038,6 +2081,26 @@ window.marConfirmWedding = function() {
   const w = m.wedding;
   if (!w) return;
   const isTraditionalWoman = marIsTraditionalWoman();
+     const m = S.marriage;
+  
+  // HARD LOCK: Check if all required Gehaz items are present in the marital home
+  const h = S.ownedHomes.find(x => x.status === 'occupied') || S.ownedHomes[0];
+  if (!h) {
+    log('🚨 The wedding is cancelled! You have no home.');
+    return;
+  }
+
+  let missing = [];
+  MARRIAGE_GEHAZ_CHECKLIST.forEach(item => {
+    const hasItem = S.shopping.inventory.some(i => i.homeId === h.id && i.cat === item.cat && (!item.subcat || i.subcat === item.subcat));
+    if (!hasItem) missing.push(item.label);
+  });
+
+  if (missing.length > 0) {
+    log(`🚨 The wedding is cancelled! The home is missing: ${missing.join(', ')}. Complete the Gehaz first.`);
+    fx({ happiness: -15 });
+    return;
+  }
 
   const selection = marGetWeddingSelection(w);
   
