@@ -18,7 +18,7 @@ let START = {
 const GameHooks = {
   year: [], month: [], render: [], newGame: [], migrate: [],
   tabs: [],
-  on(name, fn) { if (this[name]) this[name].push(fn); },
+  on(name, fn) { if (!this[name]) this[name] = []; this[name].push(fn); },
   run(name, ...args) { if (this[name]) this[name].forEach(fn => { try { fn(...args); } catch(e) { console.error(e); } }); },
   registerTab(tab) { this.tabs.push(tab); },
 };
