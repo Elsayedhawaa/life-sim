@@ -392,6 +392,7 @@ function shopBuildCatalog(catFilter) {
       desc: tag + row[8],
       age: age, discount: discount,
       fromYear: fromYear, untilYear: untilYear
+       grams: row[11] || 0, karat: row[12] || 0,.
     });
   });
 
@@ -779,6 +780,7 @@ function shoppingView() {
     ['fashion', '👕 Fashion'],
     ['mine', '🏷 My Items'],
     ['gifts', '🎁 Gifts']
+     ['jewelry', '💍 Jewelry & Gold'],
   ];
 
   const sale = S.shopping.activeSale;
@@ -842,7 +844,12 @@ function shopRenderCategory(cat) {
     if (!subcats[i.subcat]) subcats[i.subcat] = [];
     subcats[i.subcat].push(i);
   });
-
+function _shopCatMatch(row, f) {
+  if (f === 'jewelry') return row[2] === 'jewelry' || row[3] === 'jewelry' || row[2] === 'luxury';
+  return row[2] === f;
+}
+/* replace:  if (catFilter && cat !== catFilter) return;   with: */
+if (catFilter && !_shopCatMatch(row, catFilter)) return;
   Object.keys(subcats).forEach(function(sub) {
     html += '<div class="card"><h4 style="font-size:.85rem;color:#8b5cf6">' + sub.replace(/_/g, ' ').toUpperCase() + '</h4>';
     subcats[sub].forEach(function(item) {
