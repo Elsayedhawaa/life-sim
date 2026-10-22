@@ -521,6 +521,36 @@ function marRenderFind() {
 
   let html = '<div class="card"><h3>💕 Where to meet someone</h3>' +
     '<p class="muted small">Different sources have different success rates and family approval.</p></div>';
+    /* --- SALONAT PROSPECT UI --- */
+  if (m.salonatProspect) {
+    const p = m.salonatProspect;
+    html += '<div class="card" style="border-color:#fbbf24;background:#fbbf2410">' +
+      '<h3 style="color:#fbbf24">💍 The Salonat Meeting</h3>' +
+      '<p class="muted small">Your parents introduced you to ' + p.name + '. Here is what they bring to the table:</p>' +
+      '<div class="row"><span>Age</span><b>' + p.age + '</b></div>' +
+      '<div class="row"><span>Job</span><b>' + p.job.title + '</b></div>' +
+      '<div class="row"><span>Income</span><b>' + money(p.job.salary) + '/yr</b></div>' +
+      '<div class="row"><span>Mahr (Dowry)</span><b>' + money(p.mahrLocal) + '</b></div>' +
+      '<div class="row"><span>Shabka (Gold)</span><b>' + p.shabkaGrams + 'g (21K)</b></div>' +
+      '<div class="row"><span>Housing</span><b>' + (p.houseType === 'mansion' ? 'Mansion' : 'Apartment') + ' (' + money(p.houseValueLocal) + ')</b></div>' +
+      '<div class="row"><span>House Ownership</span><b>' + (p.giveHouseToBride ? 'Written under YOUR name' : 'Remains under his name') + '</b></div>' +
+      '<div class="muted small" style="margin-top:8px">Traits: ' + p.traits.map(t => marTrait(t) ? marTrait(t).label : t).join(', ') + '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:12px">' +
+      '<button class="opt" style="flex:1;text-align:center;background:#34d399;color:#000;font-weight:700;padding:10px" onclick="marAcceptSalonat()">✅ Accept & Engage</button>' +
+      '<button class="opt" style="flex:1;text-align:center;border-color:#fb7185;color:#fb7185;padding:10px" onclick="marRejectSalonat()">❌ Reject</button>' +
+      '</div></div>';
+    return html;
+  }
+
+  /* --- STANDARD DATING UI --- */
+  html += '<div class="card" style="border-color:#fbbf24">' +
+    '<h3 style="color:#fbbf24">🏛 Traditional Arranged Meeting</h3>' +
+    '<p class="muted small">Ask your parents to arrange a Salonat. The suitor will come with his family, and you will see his job, wealth, and property before deciding.</p>' +
+    '<button class="opt" style="margin-top:6px;width:100%;text-align:center;background:#fbbf24;color:#000;font-weight:700;font-size:.78rem" onclick="marStartSalonat()">🤝 Request a Salonat (Cost: ' + money(marEGP(2000)) + ')</button>' +
+    '</div>';
+
+  html += '<div class="card"><h3>💕 Other Ways to Meet Someone</h3>' +
+    '<p class="muted small">Different sources have different success rates and family approval.</p></div>';
 
   if (typeof MARRIAGE_DATING_SOURCES === 'undefined') {
     return html + '<div class="card"><p class="muted small">Data not loaded.</p></div>';
@@ -1010,7 +1040,166 @@ function marRenderRecords() {
 
   return html || '<div class="card"><h3>📜 Records</h3><p class="muted small">No records yet.</p></div>';
 }
+/* ============================================================
+   SALONAT (ARRANGED MARRIAGE) SYSTEM
+   ============================================================ */
 
+window.marStartSalonat = function() {
+  ensureMarriageState();
+  const m = S.marriage;
+  if (m.status !== 'single' && m.status !== 'divorced') {
+    log('You must be single to meet a Salonat prospect.'); render(); return;
+  }
+
+  // Cost of the family hosting the meeting
+  const meetCost = marEGP(2000);
+  if (S.wealth < meetCost) { log('Not enough cash for the family gathering (' + money(meetCost) + ').'); render(); return; }
+  S.wealth -= meetCost;
+
+  // Generate the prospect based on family wealth
+  const tier = S.familyTier || 'middle';
+  let wealthLevel = 'middle';
+  if (tier === 'poor' || tier === 'lower-mid') wealthLevel = 'working';
+  else if (tier === 'wealthy' || tier === 'ultra') wealthLevel = 'elite';
+
+  const ages = wealthLevel === 'elite' ? [28, 42] : wealthLevel === 'working' ? [22, 32] : [25, 36];
+  const age = Math.floor(Math.random() * (ages[1] - ages[0] + 1)) + ages[0];
+  const gender = S.gender === 'm' ? 'f' : 'm';
+  const names = marNamePool(gender) || (gender === 'm' ? ['Omar'] : ['Sarah']);
+  const name = names[Math.floor(Math.random() * names.length)];
+  
+  // Job & Income
+  const jobs = {
+    working: [ { title: 'Teacher', salary: 120000 }, { title: 'Accountant', salary: 150000 }, { title: 'Sales Rep', salary: 140000 } ],
+    middle: [ { title: 'Doctor', salary: 350000 }, { title: 'Engineer', salary: 300000 }, { title: 'Business Owner', salary: 500000 } ],
+    elite: [ { title: 'Surgeon', salary: 1200000 }, { title: 'CEO', salary: 2500000 }, { title: 'Investor', salary: 3000000 } ]
+  };
+  const job = jobs[wealthLevel][Math.floor(Math.random() * jobs[wealthLevel].length)];
+  
+  // Assets (Mahr & Shabka)
+  const mahrEGP = wealthLevel === 'elite' ? 500000 : wealthLevel === 'working' ? 50000 : 150000;
+  const shabkaGrams = wealthLevel === 'elite' ? 100 : wealthLevel === 'working' ? 25 : 50;
+  
+  // House Details
+  const houseType = wealthLevel === 'elite' ? 'mansion' : wealthLevel === 'working' ? 'small_apartment' : 'nice_apartment';
+  const houseValueEGP = wealthLevel === 'elite' ? 15000000 : wealthLevel === 'working' ? 1500000 : 3500000;
+  
+  // Will he put the house in the bride's name? (More likely if he is older or wealthy)
+  let giveHouseToBride = false;
+  if (gender === 'm' && Math.random() < (wealthLevel === 'elite' ? 0.4 : 0.2)) giveHouseToBride = true; 
+  else if (gender === 'f' && Math.random() < 0.5) giveHouseToBride = true;
+
+  const traits = marRollTraits();
+  
+  // Create the prospect object
+  S.marriage.salonatProspect = {
+    name, age, gender, job,
+    wealthLevel,
+    mahrLocal: marEGP(mahrEGP),
+    shabkaGrams,
+    houseType,
+    houseValueLocal: marEGP(houseValueEGP),
+    giveHouseToBride,
+    traits,
+    familyApproval: 1.0
+  };
+  
+  m.tab = 'find'; // Switch to a special view
+  render();
+};
+
+window.marAcceptSalonat = function() {
+  const p = S.marriage.salonatProspect;
+  if (!p) return;
+
+  // 1. Create the partner
+  S.marriage.partner = {
+    name: p.name, age: p.age, gender: p.gender,
+    bond: 30, // Starts low, it's arranged
+    trust: 25,
+    communication: 25,
+    compatibility: 50,
+    traits: p.traits,
+    income: p.job.salary,
+    source: 'Salonat',
+    familyApproval: 1.0,
+    metYear: gameYear(),
+    relationshipStage: 'engaged',
+    exclusive: true,
+    memories: [], talkedTopics: [], topicCounts: {}, activityCounts: {},
+    dateCount: 0, commitmentTalks: 1, familyIntroduced: true,
+    preferences: marCreatePartnerPreferences(p.traits)
+  };
+
+  // 2. Status -> Engaged
+  S.marriage.status = 'engaged';
+  S.marriage.engagement = {
+    proposal: 'family',
+    shabkaTier: 'custom', // Overridden by Salonat logic
+    mahrTier: 'custom',
+    partyTier: 'nice_hall',
+    payer: p.gender === 'm' ? 'partner' : 'self', // Men pay in traditional culture
+    finalized: true,
+    salonatMahr: p.mahrLocal,
+    salonatShabka: p.shabkaGrams
+  };
+
+  // 3. Give the Gold (Shabka) to the player
+  if (!S.expat) S.expat = { goldStash: [] };
+  if (!Array.isArray(S.expat.goldStash)) S.expat.goldStash = [];
+  S.expat.goldStash.push({
+    id: 'gold_s_' + Math.random().toString(36).slice(2, 6),
+    karat: '21K',
+    grams: p.shabkaGrams,
+    buyPricePerGram: 4500,
+    buyLocal: 0,
+    buyYear: gameYear(),
+    buyCountry: S.country
+  });
+
+  // 4. Give the Mahr to the player
+  S.wealth += p.mahrLocal;
+
+  // 5. Create the Property in Real Estate
+  if (typeof createHome === 'function') {
+    const h = createHome({
+      name: p.houseType === 'mansion' ? 'Family Mansion' : 'Marital Apartment',
+      country: S.country,
+      city: 'Cairo', // Or generic
+      location: 'Family Neighborhood',
+      baseValue: p.houseValueLocal,
+      value: p.houseValueLocal,
+      area: p.houseType === 'mansion' ? 400 : p.houseType === 'nice_apartment' ? 140 : 90,
+      condition: 100,
+      status: 'occupied',
+      source: 'salonat',
+      isHusbandOwned: !p.giveHouseToBride
+    });
+    
+    // If it's in her name, she owns it. If it's in his name, she doesn't, but she lives there.
+    S.ownedHomes.push(h);
+    S.housing = 'owned';
+    S.realEstateActiveHomeId = h.id;
+  }
+
+  log(`💍 You accepted the proposal from ${p.name}. You received ${p.shabkaGrams}g of gold and ${money(p.mahrLocal)} Mahr.`);
+  if (p.giveHouseToBride) {
+    log(`🏠 The house (${p.houseType}) was put under YOUR name. Check the Real Estate tab.`);
+  } else {
+    log(`🏠 You will live in his ${p.houseType}, but it remains under HIS name.`);
+  }
+
+  fx({ happiness: 15, social: 10 });
+  S.marriage.salonatProspect = null;
+  S.marriage.tab = 'plan';
+  render();
+};
+
+window.marRejectSalonat = function() {
+  log('❌ You declined the Salonat proposal. Your family is disappointed.');
+  S.marriage.salonatProspect = null;
+  render();
+};
 /* ============================================================
    ACTIONS
    ============================================================ */
