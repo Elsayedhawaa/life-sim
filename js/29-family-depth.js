@@ -178,12 +178,37 @@ window.familyIgnoreWant = function(wantId) {
 
 window.familyFulfillSelfWant = function() {
   if (!S.selfWant) return;
+
+  // Route wishes that correspond to real systems
+  if (S.selfWant.id === 'buy_car') {
+    log('🚗 Time to actually go buy that car. Opening the Cars tab.');
+    S.selfWant = null;
+    if (typeof switchTab === 'function') switchTab('cars');
+    render();
+    return;
+  }
+  if (S.selfWant.id === 'buy_phone' || S.selfWant.id === 'buy_clothes') {
+    log('🛍 Time to actually treat yourself. Opening Shopping.');
+    S.selfWant = null;
+    if (typeof switchTab === 'function') switchTab('shopping');
+    render();
+    return;
+  }
+  if (S.selfWant.id === 'vacation') {
+    log('✈️ You really need that break. Opening Vacations.');
+    S.selfWant = null;
+    if (typeof switchTab === 'function') switchTab('vacations');
+    render();
+    return;
+  }
+
+  // Fallback — generic emotional wish (e.g. self-care)
   const cost = Math.round(S.selfWant.costEGP * _fdRate());
-  if (S.wealth < cost) { log('❌ Need ' + money(cost) + '.'); render(); return; }
-  if (!confirm('Buy: ' + S.selfWant.label + '?\n\nCost: ' + money(cost) + '\nHappiness +' + S.selfWant.happyFulfill)) return;
-  S.wealth -= cost;
+  if (cost > 0 && S.wealth < cost) { log('❌ Need ' + money(cost) + '.'); render(); return; }
+  if (!confirm('Fulfill: ' + S.selfWant.label + '?\n\nCost: ' + money(cost) + '\nHappiness +' + S.selfWant.happyFulfill)) return;
+  if (cost > 0) S.wealth -= cost;
   fx({ happiness: S.selfWant.happyFulfill });
-  log('🛍 Bought ' + S.selfWant.label + '. Happiness +' + S.selfWant.happyFulfill + '.');
+  log('✨ You fulfilled your wish: ' + S.selfWant.label + '. Happiness +' + S.selfWant.happyFulfill + '.');
   S.selfWant = null;
   render();
 };
@@ -389,9 +414,10 @@ GameHooks.on('year', function() {
     const r = Math.random();
     if (S.happiness < 50 || r < 0.5) {
       const tpl = SELF_WANT_TEMPLATES[Math.floor(Math.random() * SELF_WANT_TEMPLATES.length)];
-      S.selfWant = {
-        label: tpl.label,
-        costEGP: tpl.costEGP,
+         S.selfWant = {
+      id: tpl.id,
+      label: tpl.label,
+      costEGP: tpl.costEGP,
         happyFulfill: tpl.happyFulfill,
         happyIgnore: tpl.happyIgnore,
         setYear: gameYear(),
