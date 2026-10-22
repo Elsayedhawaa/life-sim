@@ -1974,19 +1974,6 @@ window.marFinalizeEngagement = function() {
   // Save mahr split
   m.mahrAdvanced = marEGP(mahrAdvCost);
   m.mahrDeferred = marEGP(mahrDefCost);
-
-  const totalEGP = shabka.costEGP + mahr.costEGP + party.costEGP;
-  const totalLocal = marEGP(totalEGP);
-  
-  const payer = e.payer || 'self';
-  let playerShare = 1;
-  if (payer === 'partner') playerShare = 0;
-  else if (payer === 'split') playerShare = 0.5;
-  
-  const playerTotal = Math.round(totalLocal * playerShare);
-
-  if (S.wealth < playerTotal) { log('Not enough cash.'); render(); return; }
-  S.wealth -= playerTotal;
   
   m.engagement = {
     shabkaTier: shabka.id, shabkaCost: shabka.costEGP,
@@ -2081,8 +2068,7 @@ window.marConfirmWedding = function() {
   const w = m.wedding;
   if (!w) return;
   const isTraditionalWoman = marIsTraditionalWoman();
-     const m = S.marriage;
-  
+
   // HARD LOCK: Check if all required Gehaz items are present in the marital home
   const h = S.ownedHomes.find(x => x.status === 'occupied') || S.ownedHomes[0];
   if (!h) {
@@ -2108,37 +2094,70 @@ window.marConfirmWedding = function() {
   if (w.payer === 'split') share = 0.5;
   else if (w.payer === 'partner_family') share = isTraditionalWoman ? 0.15 : 0.25;
   else if (w.payer === 'own_family') share = 0.5;
-     // Mother-in-law interference
+
+  // Mother-in-law interference
   if (S.marriage.motherInLawBond < 30 && Math.random() < 0.5) {
     log('🚨 Your mother-in-law interfered! She added 50 unwanted guests to the wedding list.');
-    selection.baseTotalEGP += marEGP(250000); // Cost of 50 extra guests
+    selection.baseTotalEGP += marEGP(250000);
     fx({ happiness: -10 });
   }
-     // HARD CHECK FOR GEHAZ
-  if (!m.trousseau || !m.trousseau.completed) {
-    log('🚨 The wedding is cancelled! The home is empty. You must complete the Gehaz (Furniture) negotiation first.');
-    fx({ happiness: -15 });
-    return;
-  }
 
-  // Trousseau penalty (If not done)
-  if (!S.marriage.trousseauComplete && S.marriage.gender === 'f') {
-    if (confirm('Your marital home is empty! Your mother-in-law is threatening to cancel the wedding unless you furnish it.\n\nDo you want to rush-buy basic furniture for ' + money(marEGP(50000)) + '?')) {
-      if (S.wealth >= marEGP(50000)) {
-        S.wealth -= marEGP(50000);
-        S.marriage.trousseauComplete = true;
-        log('You rushed to buy basic furniture to save the wedding.');
-      } else {
-        log('❌ You don\'t have the money. The wedding is postponed!');
-        S.marriage.wedding = null;
-        render(); return;
-      }
-    } else {
-      log('❌ The wedding was cancelled by the bride\'s family due to lack of preparation.');
-      S.marriage.wedding = null;
+  const playerTotalLocal = marEGP(selection.baseTotalEGP * share) + selection.prenupCostLocal;
+  
+  if (S.wealth < playerTotalLocal) { log('Not enough cash.'); render(); return; }
+  S.wealth -= playerTotalLocal;
+
+  /* Prenup refusal chance */
+  let prenupRecord = null;
+  if (w.prenup !== 'none') {
+    const prenupDef = MARRIAGE_PRENUP_OPTIONS.find(function(o) { return o.id === w.prenup; });
+    const refusalChance = w.prenup === 'full' ? 0.50 : 0.30;
+    if (Math.random() < refusalChance) {
+      log('💔 ' + m.partner.name + ' refused the prenup. Wedding cancelled.');
+      m.partner.bond = Math.max(0, m.partner.bond - 25);
+      m.wedding = null;
       render(); return;
     }
+    prenupRecord = { type: prenupDef.label, signedYear: gameYear() };
   }
+
+  m.wedding = {
+    venue: w.venue, guests: w.guests, catering: w.catering,
+    photography: w.photography, dress: w.dress, decoration: w.decoration, music: w.music,
+    honeymoon: w.honeymoon, planner: w.planner,
+    totalCost: selection.baseTotalEGP, payer: w.payer
+  };
+  m.prenup = prenupRecord;
+  m.financeModel = w.financeModel;
+  m.status = 'married';
+  m.partner.bond = 100;
+  m.partner.marriedYear = gameYear();
+
+  marUnlockAchievement('married');
+  if (selection.baseTotalEGP < 2000000) marUnlockAchievement('budget_wedding');
+  if (selection.baseTotalEGP > 8000000) marUnlockAchievement('dream_wedding');
+  marUnlockAchievement('financial_planners');
+  marReachMilestone('marriage');
+
+  if (typeof MARRIAGE_WEDDING_EVENTS !== 'undefined') {
+    const ev = MARRIAGE_WEDDING_EVENTS[Math.floor(Math.random() * MARRIAGE_WEDDING_EVENTS.length)];
+    log('💒 ' + ev.title + ': ' + ev.text);
+  }
+
+  log('🎉 You married ' + m.partner.name + '! You paid ' + money(playerTotalLocal) + '.');
+  fx({ happiness: 30 });
+
+  S.spouse = {
+    name: m.partner.name,
+    age: m.partner.age,
+    gender: m.partner.gender,
+    bond: m.partner.bond,
+    income: m.partner.income,
+    works: m.partner.income > 0
+  };
+
+  render();
+};
 
   const playerTotalLocal = marEGP(selection.baseTotalEGP * share) + selection.prenupCostLocal;
   
