@@ -183,12 +183,26 @@ function currentHousing() {
     if (!S.rentedHome) S.rentedHome = { tierId: 'br2', yearlyRent: (C().prices && C().prices.rent) || 120000, area: 100, condition: 75, rentedYear: gameYear() };
     return { kind: 'rented', home: S.rentedHome };
   }
-  if (S.housing === 'owned') {
-    const h = (S.ownedHomes || []).find(function(x) { return x.status === 'occupied'; });
-    if (h) return { kind: 'owned', home: h };
+   if (S.housing === 'owned') {
+    const h = S.ownedHomes.find(function(x) { return x.status === 'occupied'; });
+    if (h) {
+      return {
+        type: 'owned',
+        name: h.name + (h.isHusbandOwned ? ' (Husband\'s)' : ''),
+        description: (h.city || '') + ' · ' + (h.area || 0) + ' m² · ' + (h.location || ''),
+        area: h.area,
+        rooms: h.rooms || Math.max(2, Math.floor((h.area || 100) / 30)),
+        condition: h.condition,
+        value: h.value,
+        homeComfort: h.homeComfort || 0,
+        shoppingComfort: h.shoppingComfort || 0,
+        furnitureValue: h.furnitureValue || 0,
+        canManage: true,
+        note: h.isHusbandOwned ? "You live in your husband's property. You can decorate and renovate, but the property remains his." : null,
+        home: h
+      };
+    }
   }
-  return { kind: 'unknown', home: null };
-}
 
 function housingItemsCount(homeId) {
   if (!S.shopping || !Array.isArray(S.shopping.inventory)) return 0;
