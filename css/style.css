@@ -6,9 +6,9 @@
 body {
   background: #0a0a12;
   color: #e8e8f2;
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
   padding: 12px;
-  padding-bottom: 80px !important;   /* space for fixed bottom nav */
+  padding-bottom: 90px !important; /* Space for fixed bottom nav */
   max-width: 520px;
   margin: 0 auto;
   min-height: 100vh;
@@ -39,7 +39,7 @@ input, select {
 }
 
 /* ============================================================
-   PILLS (inline tab buttons, filter chips, etc.)
+   BUTTONS & PILLS
    ============================================================ */
 .pill {
   padding: 10px;
@@ -50,6 +50,7 @@ input, select {
   color: #888;
   font: inherit;
   text-align: center;
+  transition: all 0.2s;
 }
 .pill.on {
   background: #8b5cf6;
@@ -57,12 +58,25 @@ input, select {
   border-color: #8b5cf6;
 }
 
-/* ============================================================
-   ACTION BUTTONS
-   ============================================================ */
+.opt {
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px;
+  background: #1a1a2a;
+  border: 1px solid #333;
+  color: #fff;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition: all 0.2s;
+}
+.opt:hover:not(:disabled) { border-color: #8b5cf6; background: #25253a; }
+.opt:disabled { opacity: .5; cursor: not-allowed; }
+
 #bottom button {
   width: 100%;
-  padding: 14px;
+  padding: 16px;
   background: #8b5cf6;
   color: #fff;
   border: none;
@@ -70,35 +84,18 @@ input, select {
   font-size: 1rem;
   font-weight: bold;
   cursor: pointer;
+  transition: background 0.2s;
 }
-#bottom button:disabled {
-  background: #25253a;
-  color: #666;
-  cursor: not-allowed;
-}
-
-.opt {
-  width: 100%;
-  margin-top: 6px;
-  padding: 11px;
-  background: #1a1a2a;
-  border: 1px solid #333;
-  color: #fff;
-  border-radius: 6px;
-  text-align: left;
-  cursor: pointer;
-  font: inherit;
-}
-.opt:hover:not(:disabled) { border-color: #8b5cf6; }
-.opt:disabled { opacity: .5; cursor: not-allowed; }
+#bottom button:disabled { background: #25253a; color: #666; cursor: not-allowed; }
+#bottom button:active:not(:disabled) { background: #7c3aed; }
 
 /* ============================================================
-   TEXT & UTILITY CLASSES
+   TEXT & UTILITIES
    ============================================================ */
 .row {
   display: flex;
   justify-content: space-between;
-  padding: 5px 0;
+  padding: 6px 0;
   font-size: .9rem;
   border-bottom: 1px solid #1a1a2a;
 }
@@ -112,7 +109,7 @@ input, select {
 .mono  { font-family: monospace; }
 
 /* ============================================================
-   MODERN APP NAVIGATION — Fixed bottom bar
+   MODERN APP NAVIGATION — Fixed Bottom Bar
    ============================================================ */
 #tabs {
   position: fixed;
@@ -123,10 +120,11 @@ input, select {
   border-top: 1px solid #25253a;
   display: flex;
   justify-content: space-around;
-  padding: 8px 4px;
+  padding: 8px 4px 12px 4px;
   z-index: 100;
   max-width: 520px;
   margin: 0 auto;
+  box-shadow: 0 -4px 15px rgba(0,0,0,0.6);
 }
 
 #tabs button {
@@ -138,7 +136,7 @@ input, select {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 6px;
+  padding: 6px 4px;
   flex: 1;
   cursor: pointer;
   transition: color 0.2s;
@@ -151,45 +149,92 @@ input, select {
 }
 
 #tabs button .icon {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
+  line-height: 1;
 }
 
 /* ============================================================
-   "MORE" MENU — Full-screen overlay for extra tabs
+   "MORE" MENU — Full-Screen App Drawer
    ============================================================ */
 #more-menu {
   display: none;
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(10, 10, 18, 0.95);
+  background: #0a0a12;
   z-index: 200;
   padding: 20px;
   overflow-y: auto;
+  animation: fadeIn 0.2s ease-out;
 }
 #more-menu.active {
   display: block;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#more-menu h3 {
+  color: #8b5cf6;
+  text-align: center;
+  margin: 10px 0 20px 0;
+  font-size: 1.2rem;
+}
+
 .more-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-  margin-top: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px 12px;
 }
+
 .more-grid button {
   background: #14141f;
   border: 1px solid #25253a;
-  border-radius: 10px;
-  padding: 16px 8px;
+  border-radius: 12px;
+  padding: 16px 4px;
   color: #e8e8f2;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  font-size: 0.75rem;
   cursor: pointer;
+  transition: all 0.2s;
   font-family: inherit;
 }
-.more-grid button .icon {
-  font-size: 1.5rem;
+
+.more-grid button:active {
+  transform: scale(0.95);
+  background: #1a1a2a;
 }
+
+.more-grid button.on {
+  border-color: #8b5cf6;
+  background: #8b5cf615;
+}
+
+.more-grid button .icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.more-grid button .label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+#more-close-btn {
+  margin: 30px auto 10px;
+  display: block;
+  background: #25253a;
+  border: none;
+  padding: 14px 40px;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#more-close-btn:hover { background: #333; }
