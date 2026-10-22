@@ -987,50 +987,42 @@ function realEstateYear() {
   });
 
   /* Mortgages — remaining stays in property currency, payments convert to player currency */
-  S.realestateContracts.forEach(c => {
+    S.realestateContracts.forEach(c => {
     if (c.yearsLeft <= 0) return;
     if (typeof c.missedPayments !== 'number') c.missedPayments = 0;
+
     if (typeof isMonthly === 'function' && isMonthly()) return;
 
-    const home = S.ownedHomes.find(h => h.id === c.homeId);
-    const hc = home ? homeCountry(home) : 'egy';
-    const paymentInHome = Math.min(c.remaining, c.annualPayment);
-    const paymentInPlayer = toPlayerCurrency(paymentInHome, hc);
-
-    if (S.wealth < paymentInPlayer) {
+    const payment = Math.min(c.remaining, c.annualPayment);
+    if (S.wealth < payment) {
       c.remaining = Math.round(c.remaining * 1.05);
       c.missedPayments += 1;
-      log('Missed bank installment on ' + c.name + ' (' + c.missedPayments + '/3). Debt grew to ' + moneyIn(c.remaining, hc) + '.');
+      log(`⚠️ Missed bank installment on ${c.name} (${c.missedPayments}/3). Debt grew.`);
 
+      /* Foreclosure Logic */
       if (c.missedPayments >= 3) {
+        const home = S.ownedHomes.find(h => h.id === c.homeId);
         if (home) {
-          const equityInHome = Math.max(0, home.value - c.remaining);
-          const equityInPlayer = toPlayerCurrency(equityInHome, hc);
-          log('🚨 BANK REPOSSESSED ' + home.name + ' after 3 missed payments.');
-
-          if (equityInPlayer > 0) {
-            const refund = Math.round(equityInPlayer * 0.90);
-            S.wealth += refund;
-            log('💰 Equity returned: ' + money(refund) + ' (after 10% bank fee).');
-            if (home.status === 'occupied') S.housing = 'parents';
-            log('   You must find new housing. You are now living with parents.');
-          } else {
-            log('❌ Home was underwater. Bank absorbed the loss.');
-            if (home.status === 'occupied') S.housing = 'parents';
+          const equity = Math.max(0, home.value - c.remaining);
+          log(`🚨 BANK REPOSSESSED ${home.name} after 3 missed payments.`);
+          if (equity > 0) {
+            const cashBack = Math.round(equity * 0.90); // 10% bank fee
+            S.wealth += typeof convertToPlayerCurrency === 'function' ? convertToPlayerCurrency(cashBack, home.country || S.country) : cashBack;
+            log(`💰 Equity returned: ${money(cashBack)} after bank fees.`);
           }
+          if (home.status === 'occupied') S.housing = 'parents';
           S.ownedHomes = S.ownedHomes.filter(h => h.id !== c.homeId);
           c._repo = true;
         }
       }
     } else {
-      S.wealth -= paymentInPlayer;
-      c.remaining -= paymentInHome;
+      S.wealth -= payment;
+      c.remaining -= payment;
       c.yearsLeft--;
       c.missedPayments = 0;
     }
   });
   S.realestateContracts = S.realestateContracts.filter(c => !c._repo && c.yearsLeft > 0 && c.remaining > 0);
-
   /* Land construction */
   S.land.forEach(l => {
     const lc = l.country || 'egy';
