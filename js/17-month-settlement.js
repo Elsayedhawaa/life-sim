@@ -345,17 +345,12 @@ function monthlyApplySeasonal(c, month) {
 /* ---------- 3. RANDOM EVENT ---------- */
 function monthlyFireRandomEvent() {
   if (S.pending) return;
-  const allEvents = [...GLOBAL_EVENTS, ...(C().events || [])];
-  const eligible = allEvents.filter(function(e) {
-    return S.age >= e.minAge && S.age <= e.maxAge &&
-      !S.flags['evt_' + e.id] &&
-      (!e.condition || e.condition(S));
-  });
-  if (eligible.length && Math.random() < 0.30) {
-    const e = eligible[Math.floor(Math.random() * eligible.length)];
-    S.pending = prepareEvent(e);
-    S.evId = e.id;
-    log('📖 ' + e.title);
+  if (typeof pickEligibleEvent !== 'function') return;
+  var _evt = pickEligibleEvent();
+  if (_evt && Math.random() < 0.45) {
+    S.pending = prepareEvent(_evt);
+    S.evId = _evt.id;
+    log('📖 ' + (_evt.title || 'Event'));
   }
 }
 
