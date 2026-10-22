@@ -1,23 +1,32 @@
 /* ============================================================
-   02-data-events.js — COMPLETE REPLACEMENT (Session 3)
-   Gender-aware, money-integrated, deeply-connected events.
+   02-data-events.js — FIXED (Session 3 + crash patch)
+   All evt* helpers are null-safe.
+   All dynamic labels are functions: label: s => '...'
    ============================================================ */
 
-/* ---------- HELPERS ---------- */
+/* ---------- HELPERS (all null-safe) ---------- */
 function evtMoney(egpBase) {
   var egpRate = 52.7;
-  var currentRate = C().rate || 1;
-  return Math.round(egpBase / egpRate * currentRate);
+  var currentRate = (typeof C === 'function' && C().rate) || 52.7;
+  return Math.round((egpBase || 0) / egpRate * currentRate);
 }
 window.evtMoney = evtMoney;
 
-function evtHasJob() { return !!((S.career && S.career.job) || S.job); }
+function evtCurrency() {
+  return (typeof C === 'function' && C().currency) || 'EGP';
+}
+
+function evtHasJob() { return !!(S && ((S.career && S.career.job) || S.job)); }
+
 function evtJobPerf() {
+  if (!S) return 50;
   if (S.career && S.career.job) return S.career.job.performance || 50;
   if (S.job) return S.job.performance || 50;
   return 50;
 }
+
 function evtAffectPerf(delta) {
+  if (!S) return;
   if (S.career && S.career.job) {
     S.career.job.performance = Math.max(0, Math.min(100, (S.career.job.performance || 50) + delta));
   }
@@ -25,56 +34,72 @@ function evtAffectPerf(delta) {
     S.job.performance = Math.max(0, Math.min(100, (S.job.performance || 50) + delta));
   }
 }
+
 function evtIsMarried() {
-  return !!(S.marriage && S.marriage.status === 'married' && S.marriage.partner) || !!S.spouse;
+  if (!S) return false;
+  return !!((S.marriage && S.marriage.status === 'married' && S.marriage.partner) || S.spouse);
 }
+
 function evtIsSingle() {
+  if (!S) return true;
   return !S.marriage || S.marriage.status === 'single' || S.marriage.status === 'divorced';
 }
-function evtHasChildren() { return !!(S.childrenList && S.childrenList.length > 0); }
+
+function evtHasChildren() {
+  return !!(S && S.childrenList && S.childrenList.length > 0);
+}
+
 function evtPartner() {
+  if (!S) return null;
   if (S.marriage && S.marriage.partner) return S.marriage.partner;
   if (S.spouse) return S.spouse;
   return null;
 }
+
 function evtPartnerName() {
   var p = evtPartner();
   return p ? p.name : 'your spouse';
 }
+
 function evtParent(role) {
-  if (!S.family) return null;
-  return S.family.find(function(m) {
+  if (!S || !Array.isArray(S.family)) return null;
+  return S.family.find(function (m) {
     return m.alive !== false && (!role || m.role === role);
   }) || null;
 }
+
 function evtBumpFamily(role, delta) {
-  if (!S.family) return;
-  S.family.forEach(function(m) {
+  if (!S || !Array.isArray(S.family)) return;
+  S.family.forEach(function (m) {
     if (m.alive !== false && (!role || m.role === role)) {
       m.bond = Math.max(0, Math.min(100, (m.bond || 70) + delta));
     }
   });
 }
+
 function evtBumpPartner(delta) {
   var p = evtPartner();
   if (p) p.bond = Math.max(0, Math.min(100, (p.bond || 70) + delta));
 }
+
 function evtCreditRoom() {
-  if (!S.bank || !Array.isArray(S.bank.creditCards)) return 0;
-  return S.bank.creditCards.reduce(function(sum, c) {
+  if (!S || !S.bank || !Array.isArray(S.bank.creditCards)) return 0;
+  return S.bank.creditCards.reduce(function (sum, c) {
     return sum + Math.max(0, (c.limit || 0) - (c.balance || 0));
   }, 0);
 }
+
 function evtChargeCredit(amount) {
-  if (!S.bank || !Array.isArray(S.bank.creditCards)) return false;
-  var card = S.bank.creditCards.find(function(c) {
+  if (!S || !S.bank || !Array.isArray(S.bank.creditCards)) return false;
+  var card = S.bank.creditCards.find(function (c) {
     return ((c.balance || 0) + amount) <= (c.limit || 0);
   });
   if (!card) return false;
   card.balance = (card.balance || 0) + amount;
   return true;
 }
-function evtAskPartner(amount, ctx) {
+
+function evtAskPartner(amount) {
   var p = evtPartner();
   if (!p) return { ok: false, reason: 'no_partner' };
   var bond = p.bond || 70;
@@ -82,20 +107,17 @@ function evtAskPartner(amount, ctx) {
   if (Math.random() < chance) {
     p.bond = Math.max(0, bond - 2);
     return { ok: true, name: p.name };
-  } else {
-    p.bond = Math.max(0, bond - 6);
-    return { ok: false, reason: 'refused', name: p.name };
   }
+  p.bond = Math.max(0, bond - 6);
+  return { ok: false, reason: 'refused', name: p.name };
 }
 
 /* ============================================================
-   GENDER_EVENTS — gender-aware, money-integrated life events
+   GENDER_EVENTS
    ============================================================ */
 const GENDER_EVENTS = [
 
-/* ============================================================
-   FEMALE-SPECIFIC EVENTS
-   ============================================================ */
+/* ---------- FEMALE EVENTS ---------- */
 
 { id: 'f_marriage_pressure', genderOnly: 'f', minAge: 22, maxAge: 32,
   condition: s => evtIsSingle(),
@@ -104,7 +126,7 @@ const GENDER_EVENTS = [
   text: s => {
     var mom = evtParent('Mother');
     var name = mom ? mom.name : 'Your mother';
-    return name + ' sits you down with tea. "You are ' + s.age + ' now. Your cousin married at 23. The neighbor\'s daughter at 25. Everyone is asking about you. What should I tell them?"\n\nYour accomplishments mean nothing to her compared to a ring on your finger.';
+    return name + ' sits you down with tea. "You are ' + s.age + ' now. Your cousin married at 23. Everyone is asking about you. What should I tell them?"';
   },
   choices: [
     { label: 'Tell her to stop pressuring you',
@@ -118,7 +140,7 @@ const GENDER_EVENTS = [
 
 { id: 'f_aunt_body_comment', genderOnly: 'f', minAge: 18, maxAge: 45, weight: 8, maxFires: 4,
   title: '👩‍👧 Family Gathering Critique',
-  text: s => 'At a family gathering, your aunt pulls you aside and loudly comments on your weight, your clothes, and your skin. "Look at your cousin, she is so elegant. Why do you not take care of yourself?"',
+  text: s => 'At a family gathering, your aunt pulls you aside and loudly comments on your weight, your clothes, your skin. "Look at your cousin, she is so elegant. Why do you not take care of yourself?"',
   choices: [
     { label: 'Smile politely and excuse yourself',
       effect: s => { fx({ happiness: -3, social: 1 }); } },
@@ -131,14 +153,14 @@ const GENDER_EVENTS = [
 
 { id: 'f_street_harassment', genderOnly: 'f', minAge: 15, maxAge: 45, weight: 9, maxFires: 5,
   title: '🚶‍♀️ Street Harassment',
-  text: s => 'You are walking home and a group of men start catcalling you. One of them follows you for a block. Your heart is racing.',
+  text: s => 'You are walking home and a group of men start catcalling you. One follows you for a block. Your heart is racing.',
   choices: [
     { label: 'Ignore and walk faster (free)',
       effect: s => { fx({ happiness: -4, health: -1 }); } },
-    { label: 'Take an Uber to escape (' + evtMoney(80).toLocaleString() + ' ' + C().currency + ')',
+    { label: s => 'Take an Uber to escape (' + evtMoney(80).toLocaleString() + ' ' + evtCurrency() + ')',
       available: s => s.wealth >= evtMoney(80),
       effect: s => { s.wealth -= evtMoney(80); fx({ happiness: 1 }); } },
-    { label: 'Call ' + (evtParent('Father')?.name || 'your father') + ' to come get you',
+    { label: s => 'Call ' + (evtParent('Father') ? evtParent('Father').name : 'your father') + ' to come get you',
       effect: s => { evtBumpFamily('Father', 4); fx({ happiness: 2 }); } }
   ]
 },
@@ -148,7 +170,7 @@ const GENDER_EVENTS = [
   title: '⚖️ Career or Family?',
   text: s => {
     var p = evtPartnerName();
-    return p + '\'s family is over for dinner. His mother says: "She should stay home with the children. A woman who works is not raising her kids right." Everyone looks at you.\n\nYour job means everything to you. But the silence at the table is deafening.';
+    return p + '\'s family is over for dinner. His mother says: "She should stay home with the children. A woman who works is not raising her kids right." Everyone looks at you.';
   },
   choices: [
     { label: 'Stand up for your career',
@@ -165,7 +187,7 @@ const GENDER_EVENTS = [
   title: '🍲 Mother-in-Law Critiques Dinner',
   text: s => {
     var p = evtPartnerName();
-    return 'Your mother-in-law tastes your food, puts the spoon down and says quietly: "This is not how ' + p + '\'s grandmother made it. He deserves better."\n\nThe air leaves the room.';
+    return 'Your mother-in-law tastes your food, puts the spoon down and says: "This is not how ' + p + '\'s grandmother made it. He deserves better."';
   },
   choices: [
     { label: 'Apologize and promise to do better',
@@ -177,15 +199,14 @@ const GENDER_EVENTS = [
         var p = evtPartner();
         if (p && (p.bond || 70) >= 60) { evtBumpPartner(5); evtBumpFamily('Mother', -5); fx({ happiness: 4 }); }
         else { evtBumpPartner(-6); fx({ happiness: -8 }); }
-      }
-    }
+      } }
   ]
 },
 
 { id: 'f_baby_pressure', genderOnly: 'f', minAge: 25, maxAge: 35, weight: 8,
   condition: s => evtIsMarried() && !evtHasChildren(),
   title: '👶 "When is the Baby Coming?"',
-  text: s => 'Your mother-in-law holds your hand and says: "Two years married. Still nothing? People are talking. Maybe you should see a doctor, habibti."',
+  text: s => 'Your mother-in-law holds your hand: "Two years married. Still nothing? People are talking. Maybe you should see a doctor, habibti."',
   choices: [
     { label: 'Politely say it is between you and your husband',
       effect: s => { evtBumpFamily('Mother', -3); evtBumpPartner(2); fx({ happiness: -2 }); } },
@@ -198,7 +219,7 @@ const GENDER_EVENTS = [
 
 { id: 'f_dress_code_family', genderOnly: 'f', minAge: 18, maxAge: 40, weight: 7, maxFires: 3,
   title: '👗 Clothing Dispute',
-  text: s => 'You come downstairs in your favorite outfit. Your father looks up from the newspaper and says: "You are not leaving the house like that."',
+  text: s => 'You come downstairs in your favorite outfit. Your father looks up and says: "You are not leaving the house like that."',
   choices: [
     { label: 'Change your clothes',
       effect: s => { evtBumpFamily('Father', 3); fx({ happiness: -4 }); } },
@@ -212,7 +233,7 @@ const GENDER_EVENTS = [
 { id: 'f_workplace_sexism', genderOnly: 'f', minAge: 22, maxAge: 45, weight: 8, maxFires: 3,
   condition: s => evtHasJob(),
   title: '💼 The Promotion That Wasn\'t Yours',
-  text: s => 'You delivered better results than any man in the department. But the promotion went to a junior male colleague. When you ask your manager why, he says: "You know how it is. He has a family to feed."',
+  text: s => 'You delivered better results than any man in the department. The promotion went to a junior male colleague. Your manager says: "You know how it is. He has a family to feed."',
   choices: [
     { label: 'Report it to HR',
       effect: s => { evtAffectPerf(2); fx({ happiness: -2, smarts: 2 }); } },
@@ -226,10 +247,10 @@ const GENDER_EVENTS = [
 { id: 'f_grandma_matchmaking', genderOnly: 'f', minAge: 20, maxAge: 28, weight: 7,
   condition: s => evtIsSingle(),
   title: '👵 Grandma Has a "Nice Young Man"',
-  text: s => 'Your grandmother is on the phone with someone. She hangs up and beams at you: "I found you a wonderful young man! Engineer, good family, prays on time. I told them you will come for tea on Friday."',
+  text: s => 'Your grandmother beams at you: "I found you a wonderful young man! Engineer, good family. I told them you will come for tea on Friday."',
   choices: [
     { label: 'Go to the tea meeting',
-      effect: s => { fx({ happiness: -1, social: 2 }); log('💍 You went. It was awkward. But grandma was happy.'); } },
+      effect: s => { fx({ happiness: -1, social: 2 }); log('💍 You went. Awkward. But grandma was happy.'); } },
     { label: 'Refuse to go',
       effect: s => { evtBumpFamily('Mother', -4); fx({ happiness: 1, social: -2 }); } },
     { label: 'Go but make it clear you are not interested',
@@ -238,9 +259,9 @@ const GENDER_EVENTS = [
 },
 
 { id: 'f_dowry_argument', genderOnly: 'f', minAge: 22, maxAge: 32, weight: 6,
-  condition: s => s.marriage && (s.marriage.status === 'engaged' || s.marriage.status === 'dating'),
+  condition: s => S && S.marriage && (S.marriage.status === 'engaged' || S.marriage.status === 'dating'),
   title: '💬 The Dowry Argument',
-  text: s => 'Your mother and your fiancé\'s mother are arguing over the mahr. Your mother wants more to "protect your future." His mother thinks she is greedy. Both keep looking at you.',
+  text: s => 'Your mother and your fiancé\'s mother are arguing over the mahr. Both keep looking at you.',
   choices: [
     { label: 'Stay silent and let them fight',
       effect: s => { evtBumpFamily('Mother', -3); fx({ happiness: -4 }); } },
@@ -253,7 +274,7 @@ const GENDER_EVENTS = [
 
 { id: 'f_hijab_choice', genderOnly: 'f', minAge: 16, maxAge: 28, weight: 6,
   title: '🧕 Personal Decision',
-  text: s => 'You have been thinking about it for months. Some of your friends wear the hijab, some do not. Your mother asks what you are going to do.',
+  text: s => 'You have been thinking about it for months. Your mother asks what you are going to do.',
   choices: [
     { label: 'Decide to wear it',
       effect: s => { evtBumpFamily(null, 5); fx({ happiness: 2, social: 1 }); } },
@@ -267,15 +288,15 @@ const GENDER_EVENTS = [
 { id: 'f_friend_wedding_dress', genderOnly: 'f', minAge: 22, maxAge: 40, weight: 7, maxFires: 3,
   condition: s => (S.friends || []).length > 0,
   title: '👗 Friend\'s Wedding, No Dress',
-  text: s => 'Your close friend is getting married next week. You have absolutely nothing nice enough to wear. A proper new dress costs around ' + evtMoney(3000).toLocaleString() + ' ' + C().currency + '.',
+  text: s => 'Your close friend is getting married next week. You have nothing nice to wear. A proper new dress costs ~' + evtMoney(3000).toLocaleString() + ' ' + evtCurrency() + '.',
   choices: [
-    { label: 'Buy a new dress (' + evtMoney(3000).toLocaleString() + ' ' + C().currency + ', cash)',
+    { label: s => 'Buy a new dress (' + evtMoney(3000).toLocaleString() + ' ' + evtCurrency() + ', cash)',
       available: s => s.wealth >= evtMoney(3000),
       effect: s => { s.wealth -= evtMoney(3000); (S.friends || []).forEach(f => f.bond = Math.min(100, (f.bond || 50) + 4)); fx({ happiness: 4, social: 3 }); } },
-    { label: 'Charge to credit card',
+    { label: s => 'Charge ' + evtMoney(3000).toLocaleString() + ' ' + evtCurrency() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(3000),
       effect: s => { evtChargeCredit(evtMoney(3000)); (S.friends || []).forEach(f => f.bond = Math.min(100, (f.bond || 50) + 4)); fx({ happiness: 3, social: 3 }); } },
-    { label: 'Ask ' + evtPartnerName() + ' to pay',
+    { label: s => 'Ask ' + evtPartnerName() + ' to pay',
       available: s => evtIsMarried(),
       effect: s => {
         var r = evtAskPartner(evtMoney(3000));
@@ -287,9 +308,7 @@ const GENDER_EVENTS = [
   ]
 },
 
-/* ============================================================
-   MALE-SPECIFIC EVENTS
-   ============================================================ */
+/* ---------- MALE EVENTS ---------- */
 
 { id: 'm_apartment_pressure', genderOnly: 'm', minAge: 22, maxAge: 32, weight: 10,
   condition: s => evtIsSingle(),
@@ -297,7 +316,7 @@ const GENDER_EVENTS = [
   text: s => {
     var dad = evtParent('Father');
     var name = dad ? dad.name : 'Your father';
-    return name + ' slams his tea glass down. "You are ' + s.age + '. No apartment, no car, still living here. How will any father give you his daughter? Get serious about your life."\n\nHe is not wrong. The pressure is crushing.';
+    return name + ' slams his tea glass down. "You are ' + s.age + '. No apartment, no car, still living here. How will any father give you his daughter? Get serious."';
   },
   choices: [
     { label: 'Promise to start saving for an apartment',
@@ -312,30 +331,30 @@ const GENDER_EVENTS = [
 { id: 'm_military_service', genderOnly: 'm', minAge: 18, maxAge: 24, weight: 12,
   condition: s => s.country === 'egy',
   title: '🎖 Military Conscription Notice',
-  text: s => 'The letter arrives in the mail. You have been called for mandatory military service. You can serve for a year, buy an exemption if you can afford it, or find a medical excuse.',
+  text: s => 'The letter arrives in the mail. You have been called for mandatory military service. You can serve, buy an exemption, or find a medical excuse.',
   choices: [
     { label: 'Serve your country (lose a year)',
-      effect: s => { fx({ happiness: -10, health: -5, smarts: 3, social: 5 }); log('🎖 You completed military service. It was brutal, but you are stronger.'); } },
-    { label: 'Buy an exemption (' + evtMoney(50000).toLocaleString() + ' ' + C().currency + ')',
+      effect: s => { fx({ happiness: -10, health: -5, smarts: 3, social: 5 }); log('🎖 You completed military service. It was brutal.'); } },
+    { label: s => 'Buy an exemption (' + evtMoney(50000).toLocaleString() + ' ' + evtCurrency() + ')',
       available: s => s.wealth >= evtMoney(50000),
-      effect: s => { s.wealth -= evtMoney(50000); fx({ happiness: 5 }); log('🎖 You paid for an exemption. Free, but the money hurts.'); } },
+      effect: s => { s.wealth -= evtMoney(50000); fx({ happiness: 5 }); log('🎖 You paid for an exemption.'); } },
     { label: 'Look for a medical exemption',
-      effect: s => { if (Math.random() < 0.4) { fx({ happiness: 3 }); log('🎖 A doctor friend helped you. Exempt.'); } else { fx({ happiness: -8, health: -3 }); log('🎖 The medical excuse was rejected. You still served.'); } } }
+      effect: s => { if (Math.random() < 0.4) { fx({ happiness: 3 }); log('🎖 A doctor friend helped you. Exempt.'); } else { fx({ happiness: -8, health: -3 }); log('🎖 Excuse rejected. You still served.'); } } }
   ]
 },
 
 { id: 'm_breadwinner', genderOnly: 'm', minAge: 26, maxAge: 45, weight: 8, maxFires: 3,
   condition: s => evtHasJob(),
   title: '💰 "You Are the Man of the House"',
-  text: s => 'Your mother calls. Your father\'s pension has been delayed again. Your sister\'s school fees are due. "You are the man of the house now. We need your help."',
+  text: s => 'Your mother calls. Your father\'s pension delayed again. Your sister\'s school fees are due. "You are the man of the house now."',
   choices: [
-    { label: 'Send them money (' + evtMoney(5000).toLocaleString() + ' ' + C().currency + ', cash)',
+    { label: s => 'Send ' + evtMoney(5000).toLocaleString() + ' ' + evtCurrency() + ' (cash)',
       available: s => s.wealth >= evtMoney(5000),
       effect: s => { s.wealth -= evtMoney(5000); evtBumpFamily(null, 8); fx({ happiness: 3 }); } },
-    { label: 'Put it on your credit card',
+    { label: s => 'Put ' + evtMoney(5000).toLocaleString() + ' on credit card',
       available: s => evtCreditRoom() >= evtMoney(5000),
       effect: s => { evtChargeCredit(evtMoney(5000)); evtBumpFamily(null, 8); fx({ happiness: 2 }); } },
-    { label: 'Send only part of it',
+    { label: s => 'Send ' + evtMoney(2000).toLocaleString() + ' (partial)',
       available: s => s.wealth >= evtMoney(2000),
       effect: s => { s.wealth -= evtMoney(2000); evtBumpFamily(null, 3); fx({ happiness: 1 }); } },
     { label: 'Tell them you cannot this month',
@@ -344,28 +363,28 @@ const GENDER_EVENTS = [
 },
 
 { id: 'm_shabka_saving', genderOnly: 'm', minAge: 24, maxAge: 32, weight: 7,
-  condition: s => s.marriage && (s.marriage.status === 'engaged'),
+  condition: s => S && S.marriage && (S.marriage.status === 'engaged'),
   title: '💍 Shabka is Due',
   text: s => {
     var p = evtPartnerName();
-    return p + '\'s father calls. "We agreed on the shabka for next month. I hope you are ready." You need ' + evtMoney(80000).toLocaleString() + ' ' + C().currency + ' worth of gold before you can proceed.';
+    return p + '\'s father calls. "We agreed on the shabka next month. You need ' + evtMoney(80000).toLocaleString() + ' ' + evtCurrency() + ' worth of gold."';
   },
   choices: [
-    { label: 'Pay from savings',
+    { label: s => 'Pay ' + evtMoney(80000).toLocaleString() + ' from savings',
       available: s => s.wealth >= evtMoney(80000),
-      effect: s => { s.wealth -= evtMoney(80000); evtBumpPartner(10); fx({ happiness: 5 }); log('💍 You bought the shabka. The wedding is on.'); } },
-    { label: 'Take a personal loan for it',
+      effect: s => { s.wealth -= evtMoney(80000); evtBumpPartner(10); fx({ happiness: 5 }); log('💍 Shabka bought. Wedding is on.'); } },
+    { label: s => 'Charge ' + evtMoney(80000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(80000),
-      effect: s => { evtChargeCredit(evtMoney(80000)); evtBumpPartner(6); fx({ happiness: 2, health: -1 }); log('💍 You charged the shabka. The gold shines, but the debt hangs over you.'); } },
+      effect: s => { evtChargeCredit(evtMoney(80000)); evtBumpPartner(6); fx({ happiness: 2, health: -1 }); } },
     { label: 'Ask for more time',
-      effect: s => { evtBumpPartner(-8); fx({ happiness: -6 }); log('💔 Her father was not happy. The wedding may be postponed.'); } }
+      effect: s => { evtBumpPartner(-8); fx({ happiness: -6 }); log('💔 Her father was not happy. Wedding postponed.'); } }
   ]
 },
 
 { id: 'm_family_business', genderOnly: 'm', minAge: 22, maxAge: 40, weight: 6,
   condition: s => evtParent('Father'),
   title: '🏪 "Come Work With Me"',
-  text: s => 'Your father wants you to join the family business. He is getting older and wants to pass it on. But it means giving up your own career.',
+  text: s => 'Your father wants you to join the family business. He is getting older. But it means giving up your own career.',
   choices: [
     { label: 'Join the family business',
       effect: s => { evtBumpFamily('Father', 15); evtAffectPerf(-15); fx({ happiness: 3, social: 3 }); } },
@@ -377,92 +396,76 @@ const GENDER_EVENTS = [
 },
 
 { id: 'm_car_required', genderOnly: 'm', minAge: 24, maxAge: 32, weight: 6,
-  condition: s => s.marriage && s.marriage.status === 'dating' && (!S.cars || S.cars.length === 0),
+  condition: s => S && S.marriage && S.marriage.status === 'dating' && (!S.cars || S.cars.length === 0),
   title: '🚗 "He Has No Car?"',
-  text: s => 'You are dating ' + evtPartnerName() + '. Her brother saw you walking her home and made a comment: "A man who does not have a car should not be dating my sister."',
+  text: s => 'You are dating ' + evtPartnerName() + '. Her brother made a comment: "A man who does not have a car should not be dating my sister."',
   choices: [
     { label: 'Save aggressively for a car',
-      effect: s => { fx({ happiness: -3, smarts: 1 }); log('🚗 You started saving. The road ahead is long.'); } },
+      effect: s => { fx({ happiness: -3, smarts: 1 }); } },
     { label: 'Ignore him and keep dating her',
       effect: s => { evtBumpPartner(4); fx({ happiness: 2, social: -2 }); } },
     { label: 'End things to save her reputation',
-      effect: s => { evtBumpPartner(-20); fx({ happiness: -8 }); log('💔 You ended the relationship. The shame was too much.'); } }
+      effect: s => { evtBumpPartner(-20); fx({ happiness: -8 }); log('💔 You ended it. The shame was too much.'); } }
   ]
 },
 
 { id: 'm_marriage_proposal', genderOnly: 'm', minAge: 26, maxAge: 35, weight: 8,
-  condition: s => s.marriage && s.marriage.status === 'dating' && S.marriage.partner && (S.marriage.partner.bond || 70) >= 65,
+  condition: s => S && S.marriage && S.marriage.status === 'dating' && S.marriage.partner && (S.marriage.partner.bond || 70) >= 65,
   title: '💍 Time to Propose?',
-  text: s => {
-    var p = evtPartnerName();
-    return 'You have been dating ' + p + ' for a while now. Both families are asking. Your heart says yes. Are you ready to take this step?';
-  },
+  text: s => 'You have been dating ' + evtPartnerName() + ' for a while. Both families are asking. Are you ready?',
   choices: [
-    { label: 'Propose properly (buy ring, ' + evtMoney(15000).toLocaleString() + ')',
+    { label: s => 'Propose properly (ring: ' + evtMoney(15000).toLocaleString() + ' ' + evtCurrency() + ')',
       available: s => s.wealth >= evtMoney(15000),
-      effect: s => {
-        s.wealth -= evtMoney(15000);
-        if (S.marriage) { S.marriage.status = 'engaged'; }
-        evtBumpPartner(15);
-        fx({ happiness: 15 });
-      } },
-    { label: 'Propose with a cheap ring (' + evtMoney(3000).toLocaleString() + ')',
+      effect: s => { s.wealth -= evtMoney(15000); if (S.marriage) S.marriage.status = 'engaged'; evtBumpPartner(15); fx({ happiness: 15 }); } },
+    { label: s => 'Propose with a cheap ring (' + evtMoney(3000).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(3000),
-      effect: s => {
-        s.wealth -= evtMoney(3000);
-        if (S.marriage) { S.marriage.status = 'engaged'; }
-        evtBumpPartner(8);
-        fx({ happiness: 10 });
-      } },
+      effect: s => { s.wealth -= evtMoney(3000); if (S.marriage) S.marriage.status = 'engaged'; evtBumpPartner(8); fx({ happiness: 10 }); } },
     { label: 'Wait a bit longer',
       effect: s => { evtBumpPartner(-3); fx({ happiness: -2 }); } }
   ]
 },
 
 { id: 'm_sibling_loan', genderOnly: 'm', minAge: 24, maxAge: 45, weight: 7, maxFires: 3,
-  condition: s => (S.family || []).some(function(m) { return m.alive !== false && m.role === 'Brother'; }),
+  condition: s => (S.family || []).some(m => m.alive !== false && m.role === 'Brother'),
   title: '💸 Brother Needs a Big Loan',
-  text: s => 'Your brother calls, voice low. He needs ' + evtMoney(20000).toLocaleString() + ' ' + C().currency + ' for a "sure thing" business deal. "You are my brother. I would do it for you."',
+  text: s => 'Your brother needs ' + evtMoney(20000).toLocaleString() + ' ' + evtCurrency() + ' for a "sure thing" business deal.',
   choices: [
-    { label: 'Lend it from savings',
+    { label: s => 'Lend ' + evtMoney(20000).toLocaleString() + ' from savings',
       available: s => s.wealth >= evtMoney(20000),
-      effect: s => { s.wealth -= evtMoney(20000); evtBumpFamily('Brother', 12); fx({ happiness: 2 }); log('💸 You lent him the money. He hugged you.'); } },
-    { label: 'Charge it to credit card',
+      effect: s => { s.wealth -= evtMoney(20000); evtBumpFamily('Brother', 12); fx({ happiness: 2 }); } },
+    { label: s => 'Charge ' + evtMoney(20000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(20000),
       effect: s => { evtChargeCredit(evtMoney(20000)); evtBumpFamily('Brother', 8); fx({ happiness: 1 }); } },
-    { label: 'Lend him half',
+    { label: s => 'Lend ' + evtMoney(10000).toLocaleString() + ' (half)',
       available: s => s.wealth >= evtMoney(10000),
       effect: s => { s.wealth -= evtMoney(10000); evtBumpFamily('Brother', 5); } },
     { label: 'Refuse',
-      effect: s => { evtBumpFamily('Brother', -15); fx({ happiness: -4 }); log('💔 He said nothing and hung up.'); } }
+      effect: s => { evtBumpFamily('Brother', -15); fx({ happiness: -4 }); } }
   ]
 },
 
 { id: 'm_father_in_law', genderOnly: 'm', minAge: 26, maxAge: 38, weight: 6,
-  condition: s => s.marriage && s.marriage.status === 'engaged',
+  condition: s => S && S.marriage && S.marriage.status === 'engaged',
   title: '☕ Meet the Father-in-Law',
-  text: s => {
-    var p = evtPartnerName();
-    return 'You have been invited to meet ' + p + '\'s father for the first time, alone. He wants to "discuss your intentions." This is the most important tea of your life.';
-  },
+  text: s => 'You meet ' + evtPartnerName() + '\'s father for the first time, alone. He wants to "discuss your intentions."',
   choices: [
-    { label: 'Bring a generous gift (' + evtMoney(3000).toLocaleString() + ')',
+    { label: s => 'Bring a generous gift (' + evtMoney(3000).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(3000),
       effect: s => { s.wealth -= evtMoney(3000); evtBumpPartner(10); fx({ happiness: 6 }); } },
-    { label: 'Bring a simple gift',
+    { label: s => 'Bring a simple gift (' + evtMoney(500).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(500),
       effect: s => { s.wealth -= evtMoney(500); evtBumpPartner(4); fx({ happiness: 2 }); } },
     { label: 'Arrive empty-handed',
-      effect: s => { evtBumpPartner(-6); fx({ happiness: -4 }); log('😬 He noticed. The meeting was cold.'); } }
+      effect: s => { evtBumpPartner(-6); fx({ happiness: -4 }); } }
   ]
 },
 
 { id: 'm_friend_pressure_drink', genderOnly: 'm', minAge: 18, maxAge: 40, weight: 6, maxFires: 4,
   condition: s => (S.friends || []).length > 0,
   title: '🍻 Friends Want to Go Out',
-  text: s => 'The group chat is blowing up. The boys want to go to a club. "You never come out anymore. What, are you scared?"',
+  text: s => 'The boys want to go to a club. "You never come out anymore. What, are you scared?"',
   choices: [
-    { label: 'Go, spend ' + evtMoney(800).toLocaleString() + ' ' + C().currency + ' on drinks',
+    { label: s => 'Go, spend ' + evtMoney(800).toLocaleString() + ' ' + evtCurrency() + ' on drinks',
       available: s => s.wealth >= evtMoney(800),
       effect: s => { s.wealth -= evtMoney(800); (S.friends || []).forEach(f => f.bond = Math.min(100, (f.bond || 50) + 6)); fx({ happiness: 5, social: 4, health: -2 }); } },
     { label: 'Stay home and rest',
@@ -473,17 +476,17 @@ const GENDER_EVENTS = [
 },
 
 { id: 'm_brother_wedding_help', genderOnly: 'm', minAge: 24, maxAge: 45, weight: 6,
-  condition: s => (S.family || []).some(function(m) { return m.alive !== false && m.role === 'Brother'; }),
+  condition: s => (S.family || []).some(m => m.alive !== false && m.role === 'Brother'),
   title: '💍 Brother\'s Wedding Costs',
-  text: s => 'Your brother is getting married. In your culture, the whole family helps. Your mother quietly tells you: "We need ' + evtMoney(15000).toLocaleString() + ' ' + C().currency + ' from you. You are his only brother."',
+  text: s => 'Your brother is getting married. Your mother quietly tells you: "We need ' + evtMoney(15000).toLocaleString() + ' ' + evtCurrency() + ' from you. You are his only brother."',
   choices: [
-    { label: 'Pay the full amount',
+    { label: s => 'Pay ' + evtMoney(15000).toLocaleString() + ' (cash)',
       available: s => s.wealth >= evtMoney(15000),
       effect: s => { s.wealth -= evtMoney(15000); evtBumpFamily(null, 15); fx({ happiness: 6, social: 5 }); } },
-    { label: 'Charge it to credit card',
+    { label: s => 'Charge ' + evtMoney(15000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(15000),
       effect: s => { evtChargeCredit(evtMoney(15000)); evtBumpFamily(null, 12); fx({ happiness: 4 }); } },
-    { label: 'Contribute what you can',
+    { label: s => 'Contribute ' + evtMoney(5000).toLocaleString() + ' (what you can)',
       available: s => s.wealth >= evtMoney(5000),
       effect: s => { s.wealth -= evtMoney(5000); evtBumpFamily(null, 6); fx({ happiness: 2 }); } },
     { label: 'Refuse — you have your own family',
@@ -492,30 +495,27 @@ const GENDER_EVENTS = [
 },
 
 { id: 'm_wedding_costs', genderOnly: 'm', minAge: 26, maxAge: 38, weight: 7,
-  condition: s => s.marriage && s.marriage.status === 'engaged',
+  condition: s => S && S.marriage && S.marriage.status === 'engaged',
   title: '🎉 Wedding Budget Crisis',
   text: s => {
     var p = evtPartnerName();
-    return p + '\'s family and yours are arguing about the wedding cost. You are expected to pay ' + evtMoney(150000).toLocaleString() + ' ' + C().currency + '. Your savings are not there yet.';
+    return p + '\'s family and yours argue over wedding cost. You are expected to pay ' + evtMoney(150000).toLocaleString() + ' ' + evtCurrency() + '.';
   },
   choices: [
-    { label: 'Take a bank loan for the wedding',
+    { label: s => 'Take a bank loan (' + evtMoney(150000).toLocaleString() + ')',
       available: s => evtCreditRoom() >= evtMoney(150000),
-      effect: s => { evtChargeCredit(evtMoney(150000)); evtBumpPartner(10); fx({ happiness: 8, health: -3 }); log('🎉 The wedding happens. The debt lingers.'); } },
+      effect: s => { evtChargeCredit(evtMoney(150000)); evtBumpPartner(10); fx({ happiness: 8, health: -3 }); } },
     { label: 'Ask for a smaller wedding',
-      effect: s => { evtBumpPartner(-5); fx({ happiness: -3 }); log('💔 Her family was offended. The wedding was scaled down.'); } },
-    { label: 'Ask ' + p + ' and her family to contribute',
-      effect: s => { evtBumpPartner(-3); fx({ happiness: -2 }); log('💬 They eventually agreed. But it was a painful conversation.'); } }
+      effect: s => { evtBumpPartner(-5); fx({ happiness: -3 }); } },
+    { label: s => 'Ask ' + evtPartnerName() + ' and her family to contribute',
+      effect: s => { evtBumpPartner(-3); fx({ happiness: -2 }); } }
   ]
 },
 
 { id: 'm_career_versus_family', genderOnly: 'm', minAge: 30, maxAge: 48, weight: 7,
   condition: s => evtIsMarried() && evtHasChildren() && evtHasJob(),
   title: '💼 "You Are Never Home"',
-  text: s => {
-    var p = evtPartnerName();
-    return p + ' is waiting up when you come home at 11 PM. "The kids asked where you were again. This is not a family anymore, it is a hotel."';
-  },
+  text: s => evtPartnerName() + ' is waiting up at 11 PM. "The kids asked where you were again. This is not a family anymore, it is a hotel."',
   choices: [
     { label: 'Cut back on work hours',
       effect: s => { evtAffectPerf(-8); evtBumpPartner(12); fx({ happiness: 6 }); } },
@@ -529,10 +529,10 @@ const GENDER_EVENTS = [
 { id: 'm_marriage_offer_arranged', genderOnly: 'm', minAge: 24, maxAge: 34, weight: 6,
   condition: s => evtIsSingle(),
   title: '💍 Family Arranged Match',
-  text: s => 'Your mother has been talking with a "very respectable family." Their daughter is beautiful, educated, from a good home. She wants you to meet her next Friday.',
+  text: s => 'Your mother found a "very respectable family." Their daughter is beautiful, educated. She wants you to meet her Friday.',
   choices: [
     { label: 'Go to the meeting',
-      effect: s => { fx({ happiness: 1, social: 2 }); log('👀 You met her. The families are hopeful.'); } },
+      effect: s => { fx({ happiness: 1, social: 2 }); } },
     { label: 'Refuse politely',
       effect: s => { evtBumpFamily('Mother', -5); fx({ happiness: -2 }); } },
     { label: 'Say you want to choose your own wife',
@@ -543,7 +543,7 @@ const GENDER_EVENTS = [
 { id: 'm_family_honor', genderOnly: 'm', minAge: 22, maxAge: 45, weight: 5,
   condition: s => (S.family || []).length > 0,
   title: '⚔️ Family Honor',
-  text: s => 'A neighbor insulted your family publicly. Your father and brothers are livid. They expect you to "handle it" — man to man.',
+  text: s => 'A neighbor insulted your family publicly. Your father and brothers expect you to "handle it" — man to man.',
   choices: [
     { label: 'Confront him directly',
       effect: s => { if (Math.random() < 0.5) { evtBumpFamily(null, 10); fx({ happiness: 5, health: -3 }); } else { evtBumpFamily(null, -3); fx({ happiness: -4, health: -8 }); } } },
@@ -554,25 +554,24 @@ const GENDER_EVENTS = [
   ]
 },
 
-/* ============================================================
-   SHARED EVENTS (money, family, social — both genders)
-   ============================================================ */
+/* ---------- SHARED ---------- */
 
 { id: 's_parent_surgery', minAge: 22, maxAge: 65, weight: 8, maxFires: 2,
   condition: s => evtParent(),
   title: '🏥 Parent Needs Surgery',
   text: s => {
     var parent = evtParent();
-    return 'Your ' + parent.role.toLowerCase() + ', ' + parent.name + ', needs urgent surgery. The hospital wants ' + evtMoney(15000).toLocaleString() + ' ' + C().currency + ' upfront. Your family is looking at you.';
+    if (!parent) return 'A parent needs urgent surgery.';
+    return 'Your ' + parent.role.toLowerCase() + ', ' + parent.name + ', needs urgent surgery. The hospital wants ' + evtMoney(15000).toLocaleString() + ' ' + evtCurrency() + ' upfront.';
   },
   choices: [
-    { label: 'Pay from savings',
+    { label: s => 'Pay ' + evtMoney(15000).toLocaleString() + ' (cash)',
       available: s => s.wealth >= evtMoney(15000),
-      effect: s => { s.wealth -= evtMoney(15000); evtBumpFamily(null, 15); fx({ happiness: 3 }); log('💰 You paid for the surgery. The family is grateful.'); } },
-    { label: 'Put it on credit card',
+      effect: s => { s.wealth -= evtMoney(15000); evtBumpFamily(null, 15); fx({ happiness: 3 }); } },
+    { label: s => 'Charge ' + evtMoney(15000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(15000),
-      effect: s => { evtChargeCredit(evtMoney(15000)); evtBumpFamily(null, 12); fx({ happiness: 2 }); log('💳 Charged. The debt is heavy.'); } },
-    { label: 'Ask ' + evtPartnerName() + ' to help',
+      effect: s => { evtChargeCredit(evtMoney(15000)); evtBumpFamily(null, 12); fx({ happiness: 2 }); } },
+    { label: s => 'Ask ' + evtPartnerName() + ' to help',
       available: s => evtIsMarried(),
       effect: s => {
         var r = evtAskPartner(evtMoney(15000));
@@ -580,29 +579,29 @@ const GENDER_EVENTS = [
         else { fx({ happiness: -12 }); log('💔 ' + r.name + ' refused.'); }
       } },
     { label: 'Say you cannot afford it',
-      effect: s => { evtBumpFamily(null, -25); fx({ happiness: -20, health: -5 }); log('💔 The surgery was delayed. Your family is devastated.'); } }
+      effect: s => { evtBumpFamily(null, -25); fx({ happiness: -20, health: -5 }); } }
   ]
 },
 
 { id: 's_sibling_wedding', minAge: 22, maxAge: 45, weight: 6, maxFires: 2,
-  condition: s => (S.family || []).some(function(m) { return m.alive !== false && (m.isSibling || m.role === 'Sibling' || m.role === 'Brother' || m.role === 'Sister'); }),
+  condition: s => (S.family || []).some(m => m.alive !== false && (m.isSibling || m.role === 'Sibling' || m.role === 'Brother' || m.role === 'Sister')),
   title: '💍 Sibling\'s Wedding',
-  text: s => 'Your sibling is getting married and the whole family is chipping in. Your expected share: ' + evtMoney(10000).toLocaleString() + ' ' + C().currency + '.',
+  text: s => 'Your sibling is getting married. Your expected share: ' + evtMoney(10000).toLocaleString() + ' ' + evtCurrency() + '.',
   choices: [
-    { label: 'Pay your share',
+    { label: s => 'Pay ' + evtMoney(10000).toLocaleString() + ' (cash)',
       available: s => s.wealth >= evtMoney(10000),
       effect: s => { s.wealth -= evtMoney(10000); evtBumpFamily(null, 8); fx({ happiness: 4, social: 3 }); } },
-    { label: 'Charge to credit card',
+    { label: s => 'Charge ' + evtMoney(10000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(10000),
       effect: s => { evtChargeCredit(evtMoney(10000)); evtBumpFamily(null, 8); fx({ happiness: 3 }); } },
-    { label: 'Ask ' + evtPartnerName() + ' to cover it',
+    { label: s => 'Ask ' + evtPartnerName() + ' to cover it',
       available: s => evtIsMarried(),
       effect: s => {
         var r = evtAskPartner(evtMoney(10000));
         if (r.ok) { evtBumpFamily(null, 6); fx({ happiness: 2 }); }
         else { evtBumpFamily(null, -5); fx({ happiness: -5 }); }
       } },
-    { label: 'Give what you can (' + evtMoney(3000).toLocaleString() + ')',
+    { label: s => 'Give ' + evtMoney(3000).toLocaleString() + ' (what you can)',
       available: s => s.wealth >= evtMoney(3000),
       effect: s => { s.wealth -= evtMoney(3000); evtBumpFamily(null, 3); } },
     { label: 'Refuse',
@@ -611,40 +610,41 @@ const GENDER_EVENTS = [
 },
 
 { id: 's_friend_wedding_gift', minAge: 22, maxAge: 45, weight: 8, maxFires: 3,
-  condition: s => (S.friends || []).some(function(f) { return (f.bond || 0) >= 40; }),
+  condition: s => (S.friends || []).some(f => (f.bond || 0) >= 40),
   title: '💒 Friend\'s Wedding',
   text: s => {
-    var f = (S.friends || []).filter(function(x) { return (x.bond || 0) >= 40; })[0];
-    return 'Your close friend ' + f.name + ' is getting married. You are expected to attend with a cash gift (negoot). A proper one costs around ' + evtMoney(2000).toLocaleString() + ' ' + C().currency + '.';
+    var f = (S.friends || []).filter(x => (x.bond || 0) >= 40)[0];
+    if (!f) return 'A close friend is getting married.';
+    return f.name + ' is getting married. A proper cash gift (negoot): ' + evtMoney(2000).toLocaleString() + ' ' + evtCurrency() + '.';
   },
   choices: [
-    { label: 'Attend with a proper gift (' + evtMoney(2000).toLocaleString() + ', cash)',
+    { label: s => 'Attend with proper gift (' + evtMoney(2000).toLocaleString() + ', cash)',
       available: s => s.wealth >= evtMoney(2000),
       effect: s => { s.wealth -= evtMoney(2000); (S.friends || []).forEach(f => f.bond = Math.min(100, (f.bond || 50) + 8)); fx({ happiness: 4, social: 4 }); } },
-    { label: 'Charge to credit card',
+    { label: s => 'Charge ' + evtMoney(2000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(2000),
       effect: s => { evtChargeCredit(evtMoney(2000)); (S.friends || []).forEach(f => f.bond = Math.min(100, (f.bond || 50) + 8)); fx({ happiness: 3, social: 3 }); } },
-    { label: 'Ask ' + evtPartnerName() + ' to split the gift',
+    { label: s => 'Ask ' + evtPartnerName() + ' to split the gift',
       available: s => evtIsMarried(),
       effect: s => {
         var r = evtAskPartner(evtMoney(1000));
         if (r.ok) { (S.friends || []).forEach(f => f.bond = Math.min(100, (f.bond || 50) + 6)); fx({ happiness: 3 }); }
         else { fx({ happiness: -2 }); }
       } },
-    { label: 'Send a message and skip the wedding',
+    { label: 'Send a message and skip',
       effect: s => { (S.friends || []).forEach(f => f.bond = Math.max(0, (f.bond || 50) - 8)); fx({ social: -3 }); } }
   ]
 },
 
 { id: 's_family_birthday', minAge: 18, maxAge: 60, weight: 8, maxFires: 5,
-  condition: s => (S.family || []).some(function(m) { return m.alive !== false; }),
+  condition: s => (S.family || []).some(m => m.alive !== false),
   title: '🎂 Family Birthday',
-  text: s => 'A close family member\'s birthday is coming. A good gift is expected — around ' + evtMoney(1500).toLocaleString() + ' ' + C().currency + '.',
+  text: s => 'A close family member\'s birthday. A good gift: ~' + evtMoney(1500).toLocaleString() + ' ' + evtCurrency() + '.',
   choices: [
-    { label: 'Buy a thoughtful gift (' + evtMoney(1500).toLocaleString() + ')',
+    { label: s => 'Buy a thoughtful gift (' + evtMoney(1500).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(1500),
       effect: s => { s.wealth -= evtMoney(1500); evtBumpFamily(null, 5); fx({ happiness: 3 }); } },
-    { label: 'Simple gift (' + evtMoney(500).toLocaleString() + ')',
+    { label: s => 'Simple gift (' + evtMoney(500).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(500),
       effect: s => { s.wealth -= evtMoney(500); evtBumpFamily(null, 2); fx({ happiness: 1 }); } },
     { label: 'Just call and wish them',
@@ -653,48 +653,48 @@ const GENDER_EVENTS = [
 },
 
 { id: 's_car_breakdown', minAge: 22, maxAge: 65, weight: 8, maxFires: 3,
-  condition: s => (S.cars || []).some(function(c) { return !c.storedIn; }),
+  condition: s => (S.cars || []).some(c => !c.storedIn),
   title: '🚗 Car Broke Down',
-  text: s => 'Your car will not start. The mechanic says the alternator is dead. Repair: ' + evtMoney(3000).toLocaleString() + ' ' + C().currency + '.',
+  text: s => 'Your car will not start. Dead alternator. Repair: ' + evtMoney(3000).toLocaleString() + ' ' + evtCurrency() + '.',
   choices: [
-    { label: 'Repair the car (cash)',
+    { label: s => 'Repair the car (' + evtMoney(3000).toLocaleString() + ', cash)',
       available: s => s.wealth >= evtMoney(3000),
       effect: s => { s.wealth -= evtMoney(3000); fx({ happiness: -2 }); } },
-    { label: 'Charge to credit card',
+    { label: s => 'Charge ' + evtMoney(3000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(3000),
       effect: s => { evtChargeCredit(evtMoney(3000)); fx({ happiness: -1 }); } },
     { label: 'Take public transport for now',
-      effect: s => { fx({ happiness: -5, health: -1 }); log('🚌 You are stuck with buses and microbus chaos.'); } }
+      effect: s => { fx({ happiness: -5, health: -1 }); } }
   ]
 },
 
 { id: 's_fridge_broken', minAge: 22, maxAge: 65, weight: 7,
-  condition: s => S.housing && S.housing !== 'parents',
+  condition: s => S && S.housing && S.housing !== 'parents',
   title: '🧊 Fridge Died',
-  text: s => 'Your refrigerator stopped working overnight. All your food is spoiling. A new fridge: ' + evtMoney(12000).toLocaleString() + ' ' + C().currency + '. Repair: ' + evtMoney(2500).toLocaleString() + '.',
+  text: s => 'Your refrigerator stopped working overnight. New fridge: ' + evtMoney(12000).toLocaleString() + ' ' + evtCurrency() + '. Repair: ' + evtMoney(2500).toLocaleString() + '.',
   choices: [
-    { label: 'Buy a new fridge (cash)',
+    { label: s => 'Buy new fridge (' + evtMoney(12000).toLocaleString() + ', cash)',
       available: s => s.wealth >= evtMoney(12000),
       effect: s => { s.wealth -= evtMoney(12000); fx({ happiness: 2 }); } },
-    { label: 'Buy on credit card',
+    { label: s => 'Charge ' + evtMoney(12000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(12000),
       effect: s => { evtChargeCredit(evtMoney(12000)); fx({ happiness: 1 }); } },
-    { label: 'Repair it (cash)',
+    { label: s => 'Repair (' + evtMoney(2500).toLocaleString() + ', cash)',
       available: s => s.wealth >= evtMoney(2500),
       effect: s => { s.wealth -= evtMoney(2500); fx({ happiness: -2 }); } },
-    { label: 'Just live without a fridge for now',
+    { label: 'Live without a fridge',
       effect: s => { fx({ happiness: -5, health: -2 }); } }
   ]
 },
 
 { id: 's_phone_stolen', minAge: 16, maxAge: 70, weight: 7,
   title: '📱 Phone Snatched',
-  text: s => 'A motorcycle snatcher grabbed your phone from your hand at the traffic light. It is gone. You need a new one.',
+  text: s => 'A motorcycle snatcher grabbed your phone at the traffic light. You need a new one.',
   choices: [
-    { label: 'Buy a basic replacement (' + evtMoney(5000).toLocaleString() + ')',
+    { label: s => 'Buy a basic replacement (' + evtMoney(5000).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(5000),
       effect: s => { s.wealth -= evtMoney(5000); fx({ happiness: -4 }); } },
-    { label: 'Buy on credit card',
+    { label: s => 'Charge ' + evtMoney(5000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(5000),
       effect: s => { evtChargeCredit(evtMoney(5000)); fx({ happiness: -3 }); } },
     { label: 'Go without a phone',
@@ -705,11 +705,11 @@ const GENDER_EVENTS = [
 { id: 's_coworker_loan', minAge: 22, maxAge: 55, weight: 6, maxFires: 3,
   condition: s => evtHasJob(),
   title: '💼 Coworker Wants a Loan',
-  text: s => 'A coworker pulls you aside. "I am short on rent. Can you lend me ' + evtMoney(2000).toLocaleString() + ' ' + C().currency + '? I will pay you next week."',
+  text: s => 'A coworker: "I am short on rent. Can you lend me ' + evtMoney(2000).toLocaleString() + ' ' + evtCurrency() + '?"',
   choices: [
-    { label: 'Lend it (cash)',
+    { label: s => 'Lend ' + evtMoney(2000).toLocaleString() + ' (cash)',
       available: s => s.wealth >= evtMoney(2000),
-      effect: s => { s.wealth -= evtMoney(2000); if (Math.random() < 0.5) { fx({ happiness: 2, social: 3 }); log('😊 They paid you back on time.'); } else { fx({ happiness: -3 }); log('😐 They have not mentioned it since. You probably will not see that money.'); } } },
+      effect: s => { s.wealth -= evtMoney(2000); if (Math.random() < 0.5) { fx({ happiness: 2, social: 3 }); log('😊 They paid you back on time.'); } else { fx({ happiness: -3 }); log('😐 Not seen that money since.'); } } },
     { label: 'Politely say you cannot',
       effect: s => { evtAffectPerf(-1); fx({ social: -2 }); } }
   ]
@@ -717,7 +717,7 @@ const GENDER_EVENTS = [
 
 { id: 's_subscription_trap', minAge: 18, maxAge: 70, weight: 7, maxFires: 3,
   title: '📱 Forgotten Subscription Auto-Renewed',
-  text: s => 'You notice your credit card was charged ' + evtMoney(1200).toLocaleString() + ' ' + C().currency + ' for an app you completely forgot about. Auto-renewal.',
+  text: s => 'You notice a charge of ' + evtMoney(1200).toLocaleString() + ' ' + evtCurrency() + ' on your card for an old app. Auto-renewal.',
   choices: [
     { label: 'Accept and cancel now',
       effect: s => { fx({ happiness: -1 }); } },
@@ -731,10 +731,10 @@ const GENDER_EVENTS = [
   title: '☕ Coffee Invite',
   text: s => {
     var f = (S.friends || [])[0];
-    return f.name + ' texts: "Free this weekend? Coffee?" A coffee date is around ' + evtMoney(200).toLocaleString() + ' ' + C().currency + '.';
+    return (f ? f.name : 'A friend') + ' texts: "Free this weekend? Coffee?" (~' + evtMoney(200).toLocaleString() + ' ' + evtCurrency() + ')';
   },
   choices: [
-    { label: 'Yes, coffee out (' + evtMoney(250).toLocaleString() + ')',
+    { label: s => 'Yes, coffee out (' + evtMoney(250).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(250),
       effect: s => { s.wealth -= evtMoney(250); (S.friends || []).forEach(f => f.bond = Math.min(100, (f.bond || 50) + 4)); fx({ happiness: 3, social: 3 }); } },
     { label: 'Meet at home instead (free)',
@@ -749,10 +749,10 @@ const GENDER_EVENTS = [
   title: '👨‍👩‍👧 "Come See Us"',
   text: s => {
     var p = evtParent();
-    return p.name + ' calls. "It has been so long. When are you coming to visit? We miss you." You can hear the loneliness in their voice.';
+    return (p ? p.name : 'Your parent') + ' calls. "It has been so long. When are you coming to visit?"';
   },
   choices: [
-    { label: 'Visit this weekend (transport ' + evtMoney(300).toLocaleString() + ')',
+    { label: s => 'Visit this weekend (' + evtMoney(300).toLocaleString() + ' transport)',
       available: s => s.wealth >= evtMoney(300),
       effect: s => { s.wealth -= evtMoney(300); evtBumpFamily(null, 6); fx({ happiness: 4, social: 2 }); } },
     { label: 'Promise to visit soon',
@@ -765,9 +765,9 @@ const GENDER_EVENTS = [
 { id: 's_old_friend_returns', minAge: 24, maxAge: 60, weight: 5, maxFires: 3,
   condition: s => (S.friends || []).length > 0,
   title: '👋 Old Friend Reappears',
-  text: s => 'Someone you lost touch with messages you out of the blue: "Long time! Let\'s catch up properly. Dinner at my place?"',
+  text: s => 'Someone you lost touch with: "Long time! Dinner at my place?"',
   choices: [
-    { label: 'Go and reconnect, bring a gift (' + evtMoney(400).toLocaleString() + ')',
+    { label: s => 'Go, bring a gift (' + evtMoney(400).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(400),
       effect: s => { s.wealth -= evtMoney(400); (S.friends || []).forEach(f => f.bond = Math.min(100, (f.bond || 50) + 6)); fx({ happiness: 4, social: 3 }); } },
     { label: 'Go but bring nothing',
@@ -779,12 +779,12 @@ const GENDER_EVENTS = [
 
 { id: 's_charity_encounter', minAge: 16, maxAge: 70, weight: 6, maxFires: 4,
   title: '🤲 Person in Need',
-  text: s => 'Outside the supermarket, an elderly woman quietly asks you for money to buy bread and milk for her grandchildren.',
+  text: s => 'An elderly woman quietly asks you for money to buy bread and milk for her grandchildren.',
   choices: [
-    { label: 'Buy her groceries (' + evtMoney(400).toLocaleString() + ')',
+    { label: s => 'Buy groceries (' + evtMoney(400).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(400),
-      effect: s => { s.wealth -= evtMoney(400); fx({ happiness: 5, health: 1 }); log('🤲 She prayed for you. You feel warm inside.'); } },
-    { label: 'Give some cash (' + evtMoney(100).toLocaleString() + ')',
+      effect: s => { s.wealth -= evtMoney(400); fx({ happiness: 5, health: 1 }); log('🤲 She prayed for you.'); } },
+    { label: s => 'Give some cash (' + evtMoney(100).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(100),
       effect: s => { s.wealth -= evtMoney(100); fx({ happiness: 2 }); } },
     { label: 'Apologize and walk away',
@@ -794,26 +794,24 @@ const GENDER_EVENTS = [
 
 { id: 's_scam_call', minAge: 18, maxAge: 70, weight: 6, maxFires: 3,
   title: '📞 "Bank Security" Call',
-  text: s => 'Someone claiming to be from your bank calls. They say your account is frozen and need your OTP to verify.',
+  text: s => 'Someone claiming to be from your bank calls. They want your OTP to "verify" your identity.',
   choices: [
     { label: 'Give them the OTP',
-      effect: s => { var loss = Math.min(s.wealth, evtMoney(4000)); s.wealth -= loss; fx({ happiness: -8, smarts: -2 }); log('🚨 It was a scam. They took ' + loss.toLocaleString() + ' ' + C().currency + '.'); } },
+      effect: s => { var loss = Math.min(s.wealth, evtMoney(4000)); s.wealth -= loss; fx({ happiness: -8, smarts: -2 }); log('🚨 Scam. Took ' + loss.toLocaleString() + ' ' + evtCurrency() + '.'); } },
     { label: 'Hang up immediately',
       effect: s => { fx({ smarts: 1 }); log('🛡 You protected yourself.'); } }
   ]
 },
 
-/* ============================================================
-   MARRIED-ONLY EVENTS
-   ============================================================ */
+/* ---------- MARRIED-ONLY ---------- */
 
 { id: 'm_partner_wants_baby', minAge: 24, maxAge: 38, weight: 9, maxFires: 4,
   condition: s => evtIsMarried() && !evtHasChildren(),
-  title: '👶 ' + 'Partner Wants a Child',
-  text: s => evtPartnerName() + ': "I have been thinking about this for a while. Maybe we are ready? A baby."',
+  title: '👶 Partner Wants a Child',
+  text: s => evtPartnerName() + ': "I have been thinking. Maybe we are ready? A baby."',
   choices: [
     { label: 'Yes — let us try',
-      effect: s => { evtBumpPartner(12); fx({ happiness: 8 }); log('💡 Try for a baby from the Children tab.'); } },
+      effect: s => { evtBumpPartner(12); fx({ happiness: 8 }); log('💡 Try for a baby in the Children tab.'); } },
     { label: 'Not yet',
       effect: s => { evtBumpPartner(-4); } },
     { label: 'I do not want children',
@@ -826,10 +824,10 @@ const GENDER_EVENTS = [
   title: '💍 Wedding Anniversary',
   text: s => evtPartnerName() + ': "So... do you remember what today is?"',
   choices: [
-    { label: 'Book dinner + gift (' + evtMoney(8000).toLocaleString() + ')',
+    { label: s => 'Book dinner + gift (' + evtMoney(8000).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(8000),
       effect: s => { s.wealth -= evtMoney(8000); evtBumpPartner(15); fx({ happiness: 10 }); } },
-    { label: 'Charge to credit card',
+    { label: s => 'Charge ' + evtMoney(8000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(8000),
       effect: s => { evtChargeCredit(evtMoney(8000)); evtBumpPartner(12); fx({ happiness: 8 }); } },
     { label: 'Homemade dinner + card (free)',
@@ -842,9 +840,9 @@ const GENDER_EVENTS = [
 { id: 'm_inlaw_visit', minAge: 24, maxAge: 55, weight: 7, maxFires: 5,
   condition: s => evtIsMarried(),
   title: '👵 Mother-in-Law Visiting',
-  text: s => 'Your mother-in-law announces she is coming to stay for a week. ' + evtPartnerName() + ': "It is only a week. She misses us."',
+  text: s => 'Your mother-in-law announces a week-long stay. ' + evtPartnerName() + ': "Only a week. She misses us."',
   choices: [
-    { label: 'Host her graciously (' + evtMoney(2000).toLocaleString() + ')',
+    { label: s => 'Host graciously (' + evtMoney(2000).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(2000),
       effect: s => { s.wealth -= evtMoney(2000); evtBumpFamily('Mother', 10); evtBumpPartner(5); fx({ happiness: -2 }); } },
     { label: 'Push back on her comments',
@@ -871,31 +869,29 @@ const GENDER_EVENTS = [
 { id: 'm_partner_lost_job', minAge: 26, maxAge: 58, weight: 5,
   condition: s => evtIsMarried() && evtPartner() && evtPartner().income > 0,
   title: '😔 Partner Lost Job',
-  text: s => evtPartnerName() + ' comes home with red eyes. "They let me go. What do we do now?"',
+  text: s => evtPartnerName() + ' comes home with red eyes. "They let me go."',
   choices: [
-    { label: 'Reassure them (support)',
+    { label: 'Reassure them',
       effect: s => { evtBumpPartner(10); fx({ happiness: 2 }); if (evtPartner()) evtPartner().income = 0; } },
     { label: 'Get angry',
       effect: s => { evtBumpPartner(-12); fx({ happiness: -6 }); if (evtPartner()) evtPartner().income = 0; } }
   ]
 },
 
-/* ============================================================
-   CHILDREN-ONLY EVENTS
-   ============================================================ */
+/* ---------- CHILDREN-ONLY ---------- */
 
 { id: 'c_school_fees', minAge: 30, maxAge: 55, weight: 7, maxFires: 8,
-  condition: s => evtHasChildren() && (S.childrenList || []).some(function(c) { return c.age >= 4 && c.age <= 18; }),
+  condition: s => evtHasChildren() && (S.childrenList || []).some(c => c.age >= 4 && c.age <= 18),
   title: '📚 Child\'s School Fees',
-  text: s => 'The school sent home a notice. Term fees + uniforms + books: ' + evtMoney(8000).toLocaleString() + ' ' + C().currency + '. Due next week.',
+  text: s => 'Term fees + uniforms + books: ' + evtMoney(8000).toLocaleString() + ' ' + evtCurrency() + '.',
   choices: [
-    { label: 'Pay (cash)',
+    { label: s => 'Pay ' + evtMoney(8000).toLocaleString() + ' (cash)',
       available: s => s.wealth >= evtMoney(8000),
       effect: s => { s.wealth -= evtMoney(8000); (S.childrenList || []).forEach(c => c.happiness = Math.min(100, (c.happiness || 70) + 3)); fx({ happiness: 2 }); } },
-    { label: 'Charge to credit card',
+    { label: s => 'Charge ' + evtMoney(8000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(8000),
       effect: s => { evtChargeCredit(evtMoney(8000)); fx({ happiness: 1 }); } },
-    { label: 'Ask ' + evtPartnerName() + ' to split',
+    { label: s => 'Ask ' + evtPartnerName() + ' to split',
       available: s => evtIsMarried(),
       effect: s => {
         var r = evtAskPartner(evtMoney(4000));
@@ -908,17 +904,17 @@ const GENDER_EVENTS = [
 },
 
 { id: 'c_child_wants_phone', minAge: 30, maxAge: 50, weight: 6,
-  condition: s => (S.childrenList || []).some(function(c) { return c.age >= 11 && c.age <= 15; }),
+  condition: s => (S.childrenList || []).some(c => c.age >= 11 && c.age <= 15),
   title: '📱 Child Wants a Phone',
   text: s => {
-    var child = (S.childrenList || []).find(function(c) { return c.age >= 11 && c.age <= 15; });
-    return child.name + ' is begging for a smartphone. "Everyone at school has one!" A decent one costs ' + evtMoney(8000).toLocaleString() + ' ' + C().currency + '.';
+    var child = (S.childrenList || []).find(c => c.age >= 11 && c.age <= 15);
+    return (child ? child.name : 'Your child') + ' begs for a smartphone. Decent one: ' + evtMoney(8000).toLocaleString() + ' ' + evtCurrency() + '.';
   },
   choices: [
-    { label: 'Buy it (cash)',
+    { label: s => 'Buy it (' + evtMoney(8000).toLocaleString() + ', cash)',
       available: s => s.wealth >= evtMoney(8000),
       effect: s => { s.wealth -= evtMoney(8000); (S.childrenList || []).forEach(c => c.happiness = Math.min(100, (c.happiness || 70) + 10)); fx({ happiness: 3 }); } },
-    { label: 'Buy on credit card',
+    { label: s => 'Charge ' + evtMoney(8000).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(8000),
       effect: s => { evtChargeCredit(evtMoney(8000)); (S.childrenList || []).forEach(c => c.happiness = Math.min(100, (c.happiness || 70) + 8)); fx({ happiness: 2 }); } },
     { label: 'Refuse — too young',
@@ -931,13 +927,13 @@ const GENDER_EVENTS = [
   title: '🎂 Child\'s Birthday',
   text: s => {
     var child = (S.childrenList || [])[0];
-    return child.name + '\'s birthday is coming up. Do you throw a party? Costs: ' + evtMoney(3000).toLocaleString() + ' ' + C().currency + ' for a proper one, or ' + evtMoney(500).toLocaleString() + ' for simple cake at home.';
+    return (child ? child.name : 'Your child') + '\'s birthday. Proper party: ' + evtMoney(3000).toLocaleString() + ' ' + evtCurrency() + '. Simple cake: ' + evtMoney(500).toLocaleString() + '.';
   },
   choices: [
-    { label: 'Proper party (' + evtMoney(3000).toLocaleString() + ')',
+    { label: s => 'Proper party (' + evtMoney(3000).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(3000),
       effect: s => { s.wealth -= evtMoney(3000); (S.childrenList || []).forEach(c => { c.happiness = Math.min(100, (c.happiness || 70) + 12); c.bond = Math.min(100, (c.bond || 55) + 6); }); fx({ happiness: 5 }); } },
-    { label: 'Simple cake at home (' + evtMoney(500).toLocaleString() + ')',
+    { label: s => 'Simple cake at home (' + evtMoney(500).toLocaleString() + ')',
       available: s => s.wealth >= evtMoney(500),
       effect: s => { s.wealth -= evtMoney(500); (S.childrenList || []).forEach(c => { c.happiness = Math.min(100, (c.happiness || 70) + 5); c.bond = Math.min(100, (c.bond || 55) + 3); }); fx({ happiness: 3 }); } },
     { label: 'Just a phone call',
@@ -946,20 +942,20 @@ const GENDER_EVENTS = [
 },
 
 { id: 'c_child_sick', minAge: 28, maxAge: 55, weight: 6, maxFires: 5,
-  condition: s => (S.childrenList || []).some(function(c) { return c.age < 12; }),
+  condition: s => (S.childrenList || []).some(c => c.age < 12),
   title: '🤒 Child is Sick',
   text: s => {
-    var child = (S.childrenList || []).find(function(c) { return c.age < 12; });
-    return child.name + ' has a high fever and is crying. Doctor visit + medicine: ' + evtMoney(1500).toLocaleString() + ' ' + C().currency + '.';
+    var child = (S.childrenList || []).find(c => c.age < 12);
+    return (child ? child.name : 'Your child') + ' has a high fever. Doctor + medicine: ' + evtMoney(1500).toLocaleString() + ' ' + evtCurrency() + '.';
   },
   choices: [
-    { label: 'Take to private doctor (cash)',
+    { label: s => 'Private doctor (' + evtMoney(1500).toLocaleString() + ', cash)',
       available: s => s.wealth >= evtMoney(1500),
       effect: s => { s.wealth -= evtMoney(1500); (S.childrenList || []).forEach(c => { c.health = Math.min(100, (c.health || 100) + 15); }); fx({ happiness: 1 }); } },
-    { label: 'Charge to credit card',
+    { label: s => 'Charge ' + evtMoney(1500).toLocaleString() + ' to credit card',
       available: s => evtCreditRoom() >= evtMoney(1500),
       effect: s => { evtChargeCredit(evtMoney(1500)); fx({ happiness: 1 }); } },
-    { label: 'Just wait it out at home',
+    { label: 'Wait it out at home',
       effect: s => { (S.childrenList || []).forEach(c => { c.health = Math.max(0, (c.health || 100) - 15); }); fx({ happiness: -5, health: -1 }); } }
   ]
 }
@@ -967,7 +963,7 @@ const GENDER_EVENTS = [
 ];
 
 /* ============================================================
-   KEEP ORIGINAL SIMPLE EVENTS — but fixed conditions
+   GLOBAL_EVENTS (original simple events — kept)
    ============================================================ */
 const GLOBAL_EVENTS = [
   { id: 'first_friend', minAge: 7, maxAge: 9,
