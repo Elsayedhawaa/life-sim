@@ -4224,3 +4224,86 @@ window.marAskForDivorce = function() {
     }
   }
 };
+/* ============================================================
+   PATCH 3: fix zero shabka budget / zero engagement review
+   ============================================================ */
+
+/* Money values are stored in EGP and converted with marEGP().
+   This works out the conversion ratio for the current country. */
+function marEgpRatio() {
+  return marEGP(1000000) / 1000000 || 1;
+}
+
+/* Fill in the missing prices on an engagement (Salonat and older saves) */
+function marFixEngagementCosts() {
+  const m = S.marriage;
+  const e = m && m.engagement;
+  if (!e) return;
+
+  /* Shabka */
+  if (!e.shabkaCost) {
+    if (e.salonatShabka) {
+      e.shabkaCost = Math.round(e.salonatShabka * 4500);
+    } else {
+      const t = (MARRIAGE_SHABKA_TIERS || []).find(function(x) { return x.id === e.shabkaTier; });
+      e.shabkaCost = t ? t.costEGP : 0;
+    }
+  }
+  /* Mahr */
+  if (!e.mahrCost) {
+    if (e.salonatMahr) {
+      e.mahrCost = Math.round(e.salonatMahr / marEgpRatio());
+    } else {
+      const t = (MARRIAGE_MAHR_TIERS || []).find(function(x) { return x.id === e.mahrTier; });
+      e.mahrCost = t ? t.costEGP : 0;
+    }
+  }
+  /* Party (the groom's family hosts it in a Salonat match) */
+  if (typeof e.partyCost !== 'number') {
+    const t = (MARRIAGE_ENGAGEMENT_PARTY_TIERS || []).find(function(x) { return x.id === e.partyTier; });
+    e.partyCost = e.salonatShabka ? 0 : (t ? t.costEGP : 0);
+  }
+}
+
+/* Gold budget for the souk */
+function marShabkaBudgetFor(e) {
+  if (!e) return 0;
+  if (e.salonatShabka) {
+    /* Salonat: you were promised this many grams, so budget = grams x gold price */
+    return Math.round(e.salonatShabka * marGoldLocalPerGram(21) * 1.2);
+  }
+  marFixEngagementCosts();
+  return marEGP(e.shabkaCost || 0);
+}
+
+/* Opening the souk now uses the correct budget */
+window.marOpenShabkaPicker = function() {
+  const m = S.marriage, e = m.engagement;
+  if (!e || !e.finalized) { log('Finalize the engagement first.'); render(); return; }
+  if (m.shabkaChosen) { log('You already chose your shabka.'); render(); return; }
+  m.shabkaPick = { budget: marShabkaBudgetFor(e), items: [] };
+  m.tab = 'plan';
+  render();
+};
+window.marShabkaGoldSoukTrip = function() { marOpenShabkaPicker(); };
+
+/* New Salonat acceptances get correct prices straight away */
+var _marAcceptSalonatBase3 = window.marAcceptSalonat;
+window.marAcceptSalonat = function() {
+  _marAcceptSalonatBase3();
+  marFixEngagementCosts();
+  render();
+};
+
+/* Repairs an ALREADY-open souk and your current save every time the Plan tab draws */
+var _marRenderPlanBase3 = marRenderPlan;
+marRenderPlan = function() {
+  const m = S.marriage;
+  if (m && m.engagement && m.engagement.finalized) {
+    marFixEngagementCosts();
+    if (m.shabkaPick && (!m.shabkaPick.budget || m.shabkaPick.budget <= 0)) {
+      m.shabkaPick.budget = marShabkaBudgetFor(m.engagement);
+    }
+  }
+  return _marRenderPlanBase3();
+};
