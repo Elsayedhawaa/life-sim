@@ -39,8 +39,8 @@ function ensureMarriageState() {
   const m = S.marriage;
   if (!Array.isArray(m.exSpouses)) m.exSpouses = [];
   if (typeof m.sharedAccountBalance !== 'number') m.sharedAccountBalance = 0;
-     if (!m.gehazPayer) m.gehazPayer = null;
-   if (!m.trousseau) m.trousseau = { tier: null, payer: null, cost: 0, completed: false };
+  if (!m.gehazPayer) m.gehazPayer = null;
+  if (!m.trousseau) m.trousseau = { tier: null, payer: null, cost: 0, completed: false };
   if (typeof m.datingAttempts !== 'number') m.datingAttempts = 0;
   if (typeof m.lastDateYear !== 'number') m.lastDateYear = 0;
   if (typeof m.home === 'undefined') m.home = null;
@@ -396,12 +396,10 @@ function marRenderOverview() {
     (p.income > 0 ? '<div class="row"><span>Income</span><b>' + money(p.income) + '/yr</b></div>' : '') +
     '</div>';
 
-  /* Premarital relationship progression: intentionally ends at the wedding. */
   if (m.status === 'dating' || m.status === 'engaged') {
     html += marRenderPremaritalPanel();
   }
 
-  /* Relationship activities */
   if (typeof MARRIAGE_RELATIONSHIP_ACTIVITIES !== 'undefined' && m.status !== 'engaged') {
     html += '<div class="card"><h3>💞 Spend Time Together</h3>';
     if (prof && prof.activities) {
@@ -437,7 +435,7 @@ function marRenderPremaritalPanel() {
     '<div class="row"><span>Compatibility</span><b>' + marClamp(p.compatibility, 0, 100) + '%</b></div>' +
     '<div class="row"><span>Marriage readiness</span><b>' + readiness.score + '%</b></div>' +
     '<p class="muted small" style="margin-top:8px">Trust and readiness grow through honest conversations, respecting preferences, and consistent actions—not just expensive dates.</p>';
-     const isArranged = p.source && p.source.indexOf('Salonat') >= 0;
+  const isArranged = p.source && p.source.indexOf('Salonat') >= 0;
   if (isArranged && m.status === 'dating') {
     html += '<div class="card" style="border-color:#fbbf24;background:#fbbf2410">' +
       '<b style="color:#fbbf24;font-size:.85rem">💍 Arranged Introduction (Salonat)</b>' +
@@ -499,13 +497,12 @@ window.marVisitMotherInLaw = function() {
   let change = 5;
   
   if (traits.includes('mamas_boy')) {
-    change += 5; // She loves when you visit
+    change += 5;
   }
   if (marHasTrait(m.partner, 'protector')) {
-    change += 3; // He appreciates it
+    change += 3;
   }
 
-  // Random outcome
   if (Math.random() < 0.3) {
     log('👵 You visited your mother-in-law. She criticized your outfit.');
     change = -5;
@@ -531,7 +528,6 @@ window.marAskForHand = function() {
     log('👩 He must ask your father for your hand in marriage.');
   }
   
-  // The father's approval is a mix of the family approval metric
   const fatherApproval = marFamilyApproval(p);
   
   if (fatherApproval < 0.6) {
@@ -549,9 +545,10 @@ window.marAskForHand = function() {
     partyTier: 'nice_hall',
     payer: isTraditionalWoman ? 'partner' : 'self'
   };
-  m.status = 'engaged'; // Skip proposal phase, straight to engagement
+  m.status = 'engaged';
   render();
 };
+
 /* ============================================================
    FIND TAB
    ============================================================ */
@@ -563,7 +560,6 @@ function marRenderFind() {
 
   let html = '<div class="card"><h3>💕 Where to meet someone</h3>' +
     '<p class="muted small">Different sources have different success rates and family approval.</p></div>';
-    /* --- SALONAT PROSPECT UI --- */
   if (m.salonatProspect) {
     const p = m.salonatProspect;
     html += '<div class="card" style="border-color:#fbbf24;background:#fbbf2410">' +
@@ -584,7 +580,6 @@ function marRenderFind() {
     return html;
   }
 
-  /* --- STANDARD DATING UI --- */
   html += '<div class="card" style="border-color:#fbbf24">' +
     '<h3 style="color:#fbbf24">🏛 Traditional Arranged Meeting</h3>' +
     '<p class="muted small">Ask your parents to arrange a Salonat. The suitor will come with his family, and you will see his job, wealth, and property before deciding.</p>' +
@@ -646,7 +641,6 @@ function marRenderPlan() {
       '</div>';
   }
 
-  /* A partner can independently bring up engagement after a serious, mutual discussion. */
   if (m.status === 'dating' && p.pendingPartnerProposal) {
     html += '<div class="card" style="border-color:#fbbf24"><h3>💍 ' + p.name + ' Wants to Ask You Something</h3>' +
       '<p class="muted small">After thinking about your conversations, ' + p.name + ' is ready to ask whether you want to become engaged. This is their decision, and you can accept, ask for more time, or decline.</p>' +
@@ -655,7 +649,6 @@ function marRenderPlan() {
       '<button class="opt" style="width:100%;margin-top:5px;text-align:center;border-color:#fb7185;color:#fb7185" onclick="marRespondToPartnerProposal(\'decline\')">Decline respectfully</button></div>';
   }
 
-  /* Proposal phase */
   if (m.status === 'dating' && !p.pendingPartnerProposal) {
     const readiness = marPremaritalReadiness(p);
     html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">💍 Proposal</h3>';
@@ -681,7 +674,6 @@ function marRenderPlan() {
     html += '</div>';
   }
 
-  /* Engagement phase */
   if (m.status === 'engaged') {
     if (!m.engagement || !m.engagement.finalized) {
       html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">💍 Engagement Planning</h3>';
@@ -695,7 +687,6 @@ function marRenderPlan() {
         '</div>';
     }
 
-     /* Wedding planner — only available after engagement is finalized */
     if (m.wedding) {
       html += '<div class="card" style="border-color:#34d399"><h3 style="color:#34d399">🎉 Wedding Planning</h3>';
       html += marRenderWeddingPlanner();
@@ -713,35 +704,6 @@ function marRenderPlan() {
 
     html += '<div class="card"><button class="opt" style="text-align:center;border-color:#fb7185;color:#fb7185" onclick="marCancelEngagement()">Cancel engagement</button></div>';
   }
-  /* --- GEHAZ NEGOTIATION --- */
-  html += '<div class="card" style="border-color:#22d3ee;margin-top:10px"><h4 style="color:#22d3ee">🛋 Gehaz (Trousseau & Furniture)</h4>';
-  if (S.marriage.trousseau.completed) {
-    const tierDef = MARRIAGE_TROUSSEAU_TIERS.find(t => t.id === S.marriage.trousseau.tier);
-    html += `<p class="small good">✅ Gehaz completed: ${tierDef.label}</p>`;
-  } else {
-    html += '<p class="muted small">A marriage cannot happen without a furnished home. Negotiate who pays for the furniture.</p>';
-    
-    // Tier Selection
-    html += '<div style="display:grid;grid-template-columns:1fr;gap:4px;margin-top:8px">';
-    MARRIAGE_TROUSSEAU_TIERS.forEach(t => {
-      html += `<button class="opt" style="text-align:left;padding:8px;font-size:.75rem" onclick="S.marriage._tempTier='${t.id}';render()">
-        <div style="display:flex;justify-content:space-between"><b>${t.label}</b><span>${money(marEGP(t.costEGP))}</span></div>
-        <div class="muted small">${t.desc}</div>
-      </button>`;
-    });
-    html += '</div>';
-
-    // Payer Selection (if tier is selected)
-    if (S.marriage._tempTier) {
-      html += '<h5 style="font-size:.75rem;color:#fbbf24;margin-top:10px">Who pays?</h5>';
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
-      MARRIAGE_TROUSSEAU_PAYERS.forEach(p => {
-        html += `<button class="pill" style="padding:6px;font-size:.7rem" onclick="marBuyTrousseau('${S.marriage._tempTier}', '${p.id}')">${p.label}</button>`;
-      });
-      html += '</div>';
-    }
-  }
-  html += '</div>';
   return html;
 }
 
@@ -765,7 +727,6 @@ function marRenderEngagementPlanner() {
   if (!e) return '';
   const isTraditionalWoman = marIsTraditionalWoman();
 
-  // Default payer logic for new engagements
   if (typeof e.payer === 'undefined') {
     e.payer = isTraditionalWoman ? 'partner' : 'self';
   }
@@ -800,7 +761,6 @@ function marRenderEngagementPlanner() {
   const canAfford = S.wealth >= playerTotalLocal;
 
   let html = '';
-  /* --- GEHAZ NEGOTIATION & CHECKLIST --- */
   html += '<div class="card" style="border-color:#22d3ee;margin-top:10px"><h4 style="color:#22d3ee">🛋 Gehaz (Trousseau & Furniture)</h4>';
   
   const maritalHome = S.ownedHomes.find(x => x.status === 'occupied') || S.ownedHomes[0];
@@ -808,7 +768,6 @@ function marRenderEngagementPlanner() {
   if (!maritalHome) {
     html += '<p class="bad small">⚠️ You need a home first! Go to Real Estate to buy or rent.</p>';
   } else {
-    // Payer Selection
     html += '<div style="margin-bottom:10px;padding:8px;background:#0f0f1a;border-radius:6px">' +
       '<b class="small" style="color:#fbbf24">Who pays for the Gehaz?</b>' +
       '<div style="display:flex;gap:4px;margin-top:4px">' +
@@ -817,7 +776,6 @@ function marRenderEngagementPlanner() {
       ).join('') +
       '</div></div>';
 
-    // Checklist
     let allDone = true;
     MARRIAGE_GEHAZ_CHECKLIST.forEach(item => {
       const hasItem = S.shopping.inventory.some(i => i.homeId === maritalHome.id && i.cat === item.cat && (!item.subcat || i.subcat === item.subcat));
@@ -840,7 +798,6 @@ function marRenderEngagementPlanner() {
     }
   }
   html += '</div>';
-  // Mahr Structure display (moved to top of return)
   html += '<div style="margin-top:10px; padding:10px; background:#0f0f1a; border-radius:6px">' +
     '<b class="small" style="color:#fbbf24">Mahr Structure</b>' +
     '<div class="row small"><span>Muqaddam (Advanced)</span><b>' + money(marEGP(mahrAdv)) + '</b></div>' +
@@ -854,7 +811,6 @@ function marRenderEngagementPlanner() {
   html += picker('Mahr (deferred dowry)', MARRIAGE_MAHR_TIERS, 'mahrTier', e.mahrTier, function(t) { return money(marEGP(t.costEGP)); });
   html += picker('Engagement party', MARRIAGE_ENGAGEMENT_PARTY_TIERS, 'partyTier', e.partyTier, function(t) { return money(marEGP(t.costEGP)); });
 
-  // ADD PAYER SELECTION
   html += '<h4 style="font-size:.8rem;color:#34d399;margin-top:12px">Who pays for the engagement?</h4>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">';
   html += '<button class="pill ' + (e.payer === 'self' ? 'on' : '') + '" style="padding:6px;font-size:.7rem" onclick="marEngagementSet(\'payer\',\'self\')">You pay all</button>';
@@ -884,7 +840,6 @@ function marRenderWeddingPlanner() {
   if (!w) return '';
   const isTraditionalWoman = marIsTraditionalWoman();
 
-  // Auto-default the payer based on gender/culture
   if (typeof w.payer === 'undefined') {
     w.payer = isTraditionalWoman ? 'partner_family' : 'self';
   }
@@ -916,10 +871,9 @@ function marRenderWeddingPlanner() {
   const totalLocal = marEGP(total);
   const prenupLocal = selection.prenupCostLocal;
   
-  // NOTE: If female in traditional country, her dress might be the only thing she pays for
   let share = 1;
   if (w.payer === 'split') share = 0.5;
-  else if (w.payer === 'partner_family') share = isTraditionalWoman ? 0.15 : 0.25; // Woman pays ~15% (dress/makeup)
+  else if (w.payer === 'partner_family') share = isTraditionalWoman ? 0.15 : 0.25;
   else if (w.payer === 'own_family') share = 0.5;
 
   const playerWeddingShare = marEGP(total * share);
@@ -937,7 +891,6 @@ function marRenderWeddingPlanner() {
   html += picker('Honeymoon', MARRIAGE_HONEYMOON_TIERS, 'honeymoon', w.honeymoon, function(t) { return money(marEGP(t.costEGP)); });
   if (typeof MARRIAGE_PLANNER_OPTIONS !== 'undefined') html += picker('Wedding planner', MARRIAGE_PLANNER_OPTIONS, 'planner', w.planner, function(t) { return money(marEGP(t.costEGP)); });
 
-  /* Breakdown */
   html += '<div class="card" style="background:#0f0f1a;margin-top:12px;padding:10px">' +
     '<div class="row" style="border-top:1px solid #25253a;margin-top:6px;padding-top:6px"><b>Full wedding cost</b><b style="color:#34d399">' + money(totalLocal) + '</b></div>' +
     (prenup.legalCostEGP > 0 ? '<div class="row"><span>Prenup (' + prenup.label + ')</span><b>' + money(prenupLocal) + '</b></div>' : '') +
@@ -946,7 +899,6 @@ function marRenderWeddingPlanner() {
     (w.payer === 'partner_family' ? '<p class="muted small" style="color:#8b5cf6">💡 Cultural tradition: The groom and his family cover the vast majority of the wedding.</p>' : '') +
     '</div>';
 
-  /* Prenup */
   html += '<h4 style="font-size:.8rem;color:#34d399;margin-top:12px">Prenup</h4>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
   MARRIAGE_PRENUP_OPTIONS.forEach(function(o) {
@@ -954,7 +906,6 @@ function marRenderWeddingPlanner() {
   });
   html += '</div>';
 
-  /* Who pays */
   html += '<h4 style="font-size:.8rem;color:#34d399;margin-top:12px">Who pays?</h4>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">' +
     '<button class="pill ' + (w.payer === 'self' ? 'on' : '') + '" style="padding:6px;font-size:.72rem" onclick="marWeddingSet(\'payer\',\'self\')">You pay all</button>' +
@@ -990,7 +941,6 @@ function marRenderLife() {
     '<div class="row"><span>Children</span><b>' + ((S.childrenList || []).length) + '</b></div>' +
     '</div>';
 
-  /* Home selection */
   if (typeof MARRIAGE_HOME_OPTIONS !== 'undefined') {
     if (!m.home) {
       html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">🏠 Set up your home</h3>' +
@@ -1012,7 +962,6 @@ function marRenderLife() {
     }
   }
 
-  /* Family planning */
   if (typeof MARRIAGE_FAMILY_PLANNING_OPTIONS !== 'undefined') {
     html += '<div class="card"><h3>👶 Family Planning</h3>' +
       '<div class="row"><span>Current plan</span><b>' + ((MARRIAGE_FAMILY_PLANNING_OPTIONS.find(function(x) { return x.id === m.familyPlanning; }) || {}).label || 'Undecided') + '</b></div>';
@@ -1023,7 +972,6 @@ function marRenderLife() {
     html += '</div>';
   }
 
-  /* Childcare */
   if (typeof MARRIAGE_CHILDCARE_OPTIONS !== 'undefined' && (S.childrenList && S.childrenList.length > 0)) {
     html += '<div class="card"><h3>👶 Childcare</h3>' +
       '<div class="row"><span>Current</span><b>' + ((MARRIAGE_CHILDCARE_OPTIONS.find(function(x) { return x.id === m.childcare; }) || {}).label || 'None chosen') + '</b></div>';
@@ -1035,14 +983,12 @@ function marRenderLife() {
     html += '</div>';
   }
 
-  /* Shared account */
   html += '<div class="card"><h3>💰 Shared Account</h3>' +
     '<div class="row"><span>Balance</span><b>' + money(m.sharedAccountBalance) + '</b></div>' +
     '<button class="opt" style="margin-top:6px;width:50%;font-size:.75rem;padding:6px" onclick="marDepositShared()">Deposit</button>' +
     '<button class="opt" style="margin-top:6px;width:50%;font-size:.75rem;padding:6px" onclick="marWithdrawShared()">Withdraw</button>' +
     '</div>';
 
-  /* Try for baby */
   if ((S.childrenList || []).length === 0 || m.familyPlanning !== 'wait') {
     html += '<div class="card"><button class="opt" style="width:100%;text-align:center;background:#fb7185;color:#fff;font-weight:700;padding:10px" onclick="marTryForBaby()">👶 Try for baby</button></div>';
   }
@@ -1061,7 +1007,6 @@ function marRenderConflict() {
 
   let html = '';
 
-  /* Current pending conflict */
   if (m.pendingConflict) {
     const topic = (MARRIAGE_CONFLICT_TOPICS || []).find(function(x) { return x.id === m.pendingConflict; });
     if (topic) {
@@ -1081,7 +1026,6 @@ function marRenderConflict() {
       '</div>';
   }
 
-  /* Separation options */
   if (typeof MARRIAGE_SEPARATION_OPTIONS !== 'undefined' && m.status === 'married') {
     html += '<div class="card"><h3>💔 Marital Difficulty</h3>' +
       '<p class="muted small">When things get hard, these are your options.</p>';
@@ -1107,7 +1051,6 @@ function marRenderRecords() {
   const m = S.marriage;
   let html = '';
 
-  /* Achievements */
   if (typeof MARRIAGE_ACHIEVEMENTS !== 'undefined') {
     html += '<div class="card"><h3>🏆 Achievements</h3>';
     const earned = m.achievements || [];
@@ -1119,7 +1062,6 @@ function marRenderRecords() {
     html += '</div>';
   }
 
-  /* Milestones */
   if (typeof MARRIAGE_MILESTONES !== 'undefined') {
     html += '<div class="card"><h3>🌟 Milestones</h3>';
     const reached = m.milestones || [];
@@ -1131,7 +1073,6 @@ function marRenderRecords() {
     html += '</div>';
   }
 
-  /* Premarital memories */
   const premarital = Array.isArray(m.premaritalHistory) ? m.premaritalHistory.slice(-15).reverse() : [];
   if (premarital.length) {
     html += '<div class="card"><h3>💌 Dating & Wedding Memories</h3>';
@@ -1141,7 +1082,6 @@ function marRenderRecords() {
     html += '</div>';
   }
 
-  /* Ex-spouses */
   if (m.exSpouses && m.exSpouses.length) {
     html += '<div class="card" style="border-color:#666"><h3 style="color:#888">💔 Ex-Partners</h3>';
     m.exSpouses.forEach(function(ex) {
@@ -1155,7 +1095,6 @@ function marRenderRecords() {
     html += '</div>';
   }
 
-  /* Conflict history */
   if (m.conflictHistory && m.conflictHistory.length) {
     html += '<div class="card"><h3>📖 Conflict History</h3>';
     m.conflictHistory.slice(-10).reverse().forEach(function(c) {
@@ -1166,6 +1105,7 @@ function marRenderRecords() {
 
   return html || '<div class="card"><h3>📜 Records</h3><p class="muted small">No records yet.</p></div>';
 }
+
 /* ============================================================
    SALONAT (ARRANGED MARRIAGE) SYSTEM
    ============================================================ */
@@ -1177,12 +1117,10 @@ window.marStartSalonat = function() {
     log('You must be single to meet a Salonat prospect.'); render(); return;
   }
 
-  // Cost of the family hosting the meeting
   const meetCost = marEGP(2000);
   if (S.wealth < meetCost) { log('Not enough cash for the family gathering (' + money(meetCost) + ').'); render(); return; }
   S.wealth -= meetCost;
 
-  // Generate the prospect based on family wealth
   const tier = S.familyTier || 'middle';
   let wealthLevel = 'middle';
   if (tier === 'poor' || tier === 'lower-mid') wealthLevel = 'working';
@@ -1194,7 +1132,6 @@ window.marStartSalonat = function() {
   const names = marNamePool(gender) || (gender === 'm' ? ['Omar'] : ['Sarah']);
   const name = names[Math.floor(Math.random() * names.length)];
   
-  // Job & Income
   const jobs = {
     working: [ { title: 'Teacher', salary: 120000 }, { title: 'Accountant', salary: 150000 }, { title: 'Sales Rep', salary: 140000 } ],
     middle: [ { title: 'Doctor', salary: 350000 }, { title: 'Engineer', salary: 300000 }, { title: 'Business Owner', salary: 500000 } ],
@@ -1202,22 +1139,18 @@ window.marStartSalonat = function() {
   };
   const job = jobs[wealthLevel][Math.floor(Math.random() * jobs[wealthLevel].length)];
   
-  // Assets (Mahr & Shabka)
   const mahrEGP = wealthLevel === 'elite' ? 500000 : wealthLevel === 'working' ? 50000 : 150000;
   const shabkaGrams = wealthLevel === 'elite' ? 100 : wealthLevel === 'working' ? 25 : 50;
   
-  // House Details
   const houseType = wealthLevel === 'elite' ? 'mansion' : wealthLevel === 'working' ? 'small_apartment' : 'nice_apartment';
   const houseValueEGP = wealthLevel === 'elite' ? 15000000 : wealthLevel === 'working' ? 1500000 : 3500000;
   
-  // Will he put the house in the bride's name? (More likely if he is older or wealthy)
   let giveHouseToBride = false;
   if (gender === 'm' && Math.random() < (wealthLevel === 'elite' ? 0.4 : 0.2)) giveHouseToBride = true; 
   else if (gender === 'f' && Math.random() < 0.5) giveHouseToBride = true;
 
   const traits = marRollTraits();
   
-  // Create the prospect object
   S.marriage.salonatProspect = {
     name, age, gender, job,
     wealthLevel,
@@ -1230,14 +1163,14 @@ window.marStartSalonat = function() {
     familyApproval: 1.0
   };
   
-  m.tab = 'find'; // Switch to a special view
+  m.tab = 'find';
   render();
 };
+
 window.marCheckTrousseau = function() {
   const m = S.marriage;
   if (m.status !== 'engaged') return;
   
-  // Find the marital home (either the owned one or the one we designated)
   const h = (S.ownedHomes || []).find(function(x) { return x.status === 'occupied' || x.source === 'salonat'; });
   
   if (!h) {
@@ -1245,12 +1178,10 @@ window.marCheckTrousseau = function() {
     return;
   }
 
-  // Count the furniture in the home
   const furnItems = (S.shopping && Array.isArray(S.shopping.inventory))
     ? S.shopping.inventory.filter(i => i.homeId === h.id && (i.cat === 'furniture' || i.cat === 'appliances'))
     : [];
 
-  // We need at least 3 major items (Bed, Sofa, Fridge/Appliances) to consider it "ready"
   if (furnItems.length >= 3) {
     m.trousseauComplete = true;
     m.motherInLawBond = Math.min(100, m.motherInLawBond + 10);
@@ -1261,14 +1192,14 @@ window.marCheckTrousseau = function() {
   }
   render();
 };
+
 window.marAcceptSalonat = function() {
   const p = S.marriage.salonatProspect;
   if (!p) return;
 
-  // 1. Create the partner
   S.marriage.partner = {
     name: p.name, age: p.age, gender: p.gender,
-    bond: 30, // Starts low, it's arranged
+    bond: 30,
     trust: 25,
     communication: 25,
     compatibility: 50,
@@ -1284,20 +1215,18 @@ window.marAcceptSalonat = function() {
     preferences: marCreatePartnerPreferences(p.traits)
   };
 
-  // 2. Status -> Engaged
   S.marriage.status = 'engaged';
   S.marriage.engagement = {
     proposal: 'family',
-    shabkaTier: 'custom', // Overridden by Salonat logic
+    shabkaTier: 'custom',
     mahrTier: 'custom',
     partyTier: 'nice_hall',
-    payer: p.gender === 'm' ? 'partner' : 'self', // Men pay in traditional culture
+    payer: p.gender === 'm' ? 'partner' : 'self',
     finalized: true,
     salonatMahr: p.mahrLocal,
     salonatShabka: p.shabkaGrams
   };
 
-  // 3. Give the Gold (Shabka) to the player
   if (!S.expat) S.expat = { goldStash: [] };
   if (!Array.isArray(S.expat.goldStash)) S.expat.goldStash = [];
   S.expat.goldStash.push({
@@ -1310,15 +1239,13 @@ window.marAcceptSalonat = function() {
     buyCountry: S.country
   });
 
-  // 4. Give the Mahr to the player
   S.wealth += p.mahrLocal;
 
-  // 5. Create the Property in Real Estate
   if (typeof createHome === 'function') {
     const h = createHome({
       name: p.houseType === 'mansion' ? 'Family Mansion' : 'Marital Apartment',
       country: S.country,
-      city: 'Cairo', // Or generic
+      city: 'Cairo',
       location: 'Family Neighborhood',
       baseValue: p.houseValueLocal,
       value: p.houseValueLocal,
@@ -1329,7 +1256,6 @@ window.marAcceptSalonat = function() {
       isHusbandOwned: !p.giveHouseToBride
     });
     
-    // If it's in her name, she owns it. If it's in his name, she doesn't, but she lives there.
     S.ownedHomes.push(h);
     S.housing = 'owned';
     S.realEstateActiveHomeId = h.id;
@@ -1347,31 +1273,29 @@ window.marAcceptSalonat = function() {
   S.marriage.tab = 'plan';
   render();
 };
+
 window.marSetMahrSplit = function(pct) {
   if (!S.marriage.engagement) return;
   S.marriage.engagement.mahrAdvancedPct = pct;
   render();
 };
+
 window.marBuyGehazItem = function(cat, subcat) {
   const m = S.marriage;
   const h = S.ownedHomes.find(x => x.status === 'occupied') || S.ownedHomes[0];
   if (!h) { log('❌ You need a house first.'); return; }
 
-  // Find the cheapest or standard real item in this category
   let pool = SHOP_ALL.filter(item => item[2] === cat && (!subcat || item[3] === subcat));
   if (pool.length === 0) { log('❌ No items found in this category.'); return; }
 
-  // Pick a mid-tier real item (e.g., Samsung fridge, IKEA sofa)
   const itemData = pool[Math.floor(pool.length / 2)];
   const brand = itemData[0];
   const name = itemData[1];
   const priceUSD = itemData[4];
   
-  // Calculate local price
   const shopMultVal = SHOP_MULT[S.country] ? (SHOP_MULT[S.country][cat] || 1) : 1;
   const priceLocal = Math.round(priceUSD * shopMultVal * (C().rate || 1));
 
-  let payerName = "You";
   let canAfford = false;
 
   if (m.gehazPayer === 'groom' || m.gehazPayer === 'split') {
@@ -1379,7 +1303,6 @@ window.marBuyGehazItem = function(cat, subcat) {
     if (S.wealth >= yourShare) canAfford = true;
   } 
   if (!canAfford && m.gehazPayer !== 'self') {
-    // Check if family or partner can pay
     const famWealth = eduFamilyWealth ? eduFamilyWealth() : 3000000;
     const partnerWealth = m.partner ? (m.partner.wealth || 1000000) : 0;
     
@@ -1390,18 +1313,14 @@ window.marBuyGehazItem = function(cat, subcat) {
 
   if (!canAfford) { log('❌ Neither you nor the payer has ' + money(priceLocal) + ' for ' + name + '.'); return; }
 
-  // Deduct money
   if (m.gehazPayer === 'groom' || m.gehazPayer === 'self' || m.gehazPayer === 'split') {
     let yourShare = m.gehazPayer === 'split' ? priceLocal / 2 : priceLocal;
     S.wealth -= yourShare;
   }
   if (m.gehazPayer === 'bride_family' || m.gehazPayer === 'groom_family' || m.gehazPayer === 'split') {
-    if (S.familyTier === 'wealthy' || S.familyTier === 'ultra') { /* family pays, no player wealth hit */ }
-    else { /* family pays, simulated by not hitting player wealth */ }
     log('👨‍👩‍👧 The family paid for the ' + name + '.');
   }
 
-  // Create the REAL item in inventory
   if (!S.shopping.inventory) S.shopping.inventory = [];
   const uid = 'i' + (S.uidN++);
   S.shopping.inventory.push({
@@ -1415,7 +1334,6 @@ window.marBuyGehazItem = function(cat, subcat) {
     homeId: h.id, homeName: h.name
   });
 
-  // Update home value
   if (h) {
     h.furnitureValue = (h.furnitureValue || 0) + priceLocal;
     h.value = (h.value || 0) + priceLocal;
@@ -1425,11 +1343,13 @@ window.marBuyGehazItem = function(cat, subcat) {
   log(`✅ Purchased ${brand} ${name} for the marital home.`);
   render();
 };
+
 window.marRejectSalonat = function() {
   log('❌ You declined the Salonat proposal. Your family is disappointed.');
   S.marriage.salonatProspect = null;
   render();
 };
+
 /* ============================================================
    ACTIONS
    ============================================================ */
@@ -1451,7 +1371,6 @@ window.marTryDate = function(sourceId) {
   S.wealth -= cost;
   m.datingAttempts++;
 
-  /* Previous failed attempts can modestly improve familiarity, never guarantee a match. */
   const familiarityBonus = Math.min(0.08, Math.max(0, m.datingAttempts - 1) * 0.01);
   if (Math.random() > Math.min(0.95, src.matchChance + familiarityBonus)) {
     log('💔 No promising match came from ' + src.label + ' this time. You can try another route later.');
@@ -1467,7 +1386,6 @@ window.marTryDate = function(sourceId) {
   const traits = marRollTraits();
   const isArranged = src.id === 'salonat';
   
-  // Arrange marriage dynamic setup
   const initialBond = isArranged ? 25 : (42 + Math.floor(Math.random() * 17));
   const initialTrust = isArranged ? 20 : (38 + Math.floor(Math.random() * 18));
   const initialFamilyApproval = isArranged ? 1.0 : src.familyApproval;
@@ -1524,38 +1442,30 @@ window.marDoActivity = function(activityId) {
   if (!p) return;
   const act = (MARRIAGE_RELATIONSHIP_ACTIVITIES || []).find(function(a) { return a.id === activityId; });
   if (!act) return;
-   const cost = marEGP(act.costEGP);
+  const cost = marEGP(act.costEGP);
   if (m.status !== 'dating' && m.status !== 'engaged' && m.status !== 'married') {
     log('This activity is not available at the current relationship stage.'); render(); return;
   }
 
-  // --- DATING FINANCE LOGIC ---
   let playerPays = true;
-  let payerName = "You paid";
   
   if (m.status === 'dating' || m.status === 'engaged') {
     if (marIsTraditionalWoman()) {
-      playerPays = false; // Man pays in traditional culture
-      payerName = p.name + " paid";
+      playerPays = false;
     } else if (S.gender === 'f' && !marIsTraditionalWoman()) {
-      playerPays = true; // Western woman pays her share
-      payerName = "You paid your share";
-      // If western, we charge half
+      playerPays = true;
       const halfCost = Math.round(cost * 0.5);
       if (S.wealth < halfCost) { log('Not enough cash for your share (' + money(halfCost) + ').'); render(); return; }
       S.wealth -= halfCost;
     } else {
-      // Man pays
       if (S.wealth < cost) { log('Not enough cash for ' + act.label + ' (' + money(cost) + ').'); render(); return; }
       S.wealth -= cost;
     }
   } else {
-    // Married - shared finances based on model, but for activities just deduct from main pool
     if (S.wealth < cost) { log('Not enough cash for ' + act.label + ' (' + money(cost) + ').'); render(); return; }
     S.wealth -= cost;
   }
 
-  /* Preserve the existing married-life effect; premarital actions use contextual outcomes. */
   if (m.status === 'married') {
     p.bond = marClamp(Number(p.bond || 0) + Number(act.bond || 0), 0, 100);
     fx({ happiness: Number(act.happiness || 0) });
@@ -1647,7 +1557,7 @@ window.marPremaritalTalk = function(topicId) {
   p.communication = marClamp(Number(p.communication || 0) + communicationChange, 0, 100);
   p.compatibility = marClamp(Number(p.compatibility || 0) + compatibilityChange, 0, 100);
   p.topicCounts[topic.id] = priorCount + 1;
-     // RED FLAG DISCOVERY
+  
   if (priorCount === 0 && Math.random() < 0.15) {
     const negativeTraits = p.traits.filter(t => ['greedy', 'jealous', 'grumpy', 'stubborn', 'extravagant'].includes(t));
     if (negativeTraits.length > 0) {
@@ -1676,8 +1586,7 @@ window.marPremaritalTalk = function(topicId) {
   marRecordMemory('conversation_' + topic.id, 'You discussed ' + topic.topic + ' with ' + p.name + '. ' + response, topic.id === 'marriage' || topic.id === 'finances' ? 3 : 2);
   log('💬 ' + topic.label + ': ' + response + ' Bond ' + (bondChange >= 0 ? '+' : '') + bondChange + ', trust ' + (trustChange >= 0 ? '+' : '') + trustChange + '.');
 
-  /* Partner agency: after a serious conversation, a ready partner may initiate engagement. */
-   if ((topic.id === 'marriage' || topic.id === 'commitment') && m.status === 'dating' &&
+  if ((topic.id === 'marriage' || topic.id === 'commitment') && m.status === 'dating' &&
       p.exclusive && !p.partnerProposalOffered && !p.pendingPartnerProposal &&
       (!m.engagement || !m.engagement.proposal) && Number(p.bond || 0) >= 70 && Number(p.trust || 0) >= 65 &&
       marPremaritalReadiness(p).score >= 75) {
@@ -1686,7 +1595,6 @@ window.marPremaritalTalk = function(topicId) {
       if (marHasTrait(p, 'confident')) baseChance += 0.05;
       if (marHasTrait(p, 'romantic')) baseChance += 0.04;
       
-      // BOOST CHANCE IF TRADITIONAL WOMAN
       if (marIsTraditionalWoman()) baseChance += 0.35; 
 
       const partnerInitiationChance = marClamp(baseChance, 0.12, 0.90);
@@ -1700,15 +1608,15 @@ window.marPremaritalTalk = function(topicId) {
     }
   render();
 };
+
 window.marFamilyIntervention = function() {
   const m = S.marriage;
   const p = m.partner;
   if (!p || m.status !== 'dating') return;
   
   const approval = marFamilyApproval(p);
-  if (approval >= 0.50) return; // Family likes them
+  if (approval >= 0.50) return;
   
-  // Family hates them
   if (S.marriage.flags_familyWarning) return;
   S.marriage.flags_familyWarning = true;
   
@@ -1725,7 +1633,7 @@ window.marFamilyIntervention = function() {
         }},
       { label: 'I will fight for them', effect: function(s) {
           log('⚔️ You refused. Your parents are furious.');
-          p.bond = Math.min(100, p.bond + 15); // Partner loves the loyalty
+          p.bond = Math.min(100, p.bond + 15);
           (s.family || []).forEach(function(fm) {
             if (fm.role === 'Mother' || fm.role === 'Father') fm.bond = Math.max(0, fm.bond - 25);
           });
@@ -1736,6 +1644,7 @@ window.marFamilyIntervention = function() {
   S.evId = 'family_intervention';
   render();
 };
+
 window.marRespondToPartnerProposal = function(choice) {
   ensureMarriageState();
   const m = S.marriage;
@@ -1957,7 +1866,6 @@ window.marFinalizeEngagement = function() {
   const mahrAdvCost = Math.round(totalMahr * advancedPct);
   const mahrDefCost = totalMahr - mahrAdvCost;
 
-  // Only charge the ADVANCED (muqaddam) portion upfront
   const totalEGP = shabka.costEGP + mahrAdvCost + party.costEGP;
   const totalLocal = marEGP(totalEGP);
 
@@ -1971,7 +1879,6 @@ window.marFinalizeEngagement = function() {
   if (S.wealth < playerTotal) { log('Not enough cash.'); render(); return; }
   S.wealth -= playerTotal;
 
-  // Save mahr split
   m.mahrAdvanced = marEGP(mahrAdvCost);
   m.mahrDeferred = marEGP(mahrDefCost);
   
@@ -1998,6 +1905,7 @@ window.marFinalizeEngagement = function() {
   }
   render();
 };
+
 /* Wedding */
 window.marOpenWeddingPlanner = function() {
   ensureMarriageState();
@@ -2019,7 +1927,6 @@ window.marOpenWeddingPlanner = function() {
       planner: 'day_of',
       payer: 'self',
       prenup: 'none',
-      /* Neutral default: never infer financial roles from either partner's gender. */
       financeModel: 'egalitarian'
     };
   }
@@ -2069,7 +1976,6 @@ window.marConfirmWedding = function() {
   if (!w) return;
   const isTraditionalWoman = marIsTraditionalWoman();
 
-  // HARD LOCK: Check if all required Gehaz items are present in the marital home
   const h = S.ownedHomes.find(x => x.status === 'occupied') || S.ownedHomes[0];
   if (!h) {
     log('🚨 The wedding is cancelled! You have no home.');
@@ -2095,7 +2001,6 @@ window.marConfirmWedding = function() {
   else if (w.payer === 'partner_family') share = isTraditionalWoman ? 0.15 : 0.25;
   else if (w.payer === 'own_family') share = 0.5;
 
-  // Mother-in-law interference
   if (S.marriage.motherInLawBond < 30 && Math.random() < 0.5) {
     log('🚨 Your mother-in-law interfered! She added 50 unwanted guests to the wedding list.');
     selection.baseTotalEGP += marEGP(250000);
@@ -2107,7 +2012,6 @@ window.marConfirmWedding = function() {
   if (S.wealth < playerTotalLocal) { log('Not enough cash.'); render(); return; }
   S.wealth -= playerTotalLocal;
 
-  /* Prenup refusal chance */
   let prenupRecord = null;
   if (w.prenup !== 'none') {
     const prenupDef = MARRIAGE_PRENUP_OPTIONS.find(function(o) { return o.id === w.prenup; });
@@ -2159,62 +2063,6 @@ window.marConfirmWedding = function() {
   render();
 };
 
-  const playerTotalLocal = marEGP(selection.baseTotalEGP * share) + selection.prenupCostLocal;
-  
-  if (S.wealth < playerTotalLocal) { log('Not enough cash.'); render(); return; }
-  S.wealth -= playerTotalLocal;
-
-  /* Prenup refusal chance */
-  let prenupRecord = null;
-  if (w.prenup !== 'none') {
-    const prenupDef = MARRIAGE_PRENUP_OPTIONS.find(function(o) { return o.id === w.prenup; });
-    const refusalChance = w.prenup === 'full' ? 0.50 : 0.30;
-    if (Math.random() < refusalChance) {
-      log('💔 ' + m.partner.name + ' refused the prenup. Wedding cancelled.');
-      m.partner.bond = Math.max(0, m.partner.bond - 25);
-      m.wedding = null;
-      render(); return;
-    }
-    prenupRecord = { type: prenupDef.label, signedYear: gameYear() };
-  }
-
-  m.wedding = {
-    venue: w.venue, guests: w.guests, catering: w.catering,
-    photography: w.photography, dress: w.dress, decoration: w.decoration, music: w.music,
-    honeymoon: w.honeymoon, planner: w.planner,
-    totalCost: selection.baseTotalEGP, payer: w.payer
-  };
-  m.prenup = prenupRecord;
-  m.financeModel = w.financeModel;
-  m.status = 'married';
-  m.partner.bond = 100;
-  m.partner.marriedYear = gameYear();
-
-  marUnlockAchievement('married');
-  if (selection.baseTotalEGP < 2000000) marUnlockAchievement('budget_wedding');
-  if (selection.baseTotalEGP > 8000000) marUnlockAchievement('dream_wedding');
-  marUnlockAchievement('financial_planners');
-  marReachMilestone('marriage');
-
-  if (typeof MARRIAGE_WEDDING_EVENTS !== 'undefined') {
-    const ev = MARRIAGE_WEDDING_EVENTS[Math.floor(Math.random() * MARRIAGE_WEDDING_EVENTS.length)];
-    log('💒 ' + ev.title + ': ' + ev.text);
-  }
-
-  log('🎉 You married ' + m.partner.name + '! You paid ' + money(playerTotalLocal) + '.');
-  fx({ happiness: 30 });
-
-  S.spouse = {
-    name: m.partner.name,
-    age: m.partner.age,
-    gender: m.partner.gender,
-    bond: m.partner.bond,
-    income: m.partner.income,
-    works: m.partner.income > 0
-  };
-
-  render();
-};
 /* Home */
 window.marSetHome = function(homeId) {
   const m = S.marriage;
@@ -2230,7 +2078,6 @@ window.marSetHome = function(homeId) {
   render();
 };
 
-/* Family planning */
 window.marSetFamilyPlanning = function(optionId) {
   S.marriage.familyPlanning = optionId;
   const opt = MARRIAGE_FAMILY_PLANNING_OPTIONS.find(function(x) { return x.id === optionId; });
@@ -2246,7 +2093,6 @@ window.marSetChildcare = function(optionId) {
   render();
 };
 
-/* Shared account */
 window.marDepositShared = function() {
   const amt = Math.round(Number(prompt('Deposit how much?\nYou have ' + money(S.wealth), '10000')));
   if (!amt || amt <= 0) return;
@@ -2267,7 +2113,6 @@ window.marWithdrawShared = function() {
   render();
 };
 
-/* Try for baby */
 window.marTryForBaby = function() {
   if (!S.marriage.partner) return;
   if (S.pregnantMonths > 0) { log('Already expecting!'); render(); return; }
@@ -2288,7 +2133,6 @@ window.marTryForBaby = function() {
   render();
 };
 
-/* Conflict resolution */
 window.marResolveConflict = function(mode) {
   const m = S.marriage;
   if (!m.pendingConflict || !m.partner) return;
@@ -2321,7 +2165,6 @@ window.marResolveConflict = function(mode) {
   render();
 };
 
-/* Separation options */
 window.marSeparationOption = function(optionId) {
   const opt = MARRIAGE_SEPARATION_OPTIONS.find(function(x) { return x.id === optionId; });
   if (!opt) return;
@@ -2335,7 +2178,6 @@ window.marSeparationOption = function(optionId) {
   render();
 };
 
-/* Divorce */
 window.marAskForDivorce = function() {
   if (!S.marriage.partner) return;
   const p = S.marriage.partner;
@@ -2418,10 +2260,8 @@ GameHooks.on('year', function() {
   const p = m.partner;
   if (!p) return;
 
-  /* Partner aging */
   p.age++;
 
-  /* Bond decay + trait effects */
   let bondChange = -2;
   (p.traits || []).forEach(function(tid) {
     const t = marTrait(tid);
@@ -2429,13 +2269,11 @@ GameHooks.on('year', function() {
   });
   p.bond = Math.max(0, Math.min(100, p.bond + bondChange));
 
-  /* Partner income growth */
   if (p.income > 0) {
     const ambitious = (p.traits || []).indexOf('ambitious') >= 0 || (p.traits || []).indexOf('career_focused') >= 0;
     p.income = Math.round(p.income * (ambitious ? 1.06 : 1.03));
   }
 
-  /* Home cost */
   if (m.home) {
     const h = (MARRIAGE_HOME_OPTIONS || []).find(function(x) { return x.id === m.home; });
     if (h) {
@@ -2447,7 +2285,6 @@ GameHooks.on('year', function() {
   if (m.status === 'dating' && Math.random() < 0.30) {
     marFamilyIntervention();
   }
-  /* Childcare cost */
   if (m.childcare) {
     const cc = (MARRIAGE_CHILDCARE_OPTIONS || []).find(function(x) { return x.id === m.childcare; });
     if (cc) {
@@ -2456,7 +2293,6 @@ GameHooks.on('year', function() {
     }
   }
 
-  /* Random year events */
   if (typeof MARRIAGE_YEAR_EVENTS !== 'undefined' && Math.random() < 0.55) {
     const eligible = MARRIAGE_YEAR_EVENTS.filter(function(e) {
       if (e.requiresNoChildren && (S.childrenList && S.childrenList.length > 0)) return false;
@@ -2472,14 +2308,12 @@ GameHooks.on('year', function() {
     }
   }
 
-  /* Spontaneous conflicts when bond low */
   if (m.status === 'married' && !m.pendingConflict && p.bond < 50 && Math.random() < 0.20 && typeof MARRIAGE_CONFLICT_TOPICS !== 'undefined') {
     const topic = MARRIAGE_CONFLICT_TOPICS[Math.floor(Math.random() * MARRIAGE_CONFLICT_TOPICS.length)];
     m.pendingConflict = topic.id;
     log('⚔️ Conflict arose: ' + topic.label + '.');
   }
 
-  /* Partner divorce threat */
   if (m.status === 'married' && p.bond < 20 && Math.random() < 0.20) {
     log('💔 ' + p.name + ' asked for a divorce. Bond was too low.');
     const law = MARRIAGE_DIVORCE_LAWS[S.country] || MARRIAGE_DIVORCE_LAWS.egy;
@@ -2508,7 +2342,6 @@ GameHooks.on('year', function() {
     return;
   }
 
-  /* Milestones by years married */
   if (m.status === 'married' && p.marriedYear) {
     const years = gameYear() - p.marriedYear;
     if (years >= 1) marReachMilestone('first_anniversary');
@@ -2520,7 +2353,6 @@ GameHooks.on('year', function() {
     if (years >= 25) marReachMilestone('twenty_five_years');
   }
 
-  /* Child support from exes */
   m.exSpouses.forEach(function(ex) {
     if (ex.childSupportAnnual > 0) {
       const annual = ex.childSupportAnnual;
