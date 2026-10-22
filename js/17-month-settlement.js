@@ -1,8 +1,9 @@
 /* ============================================================
    MONTHLY SETTLEMENT
    ============================================================
-   Restructured to fix unbalanced braces.
-   Each block is now a separate function.
+   Each block is a separate function for readability.
+   v2: Skips stored cars for ongoing costs.
+       Moved orphaned real-estate blocks back inside monthlyApplyFinance.
    ============================================================ */
 
 function localEGP(egp) {
@@ -124,11 +125,12 @@ function monthlyApplyFinance(c, monthStr) {
     }
   }
 
-  /* Cars (fuel + service + insurance) */
+  /* Cars (fuel + service + insurance) — v2: skip stored cars */
   if (Array.isArray(S.cars) && S.cars.length > 0) {
     let carMonthly = 0;
     S.cars.forEach(function(car) {
       if (car.stolen) return;
+      if (car.storedIn) return;   /* v2: stored cars incur no costs */
       if (typeof carInsuranceYearLocal === 'function') carMonthly += carInsuranceYearLocal(car) / 12;
       if (typeof carMaintenanceYearLocal === 'function') carMonthly += carMaintenanceYearLocal(car) / 12;
       if (typeof carFuelCostYearLocal === 'function') carMonthly += carFuelCostYearLocal(car) / 12;
@@ -207,9 +209,9 @@ function monthlyApplyFinance(c, monthStr) {
       log('💳 Card installments: −' + money(cardMonthly));
     }
   }
-}
-  /* Real estate: HOA + mortgage + rent (monthly slice) */
-  /* Real estate: HOA + rent (monthly slice, currency-aware) */
+
+  /* Real estate: HOA + rent income (monthly slice, currency-aware)
+     FIX: was previously outside this function. Now correctly runs monthly. */
   if (S && Array.isArray(S.ownedHomes) && S.ownedHomes.length > 0) {
     let reCashInPlayer = 0;
     S.ownedHomes.forEach(function(h) {
@@ -218,11 +220,9 @@ function monthlyApplyFinance(c, monthStr) {
       const playerRate = (typeof C === 'function' && C().rate) || 1;
       const conv = hcRate !== playerRate ? (playerRate / hcRate) : 1;
 
-      /* HOA in home currency, converted */
       const hoaAnnualInHome = Math.round((h.value || 0) * 0.005);
       reCashInPlayer -= Math.round((hoaAnnualInHome / 12) * conv);
 
-      /* Rent income in home currency, converted */
       if (h.status === 'rented' && h.monthlyRent) {
         reCashInPlayer += Math.round(h.monthlyRent * conv);
       }
@@ -233,24 +233,25 @@ function monthlyApplyFinance(c, monthStr) {
       else if (reCashInPlayer > 0) log('🏠 Rental income: +' + money(reCashInPlayer));
     }
   }
-   /* Real estate mortgages (annualPayment / 12 per contract) */
+
+  /* Real estate mortgages (annualPayment / 12 per contract)
+     FIX: was previously outside this function. Now correctly runs monthly. */
   if (S && Array.isArray(S.realestateContracts) && S.realestateContracts.length > 0) {
     let mortMonthly = 0;
     S.realestateContracts.forEach(function(c) {
       if (c.yearsLeft <= 0) return;
-      
+
       const home = (S.ownedHomes || []).find(h => h.id === c.homeId);
       const homeCountry = home ? (home.country || S.country) : S.country;
-      
-      // Convert mortgage slice to player's current currency
+
       const sliceLocal = Math.round((c.annualPayment || 0) / 12);
-      const slice = typeof convertToPlayerCurrency === 'function' 
+      const slice = typeof convertToPlayerCurrency === 'function'
         ? convertToPlayerCurrency(sliceLocal, homeCountry)
         : sliceLocal;
 
       if (S.wealth >= slice) {
         S.wealth -= slice;
-        c.remaining = Math.max(0, (c.remaining || 0) - sliceLocal); // Deduct in home currency
+        c.remaining = Math.max(0, (c.remaining || 0) - sliceLocal);
         c.missedPayments = 0;
       } else {
         c.missedPayments = (c.missedPayments || 0) + 1;
@@ -266,6 +267,8 @@ function monthlyApplyFinance(c, monthStr) {
       });
     }
   }
+}   /* ← monthlyApplyFinance closes here */
+
 /* ---------- 2. SEASONAL ---------- */
 function monthlyApplySeasonal(c, month) {
 
