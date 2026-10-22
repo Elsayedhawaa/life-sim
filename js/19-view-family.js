@@ -52,7 +52,6 @@ function ensureFamilyState() {
   if (typeof S.partner === 'undefined') S.partner = null;
   if (!Array.isArray(S.exes)) S.exes = [];
   if (!Array.isArray(S.childrenList)) S.childrenList = [];
-  // FIXED BUG: Was === 'number', forced pregnancy to reset constantly
   if (typeof S.pregnantMonths !== 'number') S.pregnantMonths = 0; 
 
   // Init Medical
@@ -296,18 +295,15 @@ function familyRenderRelative(p) {
     '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyCall(\'' + p.id + '\')">📞 Call</button>' +
     '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyVisit(\'' + p.id + '\')">☕ Visit</button>' +
     '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyHelpPrompt(\'' + p.id + '\', 500)">💵 Help</button>';
-        if(isParent) html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familySetAllowance(\'' + p.id + '\')">💰 Allowance</button>';
-    else html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyOpenGiftPicker(\'' + p.id + '\')">🎁 Gift</button>';
     
-    // ADD THIS:
-    if (isParent) {
-      html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;background:#34d39920;border-color:#34d399;color:#34d399" onclick="askFamilyForMoney()">💸 Ask for Cash</button>';
-    }
+  if (isParent) {
+    html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familySetAllowance(\'' + p.id + '\')">💰 Allowance</button>';
+    html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;background:#34d39920;border-color:#34d399;color:#34d399" onclick="askFamilyForMoney()">💸 Ask for Cash</button>';
+  } else {
+    html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyOpenGiftPicker(\'' + p.id + '\')">🎁 Gift</button>';
+  }
+
   html += '</div></div>';
-       if(isParent) html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familySetAllowance(\'' + p.id + '\')">💰 Allowance</button>';
-    else html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyOpenGiftPicker(\'' + p.id + '\')">🎁 Gift</button>';
-    
-  html += '</div>';
 
   /* Cut ties / reunion buttons */
   if (typeof familyCutTies === 'function') {
@@ -429,41 +425,6 @@ function renderPartnerTab() {
       <p class="muted small">To ensure full details for Shabka, Mahr, weddings, and divorce, please use the dedicated Marriage tab.</p>
       <button class="opt" style="margin-top:10px;width:100%;text-align:center;background:#fb7185;color:#fff;font-weight:700" onclick="switchTab('marriage')">Go to Marriage Tab →</button>
     </div>`;
-}
-    } 
-    else if (S.datingStatus === 'dating') {
-        html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">In a Relationship</h3>';
-        html += renderPartnerCard();
-        html += '<button class="opt" style="margin-top:10px;text-align:center;background:#fb7185;color:#fff" onclick="familyOpenProposal()">Propose Marriage</button>';
-        html += '<button class="opt" style="margin-top:6px;text-align:center;border-color:#fb7185;color:#fb7185" onclick="familyBreakup()">Break Up</button>';
-        html += '</div>';
-
-        if(S.weddingPlan) html += renderWeddingPlanner();
-    }
-    else if (S.datingStatus === 'married') {
-        html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">Marriage</h3>';
-        html += renderPartnerCard();
-        html += '<div class="row" style="margin-top:8px"><span>Finance Setup</span><b>' + (S.partner.financeModel || 'Traditional') + '</b></div>';
-        
-        html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">';
-        html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyPartnerAction(\'date\')">Romantic Date</button>';
-        html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyPartnerAction(\'gift\')">Buy Gift</button>';
-        html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyTryBaby()">Try for Baby</button>';
-        html += '</div>';
-        
-        html += '<button class="opt" style="margin-top:12px;text-align:center;border-color:#fb7185;color:#fb7185" onclick="familyDivorce()">Ask for Divorce</button>';
-        html += '</div>';
-    }
-
-    if (S.exes && S.exes.length > 0) {
-        html += '<div class="card"><h3>Exes</h3>';
-        S.exes.forEach(ex => {
-            html += '<div class="row"><span>' + ex.name + '</span><span class="muted small">' + ex.reason + '</span></div>';
-        });
-        html += '</div>';
-    }
-
-    return html;
 }
 
 function renderPartnerCard() {
