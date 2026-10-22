@@ -431,6 +431,14 @@ function marRenderPremaritalPanel() {
     '<div class="row"><span>Compatibility</span><b>' + marClamp(p.compatibility, 0, 100) + '%</b></div>' +
     '<div class="row"><span>Marriage readiness</span><b>' + readiness.score + '%</b></div>' +
     '<p class="muted small" style="margin-top:8px">Trust and readiness grow through honest conversations, respecting preferences, and consistent actions—not just expensive dates.</p>';
+     const isArranged = p.source && p.source.indexOf('Salonat') >= 0;
+  if (isArranged && m.status === 'dating') {
+    html += '<div class="card" style="border-color:#fbbf24;background:#fbbf2410">' +
+      '<b style="color:#fbbf24;font-size:.85rem">💍 Arranged Introduction (Salonat)</b>' +
+      '<p class="muted small" style="margin-top:4px">Your families arranged this match. You are expected to marry soon, but you barely know each other. Building trust and communication is critical before the wedding.</p>' +
+      '<button class="opt" style="margin-top:6px;width:100%;text-align:center;background:#fbbf24;color:#000;font-weight:700;font-size:.75rem" onclick="marSetTab(\'plan\')">Proceed to Engagement →</button>' +
+      '</div>';
+  }
 
   if (m.status === 'dating') {
     if (!p.exclusive) {
@@ -468,7 +476,40 @@ function marRenderPremaritalPanel() {
   html += '</div>';
   return html;
 }
-
+window.marAskForHand = function() {
+  const m = S.marriage;
+  const p = m.partner;
+  if (!p || m.status !== 'dating') return;
+  
+  const isTraditionalWoman = marIsTraditionalWoman();
+  
+  if (isTraditionalWoman) {
+    log('👨 As the man, you must ask her father for her hand in marriage.');
+  } else {
+    log('👩 He must ask your father for your hand in marriage.');
+  }
+  
+  // The father's approval is a mix of the family approval metric
+  const fatherApproval = marFamilyApproval(p);
+  
+  if (fatherApproval < 0.6) {
+    log('❌ The father refused. "You are not ready to take care of my daughter/son." (Need 60% family approval).');
+    return;
+  }
+  
+  if (!confirm('Ask for the hand in marriage?\n\nThis is the traditional step before the engagement. Proceed?')) return;
+  
+  log('🎉 The father said yes! You are officially permitted to proceed with the engagement.');
+  m.engagement = {
+    proposal: 'family',
+    shabkaTier: 'standard',
+    mahrTier: 'standard',
+    partyTier: 'nice_hall',
+    payer: isTraditionalWoman ? 'partner' : 'self'
+  };
+  m.status = 'engaged'; // Skip proposal phase, straight to engagement
+  render();
+};
 /* ============================================================
    FIND TAB
    ============================================================ */
@@ -520,6 +561,12 @@ function marRenderPlan() {
   }
   if (m.status === 'married') {
     return '<div class="card"><h3>💍 Planning</h3><p class="muted small">You are already married. See the Married Life tab.</p></div>';
+  }
+     if (m.status === 'dating' && p.bond >= 60) {
+    html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">👨‍👩‍👧 Traditional Ask</h3>' +
+      '<p class="muted small">Go directly to the family to ask for their blessing to get engaged.</p>' +
+      '<button class="opt" style="margin-top:6px;width:100%;text-align:center;background:#8b5cf6;color:#fff;font-weight:700;font-size:.75rem" onclick="marAskForHand()">🤝 Ask for Hand in Marriage</button>' +
+      '</div>';
   }
 
   const p = m.partner;
@@ -997,7 +1044,13 @@ window.marTryDate = function(sourceId) {
   const names = marNamePool(targetGender) || [];
   const name = names.length ? names[Math.floor(Math.random() * names.length)] : (targetGender === 'f' ? 'Alexandra' : 'Alex');
   const age = Math.max(18, S.age + Math.floor(Math.random() * 7) - 3);
-  const traits = marRollTraits();
+  const traits  const traits = marRollTraits();
+  const isArranged = src.id === 'salonat';
+  
+  // Arrange marriage dynamic setup
+  const initialBond = isArranged ? 25 : (42 + Math.floor(Math.random() * 17));
+  const initialTrust = isArranged ? 20 : (38 + Math.floor(Math.random() * 18));
+  const initialFamilyApproval = isArranged ? 1.0 : src.familyApproval;= marRollTraits();
   const compatibility = marClamp(45 + Math.floor(Math.random() * 36) +
     (traits.indexOf('communicative') >= 0 ? 4 : 0) +
     (traits.indexOf('mature') >= 0 ? 4 : 0) -
@@ -1016,6 +1069,10 @@ window.marTryDate = function(sourceId) {
     familyApproval: src.familyApproval,
     metYear: gameYear(),
     relationshipStage: 'getting_to_know_you',
+         bond: initialBond,
+    trust: initialTrust,
+    // ...
+    familyApproval: initialFamilyApproval,
     exclusive: false,
     memories: [],
     talkedTopics: [],
@@ -1049,12 +1106,36 @@ window.marDoActivity = function(activityId) {
   if (!p) return;
   const act = (MARRIAGE_RELATIONSHIP_ACTIVITIES || []).find(function(a) { return a.id === activityId; });
   if (!act) return;
-  const cost = marEGP(act.costEGP);
-  if (S.wealth < cost) { log('Not enough cash for ' + act.label + ' (' + money(cost) + ').'); render(); return; }
+   const cost = marEGP(act.costEGP);
   if (m.status !== 'dating' && m.status !== 'engaged' && m.status !== 'married') {
     log('This activity is not available at the current relationship stage.'); render(); return;
   }
-  S.wealth -= cost;
+
+  // --- DATING FINANCE LOGIC ---
+  let playerPays = true;
+  let payerName = "You paid";
+  
+  if (m.status === 'dating' || m.status === 'engaged') {
+    if (marIsTraditionalWoman()) {
+      playerPays = false; // Man pays in traditional culture
+      payerName = p.name + " paid";
+    } else if (S.gender === 'f' && !marIsTraditionalWoman()) {
+      playerPays = true; // Western woman pays her share
+      payerName = "You paid your share";
+      // If western, we charge half
+      const halfCost = Math.round(cost * 0.5);
+      if (S.wealth < halfCost) { log('Not enough cash for your share (' + money(halfCost) + ').'); render(); return; }
+      S.wealth -= halfCost;
+    } else {
+      // Man pays
+      if (S.wealth < cost) { log('Not enough cash for ' + act.label + ' (' + money(cost) + ').'); render(); return; }
+      S.wealth -= cost;
+    }
+  } else {
+    // Married - shared finances based on model, but for activities just deduct from main pool
+    if (S.wealth < cost) { log('Not enough cash for ' + act.label + ' (' + money(cost) + ').'); render(); return; }
+    S.wealth -= cost;
+  }
 
   /* Preserve the existing married-life effect; premarital actions use contextual outcomes. */
   if (m.status === 'married') {
@@ -1148,6 +1229,30 @@ window.marPremaritalTalk = function(topicId) {
   p.communication = marClamp(Number(p.communication || 0) + communicationChange, 0, 100);
   p.compatibility = marClamp(Number(p.compatibility || 0) + compatibilityChange, 0, 100);
   p.topicCounts[topic.id] = priorCount + 1;
+     // RED FLAG DISCOVERY
+  if (priorCount === 0 && Math.random() < 0.15) {
+    const negativeTraits = p.traits.filter(t => ['greedy', 'jealous', 'grumpy', 'stubborn', 'extravagant'].includes(t));
+    if (negativeTraits.length > 0) {
+      const trait = negativeTraits[0];
+      S.pending = {
+        title: '🚩 Red Flag Discovered',
+        text: 'During your conversation about ' + topic.topic + ', you noticed a troubling side of ' + p.name + '. They revealed they are extremely ' + trait + '.',
+        choices: [
+          { label: 'This is a dealbreaker. Break up.', effect: function(s) {
+              log('💔 You ended the relationship over the red flag.');
+              s.marriage.partner = null;
+              s.marriage.status = 'single';
+              fx({ happiness: -10 });
+            }},
+          { label: 'I can live with this.', effect: function(s) {
+              log('You decided to look past it.');
+              p.compatibility = Math.max(0, p.compatibility - 10);
+            }}
+        ]
+      };
+      S.evId = 'red_flag_' + trait;
+    }
+  }
   if (p.talkedTopics.indexOf(topic.id) < 0) p.talkedTopics.push(topic.id);
   if (topic.id === 'commitment' || topic.id === 'marriage') p.commitmentTalks = Math.max(1, Number(p.commitmentTalks || 0));
   marRecordMemory('conversation_' + topic.id, 'You discussed ' + topic.topic + ' with ' + p.name + '. ' + response, topic.id === 'marriage' || topic.id === 'finances' ? 3 : 2);
@@ -1177,7 +1282,42 @@ window.marPremaritalTalk = function(topicId) {
     }
   render();
 };
-
+window.marFamilyIntervention = function() {
+  const m = S.marriage;
+  const p = m.partner;
+  if (!p || m.status !== 'dating') return;
+  
+  const approval = marFamilyApproval(p);
+  if (approval >= 0.50) return; // Family likes them
+  
+  // Family hates them
+  if (S.marriage.flags_familyWarning) return;
+  S.marriage.flags_familyWarning = true;
+  
+  S.pending = {
+    title: '👨‍👩‍👧 Family Intervention',
+    text: 'Your parents sat you down. "We don\'t approve of ' + p.name + '. They are not the right fit for our family. We want you to end this relationship."',
+    choices: [
+      { label: 'I will break up with them', effect: function(s) {
+          log('💔 You broke up with ' + p.name + ' to please your family.');
+          s.marriage.partner = null;
+          s.marriage.status = 'single';
+          s.marriage.flags_familyWarning = false;
+          fx({ happiness: -20 });
+        }},
+      { label: 'I will fight for them', effect: function(s) {
+          log('⚔️ You refused. Your parents are furious.');
+          p.bond = Math.min(100, p.bond + 15); // Partner loves the loyalty
+          (s.family || []).forEach(function(fm) {
+            if (fm.role === 'Mother' || fm.role === 'Father') fm.bond = Math.max(0, fm.bond - 25);
+          });
+          fx({ happiness: -10 });
+        }}
+    ]
+  };
+  S.evId = 'family_intervention';
+  render();
+};
 window.marRespondToPartnerProposal = function(choice) {
   ensureMarriageState();
   const m = S.marriage;
@@ -1793,7 +1933,9 @@ GameHooks.on('year', function() {
       else log('⚠️ Could not pay home costs (' + money(yearly) + ').');
     }
   }
-
+  if (m.status === 'dating' && Math.random() < 0.30) {
+    marFamilyIntervention();
+  }
   /* Childcare cost */
   if (m.childcare) {
     const cc = (MARRIAGE_CHILDCARE_OPTIONS || []).find(function(x) { return x.id === m.childcare; });
