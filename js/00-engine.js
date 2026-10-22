@@ -266,7 +266,10 @@ function advanceYear() {
 
   ['health', 'happiness', 'smarts', 'social'].forEach(k => { S[k] = clamp(S[k], 0, 100); });
  
-   if (!S.pending) {
+    /* Ambient life flavor — happens every year */
+  if (typeof ambientFlavor === 'function') ambientFlavor(3);
+
+  if (!S.pending) {
     var _evt = pickEligibleEvent();
     if (_evt && Math.random() < 0.95) {
       S.pending = prepareEvent(_evt);
@@ -292,6 +295,9 @@ function advanceMonth(silent) {
   }
 
   GameHooks.run('month', S, { month: S.month, isYearEnd: S.month === 1 });
+
+  /* Ambient life flavor — happens every month */
+  if (typeof ambientFlavor === 'function' && !silent) ambientFlavor(1);
 
   if (!silent) { save(); render(); }
 }
@@ -397,8 +403,9 @@ function header() {
   return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
       <div>
-          <div class="muted" style="font-size:.7rem;letter-spacing:.06em">AGE ${S.age}${isMonthly() ? ' · ' + currentMonthName() : ''} · ${gameYear()} · ${C().flag} ${C().name}</div>
+                  <div class="muted" style="font-size:.7rem;letter-spacing:.06em">AGE ${S.age}${isMonthly() ? ' · ' + currentMonthName() : ''} · ${gameYear()} · ${C().flag} ${C().name}</div>
         <div style="font-size:1.15rem;font-weight:bold;margin-top:2px">${S.name} ${S.gender==='f'?'♀':'♂'}</div>
+        ${typeof lifeSummaryHtml === 'function' ? lifeSummaryHtml() : ''}
       </div>
       <div style="text-align:right">
         <div class="muted" style="font-size:.7rem">WEALTH</div>
@@ -845,6 +852,216 @@ function pickEligibleEvent() {
   return eligible[eligible.length - 1];
 }
 window.pickEligibleEvent = pickEligibleEvent;
+/* ============================================================
+   AMBIENT FLAVOR — life feels alive even without big events
+   ============================================================ */
+function ambientFlavor(count) {
+  if (!S) return;
+  count = count || 1;
+
+  var pool = [];
+
+  /* --- Childhood (6-17): parents + school --- */
+  if (S.age < 18) {
+    if (S.family) {
+      S.family.forEach(function(m) {
+        if (m.alive === false) return;
+        if (m.role === 'Mother' || m.role === 'Father') {
+          var bond = m.bond || 70;
+          if (bond > 75) {
+            pool.push(m.name + ' hugged you before you left for school.');
+            pool.push(m.name + ' made your favorite breakfast without being asked.');
+          } else if (bond > 45) {
+            pool.push(m.name + ' asked how your day was.');
+            pool.push(m.name + ' was on the phone when you got home.');
+          } else {
+            pool.push(m.name + ' barely looked up when you walked in.');
+            pool.push('The house was quiet. ' + m.name + ' was in their room.');
+          }
+        }
+        if (m.isSibling || m.role === 'Brother' || m.role === 'Sister') {
+          pool.push('You and ' + m.name + ' argued over the TV remote.');
+          pool.push(m.name + ' borrowed something from your room without asking.');
+        }
+      });
+    }
+    if (S.school) {
+      var schoolFlavor = [
+        'A teacher told you that you had potential.',
+        'You fell asleep in class and someone nudged you.',
+        'You ate lunch alone today. Nobody noticed.',
+        'You laughed so hard at lunch your stomach hurt.',
+        'The school bell rang. You were the first to leave.'
+      ];
+      pool.push(schoolFlavor[Math.floor(Math.random() * schoolFlavor.length)]);
+    }
+  }
+  /* --- Adult (18+) --- */
+  else {
+    /* Spouse */
+    if (S.marriage && S.marriage.partner && S.marriage.partner.alive !== false) {
+      var p = S.marriage.partner;
+      var pBond = p.bond || 70;
+      var trait = (Array.isArray(p.traits) ? p.traits[0] : p.trait) || 'balanced';
+      if (pBond > 75) {
+        if (trait === 'romantic') pool.push(p.name + ' left a note on the fridge just to say "I love you."');
+        else if (trait === 'funny') pool.push(p.name + ' sent you a meme that made you laugh out loud.');
+        else pool.push(p.name + ' made you tea without asking. "You looked tired."');
+        pool.push(p.name + ' reached for your hand at dinner. Small, quiet moments.');
+      } else if (pBond > 45) {
+        if (trait === 'grumpy') pool.push(p.name + ' grumbled about the weather all morning.');
+        else if (trait === 'ambitious') pool.push(p.name + ' was on their laptop till midnight again.');
+        else pool.push(p.name + ' was quiet at dinner tonight. Not much was said.');
+        pool.push('You and ' + p.name + ' watched TV in comfortable silence.');
+      } else {
+        pool.push(p.name + ' slept in the other room again.');
+        pool.push('Dinner was silent. ' + p.name + ' left the table early.');
+        pool.push('You and ' + p.name + ' have not talked properly in weeks.');
+      }
+    } else if (S.marriage && S.marriage.status === 'divorced') {
+      pool.push('You woke up alone. The apartment felt too quiet.');
+      pool.push('You caught yourself thinking about someone who is not here anymore.');
+    }
+
+    /* Children */
+    if (S.childrenList && S.childrenList.length > 0) {
+      S.childrenList.forEach(function(c) {
+        if (c.movedOut) return;
+        if (c.age < 3) {
+          pool.push(c.name + ' laughed at something only they understood.');
+        } else if (c.age < 6) {
+          pool.push(c.name + ' asked "why?" seventeen times in a row.');
+          pool.push(c.name + ' drew you a picture of the whole family.');
+        } else if (c.age < 13) {
+          pool.push(c.name + ' asked you a question you did not know how to answer.');
+          pool.push(c.name + ' wanted to show you something on the way home.');
+        } else if (c.age < 18) {
+          pool.push(c.name + ' spent the whole day in their room.');
+          if ((c.bond || 55) > 60) pool.push(c.name + ' said "thanks, mom/dad" and meant it.');
+        }
+      });
+    }
+
+    /* Parents still alive */
+    if (S.family) {
+      S.family.forEach(function(m) {
+        if (m.alive === false) return;
+        if (m.role === 'Mother' || m.role === 'Father') {
+          if ((m.bond || 70) > 55) {
+            pool.push(m.name + ' called just to say they miss you.');
+            pool.push(m.name + ' asked if you are eating properly.');
+          } else {
+            pool.push('You have not spoken to ' + m.name + ' in a while.');
+          }
+        }
+      });
+    }
+
+    /* Career */
+    if (S.career && S.career.job) {
+      var job = S.career.job;
+      var perf = job.performance || 50;
+      if (perf > 75) {
+        pool.push('Your boss nodded at you in the hallway. Respect.');
+        pool.push('A colleague asked for your advice on something.');
+      } else if (perf < 40) {
+        pool.push('Your boss walked past your desk without saying hello.');
+        pool.push('You made a small mistake today that nobody mentioned. Yet.');
+      } else {
+        pool.push('Work was work. The day blurred into the next.');
+      }
+    }
+
+    /* Environment */
+    var envMap = {
+      egy: ['Cairo traffic was a nightmare today.', 'The power cut out for an hour this afternoon.', 'A street vendor called out to you on your way home.', 'The Nile looked beautiful at sunset.'],
+      usa: ['The commute felt longer than usual.', 'A neighbor waved at you across the street.', 'You overheard a conversation on the train that stuck with you.'],
+      sau: ['The heat was unrelenting today.', 'You saw a sandstorm building on the horizon.', 'A friendly voice at the café asked about your family.'],
+      uae: ['The city lights looked different tonight.', 'You noticed a new tower rising on the skyline.', 'Traffic on Sheikh Zayed Road was somehow worse than usual.'],
+      gbr: ['It rained briefly, then stopped.', 'A stranger on the tube smiled at you.', 'The sky was that particular shade of grey again.'],
+      deu: ['The autumn leaves are falling.', 'You watched the trains pass for a while.', 'You learned a new German word from a stranger.'],
+      can: ['Snow was falling softly all afternoon.', 'A moose crossed the road ahead of you, unhurried.', 'The lake looked calm from the window.'],
+      aus: ['The beach was empty this morning.', 'You saw a kangaroo on the drive home.', 'Someone said "mate" to you and it made you smile.'],
+      nld: ['You cycled past the canals in the golden hour.', 'The tulips are blooming on your street.', 'A neighbor nodded at you from their window.'],
+      fra: ['The baker remembered your usual order.', 'A street musician played something beautiful.', 'The café was full, so you walked.'],
+      jpn: ['The cherry blossoms are falling.', 'The train was perfectly on time, as always.', 'You bowed back at a stranger.'],
+      ita: ['The espresso was perfect this morning.', 'You watched the old men argue at the piazza.', 'Someone\'s grandmother smiled at you.'],
+      sgp: ['The rain stopped as suddenly as it began.', 'The hawker centre smelled incredible.', 'You walked the waterfront, watching the ships.'],
+      bra: ['The music from a street corner pulled you in.', 'The sun was relentless. You found shade.', 'Someone laughed, warm and loud.'],
+      ind: ['The chai was perfect today.', 'You saw an elephant on the way to work.', 'The monsoon held off for one more day.']
+    };
+    var env = envMap[S.country] || envMap.egy;
+    if (Math.random() < 0.35) {
+      pool.push(env[Math.floor(Math.random() * env.length)]);
+    }
+
+    /* Health / mood reminders */
+    if (S.health < 40) pool.push('You woke up feeling heavy. Maybe something is wrong.');
+    if (S.happiness < 30) pool.push('Nothing feels quite right lately.');
+    if (S.happiness > 80) pool.push('You caught yourself smiling for no reason.');
+  }
+
+  if (pool.length === 0) return;
+  for (var i = 0; i < count; i++) {
+    log(pool[Math.floor(Math.random() * pool.length)]);
+  }
+}
+window.ambientFlavor = ambientFlavor;
+
+/* ============================================================
+   LIFE SUMMARY STRIP — visible in header
+   ============================================================ */
+function lifeSummaryHtml() {
+  if (!S) return '';
+  var bits = [];
+
+  /* Spouse */
+  if (S.marriage && S.marriage.partner && S.marriage.partner.alive !== false) {
+    var p = S.marriage.partner;
+    var pb = p.bond || 70;
+    var heart = pb > 70 ? '❤️' : pb > 40 ? '💛' : '💔';
+    bits.push(heart + ' ' + p.name);
+  } else if (S.marriage && S.marriage.status === 'engaged' && S.marriage.partner) {
+    bits.push('💍 Engaged to ' + S.marriage.partner.name);
+  } else if (S.marriage && S.marriage.status === 'divorced') {
+    bits.push('💔 Divorced');
+  } else if (S.marriage && S.marriage.status === 'dating' && S.marriage.partner) {
+    bits.push('💕 Dating ' + S.marriage.partner.name);
+  }
+
+  /* Children */
+  if (S.childrenList && S.childrenList.length > 0) {
+    var childBit = '👶 ' + S.childrenList.length + ' child' + (S.childrenList.length > 1 ? 'ren' : '');
+    if (S.childrenList.length <= 3) {
+      var ages = S.childrenList.map(function(c) { return c.age; }).join('/');
+      childBit += ' (' + ages + ')';
+    }
+    bits.push(childBit);
+  }
+
+  /* Housing */
+  var housingLabel =
+    S.housing === 'parents' ? '🏠 Parents' :
+    S.housing === 'rented' ? '🔑 Renting' :
+    S.housing === 'owned' ? '🏡 Owned' : '🏠 Home';
+  bits.push(housingLabel);
+
+  /* Career */
+  var j = (S.career && S.career.job) ? S.career.job : S.job;
+  if (j) {
+    bits.push('💼 ' + j.title);
+  } else if (S.uni) {
+    bits.push('🎓 Student');
+  } else if (S.school) {
+    bits.push('📚 School');
+  } else if (S.age >= 18) {
+    bits.push('💤 Unemployed');
+  }
+
+  if (bits.length === 0) return '';
+  return '<div style="font-size:.72rem;color:#aaa;margin-top:3px;line-height:1.3">' + bits.join(' · ') + '</div>';
+}
+window.lifeSummaryHtml = lifeSummaryHtml;
 /* ============================================================
    CHARACTER DIALOGUE & VOICE ENGINE (EXPANDED & REALISTIC)
    ============================================================ */
