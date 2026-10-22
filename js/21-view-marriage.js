@@ -309,12 +309,12 @@ function marriageView() {
   ensureMarriageState();
   if (!S) return '';
   if (S.age < 16) return '<div class="card"><h3>💍 Marriage</h3><p class="muted">Available from age 16+.</p></div>';
-     if (typeof m.motherInLawBond !== 'number') m.motherInLawBond = 50;
+
+  const m = S.marriage;
+  if (typeof m.motherInLawBond !== 'number') m.motherInLawBond = 50;
   if (typeof m.mahrAdvanced !== 'number') m.mahrAdvanced = 0;
   if (typeof m.mahrDeferred !== 'number') m.mahrDeferred = 0;
   if (typeof m.trousseauComplete !== 'boolean') m.trousseauComplete = false;
-
-  const m = S.marriage;
   const tabs = [
     ['overview', '📋 Overview'],
     ['find', '💕 Find'],
@@ -444,7 +444,6 @@ function marRenderPremaritalPanel() {
       '<button class="opt" style="margin-top:6px;width:100%;text-align:center;background:#fbbf24;color:#000;font-weight:700;font-size:.75rem" onclick="marSetTab(\'plan\')">Proceed to Engagement →</button>' +
       '</div>';
   }
-  const m = S.marriage;
   if (m.status === 'engaged') {
     const hamaColor = m.motherInLawBond > 70 ? '#34d399' : m.motherInLawBond > 40 ? '#fbbf24' : '#fb7185';
     html += '<div class="card" style="border-color:' + hamaColor + '">' +
@@ -634,16 +633,17 @@ function marRenderPlan() {
   if (m.status === 'married') {
     return '<div class="card"><h3>💍 Planning</h3><p class="muted small">You are already married. See the Married Life tab.</p></div>';
   }
-     if (m.status === 'dating' && p.bond >= 60) {
+
+  const p = m.partner;
+  if (!p) return '';
+  let html = '';
+
+  if (m.status === 'dating' && p.bond >= 60) {
     html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">👨‍👩‍👧 Traditional Ask</h3>' +
       '<p class="muted small">Go directly to the family to ask for their blessing to get engaged.</p>' +
       '<button class="opt" style="margin-top:6px;width:100%;text-align:center;background:#8b5cf6;color:#fff;font-weight:700;font-size:.75rem" onclick="marAskForHand()">🤝 Ask for Hand in Marriage</button>' +
       '</div>';
   }
-
-  const p = m.partner;
-  if (!p) return '';
-  let html = '';
 
   /* A partner can independently bring up engagement after a serious, mutual discussion. */
   if (m.status === 'dating' && p.pendingPartnerProposal) {
@@ -763,24 +763,7 @@ function marRenderEngagementPlanner() {
   const e = S.marriage.engagement;
   if (!e) return '';
   const isTraditionalWoman = marIsTraditionalWoman();
-     // Inside marRenderEngagementPlanner, before the picker:
-  const mahr = MARRIAGE_MAHR_TIERS.find(function(x) { return x.id === e.mahrTier; }) || MARRIAGE_MAHR_TIERS[0];
-  const totalMahr = mahr.costEGP;
-  const advancedPct = (e.mahrAdvancedPct || 0.5); // 50% upfront by default
-  const mahrAdv = Math.round(totalMahr * advancedPct);
-  const mahrDef = Math.round(totalMahr * (1 - advancedPct));
 
-  // Update the picker UI to show the split
-  html += '<div style="margin-top:10px; padding:10px; background:#0f0f1a; border-radius:6px">' +
-    '<b class="small" style="color:#fbbf24">Mahr Structure</b>' +
-    '<div class="row small"><span>Muqaddam (Advanced)</span><b>' + money(marEGP(mahrAdv)) + '</b></div>' +
-    '<div class="row small"><span>Mu\'akhar (Deferred)</span><b>' + money(marEGP(mahrDef)) + '</b></div>' +
-    '<div style="display:flex;gap:4px;margin-top:6px">' +
-    '<button class="pill ' + (advancedPct === 1 ? 'on' : '') + '" style="flex:1;font-size:.65rem" onclick="marSetMahrSplit(1)">100% Upfront</button>' +
-    '<button class="pill ' + (advancedPct === 0.5 ? 'on' : '') + '" style="flex:1;font-size:.65rem" onclick="marSetMahrSplit(0.5)">50/50 Split</button>' +
-    '<button class="pill ' + (advancedPct === 0.1 ? 'on' : '') + '" style="flex:1;font-size:.65rem" onclick="marSetMahrSplit(0.1)">10% Upfront (Traditional)</button>' +
-    '</div></div>';
-  
   // Default payer logic for new engagements
   if (typeof e.payer === 'undefined') {
     e.payer = isTraditionalWoman ? 'partner' : 'self';
@@ -799,18 +782,34 @@ function marRenderEngagementPlanner() {
   const shabka = MARRIAGE_SHABKA_TIERS.find(function(x) { return x.id === e.shabkaTier; }) || MARRIAGE_SHABKA_TIERS[0];
   const mahr = MARRIAGE_MAHR_TIERS.find(function(x) { return x.id === e.mahrTier; }) || MARRIAGE_MAHR_TIERS[0];
   const party = MARRIAGE_ENGAGEMENT_PARTY_TIERS.find(function(x) { return x.id === e.partyTier; }) || MARRIAGE_ENGAGEMENT_PARTY_TIERS[0];
-  
+
+  const totalMahr = mahr.costEGP;
+  const advancedPct = (e.mahrAdvancedPct || 0.5);
+  const mahrAdv = Math.round(totalMahr * advancedPct);
+  const mahrDef = Math.round(totalMahr * (1 - advancedPct));
+
   const totalEGP = shabka.costEGP + mahr.costEGP + party.costEGP;
   const totalLocal = marEGP(totalEGP);
-  
+
   let playerShare = 1;
   if (e.payer === 'partner') playerShare = 0;
   else if (e.payer === 'split') playerShare = 0.5;
-  
+
   const playerTotalLocal = Math.round(totalLocal * playerShare);
   const canAfford = S.wealth >= playerTotalLocal;
 
   let html = '';
+
+  // Mahr Structure display (moved to top of return)
+  html += '<div style="margin-top:10px; padding:10px; background:#0f0f1a; border-radius:6px">' +
+    '<b class="small" style="color:#fbbf24">Mahr Structure</b>' +
+    '<div class="row small"><span>Muqaddam (Advanced)</span><b>' + money(marEGP(mahrAdv)) + '</b></div>' +
+    '<div class="row small"><span>Mu\'akhar (Deferred)</span><b>' + money(marEGP(mahrDef)) + '</b></div>' +
+    '<div style="display:flex;gap:4px;margin-top:6px">' +
+    '<button class="pill ' + (advancedPct === 1 ? 'on' : '') + '" style="flex:1;font-size:.65rem" onclick="marSetMahrSplit(1)">100% Upfront</button>' +
+    '<button class="pill ' + (advancedPct === 0.5 ? 'on' : '') + '" style="flex:1;font-size:.65rem" onclick="marSetMahrSplit(0.5)">50/50 Split</button>' +
+    '<button class="pill ' + (advancedPct === 0.1 ? 'on' : '') + '" style="flex:1;font-size:.65rem" onclick="marSetMahrSplit(0.1)">10% Upfront (Traditional)</button>' +
+    '</div></div>';
   html += picker('Shabka (bride\'s gold)', MARRIAGE_SHABKA_TIERS, 'shabkaTier', e.shabkaTier, function(t) { return money(marEGP(t.costEGP)); });
   html += picker('Mahr (deferred dowry)', MARRIAGE_MAHR_TIERS, 'mahrTier', e.mahrTier, function(t) { return money(marEGP(t.costEGP)); });
   html += picker('Engagement party', MARRIAGE_ENGAGEMENT_PARTY_TIERS, 'partyTier', e.partyTier, function(t) { return money(marEGP(t.costEGP)); });
@@ -1909,18 +1908,30 @@ window.marFinalizeEngagement = function() {
   const mahr = MARRIAGE_MAHR_TIERS.find(function(x) { return x.id === e.mahrTier; });
   const party = MARRIAGE_ENGAGEMENT_PARTY_TIERS.find(function(x) { return x.id === e.partyTier; });
   if (!shabka || !mahr || !party) return;
-  const mahrDef = MARRIAGE_MAHR_TIERS.find(function(x) { return x.id === e.mahrTier; });
-const totalMahr = mahrDef.costEGP;
-const advancedPct = e.mahrAdvancedPct || 0.5;
-const mahrAdvCost = Math.round(totalMahr * advancedPct);
-const mahrDefCost = totalMahr - mahrAdvCost;
 
-const totalEGP = shabka.costEGP + mahrAdvCost + party.costEGP; // Only charge advanced!
-// ... inside deduction
-S.wealth -= playerTotal;
-// Set state
-m.mahrAdvanced = marEGP(mahrAdvCost);
-m.mahrDeferred = marEGP(mahrDefCost);
+  const totalMahr = mahr.costEGP;
+  const advancedPct = e.mahrAdvancedPct || 0.5;
+  const mahrAdvCost = Math.round(totalMahr * advancedPct);
+  const mahrDefCost = totalMahr - mahrAdvCost;
+
+  // Only charge the ADVANCED (muqaddam) portion upfront
+  const totalEGP = shabka.costEGP + mahrAdvCost + party.costEGP;
+  const totalLocal = marEGP(totalEGP);
+
+  const payer = e.payer || 'self';
+  let playerShare = 1;
+  if (payer === 'partner') playerShare = 0;
+  else if (payer === 'split') playerShare = 0.5;
+
+  const playerTotal = Math.round(totalLocal * playerShare);
+
+  if (S.wealth < playerTotal) { log('Not enough cash.'); render(); return; }
+  S.wealth -= playerTotal;
+
+  // Save mahr split
+  m.mahrAdvanced = marEGP(mahrAdvCost);
+  m.mahrDeferred = marEGP(mahrDefCost);
+
   const totalEGP = shabka.costEGP + mahr.costEGP + party.costEGP;
   const totalLocal = marEGP(totalEGP);
   
