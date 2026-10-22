@@ -1,5 +1,20 @@
 /* ============================================================
-   VIEW: MARRIAGE (Core Logic, Negotiation & Life)
+   VIEW: MARRIAGE (Fully Expanded & Integrated)
+   ============================================================
+   Uses all tables from 08-data-marriage.js.
+   Owns S.marriage with full state.
+
+   UPGRADES:
+   - Pre-marital readiness & memories
+   - Partner-initiated proposals
+   - Double-charge bug fixed for proposal/wedding
+   - Wedding Day event sequence
+   
+   RESTORED:
+   - Family planning & childcare
+   - Shared account deposits/withdrawals
+   - Conflict resolution & divorce
+   - Marriage year-tick events
    ============================================================ */
 
 /* ---------- STATE ---------- */
@@ -8,38 +23,50 @@ function ensureMarriageState() {
   if (!S.marriage) {
     S.marriage = {
       status: 'single', partner: null, engagement: null, wedding: null,
-      financeModel: null, sharedAccountBalance: 0, prenup: null, exSpouses: [],
-      datingAttempts: 0, lastDateYear: 0, home: null, homeSetupPaid: false,
-      familyPlanning: 'undecided', childcare: null, achievements: [], milestones: [],
-      conflictHistory: [], pendingConflict: null, tab: 'overview',
-      negotiation: null, eloped: false
+      financeModel: null, sharedAccountBalance: 0, prenup: null,
+      exSpouses: [], datingAttempts: 0, lastDateYear: 0, home: null,
+      homeSetupPaid: false, familyPlanning: 'undecided', childcare: null,
+      achievements: [], milestones: [], conflictHistory: [], pendingConflict: null,
+      tab: 'overview', memories: [], readiness: {}, proposalPaid: false, weddingPaid: false
     };
   }
   const m = S.marriage;
   if (!Array.isArray(m.exSpouses)) m.exSpouses = [];
+  if (typeof m.sharedAccountBalance !== 'number') m.sharedAccountBalance = 0;
+  if (typeof m.datingAttempts !== 'number') m.datingAttempts = 0;
+  if (typeof m.lastDateYear !== 'number') m.lastDateYear = 0;
+  if (typeof m.home === 'undefined') m.home = null;
+  if (typeof m.homeSetupPaid !== 'boolean') m.homeSetupPaid = false;
+  if (typeof m.familyPlanning !== 'string') m.familyPlanning = 'undecided';
+  if (typeof m.childcare === 'undefined') m.childcare = null;
   if (!Array.isArray(m.achievements)) m.achievements = [];
   if (!Array.isArray(m.milestones)) m.milestones = [];
   if (!Array.isArray(m.conflictHistory)) m.conflictHistory = [];
+  if (!Array.isArray(m.memories)) m.memories = [];
+  if (!m.readiness) m.readiness = {};
+  if (typeof m.proposalPaid === 'undefined') m.proposalPaid = false;
+  if (typeof m.weddingPaid === 'undefined') m.weddingPaid = false;
   if (!m.tab) m.tab = 'overview';
 
-  /* Migrate legacy */
+  /* Migrate legacy S.spouse */
   if (S.spouse && m.status === 'single' && m.partner === null) {
     m.status = 'married';
     m.partner = { name: S.spouse.name, age: S.spouse.age || S.age, gender: S.spouse.gender || (S.gender === 'm' ? 'f' : 'm'), bond: S.spouse.bond || 70, traits: ['kind'], income: S.spouse.income || 0, source: 'legacy', familyApproval: 0.8, metYear: gameYear(), marriedYear: gameYear() };
-    m.financeModel = 'male_provider';
+    m.financeModel = 'male_provider'; m.prenup = null;
   }
 }
 GameHooks.on('newGame', ensureMarriageState);
 GameHooks.on('migrate', ensureMarriageState);
 
 /* ---------- HELPERS ---------- */
+var MAR_EGP_BASE_RATE = 52.7;
 function marRate() { return C().rate || 1; }
 function marEGP(amountEGP) {
   var localRate = C().rate || 1;
   var countryMult = (typeof MARRIAGE_COUNTRY_MULT !== 'undefined' && MARRIAGE_COUNTRY_MULT[S.country]) || 1.0;
   var adjustedEGP = amountEGP * countryMult;
-  if (localRate === 52.7 && countryMult === 1.0) return Math.round(adjustedEGP || 0);
-  return Math.round((adjustedEGP || 0) * (localRate / 52.7));
+  if (localRate === MAR_EGP_BASE_RATE && countryMult === 1.0) return Math.round(adjustedEGP || 0);
+  return Math.round((adjustedEGP || 0) * (localRate / MAR_EGP_BASE_RATE));
 }
 function marNamePool(gender) {
   const pool = (typeof MARRIAGE_PARTNER_NAMES !== 'undefined' && MARRIAGE_PARTNER_NAMES[S.country]) || MARRIAGE_PARTNER_NAMES.egy;
@@ -49,30 +76,27 @@ function marTrait(id) { return MARRIAGE_PARTNER_TRAITS[id] || null; }
 function marBondColor(v) { return v > 70 ? '#34d399' : v > 40 ? '#fbbf24' : '#fb7185'; }
 function marCountryProfile() { return (typeof MARRIAGE_COUNTRY_PROFILES !== 'undefined' && MARRIAGE_COUNTRY_PROFILES[S.country]) || null; }
 
-function _marIsArabCulture() { return ['egy', 'sau', 'uae', 'jor', 'lbn'].indexOf(S.country) >= 0; }
-function _marSocialTier() { return S.familyTier || 'middle'; }
-function _marCheckApartment() { return (S.ownedHomes && S.ownedHomes.some(h => h.status !== 'sold' && h.status !== 'rented')) || S.housing === 'owned'; }
-function _marPartnerFamilyStatus() {
-  if (!S.marriage.partner.familyWealth) {
-    const tiers = ['lower-mid', 'middle', 'upper-mid', 'wealthy'];
-    S.marriage.partner.familyWealth = tiers[Math.floor(Math.random() * tiers.length)];
-  }
-  return S.marriage.partner.familyWealth;
+function marAddMemory(text) {
+  if (!S.marriage.memories) S.marriage.memories = [];
+  S.marriage.memories.push({ year: gameYear(), text: text });
+  if (S.marriage.memories.length > 20) S.marriage.memories.shift(); // Bound history
 }
 
 function marRollTraits() {
   const positive = ['kind', 'funny', 'romantic', 'calm', 'ambitious', 'religious', 'generous', 'loyal', 'independent', 'family_oriented', 'patient', 'supportive', 'communicative', 'adventurous', 'homebody', 'mature', 'frugal', 'career_focused'];
   const negative = ['grumpy', 'moody', 'pessimistic', 'greedy', 'jealous', 'impulsive', 'extravagant', 'avoidant', 'stubborn', 'insecure'];
   const traits = [];
-  for (let i = 0; i < 1 + Math.floor(Math.random() * 2); i++) { const pick = positive[Math.floor(Math.random() * positive.length)]; if (!traits.includes(pick)) traits.push(pick); }
-  for (let i = 0; i < Math.floor(Math.random() * 3); i++) { const pick = negative[Math.floor(Math.random() * negative.length)]; if (!traits.includes(pick)) traits.push(pick); }
-  if (!traits.length) traits.push('kind');
-  return traits;
+  const pCount = 1 + Math.floor(Math.random() * 2);
+  const nCount = Math.floor(Math.random() * 3);
+  for (let i = 0; i < pCount; i++) { traits.push(positive[Math.floor(Math.random() * positive.length)]); }
+  for (let i = 0; i < nCount; i++) { traits.push(negative[Math.floor(Math.random() * negative.length)]); }
+  return [...new Set(traits)];
 }
 
 function marFamilyApproval(partner) {
   let a = partner.familyApproval || 0.7;
-  if (S.job && S.job.salary > 200000) a += 0.15; else if (!S.job) a -= 0.30;
+  if (S.job && S.job.salary > 200000) a += 0.15;
+  else if (!S.job) a -= 0.30;
   if (S.degree) a += 0.10;
   if (Math.abs(S.age - partner.age) > 10) a -= 0.15;
   const prof = marCountryProfile();
@@ -82,37 +106,47 @@ function marFamilyApproval(partner) {
 
 function marUnlockAchievement(id) {
   const m = S.marriage;
-  if (m.achievements.includes(id)) return;
+  if (m.achievements.indexOf(id) >= 0) return;
   m.achievements.push(id);
-  const ach = (typeof MARRIAGE_ACHIEVEMENTS !== 'undefined') ? MARRIAGE_ACHIEVEMENTS.find(a => a.id === id) : null;
+  const ach = (typeof MARRIAGE_ACHIEVEMENTS !== 'undefined') ? MARRIAGE_ACHIEVEMENTS.find(function(a) { return a.id === id; }) : null;
   if (ach) log('🏆 Achievement unlocked: ' + ach.label);
 }
+
 function marReachMilestone(id) {
   const m = S.marriage;
-  if (m.milestones.includes(id)) return;
+  if (m.milestones.indexOf(id) >= 0) return;
   m.milestones.push(id);
-  const mil = (typeof MARRIAGE_MILESTONES !== 'undefined') ? MARRIAGE_MILESTONES.find(x => x.id === id) : null;
+  const mil = (typeof MARRIAGE_MILESTONES !== 'undefined') ? MARRIAGE_MILESTONES.find(function(x) { return x.id === id; }) : null;
   if (mil) log('🌟 Milestone: ' + mil.label);
 }
+
 function marSetTab(tab) { S.marriage.tab = tab; render(); }
 window.marSetTab = marSetTab;
 
 /* ---------- MAIN VIEW ---------- */
 function marriageView() {
   ensureMarriageState();
-  if (!S || S.age < 16) return '<div class="card"><h3>💍 Marriage</h3><p class="muted">Available from age 16+.</p></div>';
+  if (!S) return '';
+  if (S.age < 16) return '<div class="card"><h3>💍 Marriage</h3><p class="muted">Available from age 16+.</p></div>';
 
   const m = S.marriage;
-  const tabs = [['overview', '📋 Overview'], ['find', '💕 Find'], ['plan', '💍 Plan'], ['life', '🏠 Life'], ['conflict', '⚔️ Conflict'], ['records', '📜 Records']];
+  const tabs = [
+    ['overview', '📋 Overview'],
+    ['find', '💕 Find'],
+    ['plan', '💍 Plan'],
+    ['life', '🏠 Life'],
+    ['conflict', '⚔️ Conflict'],
+    ['records', '📜 Records']
+  ];
 
-  let html = `<div class="card" style="padding:12px;background:linear-gradient(180deg,#fb718515 0%,transparent 100%);border-color:#fb7185">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div><div class="muted small" style="letter-spacing:.06em;font-weight:700">MARRIAGE · ${C().name.toUpperCase()}</div>
-      <div style="font-weight:700;font-size:1.05rem;margin-top:2px">${marStatusLabel()}</div></div>
-      <div style="font-size:2rem">💍</div></div>
-    <div style="display:flex;gap:4px;overflow-x:auto;margin-top:10px;scrollbar-width:none">
-      ${tabs.map(t => `<button class="pill ${m.tab === t[0] ? 'on' : ''}" style="padding:6px 10px;font-size:.72rem;white-space:nowrap" onclick="marSetTab('${t[0]}')">${t[1]}</button>`).join('')}
-    </div></div>`;
+  let html = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#fb718515 0%,transparent 100%);border-color:#fb7185">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<div><div class="muted small" style="letter-spacing:.06em;font-weight:700">MARRIAGE · ' + C().name.toUpperCase() + '</div>' +
+    '<div style="font-weight:700;font-size:1.05rem;margin-top:2px">' + marStatusLabel() + '</div></div>' +
+    '<div style="font-size:2rem">💍</div></div>' +
+    '<div style="display:flex;gap:4px;overflow-x:auto;margin-top:10px;scrollbar-width:none">' +
+    tabs.map(function(t) { return '<button class="pill ' + (m.tab === t[0] ? 'on' : '') + '" style="padding:6px 10px;font-size:.72rem;white-space:nowrap" onclick="marSetTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') +
+    '</div></div>';
 
   if (m.tab === 'overview') html += marRenderOverview();
   else if (m.tab === 'find') html += marRenderFind();
@@ -120,6 +154,7 @@ function marriageView() {
   else if (m.tab === 'life') html += marRenderLife();
   else if (m.tab === 'conflict') html += marRenderConflict();
   else if (m.tab === 'records') html += marRenderRecords();
+
   return html;
 }
 
@@ -134,115 +169,119 @@ function marStatusLabel() {
 }
 
 /* ============================================================
-   OVERVIEW
+   OVERVIEW TAB
    ============================================================ */
 function marRenderOverview() {
   const m = S.marriage;
   const prof = marCountryProfile();
-  let html = '';
 
+  let html = '';
   if (prof) {
-    html += `<div class="card" style="border-color:#8b5cf6">
-      <div class="muted small" style="letter-spacing:.06em;font-weight:700;color:#8b5cf6">COUNTRY PROFILE · ${prof.label}</div>
-      <div class="row" style="margin-top:6px"><span>Family influence</span><b>${Math.round(prof.familyInfluence * 100)}%</b></div>
-      <div class="row"><span>Wedding pressure</span><b>${Math.round(prof.weddingPressure * 100)}%</b></div>
-      <div class="row"><span>Housing pressure</span><b>${Math.round(prof.housingPressure * 100)}%</b></div>
-      <p class="muted small" style="margin-top:8px">${prof.notes}</p>
-      <div class="muted small" style="margin-top:6px">Typical concerns: ${prof.typicalConcerns.join(' · ')}</div></div>`;
+    html += '<div class="card" style="border-color:#8b5cf6">' +
+      '<div class="muted small" style="letter-spacing:.06em;font-weight:700;color:#8b5cf6">COUNTRY PROFILE · ' + prof.label + '</div>' +
+      '<div class="row" style="margin-top:6px"><span>Family influence</span><b>' + Math.round(prof.familyInfluence * 100) + '%</b></div>' +
+      '<div class="row"><span>Wedding pressure</span><b>' + Math.round(prof.weddingPressure * 100) + '%</b></div>' +
+      '<p class="muted small" style="margin-top:8px">' + prof.notes + '</p></div>';
   }
 
   if (m.status === 'single') {
-    return html + `<div class="card"><h3>💕 You are single</h3><p class="muted small">Head to the Find tab to meet someone.</p>
-      <button class="opt" style="margin-top:8px;text-align:center;background:#fb7185;color:#fff;font-weight:700" onclick="marSetTab('find')">Find a partner</button></div>`;
+    html += '<div class="card"><h3>💕 You are single</h3>' +
+      '<p class="muted small">Head to the Find tab to meet someone.</p>' +
+      '<button class="opt" style="margin-top:8px;text-align:center;background:#fb7185;color:#fff;font-weight:700" onclick="marSetTab(\'find\')">Find a partner</button></div>';
+    return html;
   }
 
   const p = m.partner;
   if (!p) return html;
   const bond = p.bond || 70;
-  const traitsList = (p.traits || []).map(t => { const tt = marTrait(t); return tt ? tt.label : t; });
+  const traitsList = (p.traits || []).map(function(t) { const tt = marTrait(t); return tt ? tt.label : t; });
   const approval = marFamilyApproval(p);
 
-  html += `<div class="card"><h3>Partner</h3>
-    <div style="font-weight:700;font-size:1.1rem">${p.name}</div>
-    <div class="muted small">Age ${p.age} · Met via ${p.source} ${p.metYear ? '· ' + p.metYear : ''}</div>
-    <div class="muted small" style="color:#8b5cf6;margin-top:4px">${traitsList.join(' · ')}</div>
-    <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#888;margin-top:10px"><span>Bond</span><span>${bond}%</span></div>
-    <div style="height:5px;background:#1a1a2a;border-radius:3px;margin-top:3px"><div style="height:100%;width:${bond}%;background:${marBondColor(bond)};border-radius:3px"></div></div>
-    ${m.status !== 'married' ? `<div class="row" style="margin-top:8px"><span>Family approval</span><b class="${approval >= 0.7 ? 'good' : approval >= 0.4 ? '' : 'bad'}">${Math.round(approval * 100)}%</b></div>` : ''}
-    ${p.income > 0 ? `<div class="row"><span>Income</span><b>${money(p.income)}/yr</b></div>` : ''}
-  </div>`;
+  html += '<div class="card"><h3>Partner</h3>' +
+    '<div style="font-weight:700;font-size:1.1rem">' + p.name + '</div>' +
+    '<div class="muted small">Age ' + p.age + ' · Met via ' + p.source + '</div>' +
+    '<div class="muted small" style="color:#8b5cf6;margin-top:4px">' + traitsList.join(' · ') + '</div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:#888;margin-top:10px"><span>Bond</span><span>' + bond + '%</span></div>' +
+    '<div style="height:5px;background:#1a1a2a;border-radius:3px;margin-top:3px"><div style="height:100%;width:' + bond + '%;background:' + marBondColor(bond) + ';border-radius:3px"></div></div>' +
+    (m.status !== 'married' ? '<div class="row" style="margin-top:8px"><span>Family approval</span><b class="' + (approval >= 0.7 ? 'good' : approval >= 0.4 ? '' : 'bad') + '">' + Math.round(approval * 100) + '%</b></div>' : '') +
+    (p.income > 0 ? '<div class="row"><span>Income</span><b>' + money(p.income) + '/yr</b></div>' : '') +
+    '</div>';
 
-  if (S.gender === 'f' && m.status === 'dating' && (gameYear() - p.metYear) >= 2) {
-    html += `<div class="card" style="border-color:#fbbf24;background:#fbbf2415">
-      <h3 style="color:#fbbf24">⏳ Time is passing...</h3>
-      <p class="muted small">You have been dating ${p.name} for ${gameYear() - p.metYear} years. He hasn't proposed yet.</p>
-      <button class="opt" style="margin-top:8px;width:100%;text-align:center;background:#fbbf24;color:#000;font-weight:700" onclick="marAskWhatAreWe()">💬 Ask him: "What are we?"</button></div>`;
+  /* Dating Activities & Dialogue (Premarital only) */
+  if (m.status === 'dating' || m.status === 'engaged') {
+    if (typeof MARRIAGE_DIALOGUE_TOPICS !== 'undefined') {
+      html += '<div class="card"><h3>💬 Deep Conversations</h3>';
+      MARRIAGE_DIALOGUE_TOPICS.slice(0, 3).forEach(function(topic) {
+        html += '<button class="opt" style="width:100%;margin-top:4px;text-align:left;padding:8px;font-size:.75rem" onclick="marDoDialogue(\'' + topic.id + '\')">' +
+          '<div style="display:flex;justify-content:space-between"><b>' + topic.label + '</b><span>' + money(marEGP(topic.costEGP)) + '</span></div>' +
+          '<div class="muted small">Bond +' + topic.bond + ' (or negative if incompatible)</div></button>';
+      });
+      html += '</div>';
+    }
+
+    html += '<div class="card"><h3>💞 Spend Time Together</h3>';
+    if (typeof MARRIAGE_RELATIONSHIP_ACTIVITIES !== 'undefined') {
+      MARRIAGE_RELATIONSHIP_ACTIVITIES.slice(0, 6).forEach(function(act) {
+        html += '<button class="opt" style="width:100%;margin-top:4px;text-align:left;padding:8px;font-size:.75rem" onclick="marDoActivity(\'' + act.id + '\')">' +
+          '<div style="display:flex;justify-content:space-between"><b>' + act.label + '</b><span>' + money(marEGP(act.costEGP)) + '</span></div></button>';
+      });
+    }
+    html += '</div>';
+
+    if (m.memories && m.memories.length > 0) {
+      html += '<div class="card"><h3>📖 Recent Memories</h3>';
+      m.memories.slice(-3).reverse().forEach(function(mem) {
+        html += '<div class="muted small" style="padding:4px 0;border-bottom:1px solid #1a1a2a">' + mem.year + ' · ' + mem.text + '</div>';
+      });
+      html += '</div>';
+    }
   }
 
-  if (typeof MARRIAGE_RELATIONSHIP_ACTIVITIES !== 'undefined') {
-    html += `<div class="card"><h3>💞 Spend Time Together</h3>`;
-    if (prof && prof.activities) html += `<p class="muted small" style="margin-bottom:8px">In ${prof.label}: ${prof.activities.slice(0, 3).join(' · ')}</p>`;
-    MARRIAGE_RELATIONSHIP_ACTIVITIES.slice(0, 8).forEach(act => {
-      html += `<button class="opt" style="width:100%;margin-top:4px;text-align:left;padding:8px;font-size:.75rem" onclick="marDoActivity('${act.id}')">
-        <div style="display:flex;justify-content:space-between"><b>${act.label}</b><span>${money(marEGP(act.costEGP))}</span></div>
-        <div class="muted small">Bond +${act.bond} · Happiness +${act.happiness}</div></button>`;
-    });
-    html += `</div>`;
-  }
   return html;
 }
 
-window.marAskWhatAreWe = function() {
-  const p = S.marriage.partner;
-  if (!p) return;
-  if (Math.random() < 0.6) {
-    log('💍 You confronted ' + p.name + ' about your future. He realized he was taking you for granted and proposed on the spot!');
-    S.marriage.status = 'engaged';
-    S.marriage.engagement = { proposal: 'a_private', finalized: false };
-    fx({ happiness: 15 });
-    marStartFatherNegotiation(); 
-  } else {
-    log('😔 You asked ' + p.name + ' where this is going. He panicked and said he "needs space".');
-    p.bond = Math.max(0, p.bond - 15);
-    fx({ happiness: -10 });
-    if (p.bond < 20) { log('💔 He broke up with you.'); S.marriage.partner = null; S.marriage.status = 'single'; }
-  }
-  render();
-};
-
 /* ============================================================
-   FIND
+   FIND TAB
    ============================================================ */
 function marRenderFind() {
   const m = S.marriage;
-  if (m.status !== 'single' && m.status !== 'divorced') return `<div class="card"><h3>💕 Find a Partner</h3><p class="muted small">You are currently ${m.status}.</p></div>`;
-  let html = `<div class="card"><h3>💕 Where to meet someone</h3><p class="muted small">Different sources have different success rates and family approval.</p></div>`;
+  if (m.status !== 'single' && m.status !== 'divorced') {
+    return '<div class="card"><h3>💕 Find a Partner</h3><p class="muted small">You are currently ' + m.status + '.</p></div>';
+  }
 
-  MARRIAGE_DATING_SOURCES.forEach(src => {
-    const blocked = (S.age < src.minAge || S.age > src.maxAge) || (src.requiresEducation && !S.uni && !S.degree) || (src.requiresJob && !S.job);
+  let html = '<div class="card"><h3>💕 Where to meet someone</h3></div>';
+
+  MARRIAGE_DATING_SOURCES.forEach(function(src) {
+    const blockAge = S.age < src.minAge || S.age > src.maxAge;
+    const blockEdu = src.requiresEducation && !S.uni && !S.degree;
+    const blockJob = src.requiresJob && !S.job;
+    const blocked = blockAge || blockEdu || blockJob;
     const cost = marEGP(src.cost);
-    let reason = (S.age < src.minAge || S.age > src.maxAge) ? 'Age block' : (src.requiresEducation && !S.uni && !S.degree) ? 'Needs education' : (src.requiresJob && !S.job) ? 'Needs a job' : '';
+    let reason = '';
+    if (blockAge) reason = 'Age ' + src.minAge + '-' + src.maxAge + ' only';
+    else if (blockEdu) reason = 'Needs education';
+    else if (blockJob) reason = 'Needs a job';
 
-    html += `<div class="card" style="padding:10px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-      <div style="flex:1"><div style="font-weight:700">${src.label}</div>
-      <div class="muted small">${src.desc}</div>
-      <div class="muted small">Match ${Math.round(src.matchChance * 100)}% · Family ${Math.round(src.familyApproval * 100)}% · Romance ${Math.round((src.romantic || 0.7) * 100)}%</div></div>
-      <div style="text-align:right;flex-shrink:0;margin-left:8px"><b>${money(cost)}</b></div></div>
-      ${blocked ? `<div class="bad small" style="margin-top:6px">${reason}</div>` :
-        `<button class="opt" style="margin-top:6px;text-align:center;font-size:.75rem;background:#fb7185;color:#fff;font-weight:700" onclick="marTryDate('${src.id}')">Meet someone · ${money(cost)}</button>`}
-      </div>`;
+    html += '<div class="card" style="padding:10px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+      '<div style="flex:1"><div style="font-weight:700">' + src.label + '</div>' +
+      '<div class="muted small">' + src.desc + '</div></div>' +
+      '<div style="text-align:right;margin-left:8px"><b>' + money(cost) + '</b></div></div>' +
+      (blocked ? '<div class="bad small" style="margin-top:6px">' + reason + '</div>' :
+        '<button class="opt" style="margin-top:6px;text-align:center;font-size:.75rem;background:#fb7185;color:#fff;font-weight:700" onclick="marTryDate(\'' + src.id + '\')">Meet someone</button>') +
+      '</div>';
   });
+
   return html;
 }
 
 /* ============================================================
-   PLAN (Proposal, Negotiation, Wedding Link)
+   PLAN TAB (Proposal · Engagement · Wedding)
    ============================================================ */
 function marRenderPlan() {
   const m = S.marriage;
-  if (m.status === 'single') return `<div class="card"><h3>💍 Planning</h3><p class="muted small">Find a partner first.</p></div>`;
-  if (m.status === 'married') return `<div class="card"><h3>💍 Planning</h3><p class="muted small">You are already married. See the Married Life tab.</p></div>`;
+  if (m.status === 'single') return '<div class="card"><h3>💍 Planning</h3><p class="muted small">Find a partner first.</p></div>';
+  if (m.status === 'married') return '<div class="card"><h3>💍 Planning</h3><p class="muted small">You are already married.</p></div>';
 
   const p = m.partner;
   if (!p) return '';
@@ -252,491 +291,771 @@ function marRenderPlan() {
     const bond = p.bond || 0;
     const canPropose = bond >= 40;
 
-    if (S.gender === 'm' || !_marIsArabCulture()) {
-      html += `<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">💍 Proposal</h3>`;
-      if (!m.engagement) {
-        if (!canPropose) html += `<p class="muted small">Bond needs 40%+ before proposing. Currently ${bond}%.</p>`;
-        else {
-          html += `<p class="muted small">Choose how you want to propose.</p>`;
-          const isArab = _marIsArabCulture();
-          const props = isArab ? MARRIAGE_CULTURAL_PROPOSALS.arab : MARRIAGE_CULTURAL_PROPOSALS.western;
-          props.forEach(opt => {
-            html += `<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:8px;font-size:.75rem" onclick="marSelectProposal('${opt.id}')">
-              <div style="display:flex;justify-content:space-between"><b>${opt.label}</b><span>${money(marEGP(opt.costEGP))}</span></div>
-              <div class="muted small">Romance +${opt.romance} · ${opt.desc}</div></button>`;
-          });
-        }
-      } else {
-        html += marRenderNegotiationUI();
-      }
-      html += `</div>`;
-    } else {
-      // Arab Female
-      html += `<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">💍 Waiting for Proposal</h3>
-        <p class="muted small">In your culture, the man initiates the engagement. You must wait for him to propose. If he takes too long, ask him "What are we?" from the Overview tab.</p>
-        <button class="opt" style="margin-top:8px;width:100%;text-align:center;background:#fbbf24;color:#000;font-weight:700" onclick="marForceMaleProposal()">⏩ Wait for next year (Hope he proposes)</button></div>`;
+    /* Readiness Discussions */
+    html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">🛡️ Discuss the Future</h3>' +
+      '<p class="muted small">Ensure you are aligned on major life decisions before proposing.</p>';
+    
+    if (typeof MARRIAGE_READINESS_TOPICS !== 'undefined') {
+      MARRIAGE_READINESS_TOPICS.forEach(function(topic) {
+        const discussed = m.readiness[topic.id];
+        html += '<div class="row" style="padding:6px 0;border-bottom:1px solid #1a1a2a">' +
+          '<div><b>' + topic.label + '</b><div class="muted small">' + topic.desc + '</div></div>' +
+          (discussed ? '<b class="good">✓ Discussed</b>' : '<button class="pill" style="padding:4px 8px;font-size:.7rem" onclick="marDiscussReadiness(\'' + topic.id + '\')">Discuss</button>') +
+          '</div>';
+      });
     }
+    html += '</div>';
+
+    /* Proposal */
+    html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">💍 Proposal</h3>';
+    if (!canPropose) {
+      html += '<p class="muted small">Bond needs 40%+ before proposing. Currently ' + bond + '%.</p>';
+    } else {
+      html += '<p class="muted small">Choose how you want to propose. The style affects their answer.</p>';
+      if (typeof MARRIAGE_PROPOSAL_OPTIONS !== 'undefined') {
+        MARRIAGE_PROPOSAL_OPTIONS.forEach(function(opt) {
+          html += '<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:8px;font-size:.75rem" onclick="marSelectProposal(\'' + opt.id + '\')">' +
+            '<div style="display:flex;justify-content:space-between"><b>' + opt.label + '</b><span>' + money(marEGP(opt.costEGP)) + '</span></div></button>';
+        });
+      }
+      if (m.engagement && m.engagement.proposal) {
+        html += marRenderProposalReview();
+      }
+    }
+    html += '</div>';
   }
 
   if (m.status === 'engaged') {
-    if (!m.engagement.finalized) {
-      html += `<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">💍 Engagement Negotiation</h3>`;
-      html += marRenderNegotiationUI();
-      html += `</div>`;
+    if (!m.engagement || !m.engagement.finalized) {
+      html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">💍 Engagement Planning</h3>';
+      html += marRenderEngagementPlanner();
+      html += '</div>';
     } else {
-      // Once finalized, show the Engagement Review using the new separate file
-      if (typeof marRenderEngagementReview === 'function') {
-        html += marRenderEngagementReview();
-      } else {
-        html += `<div class="card"><h3>💍 Engagement Finalized</h3><p class="muted small">Ready for wedding planning.</p></div>`;
-      }
+      html += '<div class="card"><h3>💍 Engagement Review</h3>' +
+        '<div class="row"><span>Shabka</span><b>' + money(marEGP(m.engagement.shabkaCost)) + '</b></div>' +
+        '<div class="row"><span>Mahr</span><b>' + money(marEGP(m.engagement.mahrCost)) + '</b></div>' +
+        '</div>';
     }
 
-    if (m.wedding) {
-      html += `<div class="card" style="border-color:#34d399"><h3 style="color:#34d399">🎉 Wedding Planning</h3>`;
-      html += (typeof marRenderWeddingPlanner === 'function') ? marRenderWeddingPlanner() : '<p class="muted small">Wedding planner loading...</p>';
-      html += `</div>`;
+    if (m.weddingPaid) {
+      html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">💒 It\'s Wedding Day!</h3>' +
+        '<p class="muted small">Everything is paid for and ready. Time for the ceremony.</p>' +
+        '<button class="opt" style="background:#8b5cf6;color:#fff;font-weight:700;text-align:center;padding:12px" onclick="marHoldWedding()">🎉 Begin Ceremony</button></div>';
+    } else if (m.wedding) {
+      html += '<div class="card" style="border-color:#34d399"><h3 style="color:#34d399">🎉 Wedding Planning</h3>';
+      html += marRenderWeddingPlanner();
+      html += '</div>';
     } else if (m.engagement && m.engagement.finalized) {
-      html += `<div class="card"><p class="muted small">Engagement finalized. Now plan the wedding.</p>
-        <button class="opt" style="text-align:center;background:#fbbf24;color:#000;font-weight:700" onclick="marOpenWeddingPlanner()">Start wedding planning</button></div>`;
+      html += '<div class="card"><p class="muted small">Engagement finalized. Now plan the wedding.</p>' +
+        '<button class="opt" style="text-align:center;background:#fbbf24;color:#000;font-weight:700" onclick="marOpenWeddingPlanner()">Start wedding planning</button></div>';
     }
-    html += `<div class="card"><button class="opt" style="text-align:center;border-color:#fb7185;color:#fb7185" onclick="marCancelEngagement()">Cancel engagement</button></div>`;
+    
+    html += '<div class="card"><button class="opt" style="text-align:center;border-color:#fb7185;color:#fb7185" onclick="marCancelEngagement()">Cancel engagement</button></div>';
   }
+
+  return html;
+}
+
+function marRenderProposalReview() {
+  const e = S.marriage.engagement;
+  const prop = (MARRIAGE_PROPOSAL_OPTIONS || []).find(function(x) { return x.id === e.proposal; });
+  return '<div style="margin-top:8px;padding:10px;background:#0f0f1a;border-radius:8px">' +
+    '<div style="font-weight:700">' + (prop ? prop.label : e.proposal) + '</div>' +
+    '<div class="row" style="margin-top:6px"><span>Cost</span><b>' + money(marEGP(prop ? prop.costEGP : 0)) + '</b></div>' +
+    '<button class="opt" style="margin-top:8px;text-align:center;background:#fb7185;color:#fff;font-weight:700" onclick="marConfirmProposal()">💍 Propose now</button>' +
+    '</div>';
+}
+
+function marRenderEngagementPlanner() {
+  const e = S.marriage.engagement;
+  if (!e) return '';
+
+  function picker(label, items, key, selectedId, costFn) {
+    return '<h4 style="font-size:.8rem;color:#fbbf24;margin-top:10px">' + label + '</h4>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">' +
+      items.map(function(item) {
+        const cost = costFn ? costFn(item) : '';
+        return '<button class="pill ' + (selectedId === item.id ? 'on' : '') + '" style="padding:6px;font-size:.68rem" onclick="marEngagementSet(\'' + key + '\',\'' + item.id + '\')">' +
+          item.label + (cost ? '<br><span class="muted" style="font-size:.62rem">' + cost + '</span>' : '') + '</button>';
+      }).join('') + '</div>';
+  }
+
+  const shabka = MARRIAGE_SHABKA_TIERS.find(function(x) { return x.id === e.shabkaTier; }) || MARRIAGE_SHABKA_TIERS[0];
+  const mahr = MARRIAGE_MAHR_TIERS.find(function(x) { return x.id === e.mahrTier; }) || MARRIAGE_MAHR_TIERS[0];
+  const party = MARRIAGE_ENGAGEMENT_PARTY_TIERS.find(function(x) { return x.id === e.partyTier; }) || MARRIAGE_ENGAGEMENT_PARTY_TIERS[0];
+  const total = shabka.costEGP + mahr.costEGP + party.costEGP;
+  const totalLocal = marEGP(total);
+  const canAfford = S.wealth >= totalLocal;
+
+  let html = '';
+  html += picker('Shabka', MARRIAGE_SHABKA_TIERS, 'shabkaTier', e.shabkaTier, function(t) { return money(marEGP(t.costEGP)); });
+  html += picker('Mahr', MARRIAGE_MAHR_TIERS, 'mahrTier', e.mahrTier, function(t) { return money(marEGP(t.costEGP)); });
+  html += picker('Party', MARRIAGE_ENGAGEMENT_PARTY_TIERS, 'partyTier', e.partyTier, function(t) { return money(marEGP(t.costEGP)); });
+
+  html += '<div class="card" style="background:#0f0f1a;margin-top:12px;padding:10px">' +
+    '<div class="row"><span>Shabka</span><b>' + money(marEGP(shabka.costEGP)) + '</b></div>' +
+    '<div class="row"><span>Mahr</span><b>' + money(marEGP(mahr.costEGP)) + '</b></div>' +
+    '<div class="row"><span>Party</span><b>' + money(marEGP(party.costEGP)) + '</b></div>' +
+    '<div class="row" style="border-top:1px solid #25253a;margin-top:6px;padding-top:6px"><b>Total</b><b style="color:#fbbf24">' + money(totalLocal) + '</b></div>' +
+    '</div>';
+
+  html += '<button class="opt" style="margin-top:10px;text-align:center;background:' + (canAfford ? '#34d399' : '#25253a') + ';color:' + (canAfford ? '#000' : '#666') + ';font-weight:700" ' + (canAfford ? '' : 'disabled') + ' onclick="marFinalizeEngagement()">' + (canAfford ? 'Confirm engagement · ' + money(totalLocal) : 'Need ' + money(totalLocal)) + '</button>';
+
+  return html;
+}
+
+function marRenderWeddingPlanner() {
+  const w = S.marriage.wedding;
+  const p = S.marriage.partner;
+  if (!w) return '';
+
+  function picker(label, items, key, selectedId, costFn, cols) {
+    const c = cols || 2;
+    return '<h4 style="font-size:.8rem;color:#34d399;margin-top:10px">' + label + '</h4>' +
+      '<div style="display:grid;grid-template-columns:repeat(' + c + ',1fr);gap:4px">' +
+      items.map(function(item) {
+        const cost = costFn ? costFn(item) : '';
+        return '<button class="pill ' + (selectedId === item.id ? 'on' : '') + '" style="padding:5px;font-size:.66rem" onclick="marWeddingSet(\'' + key + '\',\'' + item.id + '\')">' +
+          item.label + (cost ? '<br><span class="muted" style="font-size:.6rem">' + cost + '</span>' : '') + '</button>';
+      }).join('') + '</div>';
+  }
+
+  const venue = MARRIAGE_WEDDING_VENUES.find(function(x) { return x.id === w.venue; }) || MARRIAGE_WEDDING_VENUES[0];
+  const guests = MARRIAGE_GUEST_COUNTS.find(function(x) { return x.id === w.guests; }) || MARRIAGE_GUEST_COUNTS[0];
+  const catering = MARRIAGE_CATERING_TIERS.find(function(x) { return x.id === w.catering; }) || MARRIAGE_CATERING_TIERS[0];
+  const photo = MARRIAGE_PHOTOGRAPHY_TIERS.find(function(x) { return x.id === w.photography; }) || MARRIAGE_PHOTOGRAPHY_TIERS[0];
+  const dress = MARRIAGE_DRESS_TIERS.find(function(x) { return x.id === w.dress; }) || MARRIAGE_DRESS_TIERS[0];
+  const decor = (MARRIAGE_DECORATION_TIERS || []).find(function(x) { return x.id === w.decoration; }) || { costEGP: 0 };
+  const music = (MARRIAGE_MUSIC_OPTIONS || []).find(function(x) { return x.id === w.music; }) || { costEGP: 0 };
+  const honey = MARRIAGE_HONEYMOON_TIERS.find(function(x) { return x.id === w.honeymoon; }) || MARRIAGE_HONEYMOON_TIERS[0];
+  const planner = (MARRIAGE_PLANNER_OPTIONS || []).find(function(x) { return x.id === w.planner; }) || { costEGP: 0 };
+  const prenup = MARRIAGE_PRENUP_OPTIONS.find(function(x) { return x.id === w.prenup; }) || MARRIAGE_PRENUP_OPTIONS[0];
+
+  const total = venue.baseCostEGP + (guests.guests * catering.perGuestEGP) + photo.costEGP + dress.costEGP + (decor.costEGP || 0) + (music.costEGP || 0) + honey.costEGP + (planner.costEGP || 0);
+  const totalLocal = marEGP(total);
+  const prenupLocal = marEGP(prenup.legalCostEGP);
+  const canAfford = S.wealth >= totalLocal + prenupLocal;
+
+  let html = '';
+  html += picker('Venue', MARRIAGE_WEDDING_VENUES, 'venue', w.venue, function(t) { return money(marEGP(t.baseCostEGP)); });
+  html += picker('Guests', MARRIAGE_GUEST_COUNTS, 'guests', w.guests, function(t) { return t.guests + ' ppl'; }, 3);
+  html += picker('Catering', MARRIAGE_CATERING_TIERS, 'catering', w.catering, function(t) { return money(marEGP(t.perGuestEGP)) + '/g'; });
+  html += picker('Photography', MARRIAGE_PHOTOGRAPHY_TIERS, 'photography', w.photography, function(t) { return money(marEGP(t.costEGP)); });
+  html += picker('Attire', MARRIAGE_DRESS_TIERS, 'dress', w.dress, function(t) { return money(marEGP(t.costEGP)); });
+  html += picker('Honeymoon', MARRIAGE_HONEYMOON_TIERS, 'honeymoon', w.honeymoon, function(t) { return money(marEGP(t.costEGP)); });
+
+  const prefersSmall = (p.traits || []).some(t => ['frugal', 'independent', 'homebody'].includes(t));
+  if (prefersSmall && guests.guests > 200) {
+    html += '<div class="bad small" style="margin-top:10px">⚠️ ' + p.name + ' prefers a small wedding. They will be unhappy with this huge guest list.</div>';
+  }
+
+  html += '<div class="card" style="background:#0f0f1a;margin-top:12px;padding:10px">' +
+    '<div class="row"><span>Venue</span><b>' + money(marEGP(venue.baseCostEGP)) + '</b></div>' +
+    '<div class="row"><span>Catering</span><b>' + money(marEGP(guests.guests * catering.perGuestEGP)) + '</b></div>' +
+    '<div class="row"><span>Honeymoon</span><b>' + money(marEGP(honey.costEGP)) + '</b></div>' +
+    '<div class="row" style="border-top:1px solid #25253a;margin-top:6px;padding-top:6px"><b>Wedding total</b><b style="color:#34d399">' + money(totalLocal) + '</b></div>' +
+    (prenup.legalCostEGP > 0 ? '<div class="row"><span>Prenup</span><b>' + money(prenupLocal) + '</b></div>' : '') +
+    '</div>';
+
+  const grand = totalLocal + prenupLocal;
+  html += '<button class="opt" style="margin-top:12px;text-align:center;background:' + (canAfford ? '#34d399' : '#25253a') + ';color:' + (canAfford ? '#000' : '#666') + ';font-weight:700" ' + (canAfford ? '' : 'disabled') + ' onclick="marConfirmWedding(' + total + ',' + prenup.legalCostEGP + ')">' + (canAfford ? '🎉 Confirm wedding · ' + money(grand) : 'Need ' + money(grand)) + '</button>';
+  html += '<button class="opt" style="margin-top:6px;text-align:center;border-color:#fb7185;color:#fb7185" onclick="marCancelWeddingPlanner()">Cancel planning</button>';
+
   return html;
 }
 
 /* ============================================================
-   NEGOTIATION LOGIC
-   ============================================================ */
-function marStartFatherNegotiation() {
-  const m = S.marriage;
-  const p = m.partner;
-  const partnerClass = _marPartnerFamilyStatus();
-  const playerClass = _marSocialTier();
-  let demands = [];
-  let willRefuse = false;
-  let refusalReason = '';
-
-  const classTiers = ['poor', 'lower-mid', 'middle', 'upper-mid', 'wealthy', 'ultra'];
-  const pClassIdx = classTiers.indexOf(partnerClass);
-  const myClassIdx = classTiers.indexOf(playerClass);
-
-  if (pClassIdx - myClassIdx >= 2) {
-    willRefuse = true;
-    refusalReason = 'Your family is not in the same social class as ours.';
-  }
-
-  if (!_marCheckApartment()) {
-    demands.push(MARRIAGE_NEGOTIATION_DEMANDS.find(d => d.id === 'apartment'));
-  } else if (Math.random() < 0.5) {
-    demands.push(MARRIAGE_NEGOTIATION_DEMANDS.find(d => d.id === 'furniture'));
-  }
-
-  if (p.traits.includes('traditional') || p.traits.includes('ambitious')) {
-    if (Math.random() < 0.6) demands.push(MARRIAGE_NEGOTIATION_DEMANDS.find(d => d.id === 'gold_upgrade'));
-    if (Math.random() < 0.4) demands.push(MARRIAGE_NEGOTIATION_DEMANDS.find(d => d.id === 'mahr_upgrade'));
-  }
-
-  m.negotiation = { demands, willRefuse, refusalReason };
-
-  if (willRefuse) {
-    S.pending = {
-      title: '🚫 Proposal Refused by Father',
-      text: `You sit down with ${p.name}'s father. He looks at you with disappointment.\n\n"${refusalReason}"\n\nHe refuses the engagement.`,
-      choices: [
-        { label: 'Try to convince him (Charisma)', effect: function() { marNegotiateConvince(); } },
-        { label: 'Elope with ' + p.name, effect: function() { marElope(); } },
-        { label: 'Accept the refusal and leave', effect: function() { marBreakupFromRefusal(); } }
-      ]
-    };
-    S.evId = 'mar_refusal_drama';
-    return;
-  }
-
-  if (demands.length > 0) {
-    let demandText = demands.map(d => '• ' + d.desc).join('\n');
-    S.pending = {
-      title: '🤝 Family Negotiation',
-      text: `${p.name}'s father sits you down.\n\n"If you want to marry my daughter, you must meet these conditions:\n\n${demandText}"`,
-      choices: [
-        { label: 'Agree to the demands', effect: function() { marAcceptDemands(); } },
-        { label: 'Negotiate / Refuse', effect: function() { marNegotiateDemands(); } }
-      ]
-    };
-    S.evId = 'mar_negotiation';
-  } else {
-    log('🤝 The family approves.');
-    marFinalizeEngagementCosts();
-  }
-}
-
-function marNegotiateConvince() {
-  if (Math.random() < 0.3) {
-    log('🗣 You made an impassioned speech about love and hard work. He was moved.');
-    marStartFatherNegotiation();
-  } else {
-    log('❌ He remained unconvinced. The engagement is off.');
-    marBreakupFromRefusal();
-  }
-}
-
-function marNegotiateDemands() {
-  const m = S.marriage;
-  if (Math.random() < 0.5) {
-    log('🗣 You reasoned with him. He agreed to drop some demands.');
-    m.negotiation.demands.pop();
-    marStartFatherNegotiation();
-  } else {
-    log('❌ "My daughter deserves the best! How dare you negotiate her worth?"');
-    m.partner.bond = Math.max(0, m.partner.bond - 20);
-    marBreakupFromRefusal();
-  }
-}
-
-function marAcceptDemands() {
-  log('🤝 You agreed to all conditions.');
-  marFinalizeEngagementCosts();
-}
-
-window.marElope = function() {
-  const m = S.marriage;
-  log('🏃 You and ' + m.partner.name + ' decided to elope!');
-  log('💔 Her family is furious. They have cut ties with her.');
-  m.partner.familyApproval = 0;
-  m.partner.familyCutTies = true;
-  m.status = 'engaged';
-  m.engagement = { proposal: 'eloped', finalized: true, totalPaid: 0 };
-  m.eloped = true;
-  fx({ happiness: 10, social: -15 });
-  m.partner.bond = Math.min(100, m.partner.bond + 20);
-  render();
-};
-
-window.marBreakupFromRefusal = function() {
-  log('💔 The engagement was called off.');
-  S.marriage.partner = null;
-  S.marriage.status = 'single';
-  S.marriage.engagement = null;
-  render();
-};
-
-function marFinalizeEngagementCosts() {
-  const m = S.marriage;
-  m.engagement.finalized = true;
-  let totalCostEGP = 0;
-  m.negotiation.demands.forEach(d => { totalCostEGP += d.costEGP; });
-  
-  if (_marIsArabCulture()) {
-    totalCostEGP += 30000; // Base Shabka
-    totalCostEGP += 20000; // Base Mahr
-  }
-
-  const costLocal = marEGP(totalCostEGP);
-  m.engagement.totalPaid = totalCostEGP;
-  
-  if (S.gender === 'm') {
-    if (S.wealth < costLocal) { log('❌ You agreed to pay ' + money(costLocal) + ' but you do not have the money!'); S.wealth -= costLocal; }
-    else S.wealth -= costLocal;
-    log('💸 Paid ' + money(costLocal) + ' for Shabka, Mahr, and family demands.');
-  } else {
-    log('👑 As the bride, the Shabka and Mahr are provided to you.');
-    S.wealth += marEGP(30000);
-  }
-  log('🎉 Engagement finalized! Check the Plan tab for wedding details.');
-}
-
-function marRenderNegotiationUI() {
-  return `<p class="muted small">Negotiation in progress. Check your pending events.</p>`;
-}
-
-window.marCancelEngagement = function() {
-  if (!S.marriage.partner) return;
-  if (!confirm('Cancel engagement with ' + S.marriage.partner.name + '?')) return;
-  S.marriage.status = 'single'; S.marriage.engagement = null; S.marriage.wedding = null;
-  log('💔 Cancelled engagement with ' + S.marriage.partner.name + '.');
-  S.marriage.partner = null; fx({ happiness: -20 });
-  render();
-};
-
-/* ============================================================
-   MARRIED LIFE
+   MARRIED LIFE TAB (RESTORED & UNTOUCHED)
    ============================================================ */
 function marRenderLife() {
   const m = S.marriage;
-  if (m.status !== 'married') return `<div class="card"><h3>🏠 Married Life</h3><p class="muted small">Available after you get married.</p></div>`;
+  if (m.status !== 'married') {
+    return '<div class="card"><h3>🏠 Married Life</h3><p class="muted small">Available after you get married.</p></div>';
+  }
+
   const p = m.partner;
   if (!p) return '';
 
-  let html = `<div class="card"><h3>❤️ Married to ${p.name}</h3>
-    <div class="muted small">Age ${p.age} · Married ${p.marriedYear || '?'}</div>
-    ${p.income > 0 ? `<div class="row"><span>Partner income</span><b>${money(p.income)}/yr</b></div>` : `<div class="row"><span>Partner income</span><b class="muted">None (home)</b></div>`}
-    <div class="row"><span>Finance model</span><b>${(MARRIAGE_FINANCE_MODELS.find(x => x.id === m.financeModel) || {}).label || '—'}</b></div>
-    <div class="row"><span>Prenup</span><b>${m.prenup ? m.prenup.type : 'None'}</b></div>
-    <div class="row"><span>Shared account</span><b>${money(m.sharedAccountBalance)}</b></div>
-    <div class="row"><span>Children</span><b>${(S.childrenList || []).length}</b></div></div>`;
+  let html = '<div class="card"><h3>❤️ Married to ' + p.name + '</h3>' +
+    '<div class="muted small">Age ' + p.age + ' · Married ' + (p.marriedYear || '?') + '</div>' +
+    (p.income > 0 ? '<div class="row"><span>Partner income</span><b>' + money(p.income) + '/yr</b></div>' : '<div class="row"><span>Partner income</span><b class="muted">None (home)</b></div>') +
+    '<div class="row"><span>Finance model</span><b>' + (MARRIAGE_FINANCE_MODELS.find(function(x) { return x.id === m.financeModel; }) || {}).label || '—' + '</b></div>' +
+    '<div class="row"><span>Prenup</span><b>' + (m.prenup ? m.prenup.type : 'None') + '</b></div>' +
+    '<div class="row"><span>Shared account</span><b>' + money(m.sharedAccountBalance) + '</b></div>' +
+    '<div class="row"><span>Children</span><b>' + ((S.childrenList || []).length) + '</b></div>' +
+    '</div>';
 
-  if (MARRIAGE_HOME_OPTIONS) {
+  /* Home selection */
+  if (typeof MARRIAGE_HOME_OPTIONS !== 'undefined') {
     if (!m.home) {
-      html += `<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">🏠 Set up your home</h3><p class="muted small">Where will you live?</p>`;
-      MARRIAGE_HOME_OPTIONS.forEach(h => {
-        html += `<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:8px;font-size:.75rem" onclick="marSetHome('${h.id}')">
-          <div style="display:flex;justify-content:space-between"><b>${h.label}</b><span>${money(marEGP(h.setupCostEGP))} + ${money(marEGP(h.monthlyCostEGP))}/mo</span></div>
-          <div class="muted small">${h.desc}</div></button>`;
+      html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">🏠 Set up your home</h3>' +
+        '<p class="muted small">Where will you live? Different homes affect privacy, family support, and monthly cost.</p>';
+      MARRIAGE_HOME_OPTIONS.forEach(function(h) {
+        html += '<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:8px;font-size:.75rem" onclick="marSetHome(\'' + h.id + '\')">' +
+          '<div style="display:flex;justify-content:space-between"><b>' + h.label + '</b><span>' + money(marEGP(h.setupCostEGP)) + ' + ' + money(marEGP(h.monthlyCostEGP)) + '/mo</span></div>' +
+          '<div class="muted small">' + h.desc + '</div></button>';
       });
-      html += `</div>`;
+      html += '</div>';
     } else {
-      const h = MARRIAGE_HOME_OPTIONS.find(x => x.id === m.home);
-      html += `<div class="card"><h3>🏠 Home</h3>
-        <div class="row"><span>Type</span><b>${h ? h.label : m.home}</b></div>
-        <div class="row"><span>Monthly cost</span><b>${money(marEGP(h ? h.monthlyCostEGP : 0))}/mo</b></div>
-        <div class="row"><span>Privacy</span><b>${h ? h.privacy + '/10' : '—'}</b></div>
-        <div class="row"><span>Family support</span><b>${h ? h.familySupport + '/10' : '—'}</b></div></div>`;
+      const h = MARRIAGE_HOME_OPTIONS.find(function(x) { return x.id === m.home; });
+      html += '<div class="card"><h3>🏠 Home</h3>' +
+        '<div class="row"><span>Type</span><b>' + (h ? h.label : m.home) + '</b></div>' +
+        '<div class="row"><span>Monthly cost</span><b>' + money(marEGP(h ? h.monthlyCostEGP : 0)) + '/mo</b></div>' +
+        '<div class="row"><span>Privacy</span><b>' + (h ? h.privacy + '/10' : '—') + '</b></div>' +
+        '<div class="row"><span>Family support</span><b>' + (h ? h.familySupport + '/10' : '—') + '</b></div>' +
+        '</div>';
     }
   }
 
-  if (MARRIAGE_FAMILY_PLANNING_OPTIONS) {
-    html += `<div class="card"><h3>👶 Family Planning</h3>
-      <div class="row"><span>Current plan</span><b>${(MARRIAGE_FAMILY_PLANNING_OPTIONS.find(x => x.id === m.familyPlanning) || {}).label || 'Undecided'}</b></div>`;
-    MARRIAGE_FAMILY_PLANNING_OPTIONS.forEach(o => {
+  /* Family planning */
+  if (typeof MARRIAGE_FAMILY_PLANNING_OPTIONS !== 'undefined') {
+    html += '<div class="card"><h3>👶 Family Planning</h3>' +
+      '<div class="row"><span>Current plan</span><b>' + ((MARRIAGE_FAMILY_PLANNING_OPTIONS.find(function(x) { return x.id === m.familyPlanning; }) || {}).label || 'Undecided') + '</b></div>';
+    MARRIAGE_FAMILY_PLANNING_OPTIONS.forEach(function(o) {
       if (m.familyPlanning === o.id) return;
-      html += `<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:6px;font-size:.72rem" onclick="marSetFamilyPlanning('${o.id}')">${o.label}<br><span class="muted" style="font-size:.65rem">${o.desc}</span></button>`;
+      html += '<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:6px;font-size:.72rem" onclick="marSetFamilyPlanning(\'' + o.id + '\')">' + o.label + '<br><span class="muted" style="font-size:.65rem">' + o.desc + '</span></button>';
     });
-    html += `</div>`;
+    html += '</div>';
   }
 
-  if (MARRIAGE_CHILDCARE_OPTIONS && (S.childrenList && S.childrenList.length > 0)) {
-    html += `<div class="card"><h3>👶 Childcare</h3>
-      <div class="row"><span>Current</span><b>${(MARRIAGE_CHILDCARE_OPTIONS.find(x => x.id === m.childcare) || {}).label || 'None chosen'}</b></div>`;
-    MARRIAGE_CHILDCARE_OPTIONS.forEach(o => {
+  /* Childcare */
+  if (typeof MARRIAGE_CHILDCARE_OPTIONS !== 'undefined' && (S.childrenList && S.childrenList.length > 0)) {
+    html += '<div class="card"><h3>👶 Childcare</h3>' +
+      '<div class="row"><span>Current</span><b>' + ((MARRIAGE_CHILDCARE_OPTIONS.find(function(x) { return x.id === m.childcare; }) || {}).label || 'None chosen') + '</b></div>';
+    MARRIAGE_CHILDCARE_OPTIONS.forEach(function(o) {
       if (m.childcare === o.id) return;
-      html += `<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:6px;font-size:.72rem" onclick="marSetChildcare('${o.id}')">${o.label} · ${money(marEGP(o.monthlyCostEGP))}/mo<br><span class="muted" style="font-size:.65rem">Convenience ${o.convenience}/10</span></button>`;
+      html += '<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:6px;font-size:.72rem" onclick="marSetChildcare(\'' + o.id + '\')">' +
+        o.label + ' · ' + money(marEGP(o.monthlyCostEGP)) + '/mo' + '<br><span class="muted" style="font-size:.65rem">Convenience ' + o.convenience + '/10</span></button>';
     });
-    html += `</div>`;
+    html += '</div>';
   }
 
-  html += `<div class="card"><h3>💰 Shared Account</h3>
-    <div class="row"><span>Balance</span><b>${money(m.sharedAccountBalance)}</b></div>
-    <button class="opt" style="margin-top:6px;width:50%;font-size:.75rem;padding:6px" onclick="marDepositShared()">Deposit</button>
-    <button class="opt" style="margin-top:6px;width:50%;font-size:.75rem;padding:6px" onclick="marWithdrawShared()">Withdraw</button></div>`;
+  /* Shared account */
+  html += '<div class="card"><h3>💰 Shared Account</h3>' +
+    '<div class="row"><span>Balance</span><b>' + money(m.sharedAccountBalance) + '</b></div>' +
+    '<button class="opt" style="margin-top:6px;width:50%;font-size:.75rem;padding:6px" onclick="marDepositShared()">Deposit</button>' +
+    '<button class="opt" style="margin-top:6px;width:50%;font-size:.75rem;padding:6px" onclick="marWithdrawShared()">Withdraw</button>' +
+    '</div>';
 
+  /* Try for baby */
   if ((S.childrenList || []).length === 0 || m.familyPlanning !== 'wait') {
-    html += `<div class="card"><button class="opt" style="width:100%;text-align:center;background:#fb7185;color:#fff;font-weight:700;padding:10px" onclick="marTryForBaby()">👶 Try for baby</button></div>`;
+    html += '<div class="card"><button class="opt" style="width:100%;text-align:center;background:#fb7185;color:#fff;font-weight:700;padding:10px" onclick="marTryForBaby()">👶 Try for baby</button></div>';
   }
+
   return html;
 }
 
 /* ============================================================
-   CONFLICT & RECORDS
+   CONFLICT TAB (RESTORED & UNTOUCHED)
    ============================================================ */
 function marRenderConflict() {
   const m = S.marriage;
-  if (m.status !== 'married' && m.status !== 'engaged' && m.status !== 'dating') return `<div class="card"><h3>⚔️ Conflict</h3><p class="muted small">Not in a relationship.</p></div>`;
+  if (m.status !== 'married' && m.status !== 'engaged' && m.status !== 'dating') {
+    return '<div class="card"><h3>⚔️ Conflict</h3><p class="muted small">Not in a relationship.</p></div>';
+  }
+
   let html = '';
 
+  /* Current pending conflict */
   if (m.pendingConflict) {
-    const topic = (MARRIAGE_CONFLICT_TOPICS || []).find(x => x.id === m.pendingConflict);
+    const topic = (MARRIAGE_CONFLICT_TOPICS || []).find(function(x) { return x.id === m.pendingConflict; });
     if (topic) {
-      html += `<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">⚠️ Conflict: ${topic.label}</h3>
-        <div class="row"><span>Severity</span><b>${topic.severity}/5</b></div>
-        <p class="muted small" style="margin:8px 0">${topic.resolution}</p>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="opt" style="flex:1;padding:8px;font-size:.75rem;background:#34d399;color:#000;font-weight:700" onclick="marResolveConflict('discuss')">Discuss calmly</button>
-        <button class="opt" style="flex:1;padding:8px;font-size:.75rem;background:#22d3ee;color:#000;font-weight:700" onclick="marResolveConflict('counsel')">Counsel · ${money(marEGP(5000))}</button>
-        <button class="opt" style="flex:1;padding:8px;font-size:.75rem;border-color:#fb7185;color:#fb7185" onclick="marResolveConflict('ignore')">Ignore</button>
-        </div></div>`;
+      html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">⚠️ Conflict: ' + topic.label + '</h3>' +
+        '<div class="row"><span>Severity</span><b>' + topic.severity + '/5</b></div>' +
+        '<p class="muted small" style="margin:8px 0">' + topic.resolution + '</p>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        '<button class="opt" style="flex:1;padding:8px;font-size:.75rem;background:#34d399;color:#000;font-weight:700" onclick="marResolveConflict(\'discuss\')">Discuss calmly</button>' +
+        '<button class="opt" style="flex:1;padding:8px;font-size:.75rem;background:#22d3ee;color:#000;font-weight:700" onclick="marResolveConflict(\'counsel\')">Counsel · ' + money(marEGP(5000)) + '</button>' +
+        '<button class="opt" style="flex:1;padding:8px;font-size:.75rem;border-color:#fb7185;color:#fb7185" onclick="marResolveConflict(\'ignore\')">Ignore</button>' +
+        '</div></div>';
     }
   } else {
-    html += `<div class="card"><h3>⚔️ Conflict</h3><p class="muted small">No active conflicts. Conflicts arise when bond is low or stress is high.</p></div>`;
+    html += '<div class="card"><h3>⚔️ Conflict</h3>' +
+      '<p class="muted small">No active conflicts. Conflicts arise when bond is low or stress is high.</p>' +
+      (typeof MARRIAGE_CONFLICT_TOPICS !== 'undefined' ? '<p class="muted small" style="margin-top:8px">Common topics you may face: ' + MARRIAGE_CONFLICT_TOPICS.slice(0, 5).map(function(t) { return t.label; }).join(' · ') + '</p>' : '') +
+      '</div>';
   }
 
-  if (MARRIAGE_SEPARATION_OPTIONS && m.status === 'married') {
-    html += `<div class="card"><h3>💔 Marital Difficulty</h3><p class="muted small">When things get hard, these are your options.</p>`;
-    MARRIAGE_SEPARATION_OPTIONS.forEach(o => {
+  /* Separation options */
+  if (typeof MARRIAGE_SEPARATION_OPTIONS !== 'undefined' && m.status === 'married') {
+    html += '<div class="card"><h3>💔 Marital Difficulty</h3>' +
+      '<p class="muted small">When things get hard, these are your options.</p>';
+    MARRIAGE_SEPARATION_OPTIONS.forEach(function(o) {
       if (o.id === 'divorce') {
-        html += `<button class="opt" style="margin-top:6px;width:100%;text-align:left;padding:8px;font-size:.75rem;border-color:#fb7185;color:#fb7185" onclick="marAskForDivorce()">${o.label} · ${money(marEGP(o.costEGP))}</button>`;
+        html += '<button class="opt" style="margin-top:6px;width:100%;text-align:left;padding:8px;font-size:.75rem;border-color:#fb7185;color:#fb7185" onclick="marAskForDivorce()">' + o.label + ' · ' + money(marEGP(o.costEGP)) + '</button>';
       } else {
-        html += `<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:8px;font-size:.75rem" onclick="marSeparationOption('${o.id}')">${o.label} ${o.costEGP > 0 ? '· ' + money(marEGP(o.costEGP)) : ''}<br><span class="muted" style="font-size:.65rem">${o.desc}</span></button>`;
+        html += '<button class="opt" style="margin-top:4px;width:100%;text-align:left;padding:8px;font-size:.75rem" onclick="marSeparationOption(\'' + o.id + '\')">' +
+          o.label + (o.costEGP > 0 ? ' · ' + money(marEGP(o.costEGP)) : '') +
+          '<br><span class="muted" style="font-size:.65rem">' + o.desc + '</span></button>';
       }
     });
-    html += `</div>`;
+    html += '</div>';
   }
+
   return html;
 }
 
+/* ============================================================
+   RECORDS TAB
+   ============================================================ */
 function marRenderRecords() {
   const m = S.marriage;
   let html = '';
-  if (MARRIAGE_ACHIEVEMENTS) {
-    html += `<div class="card"><h3>🏆 Achievements</h3>`;
-    if (!m.achievements.length) html += `<p class="muted small">No achievements yet.</p>`;
-    else m.achievements.forEach(id => { const ach = MARRIAGE_ACHIEVEMENTS.find(a => a.id === id); if (ach) html += `<div class="row"><span>${ach.label}</span><span class="muted small">${ach.desc}</span></div>`; });
-    html += `</div>`;
-  }
-  if (MARRIAGE_MILESTONES) {
-    html += `<div class="card"><h3>🌟 Milestones</h3>`;
-    if (!m.milestones.length) html += `<p class="muted small">No milestones yet.</p>`;
-    else m.milestones.forEach(id => { const mil = MARRIAGE_MILESTONES.find(x => x.id === id); if (mil) html += `<div class="row"><span>${mil.label}</span><span class="muted small">${mil.desc}</span></div>`; });
-    html += `</div>`;
-  }
-  if (m.exSpouses && m.exSpouses.length) {
-    html += `<div class="card" style="border-color:#666"><h3 style="color:#888">💔 Ex-Partners</h3>`;
-    m.exSpouses.forEach(ex => {
-      html += `<div style="padding:8px 0;border-bottom:1px solid #1a1a2a"><div style="font-weight:700;color:#888">${ex.name}</div>
-        <div class="muted small">Married ${ex.marriedYear} · Divorced ${ex.divorcedYear} · ${ex.reason}</div>
-        ${ex.childSupportAnnual > 0 ? `<div class="muted small">Pays child support: ${money(ex.childSupportAnnual)}/yr</div>` : ''}
-        ${ex.custody ? `<div class="muted small">Custody: ${ex.custody}</div>` : ''}</div>`;
+
+  if (m.memories && m.memories.length > 0) {
+    html += '<div class="card"><h3>📖 Relationship Memories</h3>';
+    m.memories.slice().reverse().forEach(function(mem) {
+      html += '<div class="row" style="padding:4px 0;font-size:.8rem"><span>' + mem.year + '</span><span class="muted">' + mem.text + '</span></div>';
     });
-    html += `</div>`;
+    html += '</div>';
   }
-  if (m.conflictHistory && m.conflictHistory.length) {
-    html += `<div class="card"><h3>📖 Conflict History</h3>`;
-    m.conflictHistory.slice(-10).reverse().forEach(c => { html += `<div class="row"><span>${c.year} · ${c.topic}</span><span class="muted small">${c.resolution}</span></div>`; });
-    html += `</div>`;
+
+  if (m.milestones && m.milestones.length > 0) {
+    html += '<div class="card"><h3>🌟 Milestones</h3>';
+    m.milestones.forEach(function(id) {
+      const mil = MARRIAGE_MILESTONES.find(function(x) { return x.id === id; });
+      if (mil) html += '<div class="row"><span>' + mil.label + '</span><span class="muted small">' + mil.desc + '</span></div>';
+    });
+    html += '</div>';
   }
-  return html || `<div class="card"><h3>📜 Records</h3><p class="muted small">No records yet.</p></div>`;
+
+  if (m.exSpouses && m.exSpouses.length) {
+    html += '<div class="card" style="border-color:#666"><h3 style="color:#888">💔 Ex-Partners</h3>';
+    m.exSpouses.forEach(function(ex) {
+      html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
+        '<div style="font-weight:700;color:#888">' + ex.name + '</div>' +
+        '<div class="muted small">Married ' + ex.marriedYear + ' · Divorced ' + ex.divorcedYear + ' · ' + ex.reason + '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  return html || '<div class="card"><h3>📜 Records</h3><p class="muted small">No records yet.</p></div>';
 }
 
 /* ============================================================
-   ACTIONS
+   ACTIONS (PREMARITAL & RESTORED POST-MARITAL)
    ============================================================ */
+
+window.marDoDialogue = function(topicId) {
+  const topic = MARRIAGE_DIALOGUE_TOPICS.find(t => t.id === topicId);
+  const p = S.marriage.partner;
+  if (!topic || !p) return;
+  if (S.wealth < marEGP(topic.costEGP)) { log('Not enough cash.'); return; }
+  S.wealth -= marEGP(topic.costEGP);
+  
+  let bondChange = topic.bond;
+  let happyChange = topic.happy;
+  let text = topic.goodMemory;
+  
+  const hasGood = p.traits.some(t => topic.compatibleTraits.includes(t));
+  const hasBad = p.traits.some(t => topic.incompatibleTraits.includes(t));
+  
+  if (hasBad) {
+    bondChange = -Math.abs(topic.bond);
+    happyChange = -2;
+    text = topic.badMemory;
+  } else if (hasGood) {
+    bondChange += 2;
+    text = topic.goodMemory + ' (They loved this conversation.)';
+  }
+  
+  p.bond = Math.max(0, Math.min(100, p.bond + bondChange));
+  fx({ happiness: happyChange });
+  marAddMemory(text);
+  log('💬 ' + topic.label + ': ' + text + ' (Bond ' + (bondChange >= 0 ? '+' : '') + bondChange + ')');
+  render();
+};
+
+window.marDiscussReadiness = function(topicId) {
+  const topic = MARRIAGE_READINESS_TOPICS.find(t => t.id === topicId);
+  const p = S.marriage.partner;
+  if (!topic || !p) return;
+  
+  if (p.bond < topic.bondNeeded) {
+    log('❌ Not ready to discuss this yet. Need bond ' + topic.bondNeeded + '.');
+    return;
+  }
+  
+  const pTrait = p.traits.includes('mature') || p.traits.includes('communicative');
+  const success = pTrait || Math.random() < 0.7;
+  
+  if (success) {
+    S.marriage.readiness[topic.id] = true;
+    p.bond = Math.min(100, p.bond + 5);
+    log('💍 You discussed ' + topic.label + ' and agreed.');
+    marAddMemory('You and ' + p.name + ' agreed on ' + topic.label + '.');
+  } else {
+    log('😬 You disagreed about ' + topic.label + '. Try again later.');
+    p.bond = Math.max(0, p.bond - 5);
+  }
+  render();
+};
+
 window.marTryDate = function(sourceId) {
-  const src = MARRIAGE_DATING_SOURCES.find(s => s.id === sourceId);
+  const src = MARRIAGE_DATING_SOURCES.find(function(s) { return s.id === sourceId; });
   if (!src) return;
   const cost = marEGP(src.cost);
-  if (S.wealth < cost) { log('Not enough cash (' + money(cost) + ').'); render(); return; }
-  S.wealth -= cost; S.marriage.datingAttempts++;
+  if (S.wealth < cost) { log('Not enough cash.'); render(); return; }
+  S.wealth -= cost;
 
-  if (Math.random() > src.matchChance) { log('💔 No luck through ' + src.label + '. Try again.'); fx({ happiness: -2 }); render(); return; }
+  if (Math.random() > src.matchChance) {
+    log('💔 No luck through ' + src.label + '. Try again.');
+    render(); return;
+  }
 
   const targetGender = S.gender === 'm' ? 'f' : 'm';
   const names = marNamePool(targetGender);
   const name = names[Math.floor(Math.random() * names.length)];
-  const age = Math.max(18, S.age + Math.floor(Math.random() * 8) - 4);
-  const traits = marRollTraits();
-  S.marriage.partner = { name, age, gender: targetGender, bond: 40 + Math.floor(Math.random() * 20), traits, income: 0, source: src.label, familyApproval: src.familyApproval, metYear: gameYear() };
+  
+  S.marriage.partner = {
+    name: name, age: Math.max(18, S.age + Math.floor(Math.random() * 8) - 4), gender: targetGender,
+    bond: 40 + Math.floor(Math.random() * 20), traits: marRollTraits(),
+    income: 0, source: src.label, familyApproval: src.familyApproval, metYear: gameYear(), initiatedProposal: false
+  };
   S.marriage.status = 'dating';
-  log('💕 You started dating ' + name + ' (age ' + age + ') via ' + src.label + '.');
-  fx({ happiness: 10 }); marUnlockAchievement('first_relationship'); marReachMilestone('first_date'); render();
+  S.marriage.memories = [];
+  S.marriage.readiness = {};
+  log('💕 You started dating ' + name + ' via ' + src.label + '.');
+  marReachMilestone('first_date');
+  render();
 };
 
 window.marDoActivity = function(activityId) {
   if (!S.marriage.partner) return;
-  const act = (MARRIAGE_RELATIONSHIP_ACTIVITIES || []).find(a => a.id === activityId);
+  const act = MARRIAGE_RELATIONSHIP_ACTIVITIES.find(function(a) { return a.id === activityId; });
   if (!act) return;
   const cost = marEGP(act.costEGP);
   if (S.wealth < cost) { log('Not enough cash.'); render(); return; }
-  S.wealth -= cost; S.marriage.partner.bond = Math.min(100, S.marriage.partner.bond + act.bond);
-  fx({ happiness: act.happiness }); log('💞 ' + act.label + ' with ' + S.marriage.partner.name + '. Bond +' + act.bond + ', Happiness +' + act.happiness + '.'); render();
+  S.wealth -= cost;
+  S.marriage.partner.bond = Math.min(100, S.marriage.partner.bond + act.bond);
+  fx({ happiness: act.happiness });
+  log('💞 ' + act.label + ' with ' + S.marriage.partner.name + '. Bond +' + act.bond + '.');
+  render();
 };
 
-window.marBreakup = function() {
+window.marSelectProposal = function(optionId) {
   if (!S.marriage.partner) return;
-  if (!confirm('Break up with ' + S.marriage.partner.name + '?')) return;
-  log('💔 Broke up with ' + S.marriage.partner.name + '.');
-  S.marriage.partner = null; S.marriage.status = 'single'; S.marriage.engagement = null; S.marriage.wedding = null; fx({ happiness: -12 }); render();
+  if (!S.marriage.engagement) S.marriage.engagement = { shabkaTier: 'standard', mahrTier: 'standard', partyTier: 'nice_hall' };
+  S.marriage.engagement.proposal = optionId;
+  render();
 };
+
+window.marConfirmProposal = function() {
+  const m = S.marriage;
+  const p = m.partner;
+  const e = m.engagement;
+  if (!p || !e || !e.proposal || m.proposalPaid) return;
+  
+  const propOpt = MARRIAGE_PROPOSAL_OPTIONS.find(function(x) { return x.id === e.proposal; });
+  const cost = marEGP(propOpt.costEGP);
+  if (S.wealth < cost) { log('Not enough cash.'); render(); return; }
+  
+  S.wealth -= cost;
+  m.proposalPaid = true;
+
+  let chance = 0.2 + (p.bond / 200);
+  let readinessCount = Object.keys(m.readiness).filter(k => m.readiness[k]).length;
+  chance += readinessCount * 0.05;
+
+  const hasPrivatePref = p.traits.includes('shy') || p.traits.includes('independent');
+  if (e.proposal === 'simple' && hasPrivatePref) chance += 0.15;
+  if (e.proposal === 'luxury' && hasPrivatePref) chance -= 0.15;
+
+  chance = Math.max(0.1, Math.min(0.95, chance));
+
+  if (Math.random() > chance) {
+    log('💔 ' + p.name + ' said no. The timing was not right.');
+    p.bond = Math.max(0, p.bond - 15);
+    m.engagement = null;
+    m.proposalPaid = false;
+    marAddMemory(p.name + ' rejected your proposal.');
+    render(); return;
+  }
+
+  p.bond = Math.min(100, p.bond + 15);
+  m.status = 'engaged';
+  m.engagement.finalized = false;
+  log('💍 ' + p.name + ' said YES! You are engaged.');
+  marUnlockAchievement('engaged');
+  marReachMilestone('engagement');
+  render();
+};
+
+window.marFinalizeEngagement = function() {
+  const m = S.marriage;
+  const e = m.engagement;
+  if (!e) return;
+  const shabka = MARRIAGE_SHABKA_TIERS.find(function(x) { return x.id === e.shabkaTier; });
+  const mahr = MARRIAGE_MAHR_TIERS.find(function(x) { return x.id === e.mahrTier; });
+  const party = MARRIAGE_ENGAGEMENT_PARTY_TIERS.find(function(x) { return x.id === e.partyTier; });
+  const totalLocal = marEGP(shabka.costEGP + mahr.costEGP + party.costEGP);
+  
+  if (S.wealth < totalLocal) { log('Not enough cash.'); render(); return; }
+  S.wealth -= totalLocal;
+  
+  m.engagement.finalized = true;
+  m.partner.bond = Math.min(100, m.partner.bond + 10);
+  log('💍 Engagement finalized. Total cost ' + money(totalLocal) + '.');
+  render();
+};
+
+window.marOpenWeddingPlanner = function() {
+  S.marriage.wedding = { venue: 'local_hall', guests: 'medium', catering: 'standard', photography: 'professional', dress: 'offrack', decoration: 'flowers', music: 'dj', honeymoon: 'egypt_beach', planner: 'day_of', prenup: 'none' };
+  render();
+};
+
+window.marWeddingSet = function(key, value) {
+  if (!S.marriage.wedding) return;
+  S.marriage.wedding[key] = value;
+  render();
+};
+
+window.marCancelWeddingPlanner = function() {
+  S.marriage.wedding = null;
+  render();
+};
+
+window.marConfirmWedding = function(total, prenupCostEGP) {
+  const m = S.marriage;
+  if (m.weddingPaid) return;
+  const totalLocal = marEGP(total + prenupCostEGP);
+  if (S.wealth < totalLocal) { log('Not enough cash.'); render(); return; }
+  
+  S.wealth -= totalLocal;
+  m.weddingPaid = true;
+  m.weddingCost = totalLocal;
+  m.wedding = Object.assign(m.wedding, { totalCost: total });
+  
+  log('💍 Wedding arrangements confirmed. Paid ' + money(totalLocal) + '. Time for the ceremony!');
+  render();
+};
+
+window.marHoldWedding = function() {
+  const m = S.marriage;
+  if (!m.weddingPaid) return;
+  
+  let eventHappiness = 0;
+  let extraCost = 0;
+  const numEvents = 1 + Math.floor(Math.random() * 2);
+  
+  for (let i = 0; i < numEvents; i++) {
+    const ev = MARRIAGE_WEDDING_DAY_EVENTS[Math.floor(Math.random() * MARRIAGE_WEDDING_DAY_EVENTS.length)];
+    log('💒 ' + ev.title + ': ' + ev.text);
+    if (ev.effect === 'costEGP') extraCost += marEGP(ev.costEGP);
+    if (ev.effect === 'happiness') eventHappiness += ev.happiness;
+    if (ev.effect === 'bond') m.partner.bond = Math.min(100, m.partner.bond + ev.bond);
+  }
+  
+  if (extraCost > 0) {
+    log('💸 Extra wedding expenses: ' + money(extraCost));
+    S.wealth -= extraCost;
+  }
+  
+  m.status = 'married';
+  m.partner.marriedYear = gameYear();
+  m.tab = 'overview';
+  
+  marUnlockAchievement('married');
+  marAddMemory('You married ' + m.partner.name + ' in a beautiful ceremony.');
+  log('🎉 You married ' + m.partner.name + '! Total cost: ' + money(m.weddingCost) + '.');
+  fx({ happiness: 30 + eventHappiness });
+  
+  S.spouse = { name: m.partner.name, age: m.partner.age, gender: m.partner.gender, bond: m.partner.bond, income: m.partner.income, works: m.partner.income > 0 };
+  render();
+};
+
+/* --- RESTORED POST-MARRIAGE ACTIONS --- */
 
 window.marSetHome = function(homeId) {
-  const h = MARRIAGE_HOME_OPTIONS.find(x => x.id === homeId);
+  const m = S.marriage;
+  const h = MARRIAGE_HOME_OPTIONS.find(function(x) { return x.id === homeId; });
   if (!h) return;
   const setup = marEGP(h.setupCostEGP);
   if (S.wealth < setup) { log('Need ' + money(setup) + ' for setup costs.'); render(); return; }
-  S.wealth -= setup; S.marriage.home = homeId; S.marriage.homeSetupPaid = true;
+  S.wealth -= setup;
+  m.home = homeId;
+  m.homeSetupPaid = true;
   log('🏠 You set up home: ' + h.label + '. Setup cost ' + money(setup) + '. Monthly ' + money(marEGP(h.monthlyCostEGP)) + '.');
-  if (h.id !== 'family_home') marUnlockAchievement('homeowners'); render();
+  if (h.id !== 'family_home') marUnlockAchievement('homeowners');
+  render();
 };
 
 window.marSetFamilyPlanning = function(optionId) {
   S.marriage.familyPlanning = optionId;
-  const opt = MARRIAGE_FAMILY_PLANNING_OPTIONS.find(x => x.id === optionId);
-  log('👶 Family plan set: ' + (opt ? opt.label : optionId) + '.'); marUnlockAchievement('family_planner'); render();
+  const opt = MARRIAGE_FAMILY_PLANNING_OPTIONS.find(function(x) { return x.id === optionId; });
+  log('👶 Family plan set: ' + (opt ? opt.label : optionId) + '.');
+  marUnlockAchievement('family_planner');
+  render();
 };
 
 window.marSetChildcare = function(optionId) {
   S.marriage.childcare = optionId;
-  const opt = MARRIAGE_CHILDCARE_OPTIONS.find(x => x.id === optionId);
-  log('👶 Childcare set: ' + (opt ? opt.label : optionId) + '.'); render();
+  const opt = MARRIAGE_CHILDCARE_OPTIONS.find(function(x) { return x.id === optionId; });
+  log('👶 Childcare set: ' + (opt ? opt.label : optionId) + '.');
+  render();
 };
 
 window.marDepositShared = function() {
   const amt = Math.round(Number(prompt('Deposit how much?\nYou have ' + money(S.wealth), '10000')));
   if (!amt || amt <= 0) return;
   if (S.wealth < amt) { log('Not enough.'); render(); return; }
-  S.wealth -= amt; S.marriage.sharedAccountBalance += amt;
-  log('💰 Deposited ' + money(amt) + ' into shared account.'); render();
+  S.wealth -= amt;
+  S.marriage.sharedAccountBalance += amt;
+  log('💰 Deposited ' + money(amt) + ' into shared account.');
+  render();
 };
 
 window.marWithdrawShared = function() {
   const amt = Math.round(Number(prompt('Withdraw how much?\nAvailable ' + money(S.marriage.sharedAccountBalance), '10000')));
   if (!amt || amt <= 0) return;
   if (S.marriage.sharedAccountBalance < amt) { log('Not enough in shared account.'); render(); return; }
-  S.marriage.sharedAccountBalance -= amt; S.wealth += amt;
-  log('💰 Withdrew ' + money(amt) + ' from shared account.'); render();
+  S.marriage.sharedAccountBalance -= amt;
+  S.wealth += amt;
+  log('💰 Withdrew ' + money(amt) + ' from shared account.');
+  render();
 };
 
 window.marTryForBaby = function() {
   if (!S.marriage.partner) return;
   if (S.pregnantMonths > 0) { log('Already expecting!'); render(); return; }
   const ageToUse = S.gender === 'f' ? S.age : S.marriage.partner.age;
-  let chance = 0.70; if (ageToUse > 30) chance = 0.50; if (ageToUse > 35) chance = 0.30; if (ageToUse > 40) chance = 0.10;
-  if (Math.random() < chance) { S.pregnantMonths = 1; S.marriage.partner.bond = Math.min(100, S.marriage.partner.bond + 10); log('🎉 You and ' + S.marriage.partner.name + ' are expecting a baby!'); fx({ happiness: 20 }); }
-  else { log('Not this month. Try again later.'); fx({ happiness: -2 }); }
+  let chance = 0.70;
+  if (ageToUse > 30) chance = 0.50;
+  if (ageToUse > 35) chance = 0.30;
+  if (ageToUse > 40) chance = 0.10;
+  if (Math.random() < chance) {
+    S.pregnantMonths = 1;
+    S.marriage.partner.bond = Math.min(100, S.marriage.partner.bond + 10);
+    log('🎉 You and ' + S.marriage.partner.name + ' are expecting a baby!');
+    fx({ happiness: 20 });
+  } else {
+    log('Not this month. Try again later.');
+    fx({ happiness: -2 });
+  }
   render();
 };
 
 window.marResolveConflict = function(mode) {
   const m = S.marriage;
   if (!m.pendingConflict || !m.partner) return;
-  const topic = MARRIAGE_CONFLICT_TOPICS.find(x => x.id === m.pendingConflict);
+  const topic = MARRIAGE_CONFLICT_TOPICS.find(function(x) { return x.id === m.pendingConflict; });
+
   if (mode === 'discuss') {
     const success = Math.random() < 0.60 + (m.partner.bond / 500);
-    if (success) { m.partner.bond = Math.min(100, m.partner.bond + 8); log('💬 You discussed it calmly. Bond +8.'); marUnlockAchievement('conflict_resolved'); }
-    else { m.partner.bond = Math.max(0, m.partner.bond - 5); log('😞 The conversation went badly. Bond -5.'); }
+    if (success) {
+      m.partner.bond = Math.min(100, m.partner.bond + 8);
+      log('💬 You discussed it calmly. Bond +8.');
+      marUnlockAchievement('conflict_resolved');
+    } else {
+      m.partner.bond = Math.max(0, m.partner.bond - 5);
+      log('😞 The conversation went badly. Bond -5.');
+    }
   } else if (mode === 'counsel') {
-    const cost = marEGP(5000); if (S.wealth < cost) { log('Not enough for counselling.'); render(); return; }
-    S.wealth -= cost; m.partner.bond = Math.min(100, m.partner.bond + 12); log('🧠 Counselling helped. Bond +12.'); marUnlockAchievement('conflict_resolved');
-  } else if (mode === 'ignore') { m.partner.bond = Math.max(0, m.partner.bond - 10); log('😶 You ignored the issue. Bond -10.'); }
-  m.conflictHistory.push({ year: gameYear(), topic: topic ? topic.label : m.pendingConflict, resolution: mode }); m.pendingConflict = null; render();
+    const cost = marEGP(5000);
+    if (S.wealth < cost) { log('Not enough for counselling.'); render(); return; }
+    S.wealth -= cost;
+    m.partner.bond = Math.min(100, m.partner.bond + 12);
+    log('🧠 Counselling helped. Bond +12.');
+    marUnlockAchievement('conflict_resolved');
+  } else if (mode === 'ignore') {
+    m.partner.bond = Math.max(0, m.partner.bond - 10);
+    log('😶 You ignored the issue. Bond -10.');
+  }
+
+  m.conflictHistory.push({ year: gameYear(), topic: topic ? topic.label : m.pendingConflict, resolution: mode });
+  m.pendingConflict = null;
+  render();
 };
 
 window.marSeparationOption = function(optionId) {
-  const opt = MARRIAGE_SEPARATION_OPTIONS.find(x => x.id === optionId);
+  const opt = MARRIAGE_SEPARATION_OPTIONS.find(function(x) { return x.id === optionId; });
   if (!opt) return;
-  const cost = marEGP(opt.costEGP); if (S.wealth < cost) { log('Not enough cash.'); render(); return; }
+  const cost = marEGP(opt.costEGP);
+  if (S.wealth < cost) { log('Not enough cash.'); render(); return; }
   S.wealth -= cost;
   const p = S.marriage.partner;
   if (opt.bondEffect > 0) p.bond = Math.min(100, p.bond + opt.bondEffect);
   else if (opt.bondEffect < 0) p.bond = Math.max(0, p.bond + opt.bondEffect);
-  log('💬 ' + opt.label + '. ' + opt.desc); render();
+  log('💬 ' + opt.label + '. ' + opt.desc);
+  render();
 };
 
 window.marAskForDivorce = function() {
   if (!S.marriage.partner) return;
   const p = S.marriage.partner;
-  const causes = MARRIAGE_DIVORCE_CAUSES.map(c => c.id + ' = ' + c.label).join('\n');
+  const causes = MARRIAGE_DIVORCE_CAUSES.map(function(c) { return c.id + ' = ' + c.label; }).join('\n');
   const choice = prompt('Why divorce?\n\n' + causes + '\n\nEnter cause id:', 'boredom');
   if (!choice) return;
-  const cause = MARRIAGE_DIVORCE_CAUSES.find(c => c.id === choice.trim());
+  const cause = MARRIAGE_DIVORCE_CAUSES.find(function(c) { return c.id === choice.trim(); });
   if (!cause) { log('Unknown cause.'); return; }
+
   const law = MARRIAGE_DIVORCE_LAWS[S.country] || MARRIAGE_DIVORCE_LAWS.egy;
   const courtFee = marEGP(law.courtFeeEGP);
-  let settlement = 0; let childSupportAnnual = 0; let custody = null;
-  if (law.assetSplit === '50_50' && (!S.marriage.prenup || S.marriage.prenup.type !== 'Comprehensive Financial Agreement')) settlement = Math.floor(S.wealth * 0.5);
-  if (S.job && law.alimonyYears > 0 && S.gender === 'm') { const years = typeof law.alimonyYears === 'number' ? law.alimonyYears : 1; settlement += Math.round(S.job.salary * 0.15 * years); }
+  let settlement = 0;
+  let childSupportAnnual = 0;
+  let custody = null;
+
+  if (law.assetSplit === '50_50' && (!S.marriage.prenup || S.marriage.prenup.type !== 'Comprehensive Financial Agreement')) {
+    settlement = Math.floor(S.wealth * 0.5);
+  }
+  if (S.job && law.alimonyYears > 0 && S.gender === 'm') {
+    const years = typeof law.alimonyYears === 'number' ? law.alimonyYears : 1;
+    settlement += Math.round(S.job.salary * 0.15 * years);
+  }
+
   const children = S.childrenList || [];
-  if (children.length > 0) { if (S.job) childSupportAnnual = Math.round(S.job.salary * law.childSupportPct * children.length); custody = S.gender === 'f' ? 'You have primary custody' : (law.custody === 'joint' ? 'Joint custody' : 'She has primary custody'); }
+  if (children.length > 0) {
+    if (S.job) childSupportAnnual = Math.round(S.job.salary * law.childSupportPct * children.length);
+    custody = S.gender === 'f' ? 'You have primary custody' : (law.custody === 'joint' ? 'Joint custody' : 'She has primary custody');
+  }
+
   const totalCost = courtFee + settlement;
   if (!confirm('Divorce under ' + law.label + ':\n\nCourt fee: ' + money(courtFee) + '\nSettlement: ' + money(settlement) + '\nChild support: ' + (childSupportAnnual > 0 ? money(childSupportAnnual) + '/yr' : 'None') + '\nCustody: ' + (custody || 'N/A') + '\n\nTotal upfront: ' + money(totalCost) + '\n\nProceed?')) return;
+
   if (S.wealth < totalCost) { log('Not enough for divorce (' + money(totalCost) + ').'); render(); return; }
   S.wealth -= totalCost;
-  S.marriage.exSpouses.push({ name: p.name, marriedYear: p.marriedYear || gameYear(), divorcedYear: gameYear(), reason: cause.label, childSupportAnnual, custody, remarried: false });
-  S.marriage.partner = null; S.marriage.status = 'divorced'; S.marriage.wedding = null; S.marriage.engagement = null; S.marriage.financeModel = null; S.marriage.sharedAccountBalance = 0; S.marriage.home = null; S.marriage.homeSetupPaid = false; S.marriage.tab = 'overview'; S.spouse = null;
+
+  S.marriage.exSpouses.push({
+    name: p.name,
+    marriedYear: p.marriedYear || gameYear(),
+    divorcedYear: gameYear(),
+    reason: cause.label,
+    childSupportAnnual: childSupportAnnual,
+    custody: custody,
+    remarried: false
+  });
+  S.marriage.partner = null;
+  S.marriage.status = 'divorced';
+  S.marriage.wedding = null;
+  S.marriage.engagement = null;
+  S.marriage.financeModel = null;
+  S.marriage.sharedAccountBalance = 0;
+  S.marriage.home = null;
+  S.marriage.homeSetupPaid = false;
+  S.marriage.tab = 'overview';
+  S.spouse = null;
+
   log('💔 Divorced ' + p.name + '. Reason: ' + cause.label + '. Cost: ' + money(totalCost) + '.');
-  fx({ happiness: -25 }); render();
+  fx({ happiness: -25 });
+  render();
+};
+
+window.marCancelEngagement = function() {
+  if (!S.marriage.partner) return;
+  if (!confirm('Cancel engagement with ' + S.marriage.partner.name + '?')) return;
+  S.marriage.status = 'single';
+  S.marriage.engagement = null;
+  S.marriage.wedding = null;
+  S.marriage.proposalPaid = false;
+  log('💔 Cancelled engagement with ' + S.marriage.partner.name + '.');
+  S.marriage.partner = null;
+  fx({ happiness: -20 });
+  render();
 };
 
 /* ============================================================
-   YEAR TICK
+   YEAR TICK (RESTORED POST-MARRIAGE EVENTS + NEW PRE-MARITAL)
    ============================================================ */
 GameHooks.on('year', function() {
   ensureMarriageState();
@@ -744,28 +1063,114 @@ GameHooks.on('year', function() {
   const m = S.marriage;
   const p = m.partner;
   if (!p) return;
+
+  /* Partner aging */
   p.age++;
+
+  /* Bond decay + trait effects */
   let bondChange = -2;
-  (p.traits || []).forEach(tid => { const t = marTrait(tid); if (t) bondChange += (t.bondPerYear || 0); });
+  (p.traits || []).forEach(function(tid) {
+    const t = marTrait(tid);
+    if (t) bondChange += (t.bondPerYear || 0);
+  });
   p.bond = Math.max(0, Math.min(100, p.bond + bondChange));
-  if (p.income > 0) { const ambitious = (p.traits || []).includes('ambitious') || (p.traits || []).includes('career_focused'); p.income = Math.round(p.income * (ambitious ? 1.06 : 1.03)); }
-  if (m.home) { const h = (MARRIAGE_HOME_OPTIONS || []).find(x => x.id === m.home); if (h) { const yearly = marEGP(h.monthlyCostEGP * 12); if (S.wealth >= yearly) S.wealth -= yearly; else log('⚠️ Could not pay home costs (' + money(yearly) + ').'); } }
-  if (m.childcare) { const cc = (MARRIAGE_CHILDCARE_OPTIONS || []).find(x => x.id === m.childcare); if (cc) { const yearly = marEGP(cc.monthlyCostEGP * 12); if (S.wealth >= yearly) S.wealth -= yearly; } }
-  if (MARRIAGE_YEAR_EVENTS && Math.random() < 0.55) {
-    const eligible = MARRIAGE_YEAR_EVENTS.filter(e => { if (e.requiresNoChildren && (S.childrenList && S.childrenList.length > 0)) return false; return true; });
-    const totalWeight = eligible.reduce((s, e) => s + e.weight, 0);
-    if (totalWeight > 0) { let roll = Math.random() * totalWeight; for (let i = 0; i < eligible.length; i++) { roll -= eligible[i].weight; if (roll <= 0) { marFireYearEvent(eligible[i]); break; } } }
+
+  /* Partner income growth */
+  if (p.income > 0) {
+    const ambitious = (p.traits || []).indexOf('ambitious') >= 0 || (p.traits || []).indexOf('career_focused') >= 0;
+    p.income = Math.round(p.income * (ambitious ? 1.06 : 1.03));
   }
-  if (m.status === 'married' && !m.pendingConflict && p.bond < 50 && Math.random() < 0.20 && MARRIAGE_CONFLICT_TOPICS) { const topic = MARRIAGE_CONFLICT_TOPICS[Math.floor(Math.random() * MARRIAGE_CONFLICT_TOPICS.length)]; m.pendingConflict = topic.id; log('⚔️ Conflict arose: ' + topic.label + '.'); }
+
+  /* Partner initiates proposal */
+  if (m.status === 'dating' && p.bond > 85 && !p.initiatedProposal) {
+    if (Math.random() < 0.2) {
+      p.initiatedProposal = true;
+      S.pending = {
+        title: '💍 A Surprise Proposal',
+        text: p.name + ' got down on one knee and proposed to you!\n\nWill you accept?',
+        choices: [
+          { label: 'Yes, absolutely!', effect: function(s) {
+            s.marriage.status = 'engaged';
+            s.marriage.engagement = { finalized: false, shabkaTier: 'standard', mahrTier: 'standard', partyTier: 'nice_hall', proposal: 'simple' };
+            s.marriage.partner.bond = 100;
+            log('🎉 You said YES! You are engaged.');
+            fx({ happiness: 30 });
+            marUnlockAchievement('engaged');
+            marReachMilestone('engagement');
+          }},
+          { label: 'I need more time.', effect: function(s) {
+            log('You asked for more time. They look disappointed.');
+            s.marriage.partner.bond = Math.max(0, s.marriage.partner.bond - 15);
+            fx({ happiness: -5 });
+          }}
+        ]
+      };
+      S.evId = 'partner_proposal';
+    }
+  }
+
+  /* Home cost */
+  if (m.home) {
+    const h = (MARRIAGE_HOME_OPTIONS || []).find(function(x) { return x.id === m.home; });
+    if (h) {
+      const yearly = marEGP(h.monthlyCostEGP * 12);
+      if (S.wealth >= yearly) S.wealth -= yearly;
+      else log('⚠️ Could not pay home costs (' + money(yearly) + ').');
+    }
+  }
+
+  /* Childcare cost */
+  if (m.childcare) {
+    const cc = (MARRIAGE_CHILDCARE_OPTIONS || []).find(function(x) { return x.id === m.childcare; });
+    if (cc) {
+      const yearly = marEGP(cc.monthlyCostEGP * 12);
+      if (S.wealth >= yearly) S.wealth -= yearly;
+    }
+  }
+
+  /* Random year events */
+  if (typeof MARRIAGE_YEAR_EVENTS !== 'undefined' && Math.random() < 0.55) {
+    const eligible = MARRIAGE_YEAR_EVENTS.filter(function(e) {
+      if (e.requiresNoChildren && (S.childrenList && S.childrenList.length > 0)) return false;
+      return true;
+    });
+    const totalWeight = eligible.reduce(function(s, e) { return s + e.weight; }, 0);
+    if (totalWeight > 0) {
+      let roll = Math.random() * totalWeight;
+      for (let i = 0; i < eligible.length; i++) {
+        roll -= eligible[i].weight;
+        if (roll <= 0) { marFireYearEvent(eligible[i]); break; }
+      }
+    }
+  }
+
+  /* Spontaneous conflicts when bond low */
+  if (m.status === 'married' && !m.pendingConflict && p.bond < 50 && Math.random() < 0.20 && typeof MARRIAGE_CONFLICT_TOPICS !== 'undefined') {
+    const topic = MARRIAGE_CONFLICT_TOPICS[Math.floor(Math.random() * MARRIAGE_CONFLICT_TOPICS.length)];
+    m.pendingConflict = topic.id;
+    log('⚔️ Conflict arose: ' + topic.label + '.');
+  }
+
+  /* Partner divorce threat */
   if (m.status === 'married' && p.bond < 20 && Math.random() < 0.20) {
     log('💔 ' + p.name + ' asked for a divorce. Bond was too low.');
     const law = MARRIAGE_DIVORCE_LAWS[S.country] || MARRIAGE_DIVORCE_LAWS.egy;
     const courtFee = marEGP(law.courtFeeEGP);
-    let settlement = 0; if (law.assetSplit === '50_50' && (!m.prenup || m.prenup.type !== 'Comprehensive Financial Agreement')) settlement = Math.floor(S.wealth * 0.5);
+    let settlement = 0;
+    if (law.assetSplit === '50_50' && (!m.prenup || m.prenup.type !== 'Comprehensive Financial Agreement')) settlement = Math.floor(S.wealth * 0.5);
     if (S.wealth >= courtFee + settlement) S.wealth -= (courtFee + settlement);
-    m.exSpouses.push({ name: p.name, marriedYear: p.marriedYear || gameYear(), divorcedYear: gameYear(), reason: 'Mutual — bond too low', childSupportAnnual: 0, custody: null, remarried: false });
-    m.partner = null; m.status = 'divorced'; m.wedding = null; m.engagement = null; m.financeModel = null; m.sharedAccountBalance = 0; m.home = null; S.spouse = null; fx({ happiness: -25 }); return;
+    m.exSpouses.push({
+      name: p.name, marriedYear: p.marriedYear || gameYear(), divorcedYear: gameYear(),
+      reason: 'Mutual — bond too low', childSupportAnnual: 0, custody: null, remarried: false
+    });
+    m.partner = null; m.status = 'divorced'; m.wedding = null; m.engagement = null;
+    m.financeModel = null; m.sharedAccountBalance = 0; m.home = null;
+    S.spouse = null;
+    fx({ happiness: -25 });
+    return;
   }
+
+  /* Milestones by years married */
   if (m.status === 'married' && p.marriedYear) {
     const years = gameYear() - p.marriedYear;
     if (years >= 1) marReachMilestone('first_anniversary');
@@ -776,32 +1181,73 @@ GameHooks.on('year', function() {
     if (years >= 10) marReachMilestone('ten_years');
     if (years >= 25) marReachMilestone('twenty_five_years');
   }
-  m.exSpouses.forEach(ex => { if (ex.childSupportAnnual > 0) { const annual = ex.childSupportAnnual; if (S.wealth >= annual) { S.wealth -= annual; log('💸 Child support paid to ' + ex.name + ': ' + money(annual) + '.'); } else log('⚠️ Could not pay child support to ' + ex.name + '.'); } });
+
+  /* Child support from exes */
+  m.exSpouses.forEach(function(ex) {
+    if (ex.childSupportAnnual > 0) {
+      const annual = ex.childSupportAnnual;
+      if (S.wealth >= annual) {
+        S.wealth -= annual;
+        log('💸 Child support paid to ' + ex.name + ': ' + money(annual) + '.');
+      } else {
+        log('⚠️ Could not pay child support to ' + ex.name + '.');
+      }
+    }
+  });
 });
 
 function marFireYearEvent(evt) {
   const p = S.marriage.partner;
   if (!p) return;
-  if (evt.id === 'partner_promotion') { p.income = Math.round((p.income || 50000) * 1.15); log('🎉 ' + p.name + ' got promoted. Income now ' + money(p.income) + '/yr.'); p.bond = Math.min(100, p.bond + 5); }
-  else if (evt.id === 'partner_lost_job') { p.income = 0; log('😔 ' + p.name + ' lost their job. Money will be tight.'); p.bond = Math.max(0, p.bond - 5); }
-  else if (evt.id === 'anniversary') log('💍 It is your anniversary with ' + p.name + '. Consider a gift or date.');
-  else if (evt.id === 'inlaws_visit') log('👵 Your in-laws are visiting. Bond and money matter this week.');
-  else if (evt.id === 'partner_bond_warning') log('💬 ' + p.name + ' seems distant. Spend time together.');
-  else if (evt.id === 'partner_wants_gift') log('🎁 ' + p.name + ' hints at wanting a gift.');
-  else if (evt.id === 'partner_wants_trip') log('✈️ ' + p.name + ' wants to plan a trip together.');
-  else if (evt.id === 'partner_wants_child') log('👶 ' + p.name + ' brings up having a baby.');
-  else if (evt.id === 'unexpected_bill') { const cost = marEGP(20000); if (S.wealth >= cost) { S.wealth -= cost; log('💸 Unexpected bill: ' + money(cost) + '.'); } }
-  else if (evt.id === 'home_upgrade') log('🏠 You discuss moving to a larger home.');
-  else if (evt.id === 'career_move') log('💼 Your partner received a career offer in another city.');
-  else if (evt.id === 'family_pressure') log('👵 Relatives are asking questions about your private plans.');
-  else if (evt.id === 'forgotten_anniversary') { if (p.bond > 30) { p.bond = Math.max(0, p.bond - 5); log('😞 You forgot an important date. Bond -5.'); } }
-  else if (evt.id === 'shared_goal') log('🎯 Your partner wants to work toward a shared goal.');
-  else if (evt.id === 'partner_study') log('📚 Your partner wants to study or take a course.');
-  else if (evt.id === 'holiday_planning') log('🎉 You plan holiday arrangements together.');
-  else if (evt.id === 'household_chores') { if (p.bond > 25) { p.bond = Math.max(0, p.bond - 2); log('🧹 Chore distribution felt unfair. Bond -2.'); } }
-  else if (evt.id === 'old_friend') log('👥 An old friend contacted ' + p.name + '.');
-  else if (evt.id === 'financial_review') log('💰 Annual financial review. You discussed savings and spending.');
-  else if (evt.id === 'relationship_milestone') log('💞 A milestone. You appreciate how far you have come.');
+  if (evt.id === 'partner_promotion') {
+    p.income = Math.round((p.income || 50000) * 1.15);
+    log('🎉 ' + p.name + ' got promoted. Income now ' + money(p.income) + '/yr.');
+    p.bond = Math.min(100, p.bond + 5);
+  } else if (evt.id === 'partner_lost_job') {
+    p.income = 0;
+    log('😔 ' + p.name + ' lost their job. Money will be tight.');
+    p.bond = Math.max(0, p.bond - 5);
+  } else if (evt.id === 'anniversary') {
+    log('💍 It is your anniversary with ' + p.name + '. Consider a gift or date.');
+  } else if (evt.id === 'inlaws_visit') {
+    log('👵 Your in-laws are visiting. Bond and money matter this week.');
+  } else if (evt.id === 'partner_bond_warning') {
+    log('💬 ' + p.name + ' seems distant. Spend time together.');
+  } else if (evt.id === 'partner_wants_gift') {
+    log('🎁 ' + p.name + ' hints at wanting a gift.');
+  } else if (evt.id === 'partner_wants_trip') {
+    log('✈️ ' + p.name + ' wants to plan a trip together.');
+  } else if (evt.id === 'partner_wants_child') {
+    log('👶 ' + p.name + ' brings up having a baby.');
+  } else if (evt.id === 'unexpected_bill') {
+    const cost = marEGP(20000);
+    if (S.wealth >= cost) { S.wealth -= cost; log('💸 Unexpected bill: ' + money(cost) + '.'); }
+  } else if (evt.id === 'home_upgrade') {
+    log('🏠 You discuss moving to a larger home.');
+  } else if (evt.id === 'career_move') {
+    log('💼 Your partner received a career offer in another city.');
+  } else if (evt.id === 'family_pressure') {
+    log('👵 Relatives are asking questions about your private plans.');
+  } else if (evt.id === 'forgotten_anniversary') {
+    if (p.bond > 30) { p.bond = Math.max(0, p.bond - 5); log('😞 You forgot an important date. Bond -5.'); }
+  } else if (evt.id === 'shared_goal') {
+    log('🎯 Your partner wants to work toward a shared goal.');
+  } else if (evt.id === 'partner_study') {
+    log('📚 Your partner wants to study or take a course.');
+  } else if (evt.id === 'holiday_planning') {
+    log('🎉 You plan holiday arrangements together.');
+  } else if (evt.id === 'household_chores') {
+    if (p.bond > 25) { p.bond = Math.max(0, p.bond - 2); log('🧹 Chore distribution felt unfair. Bond -2.'); }
+  } else if (evt.id === 'old_friend') {
+    log('👥 An old friend contacted ' + p.name + '.');
+  } else if (evt.id === 'financial_review') {
+    log('💰 Annual financial review. You discussed savings and spending.');
+  } else if (evt.id === 'relationship_milestone') {
+    log('💞 A milestone. You appreciate how far you have come.');
+  }
 }
 
+/* ============================================================
+   REGISTER
+   ============================================================ */
 GameHooks.registerTab({ id: 'marriage', label: '💍 Marriage', order: 9, view: marriageView });
