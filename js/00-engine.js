@@ -803,3 +803,875 @@ window.reset = reset;
 window.renderStart = renderStart;
 window.dataOK = dataOK;
 window.START = START;
+/* ============================================================
+   CHARACTER DIALOGUE & VOICE ENGINE (EXPANDED & REALISTIC)
+   ============================================================ */
+const DIALOGUE_CULTURE_TERMS = {
+  egy: { term: 'Habibi', termF: 'Habibti', prayer: 'Rabbena yekhalik leya', blessing: 'Alhamdulillah', swear: 'Walahi' },
+  sau: { term: 'Ya ba\'di', termF: 'Ya albi', prayer: 'Allah yehfezak', blessing: 'Mashallah', swear: 'Billah' },
+  uae: { term: 'Fidwa', termF: 'Ghalia', prayer: 'Rabbi yewafgek', blessing: 'Tebarak Allah', swear: 'Wallah' },
+  default: { term: 'my dear', termF: 'my darling', prayer: 'I wish you the very best', blessing: 'Thank goodness', swear: 'Honestly' }
+};
+
+function characterSay(character, intent, context) {
+  if (!character) return '';
+
+  const traits = Array.isArray(character.traits)
+    ? character.traits
+    : (character.trait ? [character.trait] : []);
+
+  const countryCode = S ? S.country : 'egy';
+  const cTerms = DIALOGUE_CULTURE_TERMS[countryCode] || DIALOGUE_CULTURE_TERMS.default;
+  const petName = character.gender === 'f' ? cTerms.termF : cTerms.term;
+
+  const lines = {
+    greeting: {
+      warm: [
+        `${petName}! Come sit with me, let me look at you.`,
+        `My darling, I was just thinking about you!`
+      ],
+      kind: [
+        'It is so good to hear from you.',
+        'I am really glad we can speak right now.'
+      ],
+      grumpy: [
+        'What do you need now?',
+        'Hmph. You finally remembered I exist.'
+      ],
+      stingy: [
+        'Before we talk, I hope this call isn\'t about asking for money.',
+        'Hello. Make it quick, time is money.'
+      ],
+      mamas_boy: [
+        'Hello! My mother was just asking about us.',
+        'Hey! I just got off the phone with my mom.'
+      ],
+      protector: [
+        'Everything alright? Let me know if anyone gives you a hard time.',
+        'I am right here with you. How can I help?'
+      ],
+      traditional: [
+        `${cTerms.prayer}. Sit down, tell me how you are doing.`,
+        'Peace be upon you. How are your days treating you?'
+      ],
+      religious: [
+        `${cTerms.blessing}. It is a blessing to hear from you today.`,
+        'May your day be full of peace and good health.'
+      ],
+      frugal: [
+        'Good to hear from you. We should review the budget soon.',
+        'Hello! Hope you are taking care of our resources.'
+      ],
+      extravagant: [
+        `Darling! We simply must go out and treat ourselves soon.`,
+        'Hello! I saw the most gorgeous collection today.'
+      ],
+      communicative: [
+        'I love that we can always talk things through. How was your day?',
+        'Hey there! Let\'s sit down and share what\'s on our minds.'
+      ],
+      avoidant: [
+        'Hey. Everything is fine... we don\'t have to overcomplicate things, right?',
+        'Hi. Hope things are quiet today.'
+      ],
+      romantic: [
+        'Every time you reach out, my whole day gets lighter.',
+        'Hearing your voice is always the best part of my day.'
+      ],
+      ambitious: [
+        'I have a packed schedule today, but for you I always have time.',
+        'Hello! Working hard toward our future. What is new?'
+      ],
+      supportive: [
+        'I am so glad you reached out. How are you really feeling?',
+        'Whatever you are facing today, remember I have your back.'
+      ],
+      shy: [
+        'H-hello... I\'m really happy to hear from you.',
+        'Hi. I was hoping you would reach out.'
+      ],
+      default: [
+        'Hello. How are you doing today?',
+        'Hi there! Good to hear from you.'
+      ]
+    },
+
+    affection: {
+      romantic: [
+        'You have no idea how much I needed to hear that. You are my world.',
+        'Every day by your side feels like an answered prayer.'
+      ],
+      mamas_boy: [
+        'I care about you so much. My mother always said you have a good heart.',
+        'You make our family complete.'
+      ],
+      protector: [
+        'No matter what happens, I will always stand between you and the world.',
+        'You never have to worry as long as I am here.'
+      ],
+      traditional: [
+        `May we always build an honorable home together, ${petName}.`,
+        'You bring dignity, peace, and blessing into my life.'
+      ],
+      warm: [
+        `I love you with all my heart, ${petName}. Never forget that.`,
+        'You make this house feel like a true home.'
+      ],
+      loyal: [
+        'We stand shoulder to shoulder, through thick and thin.',
+        'I am so thankful we found each other.'
+      ],
+      frugal: [
+        'A good partner is the greatest treasure one could ever save for.',
+        'You are worth more than all the gold in the market.'
+      ],
+      default: [
+        'I love you too.',
+        'That means more to me than words can say.'
+      ]
+    },
+
+    upset: {
+      grumpy: [
+        'Do not speak to me right now.',
+        'Leave me alone until I have cooled off.'
+      ],
+      stingy: [
+        'Every time we disagree, money gets wasted!',
+        'You don\'t appreciate how hard every pound/dollar is earned.'
+      ],
+      mamas_boy: [
+        'My mother warned me that this would become an issue between us.',
+        'Why can\'t you respect my family\'s advice on this?'
+      ],
+      protector: [
+        'I am trying to shield us, but you are not listening to reason.',
+        'You are putting us in a difficult position.'
+      ],
+      avoidant: [
+        'I cannot deal with this argument right now. Please drop it.',
+        'Let\'s just not talk about this today.'
+      ],
+      stubborn: [
+        'I said what I said. My position is not changing.',
+        'You can argue all day, but I am not backing down.'
+      ],
+      jealous: [
+        'Oh, so now you remember I exist? Who was keeping you so occupied?',
+        'Don\'t treat me like a fool. I see how things are.'
+      ],
+      moody: [
+        'I am really not in the mood for another confrontation.',
+        'Can we just have one peaceful day without drama?'
+      ],
+      default: [
+        'I am very upset about this, and we need to address it properly.',
+        'This hurt me more than you realize.'
+      ]
+    },
+
+    happy: {
+      warm: [
+        `${cTerms.blessing}! You make me so proud!`,
+        'Seeing you happy makes everything worth it.'
+      ],
+      traditional: [
+        `${cTerms.blessing}, this brings true honor to our family name.`,
+        'May good fortune and blessings always follow our footsteps.'
+      ],
+      ambitious: [
+        'That is what I am talking about! Our hard work is finally paying off.',
+        'Success looks good on us. On to the next milestone!'
+      ],
+      funny: [
+        'Look at you winning at life! Don\'t forget the little people now!',
+        'This calls for a celebration — dinner is on you!'
+      ],
+      supportive: [
+        'I always believed in you! Nobody deserves this more.',
+        'I am cheering for you with all my heart!'
+      ],
+      default: [
+        'That is wonderful news!',
+        'I am so happy for you!'
+      ]
+    },
+
+    /* --- MARRIAGE SPECIFIC INTENTS --- */
+    inlaw_clash: {
+      mamas_boy: [
+        'She is my mother! You expect me to just throw away her advice?',
+        'Can you please just smile and agree for once? She only wants what is best.'
+      ],
+      protector: [
+        'Do not worry. I will speak to my mother in private. She overstepped.',
+        'I won\'t let anyone disrespect you under our roof, family or not.'
+      ],
+      traditional: [
+        'In our customs, elders deserve respect even when they are mistaken.',
+        'Patience brings peace. Let us handle this with grace.'
+      ],
+      communicative: [
+        'Let us agree on firm boundaries together before our families visit next time.',
+        'I understand why you felt cornered. Let\'s resolve this as a team.'
+      ],
+      default: [
+        'Family tensions are exhausting. Let us try to stay united.',
+        'Please, let us not let our relatives destroy what we have built.'
+      ]
+    },
+
+    money_strain: {
+      frugal: [
+        'Every cent matters right now! We cannot afford unnecessary luxuries.',
+        'We need to cut non-essentials until our savings balance recovers.'
+      ],
+      stingy: [
+        'You are bleeding us dry with these purchases! Stop spending!',
+        'No more unnecessary expenses! We need to tighten every lock on our wallet.'
+      ],
+      extravagant: [
+        'What is the point of working so hard if we cannot enjoy our lives?',
+        'Money comes and goes, but dignity and living well remain!'
+      ],
+      ambitious: [
+        'This financial pinch is temporary. I am working on expanding our income.',
+        'Stay focused on our 5-year plan. We will get through this dip.'
+      ],
+      default: [
+        'The bills are getting out of hand. We need to sit down and review our budget.',
+        'Money is tight, and we need to handle this together.'
+      ]
+    },
+
+    jealousy: {
+      jealous: [
+        'Who is messaging you at this hour? Hand me your phone.',
+        'I noticed how they looked at you. Do not take me for an idiot.'
+      ],
+      insecure: [
+        'Do you still find me attractive? Sometimes I feel like you look right through me.',
+        'Are you happy with me, or do you regret choosing this life?'
+      ],
+      protector: [
+        'I trust you, but I do not trust the people hovering around you.',
+        'Keep your guard up. Not everyone wishing us well is sincere.'
+      ],
+      default: [
+        'Who was that? You seemed awfully friendly.',
+        'I just need reassurance that nothing is being hidden from me.'
+      ]
+    },
+
+    baby_talk: {
+      family_oriented: [
+        `Our home feels ready, ${petName}. Hearing little footsteps would bring so much life here.`,
+        'Both our parents keep hinting, but more importantly, my own heart is ready.'
+      ],
+      career_focused: [
+        'Having a baby right now could stall our career momentum. Let us give it another year.',
+        'We need more financial security before taking on the responsibility of a child.'
+      ],
+      frugal: [
+        'Children require school funds, medical care, and savings. Are our numbers ready?',
+        'Let us build an emergency cushion before we welcome a baby.'
+      ],
+      traditional: [
+        `Children are the blessing of a home. May we be blessed when the time is right.`,
+        'Every child comes with their own sustenance. Let us trust and take the step.'
+      ],
+      default: [
+        'What do you think about taking the next step for our family?',
+        'I feel like we are at a crossroads regarding children.'
+      ]
+    },
+
+    apology: {
+      warm: [
+        `${petName}, I was wrong. My temper got the better of me. Please forgive me.`,
+        'You matter more to me than winning any silly argument. I am sorry.'
+      ],
+      stubborn: [
+        'Fine. Perhaps I reacted too harshly. Let us put it behind us.',
+        'I am not saying I was completely wrong, but I regret how it sounded.'
+      ],
+      communicative: [
+        'I see where I hurt your feelings, and I take responsibility for it. I apologize.',
+        'Let us reset. You deserve my gentleness, not my frustration.'
+      ],
+      default: [
+        'I am sorry for how I acted.',
+        'Please forgive me. I want us to be at peace.'
+      ]
+    }
+  };
+
+  const pool = lines[intent] || lines.greeting;
+  let result = null;
+
+  for (let i = 0; i < traits.length; i++) {
+    const t = traits[i];
+    if (pool[t]) {
+      const arr = pool[t];
+      result = arr[Math.floor(Math.random() * arr.length)];
+      break;
+    }
+  }
+
+  if (!result) {
+    const def = pool.default || lines.greeting.default;
+    result = def[Math.floor(Math.random() * def.length)];
+  }
+
+  return result;
+}
+
+/* ---------- SPEECH SYNTHESIS ENGINE (REAL VOICE) ---------- */
+function characterSpeak(text, character) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  if (!text) return;
+
+  try {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = (character && character.gender === 'f') ? 1.15 : 0.95;
+
+    const countryCode = S ? S.country : 'egy';
+    if (['egy', 'sau', 'uae'].includes(countryCode)) {
+      utterance.lang = 'ar-EG';
+    } else if (countryCode === 'gbr' || countryCode === 'uk') {
+      utterance.lang = 'en-GB';
+    } else {
+      utterance.lang = 'en-US';
+    }
+
+    window.speechSynthesis.speak(utterance);
+  } catch (err) {
+    console.warn('[Voice Engine] Speech synthesis error:', err);
+  }
+}
+
+window.characterSay = characterSay;
+window.characterSpeak = characterSpeak;
+
+
+/* ============================================================
+   EXPANDED MARRIAGE LIFE EVENTS
+   ============================================================
+   Deeply integrated with:
+   - S.marriage (partner, bond, trust, stress, motherInLawBond)
+   - S.shopping (gold, inventory, jewelry)
+   - S.ownedHomes (marital home repairs, upgrades)
+   - Voice audio synthesis via characterSay & characterSpeak
+   ============================================================ */
+
+const MARRIAGE_EXTENDED_EVENTS = [
+  /* 1. Unannounced Mother-in-Law Spare Key */
+  {
+    id: 'inlaw_spare_key',
+    weight: 12,
+    condition: (s) => s.marriage && s.marriage.status === 'married' && s.marriage.motherInLawBond < 60,
+    trigger: function(s) {
+      const p = s.marriage.partner;
+      const speech = characterSay(p, 'inlaw_clash');
+      s.pending = {
+        title: '🔑 The Unannounced Spare Key',
+        text: `On a quiet morning, your front door opens. ${p.name}'s mother walks in carrying food containers, inspecting the living room dust.\n\n` +
+              `"I have a key to my son's house," she remarks coldly. ${p.name} looks tense.\n\n` +
+              `"${speech}"`,
+        choices: [
+          {
+            label: '🔒 Politely ask for the key back & set boundaries',
+            effect: function(st) {
+              st.marriage.motherInLawBond = Math.max(0, st.marriage.motherInLawBond - 18);
+              if (marHasTrait(p, 'mamas_boy')) {
+                p.bond = Math.max(0, p.bond - 10);
+                p.trust = Math.max(0, p.trust - 8);
+                log('😤 You demanded the key back. His mother wept to his relatives. Bond decreased.');
+              } else {
+                p.bond = Math.min(100, p.bond + 6);
+                p.trust = Math.min(100, p.trust + 8);
+                log('🛡 You established firm household boundaries. Your spouse quietly respected your backbone.');
+              }
+              fx({ happiness: 2 });
+            }
+          },
+          {
+            label: '🍵 Bite your tongue and accept the food',
+            effect: function(st) {
+              st.marriage.motherInLawBond = Math.min(100, st.marriage.motherInLawBond + 10);
+              st.marriage.stress = Math.min(100, (st.marriage.stress || 20) + 12);
+              log('🤐 You smiled through clenched teeth. Her intrusions will continue, but family peace was preserved.');
+              fx({ happiness: -5 });
+            }
+          },
+          {
+            label: '🚪 Change the door lock quietly next week',
+            effect: function(st) {
+              const lockCost = typeof marEGP === 'function' ? marEGP(2500) : 2500;
+              st.wealth = Math.max(0, st.wealth - lockCost);
+              st.marriage.motherInLawBond = Math.max(0, st.marriage.motherInLawBond - 25);
+              log(`🔑 You installed a smart lock (${money(lockCost)}). She found out the next week and an uproar erupted.`);
+              fx({ happiness: 4 });
+            }
+          }
+        ]
+      };
+      s.evId = 'spare_key_' + gameYear();
+      characterSpeak(speech, p);
+    }
+  },
+
+  /* 2. Family Loan Request (In-Laws in Need) */
+  {
+    id: 'inlaw_loan_request',
+    weight: 10,
+    condition: (s) => s.marriage && s.marriage.status === 'married' && s.wealth > 30000,
+    trigger: function(s) {
+      const p = s.marriage.partner;
+      const loanAmt = typeof marEGP === 'function' ? marEGP(40000) : 40000;
+      const speech = characterSay(p, 'money_strain');
+      s.pending = {
+        title: '💸 Family Financial Request',
+        text: `${p.name} sits you down over coffee with a strained expression.\n\n` +
+              `"My brother is facing major debts and our parents asked if we can lend them ${money(loanAmt)}. It would mean so much to our standing."\n\n` +
+              `"${speech}"`,
+        choices: [
+          {
+            label: `🤝 Agree to lend the ${money(loanAmt)}`,
+            effect: function(st) {
+              if (st.wealth >= loanAmt) {
+                st.wealth -= loanAmt;
+                p.bond = Math.min(100, p.bond + 12);
+                p.trust = Math.min(100, p.trust + 10);
+                st.marriage.motherInLawBond = Math.min(100, st.marriage.motherInLawBond + 20);
+                log(`🤝 You lent ${money(loanAmt)} to the in-laws. Their family regards you with deep gratitude.`);
+                fx({ happiness: 5, social: 6 });
+              } else {
+                log('❌ You did not have enough liquid funds.');
+              }
+            }
+          },
+          {
+            label: '🙅 Refuse — "We must protect our own household first"',
+            effect: function(st) {
+              p.bond = Math.max(0, p.bond - 12);
+              st.marriage.motherInLawBond = Math.max(0, st.marriage.motherInLawBond - 15);
+              st.marriage.stress = Math.min(100, (st.marriage.stress || 20) + 10);
+              log('🛑 You stood firm against lending household money. The in-laws took it as an insult.');
+              fx({ happiness: -4 });
+            }
+          },
+          {
+            label: `🎁 Offer half (${money(Math.round(loanAmt / 2))}) as a non-repayable gift`,
+            effect: function(st) {
+              const giftAmt = Math.round(loanAmt / 2);
+              if (st.wealth >= giftAmt) {
+                st.wealth -= giftAmt;
+                p.bond = Math.min(100, p.bond + 6);
+                p.trust = Math.min(100, p.trust + 6);
+                st.marriage.motherInLawBond = Math.min(100, st.marriage.motherInLawBond + 8);
+                log(`🎁 You offered a dignified compromise of ${money(giftAmt)} as a family gift without debt.`);
+                fx({ happiness: 3 });
+              }
+            }
+          }
+        ]
+      };
+      s.evId = 'inlaw_loan_' + gameYear();
+      characterSpeak(speech, p);
+    }
+  },
+
+  /* 3. The Holiday / Eid Location War */
+  {
+    id: 'eid_holiday_clash',
+    weight: 14,
+    condition: (s) => s.marriage && s.marriage.status === 'married',
+    trigger: function(s) {
+      const p = s.marriage.partner;
+      const holidayName = ['egy', 'sau', 'uae'].includes(s.country) ? 'The First Day of Eid' : 'The Holiday Season';
+      s.pending = {
+        title: `🎉 ${holidayName} Dilemma`,
+        text: `${holidayName} is approaching, and both families expect you for the first day feast.\n\n` +
+              `"My mother will be heartbroken if we aren't there for the morning gathering," ${p.name} insists.\n\n` +
+              `Your own parents have already prepared the banquet.`,
+        choices: [
+          {
+            label: `🏠 Spend morning with your family, evening with ${p.name}'s`,
+            effect: function(st) {
+              p.bond = Math.min(100, p.bond + 4);
+              st.marriage.motherInLawBond = Math.min(100, st.marriage.motherInLawBond + 4);
+              log('🚗 You split the day evenly. Exhausting driving across town, but both families felt honored.');
+              fx({ happiness: 4, social: 6 });
+            }
+          },
+          {
+            label: `👵 Give priority to ${p.name}'s family this year`,
+            effect: function(st) {
+              p.bond = Math.min(100, p.bond + 10);
+              st.marriage.motherInLawBond = Math.min(100, st.marriage.motherInLawBond + 15);
+              (st.family || []).forEach(f => { if (f.role === 'Mother') f.bond = Math.max(0, f.bond - 6); });
+              log(`👵 You prioritized ${p.name}'s family. Your in-laws were beaming with pride.`);
+              fx({ happiness: 2 });
+            }
+          },
+          {
+            label: '✈️ Book a couples trip and skip both family obligations',
+            effect: function(st) {
+              const tripCost = typeof marEGP === 'function' ? marEGP(18000) : 18000;
+              if (st.wealth >= tripCost) {
+                st.wealth -= tripCost;
+                p.bond = Math.min(100, p.bond + 12);
+                p.chemistry = Math.min(100, (p.chemistry || 40) + 10);
+                st.marriage.motherInLawBond = Math.max(0, st.marriage.motherInLawBond - 20);
+                log(`✈️ You escaped the family politics on a private romantic holiday (${money(tripCost)}). Both sides gossiped.`);
+                fx({ happiness: 12 });
+              } else {
+                log('❌ Could not afford the holiday getaway.');
+              }
+            }
+          }
+        ]
+      };
+      s.evId = 'holiday_clash_' + gameYear();
+    }
+  },
+
+  /* 4. Gold / Shabka Dilemma During Inflation */
+  {
+    id: 'gold_liquidation_choice',
+    weight: 9,
+    condition: (s) => s.marriage && s.marriage.status === 'married' && s.gender === 'f' && Array.isArray(s.shopping && s.shopping.inventory) && s.shopping.inventory.some(i => i.cat === 'jewelry' && i.grams > 0),
+    trigger: function(s) {
+      const p = s.marriage.partner;
+      const goldItems = s.shopping.inventory.filter(i => i.cat === 'jewelry' && i.grams > 0);
+      const targetGold = goldItems[0];
+      const goldVal = Math.round(targetGold.currentValue || (targetGold.grams * 4500));
+
+      s.pending = {
+        title: '🪙 Shabka Gold Liquidation Debate',
+        text: `Gold prices have surged. ${p.name} mentions an investment opportunity or cash crunch.\n\n` +
+              `"If we liquidate your ${targetGold.name} (${targetGold.grams}g), we could free up ${money(goldVal)} for investments."\n\n` +
+              `In traditional customs, a bride's gold is strictly her personal financial insurance.`,
+        choices: [
+          {
+            label: `💍 Sell the piece to invest together (${money(goldVal)})`,
+            effect: function(st) {
+              st.wealth += goldVal;
+              st.shopping.inventory = st.shopping.inventory.filter(i => i.uid !== targetGold.uid);
+              p.bond = Math.min(100, p.bond + 15);
+              p.trust = Math.min(100, p.trust + 15);
+              log(`🪙 You sold your ${targetGold.name} for ${money(goldVal)} to support household ambitions. ${p.name} is deeply grateful.`);
+              fx({ happiness: 6 });
+            }
+          },
+          {
+            label: '🛑 Refuse: "My gold is my personal security, as agreed."',
+            effect: function(st) {
+              p.bond = Math.max(0, p.bond - 6);
+              st.marriage.stress = Math.min(100, (st.marriage.stress || 20) + 6);
+              log('💪 You held firm to your Shabka. Your personal security remains intact.');
+            }
+          }
+        ]
+      };
+      s.evId = 'gold_debate_' + gameYear();
+    }
+  },
+
+  /* 5. Late Night Suspicious Phone Notification */
+  {
+    id: 'phone_privacy_scare',
+    weight: 8,
+    condition: (s) => s.marriage && s.marriage.status === 'married' && !s.pending,
+    trigger: function(s) {
+      const p = s.marriage.partner;
+      const speech = characterSay(p, 'jealousy');
+      s.pending = {
+        title: '📱 Late Night Notification',
+        text: `At 11:30 PM, ${p.name}'s phone lights up on the bedside table with an unfamiliar message preview: "Thanks for today... you were amazing."\n\n` +
+              `"${speech}"`,
+        choices: [
+          {
+            label: '👀 Pick up the phone and check the full chat',
+            effect: function(st) {
+              if (marHasTrait(p, 'loyal')) {
+                p.trust = Math.max(0, p.trust - 12);
+                log('📱 You checked it: it was a colleague thanking them for saving a critical work project. Your spouse caught you and was offended.');
+                fx({ happiness: -4 });
+              } else if (Math.random() < 0.35) {
+                log('💔 You unlocked it and discovered flirtatious messages. Trust is shattered.');
+                p.trust = Math.max(0, p.trust - 35);
+                p.bond = Math.max(0, p.bond - 25);
+                fx({ happiness: -15 });
+              } else {
+                log('📱 Harmless message from an old schoolmate. You breathed a sigh of relief.');
+              }
+            }
+          },
+          {
+            label: '💬 Ask them directly with calm maturity',
+            effect: function(st) {
+              p.trust = Math.min(100, p.trust + 6);
+              p.communication = Math.min(100, (p.communication || 40) + 6);
+              log(`💬 ${p.name} handed you the phone with a smile. "Work emergency, see?" Open communication strengthened your bond.`);
+              fx({ happiness: 4 });
+            }
+          },
+          {
+            label: '😶 Ignore it and choose trust',
+            effect: function(st) {
+              p.trust = Math.min(100, p.trust + 4);
+              log('🕊 You chose to trust your partner without letting suspicion fester.');
+            }
+          }
+        ]
+      };
+      s.evId = 'phone_scare_' + gameYear();
+      characterSpeak(speech, p);
+    }
+  },
+
+  /* 6. Fertility Pressure from Extended Relatives */
+  {
+    id: 'extended_family_fertility_talk',
+    weight: 11,
+    condition: (s) => s.marriage && s.marriage.status === 'married' && (!s.childrenList || s.childrenList.length === 0) && (gameYear() - (s.marriage.partner.marriedYear || gameYear())) >= 2,
+    trigger: function(s) {
+      const p = s.marriage.partner;
+      const speech = characterSay(p, 'baby_talk');
+      s.pending = {
+        title: '👶 The "When Are You Having Children?" Interrogation',
+        text: `At a large family gathering, aunts and relatives gather around you both with tea.\n\n` +
+              `"Two years married and the nest is still empty? We want to carry your children!"\n\n` +
+              `"${speech}"`,
+        choices: [
+          {
+            label: '👶 Decide together that the time has come to try for a baby',
+            effect: function(st) {
+              st.pregnantMonths = 1;
+              p.bond = Math.min(100, p.bond + 12);
+              st.marriage.motherInLawBond = Math.min(100, st.marriage.motherInLawBond + 15);
+              log('🎉 You announced you are trying! Both families rejoiced.');
+              fx({ happiness: 15 });
+            }
+          },
+          {
+            label: '🛡 "In God\'s timing. We are focusing on our home right now."',
+            effect: function(st) {
+              p.bond = Math.min(100, p.bond + 6);
+              log('🛡 You gave a dignified, united answer. The relatives backed off gracefully.');
+              fx({ happiness: 2 });
+            }
+          },
+          {
+            label: '😤 Shut down the intrusive question firmly',
+            effect: function(st) {
+              st.marriage.motherInLawBond = Math.max(0, st.marriage.motherInLawBond - 12);
+              log('🛑 You stated that family planning is strictly private. An awkward silence filled the room.');
+              fx({ happiness: -2 });
+            }
+          }
+        ]
+      };
+      s.evId = 'fertility_pressure_' + gameYear();
+      characterSpeak(speech, p);
+    }
+  },
+
+  /* 7. Career Promotion Abroad / Relocation Offer */
+  {
+    id: 'spouse_abroad_offer',
+    weight: 7,
+    condition: (s) => s.marriage && s.marriage.status === 'married' && s.marriage.partner && s.marriage.partner.income > 100000,
+    trigger: function(s) {
+      const p = s.marriage.partner;
+      const newSalary = Math.round(p.income * 1.6);
+      s.pending = {
+        title: '✈️ The Gulf / Overseas Job Offer',
+        text: `${p.name} rushes home holding an official offer letter from a top international firm.\n\n` +
+              `"They want me to lead a division abroad! The salary is ${money(newSalary)}/yr — but it means moving away from our families and hometown."`,
+        choices: [
+          {
+            label: '🌍 "Let\'s do it! An adventure for our future."',
+            effect: function(st) {
+              p.income = newSalary;
+              p.bond = Math.min(100, p.bond + 12);
+              p.chemistry = Math.min(100, (p.chemistry || 40) + 8);
+              log(`🌍 You backed the move! Household income increased to ${money(newSalary)}/year.`);
+              fx({ happiness: 10, social: 4 });
+            }
+          },
+          {
+            label: '🏠 "Our life and family are here. Please decline."',
+            effect: function(st) {
+              if (marHasTrait(p, 'ambitious')) {
+                p.bond = Math.max(0, p.bond - 14);
+                st.marriage.stress = Math.min(100, (st.marriage.stress || 20) + 12);
+                log('😞 You asked to stay. Your partner turned down the offer with a lingering sense of resentment.');
+              } else {
+                p.bond = Math.min(100, p.bond + 4);
+                log('🏡 Your partner agreed that family closeness outweighs extra income.');
+              }
+            }
+          }
+        ]
+      };
+      s.evId = 'abroad_offer_' + gameYear();
+    }
+  },
+
+  /* 8. Discovery of Hidden Personal Savings */
+  {
+    id: 'secret_savings_revealed',
+    weight: 8,
+    condition: (s) => s.marriage && s.marriage.status === 'married' && s.marriage.sharedAccountBalance > 0,
+    trigger: function(s) {
+      const p = s.marriage.partner;
+      s.pending = {
+        title: '💼 Financial Transparency Discussion',
+        text: `While doing the annual tax and paperwork review, the question of separate bank accounts arises.\n\n` +
+              `${p.name} notices you keep personal funds independent of the shared household balance.\n\n` +
+              `"Are we building one shared life, or keeping one foot out the door?"`,
+        choices: [
+          {
+            label: '🤝 "A separate reserve protects us both in emergencies"',
+            effect: function(st) {
+              p.trust = Math.min(100, p.trust + 5);
+              p.communication = Math.min(100, (p.communication || 40) + 6);
+              log('💬 A mature discussion about financial security and emergency independence followed.');
+              fx({ happiness: 4 });
+            }
+          },
+          {
+            label: '💰 Transfer a significant portion into the Shared Account',
+            effect: function(st) {
+              const deposit = Math.min(st.wealth, typeof marEGP === 'function' ? marEGP(20000) : 20000);
+              if (deposit > 0) {
+                st.wealth -= deposit;
+                st.marriage.sharedAccountBalance += deposit;
+                p.bond = Math.min(100, p.bond + 12);
+                p.trust = Math.min(100, p.trust + 10);
+                log(`💰 You deposited ${money(deposit)} into the shared account. Your partner feels fully unified.`);
+                fx({ happiness: 8 });
+              }
+            }
+          }
+        ]
+      };
+      s.evId = 'secret_savings_' + gameYear();
+    }
+  },
+
+  /* 9. Critical Appliance Breakdown in the Marital Home */
+  {
+    id: 'home_appliance_crisis',
+    weight: 12,
+    condition: (s) => s.marriage && s.marriage.status === 'married' && Array.isArray(s.shopping && s.shopping.inventory) && s.shopping.inventory.some(i => i.cat === 'appliances'),
+    trigger: function(s) {
+      const p = s.marriage.partner;
+      const repairCost = typeof marEGP === 'function' ? marEGP(5000) : 5000;
+      s.pending = {
+        title: '❄️ Household Breakdown',
+        text: `Water is pooling on the kitchen floor! The refrigerator compressor died overnight, spoiling groceries and soaking cabinets.\n\n` +
+              `${p.name} is overwhelmed and frustrated with household chores.\n\n` +
+              `Emergency repair & replacement cost: ${money(repairCost)}.`,
+        choices: [
+          {
+            label: `💸 Pay immediately for emergency premium technician (${money(repairCost)})`,
+            effect: function(st) {
+              if (st.wealth >= repairCost) {
+                st.wealth -= repairCost;
+                p.bond = Math.min(100, p.bond + 6);
+                log(`🔧 Fixed with no hassle (${money(repairCost)}). Your fast action turned a nightmare into calm.`);
+                fx({ happiness: 4 });
+              } else {
+                log('❌ Could not afford the repair cost.');
+              }
+            }
+          },
+          {
+            label: '😤 Complain about costs and argue about who was responsible',
+            effect: function(st) {
+              p.bond = Math.max(0, p.bond - 8);
+              st.marriage.stress = Math.min(100, (st.marriage.stress || 20) + 15);
+              log('😞 The repair dispute escalated into a bitter evening of blaming each other.');
+              fx({ happiness: -6 });
+            }
+          }
+        ]
+      };
+      s.evId = 'appliance_crisis_' + gameYear();
+    }
+  },
+
+  /* 10. Surprise Anniversary Romantic Gesture */
+  {
+    id: 'surprise_anniversary_date',
+    weight: 10,
+    condition: (s) => s.marriage && s.marriage.status === 'married' && s.marriage.partner && s.marriage.partner.bond > 60,
+    trigger: function(s) {
+      const p = s.marriage.partner;
+      const speech = characterSay(p, 'affection');
+      s.pending = {
+        title: '💐 A Surprise from the Heart',
+        text: `You arrive home to candlelight, soft music, and your favourite homemade dishes prepared on the dining table.\n\n` +
+              `${p.name} embraces you gently.\n\n` +
+              `"${speech}"`,
+        choices: [
+          {
+            label: '❤️ Embrace them tightly and express your devotion',
+            effect: function(st) {
+              p.bond = Math.min(100, p.bond + 12);
+              p.chemistry = Math.min(100, (p.chemistry || 40) + 10);
+              st.marriage.stress = Math.max(0, (st.marriage.stress || 20) - 15);
+              log(`❤️ A magical evening together reminded you both why you fell in love.`);
+              fx({ happiness: 15 });
+            }
+          },
+          {
+            label: '🎁 Present them with a surprise piece of gold / gift in return',
+            effect: function(st) {
+              const giftCost = typeof marEGP === 'function' ? marEGP(8000) : 8000;
+              if (st.wealth >= giftCost) {
+                st.wealth -= giftCost;
+                p.bond = 100;
+                p.chemistry = Math.min(100, (p.chemistry || 40) + 15);
+                st.marriage.stress = Math.max(0, (st.marriage.stress || 20) - 20);
+                log(`🎁 You countered with a stunning gift (${money(giftCost)}). An unforgettable milestone.`);
+                fx({ happiness: 20 });
+              }
+            }
+          }
+        ]
+      };
+      s.evId = 'anniversary_surprise_' + gameYear();
+      characterSpeak(speech, p);
+    }
+  }
+];
+
+/* ============================================================
+   INTEGRATION HOOK: RUNS WITH ANNUAL ENGINE TICK
+   ============================================================ */
+GameHooks.on('year', function() {
+  if (!S || !S.marriage || S.marriage.status !== 'married' || S.pending) return;
+
+  // 45% chance to roll one of the extended realistic marriage events each year
+  if (Math.random() < 0.45) {
+    const eligible = MARRIAGE_EXTENDED_EVENTS.filter(e => !e.condition || e.condition(S));
+    if (eligible.length > 0) {
+      const totalWeight = eligible.reduce((acc, ev) => acc + ev.weight, 0);
+      let roll = Math.random() * totalWeight;
+      for (let i = 0; i < eligible.length; i++) {
+        roll -= eligible[i].weight;
+        if (roll <= 0) {
+          eligible[i].trigger(S);
+          break;
+        }
+      }
+    }
+  }
+});
