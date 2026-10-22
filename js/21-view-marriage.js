@@ -566,16 +566,13 @@ window.marHintAtProposal = function() {
   chance = Math.max(0.15, Math.min(0.90, chance));
 
   if (Math.random() < chance) {
-    p.partnerProposalOffered = true;
-    p.pendingPartnerProposal = { year: gameYear(), kind: 'engagement' };
-    marRecordMemory('partner_proposal', p.name + ' decided to ask whether you would like to become engaged.', 5);
-    log('💍 ' + p.name + ' noticed your hint. He is ready to propose!');
-    fx({ happiness: 10 });
+    // Trigger the popup immediately instead of waiting for the Plan tab
+    marTriggerProposalEvent(p);
   } else {
     log('💬 You hinted at marriage, but ' + p.name + ' did not pick up on it yet. Keep building the relationship.');
     p.bond = Math.max(0, p.bond - 1);
+    render();
   }
-  render();
 };
 /* ============================================================
    FIND TAB
@@ -777,6 +774,40 @@ function marRenderEngagementPlanner() {
   const e = S.marriage.engagement;
   if (!e) return '';
   const isTraditionalWoman = marIsTraditionalWoman();
+     /* Mother-in-law mahr negotiation (traditional only, once per engagement) */
+  if (isTraditionalWoman && !e.mahrNegotiationTriggered && e.mahrTier && e.mahrAdvancedPct > 0.3) {
+    e.mahrNegotiationTriggered = true;
+    S.pending = {
+      title: '💬 Mahr Negotiation',
+      text: 'Before finalizing the Mahr, ' + (m.partner.name) + '’s mother pulls you aside.\n\n"Habibti, we are all family now. Perhaps we can lower the Mahr slightly? ' + m.partner.name + ' doesn\'t need to know."',
+      choices: [
+        { label: '💪 Hold firm on the agreed Mahr', effect: function(s) {
+            s.marriage.motherInLawBond = Math.max(0, s.marriage.motherInLawBond - 15);
+            s.marriage.partner.bond = Math.min(100, s.marriage.partner.bond + 5);
+            log('💪 You refused to lower the Mahr. His mother is unhappy, but ' + s.marriage.partner.name + ' respects you more for it.');
+            fx({ happiness: 3 });
+          }
+        },
+        { label: '🤝 Compromise — lower it 20%', effect: function(s) {
+            s.marriage.engagement.mahrAdvancedPct = 0.4;
+            s.marriage.motherInLawBond = Math.min(100, s.marriage.motherInLawBond + 10);
+            log('🤝 You accepted a compromise. His mother is pleased, but you will receive less in the Mahr.');
+          }
+        },
+        { label: '😔 Lower it substantially to be safe', effect: function(s) {
+            s.marriage.engagement.mahrAdvancedPct = 0.2;
+            s.marriage.motherInLawBond = Math.min(100, s.marriage.motherInLawBond + 20);
+            s.marriage.partner.bond = Math.max(0, s.marriage.partner.bond - 5);
+            log('😔 You lowered the Mahr substantially. His family is relieved, but you wonder if you lost respect.');
+            fx({ happiness: -3 });
+          }
+        }
+      ]
+    };
+    S.evId = 'mahr_negotiation_' + gameYear();
+    render();
+    return ''; // Skip normal rendering until negotiation is resolved
+  }
 
   if (typeof e.payer === 'undefined') {
     e.payer = isTraditionalWoman ? 'partner' : 'self';
@@ -1168,9 +1199,15 @@ window.marStartSalonat = function() {
     log('You must be single to meet a Salonat prospect.'); render(); return;
   }
 
-  const meetCost = marEGP(2000);
-  if (S.wealth < meetCost) { log('Not enough cash for the family gathering (' + money(meetCost) + ').'); render(); return; }
-  S.wealth -= meetCost;
+  const isTraditionalWoman = marIsTraditionalWoman();
+  
+  // Women in traditional cultures do not pay for the Salonat; the man's family hosts it.
+  const meetCost = isTraditionalWoman ? 0 : marEGP(2000);
+  
+  if (meetCost > 0 && S.wealth < meetCost) { 
+    log('Not enough cash for the family gathering (' + money(meetCost) + ').'); render(); return; 
+  }
+  if (meetCost > 0) S.wealth -= meetCost;
 
   const tier = S.familyTier || 'middle';
   let wealthLevel = 'middle';
@@ -1196,9 +1233,12 @@ window.marStartSalonat = function() {
   const houseType = wealthLevel === 'elite' ? 'mansion' : wealthLevel === 'working' ? 'small_apartment' : 'nice_apartment';
   const houseValueEGP = wealthLevel === 'elite' ? 15000000 : wealthLevel === 'working' ? 1500000 : 3500000;
   
+  // FIX: If the PLAYER is male, the bride does NOT give him the house (he provides it).
+  // If the PLAYER is female, the male prospect MIGHT give her the house.
   let giveHouseToBride = false;
-  if (gender === 'm' && Math.random() < (wealthLevel === 'elite' ? 0.4 : 0.2)) giveHouseToBride = true; 
-  else if (gender === 'f' && Math.random() < 0.5) giveHouseToBride = true;
+  if (gender === 'm' && Math.random() < (wealthLevel === 'elite' ? 0.4 : 0.2)) {
+    giveHouseToBride = true; // He puts it in her (the player's) name
+  }
 
   const traits = marRollTraits();
   
@@ -1217,7 +1257,6 @@ window.marStartSalonat = function() {
   m.tab = 'find';
   render();
 };
-
 window.marCheckTrousseau = function() {
   const m = S.marriage;
   if (m.status !== 'engaged') return;
@@ -1494,26 +1533,31 @@ window.marDoActivity = function(activityId) {
   const act = (MARRIAGE_RELATIONSHIP_ACTIVITIES || []).find(function(a) { return a.id === activityId; });
   if (!act) return;
   const cost = marEGP(act.costEGP);
+  
   if (m.status !== 'dating' && m.status !== 'engaged' && m.status !== 'married') {
     log('This activity is not available at the current relationship stage.'); render(); return;
   }
 
-  let playerPays = true;
-  
+  // --- DATING FINANCE LOGIC ---
   if (m.status === 'dating' || m.status === 'engaged') {
     if (marIsTraditionalWoman()) {
-      playerPays = false;
-    } else if (S.gender === 'f' && !marIsTraditionalWoman()) {
-      playerPays = true;
+      // Traditional culture: Man pays. If the player is the man, deduct wealth.
+      // If the player is the woman, he pays (no wealth deduction).
+      if (S.gender === 'm') {
+        if (S.wealth < cost) { log('Not enough cash for ' + act.label + ' (' + money(cost) + ').'); render(); return; }
+        S.wealth -= cost;
+      } else {
+        log('💸 ' + p.name + ' paid for ' + act.label + '.');
+      }
+    } else {
+      // Modern culture: Split 50/50
       const halfCost = Math.round(cost * 0.5);
       if (S.wealth < halfCost) { log('Not enough cash for your share (' + money(halfCost) + ').'); render(); return; }
       S.wealth -= halfCost;
-    } else {
-      if (S.wealth < cost) { log('Not enough cash for ' + act.label + ' (' + money(cost) + ').'); render(); return; }
-      S.wealth -= cost;
     }
   } else {
-    if (S.wealth < cost) { log('Not enough cash for ' + act.label + ' (' + money(cost) + ').'); render(); return; }
+    // Married - shared finances
+    if (S.wealth < cost) { log('Not enough cash (' + money(cost) + ').'); render(); return; }
     S.wealth -= cost;
   }
 
@@ -1542,6 +1586,7 @@ window.marDoActivity = function(activityId) {
   } else if (count >= 3) {
     message = 'You enjoyed time together, though repeating the same activity is becoming less special.';
   }
+  
   if (marHasTrait(p, 'frugal') || marHasTrait(p, 'financially_cautious')) {
     if (cost === 0 || activityId === 'walk' || activityId === 'financial_talk') trustChange += 1;
     if (cost > marEGP(5000)) trustChange -= 1;
@@ -1650,11 +1695,11 @@ window.marPremaritalTalk = function(topicId) {
 
       const partnerInitiationChance = marClamp(baseChance, 0.12, 0.90);
       
-      if (Math.random() < partnerInitiationChance) {
+            if (Math.random() < partnerInitiationChance) {
         p.partnerProposalOffered = true;
-        p.pendingPartnerProposal = { year: gameYear(), kind: 'engagement' };
         marRecordMemory('partner_proposal', p.name + ' decided to ask whether you would like to become engaged.', 5);
-        log('💍 ' + p.name + ' has something important to ask. Open the Plan tab to respond to their proposal.');
+        marTriggerProposalEvent(p);
+      }
       }
     }
   render();
@@ -1743,7 +1788,151 @@ window.marRespondToPartnerProposal = function(choice) {
   }
   render();
 };
-
+/* Trigger a popup when the partner proposes */
+window.marTriggerProposalEvent = function(p) {
+  const m = S.marriage;
+  const isTraditional = marIsTraditionalWoman();
+  
+  if (isTraditional) {
+    // In traditional cultures, he asks the father first
+    S.pending = {
+      title: '💍 A Proposal from ' + p.name,
+      text: p.name + ' and his family have formally approached your father to ask for your hand in marriage.\n\nYour father has reviewed his financials, background, and reputation. He gives his blessing and asks for your decision.',
+      choices: [
+        { label: '✅ Accept the proposal', effect: function(s) {
+            s.marriage.partner = p;
+            s.marriage.status = 'engaged';
+            s.marriage.engagement = {
+              proposal: 'family', shabkaTier: 'standard', mahrTier: 'standard',
+              partyTier: 'nice_hall', payer: 'partner', finalized: false
+            };
+            s.marriage.pendingPartnerProposal = null;
+            log('💍 You accepted ' + p.name + '’s proposal! Your families are arranging the engagement.');
+            fx({ happiness: 25 });
+          }
+        },
+        { label: '⏳ Ask for more time', effect: function(s) {
+            s.marriage.pendingPartnerProposal = null;
+            p.trust = Math.max(0, p.trust - 2);
+            log('💬 You asked ' + p.name + ' for more time. He respected your decision, but his family is anxious.');
+            fx({ happiness: -2 });
+          }
+        },
+        { label: '❌ Refuse the proposal', effect: function(s) {
+            s.marriage.partner = null;
+            s.marriage.status = 'single';
+            s.marriage.pendingPartnerProposal = null;
+            log('💔 You refused the proposal from ' + p.name + '. The families are disappointed.');
+            fx({ happiness: -10 });
+          }
+        }
+      ]
+    };
+  } else {
+    // Modern cultures, he proposes directly
+    S.pending = {
+      title: '💍 ' + p.name + ' Proposed!',
+      text: p.name + ' got down on one knee and asked you to marry him.',
+      choices: [
+        { label: '✅ Say YES!', effect: function(s) {
+            s.marriage.partner = p;
+            s.marriage.status = 'engaged';
+            s.marriage.engagement = {
+              proposal: 'personal', shabkaTier: 'standard', mahrTier: 'standard',
+              partyTier: 'nice_hall', payer: 'split', finalized: false
+            };
+            s.marriage.pendingPartnerProposal = null;
+            log('💍 You said YES! You are engaged.');
+            fx({ happiness: 25 });
+          }
+        },
+        { label: '⏳ Ask for more time', effect: function(s) {
+            s.marriage.pendingPartnerProposal = null;
+            log('💬 You asked for more time. ' + p.name + ' is a bit hurt but agrees.');
+            fx({ happiness: -2 });
+          }
+        },
+        { label: '❌ Refuse', effect: function(s) {
+            s.marriage.partner = null;
+            s.marriage.status = 'single';
+            s.marriage.pendingPartnerProposal = null;
+            log('💔 You refused ' + p.name + '’s proposal.');
+            fx({ happiness: -10 });
+          }
+        }
+      ]
+    };
+  }
+  S.evId = 'proposal_event_' + gameYear();
+  render();
+};
+/* ============================================================
+   SHABKA GOLD SOUK TRIP
+   ============================================================ */
+window.marShabkaGoldSoukTrip = function() {
+  const m = S.marriage;
+  const p = m.partner;
+  if (!p || m.status !== 'engaged') return;
+  
+  S.pending = {
+    title: '🪙 The Gold Souk',
+    text: 'You and your mother visit the gold souk to pick your Shabka with ' + p.name + ' and his family.\n\nThe jeweler displays three beautiful sets. ' + p.name + ' watches your reaction nervously.',
+    choices: [
+      { label: '💍 Classic Set (25g) — ' + money(marEGP(120000)), effect: function(s) {
+          if (!s.expat) s.expat = { goldStash: [] };
+          if (!Array.isArray(s.expat.goldStash)) s.expat.goldStash = [];
+          s.expat.goldStash.push({
+            id: 'gold_shabka_' + Math.random().toString(36).slice(2, 6),
+            karat: '21K', grams: 25, buyPricePerGram: 4500, buyLocal: marEGP(120000),
+            buyYear: gameYear(), buyCountry: s.country
+          });
+          s.marriage.motherInLawBond = Math.min(100, s.marriage.motherInLawBond + 5);
+          log('💍 You picked the classic set. His mother seems relieved.');
+          fx({ happiness: 10 });
+        }
+      },
+      { label: '👑 Luxury Set (80g) — ' + money(marEGP(450000)), effect: function(s) {
+          if (s.wealth >= marEGP(450000) || s.marriage.engagement.payer === 'partner') {
+            if (!s.expat) s.expat = { goldStash: [] };
+            if (!Array.isArray(s.expat.goldStash)) s.expat.goldStash = [];
+            s.expat.goldStash.push({
+              id: 'gold_shabka_' + Math.random().toString(36).slice(2, 6),
+              karat: '21K', grams: 80, buyPricePerGram: 4500, buyLocal: marEGP(450000),
+              buyYear: gameYear(), buyCountry: s.country
+            });
+            // If player is woman, this can strain the relationship
+            if (marIsTraditionalWoman()) {
+              s.marriage.motherInLawBond = Math.max(0, s.marriage.motherInLawBond - 10);
+              log('👑 You picked the luxury set. His mother\'s smile stiffened. She will remember this.');
+            } else {
+              log('👑 Luxury set chosen.');
+            }
+            fx({ happiness: 20 });
+          } else {
+            log('❌ They cannot afford this set.');
+          }
+        }
+      },
+      { label: '💛 Modest Set (8g) — ' + money(marEGP(40000)), effect: function(s) {
+          if (!s.expat) s.expat = { goldStash: [] };
+          if (!Array.isArray(s.expat.goldStash)) s.expat.goldStash = [];
+          s.expat.goldStash.push({
+            id: 'gold_shabka_' + Math.random().toString(36).slice(2, 6),
+            karat: '21K', grams: 8, buyPricePerGram: 4500, buyLocal: marEGP(40000),
+            buyYear: gameYear(), buyCountry: s.country
+          });
+          // Choosing modest shows maturity
+          s.marriage.motherInLawBond = Math.min(100, s.marriage.motherInLawBond + 15);
+          p.bond = Math.min(100, p.bond + 10);
+          log('💛 You picked the modest set out of respect. His mother is touched by your thoughtfulness. +15 Mother-in-law bond.');
+          fx({ happiness: 12 });
+        }
+      }
+    ]
+  };
+  S.evId = 'shabka_souk_' + gameYear();
+  render();
+};
 window.marAskExclusive = function() {
   ensureMarriageState();
   const m = S.marriage;
@@ -1929,6 +2118,21 @@ window.marFinalizeEngagement = function() {
 
   if (S.wealth < playerTotal) { log('Not enough cash.'); render(); return; }
   S.wealth -= playerTotal;
+     // If the PLAYER is the woman in a traditional culture, she receives the gold
+  if (marIsTraditionalWoman() && e.payer === 'partner') {
+    if (!S.expat) S.expat = { goldStash: [] };
+    if (!Array.isArray(S.expat.goldStash)) S.expat.goldStash = [];
+    S.expat.goldStash.push({
+      id: 'gold_shabka_' + Math.random().toString(36).slice(2, 6),
+      karat: '21K',
+      grams: shabka.grams || 25,
+      buyPricePerGram: 4500,
+      buyLocal: 0,
+      buyYear: gameYear(),
+      buyCountry: S.country
+    });
+    log('🪙 You received your Shabka: ' + (shabka.grams || 25) + 'g of 21K gold.');
+  }
 
   m.mahrAdvanced = marEGP(mahrAdvCost);
   m.mahrDeferred = marEGP(mahrDefCost);
@@ -1953,6 +2157,11 @@ window.marFinalizeEngagement = function() {
   if (typeof MARRIAGE_ENGAGEMENT_EVENTS !== 'undefined') {
     const ev = MARRIAGE_ENGAGEMENT_EVENTS[Math.floor(Math.random() * MARRIAGE_ENGAGEMENT_EVENTS.length)];
     log('📖 ' + ev.title + ': ' + ev.text);
+  }
+     /* Traditional women go to the gold souk to pick their Shabka */
+  if (marIsTraditionalWoman() && m.partner && m.status === 'engaged') {
+    setTimeout(function() { marShabkaGoldSoukTrip(); }, 100);
+    return;
   }
   render();
 };
@@ -2038,6 +2247,43 @@ window.marConfirmWedding = function() {
     const hasItem = S.shopping.inventory.some(i => i.homeId === h.id && i.cat === item.cat && (!item.subcat || i.subcat === item.subcat));
     if (!hasItem) missing.push(item.label);
   });
+     /* Mother-in-law pre-wedding drama (traditional only) */
+  if (marIsTraditionalWoman() && m.motherInLawBond < 35 && !m.weddingDramaTriggered) {
+    m.weddingDramaTriggered = true;
+    S.pending = {
+      title: '👵 Wedding Day Drama',
+      text: 'The morning of the wedding, ' + m.partner.name + '’s mother arrives at your home.\n\n"My son deserves a bride who listens to her elders. I have changed the seating arrangement — your family will now sit at the back."',
+      choices: [
+        { label: '🔥 "You will NOT disrespect my family."', effect: function(s) {
+            s.marriage.motherInLawBond = Math.max(0, s.marriage.motherInLawBond - 25);
+            s.marriage.partner.bond = Math.min(100, s.marriage.partner.bond + 8);
+            log('🔥 You stood your ground. His mother was stunned. Your husband quietly thanked you.');
+            fx({ happiness: 5 });
+          }
+        },
+        { label: '😔 Give in to keep the peace', effect: function(s) {
+            s.marriage.motherInLawBond = Math.min(100, s.marriage.motherInLawBond + 10);
+            (s.family || []).forEach(function(m) { if (m.alive !== false) m.bond = Math.max(0, m.bond - 15); });
+            log('😔 Your family was seated at the back. They were hurt, but the wedding proceeded.');
+            fx({ happiness: -8 });
+          }
+        },
+        { label: '📞 Call your father to intervene', effect: function(s) {
+            if (S.gender === 'f') {
+              log('📞 Your father called his family. A tense negotiation followed, and a compromise was reached.');
+              s.marriage.motherInLawBond = Math.max(0, s.marriage.motherInLawBond - 5);
+              fx({ happiness: 3 });
+            } else {
+              log('You don\'t have a father to call in this scenario.');
+            }
+          }
+        }
+      ]
+    };
+    S.evId = 'wedding_drama_' + gameYear();
+    render();
+    return; // Wait for resolution
+  }
 
   if (missing.length > 0) {
     log(`🚨 The wedding is cancelled! The home is missing: ${missing.join(', ')}. Complete the Gehaz first.`);
@@ -2094,8 +2340,37 @@ window.marConfirmWedding = function() {
   marUnlockAchievement('financial_planners');
   marReachMilestone('marriage');
 
-  if (typeof MARRIAGE_WEDDING_EVENTS !== 'undefined') {
-    const ev = MARRIAGE_WEDDING_EVENTS[Math.floor(Math.random() * MARRIAGE_WEDDING_EVENTS.length)];
+  /* Trigger a wedding-day popup event */
+  const weddingEventChoices = {
+    vendor_late: [
+      { label: '😌 Wait calmly (guest patience +)', effect: function(s) { log('You waited calmly. Guests appreciated your grace.'); s.marriage.partner.bond = Math.min(100, s.marriage.partner.bond + 3); } },
+      { label: '😤 Demand refund from vendor', effect: function(s) { s.wealth += marEGP(5000); log('You demanded a partial refund. Vendor refunded you ' + money(marEGP(5000)) + '.'); } }
+    ],
+    weather_change: [
+      { label: '🌧 Improvise — guests dance in the rain', effect: function(s) { log('Everyone danced in the rain. It became the most memorable wedding moment.'); s.marriage.partner.bond = Math.min(100, s.marriage.partner.bond + 8); fx({ happiness: 10 }); } },
+      { label: '💸 Pay for emergency tent — ' + money(marEGP(15000)), effect: function(s) { if (s.wealth >= marEGP(15000)) { s.wealth -= marEGP(15000); log('You paid for an emergency tent. Guests stayed dry.'); } else { log('❌ Could not afford it. Wedding soaked.'); fx({ happiness: -5 }); } } }
+    ],
+    guest_conflict: [
+      { label: '🕊 Calmly separate them', effect: function(s) { log('You calmed the argument. Guests praised your maturity.'); fx({ happiness: 5 }); } },
+      { label: '🚪 Ask them both to leave', effect: function(s) { log('You asked them to leave. It caused a stir but ended the drama.'); fx({ happiness: 2 }); s.marriage.partner.bond = Math.max(0, s.marriage.partner.bond - 3); } }
+    ],
+    budget_surprise: [
+      { label: '💸 Pay the extra ' + money(marEGP(3000)), effect: function(s) { if (s.wealth >= marEGP(3000)) { s.wealth -= marEGP(3000); log('You paid. Keep the celebration going.'); } else log('❌ Cannot afford.'); } },
+      { label: '❌ Decline the extra service', effect: function(s) { log('You declined. The wedding continued without it.'); } }
+    ]
+  };
+
+  const ev = MARRIAGE_WEDDING_EVENTS[Math.floor(Math.random() * MARRIAGE_WEDDING_EVENTS.length)];
+  if (ev.choice && weddingEventChoices[ev.id]) {
+    S.pending = {
+      title: '💒 ' + ev.title,
+      text: ev.text,
+      choices: weddingEventChoices[ev.id]
+    };
+    S.evId = 'wedding_day_' + ev.id + '_' + gameYear();
+    render();
+    return;
+  } else {
     log('💒 ' + ev.title + ': ' + ev.text);
   }
 
@@ -2175,8 +2450,25 @@ window.marTryForBaby = function() {
   if (Math.random() < chance) {
     S.pregnantMonths = 1;
     S.marriage.partner.bond = Math.min(100, S.marriage.partner.bond + 10);
-    log('🎉 You and ' + S.marriage.partner.name + ' are expecting a baby!');
-    fx({ happiness: 20 });
+    S.pending = {
+      title: '🎉 You\'re Pregnant!',
+      text: 'You and ' + S.marriage.partner.name + ' just found out — you are expecting a baby!\n\nHe hugged you tightly, eyes shining. The news is spreading to family.',
+      choices: [
+        { label: '💐 Share the news with both families', effect: function(s) {
+            (s.family || []).forEach(function(m) { if (m.alive !== false) m.bond = Math.min(100, m.bond + 10); });
+            s.marriage.motherInLawBond = Math.min(100, s.marriage.motherInLawBond + 10);
+            log('💐 Both families rejoiced. Gifts and congratulations poured in.');
+            fx({ happiness: 15, social: 10 });
+          }
+        },
+        { label: '🤫 Keep it private for now', effect: function(s) {
+            log('🤫 You kept it just between you and ' + s.marriage.partner.name + ' for a few weeks.');
+            fx({ happiness: 8 });
+          }
+        }
+      ]
+    };
+    S.evId = 'pregnancy_announce_' + gameYear();
   } else {
     log('Not this month. Try again later.');
     fx({ happiness: -2 });
@@ -2215,7 +2507,52 @@ window.marResolveConflict = function(mode) {
   m.pendingConflict = null;
   render();
 };
-
+window.marCheatingDiscovery = function() {
+  const m = S.marriage;
+  const p = m.partner;
+  if (!p) return;
+  
+  S.pending = {
+    title: '💔 You Found Out',
+    text: 'You discover messages on ' + p.name + '’s phone. He has been seeing someone else. When you confront him, he breaks down.\n\nHe says it was "a moment of weakness" and begs you not to leave.',
+    choices: [
+      { label: '💪 Forgive him — a second chance', effect: function(s) {
+          p.bond = Math.max(0, p.bond - 15);
+          p.trust = Math.max(0, p.trust - 30);
+          p.cheatedBefore = true;
+          log('💪 You forgave him. But the trust will take years to rebuild.');
+          fx({ happiness: -15 });
+        }
+      },
+      { label: '💔 Demand a divorce', effect: function(s) {
+          log('💔 You walked out. His betrayal was unforgivable.');
+          fx({ happiness: -20 });
+          // Trigger divorce flow
+          s.marriage.partner = null;
+          s.marriage.status = 'divorced';
+          s.marriage.wedding = null;
+          s.marriage.engagement = null;
+          s.marriage.financeModel = null;
+          s.marriage.sharedAccountBalance = 0;
+          s.marriage.home = null;
+          s.spouse = null;
+          s.marriage.exSpouses.push({
+            name: p.name, marriedYear: p.marriedYear || gameYear(), divorcedYear: gameYear(),
+            reason: 'Cheating', childSupportAnnual: 0, custody: null, remarried: false
+          });
+        }
+      },
+      { label: '😶 Stay silent, say nothing', effect: function(s) {
+          p.bond = Math.max(0, p.bond - 5);
+          log('😶 You stayed silent. The question hangs in the air between you.');
+          fx({ happiness: -10 });
+        }
+      }
+    ]
+  };
+  S.evId = 'cheating_' + gameYear();
+  render();
+};
 window.marSeparationOption = function(optionId) {
   const opt = MARRIAGE_SEPARATION_OPTIONS.find(function(x) { return x.id === optionId; });
   if (!opt) return;
@@ -2244,22 +2581,31 @@ window.marAskForDivorce = function() {
   let childSupportAnnual = 0;
   let custody = null;
 
+  // Alimony/Settlement Logic
   if (law.assetSplit === '50_50' && (!S.marriage.prenup || S.marriage.prenup.type !== 'Comprehensive Financial Agreement')) {
     settlement = Math.floor(S.wealth * 0.5);
   }
+  // Only men pay alimony in this traditional sim, but in Western countries, it should be income based. 
+  // Keeping it traditional for now, but fixing the custody bug below.
   if (S.job && law.alimonyYears > 0 && S.gender === 'm') {
     const years = typeof law.alimonyYears === 'number' ? law.alimonyYears : 1;
     settlement += Math.round(S.job.salary * 0.15 * years);
   }
 
   const children = S.childrenList || [];
+  const playerGetsCustody = S.gender === 'f' || law.custody === 'joint'; // Female or joint = you get custody
+  
   if (children.length > 0) {
-    if (S.job) childSupportAnnual = Math.round(S.job.salary * law.childSupportPct * children.length);
     custody = S.gender === 'f' ? 'You have primary custody' : (law.custody === 'joint' ? 'Joint custody' : 'She has primary custody');
+    
+    // FIX: Only calculate child support if the PARTNER gets custody (or joint, in which case neither pays the other)
+    if (!playerGetsCustody && p.income) {
+      childSupportAnnual = Math.round(p.income * law.childSupportPct * children.length);
+    }
   }
 
   const totalCost = courtFee + settlement;
-  if (!confirm('Divorce under ' + law.label + ':\n\nCourt fee: ' + money(courtFee) + '\nSettlement: ' + money(settlement) + '\nChild support: ' + (childSupportAnnual > 0 ? money(childSupportAnnual) + '/yr' : 'None') + '\nCustody: ' + (custody || 'N/A') + '\n\nTotal upfront: ' + money(totalCost) + '\n\nProceed?')) return;
+  if (!confirm('Divorce under ' + law.label + ':\n\nCourt fee: ' + money(courtFee) + '\nSettlement: ' + money(settlement) + '\nChild support: ' + (childSupportAnnual > 0 ? money(childSupportAnnual) + '/yr (You receive)' : 'None') + '\nCustody: ' + (custody || 'N/A') + '\n\nTotal upfront: ' + money(totalCost) + '\n\nProceed?')) return;
 
   if (S.wealth < totalCost) { log('Not enough for divorce (' + money(totalCost) + ').'); render(); return; }
   S.wealth -= totalCost;
@@ -2288,7 +2634,6 @@ window.marAskForDivorce = function() {
   fx({ happiness: -25 });
   render();
 };
-
 window.marCancelEngagement = function() {
   if (!S.marriage.partner) return;
   if (!confirm('Cancel engagement with ' + S.marriage.partner.name + '?')) return;
@@ -2336,11 +2681,39 @@ GameHooks.on('year', function() {
   if (m.status === 'dating' && Math.random() < 0.30) {
     marFamilyIntervention();
   }
-  if (m.childcare) {
-    const cc = (MARRIAGE_CHILDCARE_OPTIONS || []).find(function(x) { return x.id === m.childcare; });
-    if (cc) {
-      const yearly = marEGP(cc.monthlyCostEGP * 12);
-      if (S.wealth >= yearly) S.wealth -= yearly;
+     /* Traditional women wait to be proposed to. If ready, the man may propose. */
+  if (m.status === 'dating' && marIsTraditionalWoman() && p.bond >= 65 && p.trust >= 60 && p.commitmentTalks >= 1 && !p.pendingPartnerProposal) {
+    if (Math.random() < 0.20) {
+      marTriggerProposalEvent(p);
+      return; // Stop other events this year, the popup needs resolving
+    }
+  }
+     /* Cheating discovery (when trust is low and traits match) */
+  if (m.status === 'married' && !S.pending && p.trust < 40 && Math.random() < 0.10) {
+    if (marHasTrait(p, 'jealous') || marHasTrait(p, 'impulsive') || marHasTrait(p, 'moody')) {
+      marCheatingDiscovery();
+      return;
+    }
+  }
+  i  /* Child support from exes */
+  m.exSpouses.forEach(function(ex) {
+    if (ex.childSupportAnnual > 0) {
+      const annual = ex.childSupportAnnual;
+      // If the player is the mother (female), she RECEIVES child support from the father
+      if (S.gender === 'f') {
+        S.wealth += annual;
+        log('💸 Received child support from ' + ex.name + ': +' + money(annual) + '.');
+      } else {
+        // If the player is the father (male), he PAYS child support
+        if (S.wealth >= annual) {
+          S.wealth -= annual;
+          log('💸 Child support paid to ' + ex.name + ': -' + money(annual) + '.');
+        } else {
+          log('⚠️ Could not pay child support to ' + ex.name + '.');
+        }
+      }
+    }
+  });
     }
   }
 
@@ -2392,7 +2765,20 @@ GameHooks.on('year', function() {
     fx({ happiness: -25 });
     return;
   }
-
+  /* Polygamy threat (traditional cultures only, after 3+ years married) */
+  if (m.status === 'married' && marIsTraditionalWoman() && p.marriedYear && (gameYear() - p.marriedYear) >= 3) {
+    if (!m.pendingSecondWife && m.motherInLawBond < 40 && Math.random() < 0.08) {
+      marPolygamyThreat();
+      return;
+    }
+  }
+  /* Partner's ex reappears (rare drama) */
+  if (m.status === 'married' && !S.pending && p.trust < 70 && Math.random() < 0.05) {
+    const exNames = ['Layla', 'Sara', 'Nadia', 'Dina', 'Rania', 'Mona', 'Huda', 'Yasmin'];
+    const exName = exNames[Math.floor(Math.random() * exNames.length)];
+    marExAppears(exName);
+    return;
+  }
   if (m.status === 'married' && p.marriedYear) {
     const years = gameYear() - p.marriedYear;
     if (years >= 1) marReachMilestone('first_anniversary');
@@ -2416,7 +2802,96 @@ GameHooks.on('year', function() {
     }
   });
 });
-
+window.marExAppears = function(exName) {
+  const m = S.marriage;
+  const p = m.partner;
+  if (!p) return;
+  
+  S.pending = {
+    title: '💔 His Ex Reappears',
+    text: exName + ', ' + p.name + '’s ex, suddenly texts him asking to "just talk". He shows you the message, waiting for your reaction.',
+    choices: [
+      { label: '😌 Trust him — "Do what you think is right"', effect: function(s) {
+          if (marHasTrait(p, 'loyal')) {
+            p.bond = Math.min(100, p.bond + 15);
+            p.trust = Math.min(100, p.trust + 10);
+            log('💚 ' + p.name + ' appreciated your trust. He replied with a polite "no." Your bond grew stronger.');
+            fx({ happiness: 10 });
+          } else {
+            p.bond = Math.min(100, p.bond + 5);
+            log('You gave him space. He handled it well, but a small doubt lingers.');
+            fx({ happiness: 2 });
+          }
+        }
+      },
+      { label: '🚫 Demand he block her number', effect: function(s) {
+          if (marHasTrait(p, 'independent') || marHasTrait(p, 'stubborn')) {
+            p.bond = Math.max(0, p.bond - 15);
+            p.trust = Math.max(0, p.trust - 5);
+            log('😤 ' + p.name + ' was annoyed. "You don\'t control me." He blocked her but the argument lingers.');
+            fx({ happiness: -8 });
+          } else {
+            p.bond = Math.min(100, p.bond + 5);
+            log('He blocked her number to reassure you. He seemed a bit surprised at the request.');
+            fx({ happiness: 3 });
+          }
+        }
+      },
+      { label: '😤 Ask him why she still has his number', effect: function(s) {
+          p.bond = Math.max(0, p.bond - 10);
+          log('😞 The argument escalated. He feels you don\'t trust him. Bond -10.');
+          fx({ happiness: -5 });
+        }
+      }
+    ]
+  };
+  S.evId = 'ex_appears_' + gameYear();
+  render();
+};
+window.marPolygamyThreat = function() {
+  const m = S.marriage;
+  const p = m.partner;
+  if (!p || m.status !== 'married') return;
+  
+  S.pending = {
+    title: '💍 A Difficult Conversation',
+    text: 'Your husband ' + p.name + ' sits you down nervously.\n\n"My mother has been pressuring me to consider a second wife. She says it would help our family status. I don\'t want this — but I need to know what you think."',
+    choices: [
+      { label: '💪 "If you marry again, I\'m gone."', effect: function(s) {
+          if (marHasTrait(p, 'protector') || marHasTrait(p, 'loyal')) {
+            p.bond = Math.min(100, p.bond + 20);
+            log('💪 He hugged you. "Then it will never happen." His respect for you deepened.');
+            s.marriage.motherInLawBond = Math.max(0, s.marriage.motherInLawBond - 20);
+            fx({ happiness: 8 });
+          } else {
+            p.bond = Math.max(0, p.bond - 20);
+            log('😔 He went quiet. You are not sure where this is going.');
+            fx({ happiness: -10 });
+          }
+        }
+      },
+      { label: '🤝 "It\'s your choice, but I\'ll be hurt."', effect: function(s) {
+          if (marHasTrait(p, 'traditional') || marHasTrait(p, 'family_oriented')) {
+            p.bond = Math.max(0, p.bond - 10);
+            s.marriage.pendingSecondWife = true;
+            log('😞 He nodded slowly. Something has changed between you.');
+          } else {
+            p.bond = Math.min(100, p.bond + 5);
+            log('He promised to resist his mother\'s pressure.');
+          }
+        }
+      },
+      { label: '😢 Say nothing, look away', effect: function(s) {
+          p.bond = Math.max(0, p.bond - 15);
+          log('The silence said enough. He walked away.');
+          fx({ happiness: -8 });
+        }
+      }
+    ]
+  };
+  S.evId = 'polygamy_threat_' + gameYear();
+  render();
+};
 function marFireYearEvent(evt) {
   const p = S.marriage.partner;
   if (!p) return;
@@ -2430,8 +2905,34 @@ function marFireYearEvent(evt) {
     p.bond = Math.max(0, p.bond - 5);
   } else if (evt.id === 'anniversary') {
     log('💍 It is your anniversary with ' + p.name + '. Consider a gift or date.');
-  } else if (evt.id === 'inlaws_visit') {
-    log('👵 Your in-laws are visiting. Bond and money matter this week.');
+    } else if (evt.id === 'inlaws_visit') {
+    S.pending = {
+      title: '👵 In-Laws Visit',
+      text: 'Your mother-in-law announces she is coming to stay with you for a week. She has opinions about everything.',
+      choices: [
+        { label: '🏠 Host her graciously', effect: function(s) {
+            s.marriage.motherInLawBond = Math.min(100, s.marriage.motherInLawBond + 15);
+            s.wealth -= marEGP(3000);
+            log('👵 You hosted her with patience. She was impressed by your hospitality. Bond +15, but you spent ' + money(marEGP(3000)) + '.');
+            fx({ happiness: -2 });
+          }
+        },
+        { label: '😤 Push back on her comments', effect: function(s) {
+            s.marriage.motherInLawBond = Math.max(0, s.marriage.motherInLawBond - 20);
+            p.bond = Math.min(100, p.bond + 5);
+            log('😤 You pushed back on her criticism. Your husband was secretly proud, but his mother is furious.');
+            fx({ happiness: 3 });
+          }
+        },
+        { label: '🤐 Stay silent, keep the peace', effect: function(s) {
+            s.marriage.motherInLawBond = Math.min(100, s.marriage.motherInLawBond + 5);
+            fx({ happiness: -5 });
+            log('🤐 You bit your tongue. The week was exhausting but peaceful.');
+          }
+        }
+      ]
+    };
+    S.evId = 'inlaws_visit_' + gameYear();
   } else if (evt.id === 'partner_bond_warning') {
     log('💬 ' + p.name + ' seems distant. Spend time together.');
   } else if (evt.id === 'partner_wants_gift') {
