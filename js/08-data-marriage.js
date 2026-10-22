@@ -410,6 +410,45 @@ const MARRIAGE_PARTNER_TRAITS = {
     bondPerYear: 2,
     happinessMod: 2,
     desc: 'Can discuss difficult subjects without turning everything into a fight.'
+  },
+  shy: {
+    label: 'Shy',
+    bondPerYear: 0,
+    happinessMod: 1,
+    prefersPrivateMoments: true,
+    desc: 'Feels most comfortable with gentle, private, low-pressure interactions.'
+  },
+  outgoing: {
+    label: 'Outgoing',
+    bondPerYear: 1,
+    happinessMod: 2,
+    prefersSocialEvents: true,
+    desc: 'Enjoys meeting people and sharing important moments with others.'
+  },
+  private: {
+    label: 'Values Privacy',
+    bondPerYear: 0,
+    happinessMod: 1,
+    prefersPrivateMoments: true,
+    desc: 'Prefers personal matters and major romantic moments to stay private.'
+  },
+  sentimental: {
+    label: 'Sentimental',
+    bondPerYear: 1,
+    happinessMod: 2,
+    desc: 'Remembers meaningful moments and values personal details.'
+  },
+  financially_cautious: {
+    label: 'Financially Cautious',
+    bondPerYear: 0,
+    savingsMult: 1.1,
+    desc: 'Prefers an affordable plan and wants major expenses discussed in advance.'
+  },
+  confident: {
+    label: 'Confident',
+    bondPerYear: 1,
+    happinessMod: 1,
+    desc: 'Communicates preferences directly and is comfortable discussing commitment.'
   }
 };
 
@@ -705,7 +744,6 @@ const MARRIAGE_COUNTRY_PROFILES = {
 
 /* ============================================================
    5. SHABKA — BRIDE'S GOLD / JEWELLERY
-   Base amounts are EGP game-balancing values.
    ============================================================ */
 
 const MARRIAGE_SHABKA_TIERS = [
@@ -757,6 +795,8 @@ window.MARRIAGE_COUNTRY_MULT = {
   egy: 1.0, sau: 2.0, uae: 2.0,
   usa: 15.0, gbr: 10.0, deu: 8.0, can: 12.0, aus: 12.0, nld: 8.0, fra: 8.0, jpn: 8.0, ita: 6.0
 };
+
+
 /* ============================================================
    6. MAHR / DEFERRED DOWRY
    ============================================================ */
@@ -1727,6 +1767,97 @@ const MARRIAGE_RELATIONSHIP_ACTIVITIES = [
 
 
 /* ============================================================
+   22B. PRE-MARITAL CONVERSATIONS
+   ============================================================
+   These conversations are used only during dating and engagement.
+   They help the player learn compatibility before the wedding.
+   ============================================================ */
+
+const MARRIAGE_PREMARITAL_CONVERSATIONS = [
+  {
+    id: 'daily_life',
+    label: 'Ask About Their Life',
+    question: 'Ask what has been happening in their life lately.',
+    bond: 2, trust: 2, communication: 4, compatibility: 1,
+    topic: 'daily life',
+    desc: 'A low-pressure conversation that helps you get to know them.'
+  },
+  {
+    id: 'interests',
+    label: 'Talk About Interests',
+    question: 'Discuss hobbies, favourite activities, and what you enjoy doing together.',
+    bond: 3, trust: 1, communication: 2, compatibility: 4,
+    topic: 'interests',
+    desc: 'Discover shared interests and possible date ideas.'
+  },
+  {
+    id: 'career',
+    label: 'Discuss Career and Education',
+    question: 'Talk about work, education, ambitions, and future opportunities.',
+    bond: 1, trust: 2, communication: 3, compatibility: 5,
+    topic: 'career',
+    desc: 'Explore how personal ambitions may fit together.'
+  },
+  {
+    id: 'finances',
+    label: 'Discuss Money and Spending',
+    question: 'Talk honestly about financial priorities, saving, and spending.',
+    bond: 0, trust: 4, communication: 3, compatibility: 5,
+    topic: 'finances',
+    desc: 'Build financial transparency before making wedding plans.'
+  },
+  {
+    id: 'family',
+    label: 'Discuss Family Expectations',
+    question: 'Ask how involved you both want your families to be.',
+    bond: 1, trust: 2, communication: 3, compatibility: 4,
+    topic: 'family',
+    desc: 'Understand family traditions and boundaries.'
+  },
+  {
+    id: 'children',
+    label: 'Discuss Future Family Plans',
+    question: 'Talk about whether you may want children someday and what timing feels right.',
+    bond: 0, trust: 2, communication: 3, compatibility: 5,
+    topic: 'children',
+    desc: 'A sensitive conversation about long-term expectations, without pressure.'
+  },
+  {
+    id: 'lifestyle',
+    label: 'Discuss Lifestyle and Independence',
+    question: 'Talk about social life, personal space, routines, and lifestyle preferences.',
+    bond: 1, trust: 2, communication: 4, compatibility: 4,
+    topic: 'lifestyle',
+    desc: 'Learn how much time together and independence each person prefers.'
+  },
+  {
+    id: 'commitment',
+    label: 'Talk About Commitment',
+    question: 'Ask how they feel about becoming exclusive and building a serious relationship.',
+    bond: 2, trust: 4, communication: 4, compatibility: 3,
+    topic: 'commitment',
+    desc: 'An important conversation before considering engagement.'
+  },
+  {
+    id: 'marriage',
+    label: 'Discuss Marriage Readiness',
+    question: 'Discuss whether marriage is something you both want and what would help you feel ready.',
+    bond: 1, trust: 5, communication: 4, compatibility: 5,
+    topic: 'marriage',
+    desc: 'Talk about readiness and timing before proposing.'
+  },
+  {
+    id: 'wedding_style',
+    label: 'Discuss Wedding Preferences',
+    question: 'Talk about wedding size, traditions, guests, and the kind of ceremony you both want.',
+    bond: 2, trust: 3, communication: 3, compatibility: 4,
+    topic: 'wedding',
+    desc: 'Useful after engagement, but also helps reveal expectations early.'
+  }
+];
+
+
+/* ============================================================
    23. CONFLICT TOPICS
    ============================================================ */
 
@@ -2604,58 +2735,52 @@ const MARRIAGE_MILESTONES = [
   }
 ];
 
+
 /* ============================================================
-   MARRIAGE SYSTEM V3 — Social Classes, Negotiation, & Gender
+   33. REALISM EXTENSIONS: EXCLUSIVITY, FAMILY & TIMELINE
    ============================================================ */
 
-/* Father's Negotiation Demands (Based on social class gap) */
-const MARRIAGE_NEGOTIATION_DEMANDS = [
-  { id: 'apartment',   label: 'A fully furnished apartment',        costEGP: 0,     tierReq: 'middle', desc: '"My daughter cannot live in a rental or with your parents. You must provide a home."' },
-  { id: 'furniture',   label: 'Furnish the apartment (50/50)',      costEGP: 40000, tierReq: 'middle', desc: '"I will pay for half the furniture, but you must cover the rest."' },
-  { id: 'gold_upgrade',label: 'Upgrade the Shabka to a heavier set',costEGP: 50000, tierReq: 'upper-mid', desc: '"This gold is too light. She deserves a heavier set for her wedding day."' },
-  { id: 'mahr_upgrade',label: 'Increase the Mahr',                  costEGP: 80000, tierReq: 'upper-mid', desc: '"The Mahr is a symbol of your commitment. It must reflect her worth."' },
-  { id: 'wedding_size',label: 'A bigger wedding venue',             costEGP: 150000,tierReq: 'wealthy', desc: '"Our family has a reputation. A small hall is not acceptable."' }
+const MARRIAGE_DIALOGUE_TOPICS = [
+  { id: 'career', label: 'Discuss Career Goals', desc: 'Talk about where you both see your careers going.', costEGP: 0, bond: 4, happy: 1,
+    compatibleTraits: ['ambitious', 'career_focused', 'supportive', 'independent'],
+    incompatibleTraits: ['lazy', 'controlling', 'avoidant'],
+    goodMemory: 'You supported their career ambitions.',
+    badMemory: 'They felt you dismissed their career goals.' },
+  { id: 'family', label: 'Talk About Family Life', desc: 'Discuss your upbringing and family expectations.', costEGP: 0, bond: 4, happy: 1,
+    compatibleTraits: ['family_oriented', 'traditional', 'patient', 'kind'],
+    incompatibleTraits: ['rebellious', 'avoidant', 'selfish'],
+    goodMemory: 'You agreed on family values and traditions.',
+    badMemory: 'You clashed over family expectations.' },
+  { id: 'finances', label: 'Discuss Financial Habits', desc: 'Talk about money, saving, and spending.', costEGP: 0, bond: 4, happy: 1,
+    compatibleTraits: ['frugal', 'mature', 'practical', 'ambitious'],
+    incompatibleTraits: ['extravagant', 'greedy', 'impulsive'],
+    goodMemory: 'You aligned on your financial goals.',
+    badMemory: 'Their spending habits worry you.' },
+  { id: 'hobbies', label: 'Explore Shared Hobbies', desc: 'Find out what you both love doing.', costEGP: 500, bond: 5, happy: 2,
+    compatibleTraits: ['funny', 'adventurous', 'homebody', 'romantic'],
+    incompatibleTraits: ['boring', 'grumpy'],
+    goodMemory: 'You discovered a shared passion.',
+    badMemory: 'You had very little in common.' }
 ];
 
-/* Cost Sharing Models for Engagement & Wedding */
-const MARRIAGE_COST_SHARING = [
-  { id: 'groom_pays',  label: 'Groom & his family pay for everything', mult: 1.0,    desc: 'Traditional Arab expectation.' },
-  { id: 'bride_pays',  label: 'Bride & her family pay for everything', mult: 1.0,    desc: 'Rare, but happens if the bride is wealthier.' },
-  { id: 'split_50',    label: 'Split 50/50',                          mult: 0.5,    desc: 'Modern, egalitarian approach.' },
-  { id: 'proportional',label: 'Split by income/wealth',               mult: 0.6,    desc: 'Whoever earns more pays more.' }
+const MARRIAGE_READINESS_TOPICS = [
+  { id: 'career', label: 'Career & Ambitions', desc: 'Are we aligned on our career paths?', bondNeeded: 50 },
+  { id: 'finances', label: 'Finances & Budget', desc: 'Do we agree on how to handle money?', bondNeeded: 50 },
+  { id: 'children', label: 'Children & Family', desc: 'Do we want the same things for our future family?', bondNeeded: 60 },
+  { id: 'location', label: 'Where to Live', desc: 'Have we agreed on where we will build our home?', bondNeeded: 60 },
+  { id: 'boundaries', label: 'Personal Boundaries', desc: 'Do we respect each other\'s space and privacy?', bondNeeded: 50 }
 ];
 
-/* New Culturally Aware Proposal Options */
-const MARRIAGE_CULTURAL_PROPOSALS = {
-  western: [
-    { id: 'w_ring', label: 'Buy an Engagement Ring', costEGP: 30000, romance: 8, desc: 'Standard Western tradition. You propose with a diamond ring.' },
-    { id: 'w_dinner', label: 'Fancy Dinner Proposal', costEGP: 5000, romance: 6, desc: 'A classic romantic setup.' },
-    { id: 'w_casual', label: 'Casual Intimate Proposal', costEGP: 0, romance: 5, desc: 'Just the two of you at home.' }
-  ],
-  arab: [
-    { id: 'a_family', label: 'Family-Attended Proposal', costEGP: 10000, romance: 3, social: 8, desc: 'Formal proposal with your parents present.' },
-    { id: 'a_private', label: 'Private Proposal', costEGP: 2000, romance: 6, social: 1, desc: 'A quiet moment before the family meeting.' },
-    { id: 'a_trip', label: 'Proposal During a Trip', costEGP: 40000, romance: 10, social: 3, desc: 'A modern, memorable proposal.' }
-  ]
-};
+const MARRIAGE_WEDDING_DAY_EVENTS = [
+  { id: 'late_vendor', title: 'Vendor is Late', text: 'The caterer is running 45 minutes late. Guests are getting hungry.', effect: 'costEGP', costEGP: 5000 },
+  { id: 'dress_rip', title: 'Wardrobe Malfunction', text: 'A seam on the attire ripped. A tailor on standby fixes it.', effect: 'costEGP', costEGP: 2000 },
+  { id: 'speech', title: 'Heartfelt Speech', text: 'Your best friend gives an amazing speech that leaves everyone in tears.', effect: 'happiness', happiness: 10 },
+  { id: 'dance', title: 'First Dance', text: 'The first dance is magical. You both feel closer than ever.', effect: 'bond', bond: 5 },
+  { id: 'weather', title: 'Bad Weather', text: 'Rain starts unexpectedly. Tents are brought out.', effect: 'costEGP', costEGP: 8000 },
+  { id: 'drama', title: 'Family Drama', text: 'Two relatives get into a heated argument at the reception.', effect: 'happiness', happiness: -5 }
+];
+
+
 /* ============================================================
    END OF EXPANDED MARRIAGE DATA
    ============================================================ */
-/* ============================================================
-   REALISM EXTENSIONS: EXCLUSIVITY & FAMILY MEETINGS
-   ============================================================ */
-
-const MARRIAGE_FAMILY_MEETING_OUTCOMES = [
-  { id: 'perfect', label: 'Perfect Match', text: 'Your family absolutely loves your partner. They think you found the one.', bond: 10, familyApproval: 0.15 },
-  { id: 'awkward', label: 'Awkward Silence', text: 'Your parents asked invasive questions about money and kids. It was tense, but survivable.', bond: -2, familyApproval: -0.05 },
-  { id: 'class_clash', label: 'Class Clash', text: 'Your family subtly judged their background and lifestyle. Your partner noticed.', bond: -8, familyApproval: -0.10 },
-  { id: 'overprotective', label: 'Overprotective Parents', text: 'Your father grilled them relentlessly. Your partner feels intimidated.', bond: -5, familyApproval: -0.05 },
-  { id: 'drama', label: 'Family Drama', text: 'A relative brought up an embarrassing childhood story that ruined the mood.', bond: -4, familyApproval: 0 }
-];
-
-const MARRIAGE_DATING_TIMELINE_RULES = {
-  exclusivityMinBond: 60,
-  parentsMeetingMinBond: 70,
-  yearsBeforePressure: 3,
-  yearsBeforeUltimatum: 5
-};
