@@ -57,7 +57,35 @@ function medRate() { return C().rate || 1; }
 function medEGP(n) { return Math.round((n || 0) * medRate()); }
 function medSetTab(tab) { S.medical.tab = tab; render(); }
 window.medSetTab = medSetTab;
+function medConditionById(id) {
+  if (typeof MED_CONDITIONS === 'undefined') return null;
+  return MED_CONDITIONS.find(function(c) { return c.id === id; }) || null;
+}
 
+function medHasCondition(condId) {
+  if (!S || !S.medical || !Array.isArray(S.medical.conditions)) return false;
+  return S.medical.conditions.some(function(c) { return c.id === condId; });
+}
+
+function medAddCondition(condId) {
+  if (!S || !S.medical || !Array.isArray(S.medical.conditions)) return;
+  if (medHasCondition(condId)) return;
+  S.medical.conditions.push({ id: condId, diagnosedYear: gameYear(), treated: false, severity: 5 });
+  const cond = medConditionById(condId);
+  if (cond) {
+    log('🏥 Diagnosed with ' + cond.label + '.');
+  }
+}
+
+function medRemoveCondition(condId) {
+  if (!S || !S.medical || !Array.isArray(S.medical.conditions)) return;
+  S.medical.conditions = S.medical.conditions.filter(function(c) { return c.id !== condId; });
+}
+
+function medHasMedication(medId) {
+  if (!S || !S.medical || !Array.isArray(S.medical.medications)) return false;
+  return S.medical.medications.some(function(m) { return m.id === medId; });
+}
 /* ============================================================
    INSURANCE SYNC — career health benefit ↔ medical insurance
    ============================================================ */
