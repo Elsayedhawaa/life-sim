@@ -939,20 +939,11 @@ function realEstateYear() {
       fx({ happiness: Math.min(10, h.shoppingComfort) });
     }
 
-    /* HOA — in home currency, converted to player currency for deduction */
-    if (!(typeof isMonthly === 'function' && isMonthly())) {
-      const hoaInHome = Math.round(h.value * 0.005);
-      if (hoaInHome > 0) {
-        const hoaInPlayer = toPlayerCurrency(hoaInHome, hc);
-        if (S.wealth >= hoaInPlayer) {
-          S.wealth -= hoaInPlayer;
-        } else {
-          log('Failed to pay HOA for ' + h.name + ' (' + money(hoaInPlayer) + '). Condition worsened.');
-          h.condition -= 5;
-        }
-      }
+       /* HOA charge handled by chargeHousehold — only track condition damage */
+    if (S.wealth < 0) {
+      log('Failed to pay HOA for ' + h.name + '. Condition worsened.');
+      h.condition -= 5;
     }
-
     /* Rental logic */
     if (h.status === 'listed') {
       const fairRent = Math.round(h.value * 0.06 / 12);
@@ -978,10 +969,8 @@ function realEstateYear() {
         S.wealth -= dmgInPlayer;
         h.condition -= 10;
         if (Math.random() < 0.3) { h.status = 'vacant'; h.tenant = null; log('Tenant fled ' + h.name + '.'); }
-      } else if (!(typeof isMonthly === 'function' && isMonthly())) {
-                const annRent = h.monthlyRent * 12;
-        S.wealth += convertToPlayerCurrency(annRent, h.country || S.country);
-      }
+      }       
+      /* Rental income handled by computeHousehold */
     }
   });
 
