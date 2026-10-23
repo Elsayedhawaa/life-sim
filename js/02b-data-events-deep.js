@@ -1702,7 +1702,7 @@ const DEEP_EVENTS = [
       }
     }
   ]
-}
+},
 
 /* ============================================================
    WEEK 4 — STAY-HOME EVENTS (both POVs, real career mutations)
