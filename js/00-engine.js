@@ -4135,3 +4135,23 @@ computeHousehold = function() {
   return h;
 };
 window.computeHousehold = computeHousehold;
+/* ============================================================
+   SESSION 9: MIGRATION FOR EXISTING CAREERS
+   If a save has a career that should have specialized already,
+   mark it as specialized to prevent forced popup.
+   ============================================================ */
+var _origMigrateForCareer = migrateDualState;
+migrateDualState = function() {
+  _origMigrateForCareer();
+  if (!S || !S.career || !S.career.job) return;
+  if (typeof CAR_BRANCH_OPTIONS === 'undefined') return;
+  var job = S.career.job;
+  if (job.branchChosen) return;
+  var branchDef = CAR_BRANCH_OPTIONS[job.track];
+  if (!branchDef) return;
+  if ((job.level || 0) < branchDef.branchAtLevel) return;
+  job.branchChosen = true;
+  job.branchChosenYear = gameYear();
+  job.branchChoiceAvailable = false;
+};
+window.migrateDualState = migrateDualState;
