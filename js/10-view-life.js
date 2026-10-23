@@ -35,6 +35,7 @@ function lifeView() {
   }
   const happinessPanel = (typeof happinessBreakdownHtml === 'function') ? happinessBreakdownHtml() : '';
      const lifeStoryPanel = (typeof lifeStoryHtml === 'function') ? lifeStoryHtml() : '';
+     const realityPanel = (typeof realityCheckHtml === 'function') ? realityCheckHtml() : '';
      const householdPanel = (typeof householdBreakdownHtml === 'function') ? householdBreakdownHtml() : '';
   return `
     ${lifeStoryPanel}
