@@ -494,48 +494,24 @@ GameHooks.on('year', function() {
   if (S.age < 18) return;
   if (!S.lifestyle.active) return;
 
-  /* In monthly mode: settlement handles all lifestyle cash flow. Skip entirely. */
-  if (typeof isMonthly === 'function' && isMonthly()) return;
-
-  /* Refund engine's basic charge */
-
-  const c = C();
-  let engineCharge = 0;
-  if (S.housing === 'parents') {
-    engineCharge = Math.round((c.prices.phone || 0) * 0.5 + (c.prices.transport || 0) * 0.25);
-  } else {
-    engineCharge = (c.prices.food || 0) + (c.prices.phone || 0) + (c.prices.transport || 0);
-    if (S.housing === 'rented') engineCharge += (c.prices.rent || 0);
-  }
-  S.wealth += engineCharge;
-
+  /* CHARGE handled by chargeHousehold — only apply stat effects here */
   const totals = lifeCalculate();
   S.lifestyle.monthlyTotal = totals.monthly;
   S.lifestyle.yearlyTotal = totals.yearly;
 
-  if (S.wealth >= totals.yearly) {
-    S.wealth -= totals.yearly;
-    log('🏠 Lifestyle expenses paid: ' + money(totals.yearly) + ' (' + money(totals.monthly) + '/month).');
-  } else {
-    const partial = Math.max(0, S.wealth);
-    S.wealth = 0;
-    S.wealth -= (totals.yearly - partial);
-    log('⚠️ Could not fully cover lifestyle expenses. Went ' + money(totals.yearly - partial) + ' into debt.');
-    fx({ happiness: -15, health: -5 });
-  }
-
-  if (totals.happiness !== 0) fx({ happiness: totals.happiness });
-  if (totals.health !== 0) fx({ health: totals.health });
-  if (totals.smarts !== 0) fx({ smarts: totals.smarts });
-  if (totals.social !== 0) fx({ social: totals.social });
-
+  /* Charity (percentage of wealth) — still charged here since it's % based */
   if (S.lifestyle.charityPct > 0 && S.wealth > 0) {
     const charityAmount = Math.round(S.wealth * S.lifestyle.charityPct / 100);
     S.wealth -= charityAmount;
     log('💝 Gave ' + money(charityAmount) + ' to charity (' + S.lifestyle.charityPct + '% of wealth).');
     fx({ happiness: 8, social: 5 });
   }
-});
 
+  /* Stat effects — apply yearly (both paces) */
+  if (totals.happiness !== 0) fx({ happiness: totals.happiness });
+  if (totals.health !== 0) fx({ health: totals.health });
+  if (totals.smarts !== 0) fx({ smarts: totals.smarts });
+  if (totals.social !== 0) fx({ social: totals.social });
+});
 /* ---------- REGISTER ---------- */
 GameHooks.registerTab({ id: 'lifestyle', label: '🏠 Lifestyle', order: 13, view: lifestyleView });
