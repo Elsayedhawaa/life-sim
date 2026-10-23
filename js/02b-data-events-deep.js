@@ -2014,7 +2014,287 @@ const DEEP_EVENTS = [
 }
 
 ];
+/* ============================================================
+   SESSION 10: THREE-GENERATION FAMILY EVENTS
+   ============================================================ */
 
+DEEP_EVENTS.push(
+
+{ id: 'inlaw_severe_criticism', minAge: 26, maxAge: 55, weight: 6, maxFires: 4,
+  condition: s => {
+    if (typeof getInLaws !== 'function') return false;
+    var inlaws = getInLaws().filter(function(m) { return m.alive !== false && m.role === 'Mother-in-law'; });
+    return inlaws.length > 0 && (inlaws[0].bond || 50) < 40;
+  },
+  title: '👵 Mother-in-Law Visits',
+  text: s => {
+    var mil = getInLaws().find(function(m) { return m.role === 'Mother-in-law' && m.alive !== false; });
+    if (!mil) return 'Your mother-in-law called.';
+    return mil.name + ' arrives unannounced. She walks through the apartment, runs a finger over the shelves, and says:\n\n"This is how you keep my child\'s home? I did not raise them for this."';
+  },
+  choices: [
+    { label: 'Stand up for yourself',
+      effect: s => {
+        var mil = getInLaws().find(function(m) { return m.role === 'Mother-in-law' && m.alive !== false; });
+        if (mil) mil.bond = Math.max(0, (mil.bond || 50) - 15);
+        if (s.marriage && s.marriage.partner) s.marriage.partner.bond = Math.min(100, (s.marriage.partner.bond || 70) + 5);
+        fx({ happiness: 4 });
+        log('💪 You told her this is your home. She left in silence.');
+      }
+    },
+    { label: 'Apologize and clean immediately',
+      effect: s => {
+        var mil = getInLaws().find(function(m) { return m.role === 'Mother-in-law' && m.alive !== false; });
+        if (mil) mil.bond = Math.min(100, (mil.bond || 50) + 10);
+        fx({ happiness: -5 });
+        log('😔 You apologized. She nodded. You cleaned the whole house.');
+      }
+    },
+    { label: 'Ask spouse to intervene',
+      effect: s => {
+        if (s.marriage && s.marriage.partner && (s.marriage.partner.bond || 70) > 60) {
+          var mil = getInLaws().find(function(m) { return m.role === 'Mother-in-law' && m.alive !== false; });
+          if (mil) mil.bond = Math.max(0, (mil.bond || 50) - 8);
+          log('💬 Your spouse spoke to their mother. She backed down.');
+          fx({ happiness: 3 });
+        } else {
+          log('💔 Your spouse stayed silent. You were alone in the fight.');
+          fx({ happiness: -6 });
+        }
+      }
+    }
+  ]
+},
+
+{ id: 'niece_nephew_birth', minAge: 22, maxAge: 60, weight: 6, maxFires: 5,
+  condition: s => {
+    if (typeof getAllNiecesNephews !== 'function') return false;
+    var nn = getAllNiecesNephews();
+    return nn.some(function(x) { return (x.age || 0) <= 1; });
+  },
+  title: '👶 New Niece or Nephew',
+  text: s => {
+    var nn = getAllNiecesNephews().find(function(x) { return (x.age || 0) <= 1; });
+    if (!nn) return 'Your sibling had a baby.';
+    return 'Your ' + (nn.parentRole ? nn.parentRole.toLowerCase() : 'sibling') + ' ' + nn.parentName + ' just welcomed a baby — ' + nn.name + '.\n\nYou are expected to visit, bring a gift, and hold the baby.';
+  },
+  choices: [
+    { label: 'Buy a gift and visit (' + evtMoney(1500).toLocaleString() + ')',
+      available: s => s.wealth >= evtMoney(1500),
+      effect: s => {
+        s.wealth -= evtMoney(1500);
+        (s.family || []).forEach(function(m) {
+          if (isSiblingOf(m) && m.alive !== false) m.bond = Math.min(100, (m.bond || 70) + 10);
+        });
+        fx({ happiness: 6 });
+        log('🎁 You brought a thoughtful gift. Your family loved it.');
+      }
+    },
+    { label: 'Just visit (no gift)',
+      effect: s => {
+        (s.family || []).forEach(function(m) {
+          if (isSiblingOf(m) && m.alive !== false) m.bond = Math.min(100, (m.bond || 70) + 4);
+        });
+        fx({ happiness: 2 });
+      }
+    },
+    { label: 'Send a message only',
+      effect: s => {
+        (s.family || []).forEach(function(m) {
+          if (isSiblingOf(m) && m.alive !== false) m.bond = Math.max(0, (m.bond || 70) - 5);
+        });
+        fx({ happiness: -2 });
+      }
+    }
+  ]
+},
+
+{ id: 'grandchild_birth', minAge: 40, maxAge: 75, weight: 8, maxFires: 8,
+  condition: s => {
+    if (typeof getAllGrandchildren !== 'function') return false;
+    return getAllGrandchildren().some(function(gc) { return (gc.age || 0) <= 1; });
+  },
+  title: '👶 Grandchild Born',
+  text: s => {
+    var gc = getAllGrandchildren().find(function(x) { return (x.age || 0) <= 1; });
+    if (!gc) return 'You became a grandparent.';
+    return 'Your child ' + gc.parentName + ' just had a baby. ' + gc.name + ' — ' + gc.age + ' year' + (gc.age !== 1 ? 's' : '') + ' old.\n\nYou are a grandparent now. This is the beginning of a new chapter.';
+  },
+  choices: [
+    { label: 'Rush to see them (buy gift ' + evtMoney(3000).toLocaleString() + ')',
+      available: s => s.wealth >= evtMoney(3000),
+      effect: s => {
+        s.wealth -= evtMoney(3000);
+        (S.childrenList || []).forEach(function(c) { c.bond = Math.min(100, (c.bond || 55) + 8); });
+        fx({ happiness: 15 });
+        log('👶 You held ' + (getAllGrandchildren()[0] || {}).name + ' in your arms. The world stopped.');
+        if (typeof emitReflection === 'function') {
+          emitReflection('You are a grandparent now. You did not know this was possible — this particular joy. This particular peace.', { mood: 'hopeful' });
+        }
+      }
+    },
+    { label: 'Call to congratulate (free)',
+      effect: s => {
+        (S.childrenList || []).forEach(function(c) { c.bond = Math.min(100, (c.bond || 55) + 3); });
+        fx({ happiness: 8 });
+      }
+    }
+  ]
+},
+
+{ id: 'sibling_death_grief', minAge: 40, maxAge: 80, weight: 3, maxFires: 3,
+  condition: s => {
+    if (!S || !Array.isArray(S.family)) return false;
+    return S.family.some(function(m) { return isSiblingOf(m) && m.alive === false && m.deathYear === gameYear(); });
+  },
+  title: '🕊 Sibling Passed',
+  text: s => {
+    var dead = (S.family || []).find(function(m) { return isSiblingOf(m) && m.alive === false && m.deathYear === gameYear(); });
+    if (!dead) return 'Someone you loved passed away.';
+    return 'Your ' + (dead.role || 'sibling') + ' ' + dead.name + ' passed away at ' + dead.age + '.\n\nYour childhood is over. There is nobody left who remembers you as a child.';
+  },
+  choices: [
+    { label: 'Attend the funeral (cost ' + evtMoney(8000).toLocaleString() + ')',
+      available: s => s.wealth >= evtMoney(8000),
+      effect: s => {
+        s.wealth -= evtMoney(8000);
+        (s.family || []).forEach(function(m) { if (m.alive !== false) m.bond = Math.min(100, (m.bond || 70) + 10); });
+        fx({ happiness: -15, health: -3 });
+        if (typeof emitReflection === 'function') {
+          emitReflection('You said goodbye at the funeral. Their children will remember you. That is what is left.', { mood: 'sad' });
+        }
+      }
+    },
+    { label: 'You cannot face it',
+      effect: s => {
+        (s.family || []).forEach(function(m) { if (m.alive !== false) m.bond = Math.max(0, (m.bond || 70) - 10); });
+        fx({ happiness: -20 });
+        log('💔 You did not attend. The family was hurt.');
+      }
+    }
+  ]
+},
+
+{ id: 'grandchild_stays_over', minAge: 45, maxAge: 75, weight: 7, maxFires: 6,
+  condition: s => {
+    if (typeof getAllGrandchildren !== 'function') return false;
+    return getAllGrandchildren().some(function(gc) { return (gc.age || 0) >= 4 && (gc.age || 0) <= 14; });
+  },
+  title: '👴 Grandchild Visits',
+  text: s => {
+    var gc = getAllGrandchildren().find(function(x) { return (x.age || 0) >= 4 && (x.age || 0) <= 14; });
+    if (!gc) return 'Your grandchild is coming over.';
+    return gc.name + ' is coming to stay with you for the weekend.\n\nThey want you to make their favorite food, tell them stories, and let them stay up late.';
+  },
+  choices: [
+    { label: 'Spoil them rotten (cost ' + evtMoney(500).toLocaleString() + ')',
+      available: s => s.wealth >= evtMoney(500),
+      effect: s => {
+        s.wealth -= evtMoney(500);
+        (S.childrenList || []).forEach(function(c) {
+          (c.children || []).forEach(function(gc) {
+            gc.bond = Math.min(100, (gc.bond || 70) + 10);
+          });
+        });
+        fx({ happiness: 12 });
+        log('👴 You made their favorite food. They said "you are the best grandma/grandpa."');
+        if (typeof emitReflection === 'function') {
+          emitReflection('Your grandchild hugged you so hard you felt your age. And you were glad.', { mood: 'tender' });
+        }
+      }
+    },
+    { label: 'Keep it quiet and simple',
+      effect: s => {
+        fx({ happiness: 5 });
+      }
+    }
+  ]
+},
+
+{ id: 'child_divorce', minAge: 42, maxAge: 75, weight: 4, maxFires: 3,
+  condition: s => {
+    if (!Array.isArray(S.childrenList)) return false;
+    return S.childrenList.some(function(c) { return c.age >= 22 && c.spouse && Math.random() < 0.1; });
+  },
+  title: '💔 Your Child Is Divorcing',
+  text: s => {
+    var c = (S.childrenList || []).find(function(ch) { return ch.age >= 22 && ch.spouse; });
+    if (!c) return 'Your child is going through a divorce.';
+    return c.name + ' calls you in tears. "The marriage is over. I am leaving. I do not know what to do."';
+  },
+  choices: [
+    { label: 'Support them emotionally',
+      effect: s => {
+        (S.childrenList || []).forEach(function(ch) {
+          if (ch.age >= 22) ch.bond = Math.min(100, (ch.bond || 55) + 15);
+        });
+        fx({ happiness: -5, social: 2 });
+        log('💬 You held them. They cried for hours. You did what a parent does.');
+      }
+    },
+    { label: 'Give them a large financial buffer (' + evtMoney(15000).toLocaleString() + ')',
+      available: s => s.wealth >= evtMoney(15000),
+      effect: s => {
+        s.wealth -= evtMoney(15000);
+        (S.childrenList || []).forEach(function(ch) {
+          if (ch.age >= 22) ch.bond = Math.min(100, (ch.bond || 55) + 20);
+        });
+        fx({ happiness: 3 });
+        log('💸 You sent them money to start over. They thanked you through tears.');
+      }
+    },
+    { label: 'Tell them to work it out',
+      effect: s => {
+        (S.childrenList || []).forEach(function(ch) {
+          if (ch.age >= 22) ch.bond = Math.max(0, (ch.bond || 55) - 12);
+        });
+        fx({ happiness: -8 });
+        log('💔 They hung up. They did not call back for weeks.');
+      }
+    }
+  ]
+},
+
+{ id: 'inlaw_wedding', minAge: 30, maxAge: 55, weight: 5, maxFires: 2,
+  condition: s => {
+    if (typeof getInLaws !== 'function') return false;
+    return getInLaws().some(function(m) { return m.role === 'Sister-in-law' || m.role === 'Brother-in-law'; });
+  },
+  title: '💍 Sibling-in-Law Wedding',
+  text: s => {
+    var sil = getInLaws().find(function(m) { return m.role === 'Sister-in-law' || m.role === 'Brother-in-law'; });
+    if (!sil) return 'Your sibling-in-law is getting married.';
+    return sil.name + ' — your spouse\'s sibling — is getting married. You are expected to attend and contribute.\n\nExpected contribution: ' + evtMoney(4000).toLocaleString() + ' ' + C().currency + '.';
+  },
+  choices: [
+    { label: 'Attend with full contribution',
+      available: s => s.wealth >= evtMoney(4000),
+      effect: s => {
+        s.wealth -= evtMoney(4000);
+        if (s.marriage && s.marriage.partner) s.marriage.partner.bond = Math.min(100, (s.marriage.partner.bond || 70) + 8);
+        getInLaws().forEach(function(m) { m.bond = Math.min(100, (m.bond || 50) + 5); });
+        fx({ happiness: 4, social: 3 });
+      }
+    },
+    { label: 'Send a smaller gift',
+      available: s => s.wealth >= evtMoney(1000),
+      effect: s => {
+        s.wealth -= evtMoney(1000);
+        if (s.marriage && s.marriage.partner) s.marriage.partner.bond = Math.min(100, (s.marriage.partner.bond || 70) + 2);
+        fx({ happiness: 1 });
+      }
+    },
+    { label: 'Skip the wedding',
+      effect: s => {
+        if (s.marriage && s.marriage.partner) s.marriage.partner.bond = Math.max(0, (s.marriage.partner.bond || 70) - 10);
+        getInLaws().forEach(function(m) { m.bond = Math.max(0, (m.bond || 50) - 8); });
+        fx({ happiness: -3 });
+      }
+    }
+  ]
+}
+
+);
 window.DEEP_EVENTS = DEEP_EVENTS;
 /* ============================================================
    SESSION 9B: CAREER & MARKET EVENTS
