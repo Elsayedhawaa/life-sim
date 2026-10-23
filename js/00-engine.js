@@ -2293,6 +2293,7 @@ function householdBreakdownHtml() {
     return '<div class="card"><h3>🏠 Household</h3><p class="muted small">Your parents pay the bills. You have no household of your own yet.</p></div>';
   }
 
+   if (typeof syncSpouseFinancials === 'function') syncSpouseFinancials();
   var h = computeHousehold();
   S.household = h;
   var sb = {
@@ -2689,44 +2690,53 @@ function syncSpouseFinancials() {
     return;
   }
 
+  /* ---- CAREER.SALARY IS AUTHORITATIVE ----
+     If career.salary is 0 or missing, use income as legacy base.
+     Otherwise, use career.salary as the real track-based value. */
   var careerSal = p.career.salary || 0;
   var income = p.income || 0;
+  var canonical = careerSal;
 
-  /* Cap runaway promotion growth at 3x track max */
+  if (canonical === 0 && income > 0) {
+    /* Legacy save: career exists but salary missing — adopt income as base */
+    p.career.salary = income;
+    canonical = income;
+  }
+
+  /* Cap at track max × 1.3 (allows 30% premium for bonuses / cost of living in role) */
   if (typeof carTrackById === 'function') {
     var track = carTrackById(p.career.track);
-    if (track && track.levels && track.levels.length) {
+    if (track && track.levels && track.levels.length > 0) {
       var maxBase = track.levels[track.levels.length - 1].baseSalaryEGP;
       var rate = (C().rate || 1) / 52.7;
-      var maxLocal = Math.round(maxBase * rate * 3);
-      if (income > maxLocal) {
-        income = maxLocal;
-        p.income = maxLocal;
-      }
-      if (careerSal > maxLocal) {
-        careerSal = maxLocal;
-        p.career.salary = maxLocal;
-      }
+      var maxLocal = Math.round(maxBase * rate * 1.3);
+      if (canonical > maxLocal) canonical = maxLocal;
     }
   }
 
-  /* Sync the two fields — career.salary and p.income are the same value */
+  /* Part-time is 60% of canonical */
   if (p.career.working === 'part-time') {
-    var expected = Math.round(careerSal * 0.6);
-    if (Math.abs(income - expected) > 100) p.income = expected;
-    return;
+    canonical = Math.round(canonical * 0.6);
   }
 
-  /* Full-time: harmonize */
-  if (careerSal > 0 && income > 0 && Math.abs(careerSal - income) > Math.max(100, careerSal * 0.10)) {
-    /* Use the HIGHER of the two — preserves accumulated promotions */
-    var higher = Math.max(careerSal, income);
-    p.career.salary = higher;
-    p.income = higher;
-  } else if (careerSal > 0 && income === 0) {
-    p.income = careerSal;
-  } else if (careerSal === 0 && income > 0) {
-    p.career.salary = income;
+  /* Set BOTH fields to canonical — they always agree after this */
+  var changed = false;
+  if (Math.abs((p.career.salary || 0) - canonical) > 1) {
+    p.career.salary = canonical;
+    changed = true;
+  }
+  if (Math.abs(income - canonical) > 1) {
+    if (income > canonical && (income - canonical) > (canonical * 0.3)) {
+      /* Only log if income was significantly higher (avoid noisy logs) */
+      log('💼 ' + p.name + ' income adjusted to ' + money(canonical) + '/yr (was ' + money(income) + ').');
+    }
+    p.income = canonical;
+    changed = true;
+  }
+
+  /* Sync S.household after change so it never shows stale */
+  if (changed && typeof computeHousehold === 'function') {
+    S.household = computeHousehold();
   }
 }
 window.syncSpouseFinancials = syncSpouseFinancials;
