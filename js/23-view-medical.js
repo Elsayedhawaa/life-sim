@@ -970,7 +970,7 @@ GameHooks.on('year', function() {
     m.insurance = 'none';
   }
 
-  /  /* Medications charge handled by chargeHousehold */
+  /* Medications charge handled by chargeHousehold */
   if (S.wealth < 0 && m.medications.length > 0) {
     log('⚠️ Could not afford medications. Some stopped.');
     m.medications = [];
