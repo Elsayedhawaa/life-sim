@@ -394,21 +394,10 @@ function advanceYear() {
     }
   }
 
-  if (S.age >= 18) {
-    const c = C();
-    if (S.housing === 'parents') {
-      const personal = Math.round(c.prices.phone * 0.5 + c.prices.transport * 0.25);
-      S.wealth -= personal;
-    } else {
-      let expenses = c.prices.food + c.prices.phone + c.prices.transport;
-      if (S.housing === 'rented') {
-        expenses += (typeof currentYearlyRent === 'function' ? currentYearlyRent() : (c.prices.rent || 0));
-      }
-      S.wealth -= expenses;
-    }
-  }
+   GameHooks.run('year', S);
 
-  GameHooks.run('year', S);
+  /* Unified household economy — single charge, replaces all scattered charges */
+  if (typeof chargeHousehold === 'function') chargeHousehold(12);
 
   ['health', 'happiness', 'smarts', 'social'].forEach(k => { S[k] = clamp(S[k], 0, 100); });
  
@@ -453,7 +442,10 @@ function advanceMonth(silent) {
     }
   }
 
-  GameHooks.run('month', S, { month: S.month, isYearEnd: S.month === 1 });
+   GameHooks.run('month', S, { month: S.month, isYearEnd: S.month === 1 });
+
+  /* Unified household economy — monthly slice */
+  if (typeof chargeHousehold === 'function') chargeHousehold(1);
 
   /* Ambient life flavor — happens every month */
   if (typeof ambientFlavor === 'function' && !silent) ambientFlavor(1);
@@ -744,7 +736,10 @@ function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) {
-      S = JSON.parse(raw);
+         S = JSON.parse(raw);
+      unityPass();
+      GameHooks.run('migrate', S);
+      if (typeof chargeHousehold === 'function') chargeHousehold(0);
       /* Migration: ensure new fields exist on old saves */
       if (!S.evtMemory) S.evtMemory = {};
       if (typeof S.gulfWork === 'undefined' && typeof ensureGulfWorkState === 'function') ensureGulfWorkState();
@@ -1864,7 +1859,384 @@ function happinessBreakdownHtml() {
 window.happinessBreakdownHtml = happinessBreakdownHtml;
 window.characterSay = characterSay;
 window.characterSpeak = characterSpeak;
+/* ============================================================
+   UNITY PASS — WEEK 3: UNIFIED HOUSEHOLD ECONOMY
+   ============================================================
+   computeHousehold()  → reads state, returns income/expense breakdown (in player currency)
+   chargeHousehold(m)  → actually deducts 1/12 or 12/12 of net from wealth
+   ============================================================ */
 
+function computeHousehold() {
+  if (!S) return { income: 0, expenses: 0, net: 0, incomeItems: [], expenseItems: [], stress: 'child' };
+
+  var income = 0, expenses = 0;
+  var incomeItems = [], expenseItems = [];
+  var c = C();
+
+  /* Helper — safe currency conversion */
+  function conv(amount, country) {
+    if (!amount) return 0;
+    if (!country) return Math.round(amount);
+    if (typeof convertToPlayerCurrency === 'function') return convertToPlayerCurrency(amount, country);
+    return Math.round(amount);
+  }
+
+  /* ---------- INCOME ---------- */
+  if (S.career && S.career.job) {
+    var sal = S.career.job.salary || 0;
+    if (sal > 0) {
+      income += sal;
+      incomeItems.push({ label: 'Salary — ' + (S.career.job.title || 'Job'), yearly: sal, country: S.country });
+    }
+  }
+
+  if (S.marriage && S.marriage.partner && S.marriage.partner.income && S.marriage.partner.alive !== false) {
+    var fm = S.marriage.financeModel;
+    var includeSpouse = !fm || fm === 'male_provider' || fm === 'egalitarian' || fm === 'joint_account' || fm === 'shared_savings' || fm === 'proportional';
+    if (includeSpouse) {
+      income += S.marriage.partner.income;
+      incomeItems.push({ label: 'Spouse — ' + S.marriage.partner.name, yearly: S.marriage.partner.income, country: S.country });
+    }
+  }
+
+  if (S.career && Array.isArray(S.career.businesses)) {
+    S.career.businesses.forEach(function(biz) {
+      var y = (biz.monthlyProfit || 0) * 12;
+      if (y > 0) {
+        income += y;
+        incomeItems.push({ label: 'Business — ' + biz.name, yearly: y, country: S.country });
+      }
+    });
+  }
+
+  (S.ownedHomes || []).forEach(function(home) {
+    if (home.status === 'rented' && home.monthlyRent) {
+      var yLocal = home.monthlyRent * 12;
+      var yConv = conv(yLocal, home.country || 'egy');
+      income += yConv;
+      incomeItems.push({
+        label: 'Rent — ' + home.name,
+        yearly: yConv,
+        yearlyLocal: yLocal,
+        country: home.country,
+        currency: (COUNTRIES[home.country] && COUNTRIES[home.country].currency) || ''
+      });
+    }
+  });
+
+  /* ---------- EXPENSES ---------- */
+  if (S.housing === 'parents') {
+    var pPhone = Math.round((c.prices.phone || 0) * 0.5);
+    var pTrans = Math.round((c.prices.transport || 0) * 0.25);
+    expenses += pPhone + pTrans;
+    expenseItems.push({ label: 'Phone (at parents)', yearly: pPhone, country: S.country });
+    expenseItems.push({ label: 'Transport', yearly: pTrans, country: S.country });
+  } else if (S.lifestyle && S.lifestyle.active && typeof lifeCalculate === 'function') {
+    var lc = lifeCalculate();
+    var lifeYear = lc.yearly || 0;
+    expenses += lifeYear;
+    expenseItems.push({ label: 'Lifestyle (all categories)', yearly: lifeYear, country: S.country });
+  } else {
+    var food = c.prices.food || 0;
+    var ph = c.prices.phone || 0;
+    var trn = c.prices.transport || 0;
+    expenses += food + ph + trn;
+    expenseItems.push({ label: 'Food', yearly: food, country: S.country });
+    expenseItems.push({ label: 'Phone', yearly: ph, country: S.country });
+    expenseItems.push({ label: 'Transport', yearly: trn, country: S.country });
+    if (S.housing === 'rented') {
+      var rentY = (typeof currentYearlyRent === 'function') ? currentYearlyRent() : (c.prices.rent || 0);
+      expenses += rentY;
+      expenseItems.push({ label: 'Rent', yearly: rentY, country: S.country });
+    }
+  }
+
+  /* Children — living, school, activities (all EGP-based, convert) */
+  (S.childrenList || []).forEach(function(child) {
+    if (child.movedOut) return;
+    var ag = child.age <= 2 ? 'infant' : child.age <= 5 ? 'toddler' : child.age <= 12 ? 'child' : 'teen';
+    var tier = (typeof CHILDREN_EXPENSE_TIERS !== 'undefined' && CHILDREN_EXPENSE_TIERS[ag] && CHILDREN_EXPENSE_TIERS[ag][child.lifestyle || 'standard']) || null;
+    if (tier && tier.monthlyEGP) {
+      var yL = conv(tier.monthlyEGP * 12, 'egy');
+      expenses += yL;
+      expenseItems.push({ label: 'Living — ' + child.name, yearly: yL, country: S.country });
+    }
+    if (child.school && child.age >= 4 && child.age <= 18) {
+      var sch = (typeof chBySchoolLabel === 'function') ? chBySchoolLabel(child.school) : null;
+      if (sch && sch.annualEGP) {
+        var yS = conv(sch.annualEGP, 'egy');
+        expenses += yS;
+        expenseItems.push({ label: 'School — ' + child.name, yearly: yS, country: S.country });
+      }
+    }
+    (child.activities || []).forEach(function(aid) {
+      var act = (typeof CHILDREN_ACTIVITIES !== 'undefined') ? CHILDREN_ACTIVITIES.find(function(a) { return a.id === aid; }) : null;
+      if (act) {
+        var base = act.monthlyEGP ? act.monthlyEGP * 12 : (act.annualEGP || 0);
+        var yA = conv(base, 'egy');
+        expenses += yA;
+        expenseItems.push({ label: 'Activity — ' + child.name, yearly: yA, country: S.country });
+      }
+    });
+  });
+
+  /* Cars — maintenance, fuel, insurance (already in player currency) */
+  (S.cars || []).forEach(function(car) {
+    if (car.storedIn) return;
+    var mnt = (typeof carMaintenanceYearLocal === 'function') ? carMaintenanceYearLocal(car) : 0;
+    var fl = (typeof carFuelCostYearLocal === 'function') ? carFuelCostYearLocal(car) : 0;
+    var ins = (typeof carInsuranceYearLocal === 'function') ? carInsuranceYearLocal(car) : 0;
+    var tot = mnt + fl + ins;
+    if (tot > 0) {
+      expenses += tot;
+      expenseItems.push({ label: 'Car — ' + (car.brand || '') + ' ' + (car.model || ''), yearly: tot, country: S.country });
+    }
+  });
+
+  /* Medical — insurance premium (EGP-based) + medications (EGP-based) */
+  if (S.medical && S.medical.insurance && typeof MED_INSURANCE !== 'undefined') {
+    var mi = MED_INSURANCE.find(function(i) { return i.id === S.medical.insurance; });
+    if (mi && mi.premiumAnnualEGP > 0) {
+      var yMi = conv(mi.premiumAnnualEGP, 'egy');
+      expenses += yMi;
+      expenseItems.push({ label: 'Health insurance', yearly: yMi, country: S.country });
+    }
+  }
+  if (S.medical && Array.isArray(S.medical.medications) && typeof MED_MEDICATIONS !== 'undefined') {
+    var medEGP = 0;
+    S.medical.medications.forEach(function(md) {
+      var def = MED_MEDICATIONS.find(function(d) { return d.id === md.id; });
+      if (def && def.monthlyEGP) medEGP += def.monthlyEGP * 12;
+    });
+    if (medEGP > 0) {
+      var yMed = conv(medEGP, 'egy');
+      expenses += yMed;
+      expenseItems.push({ label: 'Medications', yearly: yMed, country: S.country });
+    }
+  }
+
+  /* Loans + card minimums */
+  if (S.bank && Array.isArray(S.bank.loans)) {
+    S.bank.loans.forEach(function(l) {
+      var y = (l.monthlyPayment || 0) * 12;
+      if (y > 0 && (l.monthsLeft || 0) > 0) {
+        expenses += y;
+        expenseItems.push({ label: 'Loan — ' + (l.name || 'Loan'), yearly: y, country: S.country });
+      }
+    });
+  }
+  if (S.bank && Array.isArray(S.bank.creditCards)) {
+    var cardY = 0;
+    S.bank.creditCards.forEach(function(card) {
+      if ((card.balance || 0) > 0) {
+        cardY += (card.balance || 0) * (card.minPaymentPct || 0.05) * 12;
+      }
+    });
+    if (cardY > 0) {
+      expenses += cardY;
+      expenseItems.push({ label: 'Card minimum payments', yearly: cardY, country: S.country });
+    }
+  }
+
+  /* Store financing + card installments */
+  if (S.shopping && Array.isArray(S.shopping.loans)) {
+    S.shopping.loans.forEach(function(l) {
+      if ((l.yearsLeft || 0) > 0 && (l.yearlyPayment || 0) > 0) {
+        expenses += l.yearlyPayment;
+        expenseItems.push({ label: 'Store finance — ' + (l.itemName || 'Item'), yearly: l.yearlyPayment, country: S.country });
+      }
+    });
+  }
+  if (S.shopping && Array.isArray(S.shopping.cardInstallments)) {
+    var ciY = 0;
+    S.shopping.cardInstallments.forEach(function(ci) { ciY += (ci.monthlyPayment || 0) * 12; });
+    if (ciY > 0) {
+      expenses += ciY;
+      expenseItems.push({ label: 'Card installments', yearly: ciY, country: S.country });
+    }
+  }
+
+  /* Real estate HOA + mortgages (converted from property country) */
+  (S.ownedHomes || []).forEach(function(home) {
+    var hc = home.country || 'egy';
+    var hoaHome = Math.round((home.value || 0) * 0.005);
+    if (hoaHome > 0) {
+      var yHoa = conv(hoaHome, hc);
+      expenses += yHoa;
+      expenseItems.push({ label: 'HOA — ' + home.name, yearly: yHoa, country: hc });
+    }
+  });
+  if (Array.isArray(S.realestateContracts)) {
+    S.realestateContracts.forEach(function(contract) {
+      if ((contract.yearsLeft || 0) <= 0) return;
+      var hh = (S.ownedHomes || []).find(function(x) { return x.id === contract.homeId; });
+      var hc = hh ? (hh.country || 'egy') : S.country;
+      var yMort = conv(contract.annualPayment || 0, hc);
+      if (yMort > 0) {
+        expenses += yMort;
+        expenseItems.push({ label: 'Mortgage — ' + (contract.name || 'Property'), yearly: yMort, country: hc });
+      }
+    });
+  }
+
+  /* Subscriptions */
+  if (S.lifestyle && Array.isArray(S.lifestyle.subscriptions) && typeof LIFE_SUBSCRIPTIONS !== 'undefined') {
+    var subY = 0;
+    S.lifestyle.subscriptions.forEach(function(id) {
+      var sub = LIFE_SUBSCRIPTIONS.find(function(s) { return s.id === id; });
+      if (sub && sub.prices) {
+        var price = sub.prices[S.country] || sub.prices.egy || 0;
+        subY += price * 12;
+      }
+    });
+    if (subY > 0) {
+      expenses += subY;
+      expenseItems.push({ label: 'Subscriptions', yearly: subY, country: S.country });
+    }
+  }
+
+  /* Family allowances (monthly × 12) */
+  if (S.parentAllowances && typeof S.parentAllowances === 'object') {
+    var allowY = 0;
+    Object.keys(S.parentAllowances).forEach(function(k) { allowY += (S.parentAllowances[k] || 0); });
+    if (allowY > 0) {
+      expenses += allowY * 12;
+      expenseItems.push({ label: 'Family allowances', yearly: allowY * 12, country: S.country });
+    }
+  }
+
+  /* Pension contributions */
+  if (S.bank && S.bank.pension && Array.isArray(S.bank.pension.active)) {
+    var penY = 0;
+    S.bank.pension.active.forEach(function(p) { penY += (p.monthlyContribution || 0) * 12; });
+    if (penY > 0) {
+      expenses += penY;
+      expenseItems.push({ label: 'Pension contributions', yearly: penY, country: S.country });
+    }
+  }
+
+  /* Bank insurance premiums */
+  if (S.bank && Array.isArray(S.bank.insurance)) {
+    var biY = 0;
+    S.bank.insurance.forEach(function(ins) { if (ins.annualPremium) biY += ins.annualPremium; });
+    if (biY > 0) {
+      expenses += biY;
+      expenseItems.push({ label: 'Bank insurance', yearly: biY, country: S.country });
+    }
+  }
+
+  /* Income tax */
+  if (S.career && S.career.job && typeof carComputeTax === 'function') {
+    var tax = carComputeTax(S.career.job.salary);
+    if (tax > 0) {
+      expenses += tax;
+      expenseItems.push({ label: 'Income tax', yearly: tax, country: S.country });
+    }
+  }
+
+  var net = income - expenses;
+  var stress = 'healthy';
+  if (income === 0 && expenses > 0) stress = 'critical';
+  else if (expenses > income) stress = 'critical';
+  else if (expenses > income * 0.85) stress = 'tight';
+
+  return {
+    income: Math.round(income),
+    expenses: Math.round(expenses),
+    net: Math.round(net),
+    incomeItems: incomeItems,
+    expenseItems: expenseItems,
+    stress: stress
+  };
+}
+window.computeHousehold = computeHousehold;
+
+function chargeHousehold(months) {
+  if (!S) return;
+  months = (typeof months === 'number') ? months : 12;
+
+  /* Minors: no charge, set stub */
+  if (S.age < 18) {
+    S.household = { income: 0, expenses: 0, net: 0, incomeItems: [], expenseItems: [], stress: 'child' };
+    return;
+  }
+
+  /* Skip monthly charge during the year-of-switch (avoids double charge) */
+  if (months === 1 && S.pacingSwitchYear === gameYear()) {
+    var h0 = computeHousehold();
+    S.household = h0;
+    return;
+  }
+
+  var h = computeHousehold();
+  S.household = h;
+
+  if (months > 0) {
+    var periodNet = Math.round(h.net * months / 12);
+    if (periodNet !== 0) {
+      S.wealth += periodNet;
+      if (months === 12) {
+        if (periodNet > 0) log('💰 Year net income: +' + money(periodNet));
+        else log('💸 Year net expenses: ' + money(periodNet));
+      } else if (months === 1) {
+        if (periodNet > 0) log('💰 ' + currentMonthName() + ': +' + money(periodNet));
+        else log('💸 ' + currentMonthName() + ': ' + money(periodNet));
+      }
+    }
+  }
+
+  if (h.stress === 'critical' && months === 12) {
+    log('⚠️ Household deficit — you are losing money every month.');
+  }
+}
+window.chargeHousehold = chargeHousehold;
+
+/* ---------- HOUSEHOLD UI PANEL ---------- */
+function householdBreakdownHtml() {
+  if (!S) return '';
+  if (S.age < 18) {
+    return '<div class="card"><h3>🏠 Household</h3><p class="muted small">Your parents pay the bills. You have no household of your own yet.</p></div>';
+  }
+
+  var h = S.household || computeHousehold();
+  var sb = {
+    healthy: { label: '✅ Healthy', color: '#34d399' },
+    tight: { label: '⚠️ Tight', color: '#fbbf24' },
+    critical: { label: '🚨 Deficit', color: '#fb7185' }
+  }[h.stress] || { label: '—', color: '#888' };
+
+  var html = '<div class="card" style="border-color:' + sb.color + '">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<h3 style="color:' + sb.color + '">🏠 Household Economy</h3>' +
+    '<span style="font-size:.72rem;color:' + sb.color + ';font-weight:700">' + sb.label + '</span>' +
+    '</div>';
+
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;text-align:center">' +
+    '<div><div class="muted" style="font-size:.62rem">INCOME</div><div style="color:#34d399;font-weight:700;font-size:.85rem">' + money(h.income) + '</div><div class="muted" style="font-size:.6rem">/year</div></div>' +
+    '<div><div class="muted" style="font-size:.62rem">EXPENSES</div><div style="color:#fb7185;font-weight:700;font-size:.85rem">' + money(h.expenses) + '</div><div class="muted" style="font-size:.6rem">/year</div></div>' +
+    '<div><div class="muted" style="font-size:.62rem">NET</div><div style="color:' + (h.net >= 0 ? '#34d399' : '#fb7185') + ';font-weight:700;font-size:.85rem">' + (h.net >= 0 ? '+' : '') + money(h.net) + '</div><div class="muted" style="font-size:.6rem">/year</div></div>' +
+    '</div>';
+
+  if (h.incomeItems.length > 0) {
+    html += '<h4 style="font-size:.78rem;color:#34d399;margin-top:12px">💵 Income</h4>';
+    h.incomeItems.forEach(function(item) {
+      html += '<div class="row" style="padding:4px 0;font-size:.75rem"><span>' + item.label + '</span><b class="mono">+' + money(item.yearly) + '</b></div>';
+    });
+  }
+
+  if (h.expenseItems.length > 0) {
+    html += '<h4 style="font-size:.78rem;color:#fb7185;margin-top:12px">💸 Expenses</h4>';
+    h.expenseItems.forEach(function(item) {
+      html += '<div class="row" style="padding:4px 0;font-size:.75rem"><span>' + item.label + '</span><b class="mono">−' + money(item.yearly) + '</b></div>';
+    });
+  }
+
+  html += '<div class="row" style="border-top:2px solid #25253a;padding-top:6px;margin-top:8px"><b>Net / year</b><b style="color:' + (h.net >= 0 ? '#34d399' : '#fb7185') + ';font-size:1rem">' + (h.net >= 0 ? '+' : '') + money(h.net) + '</b></div>';
+  html += '<div class="row"><span>Net / month</span><b style="color:' + (h.net >= 0 ? '#34d399' : '#fb7185') + '">' + (h.net >= 0 ? '+' : '') + money(Math.round(h.net / 12)) + '</b></div>';
+  html += '</div>';
+  return html;
+}
+window.householdBreakdownHtml = householdBreakdownHtml;
 
 /* ============================================================
    EXPANDED MARRIAGE LIFE EVENTS
