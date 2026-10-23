@@ -8,7 +8,63 @@
    File grows by adding companies/tracks/events to the existing
    arrays. Do not change variable names or shapes.
    ============================================================ */
-
+/* ============================================================
+   SESSION 9: CAREER BRANCH OPTIONS
+   When a player reaches `branchAtLevel`, they must choose a specialty.
+   Each choice either keeps them on the current track (generalist path)
+   or switches them to a specialist track with its own salary ladder.
+   ============================================================ */
+const CAR_BRANCH_OPTIONS = {
+  medicine: {
+    branchAtLevel: 2,
+    question: 'You have completed your core medical training (Internship + Residency + Specialist). The next step is specialization. Choose carefully — this shapes your entire medical career.',
+    options: [
+      { trackId: 'surgery', label: '🔪 Surgery', desc: 'Highest prestige, highest pay, brutal hours. 5 more years of training.' },
+      { trackId: 'pediatrics', label: '👶 Pediatrics', desc: 'Children\'s medicine. Respected and steady. Better work-life balance.' },
+      { trackId: 'cardiology', label: '❤️ Cardiology', desc: 'Heart specialist. High pay and demand. Competitive entry.' },
+      { trackId: 'medicine', label: '🩺 General Medicine', desc: 'Stay on the general practitioner path. Consultant → Department Head.' }
+    ]
+  },
+  business: {
+    branchAtLevel: 1,
+    question: 'Your business foundation is complete. Which functional track will you pursue for the rest of your career?',
+    options: [
+      { trackId: 'accounting', label: '🧮 Accounting / Audit', desc: 'Numbers-driven. CPA / ACCA path. Stable.' },
+      { trackId: 'investment', label: '📈 Investment / PE', desc: 'High-stakes finance. Big bonuses, high risk.' },
+      { trackId: 'marketing', label: '📣 Marketing', desc: 'Brand, campaigns, growth. Creative track.' },
+      { trackId: 'hr', label: '👥 Human Resources', desc: 'People management and hiring. Slower ladder.' },
+      { trackId: 'consulting', label: '💼 Management Consulting', desc: 'Strategy for top firms. Heavy travel.' },
+      { trackId: 'product', label: '🎯 Product Management', desc: 'Tech product leadership. High ceiling.' }
+    ]
+  },
+  tech: {
+    branchAtLevel: 2,
+    question: 'You have proven yourself as a general software engineer. Choose a specialization for the next decade:',
+    options: [
+      { trackId: 'data_science', label: '🧠 Data Science / ML', desc: 'Highest demand. Build the models everyone wants.' },
+      { trackId: 'cybersecurity', label: '🛡 Cybersecurity', desc: 'Defend systems. Sky-high comp.' },
+      { trackId: 'product_design', label: '🎨 Product Design (UX)', desc: 'Design leadership. Better work-life than IC.' },
+      { trackId: 'qa_engineering', label: '🧪 QA / Testing', desc: 'Quality engineering. Underrated stability.' }
+    ]
+  },
+  engineering: {
+    branchAtLevel: 2,
+    question: 'Engineering foundation is done. Which branch will you commit to?',
+    options: [
+      { trackId: 'civil_eng', label: '🏗 Civil Engineering', desc: 'Infrastructure and construction. Onsite work.' },
+      { trackId: 'architect', label: '🏛 Architecture', desc: 'Building design and urban planning.' },
+      { trackId: 'engineering', label: '⚙ General / Mechanical', desc: 'Stay as a broad engineer. Consultancy or management.' }
+    ]
+  },
+  law: {
+    branchAtLevel: 2,
+    question: 'Your legal training is complete. Choose your path:',
+    options: [
+      { trackId: 'prosecutor', label: '⚖ Public Prosecutor / Judge', desc: 'Government legal track. Stable, respected.' },
+      { trackId: 'law', label: '💼 Corporate Law', desc: 'Big-firm practice. High pay, long hours.' }
+    ]
+  }
+};
 /* ============================================================
    1. COMPANIES BY COUNTRY & INDUSTRY
    ============================================================
