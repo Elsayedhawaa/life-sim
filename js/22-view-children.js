@@ -563,6 +563,18 @@ function chRenderChildrenList() {
   
   S.childrenList.forEach(function(c) {
     const school = c.school ? chBySchoolLabel(c.school) : null;
+         /* Family info for adult children */
+    var familyLine = '';
+    if (c.age >= 18) {
+      var bits = [];
+      if (c.career && c.career.title) bits.push('💼 ' + c.career.title);
+      if (c.spouse) bits.push('💍 Married to ' + c.spouse.name);
+      if (c.children && c.children.length > 0) {
+        bits.push('👶 ' + c.children.length + ' child' + (c.children.length > 1 ? 'ren' : '') +
+          ': ' + c.children.map(function(g) { return g.name + ' (' + g.age + ')'; }).join(', '));
+      }
+      if (bits.length) familyLine = '<div class="muted small" style="margin-top:4px;color:#22d3ee">' + bits.join(' · ') + '</div>';
+    }
     const traitLabels = (c.traits || []).map(function(tid) {
   const tr = CHILDREN_TRAITS.find(function(x) { return x.id === tid; });
   return tr ? tr.label : tid;
@@ -572,7 +584,7 @@ function chRenderChildrenList() {
       '<div><div style="font-weight:700;font-size:1.05rem">' + c.name + (c.movedOut ? ' 🏠' : '') + '</div>' +
       '<div class="muted small">Age ' + c.age + ' · ' + (c.gender === 'm' ? '👦 Boy' : '👧 Girl') +  (traitLabels.length ? ' · ' + traitLabels.join(' · ') : '') + '</div>' +
       (school ? '<div class="muted small">' + school.label + '</div>' : '') +
-      '</div><div style="text-align:right">' +
+      familyLine +      '</div><div style="text-align:right">' +
       '<div style="font-size:1.4rem">' + (c.age < 3 ? '👶' : c.age < 13 ? '🧒' : c.age < 18 ? '👦' : '🧑') + '</div></div></div>';
 
     /* Stats bars */
