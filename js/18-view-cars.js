@@ -1081,20 +1081,13 @@ GameHooks.on('year', function() {
         if(car.batteryHealth < 50) car.batteryHealth = 50;
     }
 
-      if (!car.stolen) {
+            if (!car.stolen) {
+        /* Insurance charge handled by chargeHousehold — only track expiry */
         if (car.insuranceExpiry < year && car.insurance !== 'none') {
-          const cost = carInsuranceYearLocal(car);
-          if (S.wealth >= cost) { S.wealth -= cost; car.insuranceExpiry = year + 1; }
+          car.insuranceExpiry = year + 1;
         }
         if (car.registrationExpiry < year) {
-          const cost = carRegistrationYearLocal(car);
-          if (S.wealth >= cost) { S.wealth -= cost; car.registrationExpiry = year + 2; }
-        }
-        if (!(typeof isMonthly === 'function' && isMonthly())) {
-          const serviceCost = carMaintenanceYearLocal(car);
-          if (S.wealth >= serviceCost) S.wealth -= serviceCost;
-          const fuelCost = carFuelCostYearLocal(car);
-          if (S.wealth >= fuelCost) S.wealth -= fuelCost;
+          car.registrationExpiry = year + 2;
         }
 
         const bChance = 0.02 + car.age * 0.008 + (car.condition < 50 ? 0.10 : 0) + (brand ? (11 - brand.reliability) * 0.01 : 0.03);
