@@ -17,19 +17,17 @@ GameHooks.on('month', function() {
   if (!isMonthly() || !S) return;
 
   const month = currentMonth();
-  const monthStr = monthName(month);
   const c = C();
   const isSkippedYear = (S.pacingSwitchYear === gameYear());
   const isMinor = (S.age < 18);
 
+  /* FINANCE handled by chargeHousehold() in engine — only seasonal events here */
   if (!isSkippedYear && !isMinor) {
-    monthlyApplyFinance(c, monthStr);
     monthlyApplySeasonal(c, month);
   }
 
   monthlyFireRandomEvent();
 });
-
 /* ---------- 1. FINANCE ---------- */
 function monthlyApplyFinance(c, monthStr) {
 
@@ -383,31 +381,11 @@ window.togglePacing = function() {
         ' month(s) now (salary, bills), then switch to yearly.';
       if (!confirm(msg)) return;
 
-      let monthlySalary = 0;
-      if (S.job && S.job.salary) monthlySalary = Math.round(S.job.salary / 12);
+          var h = computeHousehold();
+      var periodNet = Math.round(h.net * monthsToSettle / 12);
+      S.wealth += periodNet;
 
-      let monthlyBills = 0;
-      if (typeof lifeCalculate === 'function' && S.lifestyle && S.lifestyle.active) {
-        try { monthlyBills = lifeCalculate().monthly; } catch (e) { monthlyBills = 0; }
-      }
-      if (monthlyBills === 0) {
-        const cc = C();
-        let annual = 0;
-        if (S.housing === 'parents') {
-          annual = (cc.prices.phone || 0) * 0.5 + (cc.prices.transport || 0) * 0.25;
-        } else {
-          annual = (cc.prices.food || 0) + (cc.prices.phone || 0) + (cc.prices.transport || 0);
-          if (S.housing === 'rented') annual += cc.prices.rent || 0;
-        }
-        monthlyBills = Math.round(annual / 12);
-      }
-
-      const totalSalary = monthlySalary * monthsToSettle;
-      const totalBills = monthlyBills * monthsToSettle;
-      S.wealth += totalSalary - totalBills;
-
-      log('📅 Settled ' + monthsToSettle + ' remaining month(s): salary +' +
-        money(totalSalary) + ', bills −' + money(totalBills) + '.');
+      log('📅 Settled ' + monthsToSettle + ' remaining month(s): net ' + (periodNet >= 0 ? '+' : '') + money(periodNet) + '.');
     } else {
       if (!confirm('Switch to YEARLY mode?')) return;
     }
