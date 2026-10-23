@@ -1931,11 +1931,24 @@ function computeHousehold() {
     expenses += pPhone + pTrans;
     expenseItems.push({ label: 'Phone (at parents)', yearly: pPhone, country: S.country });
     expenseItems.push({ label: 'Transport', yearly: pTrans, country: S.country });
-  } else if (S.lifestyle && S.lifestyle.active && typeof lifeCalculate === 'function') {
+    } else if (S.lifestyle && S.lifestyle.active && typeof lifeCalculate === 'function') {
     var lc = lifeCalculate();
-    var lifeYear = lc.yearly || 0;
-    expenses += lifeYear;
-    expenseItems.push({ label: 'Lifestyle (all categories)', yearly: lifeYear, country: S.country });
+    var rentFromLife = (lc.housingMonthly || 0) * 12;
+    var lifeYear = (lc.yearly || 0) - rentFromLife;
+
+    /* Lifestyle is the aggregate of: phone, internet, utilities, food, dining,
+       transport, clothing, entertainment, personal_care, domestic_staff,
+       healthcare_insurance, subscriptions, charity.
+       The player configured each of these in the Lifestyle tab. */
+    if (lifeYear > 0) {
+      expenses += lifeYear;
+      expenseItems.push({ label: '🏠 Lifestyle (see Lifestyle tab for breakdown)', yearly: lifeYear, country: S.country });
+    }
+    if (rentFromLife > 0) {
+      expenses += rentFromLife;
+      expenseItems.push({ label: '🔑 Rent', yearly: rentFromLife, country: S.country });
+    }
+  }
   } else {
     var food = c.prices.food || 0;
     var ph = c.prices.phone || 0;
