@@ -34,7 +34,9 @@ function lifeView() {
     return 'Age ' + entry.age + (entry.year ? ' · ' + entry.year : '');
   }
   const happinessPanel = (typeof happinessBreakdownHtml === 'function') ? happinessBreakdownHtml() : '';
+     const householdPanel = (typeof householdBreakdownHtml === 'function') ? householdBreakdownHtml() : '';
   return `
+     ${householdPanel}
   ${happinessPanel}
     <div class="card">  
       <h3>Life Log</h3>
