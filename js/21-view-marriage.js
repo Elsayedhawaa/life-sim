@@ -2597,6 +2597,7 @@ window.marAssignPartnerCareer = marAssignPartnerCareer;
 GameHooks.on('render', function() {
   if (S && S.marriage && S.marriage.status === 'married' && S.marriage.partner) {
     if (typeof marAssignPartnerCareer === 'function') marAssignPartnerCareer();
+       if (typeof createInLaws === 'function') createInLaws();
   } // <-- Added missing closing brace here
 
   if (S && S.marriage && !S.marriage.home) { // <-- Fixed 'f' to 'if' and added 'S &&' safeguard
