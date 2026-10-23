@@ -34,18 +34,27 @@ function lifeView() {
     return 'Age ' + entry.age + (entry.year ? ' · ' + entry.year : '');
   }
   const happinessPanel = (typeof happinessBreakdownHtml === 'function') ? happinessBreakdownHtml() : '';
+     const lifeStoryPanel = (typeof lifeStoryHtml === 'function') ? lifeStoryHtml() : '';
      const householdPanel = (typeof householdBreakdownHtml === 'function') ? householdBreakdownHtml() : '';
   return `
+    ${lifeStoryPanel}
      ${householdPanel}
   ${happinessPanel}
     <div class="card">  
       <h3>Life Log</h3>
       <div style="max-height:400px;overflow-y:auto;font-size:.85rem">
         ${grouped.map(function(g) {
-          if (g.type === 'header') {
+                    if (g.type === 'header') {
             return '<div style="margin-top:10px;margin-bottom:4px;font-size:.72rem;color:#8b5cf6;letter-spacing:.06em;font-weight:700;border-bottom:1px solid #25253a;padding-bottom:3px">' + headerLabel(g.entry) + '</div>';
           }
           const r = g.entry;
+          if (r.isReflection) {
+            return '<div style="padding:8px 10px;margin:4px 0;border-left:3px solid #8b5cf6;background:#8b5cf60a;border-radius:4px;font-style:italic;color:#c4b5fd;font-size:.82rem"><span class="muted mono" style="font-size:.62rem;color:#8b5cf6;font-style:normal">' + (r.month && isMonthlyPace ? monthName(r.month).slice(0,3) + ' ' + (r.year || '') : 'Age ' + r.age) + ' · 💭 thought</span><br>' + r.msg + '</div>';
+          }
+          var isMoment = r.msg && r.msg.indexOf('📌') === 0;
+          if (isMoment) {
+            return '<div style="padding:6px 10px;margin:2px 0;border-left:3px solid #fbbf24;background:#fbbf2410;border-radius:4px;font-size:.85rem"><span class="muted mono" style="font-size:.62rem;color:#fbbf24">' + (r.month && isMonthlyPace ? monthName(r.month).slice(0,3) + ' ' + (r.year || '') : 'Age ' + r.age) + '</span><br>' + r.msg + '</div>';
+          }
           return '<div style="padding:4px 0;border-bottom:1px solid #1a1a2a"><span class="muted mono" style="font-size:.7rem">' + (r.month && isMonthlyPace ? monthName(r.month).slice(0,3) + ' ' + (r.year || '') : 'Age ' + r.age) + '</span> · ' + r.msg + '</div>';
         }).join('')}
       </div>
@@ -55,3 +64,73 @@ function lifeView() {
 }
 
 GameHooks.registerTab({ id: 'life', label: 'Life', order: 0, view: lifeView });
+/* ============================================================
+   LIFE STORY — the narrative view of your whole life
+   ============================================================ */
+function lifeStoryHtml() {
+  if (!S) return '';
+  if (S.age < 20) return '';
+
+  var chapter = getChapter();
+  var moments = getMoments ? getMoments() : [];
+  var recentMoments = moments.slice(0, 6);
+
+  var html = '<div class="card" style="border-color:' + chapter.color + ';background:linear-gradient(180deg,' + chapter.color + '10 0%,transparent 100%)">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+    '<div><div class="muted small" style="letter-spacing:.06em;font-weight:700;color:' + chapter.color + '">📖 YOUR STORY</div>' +
+    '<div style="font-size:1.05rem;font-weight:700;margin-top:2px">' + chapter.name + '</div>' +
+    '<div class="muted small" style="margin-top:2px">' + chapter.note + '</div></div>' +
+    '<div style="font-size:1.8rem">📖</div></div>';
+
+  /* Highlights line */
+  var stats = [];
+  if (moments.length > 0) stats.push(moments.length + ' moment' + (moments.length > 1 ? 's' : ''));
+  if ((S.reflections || []).length > 0) stats.push((S.reflections || []).length + ' reflection' + ((S.reflections || []).length > 1 ? 's' : ''));
+  if (stats.length > 0) {
+    html += '<div class="muted small" style="margin-top:8px;color:#888">' + stats.join(' · ') + '</div>';
+  }
+  html += '</div>';
+
+  /* Recent moments */
+  if (recentMoments.length > 0) {
+    html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">📌 Moments That Stayed</h3>';
+    recentMoments.forEach(function(m) {
+      html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div style="font-weight:700;font-size:.9rem">' + m.icon + ' ' + m.title + '</div>' +
+        '<span class="muted mono small" style="font-size:.7rem">' + m.year + ' · age ' + m.age + '</span></div>' +
+        (m.description ? '<div class="muted small" style="margin-top:3px;font-style:italic">' + m.description + '</div>' : '') +
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  /* Latest reflection */
+  var refl = S.reflections || [];
+  if (refl.length > 0) {
+    var lastRefl = refl[refl.length - 1];
+    html += '<div class="card" style="border-color:#8b5cf6;background:#8b5cf608">' +
+      '<h3 style="color:#8b5cf6">💭 A Recent Thought</h3>' +
+      '<div style="font-style:italic;color:#c4b5fd;font-size:.9rem;line-height:1.5">' + lastRefl.text + '</div>' +
+      '<div class="muted small" style="margin-top:6px;color:#8b5cf6">' + lastRefl.year + ' · age ' + lastRefl.age + '</div>' +
+      '</div>';
+  }
+
+  /* Chapter timeline */
+  if (S.age >= 25) {
+    var passedChapters = CHAPTERS.filter(function(c) { return c.maxAge < S.age; });
+    if (passedChapters.length > 0) {
+      html += '<div class="card"><h3>📚 Chapters So Far</h3>';
+      passedChapters.forEach(function(c) {
+        html += '<div style="padding:6px 0;border-bottom:1px solid #1a1a2a;display:flex;justify-content:space-between;align-items:center">' +
+          '<div><div style="font-weight:700;color:' + c.color + ';font-size:.85rem">' + c.name + '</div>' +
+          '<div class="muted small">' + c.note + '</div></div>' +
+          '<span class="muted mono small">ended age ' + c.maxAge + '</span></div>';
+      });
+      html += '</div>';
+    }
+  }
+
+  return html;
+}
+window.lifeStoryHtml = lifeStoryHtml;
