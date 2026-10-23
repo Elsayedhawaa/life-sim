@@ -3104,17 +3104,30 @@ function marFireYearEvent(evt) {
   if (!p || !evt) return;
 
   /* ---------- Flavor / automated events ---------- */
-    if (evt.id === 'partner_promotion') {
-    if (p.career) {
-      p.career.salary = Math.round((p.career.salary || p.income || 50000) * 1.15);
-      p.income = p.career.salary;
-      if (typeof p.career.level === 'number' && p.career.level < 3) {
-        p.career.level = Math.min(3, p.career.level + 1);
+  if (evt.id === 'partner_promotion') {
+    var _track = (typeof carTrackById === 'function') ? carTrackById(p.career ? p.career.track : null) : null;
+    var _maxLevel = (_track && _track.levels) ? _track.levels.length - 1 : 3;
+
+    if (p.career && typeof p.career.level === 'number') {
+      /* Already at max level — no promotion possible */
+      if (p.career.level >= _maxLevel) {
+        log('💬 ' + p.name + ' is already at the top of their career. No further promotions available right now.');
+        return;
+      }
+      p.career.level = Math.min(_maxLevel, p.career.level + 1);
+      var _rate = (C().rate || 1) / 52.7;
+      if (_track && _track.levels[p.career.level]) {
+        var _lvlDef = _track.levels[p.career.level];
+        p.career.title = _lvlDef.title;
+        p.career.salary = Math.round(_lvlDef.baseSalaryEGP * _rate);
+        p.income = p.career.salary;
       }
     } else {
+      /* Fallback: no career structure */
       p.income = Math.round((p.income || 50000) * 1.15);
     }
-    log('🎉 ' + p.name + ' got promoted. Income now ' + money(p.income) + '/yr.');
+
+    log('🎉 ' + p.name + ' got promoted to ' + (p.career ? p.career.title : 'a new role') + '. Income now ' + money(p.income) + '/yr.');
     log(p.name + ': "I got the promotion! We should celebrate this weekend."');
     p.bond = Math.min(100, p.bond + 5);
     fx({ happiness: 5 });
