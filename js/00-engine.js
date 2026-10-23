@@ -165,6 +165,7 @@ function newLife() {
   if (typeof GLOBAL_EVENTS !== 'undefined' && GLOBAL_EVENTS.length) {
     S.pending = prepareEvent(GLOBAL_EVENTS[0]);
   }
+    unityPass();
   GameHooks.run('newGame', S);
   save(); render();
 }
@@ -613,7 +614,6 @@ function startGame() {
 /* ============================================================
    SAVE / LOAD / RESET
    ============================================================ */
-function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch(e) {} }
 function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
@@ -624,6 +624,9 @@ function loadGame() {
       if (typeof S.gulfWork === 'undefined' && typeof ensureGulfWorkState === 'function') ensureGulfWorkState();
       if (typeof S.studyAbroad === 'undefined') S.studyAbroad = null;
       if (!Array.isArray(S.pendingQueue)) S.pendingQueue = [];
+      /* UNITY PASS Week 1: unify dual state (S.job/S.spouse/S.children) */
+      if (typeof unityPass === 'function') unityPass();
+      GameHooks.run('migrate', S);
       activeTab = 'life';
       render();
       return true;
@@ -899,6 +902,161 @@ function pickEligibleEvent() {
   return eligible[eligible.length - 1];
 }
 window.pickEligibleEvent = pickEligibleEvent;
+/* ============================================================
+   UNITY PASS — WEEK 1: STATE UNIFICATION
+   ============================================================
+   Merges every dual-state field to one source of truth:
+     S.job     → S.career.job (getter/setter)
+     S.spouse  → S.marriage.partner (getter/setter)
+     S.children → derived from S.childrenList.length (getter, read-only)
+   Old code that does `S.job = ...` still works — setter routes it.
+   Old code that does `S.job.salary` still works — getter reads career.
+   ============================================================ */
+
+function migrateDualState() {
+  if (!S) return;
+
+  /* Ensure canonical structures exist */
+  if (!S.career) S.career = {};
+  if (!S.marriage) S.marriage = { status: 'single', partner: null };
+  if (!S.bank) S.bank = {};
+  if (!Array.isArray(S.childrenList)) S.childrenList = [];
+  if (!Array.isArray(S.bank.creditCards)) S.bank.creditCards = [];
+  if (!S.evtMemory || typeof S.evtMemory !== 'object') S.evtMemory = {};
+  if (!Array.isArray(S.pendingQueue)) S.pendingQueue = [];
+
+  /* --- JOB: legacy S.job → S.career.job --- */
+  if (S.job && !S.career.job) {
+    S.career.job = {
+      title: S.job.title || 'Worker',
+      salary: S.job.salary || 0,
+      level: S.job.level || 0,
+      company: S.job.company || 'Unknown',
+      track: S.career.track || 'entry',
+      baseSalaryEGP: S.job.salary || 0,
+      payMult: 1.0,
+      performance: 50,
+      hiredYear: gameYear() - (S.job.years || 0),
+      tenure: S.job.years || 0,
+      benefits: [],
+      stability: 0.85,
+      prestige: 3,
+      salaryCurrency: C().currency
+    };
+  }
+
+  /* --- SPOUSE: legacy S.spouse → S.marriage.partner --- */
+  if (S.spouse && !S.marriage.partner) {
+    S.marriage.partner = {
+      name: S.spouse.name || 'Partner',
+      age: S.spouse.age || S.age,
+      gender: S.spouse.gender || (S.gender === 'm' ? 'f' : 'm'),
+      bond: S.spouse.bond || 70,
+      trust: 50,
+      chemistry: 50,
+      compatibility: 55,
+      traits: S.spouse.traits || ['kind'],
+      income: S.spouse.income || 0,
+      source: 'legacy',
+      alive: S.spouse.alive !== false,
+      marriedYear: gameYear()
+    };
+    if (S.marriage.status === 'single') S.marriage.status = 'married';
+  }
+
+  /* --- PREGNANCY: legacy S.pregnantMonths → S.pregnancy --- */
+  if (S.pregnantMonths && S.pregnantMonths > 0 && !S.pregnancy) {
+    S.pregnancy = {
+      active: true,
+      startYear: gameYear(),
+      monthsElapsed: S.pregnantMonths,
+      isIVF: false,
+      motherIsPlayer: S.gender === 'f',
+      fatherIsPlayer: S.gender === 'm',
+      knownGender: null,
+      plannedHospital: 'private',
+      complications: [],
+      planningChecklist: { clothes: false, clothesTier: null, nursery: false, nurseryTier: null, name: null },
+      eventLog: []
+    };
+    S.pregnantMonths = 0;
+  }
+}
+
+function unifyState() {
+  if (!S) return;
+
+  /* JOB — routes to S.career.job */
+  try {
+    Object.defineProperty(S, 'job', {
+      configurable: true,
+      enumerable: false,
+      get: function() { return (S.career && S.career.job) || null; },
+      set: function(v) {
+        if (!S.career) S.career = {};
+        if (v === null || v === undefined) {
+          S.career.job = null;
+        } else if (!S.career.job) {
+          S.career.job = v;
+        } else {
+          Object.keys(v).forEach(function(k) { S.career.job[k] = v[k]; });
+        }
+      }
+    });
+  } catch (e) { console.warn('[Unity] S.job getter failed:', e); }
+
+  /* SPOUSE — routes to S.marriage.partner */
+  try {
+    Object.defineProperty(S, 'spouse', {
+      configurable: true,
+      enumerable: false,
+      get: function() { return (S.marriage && S.marriage.partner) || null; },
+      set: function(v) {
+        if (!S.marriage) S.marriage = { status: 'single', partner: null };
+        if (v === null || v === undefined) {
+          S.marriage.partner = null;
+        } else if (!S.marriage.partner) {
+          S.marriage.partner = v;
+        } else {
+          Object.keys(v).forEach(function(k) { S.marriage.partner[k] = v[k]; });
+        }
+      }
+    });
+  } catch (e) { console.warn('[Unity] S.spouse getter failed:', e); }
+
+  /* CHILDREN — derived from S.childrenList.length (read-only) */
+  try {
+    Object.defineProperty(S, 'children', {
+      configurable: true,
+      enumerable: false,
+      get: function() { return (S.childrenList || []).length; },
+      set: function(v) {
+        if (typeof v === 'number' && v !== (S.childrenList || []).length) {
+          console.warn('[Unity] S.children write ignored — derived from childrenList.length (' + (S.childrenList || []).length + ')');
+        }
+      }
+    });
+  } catch (e) { console.warn('[Unity] S.children getter failed:', e); }
+}
+
+function unityPass() {
+  migrateDualState();
+  unifyState();
+}
+window.unityPass = unityPass;
+
+/* Idempotent re-application on every render — safety net */
+GameHooks.on('render', function() {
+  if (!S) return;
+  var isUnified = false;
+  try {
+    var desc = Object.getOwnPropertyDescriptor(S, 'job');
+    if (desc && typeof desc.get === 'function') isUnified = true;
+  } catch(e) {}
+  if (!isUnified) {
+    unityPass();
+  }
+});
 /* ============================================================
    AMBIENT FLAVOR — life feels alive even without big events
    ============================================================ */
