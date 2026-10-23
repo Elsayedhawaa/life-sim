@@ -2401,3 +2401,148 @@ GameHooks.on('render', function() {
     })(om[1]);
   }
 });
+/* ============================================================
+   SESSION 9: CAREER SALARY FROM ECON ENGINE
+   ============================================================ */
+
+function carSalaryForLevel(trackId, level, countryOverride) {
+  var country = countryOverride || (S && S.country) || 'egy';
+  var sector = 'private';
+
+  /* Try econ engine (Session 8) first — real, country-scaled, year-scaled */
+  if (typeof econSalary === 'function') {
+    try {
+      var econVal = econSalary(trackId, level, country, gameYear(), sector);
+      if (econVal > 0) return econVal;
+    } catch (e) { /* fall through */ }
+  }
+
+  /* Fallback: old hardcoded, converted by current rate */
+  var track = carTrackById(trackId);
+  if (track && track.levels && track.levels[level]) {
+    var rate = (C().rate || 1) / 52.7;
+    return Math.round(track.levels[level].baseSalaryEGP * rate);
+  }
+  return 50000;
+}
+window.carSalaryForLevel = carSalaryForLevel;
+
+/* ============================================================
+   SESSION 9: SPECIALTY / BRANCH CHOICE
+   ============================================================ */
+
+function carChooseSpecialty(newTrackId) {
+  if (!S || !S.career || !S.career.job) return false;
+  var job = S.career.job;
+
+  if (job.track === newTrackId) {
+    job.branchChosen = true;
+    job.branchChosenYear = gameYear();
+    log('🎓 You committed to staying on the ' + (carTrackById(newTrackId) || {}).label + ' path.');
+    return true;
+  }
+
+  var newTrack = carTrackById(newTrackId);
+  if (!newTrack) { log('❌ Unknown specialty: ' + newTrackId); return false; }
+
+  var check = (typeof carCanApplyTrack === 'function') ? carCanApplyTrack(newTrackId) : { ok: true };
+  if (!check.ok) { log('❌ ' + check.reason); return false; }
+
+  var oldLabel = (carTrackById(job.track) || {}).label || job.track;
+  var newLevel = Math.min(job.level || 0, newTrack.levels.length - 1);
+
+  job.track = newTrackId;
+  job.level = newLevel;
+  job.title = newTrack.levels[newLevel].title;
+  job.salary = carSalaryForLevel(newTrackId, newLevel);
+  job.baseSalaryEGP = job.salary;
+  job.specializedYear = gameYear();
+  job.branchChosen = true;
+  job.branchChosenYear = gameYear();
+
+  log('🎓 SPECIALTY CHOSEN: ' + newTrack.label);
+  log('   New title: ' + job.title);
+  log('   New salary: ' + money(job.salary) + '/year');
+  fx({ happiness: 8, smarts: 3 });
+
+  if (typeof recordMoment === 'function') {
+    recordMoment(
+      'The day you committed to ' + newTrack.label,
+      'You chose your specialty. The path ahead is now specific — no more "general."',
+      { icon: '🎓', key: 'specialty_' + newTrackId }
+    );
+  }
+  if (typeof emitSignal === 'function') {
+    emitSignal('careerSpecialized', { from: oldLabel, to: newTrack.label });
+  }
+  return true;
+}
+window.carChooseSpecialty = carChooseSpecialty;
+
+function carCheckBranchPoint() {
+  if (!S || !S.career || !S.career.job) return false;
+  var job = S.career.job;
+  var branchDef = (typeof CAR_BRANCH_OPTIONS !== 'undefined') ? CAR_BRANCH_OPTIONS[job.track] : null;
+  if (!branchDef) return false;
+  if (job.branchChosen) return false;
+  if ((job.level || 0) < branchDef.branchAtLevel) return false;
+
+  /* Mark as available — the UI shows a "choose specialty" card */
+  if (!job.branchChoiceAvailable) {
+    job.branchChoiceAvailable = true;
+    log('🎓 Your career has reached a specialization point. Choose your specialty in the Career tab.');
+  }
+
+  /* Fire an interactive event if nothing else is pending */
+  if (!S.pending) {
+    var choices = branchDef.options.map(function(opt) {
+      return {
+        label: opt.label + ' — ' + opt.desc,
+        effect: function() {
+          carChooseSpecialty(opt.trackId);
+        }
+      };
+    });
+    S.pending = {
+      title: '🎓 Choose Your Specialty',
+      text: branchDef.question,
+      choices: choices
+    };
+    S.evId = 'specialty_choice_' + gameYear();
+    return true;
+  }
+  return false;
+}
+window.carCheckBranchPoint = carCheckBranchPoint;
+
+/* ============================================================
+   SESSION 9: MIGRATION FOR EXISTING CAREERS
+   Mark existing players as already-specialized to avoid forced popup.
+   Player can manually re-specialize via Career → Overview button.
+   ============================================================ */
+function carMigrateCareerSpecialty() {
+  if (!S || !S.career || !S.career.job) return;
+  var job = S.career.job;
+  if (typeof CAR_BRANCH_OPTIONS === 'undefined') return;
+  var branchDef = CAR_BRANCH_OPTIONS[job.track];
+  if (!branchDef) return;
+  if (job.branchChosen) return;
+  if ((job.level || 0) < branchDef.branchAtLevel) return;
+
+  /* Existing save — assume they've already specialized, just mark it */
+  job.branchChosen = true;
+  job.branchChosenYear = gameYear();
+  job.branchChoiceAvailable = false;
+  log('🎓 Your existing career is treated as already specialized. You can change specialty anytime from Career → Overview.');
+}
+window.carMigrateCareerSpecialty = carMigrateCareerSpecialty;
+
+/* Run migration on render (safe, idempotent) */
+GameHooks.on('render', function() {
+  if (S && S.career && S.career.job) {
+    if (!S.career.job._migratedSpecialty) {
+      carMigrateCareerSpecialty();
+      S.career.job._migratedSpecialty = true;
+    }
+  }
+});
