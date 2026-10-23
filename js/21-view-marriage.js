@@ -2708,6 +2708,17 @@ window.marConfirmWedding = function() {
 
   log('🎉 You married ' + m.partner.name + '! Cost paid: ' + money(playerTotalLocal));
   fx({ happiness: 30 });
+     /* SOUL PASS — record the moment */
+  if (typeof recordMoment === 'function') {
+    recordMoment(
+      'The day you married ' + m.partner.name,
+      'You stood in front of everyone who mattered to you and said yes. The cake was too sweet. Someone cried.',
+      { icon: '💍', key: 'wedding', weight: 3 }
+    );
+  }
+  if (typeof emitReflection === 'function') {
+    emitReflection('You are married now. It does not feel as different as you thought it would. It feels like a door closing, gently, behind you.', { mood: 'tender' });
+  }
 
   /* Wedding Day Interactive Event Trigger */
   const weddingEventChoices = {
@@ -2965,6 +2976,16 @@ window.marAskForDivorce = function() {
 
   log('💔 Divorced ' + p.name + '.');
   fx({ happiness: -25 });
+     if (typeof recordMoment === 'function') {
+    recordMoment(
+      'The day you divorced ' + p.name,
+      'The paperwork was surprisingly fast. You walked out into a normal day. Nothing dramatic. That was the strange part.',
+      { icon: '💔', key: 'divorce', weight: 3 }
+    );
+  }
+  if (typeof checkReflectionTriggers === 'function') {
+    checkReflectionTriggers('divorce', { ex: p.name });
+  }
   render();
 };
 
