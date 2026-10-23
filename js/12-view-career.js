@@ -725,7 +725,7 @@ function carHireFromApplication(app) {
     }
   }
 
-     /* Boss assignment */
+       /* Boss assignment */
   S.career.job.boss = {
     name: carRandomInterviewer(),
     bond: 50 + Math.floor(Math.random() * 20)
@@ -990,7 +990,7 @@ function carOpenBusiness(typeId) {
     log('❌ You cannot open a business here. You need work authorization or permanent residency.');
     render();
     return;
-  } // <--- THIS WAS MISSING
+  }
 
   if (type.requiresDegree && S.degree !== type.requiresDegree) {
     log('❌ Requires ' + type.requiresDegree + ' degree.'); render(); return;
@@ -1555,6 +1555,7 @@ function carRenderSearch() {
       '<div class="small" style="color:' + trend.color + '">' + trend.icon + ' ' + trend.label + '</div></div>' +
       '<div class="muted small">Starting: ' + money(minSal) + ' - ' + money(maxSal) + '/year</div>';
     if (check.note) html += '<div class="muted small" style="color:#fbbf24">' + check.note + '</div>';
+    
     companies.forEach(function(company, idx) {
       const salary = Math.round(level.baseSalaryEGP * company.payMult);
       const appliedHere = S.career.applications.some(function(a) {
@@ -1564,7 +1565,7 @@ function carRenderSearch() {
         return h.company === company.name;
       });
 
-html += '<div style="margin-top:8px;padding:8px;background:#14141f;border-radius:6px">' +
+      html += '<div style="margin-top:8px;padding:8px;background:#14141f;border-radius:6px">' +
         '<div style="display:flex;justify-content:space-between"><b>' + company.name + (workedHere ? ' ⭐' : '') + '</b><span>' + money(salary) + '/yr</span></div>' +
         '<div class="muted small">' + level.title + ' · Prestige ' + company.prestige + '/5 · Stability ' + Math.round(company.stability * 100) + '%</div>' +
         '<div class="muted small" style="color:#8b5cf6">Perks: ' + company.benefits.map(function(b) { return (CAR_BENEFITS[b] || {}).label || b; }).join(', ') + '</div>';
@@ -1586,6 +1587,7 @@ html += '<div style="margin-top:8px;padding:8px;background:#14141f;border-radius
         html += '<button class="opt" style="margin-top:6px;padding:6px;font-size:.72rem;width:100%;text-align:center" onclick="carApplyToJob(\'' + track.id + '\',' + idx + ')">Apply</button>';
       }
       html += '</div>';
+    });
   });
 
   return html;
@@ -2747,6 +2749,7 @@ GameHooks.on('year', function() {
   if (!S || !S.career || !S.career.job) return;
   if (S.pending) return;
 
+  var year = gameYear();
   var job = S.career.job;
   var meta = carMetaFor(job.company);
   if (!meta) return;
