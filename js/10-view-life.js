@@ -286,3 +286,36 @@ function familyTreeSummaryHtml() {
   return html;
 }
 window.familyTreeSummaryHtml = familyTreeSummaryHtml;
+/* ============================================================
+   SESSION 11: LEGACY PANEL — 50+ generational summary
+   ============================================================ */
+function legacyPanelHtml() {
+  if (!S) return '';
+  if (S.age < 50) return '';
+
+  var patterns = (typeof detectFamilyPatterns === 'function') ? detectFamilyPatterns() : null;
+  if (!patterns) return '';
+
+  var notes = [];
+  if (patterns.wasRaisedDistant && patterns.isDistantParent) notes.push({ icon: '💔', text: 'You grew up distant. Your children are distant from you. The cycle continues.', color: '#fb7185' });
+  if (patterns.wasRaisedDistant && patterns.isLovingParent) notes.push({ icon: '💪', text: 'You grew up distant — but you raised your children with love. You broke the cycle.', color: '#34d399' });
+  if (patterns.wasRaisedLovingly && patterns.isLovingParent) notes.push({ icon: '❤️', text: 'You were loved. You loved in return. The pattern holds.', color: '#34d399' });
+  if (!patterns.parentsStayedMarried && patterns.playerMarriageStrong) notes.push({ icon: '💍', text: 'Your parents\' marriage broke. Yours did not. Another cycle broken.', color: '#34d399' });
+  if (patterns.parentsStayedMarried && patterns.playerMarriedOrDivorced && !patterns.playerMarriageStrong) notes.push({ icon: '💔', text: 'Your parents stayed together. Your marriage did not.', color: '#fb7185' });
+  if (patterns.valuesEducation) notes.push({ icon: '🎓', text: 'You invested in education. Your children will remember.', color: '#fbbf24' });
+
+  if (notes.length === 0) return '';
+
+  var html = '<div class="card" style="border-color:#8b5cf6;background:linear-gradient(180deg,#8b5cf610 0%,transparent 100%)">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<div><div class="muted small" style="letter-spacing:.06em;font-weight:700;color:#8b5cf6">🪞 GENERATIONAL LEGACY</div>' +
+    '<div style="font-weight:700;font-size:1rem;margin-top:2px">The Patterns You Passed</div></div>' +
+    '<div style="font-size:1.6rem">🪞</div></div>';
+
+  notes.forEach(function(n) {
+    html += '<div style="padding:6px 0;font-size:.78rem;color:' + n.color + ';line-height:1.4">' + n.icon + ' ' + n.text + '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+window.legacyPanelHtml = legacyPanelHtml;
