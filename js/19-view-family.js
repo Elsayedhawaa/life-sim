@@ -1213,10 +1213,11 @@ function familyCall(memberId) {
   ensureFamilyState();
   const m = familyById(memberId);
   if (!m || m.alive === false) return;
-  familyMarkContact(m);
+    familyMarkContact(m);
   familyAddBond(m, FAMILY_BOND_BONUSES.call);
   fx({ happiness: 2 });
-    log('📞 You called your ' + m.role.toLowerCase() + ', ' + m.name + '.');
+  log('📞 You called your ' + m.role.toLowerCase() + ', ' + m.name + '.');
+  if (typeof relRemember === 'function') relRemember(m, 'call', 'Called ' + m.name, true);
   var line = characterSay(m, m.bond < 30 ? 'upset' : m.bond > 75 ? 'happy' : 'greeting');
   if (line) log(m.name + ': "' + line + '"');
   familyLog('📞 Called ' + m.name + ' — "' + line + '"');
@@ -1246,6 +1247,7 @@ function familyVisit(memberId) {
   familyAddBond(m, FAMILY_BOND_BONUSES.visit);
   fx({ happiness: 4 });
   log('☕ You visited ' + m.name + '.');
+  if (typeof relRemember === 'function') relRemember(m, 'visit', 'Visited ' + m.name + ' in person', true);
   familyLog('☕ Visited ' + m.name);
   render();
 }
