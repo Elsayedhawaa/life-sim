@@ -157,6 +157,9 @@ window.familyFulfillWant = function(wantId) {
   }
   fx({ happiness: 4 });
   log('💝 Fulfilled ' + want.relationName + "'s wish for " + want.label + '. Bond +' + want.bondFulfill + '.');
+  if (rel && rel.obj && typeof relRemember === 'function') {
+    relRemember(rel.obj, 'gift', 'Fulfilled wish: ' + want.label, true);
+  }
   emitSignal('wantFulfilled', { want: want });
   render();
 };
@@ -173,6 +176,9 @@ window.familyIgnoreWant = function(wantId) {
     if (typeof rel.obj.happiness === 'number') rel.obj.happiness = Math.max(0, rel.obj.happiness + Math.round(want.bondIgnore / 2));
   }
   log('😶 You ignored ' + want.relationName + "'s wish. Bond " + want.bondIgnore + '.');
+  if (rel && rel.obj && typeof relRemember === 'function') {
+    relRemember(rel.obj, 'hurt', 'Ignored their request: ' + want.label, false);
+  }
   render();
 };
 
