@@ -1993,7 +1993,6 @@ function computeHousehold() {
       expenses += rentFromLife;
       expenseItems.push({ label: '🔑 Rent', yearly: rentFromLife, country: S.country });
     }
-  }
   } else {
     var food = c.prices.food || 0;
     var ph = c.prices.phone || 0;
