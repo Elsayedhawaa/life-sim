@@ -1982,14 +1982,28 @@ function computeHousehold() {
 
   /* Cars — maintenance, fuel, insurance (already in player currency) */
   (S.cars || []).forEach(function(car) {
+    if (car.stolen) return;
     if (car.storedIn) return;
+    var carName = (car.brand || '') + ' ' + (car.model || '');
     var mnt = (typeof carMaintenanceYearLocal === 'function') ? carMaintenanceYearLocal(car) : 0;
     var fl = (typeof carFuelCostYearLocal === 'function') ? carFuelCostYearLocal(car) : 0;
     var ins = (typeof carInsuranceYearLocal === 'function') ? carInsuranceYearLocal(car) : 0;
-    var tot = mnt + fl + ins;
-    if (tot > 0) {
-      expenses += tot;
-      expenseItems.push({ label: 'Car — ' + (car.brand || '') + ' ' + (car.model || ''), yearly: tot, country: S.country });
+    var reg = (typeof carRegistrationYearLocal === 'function') ? carRegistrationYearLocal(car) : 0;
+    if (ins > 0) {
+      expenses += ins;
+      expenseItems.push({ label: '🚗 Car insurance — ' + carName, yearly: ins, country: S.country });
+    }
+    if (fl > 0) {
+      expenses += fl;
+      expenseItems.push({ label: '⛽ Car fuel — ' + carName, yearly: fl, country: S.country });
+    }
+    if (mnt > 0) {
+      expenses += mnt;
+      expenseItems.push({ label: '🔧 Car maintenance — ' + carName, yearly: mnt, country: S.country });
+    }
+    if (reg > 0) {
+      expenses += reg;
+      expenseItems.push({ label: '📋 Car registration — ' + carName, yearly: reg, country: S.country });
     }
   });
 
