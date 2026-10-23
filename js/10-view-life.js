@@ -55,6 +55,14 @@ function lifeView() {
           if (isMoment) {
             return '<div style="padding:6px 10px;margin:2px 0;border-left:3px solid #fbbf24;background:#fbbf2410;border-radius:4px;font-size:.85rem"><span class="muted mono" style="font-size:.62rem;color:#fbbf24">' + (r.month && isMonthlyPace ? monthName(r.month).slice(0,3) + ' ' + (r.year || '') : 'Age ' + r.age) + '</span><br>' + r.msg + '</div>';
           }
+                     var isWhisper = r.msg && r.msg.indexOf('🌫') === 0;
+          if (isWhisper) {
+            return '<div style="padding:5px 10px;margin:3px 0;font-style:italic;color:#a5b4fc;font-size:.8rem;border-left:2px solid #6366f1;background:#6366f108;border-radius:3px"><span class="muted mono" style="font-size:.6rem;font-style:normal">' + (r.month && isMonthlyPace ? monthName(r.month).slice(0,3) + ' ' + (r.year || '') : 'Age ' + r.age) + '</span> ' + r.msg.replace('🌫 ', '') + '</div>';
+          }
+          var isResolve = r.msg && r.msg.indexOf('🌤') === 0;
+          if (isResolve) {
+            return '<div style="padding:4px 10px;margin:2px 0;font-style:italic;color:#86efac;font-size:.78rem"><span class="muted mono" style="font-size:.6rem;font-style:normal">' + (r.month && isMonthlyPace ? monthName(r.month).slice(0,3) + ' ' + (r.year || '') : 'Age ' + r.age) + '</span> ' + r.msg.replace('🌤 ', '') + '</div>';
+          }
           return '<div style="padding:4px 0;border-bottom:1px solid #1a1a2a"><span class="muted mono" style="font-size:.7rem">' + (r.month && isMonthlyPace ? monthName(r.month).slice(0,3) + ' ' + (r.year || '') : 'Age ' + r.age) + '</span> · ' + r.msg + '</div>';
         }).join('')}
       </div>
