@@ -1086,8 +1086,8 @@ GameHooks.on('year', function() {
         if (car.insuranceExpiry < year && car.insurance !== 'none') {
           car.insuranceExpiry = year + 1;
         }
-        if (car.registrationExpiry < year) {
-          car.registrationExpiry = year + 2;
+          if (car.registrationExpiry < year) {
+          car.registrationExpiry = year + 1;
         }
 
         const bChance = 0.02 + car.age * 0.008 + (car.condition < 50 ? 0.10 : 0) + (brand ? (11 - brand.reliability) * 0.01 : 0.03);
