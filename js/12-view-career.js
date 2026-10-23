@@ -598,10 +598,22 @@ function carResolveRound(app) {
   app.roundScores.push({ round: app.round, score: Math.round(score * 100), passed: passed });
   app.round++;
 
-  if (!passed) {
+    if (!passed) {
     app.status = 'rejected';
-    const msg = roundDef.failMessages[Math.floor(Math.random() * roundDef.failMessages.length)];
-    log('❌ ' + app.companyName + ': ' + msg);
+    var _reasons = (typeof INTERVIEW_REJECTION_REASONS !== 'undefined' && INTERVIEW_REJECTION_REASONS[roundDef.id]) || [];
+    var _matched = null;
+    for (var _i = 0; _i < _reasons.length; _i++) {
+      if (_reasons[_i].check && _reasons[_i].check(S)) { _matched = _reasons[_i]; break; }
+    }
+    var msg;
+    if (_matched) {
+      msg = '❌ ' + app.companyName + ': ' + _matched.text;
+    } else {
+      var _genericPool = _reasons.filter(function(r) { return !r.check; });
+      if (_genericPool.length > 0) msg = '❌ ' + app.companyName + ': ' + _genericPool[0].text;
+      else msg = '❌ ' + app.companyName + ': ' + roundDef.failMessages[Math.floor(Math.random() * roundDef.failMessages.length)];
+    }
+    log(msg);
     fx({ happiness: -5 });
     S.career.applications = S.career.applications.filter(function(a) { return a.id !== app.id; });
     if (S.career.mood === 'neutral') S.career.mood = 'frustrated';
@@ -1357,7 +1369,26 @@ function carRenderOverview() {
   const tax = (typeof carComputeTax === 'function') ? carComputeTax(j.salary) : 0;
   const pension = Math.round(j.salary * 0.11);
   const net = j.salary - tax - pension;
-
+     /* Session 9B: Active sector crisis banner */
+  if (typeof carActiveCrisis === 'function') {
+    var _crisis = carActiveCrisis();
+    if (_crisis && _crisis.severity > 0) {
+      h += '<div class="card" style="border-color:#fb7185;background:#fb718510">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div><div class="muted small" style="color:#fb7185;letter-spacing:.06em;font-weight:700">⚠️ SECTOR CRISIS ACTIVE</div>' +
+        '<div style="font-weight:700;font-size:.95rem;margin-top:2px">' + _crisis.label + '</div></div>' +
+        '<div style="font-size:1.6rem">🚨</div></div>' +
+        '<p class="muted small" style="margin-top:6px">' + _crisis.desc + '</p>' +
+        '<div class="muted small" style="margin-top:6px;color:#fb7185">Layoff risk elevated in your industry this year.</div>' +
+        '</div>';
+    } else if (_crisis && _crisis.severity < 0) {
+      h += '<div class="card" style="border-color:#34d399;background:#34d39910">' +
+        '<div class="muted small" style="color:#34d399;letter-spacing:.06em;font-weight:700">✨ BOOM PERIOD</div>' +
+        '<div style="font-weight:700;font-size:.95rem;margin-top:2px">' + _crisis.label + '</div>' +
+        '<p class="muted small" style="margin-top:6px">' + _crisis.desc + '</p>' +
+        '</div>';
+    }
+  }
   let h = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#8b5cf610 0%,transparent 100%);border-color:#8b5cf6">';
   h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">';
   h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">SALARY</div><div class="mono" style="font-weight:700;font-size:.9rem">' + money(j.salary) + '</div><div class="muted" style="font-size:.6rem">per year</div></div>';
@@ -1538,8 +1569,18 @@ function carRenderSearch() {
         '<div class="muted small">' + level.title + ' · Prestige ' + company.prestige + '/5 · Stability ' + Math.round(company.stability * 100) + '%</div>' +
         '<div class="muted small" style="color:#8b5cf6">Perks: ' + company.benefits.map(function(b) { return (CAR_BENEFITS[b] || {}).label || b; }).join(', ') + '</div>' +
         (appliedHere ? '<div class="muted small" style="color:#fbbf24;margin-top:4px">📝 Application in progress</div>' :
-          '<button class="opt" style="margin-top:6px;padding:6px;font-size:.72rem;width:100%;text-align:center" onclick="carApplyToJob(\'' + track.id + '\',' + idx + ')">Apply</button>') +
-        '</div>';
+        var _meta = (typeof COMPANY_META !== 'undefined' && COMPANY_META[company.name]) || null;
+        var _metaWarn = '';
+        if (_meta) {
+          if (_meta.growth === 'risky') _metaWarn = '<div class="muted small" style="color:#fb7185;margin-top:2px">⚠️ Startup — high risk, high reward</div>';
+          else if (_meta.growth === 'growth') _metaWarn = '<div class="muted small" style="color:#34d399;margin-top:2px">📈 Growing fast</div>';
+          else if (_meta.growth === 'cyclical') _metaWarn = '<div class="muted small" style="color:#fbbf24;margin-top:2px">〰️ Cyclical industry</div>';
+          if (_meta.culture === 'prestigious') _metaWarn += '<div class="muted small" style="color:#8b5cf6;margin-top:2px">🌟 Prestigious — tough interviews</div>';
+          if (_meta.culture === 'bureaucratic') _metaWarn += '<div class="muted small" style="color:#888;margin-top:2px">📋 Bureaucratic culture</div>';
+          if (_meta.culture === 'demanding') _metaWarn += '<div class="muted small" style="color:#fbbf24;margin-top:2px">💪 Demanding hours</div>';
+        }
+        html += _metaWarn;
+        html += '<button class="opt" style="margin-top:6px;padding:6px;font-size:.72rem;width:100%;text-align:center" onclick="carApplyToJob(\'' + track.id + '\',' + idx + ')">Apply</button>';        '</div>';
     });
     html += '</div>';
   });
@@ -2591,4 +2632,199 @@ GameHooks.on('render', function() {
       S.career.job._migratedSpecialty = true;
     }
   }
+});
+/* ============================================================
+   SESSION 9B: HELPERS + YEAR HOOKS
+   ============================================================ */
+
+function carActiveCrisis() {
+  if (!S || typeof SECTOR_CRISES === 'undefined') return null;
+  var year = gameYear();
+  var industry = null;
+  if (S.career && S.career.job && typeof carTrackById === 'function') {
+    var track = carTrackById(S.career.job.track);
+    if (track) industry = track.industry;
+  }
+  /* Prefer a crisis that matches player's industry, else any active crisis */
+  var matches = SECTOR_CRISES.filter(function(c) {
+    return c.year <= year && c.yearEnd >= year;
+  });
+  if (matches.length === 0) return null;
+  if (industry) {
+    var industryMatch = matches.find(function(c) { return c.industries.indexOf(industry) >= 0; });
+    if (industryMatch) return industryMatch;
+  }
+  /* Return crisis visible to everyone (for banner) even if not industry-specific */
+  return matches.find(function(c) { return c.severity > 0.5; }) || matches[0];
+}
+window.carActiveCrisis = carActiveCrisis;
+
+function carMetaFor(companyName) {
+  if (typeof COMPANY_META === 'undefined' || !companyName) return null;
+  return COMPANY_META[companyName] || null;
+}
+window.carMetaFor = carMetaFor;
+
+/* ---------- CRISIS LAYOFF HOOK ---------- */
+GameHooks.on('year', function() {
+  if (!S || !S.career || !S.career.job) return;
+  if (S.pending) return;
+  if (typeof SECTOR_CRISES === 'undefined') return;
+
+  var year = gameYear();
+  var job = S.career.job;
+  var industry = null;
+  if (typeof carTrackById === 'function') {
+    var track = carTrackById(job.track);
+    if (track) industry = track.industry;
+  }
+  if (!industry) return;
+
+  /* Find ALL matching crises (rare but possible) */
+  var activeCrises = SECTOR_CRISES.filter(function(c) {
+    if (c.year > year || c.yearEnd < year) return false;
+    if (c.industries.indexOf(industry) < 0) return false;
+    return c.severity > 0;
+  });
+
+  if (activeCrises.length === 0) return;
+
+  var crisis = activeCrises[0];
+  var stability = job.stability || 0.85;
+  var meta = carMetaFor(job.company);
+  if (meta && Array.isArray(meta.crisisVulnerable) && meta.crisisVulnerable.indexOf(crisis.id) >= 0) {
+    stability = Math.max(0.3, stability - 0.20);
+  }
+
+  var layoffChance = (1 - stability) * 0.30 * crisis.severity;
+  var roll = Math.random();
+
+  if (roll < layoffChance) {
+    /* Fire the layoff */
+    var _company = job.company;
+    S.pending = {
+      title: '🚨 Layoff — ' + crisis.label,
+      text: 'Your company just announced layoffs due to the ' + crisis.label + '.\n\nYour name is on the list. ' + _company + ' is letting you go.\n\nSeverance: 2 months salary.',
+      choices: [
+        { label: 'Accept the severance and move on', effect: function(s) {
+            if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('crisis layoff');
+            fx({ happiness: -25, health: -5, wealth: Math.round((S.career && S.career.job ? S.career.job.salary / 6 : 0)) });
+            log('🚨 Laid off due to ' + crisis.label + '.');
+            if (typeof emitSignal === 'function') emitSignal('jobLost', { company: _company, reason: crisis.label });
+          }
+        },
+        { label: 'Appeal to HR (30% chance)', effect: function(s) {
+            if (Math.random() < 0.30) {
+              log('💪 Your appeal was heard. You kept your job — this round.');
+              fx({ happiness: 5, health: -2 });
+            } else {
+              if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('crisis layoff');
+              fx({ happiness: -30, health: -5 });
+              log('🚨 Appeal denied. You are let go.');
+              if (typeof emitSignal === 'function') emitSignal('jobLost', { company: _company, reason: crisis.label });
+            }
+          }
+        }
+      ]
+    };
+    S.evId = 'crisis_layoff_' + crisis.id + '_' + year;
+  } else if (!S.flags['crisis_notice_' + crisis.id + '_' + year]) {
+    S.flags['crisis_notice_' + crisis.id + '_' + year] = true;
+    log('🌫 ' + crisis.label + ' — layoffs rumored across your industry.');
+  }
+});
+
+/* ---------- COMPANY COLLAPSE HOOK ---------- */
+GameHooks.on('year', function() {
+  if (!S || !S.career || !S.career.job) return;
+  if (S.pending) return;
+
+  var job = S.career.job;
+  var meta = carMetaFor(job.company);
+  if (!meta) return;
+  if (meta.growth !== 'risky') return;
+  if (Math.random() > 0.06) return;
+
+  /* Company is failing */
+  var _company = job.company;
+  S.pending = {
+    title: '💼 Company Is Failing',
+    text: 'Rumors are true. ' + _company + ' is running out of cash. The CEO just resigned. Your salary might not be paid next month.\n\nWhat do you do?',
+    choices: [
+      { label: 'Ride it out — hope for the best', effect: function(s) {
+          if (Math.random() < 0.35) {
+            log('🎲 The company secured funding. You kept your job.');
+            fx({ happiness: 3 });
+          } else {
+            if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('company collapse');
+            fx({ happiness: -25, health: -5 });
+            log('💔 ' + _company + ' shut down. You lost your job.');
+            if (typeof emitSignal === 'function') emitSignal('jobLost', { company: _company, reason: 'company collapse' });
+          }
+        }
+      },
+      { label: 'Leave now and start job hunting', effect: function(s) {
+          if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('company failure');
+          fx({ happiness: -8 });
+          log('🚪 You saw the signs and left before collapse.');
+        }
+      }
+    ]
+  };
+  S.evId = 'company_collapse_' + year;
+});
+
+/* ---------- RECRUITER OFFER HOOK ---------- */
+GameHooks.on('year', function() {
+  if (!S || !S.career || !S.career.job) return;
+  if (S.pending) return;
+
+  var job = S.career.job;
+  if ((job.performance || 50) < 75) return;
+  if ((job.tenure || 0) < 2) return;
+  if (Math.random() > 0.15) return;
+
+  var industry = null;
+  if (typeof carTrackById === 'function') {
+    var track = carTrackById(job.track);
+    if (track) industry = track.industry;
+  }
+  if (!industry) return;
+
+  var pool = (typeof CAR_COMPANIES !== 'undefined' && CAR_COMPANIES[S.country] && CAR_COMPANIES[S.country][industry]) || [];
+  var competitors = pool.filter(function(c) { return c.name !== job.company; });
+  if (competitors.length === 0) return;
+
+  /* Prefer companies with better payMult or prestige */
+  var currentMeta = carMetaFor(job.company);
+  var better = competitors.filter(function(c) { return (c.payMult || 1) >= 1.1; });
+  var target = (better.length > 0 ? better : competitors)[Math.floor(Math.random() * (better.length > 0 ? better.length : competitors.length))];
+
+  var currentSalary = job.salary || 0;
+  var baseForLevel = (typeof carSalaryForLevel === 'function') ? carSalaryForLevel(job.track, job.level || 0) : currentSalary;
+  var offeredSalary = Math.round(baseForLevel * (target.payMult || 1.0));
+
+  if (offeredSalary <= currentSalary * 1.05) return;
+
+  var pct = Math.round((offeredSalary / currentSalary - 1) * 100);
+
+  if (!Array.isArray(S.career.offers)) S.career.offers = [];
+  S.career.offers.push({
+    id: 'rec_' + Math.random().toString(36).slice(2, 8),
+    company: target.name,
+    title: job.title,
+    track: job.track,
+    level: job.level || 0,
+    salary: offeredSalary,
+    baseSalaryEGP: offeredSalary,
+    payMult: target.payMult || 1.0,
+    benefits: (target.benefits || ['health']).slice(),
+    prestige: target.prestige || 3,
+    country: S.country,
+    salaryCurrency: C().currency,
+    message: 'Recruiter reached out. ' + pct + '% raise.',
+    addedYear: gameYear()
+  });
+  log('💼 Recruiter offer from ' + target.name + ' (' + money(offeredSalary) + '/year, +' + pct + '%). Check Career → Offers.');
+  fx({ happiness: 4 });
 });
