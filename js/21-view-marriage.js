@@ -692,7 +692,13 @@ function marRenderOverview() {
     '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:#888;margin-top:10px"><span>Bond</span><span>' + bond + '%</span></div>' +
     '<div style="height:5px;background:#1a1a2a;border-radius:3px;margin-top:3px"><div style="height:100%;width:' + bond + '%;background:' + marBondColor(bond) + ';border-radius:3px"></div></div>' +
     (m.status !== 'married' ? '<div class="row" style="margin-top:8px"><span>Family approval</span><b class="' + (approval >= 0.7 ? 'good' : approval >= 0.4 ? '' : 'bad') + '">' + Math.round(approval * 100) + '%</b></div>' : '') +
-    (p.income > 0 ? '<div class="row"><span>Income</span><b>' + money(p.income) + '/yr</b></div>' : '') +
+        (p.career ? (
+      '<div class="row"><span>Career</span><b>' + (p.career.title || 'Homemaker') + '</b></div>' +
+      (p.career.company ? '<div class="row"><span>Employer</span><b>' + p.career.company + '</b></div>' : '') +
+      '<div class="row"><span>Working status</span><b class="' + (p.career.working === true ? 'good' : p.career.working === 'part-time' ? '' : 'muted') + '">' +
+        (p.career.working === true ? 'Full-time' : p.career.working === 'part-time' ? 'Part-time' : 'Not working') + '</b></div>' +
+      (p.income > 0 ? '<div class="row"><span>Personal income</span><b class="good">' + money(p.income) + '/yr</b></div>' : '')
+    ) : (p.income > 0 ? '<div class="row"><span>Income</span><b>' + money(p.income) + '/yr</b></div>' : '')) +
     '</div>';
 
   if (m.status === 'dating' || m.status === 'engaged') {
@@ -1300,6 +1306,55 @@ function marRenderLife() {
     '<div class="row"><span>Shared account</span><b>' + money(m.sharedAccountBalance) + '</b></div>' +
     '<div class="row"><span>Children</span><b>' + ((S.childrenList || []).length) + '</b></div>' +
     '</div>';
+     /* Spouse financial contribution */
+  if (p.career || p.income > 0) {
+    var fmLabel = marFinanceLabel();
+    var contributes = false;
+    var contributedAmount = 0;
+    var keptAmount = 0;
+    var fm = m.financeModel;
+    var spouseWorking = !p.career || p.career.working !== false;
+    if (spouseWorking && p.income > 0) {
+      if (fm === 'egalitarian' || fm === 'proportional' || fm === 'joint_account' || fm === 'shared_savings' || fm === 'custom') {
+        contributes = true; contributedAmount = p.income;
+      } else if (fm === 'traditional_wife' && S.gender === 'm') {
+        contributes = true; contributedAmount = p.income;
+      } else if (fm === 'one_earner' && S.gender === 'f') {
+        contributes = true; contributedAmount = p.income;
+      } else {
+        keptAmount = p.income;
+      }
+    }
+    html += '<div class="card" style="border-color:#34d399"><h3 style="color:#34d399">💼 ' + p.name + '\'s Finances</h3>' +
+      '<div class="row"><span>Career</span><b>' + (p.career ? (p.career.title || 'Homemaker') : '—') + '</b></div>' +
+      (p.career && p.career.company ? '<div class="row"><span>Employer</span><b>' + p.career.company + '</b></div>' : '') +
+      (p.income > 0 ? '<div class="row"><span>Income</span><b class="mono good">' + money(p.income) + '/yr</b></div>' : '') +
+      '<div class="row"><span>Finance model</span><b>' + fmLabel + '</b></div>' +
+      (contributedAmount > 0 ? '<div class="row"><span>Contributes to household</span><b class="good">' + money(contributedAmount) + '/yr</b></div>' : '') +
+      (keptAmount > 0 ? '<div class="row"><span>Keeps separate</span><b class="muted">' + money(keptAmount) + '/yr</b></div>' : '') +
+      '</div>';
+  }
+
+  /* Memory history */
+  var mem = relGet(p);
+  if (mem.length > 0) {
+    var recent = mem.slice(-8).reverse();
+    var unresolvedCount = mem.filter(function(r) { return !r.resolved && r.kind === 'hurt'; }).length;
+    html += '<div class="card" style="border-color:' + (unresolvedCount > 0 ? '#fb7185' : '#8b5cf6') + '">' +
+      '<h3 style="color:' + (unresolvedCount > 0 ? '#fb7185' : '#8b5cf6') + '">📖 Your History Together</h3>';
+    if (unresolvedCount > 0) {
+      html += '<div class="muted small" style="color:#fb7185;margin-bottom:6px">' + unresolvedCount + ' unresolved hurt' + (unresolvedCount > 1 ? 's' : '') + '. They remember.</div>';
+    }
+    recent.forEach(function(r) {
+      var icon = r.kind === 'hurt' ? '💔' : r.kind === 'gift' ? '🎁' : r.kind === 'promise' ? '🤝' :
+                 r.kind === 'decision' ? '✅' : r.kind === 'compromise' ? '🕊' : r.kind === 'date' ? '💞' : '💬';
+      var color = r.resolved ? '#888' : (r.kind === 'hurt' ? '#fb7185' : '#fbbf24');
+      html += '<div style="padding:4px 0;font-size:.78rem;color:' + color + '">' +
+        '<span class="mono muted" style="font-size:.65rem">' + r.year + '</span> ' + icon + ' ' + r.text +
+        '</div>';
+    });
+    html += '</div>';
+  }
 
   const c = Math.round(marEnsureChem(p));
   html += '<div class="card"><div class="row"><span>✨ Chemistry</span><b>' + c + '%</b></div>' +
@@ -1695,6 +1750,7 @@ window.marDoActivity = function(activityId) {
   p.relationshipStage = p.exclusive ? 'exclusive' : (p.dateCount >= 2 && p.bond >= 55 ? 'getting_serious' : 'getting_to_know_you');
   fx({ happiness: happinessChange });
   marRecordMemory('date_activity', act.label + ' with ' + p.name + '.', isFav ? 3 : 1);
+     if (typeof relRemember === 'function') relRemember(p, 'date', act.label, true);
   log('💞 ' + act.label + ' with ' + p.name + '.');
   render();
 };
@@ -2472,7 +2528,73 @@ window.marCancelWeddingPlanner = function() {
   S.marriage.wedding = null;
   render();
 };
+/* ============================================================
+   WEEK 4: SPOUSE CAREER ASSIGNMENT
+   Every married partner gets a real job, salary, and history.
+   ============================================================ */
+function marAssignPartnerCareer() {
+  var m = S.marriage;
+  if (!m || !m.partner) return;
+  var p = m.partner;
+  if (p.career && typeof p.career.working !== 'undefined') return;
 
+  if (typeof carTrackById !== 'function' || typeof carCompaniesFor !== 'function') return;
+
+  var isTraditional = Array.isArray(p.traits) && p.traits.indexOf('traditional') >= 0;
+  var startsWorking = !isTraditional || Math.random() < 0.35;
+
+  if (!startsWorking) {
+    p.career = {
+      working: false,
+      track: null,
+      level: 0,
+      company: null,
+      title: 'Homemaker',
+      salary: 0,
+      assignedYear: gameYear()
+    };
+    p.income = 0;
+    log('🏡 ' + p.name + ' stays home to manage the household.');
+    return;
+  }
+
+  var tracks = ['business', 'engineering', 'tech', 'teaching', 'nursing', 'accounting', 'law', 'marketing', 'hospitality', 'media'];
+  var track = tracks[Math.floor(Math.random() * tracks.length)];
+  var pAge = p.age || 25;
+  var level = pAge >= 32 ? 2 : (pAge >= 26 ? 1 : 0);
+  var trackDef = carTrackById(track);
+  if (!trackDef) trackDef = carTrackById('business');
+  level = Math.min(level, trackDef.levels.length - 1);
+  var levelDef = trackDef.levels[level];
+  var baseSalEGP = levelDef.baseSalaryEGP;
+  var rate = (C().rate || 1) / 52.7;
+  var salaryLocal = Math.round(baseSalEGP * rate);
+
+  var pool = carCompaniesFor(trackDef.industry);
+  var company = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : { name: 'Local Firm', payMult: 1.0 };
+  salaryLocal = Math.round(salaryLocal * (company.payMult || 1.0));
+
+  p.career = {
+    track: track,
+    level: level,
+    company: company.name,
+    title: levelDef.title,
+    salary: salaryLocal,
+    working: true,
+    assignedYear: gameYear(),
+    gaps: []
+  };
+  p.income = salaryLocal;
+  log('💼 ' + p.name + ' works as a ' + levelDef.title + ' at ' + company.name + ' (' + money(salaryLocal) + '/year).');
+}
+window.marAssignPartnerCareer = marAssignPartnerCareer;
+
+/* Safety net: ensure career assigned whenever married */
+GameHooks.on('render', function() {
+  if (S && S.marriage && S.marriage.status === 'married' && S.marriage.partner) {
+    if (typeof marAssignPartnerCareer === 'function') marAssignPartnerCareer();
+  }
+});
 window.marConfirmWedding = function() {
   if (S.pending) return;
   const m = S.marriage, w = m.wedding;
@@ -2492,6 +2614,7 @@ window.marConfirmWedding = function() {
   const missing = marMissingGehaz(h);
   if (missing.length > 0) {
     log('⚠️ Marital home not fully furnished yet. Missing: ' + missing.map(i => i.label).join(', '));
+       if (typeof marAssignPartnerCareer === 'function') marAssignPartnerCareer();
     render(); return;
   }
 
