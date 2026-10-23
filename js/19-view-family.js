@@ -1087,6 +1087,19 @@ function familyParentDies(p) {
     log('🕊 ' + p.name + ' passed away. Funeral cost: ' + money(funeralCost) + '.');
   } else {
     log('🕊 ' + p.name + ' passed away. You could not afford the funeral (' + money(funeralCost) + ').');
+       /* SOUL PASS — record the moment */
+  if (typeof recordMoment === 'function') {
+    recordMoment(
+      'The day ' + p.name + ' passed',
+      (p.bond || 70) > 60
+        ? 'They were not alone. You held their hand. The last thing they heard was your voice.'
+        : 'You were not there. You will think about that for years.',
+      { icon: '🕊', key: 'death_' + p.id, weight: 5 }
+    );
+  }
+  if (typeof checkReflectionTriggers === 'function') {
+    checkReflectionTriggers('parentDied', { parent: p.name });
+  }
   }
   familyLog('🕊 ' + p.name + ' passed away');
   fx({ happiness: -20, health: -5 });
