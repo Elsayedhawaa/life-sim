@@ -732,6 +732,16 @@ function startGame() {
 /* ============================================================
    SAVE / LOAD / RESET
    ============================================================ */
+function save() {
+  if (!S) return;
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(S));
+  } catch(e) {
+    console.error('Failed to save game:', e);
+  }
+}
+window.save = save;
+
 function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
