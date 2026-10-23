@@ -36,9 +36,11 @@ function lifeView() {
   const happinessPanel = (typeof happinessBreakdownHtml === 'function') ? happinessBreakdownHtml() : '';
      const lifeStoryPanel = (typeof lifeStoryHtml === 'function') ? lifeStoryHtml() : '';
      const realityPanel = (typeof realityCheckHtml === 'function') ? realityCheckHtml() : '';
+     const familyTreePanel = (typeof familyTreeSummaryHtml === 'function') ? familyTreeSummaryHtml() : '';
      const householdPanel = (typeof householdBreakdownHtml === 'function') ? householdBreakdownHtml() : '';
   return `
     ${lifeStoryPanel}
+    ${familyTreePanel}
      ${householdPanel}
   ${happinessPanel}
     <div class="card">  
@@ -189,3 +191,98 @@ function realityCheckHtml() {
   return html;
 }
 window.realityCheckHtml = realityCheckHtml;
+/* ============================================================
+   SESSION 10: FAMILY TREE SUMMARY — one glance at everyone
+   ============================================================ */
+function familyTreeSummaryHtml() {
+  if (!S) return '';
+
+  var sections = [];
+
+  /* Spouse */
+  if (S.marriage && S.marriage.partner && S.marriage.partner.alive !== false) {
+    var p = S.marriage.partner;
+    sections.push({
+      label: '💍 Spouse',
+      people: [{ name: p.name, age: p.age, role: p.career ? (p.career.title || 'Working') : 'Homemaker', bond: p.bond || 70 }]
+    });
+  }
+
+  /* Parents */
+  var parents = (S.family || []).filter(function(m) { return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false; });
+  if (parents.length) {
+    sections.push({
+      label: '👨‍👩‍👧 Parents',
+      people: parents.map(function(m) { return { name: m.name, age: m.age, role: m.role, bond: m.bond || 70 }; })
+    });
+  }
+
+  /* Siblings + their families */
+  if (typeof getSiblingFamilyTree === 'function') {
+    var sibTree = getSiblingFamilyTree().filter(function(s) { return s.sibling.alive !== false; });
+    if (sibTree.length) {
+      var sibPeople = [];
+      sibTree.forEach(function(s) {
+        sibPeople.push({ name: s.sibling.name, age: s.sibling.age, role: s.sibling.role || 'Sibling', bond: s.sibling.bond || 70 });
+        if (s.spouse) sibPeople.push({ name: s.spouse.name, age: s.spouse.age, role: 'spouse of ' + s.sibling.name, bond: 60, muted: true });
+        (s.children || []).forEach(function(nc) {
+          sibPeople.push({ name: nc.name, age: nc.age, role: 'niece/nephew of ' + s.sibling.name, bond: 60, muted: true });
+        });
+      });
+      sections.push({ label: '👫 Siblings & Their Families', people: sibPeople });
+    }
+  }
+
+  /* In-laws */
+  if (typeof getInLaws === 'function') {
+    var il = getInLaws().filter(function(m) { return m.alive !== false; });
+    if (il.length) {
+      sections.push({
+        label: '👨‍👩‍👧 In-Laws',
+        people: il.map(function(m) { return { name: m.name, age: m.age, role: m.role, bond: m.bond || 50 }; })
+      });
+    }
+  }
+
+  /* Children */
+  var kids = (S.childrenList || []).filter(function(c) { return !c.movedOut; });
+  if (kids.length) {
+    var kidPeople = [];
+    kids.forEach(function(c) {
+      kidPeople.push({ name: c.name, age: c.age, role: c.age >= 18 && c.career ? c.career.title : (c.age >= 6 ? 'Student' : 'Child'), bond: c.bond || 55 });
+      if (c.spouse) kidPeople.push({ name: c.spouse.name, age: c.spouse.age, role: 'spouse of ' + c.name, bond: 60, muted: true });
+    });
+    sections.push({ label: '👨‍👧 Your Children', people: kidPeople });
+  }
+
+  /* Grandchildren */
+  if (typeof getAllGrandchildren === 'function') {
+    var gcs = getAllGrandchildren();
+    if (gcs.length) {
+      sections.push({
+        label: '👶 Grandchildren',
+        people: gcs.map(function(gc) { return { name: gc.name, age: gc.age, role: 'grandchild', bond: gc.bond || 70 }; })
+      });
+    }
+  }
+
+  if (sections.length === 0) return '';
+
+  var totalPeople = sections.reduce(function(s, x) { return s + x.people.length; }, 0);
+
+  var html = '<div class="card" style="border-color:#8b5cf6"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="color:#8b5cf6">👪 Your Family</h3><span class="muted small">' + totalPeople + ' people</span></div>';
+  sections.forEach(function(sec) {
+    html += '<div style="margin-top:10px"><div class="muted small" style="letter-spacing:.06em;font-weight:700;color:#8b5cf6">' + sec.label + '</div>';
+    sec.people.forEach(function(person) {
+      var color = person.muted ? '#666' : (person.bond > 70 ? '#34d399' : person.bond > 40 ? '#fbbf24' : '#fb7185');
+      html += '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:.78rem">' +
+        '<span style="color:' + (person.muted ? '#888' : '#e8e8f2') + '">' + person.name + ' <span class="muted" style="font-size:.7rem">(' + person.role + ', age ' + person.age + ')</span></span>' +
+        '<span class="mono" style="color:' + color + ';font-size:.7rem">' + person.bond + '%</span>' +
+        '</div>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+window.familyTreeSummaryHtml = familyTreeSummaryHtml;
