@@ -26,7 +26,7 @@ function lifeView() {
     grouped.push({ type: 'entry', entry: entry });
   });
 
-  function headerLabel(entry) {
+    function headerLabel(entry) {
     if (isMonthlyPace && entry.month) {
       return monthName(entry.month) + ' ' + (entry.year || '');
     }
