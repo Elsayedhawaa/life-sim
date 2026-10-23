@@ -1371,8 +1371,16 @@ function marRenderLife() {
     '<button class="opt" style="margin-top:6px;width:100%;text-align:center;font-size:.75rem" onclick="marVisitMotherInLaw()">☕ Visit your mother-in-law · ' + money(marEGP(1500)) + '</button>' +
     '</div>';
 
-  if (typeof MARRIAGE_HOME_OPTIONS !== 'undefined') {
-    if (!m.home) {
+    if (typeof MARRIAGE_HOME_OPTIONS !== 'undefined') {
+    /* Auto-detect current housing — never show "Set up" if you already live somewhere */
+    var currentHousingLabel =
+      S.housing === 'parents' ? 'Living with family' :
+      S.housing === 'rented' ? (S.rentedHome ? (function(){ var t = null; if (typeof rentalTierById === 'function') t = rentalTierById(S.rentedHome.tierId); return t ? t.label : 'Rented apartment'; })() : 'Renting') :
+      S.housing === 'owned' ? 'Owned home' : 'Home';
+
+    var showSetup = !m.home && S.housing === 'parents';
+
+    if (showSetup) {
       html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">🏠 Set up your home</h3>' +
         '<p class="muted small">Where will you live? Different homes affect privacy and family support.</p>';
       MARRIAGE_HOME_OPTIONS.forEach(h => {
@@ -1382,12 +1390,12 @@ function marRenderLife() {
       });
       html += '</div>';
     } else {
-      const h = MARRIAGE_HOME_OPTIONS.find(x => x.id === m.home);
+      var h = m.home ? MARRIAGE_HOME_OPTIONS.find(x => x.id === m.home) : null;
       html += '<div class="card"><h3>🏠 Home</h3>' +
-        '<div class="row"><span>Type</span><b>' + (h ? h.label : m.home) + '</b></div>' +
-        '<div class="row"><span>Monthly cost</span><b>' + money(marEGP(h ? h.monthlyCostEGP : 0)) + '/mo</b></div>' +
-        '<div class="row"><span>Privacy</span><b>' + (h ? h.privacy + '/10' : '—') + '</b></div>' +
-        '<div class="row"><span>Family support</span><b>' + (h ? h.familySupport + '/10' : '—') + '</b></div>' +
+        '<div class="row"><span>Current home</span><b>' + (h ? h.label : currentHousingLabel) + '</b></div>' +
+        (h ? '<div class="row"><span>Monthly cost</span><b>' + money(marEGP(h.monthlyCostEGP)) + '/mo</b></div>' +
+          '<div class="row"><span>Privacy</span><b>' + h.privacy + '/10</b></div>' +
+          '<div class="row"><span>Family support</span><b>' + h.familySupport + '/10</b></div>' : '') +
         '</div>';
     }
   }
@@ -1413,11 +1421,7 @@ function marRenderLife() {
     html += '</div>';
   }
 
-  html += '<div class="card"><h3>💰 Shared Account</h3>' +
-    '<div class="row"><span>Balance</span><b>' + money(m.sharedAccountBalance) + '</b></div>' +
-    '<button class="opt" style="margin-top:6px;width:50%;font-size:.75rem;padding:6px" onclick="marDepositShared()">Deposit</button>' +
-    '<button class="opt" style="margin-top:6px;width:50%;font-size:.75rem;padding:6px" onclick="marWithdrawShared()">Withdraw</button>' +
-    '</div>';
+    html += '<div class="card" style="border-color:#666;padding:10px"><p class="muted small">💰 Shared account has moved to the <b>Bank</b> tab for better visibility.</p></div>';
 
   if ((S.childrenList || []).length === 0 || m.familyPlanning !== 'wait') {
     html += '<div class="card"><button class="opt" style="width:100%;text-align:center;background:#fb7185;color:#fff;font-weight:700;padding:10px" onclick="marTryForBaby()">👶 Try for baby</button></div>';
@@ -2593,6 +2597,11 @@ window.marAssignPartnerCareer = marAssignPartnerCareer;
 GameHooks.on('render', function() {
   if (S && S.marriage && S.marriage.status === 'married' && S.marriage.partner) {
     if (typeof marAssignPartnerCareer === 'function') marAssignPartnerCareer();
+       if (!m.home) {
+    if (S.housing === 'rented') m.home = 'small_rent';
+    else if (S.housing === 'owned') m.home = 'owned_apartment';
+    else m.home = 'family_home';
+  }
   }
 });
 window.marConfirmWedding = function() {
@@ -3094,12 +3103,21 @@ function marFireYearEvent(evt) {
   if (!p || !evt) return;
 
   /* ---------- Flavor / automated events ---------- */
-  if (evt.id === 'partner_promotion') {
-    p.income = Math.round((p.income || 50000) * 1.15);
+    if (evt.id === 'partner_promotion') {
+    if (p.career) {
+      p.career.salary = Math.round((p.career.salary || p.income || 50000) * 1.15);
+      p.income = p.career.salary;
+      if (typeof p.career.level === 'number' && p.career.level < 3) {
+        p.career.level = Math.min(3, p.career.level + 1);
+      }
+    } else {
+      p.income = Math.round((p.income || 50000) * 1.15);
+    }
     log('🎉 ' + p.name + ' got promoted. Income now ' + money(p.income) + '/yr.');
     log(p.name + ': "I got the promotion! We should celebrate this weekend."');
     p.bond = Math.min(100, p.bond + 5);
     fx({ happiness: 5 });
+    if (typeof syncSpouseFinancials === 'function') syncSpouseFinancials();
     return;
   }
 
