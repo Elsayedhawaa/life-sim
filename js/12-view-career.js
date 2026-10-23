@@ -1564,11 +1564,14 @@ function carRenderSearch() {
         return h.company === company.name;
       });
 
-      html += '<div style="margin-top:8px;padding:8px;background:#14141f;border-radius:6px">' +
+html += '<div style="margin-top:8px;padding:8px;background:#14141f;border-radius:6px">' +
         '<div style="display:flex;justify-content:space-between"><b>' + company.name + (workedHere ? ' ⭐' : '') + '</b><span>' + money(salary) + '/yr</span></div>' +
         '<div class="muted small">' + level.title + ' · Prestige ' + company.prestige + '/5 · Stability ' + Math.round(company.stability * 100) + '%</div>' +
-        '<div class="muted small" style="color:#8b5cf6">Perks: ' + company.benefits.map(function(b) { return (CAR_BENEFITS[b] || {}).label || b; }).join(', ') + '</div>' +
-        (appliedHere ? '<div class="muted small" style="color:#fbbf24;margin-top:4px">📝 Application in progress</div>' :
+        '<div class="muted small" style="color:#8b5cf6">Perks: ' + company.benefits.map(function(b) { return (CAR_BENEFITS[b] || {}).label || b; }).join(', ') + '</div>';
+
+      if (appliedHere) {
+        html += '<div class="muted small" style="color:#fbbf24;margin-top:4px">📝 Application in progress</div>';
+      } else {
         var _meta = (typeof COMPANY_META !== 'undefined' && COMPANY_META[company.name]) || null;
         var _metaWarn = '';
         if (_meta) {
@@ -1580,9 +1583,9 @@ function carRenderSearch() {
           if (_meta.culture === 'demanding') _metaWarn += '<div class="muted small" style="color:#fbbf24;margin-top:2px">💪 Demanding hours</div>';
         }
         html += _metaWarn;
-        html += '<button class="opt" style="margin-top:6px;padding:6px;font-size:.72rem;width:100%;text-align:center" onclick="carApplyToJob(\'' + track.id + '\',' + idx + ')">Apply</button>';        '</div>';
-    });
-    html += '</div>';
+        html += '<button class="opt" style="margin-top:6px;padding:6px;font-size:.72rem;width:100%;text-align:center" onclick="carApplyToJob(\'' + track.id + '\',' + idx + ')">Apply</button>';
+      }
+      html += '</div>';
   });
 
   return html;
@@ -2243,8 +2246,13 @@ if (j.performance >= 65 && j.tenure >= 1 && Math.random() < 0.15) {
     }
   }
 
-  /* Industry trends update */
-  const industries = ['banking','tech','law','consulting','hospitals','universities','retail','fmcg','engineering','oil_gas','telecom','hotels','aviation','media','government','schools','bpo','trades'];
+/* Industry trends update */
+  const industries = [
+    'banking','tech','law','consulting','hospitals','universities','retail',
+    'fmcg','engineering','oil_gas','telecom','hotels','aviation','media',
+    'government','schools','bpo','trades','pharma','real_estate','logistics',
+    'mining','consumer','insurance','military'
+  ];
   industries.forEach(function(ind) {
     if (Math.random() < 0.30) {
       const r = Math.random();
