@@ -1,5 +1,5 @@
 /* ============================================================
-   WORLD LIFE — ENGINE (hardened)
+   WORLD LIFE — ENGINE & EVENTS (hardened)
    ============================================================ */
 
 const SAVE_KEY = 'world_life_v5';
@@ -152,7 +152,7 @@ function newLife() {
     parentType: START.parentType,
     log: [],
     flags: {},
-       pending: null,
+    pending: null,
     evId: null,
     evtMemory: {},
     pendingQueue: [],
@@ -235,7 +235,7 @@ function advanceYear() {
 
   engineYearTick();
 
-   /* Keep legacy S.job and S.career.job in sync */
+  /* Keep legacy S.job and S.career.job in sync */
   if (S.career && S.career.job && S.job) {
     S.job.title = S.career.job.title || S.job.title;
     S.job.salary = S.career.job.salary || S.job.salary;
@@ -303,7 +303,7 @@ function advanceYear() {
 
   ['health', 'happiness', 'smarts', 'social'].forEach(k => { S[k] = clamp(S[k], 0, 100); });
  
-    /* Ambient life flavor — happens every year */
+  /* Ambient life flavor — happens every year */
   if (typeof ambientFlavor === 'function') ambientFlavor(3);
 
   if (!S.pending) {
@@ -868,6 +868,7 @@ window.reset = reset;
 window.renderStart = renderStart;
 window.dataOK = dataOK;
 window.START = START;
+
 /* ============================================================
    EVENT SELECTOR — gender-aware, weighted, respects maxFires
    ============================================================ */
@@ -899,6 +900,7 @@ function pickEligibleEvent() {
   return eligible[eligible.length - 1];
 }
 window.pickEligibleEvent = pickEligibleEvent;
+
 /* ============================================================
    AMBIENT FLAVOR — life feels alive even without big events
    ============================================================ */
@@ -1109,6 +1111,7 @@ function lifeSummaryHtml() {
   return '<div style="font-size:.72rem;color:#aaa;margin-top:3px;line-height:1.3">' + bits.join(' · ') + '</div>';
 }
 window.lifeSummaryHtml = lifeSummaryHtml;
+
 /* ============================================================
    CHARACTER DIALOGUE & VOICE ENGINE (EXPANDED & REALISTIC)
    ============================================================ */
@@ -1461,6 +1464,23 @@ function characterSpeak(text, character) {
 window.characterSay = characterSay;
 window.characterSpeak = characterSpeak;
 
+
+/* ============================================================
+   MARRIAGE & EVENT HELPERS
+   ============================================================ */
+function marHasTrait(partner, traitId) {
+  if (!partner) return false;
+  const traits = Array.isArray(partner.traits) ? partner.traits : (partner.trait ? [partner.trait] : []);
+  return traits.includes(traitId);
+}
+window.marHasTrait = marHasTrait;
+
+function marEGP(egpVal) {
+  const rate = (typeof C === 'function' ? C().rate : 1) || 1;
+  const egpToUsd = 52.7;
+  return Math.round((egpVal / egpToUsd) * rate);
+}
+window.marEGP = marEGP;
 
 /* ============================================================
    EXPANDED MARRIAGE LIFE EVENTS
