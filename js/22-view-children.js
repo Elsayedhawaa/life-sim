@@ -258,6 +258,7 @@ function chDoBirth() {
       movedOut: false
     };
     babies.push(child);
+         if (typeof inheritTraitsToChild === 'function') inheritTraitsToChild(child);
     S.childrenList.push(child);
   }
   S.children = S.childrenList.length;
@@ -578,11 +579,15 @@ function chRenderChildrenList() {
     const traitLabels = (c.traits || []).map(function(tid) {
   const tr = CHILDREN_TRAITS.find(function(x) { return x.id === tid; });
   return tr ? tr.label : tid;
+           var inheritedLine = '';
+    if (c.inheritedTraits && c.inheritedTraits.length > 0) {
+      inheritedLine = '<div class="muted small" style="color:#8b5cf6;margin-top:2px;font-size:.7rem">Inherited: ' + c.inheritedTraits.join(' · ') + '</div>';
+    }
 });
     html += '<div class="card" style="border-left:3px solid ' + (c.bond > 60 ? '#34d399' : c.bond > 40 ? '#fbbf24' : '#fb7185') + '">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
       '<div><div style="font-weight:700;font-size:1.05rem">' + c.name + (c.movedOut ? ' 🏠' : '') + '</div>' +
-      '<div class="muted small">Age ' + c.age + ' · ' + (c.gender === 'm' ? '👦 Boy' : '👧 Girl') +  (traitLabels.length ? ' · ' + traitLabels.join(' · ') : '') + '</div>' +
+      '<div class="muted small">Age ' + c.age + ' · ' + (c.gender === 'm' ? '👦 Boy' : '👧 Girl') +  (traitLabels.length ? ' · ' + traitLabels.join(' · ') : '') + '</div>' + inheritedLine +
       (school ? '<div class="muted small">' + school.label + '</div>' : '') +
       familyLine +      '</div><div style="text-align:right">' +
       '<div style="font-size:1.4rem">' + (c.age < 3 ? '👶' : c.age < 13 ? '🧒' : c.age < 18 ? '👦' : '🧑') + '</div></div></div>';
@@ -828,6 +833,17 @@ GameHooks.on('year', function() {
     });
 
     /* Auto-enroll in KG at age 4 if no school */
+         /* Personality finalization at age 8 */
+    if (c.age === 8 && !c._personalitySet) {
+      c._personalitySet = true;
+      if (typeof computeChildPersonality === 'function') computeChildPersonality(c);
+      if (c.personality) log('👦 ' + c.name + ' has a clear personality now: ' + c.personality + '.');
+      if (typeof recordMoment === 'function') {
+        recordMoment(c.name + '\'s personality shows',
+          'You can see who ' + c.name + ' is becoming. ' + c.personality + '.',
+          { icon: '👦', key: 'personality_' + c.id });
+      }
+    }
     if (c.age === 4 && !c.school) {
       c.school = 'Public School';
       c.events.push({ year: year, event: 'Auto-enrolled in Public School' });
