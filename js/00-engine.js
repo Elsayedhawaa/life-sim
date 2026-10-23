@@ -423,25 +423,34 @@ function advanceYear() {
       log('📖 ' + (_evt.title || 'Event'));
     }
   }
-  save(); render();
-}
+
   /* Mood decay — override fades each year (emotional beats fade over time) */
-  if (typeof S.happinessOverride === 'number' && S.happinessOverride !== 0) {
+  if (S && typeof S.happinessOverride === 'number' && S.happinessOverride !== 0) {
     S.happinessOverride = S.happinessOverride * 0.65;
     if (Math.abs(S.happinessOverride) < 0.5) S.happinessOverride = 0;
   }
+
+  save(); render();
+}
+ 
 function advanceMonth(silent) {
   if (S.pending) return;
 
   S.month = (S.month || 1) + 1;
 
-  if (S.month > 12) {
+    if (S.month > 12) {
     S.month = 1;
     S.age++;
     S.family.forEach(m => { if (m.alive) m.age++; });
     engineYearTick();
     ['health', 'happiness', 'smarts', 'social'].forEach(k => { S[k] = clamp(S[k], 0, 100); });
     GameHooks.run('year', S);
+
+    /* Mood decay — same as advanceYear, fires at each January rollover */
+    if (S && typeof S.happinessOverride === 'number' && S.happinessOverride !== 0) {
+      S.happinessOverride = S.happinessOverride * 0.65;
+      if (Math.abs(S.happinessOverride) < 0.5) S.happinessOverride = 0;
+    }
   }
 
   GameHooks.run('month', S, { month: S.month, isYearEnd: S.month === 1 });
