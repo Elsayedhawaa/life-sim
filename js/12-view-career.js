@@ -372,7 +372,7 @@ function carComputeMarketSalary(trackId, level) {
   if (!track || !track.levels[level]) return null;
   const companies = carCompaniesFor(track.industry);
   if (!companies.length) return null;
-  const baseSalary = track.levels[level].baseSalaryEGP;
+   const baseSalary = carSalaryForLevel(trackId, level);
   const salaries = companies.map(function(c) { return baseSalary * c.payMult; });
   const sum = salaries.reduce(function(s, x) { return s + x; }, 0);
   return {
@@ -536,7 +536,7 @@ function carApplyToJob(trackId, companyIndex) {
     var tier = track.languageTiers[detectedLang] || track.languageTiers.en;
     salaryMult *= tier.payMult;
   }
-  const baseSalary = Math.round(level.baseSalaryEGP * salaryMult);
+    const baseSalary = Math.round(carSalaryForLevel(trackId, startLevel) * salaryMult);
   S.career.applications.push({
     id: 'app_' + Math.random().toString(36).slice(2, 8),
     trackId: trackId,
@@ -866,11 +866,11 @@ window.carRequestPromotion = function() {
   else if (j.performance >= 85) chance = 0.80;
 
   if (Math.random() < chance) {
-    j.level++;
-    j.baseSalaryEGP = nextLevel.baseSalaryEGP;
-    j.salary = Math.round(nextLevel.baseSalaryEGP * j.payMult);
+       j.level++;
+    j.salary = carSalaryForLevel(j.track, j.level);
+    j.baseSalaryEGP = j.salary;
     j.title = nextLevel.title;
-    if (S.job) { S.job.title = j.title; S.job.salary = j.salary; S.job.level = j.level; S.job.years = 0; }
+    if (S.job) { S.job.title = j.title; S.job.salary = j.salary; S.job.level = j.level; }
     j.tenure = 0;
     j.performance = Math.max(60, j.performance - 10);
     log('🎉 PROMOTED to ' + j.title + '! Salary: ' + money(j.salary) + '/year.');
@@ -878,6 +878,7 @@ window.carRequestPromotion = function() {
     S.career.mood = 'satisfied';
     if (j.level === 1 && S.career.jobHistory.length === 0) carAddMilestone('first_promotion', 'First Promotion');
     if (j.level === track.levels.length - 1) carAddMilestone('top_of_ladder', 'Reached top of ' + track.label);
+    if (typeof carCheckBranchPoint === 'function') carCheckBranchPoint();
   } else {
     log('❌ Your manager: "Not this time. Give me another quarter of the same output and we\'ll talk."');
     fx({ happiness: -5 });
@@ -1299,6 +1300,50 @@ function carRenderOverview() {
     h += '<button class="opt" style="margin-top:8px;text-align:center;border-color:#fb7185;color:#fb7185" onclick="carQuitPartTime()">Quit</button>';
     h += '</div>';
     h += carRenderMilestonesSummary();
+       /* SESSION 9: Specialty card */
+  if (c.job && typeof CAR_BRANCH_OPTIONS !== 'undefined') {
+    var job = c.job;
+    var branchDef = CAR_BRANCH_OPTIONS[job.track];
+    var currentTrack = carTrackById(job.track);
+    var currentTrackLabel = currentTrack ? currentTrack.label : job.track;
+
+    if (job.branchChoiceAvailable) {
+      /* Player needs to choose */
+      h += '<div class="card" style="border-color:#fbbf24;background:#fbbf2410">' +
+        '<h4 style="color:#fbbf24;font-size:.88rem">🎓 Specialization Available</h4>' +
+        '<p class="muted small" style="margin:6px 0">You have reached the point in your career where you must choose a specialty. This decision shapes your salary trajectory and long-term path.</p>' +
+        '<button class="opt" style="width:100%;text-align:center;background:#fbbf24;color:#000;font-weight:700;padding:10px;font-size:.78rem" onclick="if(typeof carCheckBranchPoint===\'function\')carCheckBranchPoint();render()">Choose Specialty Now →</button>' +
+        '</div>';
+    } else if (job.branchChosen) {
+      /* Show current specialty + option to change */
+      h += '<div class="card" style="border-color:#34d399">' +
+        '<h4 style="color:#34d399;font-size:.85rem">🎓 Specialty</h4>' +
+        '<div class="row"><span>Current path</span><b>' + currentTrackLabel + '</b></div>' +
+        '<div class="row"><span>Title</span><b>' + job.title + '</b></div>' +
+        '<div class="row"><span>Salary</span><b class="good">' + money(job.salary) + '/year</b></div>' +
+        (job.specializedYear ? '<div class="muted small" style="margin-top:4px">Specialized in ' + job.specializedYear + '</div>' : '') +
+        (branchDef ? '<button class="opt" style="margin-top:8px;width:100%;text-align:center;border-color:#fbbf24;color:#fbbf24;font-size:.75rem" onclick="S._showRespecUI=true;render()">Change specialty</button>' : '') +
+        '</div>';
+    }
+
+    /* Respec panel if requested */
+    if (S._showRespecUI && branchDef) {
+      h += '<div class="card" style="border-color:#fbbf24;background:#fbbf2410">' +
+        '<h4 style="color:#fbbf24;font-size:.85rem">Change Specialty</h4>' +
+        '<p class="muted small" style="margin:4px 0">Switching tracks preserves your level progress. Your title and salary will update.</p>';
+      branchDef.options.forEach(function(opt) {
+        if (opt.trackId === job.track && job.branchChosen) {
+          /* Already on this track — skip */
+          return;
+        }
+        h += '<button class="opt" style="width:100%;margin-top:4px;text-align:left;padding:8px;font-size:.75rem" onclick="if(typeof carChooseSpecialty===\'function\'){carChooseSpecialty(\'' + opt.trackId + '\');S._showRespecUI=false;render();}">' +
+          '<div><b>' + opt.label + '</b></div>' +
+          '<div class="muted small">' + opt.desc + '</div></button>';
+      });
+      h += '<button class="opt" style="width:100%;margin-top:8px;text-align:center;font-size:.75rem;border-color:#666;color:#888" onclick="S._showRespecUI=false;render()">Cancel</button>';
+      h += '</div>';
+    }
+  }
     return h;
   }
 
@@ -2025,11 +2070,11 @@ GameHooks.on('year', function() {
       const perfOK = j.performance >= 80;
       const tenureOK = j.tenure >= reqYears;
 
-      if (perfOK && tenureOK) {
+            if (perfOK && tenureOK) {
         /* Guaranteed promotion — no random gate */
         j.level++;
-        j.baseSalaryEGP = nextLevel.baseSalaryEGP;
-        j.salary = Math.round(nextLevel.baseSalaryEGP * j.payMult);
+        j.salary = carSalaryForLevel(j.track, j.level);
+        j.baseSalaryEGP = j.salary;
         j.title = nextLevel.title;
         if (S.job) { S.job.title = j.title; S.job.salary = j.salary; S.job.level = j.level; }
         log('🎉 PROMOTED to ' + j.title + '! Salary: ' + money(j.salary) + '/year.');
@@ -2041,7 +2086,8 @@ GameHooks.on('year', function() {
         j.performance = Math.max(60, j.performance - 10);
         j.tenure = 0;
         if (S.job) S.job.years = 0;
-      } else if (j.tenure >= reqYears + 3 && !perfOK) {
+        if (typeof carCheckBranchPoint === 'function') carCheckBranchPoint();
+      }else if (j.tenure >= reqYears + 3 && !perfOK) {
         /* Long tenure, low performance — manager conversation */
         if (Math.random() < 0.5) {
           log('⚠️ Your manager pulled you aside about performance. "You\'ve been here ' + j.tenure + ' years. We need to see more."');
