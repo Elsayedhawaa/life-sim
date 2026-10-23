@@ -1378,7 +1378,7 @@ function marRenderLife() {
       S.housing === 'rented' ? (S.rentedHome ? (function(){ var t = null; if (typeof rentalTierById === 'function') t = rentalTierById(S.rentedHome.tierId); return t ? t.label : 'Rented apartment'; })() : 'Renting') :
       S.housing === 'owned' ? 'Owned home' : 'Home';
 
-    var showSetup = !m.home && S.housing === 'parents';
+ var showSetup = !S.marriage.home && S.housing === 'parents';
 
     if (showSetup) {
       html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">🏠 Set up your home</h3>' +
