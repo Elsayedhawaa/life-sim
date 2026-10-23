@@ -37,9 +37,11 @@ function lifeView() {
      const lifeStoryPanel = (typeof lifeStoryHtml === 'function') ? lifeStoryHtml() : '';
      const realityPanel = (typeof realityCheckHtml === 'function') ? realityCheckHtml() : '';
      const familyTreePanel = (typeof familyTreeSummaryHtml === 'function') ? familyTreeSummaryHtml() : '';
+     const legacyPanel = (typeof legacyPanelHtml === 'function') ? legacyPanelHtml() : '';
      const householdPanel = (typeof householdBreakdownHtml === 'function') ? householdBreakdownHtml() : '';
   return `
     ${lifeStoryPanel}
+       ${legacyPanel}
     ${familyTreePanel}
      ${householdPanel}
   ${happinessPanel}
