@@ -1425,7 +1425,7 @@ const DEEP_EVENTS = [
       }
     }
   ]
-}
+},
 
 /* ============================================================
    SESSION 5 — GULF OFFERS / STUDY ABROAD / MIGRATION EVENTS
