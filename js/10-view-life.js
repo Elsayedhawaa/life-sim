@@ -142,3 +142,49 @@ function lifeStoryHtml() {
   return html;
 }
 window.lifeStoryHtml = lifeStoryHtml;
+/* ============================================================
+   SESSION 8: REALITY CHECK — where you live and why it's hard
+   ============================================================ */
+function realityCheckHtml() {
+  if (!S) return '';
+  var country = S.country;
+  var prof = econProfile ? econProfile(country) : null;
+  if (!prof) return '';
+
+  var diff = econDifficulty(country);
+  var diffColor = diff >= 7 ? '#fb7185' : diff >= 5 ? '#fbbf24' : '#34d399';
+  var struggles = econStruggles(country);
+  var cName = COUNTRIES[country] ? COUNTRIES[country].name : country;
+  var flag = COUNTRIES[country] ? COUNTRIES[country].flag : '🌍';
+
+  var html = '<div class="card" style="border-color:' + diffColor + '">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<div><div class="muted small" style="letter-spacing:.06em;font-weight:700;color:' + diffColor + '">REALITY CHECK · ' + flag + ' ' + cName.toUpperCase() + '</div>' +
+    '<div style="font-weight:700;font-size:1rem;margin-top:2px">Difficulty: ' + diff + '/10</div></div>' +
+    '<div style="font-size:1.6rem">' + (diff >= 7 ? '🔥' : diff >= 5 ? '⚡' : '✓') + '</div></div>';
+
+  if (struggles.length > 0) {
+    html += '<div style="margin-top:8px;font-size:.75rem;color:#888">Real challenges here:</div>';
+    struggles.forEach(function(s) {
+      html += '<div style="padding:4px 0;font-size:.78rem;color:#e8e8f2">' + s.icon + ' ' + s.text + '</div>';
+    });
+  }
+
+  /* Reference points */
+  html += '<div style="margin-top:10px;padding-top:8px;border-top:1px solid #252a3a">' +
+    '<div class="muted small" style="font-size:.7rem;letter-spacing:.04em;font-weight:700;margin-bottom:4px">REFERENCE PRICES (' + gameYear() + ')</div>';
+
+  var refs = [
+    { label: 'Monthly food (basic)', value: econPriceMonthly('food', country, gameYear()) },
+    { label: 'Monthly transport', value: econPriceMonthly('transport', country, gameYear()) },
+    { label: '2BR rent / year (mid area)', value: econRent('br2', country, gameYear()) }
+  ];
+
+  refs.forEach(function(r) {
+    html += '<div class="row" style="padding:3px 0;font-size:.75rem"><span>' + r.label + '</span><b class="mono">' + money(r.value) + '</b></div>';
+  });
+
+  html += '</div></div>';
+  return html;
+}
+window.realityCheckHtml = realityCheckHtml;
