@@ -1105,6 +1105,20 @@ function migrateDualState() {
       }
     }
   }
+     /* WEEK 6: derive m.home from current S.housing if married */
+  if (S.marriage && S.marriage.status === 'married' && !S.marriage.home) {
+    if (S.housing === 'rented') S.marriage.home = 'small_rent';
+    else if (S.housing === 'owned') S.marriage.home = 'owned_apartment';
+    else if (S.housing === 'parents') S.marriage.home = 'family_home';
+    else S.marriage.home = 'family_home';
+  }
+
+  /* WEEK 6: whisper state */
+  if (!S.whisperLog || typeof S.whisperLog !== 'object') S.whisperLog = {};
+  if (!S.whisperFiredYear || typeof S.whisperFiredYear !== 'object') S.whisperFiredYear = {};
+  ['layoff', 'divorce', 'bankruptcy', 'health', 'parentdeath', 'migration'].forEach(function(cat) {
+    if (!Array.isArray(S.whisperLog[cat])) S.whisperLog[cat] = [];
+  });
 
   /* --- PREGNANCY: legacy S.pregnantMonths → S.pregnancy --- */
   if (S.pregnantMonths && S.pregnantMonths > 0 && !S.pregnancy) {
@@ -2279,7 +2293,8 @@ function householdBreakdownHtml() {
     return '<div class="card"><h3>🏠 Household</h3><p class="muted small">Your parents pay the bills. You have no household of your own yet.</p></div>';
   }
 
-  var h = S.household || computeHousehold();
+  var h = computeHousehold();
+  S.household = h;
   var sb = {
     healthy: { label: '✅ Healthy', color: '#34d399' },
     tight: { label: '⚠️ Tight', color: '#fbbf24' },
@@ -2658,6 +2673,225 @@ GameHooks.on('year', function() {
   };
 })();
 window.migrateDualState = migrateDualState;
+/* ============================================================
+   UNITY PASS — WEEK 6: SPOUSE FINANCIAL SYNC + WHISPER SYSTEM
+   ============================================================ */
+
+/* ---------- SPOUSE FINANCIAL SYNC — one source of truth ---------- */
+function syncSpouseFinancials() {
+  if (!S || !S.marriage || !S.marriage.partner) return;
+  var p = S.marriage.partner;
+  if (!p.career) return;
+
+  /* Not working → income must be 0 */
+  if (p.career.working === false) {
+    if (p.income !== 0) p.income = 0;
+    return;
+  }
+
+  var careerSal = p.career.salary || 0;
+  var income = p.income || 0;
+
+  /* Cap runaway promotion growth at 3x track max */
+  if (typeof carTrackById === 'function') {
+    var track = carTrackById(p.career.track);
+    if (track && track.levels && track.levels.length) {
+      var maxBase = track.levels[track.levels.length - 1].baseSalaryEGP;
+      var rate = (C().rate || 1) / 52.7;
+      var maxLocal = Math.round(maxBase * rate * 3);
+      if (income > maxLocal) {
+        income = maxLocal;
+        p.income = maxLocal;
+      }
+      if (careerSal > maxLocal) {
+        careerSal = maxLocal;
+        p.career.salary = maxLocal;
+      }
+    }
+  }
+
+  /* Sync the two fields — career.salary and p.income are the same value */
+  if (p.career.working === 'part-time') {
+    var expected = Math.round(careerSal * 0.6);
+    if (Math.abs(income - expected) > 100) p.income = expected;
+    return;
+  }
+
+  /* Full-time: harmonize */
+  if (careerSal > 0 && income > 0 && Math.abs(careerSal - income) > Math.max(100, careerSal * 0.10)) {
+    /* Use the HIGHER of the two — preserves accumulated promotions */
+    var higher = Math.max(careerSal, income);
+    p.career.salary = higher;
+    p.income = higher;
+  } else if (careerSal > 0 && income === 0) {
+    p.income = careerSal;
+  } else if (careerSal === 0 && income > 0) {
+    p.career.salary = income;
+  }
+}
+window.syncSpouseFinancials = syncSpouseFinancials;
+
+/* ---------- WHISPER SYSTEM — foreshadowing before consequences ---------- */
+const WHISPER_POOLS = {
+  layoff: [
+    "Company-wide email about 'restructuring.' Nobody says the word layoff.",
+    "Your manager cancelled 1-on-1s this week. Unusual.",
+    "Two senior people left quietly. Their desks were cleared by lunch.",
+    "The office feels emptier than usual. People are speaking in whispers.",
+    "HR scheduled 'individual meetings' with three teams. Yours included."
+  ],
+  divorce: [
+    "Conversations have become logistics. Who picks up groceries. Who takes the car.",
+    "Your spouse sleeps with their back to you now. Small thing. Not small.",
+    "You realise you have not laughed together in months.",
+    "There is a silence in the apartment that was not there before.",
+    "You catch them staring at the wall, not at you.",
+    "You cook for one most nights now."
+  ],
+  bankruptcy: [
+    "You check your bank balance. Then close the app. Then check again.",
+    "You delay paying a bill this month. Just this once.",
+    "At the shop, someone asks a price and you pretend not to hear.",
+    "You calculate how many days before rent is due.",
+    "You consider selling something you love. You do not. Yet."
+  ],
+  health: [
+    "You get winded climbing the stairs. Just twice. It passes.",
+    "There was a pain in your chest. Sharp. Then gone.",
+    "You wake at 3 AM for no reason. Heart racing.",
+    "You have been tired for weeks. Not the normal tired.",
+    "Your hands shake holding a cup. It stops when you notice."
+  ],
+  parentdeath: [
+    "Your parent's voice sounds older on the phone.",
+    "You notice how thin they have gotten. How slow they walk.",
+    "They fall asleep during the visit. You let them.",
+    "Your mother asks about the small things more often now. The things she used to say were unimportant.",
+    "You find yourself taking more photos. You do not know why. You do."
+  ],
+  migration: [
+    "You scroll through job listings in another country at 2 AM.",
+    "A friend abroad posts a photo. You stare at it too long.",
+    "There is another life you could be living. You can feel it under the surface.",
+    "You calculate, quietly, what leaving would cost.",
+    "Someone asks where you are from and you hesitate."
+  ]
+};
+
+const WHISPER_CONDITIONS = {
+  layoff: function() {
+    if (!S || !S.career || !S.career.job) return false;
+    var job = S.career.job;
+    if ((job.performance || 50) < 40) return true;
+    if (typeof job.stability === 'number' && job.stability < 0.7) return true;
+    if (S.age >= 50 && (job.performance || 50) < 60) return true;
+    return false;
+  },
+  divorce: function() {
+    if (!S || !S.marriage || !S.marriage.partner || S.marriage.status !== 'married') return false;
+    var p = S.marriage.partner;
+    if ((p.bond || 70) < 40) return true;
+    if ((p.trust || 50) < 30) return true;
+    if (typeof relGetUnresolved === 'function') {
+      var hurts = relGetUnresolved(p).filter(function(r) { return r.kind === 'hurt'; });
+      if (hurts.length >= 2) return true;
+    }
+    return false;
+  },
+  bankruptcy: function() {
+    if (!S) return false;
+    if ((S.wealth || 0) < 0) return true;
+    var h = S.household;
+    if (h && h.expenses > 0 && (S.wealth || 0) < h.expenses * 0.2) return true;
+    return false;
+  },
+  health: function() {
+    if (!S) return false;
+    if ((S.health || 100) < 50) return true;
+    if (S.age >= 55 && (S.health || 100) < 65) return true;
+    return false;
+  },
+  parentdeath: function() {
+    if (!S || !Array.isArray(S.family)) return false;
+    return S.family.some(function(m) {
+      return m.alive !== false && (m.role === 'Mother' || m.role === 'Father') && (m.age || 0) >= 68;
+    });
+  },
+  migration: function() {
+    if (!S) return false;
+    if (S.age < 25 || S.age > 50) return false;
+    if (S.career && S.career.job && (S.career.job.performance || 50) < 50 && (S.career.job.tenure || 0) >= 3) return true;
+    return false;
+  }
+};
+
+function ensureWhispers() {
+  if (!S) return;
+  if (!S.whisperLog) S.whisperLog = {};
+  Object.keys(WHISPER_POOLS).forEach(function(k) {
+    if (!Array.isArray(S.whisperLog[k])) S.whisperLog[k] = [];
+  });
+  if (!S.whisperFiredYear) S.whisperFiredYear = {};
+}
+
+function whisperFire(cat) {
+  if (!S) return;
+  ensureWhispers();
+  if (S.whisperFiredYear[cat] === gameYear()) return;
+  if (!WHISPER_POOLS[cat] || !WHISPER_POOLS[cat].length) return;
+  var text = WHISPER_POOLS[cat][Math.floor(Math.random() * WHISPER_POOLS[cat].length)];
+  S.whisperLog[cat].push({ year: gameYear(), text: text });
+  S.whisperFiredYear[cat] = gameYear();
+  log('🌫 ' + text);
+}
+
+function whisperClear(cat) {
+  if (!S) return;
+  ensureWhispers();
+  var count = (S.whisperLog[cat] || []).length;
+  S.whisperLog[cat] = [];
+  S.whisperFiredYear[cat] = null;
+  if (count > 0) {
+    log('🌤 The tension around your ' + cat + ' has broken.');
+  }
+}
+
+function checkWhispers() {
+  if (!S || S.age < 18) return;
+  ensureWhispers();
+  Object.keys(WHISPER_CONDITIONS).forEach(function(cat) {
+    try {
+      if (WHISPER_CONDITIONS[cat]()) {
+        if (Math.random() < 0.60) whisperFire(cat);
+      } else {
+        if ((S.whisperLog[cat] || []).length > 0) whisperClear(cat);
+      }
+    } catch (e) { /* ignore */ }
+  });
+}
+window.checkWhispers = checkWhispers;
+window.whisperFire = whisperFire;
+window.whisperClear = whisperClear;
+
+/* Wire whisper clearing to the signals that resolve each category */
+if (typeof onSignal === 'function') {
+  onSignal('jobLost', function() { whisperClear('layoff'); });
+  onSignal('divorce', function() { whisperClear('divorce'); });
+  onSignal('bankrupt', function() { whisperClear('bankruptcy'); });
+  onSignal('parentDied', function() { whisperClear('parentdeath'); });
+}
+
+/* ---------- TICK WIRING ---------- */
+GameHooks.on('year', function() {
+  if (!S) return;
+  if (typeof syncSpouseFinancials === 'function') syncSpouseFinancials();
+  if (typeof checkWhispers === 'function') checkWhispers();
+});
+
+GameHooks.on('render', function() {
+  if (!S) return;
+  if (typeof syncSpouseFinancials === 'function') syncSpouseFinancials();
+});
 /* ============================================================
    UNITY PASS — WEEK 4: RELATIONSHIP MEMORY
    Every person remembers what you did. Promises echo forward.
