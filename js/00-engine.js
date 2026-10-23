@@ -110,11 +110,119 @@ function log(msg) {
 
 function fx(effects) {
   if (!effects || !S) return;
-  ['happiness', 'health', 'smarts', 'social'].forEach(k => {
+
+  /* Health, smarts, social stay as direct writes (they are real resources) */
+  ['health', 'smarts', 'social'].forEach(k => {
     if (typeof effects[k] === 'number') S[k] = clamp(S[k] + effects[k], 0, 100);
   });
+
+  /* Happiness is now a MOOD — routed to override, not the base */
+  if (typeof effects.happiness === 'number') {
+    if (typeof addHappiness === 'function') addHappiness(effects.happiness);
+  }
+
   if (typeof effects.wealth === 'number') S.wealth += effects.wealth;
 }
+
+/* ============================================================
+   UNITY PASS — WEEK 2: DERIVED HAPPINESS
+   ============================================================
+   Happiness is computed from life state each render.
+   Event mood swings live in S.happinessOverride (decays yearly).
+   ============================================================ */
+
+function computeHappiness() {
+  if (!S) return 50;
+  var h = 50;
+
+  /* --- MARRIAGE --- */
+  if (S.marriage && S.marriage.partner && S.marriage.partner.alive !== false) {
+    var bond = S.marriage.partner.bond || 70;
+    h += (bond - 50) * 0.5;
+    if (typeof S.marriage.motherInLawBond === 'number' && S.marriage.motherInLawBond < 30) h -= 5;
+  } else if (S.marriage && S.marriage.status === 'divorced') {
+    h -= 10;
+  } else if (S.marriage && S.marriage.status === 'engaged' && S.marriage.partner) {
+    h += 8;
+  } else if (S.marriage && S.marriage.status === 'dating' && S.marriage.partner) {
+    h += 4;
+  } else if (S.age > 30 && S.age < 55) {
+    h -= 5;
+  }
+
+  /* --- CHILDREN --- */
+  if (S.childrenList && S.childrenList.length > 0) {
+    var avgChildBond = S.childrenList.reduce(function(s, c) { return s + (c.bond || 55); }, 0) / S.childrenList.length;
+    h += (avgChildBond - 50) * 0.4;
+    h += Math.min(8, S.childrenList.length * 2);
+    if (S.childrenList.some(function(c) { return (c.bond || 55) < 30; })) h -= 8;
+  }
+
+  /* --- PARENTS --- */
+  var livingParents = (S.family || []).filter(function(m) {
+    return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false;
+  });
+  if (livingParents.length > 0) {
+    var avgParentBond = livingParents.reduce(function(s, m) { return s + (m.bond || 70); }, 0) / livingParents.length;
+    h += (avgParentBond - 50) * 0.25;
+  } else if (S.age > 40) {
+    h -= 3;
+  }
+
+  /* --- FRIENDS --- */
+  var friends = S.friends || [];
+  if (friends.length > 0) {
+    var avgFriendBond = friends.reduce(function(s, f) { return s + (f.bond || 50); }, 0) / friends.length;
+    h += Math.min(6, friends.length) * 1.5;
+    h += (avgFriendBond - 50) * 0.1;
+  } else if (S.age > 25) {
+    h -= 8;
+  }
+
+  /* --- CAREER --- */
+  if (S.career && S.career.job) {
+    h += ((S.career.job.performance || 50) - 50) * 0.2;
+    if ((S.career.job.tenure || 0) > 3) h += 3;
+    if ((S.career.job.performance || 50) < 30) h -= 8;
+  } else if (S.age >= 25 && S.age < 60) {
+    h -= 12;
+  }
+
+  /* --- MONEY --- */
+  var w = S.wealth || 0;
+  var yearExpenses = (S.household && S.household.expenses) ||
+    ((C().prices.food || 0) + (C().prices.rent || 0) + (C().prices.transport || 0));
+  if (w < 0) h -= 20;
+  else if (yearExpenses > 0 && w < yearExpenses) h -= 8;
+  else if (yearExpenses > 0 && w > yearExpenses * 5) h += 5;
+
+  /* --- HEALTH --- */
+  if (S.health > 80) h += 5;
+  else if (S.health < 40) h -= 15;
+  else if (S.health < 60) h -= 5;
+
+  /* --- HOUSING --- */
+  if (S.housing === 'parents' && S.age >= 30) h -= 10;
+  if (S.housing === 'owned') h += 3;
+
+  /* --- DEBT STRESS --- */
+  if (S.bank && Array.isArray(S.bank.loans)) {
+    var totalDebt = S.bank.loans.reduce(function(s, l) { return s + (l.remaining || 0); }, 0);
+    if (totalDebt > 0 && totalDebt > Math.max(0, w) * 2) h -= 6;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(h)));
+}
+window.computeHappiness = computeHappiness;
+
+function addHappiness(n) {
+  if (!S || !n) return;
+  if (typeof S.happinessOverride !== 'number') S.happinessOverride = 0;
+  S.happinessOverride = (S.happinessOverride || 0) + n;
+  if (S.happinessOverride > 30) S.happinessOverride = 30;
+  if (S.happinessOverride < -30) S.happinessOverride = -30;
+}
+window.addHappiness = addHappiness;
 
 /* ============================================================
    NEW LIFE
@@ -317,7 +425,11 @@ function advanceYear() {
   }
   save(); render();
 }
-
+  /* Mood decay — override fades each year (emotional beats fade over time) */
+  if (typeof S.happinessOverride === 'number' && S.happinessOverride !== 0) {
+    S.happinessOverride = S.happinessOverride * 0.65;
+    if (Math.abs(S.happinessOverride) < 0.5) S.happinessOverride = 0;
+  }
 function advanceMonth(silent) {
   if (S.pending) return;
 
@@ -387,6 +499,10 @@ function eventCard(pending) {
    ============================================================ */
 function render() {
   if (!S) { renderStart(); return; }
+     /* Derive happiness from actual life state */
+  if (typeof computeHappiness === 'function') {
+    S.happiness = Math.max(0, Math.min(100, computeHappiness() + (S.happinessOverride || 0)));
+  }
 
   if (!dataOK()) {
     document.getElementById('header').innerHTML = '';
@@ -443,7 +559,8 @@ function header() {
       <div>
                   <div class="muted" style="font-size:.7rem;letter-spacing:.06em">AGE ${S.age}${isMonthly() ? ' · ' + currentMonthName() : ''} · ${gameYear()} · ${C().flag} ${C().name}</div>
         <div style="font-size:1.15rem;font-weight:bold;margin-top:2px">${S.name} ${S.gender==='f'?'♀':'♂'}</div>
-        ${typeof lifeSummaryHtml === 'function' ? lifeSummaryHtml() : ''}
+            ${typeof lifeSummaryHtml === 'function' ? lifeSummaryHtml() : ''}
+        ${typeof lifeWarningsHtml === 'function' ? lifeWarningsHtml() : ''}
       </div>
       <div style="text-align:right">
         <div class="muted" style="font-size:.7rem">WEALTH</div>
@@ -962,6 +1079,17 @@ function migrateDualState() {
       marriedYear: gameYear()
     };
     if (S.marriage.status === 'single') S.marriage.status = 'married';
+  }
+  /* --- HAPPINESS OVERRIDE (Week 2 migration) --- */
+  if (typeof S.happinessOverride !== 'number') {
+    S.happinessOverride = 0;
+    if (typeof computeHappiness === 'function') {
+      var _comp = computeHappiness();
+      if (S.happiness > _comp + 15) {
+        S.happinessOverride = 8;
+        log('💭 Life has caught up with you. Some things you had forgotten are weighing on your mind.');
+      }
+    }
   }
 
   /* --- PREGNANCY: legacy S.pregnantMonths → S.pregnancy --- */
@@ -1615,7 +1743,116 @@ function characterSpeak(text, character) {
     console.warn('[Voice Engine] Speech synthesis error:', err);
   }
 }
+/* ============================================================
+   LIFE WARNINGS — visible stress signals in the header
+   "Whispers before shocks" — player sees trouble coming
+   ============================================================ */
+function lifeWarningsHtml() {
+  if (!S) return '';
+  var w = [];
 
+  if (S.health < 40) w.push({ icon: '🏥', label: 'Health critical', color: '#fb7185' });
+  else if (S.health < 55) w.push({ icon: '💊', label: 'Health failing', color: '#fbbf24' });
+
+  if (S.marriage && S.marriage.partner && (S.marriage.partner.bond || 70) < 35) {
+    w.push({ icon: '💔', label: 'Marriage strained', color: '#fb7185' });
+  }
+  if (S.wealth < 0) w.push({ icon: '💸', label: 'In debt', color: '#fb7185' });
+  if (S.wealth >= 0 && S.household && S.household.net < 0) {
+    w.push({ icon: '📉', label: 'Overspending', color: '#fbbf24' });
+  }
+  if (S.career && S.career.job && (S.career.job.performance || 50) < 30) {
+    w.push({ icon: '⚠️', label: 'Firing risk', color: '#fb7185' });
+  }
+  if (S.childrenList && S.childrenList.some(function(c) { return (c.bond || 55) < 30; })) {
+    w.push({ icon: '👨‍👧', label: 'Child estranged', color: '#fbbf24' });
+  }
+  if (S.happiness < 25) w.push({ icon: '😔', label: 'Deeply unhappy', color: '#fb7185' });
+
+  if (w.length === 0) return '';
+  return '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">' +
+    w.slice(0, 4).map(function(x) {
+      return '<span style="background:' + x.color + '22;color:' + x.color +
+        ';padding:2px 7px;border-radius:5px;font-size:.65rem;font-weight:700">' + x.icon + ' ' + x.label + '</span>';
+    }).join('') + '</div>';
+}
+window.lifeWarningsHtml = lifeWarningsHtml;
+
+/* ============================================================
+   HAPPINESS BREAKDOWN — transparency panel
+   ============================================================ */
+function happinessBreakdownHtml() {
+  if (!S) return '';
+  var lines = [];
+
+  if (S.marriage && S.marriage.partner && S.marriage.partner.alive !== false) {
+    var b = S.marriage.partner.bond || 70;
+    var c = (b - 50) * 0.5;
+    lines.push({ label: 'Marriage (' + S.marriage.partner.name + ' · bond ' + b + '%)', value: c });
+  } else if (S.marriage && S.marriage.status === 'divorced') {
+    lines.push({ label: 'Divorced', value: -10 });
+  } else if (S.age > 30 && S.age < 55) {
+    lines.push({ label: 'Single at this age', value: -5 });
+  }
+
+  if (S.childrenList && S.childrenList.length > 0) {
+    var avg = S.childrenList.reduce(function(s, c) { return s + (c.bond || 55); }, 0) / S.childrenList.length;
+    lines.push({ label: 'Children (' + S.childrenList.length + ' · avg bond ' + Math.round(avg) + '%)', value: (avg - 50) * 0.4 + Math.min(8, S.childrenList.length * 2) });
+  }
+
+  var lp = (S.family || []).filter(function(m) { return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false; });
+  if (lp.length > 0) {
+    var ap = lp.reduce(function(s, m) { return s + (m.bond || 70); }, 0) / lp.length;
+    lines.push({ label: 'Parents (avg bond ' + Math.round(ap) + '%)', value: (ap - 50) * 0.25 });
+  }
+
+  var fr = S.friends || [];
+  if (fr.length > 0) {
+    var af = fr.reduce(function(s, f) { return s + (f.bond || 50); }, 0) / fr.length;
+    lines.push({ label: 'Friends (' + fr.length + ')', value: Math.min(6, fr.length) * 1.5 + (af - 50) * 0.1 });
+  } else if (S.age > 25) {
+    lines.push({ label: 'No friends', value: -8 });
+  }
+
+  if (S.career && S.career.job) {
+    var per = S.career.job.performance || 50;
+    var cv = (per - 50) * 0.2;
+    if ((S.career.job.tenure || 0) > 3) cv += 3;
+    if (per < 30) cv -= 8;
+    lines.push({ label: 'Career (' + per + '% perf)', value: cv });
+  } else if (S.age >= 25 && S.age < 60) {
+    lines.push({ label: 'Unemployed', value: -12 });
+  }
+
+  if (S.wealth < 0) lines.push({ label: 'In debt', value: -20 });
+  if (S.health > 80) lines.push({ label: 'Excellent health', value: 5 });
+  else if (S.health < 40) lines.push({ label: 'Poor health', value: -15 });
+  else if (S.health < 60) lines.push({ label: 'Frail health', value: -5 });
+
+  if (S.housing === 'parents' && S.age >= 30) lines.push({ label: 'Living with parents at ' + S.age, value: -10 });
+  if (S.housing === 'owned') lines.push({ label: 'Own home', value: 3 });
+
+  if (S.happinessOverride) {
+    lines.push({ label: 'Recent emotional events', value: S.happinessOverride });
+  }
+
+  var total = 50;
+  lines.forEach(function(l) { total += l.value; });
+  var final = Math.max(0, Math.min(100, Math.round(total)));
+
+  var html = '<div class="card"><h3>😊 Why Your Happiness is ' + final + '%</h3>' +
+    '<div class="muted small" style="margin-bottom:6px">This reflects your real life. It updates automatically.</div>' +
+    '<div class="row"><span>Baseline</span><b>50</b></div>';
+  lines.forEach(function(l) {
+    var sign = l.value >= 0 ? '+' : '';
+    var color = l.value >= 0 ? '#34d399' : '#fb7185';
+    html += '<div class="row"><span>' + l.label + '</span><b style="color:' + color + '">' + sign + Math.round(l.value) + '</b></div>';
+  });
+  html += '<div class="row" style="border-top:1px solid #25253a;padding-top:6px;margin-top:6px"><b>Total</b><b style="font-size:1.05rem">' + final + '</b></div>';
+  html += '</div>';
+  return html;
+}
+window.happinessBreakdownHtml = happinessBreakdownHtml;
 window.characterSay = characterSay;
 window.characterSpeak = characterSpeak;
 
