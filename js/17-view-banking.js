@@ -368,6 +368,20 @@ function bankView() {
 /* ---------- 1. ACCOUNTS ---------- */
 function bankAccountsSection() {
   const b = S.bank;
+     /* Week 6: Joint Marriage Account (moved from marriage tab) */
+  var sharedAccountHtml = '';
+  if (S.marriage && S.marriage.status === 'married' && S.marriage.partner) {
+    var sharedBal = S.marriage.sharedAccountBalance || 0;
+    sharedAccountHtml =
+      '<div class="card" style="border-color:#fb7185">' +
+        '<h3 style="color:#fb7185">💍 Joint Marriage Account</h3>' +
+        '<p class="muted small">Shared with ' + S.marriage.partner.name + '. Deposit or withdraw anytime.</p>' +
+        '<div class="row"><span>Balance</span><b class="mono good">' + money(sharedBal) + '</b></div>' +
+        '<div style="display:flex;gap:6px;margin-top:8px">' +
+        '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;background:#fb718520;border-color:#fb7185" onclick="bankDoDepositShared()">➕ Deposit</button>' +
+        '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="bankDoWithdrawShared()" ' + (sharedBal <= 0 ? 'disabled' : '') + '>➖ Withdraw</button>' +
+        '</div></div>';
+  }
   const banksHere = BANKS[S.country] || [];
 
   /* Egyptian account cross-display */
@@ -383,7 +397,7 @@ function bankAccountsSection() {
     </div>`;
   }
 
-  let html = egyptAccountHTML + `<div class="card">
+   let html = sharedAccountHtml + egyptAccountHTML + `<div class="card">
     <h3>Wealth Dashboard</h3>
     <div class="row"><span>Cash in Pocket (Unbanked)</span><b class="mono ${S.wealth < 0 ? 'bad' : 'good'}">${money(S.wealth)}</b></div>
     <div class="row"><span>Total Banked Cash</span><b class="mono good">${money(bankGetTotalLiquidCash() - S.wealth)}</b></div>
@@ -1596,7 +1610,35 @@ GameHooks.on('render', function() {
     log('📊 Net worth chart reset (currency changed).');
   }
 });
+/* ============================================================
+   WEEK 6 — JOINT MARRIAGE ACCOUNT HANDLERS
+   ============================================================ */
+window.bankDoDepositShared = function() {
+  if (!S || !S.marriage || S.marriage.status !== 'married') return;
+  var input = prompt('Deposit to shared account?\nAvailable cash: ' + money(S.wealth), '1000');
+  if (input === null) return;
+  var amt = Math.round(Number(input) || 0);
+  if (amt <= 0) return;
+  if (S.wealth < amt) { log('❌ Not enough cash.'); render(); return; }
+  S.wealth -= amt;
+  S.marriage.sharedAccountBalance = (S.marriage.sharedAccountBalance || 0) + amt;
+  log('💍 Deposited ' + money(amt) + ' to shared account. New balance: ' + money(S.marriage.sharedAccountBalance) + '.');
+  render();
+};
 
+window.bankDoWithdrawShared = function() {
+  if (!S || !S.marriage || S.marriage.status !== 'married') return;
+  var bal = S.marriage.sharedAccountBalance || 0;
+  if (bal <= 0) return;
+  var input = prompt('Withdraw from shared account?\nAvailable: ' + money(bal), String(Math.round(bal / 2)));
+  if (input === null) return;
+  var amt = Math.round(Number(input) || 0);
+  if (amt <= 0 || amt > bal) return;
+  S.marriage.sharedAccountBalance = bal - amt;
+  S.wealth += amt;
+  log('💍 Withdrew ' + money(amt) + ' from shared account. New balance: ' + money(S.marriage.sharedAccountBalance) + '.');
+  render();
+};
 /* ============================================================
    REGISTER TAB
    ============================================================ */
