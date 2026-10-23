@@ -9,7 +9,7 @@
    arrays. Do not change variable names or shapes.
    ============================================================ */
 /* ============================================================
-   SESSION 9: CAREER BRANCH OPTIONS
+   SESSION 9: CAREER BRANCH OPTIONS (EXPANDED)
    When a player reaches `branchAtLevel`, they must choose a specialty.
    Each choice either keeps them on the current track (generalist path)
    or switches them to a specialist track with its own salary ladder.
@@ -17,11 +17,16 @@
 const CAR_BRANCH_OPTIONS = {
   medicine: {
     branchAtLevel: 2,
-    question: 'You have completed your core medical training (Internship + Residency + Specialist). The next step is specialization. Choose carefully — this shapes your entire medical career.',
+    question: 'You have completed your core medical training (Internship + Residency). The next step is specialization. Choose carefully — this shapes your entire medical career.',
     options: [
       { trackId: 'surgery', label: '🔪 Surgery', desc: 'Highest prestige, highest pay, brutal hours. 5 more years of training.' },
       { trackId: 'pediatrics', label: '👶 Pediatrics', desc: 'Children\'s medicine. Respected and steady. Better work-life balance.' },
       { trackId: 'cardiology', label: '❤️ Cardiology', desc: 'Heart specialist. High pay and demand. Competitive entry.' },
+      { trackId: 'neurology', label: '🧠 Neurology', desc: 'Brain and nervous system. Intellectually demanding, high prestige.' },
+      { trackId: 'psychiatry', label: '🛋️ Psychiatry', desc: 'Mental health. Excellent work-life balance and private practice potential.' },
+      { trackId: 'dermatology', label: '🧴 Dermatology', desc: 'Skin specialist. Exceptional work-life balance, highly lucrative.' },
+      { trackId: 'anesthesiology', label: '💉 Anesthesiology', desc: 'Critical care in the OR. High pay, high pressure, exact science.' },
+      { trackId: 'emergency', label: '🚑 Emergency Medicine', desc: 'High adrenaline, shift work. Great pay but heavy burnout risk.' },
       { trackId: 'medicine', label: '🩺 General Medicine', desc: 'Stay on the general practitioner path. Consultant → Department Head.' }
     ]
   },
@@ -31,37 +36,112 @@ const CAR_BRANCH_OPTIONS = {
     options: [
       { trackId: 'accounting', label: '🧮 Accounting / Audit', desc: 'Numbers-driven. CPA / ACCA path. Stable.' },
       { trackId: 'investment', label: '📈 Investment / PE', desc: 'High-stakes finance. Big bonuses, high risk.' },
+      { trackId: 'finance', label: '🏦 Corporate Finance', desc: 'Manage company money. Path to CFO. Stable and lucrative.' },
       { trackId: 'marketing', label: '📣 Marketing', desc: 'Brand, campaigns, growth. Creative track.' },
+      { trackId: 'sales', label: '🤝 Sales / B2B', desc: 'Revenue driver. Heavy commission, high pressure, massive upside.' },
       { trackId: 'hr', label: '👥 Human Resources', desc: 'People management and hiring. Slower ladder.' },
+      { trackId: 'supply_chain', label: '📦 Supply Chain & Ops', desc: 'Logistics and operations. High demand in global trade.' },
+      { trackId: 'real_estate', label: '🏢 Real Estate & Property', desc: 'Commercial and residential development. Boom or bust potential.' },
       { trackId: 'consulting', label: '💼 Management Consulting', desc: 'Strategy for top firms. Heavy travel.' },
-      { trackId: 'product', label: '🎯 Product Management', desc: 'Tech product leadership. High ceiling.' }
+      { trackId: 'product', label: '🎯 Product Management', desc: 'Tech product leadership. High ceiling.' },
+      { trackId: 'entrepreneurship', label: '🚀 Startup Founder', desc: 'Build from scratch. Highest risk, unlimited ceiling.' }
     ]
   },
   tech: {
     branchAtLevel: 2,
-    question: 'You have proven yourself as a general software engineer. Choose a specialization for the next decade:',
+    question: 'You have proven yourself as a software engineer. Choose a specialization for the next decade:',
     options: [
-      { trackId: 'data_science', label: '🧠 Data Science / ML', desc: 'Highest demand. Build the models everyone wants.' },
-      { trackId: 'cybersecurity', label: '🛡 Cybersecurity', desc: 'Defend systems. Sky-high comp.' },
-      { trackId: 'product_design', label: '🎨 Product Design (UX)', desc: 'Design leadership. Better work-life than IC.' },
-      { trackId: 'qa_engineering', label: '🧪 QA / Testing', desc: 'Quality engineering. Underrated stability.' }
+      { trackId: 'data_science', label: '🧠 Data Science / AI', desc: 'Highest demand. Build the ML models everyone wants.' },
+      { trackId: 'cybersecurity', label: '🛡 Cybersecurity', desc: 'Defend systems. Sky-high comp, high stress.' },
+      { trackId: 'devops', label: '☁️ Cloud / DevOps', desc: 'Infrastructure and scaling. Very high pay, on-call nights.' },
+      { trackId: 'systems_arch', label: '🏗 Systems Architecture', desc: 'Design massive systems. Very senior, high compensation.' },
+      { trackId: 'mobile_dev', label: '📱 Mobile Development', desc: 'iOS/Android specialist. Highly visible consumer products.' },
+      { trackId: 'game_dev', label: '🎮 Game Development', desc: 'Passion-driven. Fun products but notorious for crunch culture.' },
+      { trackId: 'product_design', label: '🎨 Product Design (UX)', desc: 'Design leadership. Better work-life than engineering.' },
+      { trackId: 'qa_engineering', label: '🧪 QA / Testing', desc: 'Quality engineering. Underrated stability.' },
+      { trackId: 'tech', label: '💻 Full-Stack / General', desc: 'Stay as a generalist. Path to Staff Engineer or CTO.' }
     ]
   },
   engineering: {
     branchAtLevel: 2,
     question: 'Engineering foundation is done. Which branch will you commit to?',
     options: [
-      { trackId: 'civil_eng', label: '🏗 Civil Engineering', desc: 'Infrastructure and construction. Onsite work.' },
-      { trackId: 'architect', label: '🏛 Architecture', desc: 'Building design and urban planning.' },
-      { trackId: 'engineering', label: '⚙ General / Mechanical', desc: 'Stay as a broad engineer. Consultancy or management.' }
+      { trackId: 'civil_eng', label: '🏗 Civil Engineering', desc: 'Infrastructure and construction. Heavy onsite work.' },
+      { trackId: 'architect', label: '🏛 Architecture', desc: 'Building design and urban planning. Highly competitive.' },
+      { trackId: 'electrical', label: '⚡ Electrical Engineering', desc: 'Power grids, electronics, and hardware.' },
+      { trackId: 'chemical', label: '🧪 Chemical / Process', desc: 'Oil, gas, and pharma. Very high pay, industrial locations.' },
+      { trackId: 'aerospace', label: '🚀 Aerospace Engineering', desc: 'Planes, rockets, satellites. Niche, high-security clearance often required.' },
+      { trackId: 'biomedical', label: '🧬 Biomedical Engineering', desc: 'Prosthetics and medical devices. Merging tech and healthcare.' },
+      { trackId: 'engineering', label: '⚙ General / Mechanical', desc: 'Broad engineering. Consultancy or management.' }
     ]
   },
   law: {
     branchAtLevel: 2,
     question: 'Your legal training is complete. Choose your path:',
     options: [
-      { trackId: 'prosecutor', label: '⚖ Public Prosecutor / Judge', desc: 'Government legal track. Stable, respected.' },
-      { trackId: 'law', label: '💼 Corporate Law', desc: 'Big-firm practice. High pay, long hours.' }
+      { trackId: 'prosecutor', label: '⚖ Public Prosecutor / Judge', desc: 'Government legal track. Stable, highly respected.' },
+      { trackId: 'law', label: '💼 Corporate Law', desc: 'Big-firm practice. Extreme hours, massive partner payouts.' },
+      { trackId: 'criminal_defense', label: '🛡️ Criminal Defense', desc: 'Defend the accused. High stress, unpredictable income.' },
+      { trackId: 'family_law', label: '👨‍👩‍👧 Family Law', desc: 'Divorce, custody, estates. Emotionally taxing, steady client base.' },
+      { trackId: 'ip_law', label: '💡 Intellectual Property', desc: 'Patents and trademarks. Very lucrative, great work-life balance.' }
+    ]
+  },
+  academia: {
+    branchAtLevel: 2,
+    question: 'You have earned your stripes as an assistant researcher. Where do you focus your academic career?',
+    options: [
+      { trackId: 'research', label: '🔬 Research Heavy', desc: 'Publish or perish. Pursue grants and Nobel ambitions.' },
+      { trackId: 'administration', label: '🏛️ University Admin', desc: 'Path to Dean or University President. Highly political.' },
+      { trackId: 'academia', label: '📚 Teaching Professor', desc: 'Focus on lecturing and students. Stable, lower stress.' }
+    ]
+  },
+  media: {
+    branchAtLevel: 1,
+    question: 'You have broken into the media industry. Which path will you carve out?',
+    options: [
+      { trackId: 'journalism', label: '📰 Journalism', desc: 'Investigative reporting. Poor pay early on, high prestige later.' },
+      { trackId: 'production', label: '🎬 Film & TV Production', desc: 'Behind the camera. Gig-based, networking heavy, chaotic.' },
+      { trackId: 'pr', label: '🎙️ Public Relations', desc: 'Spin and corporate comms. High pay, managing crisis.' },
+      { trackId: 'broadcasting', label: '📻 Broadcasting & On-Air', desc: 'TV/Radio personality. High visibility, image-conscious.' },
+      { trackId: 'media', label: '📱 Content Creation', desc: 'Go independent. High risk, massive audience potential.' }
+    ]
+  },
+  aviation: {
+    branchAtLevel: 2,
+    question: 'You have mastered the basics of flight and aviation operations. What is your ultimate goal?',
+    options: [
+      { trackId: 'commercial_pilot', label: '✈️ Commercial Pilot', desc: 'Fly the big jets. Heavy travel, massive seniority pay.' },
+      { trackId: 'cargo_pilot', label: '📦 Cargo Pilot', desc: 'Fly freight globally. Night shifts, less passenger drama.' },
+      { trackId: 'atc', label: '📡 Air Traffic Control', desc: 'High stress, mandatory retirement age, excellent government pay.' },
+      { trackId: 'aviation', label: '🧳 Airline Management', desc: 'Corporate side of aviation. Route planning and fleet operations.' }
+    ]
+  },
+  military: {
+    branchAtLevel: 2,
+    question: 'You have completed basic and junior officer training. Choose your warfare community:',
+    options: [
+      { trackId: 'infantry', label: '⚔️ Infantry / Combat', desc: 'Frontline leadership. Physically demanding, high risk.' },
+      { trackId: 'intelligence', label: '👁️ Intelligence', desc: 'Analysis and covert ops. Strategic impact, highly classified.' },
+      { trackId: 'logistics', label: '🚛 Logistics & Supply', desc: 'Keep the military moving. Highly transferable to civilian life.' },
+      { trackId: 'military', label: '🎖️ General Staff', desc: 'Path to general/admiral. Highly political, administrative.' }
+    ]
+  },
+  hospitality: {
+    branchAtLevel: 1,
+    question: 'You know the basics of service and operations. Where will you specialize in hospitality?',
+    options: [
+      { trackId: 'culinary', label: '🍳 Culinary Arts / Chef', desc: 'Kitchen leadership. Long hours, hot environment, creative.' },
+      { trackId: 'hotel_mgmt', label: '🏨 Hotel Management', desc: 'Run resorts and properties. Corporate ladder, customer-facing.' },
+      { trackId: 'events', label: '🎪 Event Planning', desc: 'Weddings, corporate summits. High stress, project-based.' }
+    ]
+  },
+  government: {
+    branchAtLevel: 2,
+    question: 'You have navigated the lower ranks of public service. Choose your bureaucratic path:',
+    options: [
+      { trackId: 'diplomacy', label: '🌍 Foreign Service / Diplomat', desc: 'Represent the country abroad. High prestige, constant relocation.' },
+      { trackId: 'policy', label: '📜 Policy Advisor', desc: 'Draft legislation and advise politicians. Behind the scenes power.' },
+      { trackId: 'public_admin', label: '🏢 City/State Administration', desc: 'Manage municipal operations. Stable pension, local impact.' }
     ]
   }
 };
@@ -1556,3 +1636,479 @@ window.CAR_COUNTRY_MULT = {
 /* ============================================================
    END OF CAREER DATA
    ============================================================ */
+/* ============================================================
+   SESSION 9B: LIVING JOB MARKET (MASSIVELY EXPANDED)
+   Company meta, sector crises, interview depth, expansion
+   ============================================================ */
+
+/* ---------- COMPANY METADATA ---------- */
+/* Behavioral personality per company. Missing companies fall back to defaults. */
+const COMPANY_META = {
+  /* ===== EGYPT ===== */
+  'CIB (Commercial International Bank)': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008', 'egp_crisis_2023'], founded: 1975, culture: 'prestigious' },
+  'NBE (National Bank of Egypt)': { sector: 'banking', growth: 'stable', crisisVulnerable: ['egp_crisis_2023'], founded: 1898, culture: 'bureaucratic' },
+  'Banque Misr': { sector: 'banking', growth: 'stable', crisisVulnerable: ['egp_crisis_2023'], founded: 1920, culture: 'bureaucratic' },
+  'QNB Alahli': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1978, culture: 'strict' },
+  'HSBC Egypt': { sector: 'banking', growth: 'growth', crisisVulnerable: ['financial_2008'], founded: 1982, culture: 'prestigious' },
+  'Emirates NBD Egypt': { sector: 'banking', growth: 'growth', crisisVulnerable: ['financial_2008'], founded: 2005, culture: 'strict' },
+  'Amazon Egypt': { sector: 'tech', growth: 'growth', crisisVulnerable: ['tech_winter_2022'], founded: 1994, culture: 'demanding' },
+  'Microsoft Egypt': { sector: 'tech', growth: 'stable', crisisVulnerable: ['tech_winter_2022'], founded: 1975, culture: 'prestigious' },
+  'Google Egypt': { sector: 'tech', growth: 'growth', crisisVulnerable: ['tech_winter_2022'], founded: 1998, culture: 'prestigious' },
+  'Vodafone Egypt': { sector: 'tech', growth: 'stable', crisisVulnerable: [], founded: 1998, culture: 'flexible' },
+  'Fawry': { sector: 'tech', growth: 'risky', crisisVulnerable: ['tech_winter_2022'], founded: 2008, culture: 'demanding' },
+  'Paymob': { sector: 'tech', growth: 'risky', crisisVulnerable: ['tech_winter_2022'], founded: 2015, culture: 'demanding' },
+  'Thndr': { sector: 'tech', growth: 'risky', crisisVulnerable: ['tech_winter_2022'], founded: 2019, culture: 'demanding' },
+  'Oracle Egypt': { sector: 'tech', growth: 'stable', crisisVulnerable: ['tech_winter_2022'], founded: 1977, culture: 'strict' },
+  'IBM Egypt': { sector: 'tech', growth: 'stable', crisisVulnerable: ['tech_winter_2022'], founded: 1911, culture: 'prestigious' },
+  'Bosta': { sector: 'tech', growth: 'risky', crisisVulnerable: ['tech_winter_2022'], founded: 2016, culture: 'demanding' },
+  'PwC Egypt': { sector: 'consulting', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1998, culture: 'demanding' },
+  'Deloitte Egypt': { sector: 'consulting', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1998, culture: 'demanding' },
+  'KPMG Egypt': { sector: 'consulting', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1998, culture: 'strict' },
+  'EY Egypt': { sector: 'consulting', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1998, culture: 'demanding' },
+  'McKinsey Egypt': { sector: 'consulting', growth: 'growth', crisisVulnerable: ['financial_2008'], founded: 1926, culture: 'prestigious' },
+  'BCG Egypt': { sector: 'consulting', growth: 'growth', crisisVulnerable: ['financial_2008'], founded: 1963, culture: 'prestigious' },
+  'Bain Egypt': { sector: 'consulting', growth: 'growth', crisisVulnerable: ['financial_2008'], founded: 1973, culture: 'prestigious' },
+  'Matouk Bassiouny & Hennawy': { sector: 'law', growth: 'stable', crisisVulnerable: ['egp_crisis_2023'], founded: 2001, culture: 'prestigious' },
+  'Shalakany Law Office': { sector: 'law', growth: 'stable', crisisVulnerable: [], founded: 1939, culture: 'prestigious' },
+  'Zulficar & Partners': { sector: 'law', growth: 'stable', crisisVulnerable: [], founded: 1989, culture: 'prestigious' },
+  'Baker McKenzie Cairo': { sector: 'law', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1949, culture: 'prestigious' },
+  'Orascom Construction': { sector: 'engineering', growth: 'cyclical', crisisVulnerable: ['oil_crash_2014', 'egp_crisis_2023'], founded: 1950, culture: 'demanding' },
+  'Hassan Allam Holding': { sector: 'engineering', growth: 'cyclical', crisisVulnerable: ['egp_crisis_2023'], founded: 1970, culture: 'strict' },
+  'Elsewedy Electric': { sector: 'engineering', growth: 'cyclical', crisisVulnerable: ['egp_crisis_2023'], founded: 1938, culture: 'stable' },
+  'Kasr El Aini (public)': { sector: 'hospitals', growth: 'stable', crisisVulnerable: [], founded: 1837, culture: 'bureaucratic' },
+  'Dar Al Fouad': { sector: 'hospitals', growth: 'growth', crisisVulnerable: [], founded: 1998, culture: 'prestigious' },
+  'Saudi German Hospital Cairo': { sector: 'hospitals', growth: 'growth', crisisVulnerable: [], founded: 2013, culture: 'prestigious' },
+  '57357 Cancer Center': { sector: 'hospitals', growth: 'stable', crisisVulnerable: [], founded: 2007, culture: 'missionary' },
+  'MBC Masr': { sector: 'media', growth: 'cyclical', crisisVulnerable: ['ai_disruption_2026'], founded: 2012, culture: 'creative' },
+  'CNBC Arabia': { sector: 'media', growth: 'stable', crisisVulnerable: ['ai_disruption_2026'], founded: 2003, culture: 'prestigious' },
+  'Al-Ahram': { sector: 'media', growth: 'stable', crisisVulnerable: ['egp_crisis_2023', 'ai_disruption_2026'], founded: 1875, culture: 'bureaucratic' },
+  'Youm7': { sector: 'media', growth: 'cyclical', crisisVulnerable: ['ai_disruption_2026'], founded: 2007, culture: 'creative' },
+  'Mada Masr': { sector: 'media', growth: 'stable', crisisVulnerable: [], founded: 2013, culture: 'missionary' },
+  'Eva Pharma': { sector: 'pharma', growth: 'growth', crisisVulnerable: ['egp_crisis_2023'], founded: 1997, culture: 'stable' },
+  'Hikma Egypt': { sector: 'pharma', growth: 'stable', crisisVulnerable: [], founded: 1978, culture: 'stable' },
+  'Pfizer Egypt': { sector: 'pharma', growth: 'stable', crisisVulnerable: [], founded: 1849, culture: 'prestigious' },
+  'Novartis Egypt': { sector: 'pharma', growth: 'stable', crisisVulnerable: [], founded: 1996, culture: 'prestigious' },
+  'Amoun Pharmaceutical': { sector: 'pharma', growth: 'stable', crisisVulnerable: [], founded: 1986, culture: 'stable' },
+  'Cairo American College': { sector: 'schools', growth: 'stable', crisisVulnerable: [], founded: 1945, culture: 'prestigious' },
+  'British International School Cairo': { sector: 'schools', growth: 'stable', crisisVulnerable: [], founded: 1976, culture: 'prestigious' },
+  'AUC (American University in Cairo)': { sector: 'universities', growth: 'stable', crisisVulnerable: [], founded: 1919, culture: 'prestigious' },
+  'GUC (German University in Cairo)': { sector: 'universities', growth: 'stable', crisisVulnerable: [], founded: 2002, culture: 'prestigious' },
+  'Vodafone VOIS': { sector: 'bpo', growth: 'stable', crisisVulnerable: ['ai_disruption_2026'], founded: 2008, culture: 'flexible' },
+  'Teleperformance Egypt': { sector: 'bpo', growth: 'cyclical', crisisVulnerable: ['ai_disruption_2026'], founded: 2005, culture: 'strict' },
+  'Concentrix Egypt': { sector: 'bpo', growth: 'cyclical', crisisVulnerable: ['ai_disruption_2026'], founded: 2015, culture: 'strict' },
+  'Xceed (Telecom Egypt)': { sector: 'bpo', growth: 'stable', crisisVulnerable: ['ai_disruption_2026'], founded: 2003, culture: 'bureaucratic' },
+
+  /* ===== USA ===== */
+  'JPMorgan Chase': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1799, culture: 'prestigious' },
+  'Goldman Sachs': { sector: 'banking', growth: 'cyclical', crisisVulnerable: ['financial_2008'], founded: 1869, culture: 'prestigious' },
+  'Morgan Stanley': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1935, culture: 'prestigious' },
+  'Bank of America': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1784, culture: 'bureaucratic' },
+  'Citibank': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1812, culture: 'strict' },
+  'Google': { sector: 'tech', growth: 'growth', crisisVulnerable: ['tech_winter_2022'], founded: 1998, culture: 'prestigious' },
+  'Microsoft': { sector: 'tech', growth: 'stable', crisisVulnerable: ['tech_winter_2022'], founded: 1975, culture: 'stable' },
+  'Amazon': { sector: 'tech', growth: 'growth', crisisVulnerable: ['tech_winter_2022'], founded: 1994, culture: 'demanding' },
+  'Apple': { sector: 'tech', growth: 'stable', crisisVulnerable: [], founded: 1976, culture: 'prestigious' },
+  'Meta': { sector: 'tech', growth: 'growth', crisisVulnerable: ['tech_winter_2022'], founded: 2004, culture: 'demanding' },
+  'OpenAI': { sector: 'tech', growth: 'risky', crisisVulnerable: [], founded: 2015, culture: 'demanding' },
+  'Stripe': { sector: 'tech', growth: 'growth', crisisVulnerable: ['tech_winter_2022'], founded: 2010, culture: 'demanding' },
+  'Airbnb': { sector: 'tech', growth: 'cyclical', crisisVulnerable: ['covid_2020', 'tech_winter_2022'], founded: 2008, culture: 'flexible' },
+  'Nvidia': { sector: 'tech', growth: 'growth', crisisVulnerable: [], founded: 1993, culture: 'demanding' },
+  'McKinsey': { sector: 'consulting', growth: 'growth', crisisVulnerable: ['financial_2008'], founded: 1926, culture: 'prestigious' },
+  'BCG': { sector: 'consulting', growth: 'growth', crisisVulnerable: ['financial_2008'], founded: 1963, culture: 'prestigious' },
+  'Bain': { sector: 'consulting', growth: 'growth', crisisVulnerable: ['financial_2008'], founded: 1973, culture: 'prestigious' },
+  'Deloitte': { sector: 'consulting', growth: 'stable', crisisVulnerable: [], founded: 1845, culture: 'demanding' },
+  'Accenture': { sector: 'consulting', growth: 'stable', crisisVulnerable: [], founded: 1989, culture: 'bureaucratic' },
+  'Skadden': { sector: 'law', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1948, culture: 'prestigious' },
+  'Wachtell': { sector: 'law', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1965, culture: 'prestigious' },
+  'Latham & Watkins': { sector: 'law', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1934, culture: 'demanding' },
+  'Kirkland & Ellis': { sector: 'law', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1909, culture: 'demanding' },
+  'Mayo Clinic': { sector: 'hospitals', growth: 'stable', crisisVulnerable: [], founded: 1864, culture: 'missionary' },
+  'Johns Hopkins Hospital': { sector: 'hospitals', growth: 'stable', crisisVulnerable: [], founded: 1889, culture: 'prestigious' },
+  'Cleveland Clinic': { sector: 'hospitals', growth: 'stable', crisisVulnerable: [], founded: 1921, culture: 'prestigious' },
+  'Kaiser Permanente': { sector: 'hospitals', growth: 'stable', crisisVulnerable: [], founded: 1945, culture: 'bureaucratic' },
+  'CNN': { sector: 'media', growth: 'cyclical', crisisVulnerable: ['ai_disruption_2026'], founded: 1980, culture: 'demanding' },
+  'New York Times': { sector: 'media', growth: 'stable', crisisVulnerable: ['ai_disruption_2026'], founded: 1851, culture: 'prestigious' },
+  'The Atlantic': { sector: 'media', growth: 'stable', crisisVulnerable: ['ai_disruption_2026'], founded: 1857, culture: 'missionary' },
+  'Harvard': { sector: 'universities', growth: 'stable', crisisVulnerable: [], founded: 1636, culture: 'prestigious' },
+  'MIT': { sector: 'universities', growth: 'stable', crisisVulnerable: [], founded: 1861, culture: 'prestigious' },
+  'Stanford': { sector: 'universities', growth: 'stable', crisisVulnerable: [], founded: 1885, culture: 'prestigious' },
+
+  /* ===== UK ===== */
+  'Barclays': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1690, culture: 'prestigious' },
+  'HSBC UK': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1865, culture: 'bureaucratic' },
+  'DeepMind': { sector: 'tech', growth: 'growth', crisisVulnerable: ['tech_winter_2022'], founded: 2010, culture: 'prestigious' },
+  'Google UK': { sector: 'tech', growth: 'growth', crisisVulnerable: ['tech_winter_2022'], founded: 2003, culture: 'prestigious' },
+  'Monzo': { sector: 'tech', growth: 'risky', crisisVulnerable: ['tech_winter_2022'], founded: 2015, culture: 'demanding' },
+  'Revolut': { sector: 'tech', growth: 'risky', crisisVulnerable: ['tech_winter_2022'], founded: 2015, culture: 'demanding' },
+  'Clifford Chance': { sector: 'law', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1987, culture: 'prestigious' },
+  'Linklaters': { sector: 'law', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1838, culture: 'prestigious' },
+  'NHS (public)': { sector: 'hospitals', growth: 'stable', crisisVulnerable: [], founded: 1948, culture: 'bureaucratic' },
+  'AstraZeneca': { sector: 'pharma', growth: 'growth', crisisVulnerable: [], founded: 1999, culture: 'stable' },
+  'BBC': { sector: 'media', growth: 'stable', crisisVulnerable: ['ai_disruption_2026'], founded: 1922, culture: 'bureaucratic' },
+  'Eton College': { sector: 'schools', growth: 'stable', crisisVulnerable: [], founded: 1440, culture: 'prestigious' },
+  'Oxford University': { sector: 'universities', growth: 'stable', crisisVulnerable: [], founded: 1096, culture: 'prestigious' },
+
+  /* ===== SAUDI ARABIA ===== */
+  'Aramco': { sector: 'oil_gas', growth: 'cyclical', crisisVulnerable: ['oil_crash_2014'], founded: 1933, culture: 'prestigious' },
+  'SABIC': { sector: 'oil_gas', growth: 'cyclical', crisisVulnerable: ['oil_crash_2014'], founded: 1976, culture: 'prestigious' },
+  'Al Rajhi Bank': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1957, culture: 'stable' },
+  'SNB (Saudi National Bank)': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1953, culture: 'bureaucratic' },
+  'STC': { sector: 'tech', growth: 'stable', crisisVulnerable: [], founded: 1998, culture: 'stable' },
+  'Neom': { sector: 'engineering', growth: 'risky', crisisVulnerable: ['oil_crash_2014'], founded: 2017, culture: 'demanding' },
+  'Saudia Airlines': { sector: 'aviation', growth: 'stable', crisisVulnerable: ['covid_2020'], founded: 1945, culture: 'bureaucratic' },
+  'KAUST': { sector: 'universities', growth: 'stable', crisisVulnerable: [], founded: 2009, culture: 'prestigious' },
+
+  /* ===== UAE ===== */
+  'Emirates Airline': { sector: 'aviation', growth: 'cyclical', crisisVulnerable: ['covid_2020'], founded: 1985, culture: 'prestigious' },
+  'Etihad Airways': { sector: 'aviation', growth: 'cyclical', crisisVulnerable: ['covid_2020'], founded: 2003, culture: 'demanding' },
+  'Emirates NBD': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1963, culture: 'strict' },
+  'FAB (First Abu Dhabi Bank)': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 2017, culture: 'prestigious' },
+  'Emaar Properties': { sector: 'real_estate', growth: 'cyclical', crisisVulnerable: ['financial_2008', 'covid_2020'], founded: 1997, culture: 'demanding' },
+  'DP World': { sector: 'logistics', growth: 'stable', crisisVulnerable: ['supply_chain_2021'], founded: 2005, culture: 'prestigious' },
+  'Careem': { sector: 'tech', growth: 'risky', crisisVulnerable: ['tech_winter_2022'], founded: 2012, culture: 'demanding' },
+  'Cleveland Clinic Abu Dhabi': { sector: 'hospitals', growth: 'stable', crisisVulnerable: [], founded: 2015, culture: 'prestigious' },
+
+  /* ===== GERMANY ===== */
+  'SAP': { sector: 'tech', growth: 'stable', crisisVulnerable: [], founded: 1972, culture: 'stable' },
+  'Siemens': { sector: 'engineering', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1847, culture: 'prestigious' },
+  'BMW': { sector: 'engineering', growth: 'cyclical', crisisVulnerable: ['financial_2008', 'supply_chain_2021'], founded: 1916, culture: 'stable' },
+  'Mercedes-Benz': { sector: 'engineering', growth: 'cyclical', crisisVulnerable: ['financial_2008', 'supply_chain_2021'], founded: 1926, culture: 'stable' },
+  'Volkswagen': { sector: 'engineering', growth: 'cyclical', crisisVulnerable: ['financial_2008'], founded: 1937, culture: 'bureaucratic' },
+  'Deutsche Bank': { sector: 'banking', growth: 'risky', crisisVulnerable: ['financial_2008'], founded: 1870, culture: 'demanding' },
+  'Allianz': { sector: 'insurance', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1890, culture: 'stable' },
+  'Bayer': { sector: 'pharma', growth: 'stable', crisisVulnerable: [], founded: 1863, culture: 'bureaucratic' },
+
+  /* ===== CANADA ===== */
+  'Shopify': { sector: 'tech', growth: 'growth', crisisVulnerable: ['tech_winter_2022'], founded: 2006, culture: 'demanding' },
+  'RBC': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1864, culture: 'prestigious' },
+  'TD Bank': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1955, culture: 'stable' },
+  'Air Canada': { sector: 'aviation', growth: 'cyclical', crisisVulnerable: ['covid_2020'], founded: 1937, culture: 'bureaucratic' },
+  'University of Toronto': { sector: 'universities', growth: 'stable', crisisVulnerable: [], founded: 1827, culture: 'prestigious' },
+  'UHN (University Health Network)': { sector: 'hospitals', growth: 'stable', crisisVulnerable: [], founded: 1999, culture: 'prestigious' },
+  'CBC': { sector: 'media', growth: 'stable', crisisVulnerable: ['ai_disruption_2026'], founded: 1936, culture: 'bureaucratic' },
+
+  /* ===== AUSTRALIA ===== */
+  'Commonwealth Bank': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 1911, culture: 'stable' },
+  'Macquarie Group': { sector: 'banking', growth: 'growth', crisisVulnerable: ['financial_2008'], founded: 1969, culture: 'demanding' },
+  'BHP': { sector: 'mining', growth: 'cyclical', crisisVulnerable: ['oil_crash_2014'], founded: 1885, culture: 'prestigious' },
+  'Atlassian': { sector: 'tech', growth: 'growth', crisisVulnerable: ['tech_winter_2022'], founded: 2002, culture: 'flexible' },
+  'Qantas': { sector: 'aviation', growth: 'cyclical', crisisVulnerable: ['covid_2020'], founded: 1920, culture: 'prestigious' },
+  'University of Melbourne': { sector: 'universities', growth: 'stable', crisisVulnerable: [], founded: 1853, culture: 'prestigious' },
+
+  /* ===== FRANCE & JAPAN ===== */
+  'L\'Oréal': { sector: 'consumer', growth: 'stable', crisisVulnerable: [], founded: 1909, culture: 'prestigious' },
+  'BNP Paribas': { sector: 'banking', growth: 'stable', crisisVulnerable: ['financial_2008'], founded: 2000, culture: 'bureaucratic' },
+  'TotalEnergies': { sector: 'oil_gas', growth: 'cyclical', crisisVulnerable: ['oil_crash_2014'], founded: 1924, culture: 'stable' },
+  'Toyota': { sector: 'engineering', growth: 'stable', crisisVulnerable: ['supply_chain_2021'], founded: 1937, culture: 'strict' },
+  'Sony': { sector: 'tech', growth: 'stable', crisisVulnerable: ['tech_winter_2022'], founded: 1946, culture: 'creative' },
+  'SoftBank': { sector: 'finance', growth: 'risky', crisisVulnerable: ['tech_winter_2022'], founded: 1981, culture: 'demanding' }
+};
+window.COMPANY_META = COMPANY_META;
+
+/* ---------- SECTOR CRISES ---------- */
+/* Fires in specific year ranges. Layoffs hit industries that depend on the sector. */
+const SECTOR_CRISES = [
+  { id: 'dot_com_hangover', label: '2001 Post-Dot-Com Crash', year: 2001, yearEnd: 2003, severity: 0.6,
+    desc: 'The internet bubble burst. Tech companies are shuttering. Consultants are being let go across the board.',
+    industries: ['tech', 'consulting', 'media'] },
+  { id: 'financial_2008', label: '2008 Global Financial Crisis', year: 2008, yearEnd: 2010, severity: 0.85,
+    desc: 'Lehman Brothers collapsed. Banks are failing. Credit markets are frozen. Hiring has stopped across finance, real estate, and consulting.',
+    industries: ['banking', 'consulting', 'law', 'engineering', 'real_estate'] },
+  { id: 'euro_debt_2010', label: '2010 European Debt Crisis', year: 2010, yearEnd: 2012, severity: 0.5,
+    desc: 'Sovereign debt crises in Greece, Italy, and Spain have rippled outward. Banks and governments are enacting strict austerity measures.',
+    industries: ['banking', 'government', 'engineering'] },
+  { id: 'arab_spring_2011', label: '2011 Arab Spring', year: 2011, yearEnd: 2013, severity: 0.6,
+    desc: 'Political upheaval across the Middle East. Tourism has collapsed. Investors are fleeing.',
+    industries: ['hotels', 'aviation', 'media', 'retail', 'real_estate'] },
+  { id: 'oil_crash_2014', label: '2014 Oil Price Crash', year: 2014, yearEnd: 2016, severity: 0.7,
+    desc: 'Oil fell from $115 to $30. Gulf projects are being cancelled. Energy companies are cutting staff.',
+    industries: ['oil_gas', 'engineering', 'mining'] },
+  { id: 'egp_float_2016', label: '2016 EGP Float', year: 2016, yearEnd: 2017, severity: 0.4,
+    desc: 'The Egyptian pound was floated and lost half its value overnight. Everything imported doubled in price.',
+    industries: ['retail', 'manufacturing', 'hotels'] },
+  { id: 'covid_2020', label: '2020 COVID-19 Pandemic', year: 2020, yearEnd: 2021, severity: 0.9,
+    desc: 'Lockdowns. Travel stopped. Hotels empty. Airlines grounded. Millions of jobs gone in months.',
+    industries: ['hotels', 'aviation', 'retail', 'restaurants', 'media'] },
+  { id: 'covid_recovery_2021', label: 'Post-COVID Recovery', year: 2021, yearEnd: 2022, severity: -0.5,
+    desc: 'Hiring is back. Companies cannot find workers. Salaries are climbing.',
+    industries: ['tech', 'ecommerce', 'hotels', 'aviation', 'logistics'] },
+  { id: 'supply_chain_2021', label: '2021 Supply Chain Crisis', year: 2021, yearEnd: 2023, severity: 0.5,
+    desc: 'Global logistics are broken. Microchip shortages have halted manufacturing and automotive assembly worldwide.',
+    industries: ['manufacturing', 'engineering', 'logistics', 'retail'] },
+  { id: 'tech_winter_2022', label: '2022 Tech Winter', year: 2022, yearEnd: 2024, severity: 0.85,
+    desc: 'Meta, Google, Amazon, Twitter all announcing mass layoffs. 200,000+ tech jobs gone in months.',
+    industries: ['tech', 'bpo', 'consulting'] },
+  { id: 'egp_crisis_2023', label: '2023 EGP Devaluation', year: 2023, yearEnd: 2025, severity: 0.7,
+    desc: 'The Egyptian pound lost another 70% in months. Prices tripled. Most people\'s real income has halved.',
+    industries: ['banking', 'retail', 'manufacturing', 'media', 'engineering'] },
+  { id: 'ai_disruption_2026', label: '2026 AI Disruption', year: 2026, yearEnd: 2030, severity: 0.75,
+    desc: 'AI has replaced junior roles. Customer service, copywriters, paralegals — all affected. Companies are restructuring around AI.',
+    industries: ['bpo', 'media', 'consulting', 'law', 'tech'] },
+  { id: 'cre_collapse_2027', label: '2027 Commercial Real Estate Collapse', year: 2027, yearEnd: 2029, severity: 0.65,
+    desc: 'Post-pandemic remote work finally broke the office market. Major commercial defaults are hurting regional banks and developers.',
+    industries: ['real_estate', 'banking', 'engineering', 'law'] }
+];
+window.SECTOR_CRISES = SECTOR_CRISES;
+
+/* ---------- INTERVIEW REJECTION REASONS ---------- */
+const INTERVIEW_REJECTION_REASONS = {
+  screening: [
+    { id: 'thin_cv', check: function(s) { return (s.career && s.career.cv && (s.career.cv.experience || 0) < 1); },
+      text: 'Your CV was too thin. They wanted at least 1-2 years of experience.' },
+    { id: 'no_degree', check: function(s) { return !s.degree && !s.uni; },
+      text: 'You had no university degree. Most applicants for this role do.' },
+    { id: 'job_hopper', check: function(s) { return (s.career && s.career.jobHistory && s.career.jobHistory.filter(h => (h.to - h.from) < 1).length > 2); },
+      text: 'Your resume showed too many short stints. They labeled you a "job hopper."' },
+    { id: 'weak_english', check: function(s) {
+        var ielts = (s.languageScores && s.languageScores.ielts) || 0;
+        return ielts < 6.5 && s.smarts < 65;
+      },
+      text: 'Your English was not strong enough for this role\'s requirements.' },
+    { id: 'gap_in_resume', check: function(s) { return (s.career && s.career.jobHistory && s.career.jobHistory.some(function(h) { return (gameYear() - h.to) > 2; })); },
+      text: 'The gap in your work history raised concerns. They moved on.' }
+  ],
+  phone: [
+    { id: 'poor_communication', check: function(s) { return s.social < 40; },
+      text: 'You struggled to articulate your experience clearly on the phone.' },
+    { id: 'low_energy', check: function(s) { return s.social < 45 && s.happiness < 40; },
+      text: 'The recruiter felt you lacked enthusiasm for the role. "Low energy."' },
+    { id: 'unprepared', check: function(s) { return s.smarts < 45; },
+      text: 'Your answers did not demonstrate the required technical depth.' },
+    { id: 'salary_expectations', check: function(s) { return (s.wealth > 100000 && (!s.career || !s.career.job)); },
+      text: 'Your salary expectations were wildly out of sync with their budget.' },
+    { id: 'salary_early', check: function(s) { return s.social < 55 && s.smarts > 60; },
+      text: 'You brought up salary and benefits too early. They were not impressed.' }
+  ],
+  final: [
+    { id: 'culture_fit', check: function(s) { return s.social < 50; },
+      text: 'The panel felt you would not fit the team culture. "Personality mismatch."' },
+    { id: 'arrogant', check: function(s) { return s.social < 35 && s.smarts > 75; },
+      text: 'The interviewers found you difficult to work with. "Brilliant, but abrasive."' },
+    { id: 'failed_case_study', check: function(s) { return s.smarts < 55; },
+      text: 'You completely fumbled the technical case study / whiteboard assignment.' },
+    { id: 'overqualified', check: function(s) { return (s.career && s.career.cv && (s.career.cv.experience || 0) > 10) && s.age > 45; },
+      text: 'They thought you were overqualified. "You would be bored here."' },
+    { id: 'better_candidate', check: function(s) { return (s.smarts < 65) && (s.social < 65); },
+      text: 'Another candidate had more direct experience in exactly this field.' },
+    { id: 'reference_check', check: function(s) { return (s.career && s.career.network && s.career.network.references && s.career.network.references.length === 0); },
+      text: 'The reference check was weak. You had no strong professional references.' }
+  ]
+};
+window.INTERVIEW_REJECTION_REASONS = INTERVIEW_REJECTION_REASONS;
+
+/* ---------- NEW COMPANIES — Over 100+ added to existing pools ---------- */
+(function session9BExpansion() {
+  if (typeof CAR_COMPANIES === 'undefined') return;
+  var additions = {
+    egy: {
+      banking: [
+        { name: 'Bank of Alexandria (Intesa)', payMult: 1.05, benefits: ['health', 'bonus', 'pension'], stability: 0.95, prestige: 4 },
+        { name: 'Mashreq Egypt', payMult: 1.10, benefits: ['health', 'bonus', 'stock'], stability: 0.90, prestige: 4 },
+        { name: 'Ahli United Bank Egypt', payMult: 1.15, benefits: ['health', 'bonus', 'housing'], stability: 0.90, prestige: 4 }
+      ],
+      tech: [
+        { name: 'Cisco Egypt', payMult: 1.35, benefits: ['health', 'stock', 'wfh', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'VMware Egypt (Broadcom)', payMult: 1.30, benefits: ['health', 'stock', 'wfh'], stability: 0.80, prestige: 4 },
+        { name: 'Luxoft Egypt', payMult: 1.20, benefits: ['health', 'wfh', 'bonus'], stability: 0.85, prestige: 4 },
+        { name: 'Si-Vision', payMult: 1.25, benefits: ['health', 'stock', 'bonus'], stability: 0.85, prestige: 4 }
+      ],
+      consulting: [
+        { name: 'Accenture Egypt', payMult: 1.15, benefits: ['health', 'bonus', 'wfh'], stability: 0.90, prestige: 4 },
+        { name: 'Strategy& (PwC)', payMult: 1.40, benefits: ['health', 'bonus'], stability: 0.85, prestige: 5 }
+      ],
+      accounting: [
+        { name: 'BDO Egypt', payMult: 0.95, benefits: ['health', 'bonus'], stability: 0.85, prestige: 3 },
+        { name: 'Grant Thornton Egypt', payMult: 0.95, benefits: ['health', 'bonus'], stability: 0.85, prestige: 3 }
+      ],
+      law: [
+        { name: 'Kosheri Rashed & Randa', payMult: 1.25, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'Soliman Hashish & Partners', payMult: 1.10, benefits: ['health'], stability: 0.85, prestige: 4 }
+      ],
+      engineering: [
+        { name: 'Siemens Egypt', payMult: 1.30, benefits: ['health', 'stock', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'Schneider Electric Egypt', payMult: 1.20, benefits: ['health', 'bonus'], stability: 0.90, prestige: 4 }
+      ],
+      pharma: [
+        { name: 'Sanofi Egypt', payMult: 1.25, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'MSD Egypt', payMult: 1.25, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 }
+      ],
+      media: [
+        { name: 'Al-Masry Al-Youm', payMult: 0.90, benefits: ['health'], stability: 0.80, prestige: 4 },
+        { name: 'ON TV', payMult: 1.00, benefits: ['health', 'bonus'], stability: 0.85, prestige: 4 }
+      ],
+      schools: [
+        { name: 'Modern English School Cairo', payMult: 1.30, benefits: ['health', 'pension'], stability: 0.90, prestige: 4 },
+        { name: 'New Cairo British International', payMult: 1.40, benefits: ['health', 'pension'], stability: 0.90, prestige: 4 }
+      ],
+      bpo: [
+        { name: 'Sutherland Egypt', payMult: 1.00, benefits: ['health', 'bonus'], stability: 0.85, prestige: 3 },
+        { name: 'TTEC Egypt', payMult: 1.10, benefits: ['health', 'bonus'], stability: 0.80, prestige: 3 }
+      ]
+    },
+    usa: {
+      banking: [
+        { name: 'Wells Fargo', payMult: 1.10, benefits: ['health', 'stock', 'pension'], stability: 0.95, prestige: 5 },
+        { name: 'US Bank', payMult: 1.05, benefits: ['health', 'stock', 'pension'], stability: 0.95, prestige: 4 },
+        { name: 'PNC Financial', payMult: 1.08, benefits: ['health', 'stock', 'pension'], stability: 0.90, prestige: 4 }
+      ],
+      tech: [
+        { name: 'Adobe', payMult: 1.35, benefits: ['health', 'stock', 'wfh', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'Salesforce', payMult: 1.30, benefits: ['health', 'stock', 'wfh'], stability: 0.85, prestige: 5 },
+        { name: 'Netflix', payMult: 1.50, benefits: ['health', 'stock', 'wfh'], stability: 0.75, prestige: 5 },
+        { name: 'Uber', payMult: 1.25, benefits: ['health', 'stock', 'wfh'], stability: 0.80, prestige: 5 },
+        { name: 'IBM', payMult: 1.15, benefits: ['health', 'stock', 'pension'], stability: 0.90, prestige: 5 }
+      ],
+      consulting: [
+        { name: 'IBM Consulting', payMult: 1.15, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'EY-Parthenon', payMult: 1.35, benefits: ['health', 'bonus'], stability: 0.85, prestige: 5 }
+      ],
+      accounting: [
+        { name: 'PwC US', payMult: 1.10, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'KPMG US', payMult: 1.10, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'EY US', payMult: 1.10, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 }
+      ],
+      hospitals: [
+        { name: 'UCSF Medical Center', payMult: 1.25, benefits: ['health', 'pension'], stability: 0.95, prestige: 5 },
+        { name: 'Mount Sinai Hospital', payMult: 1.20, benefits: ['health', 'pension'], stability: 0.95, prestige: 5 },
+        { name: 'Massachusetts General', payMult: 1.25, benefits: ['health', 'pension'], stability: 0.95, prestige: 5 }
+      ],
+      law: [
+        { name: 'Davis Polk', payMult: 1.55, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'Sullivan & Cromwell', payMult: 1.55, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'Cravath', payMult: 1.55, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 }
+      ],
+      media: [
+        { name: 'Washington Post', payMult: 1.10, benefits: ['health', 'bonus'], stability: 0.85, prestige: 5 },
+        { name: 'Wall Street Journal', payMult: 1.15, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'Disney (Media)', payMult: 1.20, benefits: ['health', 'bonus', 'stock'], stability: 0.85, prestige: 5 }
+      ]
+    },
+    gbr: {
+      banking: [
+        { name: 'Lloyds Bank', payMult: 1.05, benefits: ['health', 'pension', 'bonus'], stability: 0.90, prestige: 4 },
+        { name: 'NatWest', payMult: 1.05, benefits: ['health', 'pension', 'bonus'], stability: 0.90, prestige: 4 },
+        { name: 'Standard Chartered', payMult: 1.15, benefits: ['health', 'pension', 'bonus'], stability: 0.85, prestige: 5 }
+      ],
+      tech: [
+        { name: 'ARM Holdings', payMult: 1.35, benefits: ['health', 'stock', 'pension'], stability: 0.90, prestige: 5 },
+        { name: 'Deliveroo', payMult: 1.15, benefits: ['health', 'wfh'], stability: 0.75, prestige: 4 },
+        { name: 'Wise', payMult: 1.20, benefits: ['health', 'stock', 'wfh'], stability: 0.80, prestige: 4 }
+      ],
+      consulting: [
+        { name: 'Capgemini UK', payMult: 1.05, benefits: ['health', 'pension'], stability: 0.85, prestige: 4 },
+        { name: 'Oliver Wyman', payMult: 1.30, benefits: ['health', 'bonus'], stability: 0.85, prestige: 5 }
+      ],
+      law: [
+        { name: 'Slaughter and May', payMult: 1.50, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'Allen & Overy', payMult: 1.45, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'Freshfields', payMult: 1.45, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 }
+      ],
+      engineering: [
+        { name: 'Rolls-Royce', payMult: 1.15, benefits: ['health', 'pension'], stability: 0.85, prestige: 5 },
+        { name: 'BAE Systems', payMult: 1.15, benefits: ['health', 'pension'], stability: 0.95, prestige: 5 },
+        { name: 'Arup', payMult: 1.10, benefits: ['health', 'pension'], stability: 0.90, prestige: 4 }
+      ]
+    },
+    sau: {
+      banking: [
+        { name: 'Riyad Bank', payMult: 1.05, benefits: ['health', 'housing', 'bonus'], stability: 0.90, prestige: 4 },
+        { name: 'Alinma Bank', payMult: 1.05, benefits: ['health', 'housing'], stability: 0.90, prestige: 4 }
+      ],
+      engineering: [
+        { name: 'Saudi Binladin Group', payMult: 1.05, benefits: ['health', 'housing'], stability: 0.80, prestige: 4 },
+        { name: 'Alfanar', payMult: 1.00, benefits: ['health'], stability: 0.85, prestige: 3 },
+        { name: 'Diriyah Company', payMult: 1.30, benefits: ['health', 'housing', 'bonus'], stability: 0.95, prestige: 5 }
+      ],
+      tech: [
+        { name: 'Elm', payMult: 1.25, benefits: ['health', 'bonus'], stability: 0.95, prestige: 5 },
+        { name: 'Mobily', payMult: 1.15, benefits: ['health', 'bonus'], stability: 0.90, prestige: 4 }
+      ],
+      consulting: [
+        { name: 'PIF (Public Investment Fund)', payMult: 1.60, benefits: ['health', 'housing', 'bonus'], stability: 0.95, prestige: 5 }
+      ]
+    },
+    uae: {
+      banking: [
+        { name: 'Abu Dhabi Commercial Bank (ADCB)', payMult: 1.10, benefits: ['health', 'housing', 'bonus'], stability: 0.90, prestige: 4 },
+        { name: 'Mashreq', payMult: 1.10, benefits: ['health', 'bonus'], stability: 0.85, prestige: 4 }
+      ],
+      real_estate: [
+        { name: 'Aldar Properties', payMult: 1.20, benefits: ['health', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'Damac Properties', payMult: 1.15, benefits: ['health', 'bonus'], stability: 0.80, prestige: 4 }
+      ],
+      aviation: [
+        { name: 'Flydubai', payMult: 1.10, benefits: ['health', 'tickets'], stability: 0.85, prestige: 4 },
+        { name: 'Air Arabia', payMult: 1.05, benefits: ['health', 'tickets'], stability: 0.85, prestige: 4 }
+      ],
+      tech: [
+        { name: 'Talabat', payMult: 1.15, benefits: ['health', 'bonus'], stability: 0.80, prestige: 4 },
+        { name: 'Noon', payMult: 1.10, benefits: ['health'], stability: 0.85, prestige: 4 }
+      ],
+      hospitals: [
+        { name: 'NMC Healthcare', payMult: 1.05, benefits: ['health', 'housing'], stability: 0.80, prestige: 4 },
+        { name: 'Aster DM Healthcare', payMult: 1.00, benefits: ['health'], stability: 0.85, prestige: 3 }
+      ]
+    },
+    can: {
+      banking: [
+        { name: 'Scotiabank', payMult: 1.05, benefits: ['health', 'pension', 'bonus'], stability: 0.95, prestige: 4 },
+        { name: 'BMO (Bank of Montreal)', payMult: 1.05, benefits: ['health', 'pension', 'bonus'], stability: 0.95, prestige: 4 },
+        { name: 'CIBC', payMult: 1.05, benefits: ['health', 'pension'], stability: 0.95, prestige: 4 }
+      ],
+      tech: [
+        { name: 'Constellation Software', payMult: 1.20, benefits: ['health', 'stock'], stability: 0.90, prestige: 4 },
+        { name: 'OpenText', payMult: 1.15, benefits: ['health', 'stock'], stability: 0.85, prestige: 4 },
+        { name: 'Hootsuite', payMult: 1.10, benefits: ['health', 'wfh'], stability: 0.80, prestige: 3 }
+      ],
+      engineering: [
+        { name: 'WSP Global', payMult: 1.10, benefits: ['health', 'pension'], stability: 0.90, prestige: 4 },
+        { name: 'SNC-Lavalin', payMult: 1.10, benefits: ['health', 'pension'], stability: 0.85, prestige: 4 },
+        { name: 'Bombardier', payMult: 1.15, benefits: ['health', 'pension'], stability: 0.80, prestige: 4 }
+      ]
+    },
+    aus: {
+      banking: [
+        { name: 'Westpac', payMult: 1.10, benefits: ['health', 'pension', 'bonus'], stability: 0.95, prestige: 5 },
+        { name: 'ANZ', payMult: 1.10, benefits: ['health', 'pension', 'bonus'], stability: 0.95, prestige: 5 },
+        { name: 'NAB', payMult: 1.10, benefits: ['health', 'pension'], stability: 0.95, prestige: 5 }
+      ],
+      tech: [
+        { name: 'Canva', payMult: 1.40, benefits: ['health', 'stock', 'wfh'], stability: 0.85, prestige: 5 },
+        { name: 'Afterpay', payMult: 1.25, benefits: ['health', 'stock'], stability: 0.80, prestige: 4 },
+        { name: 'REA Group', payMult: 1.20, benefits: ['health', 'bonus'], stability: 0.90, prestige: 4 }
+      ],
+      mining: [
+        { name: 'Rio Tinto', payMult: 1.35, benefits: ['health', 'pension', 'bonus'], stability: 0.85, prestige: 5 },
+        { name: 'Fortescue Metals', payMult: 1.30, benefits: ['health', 'bonus'], stability: 0.85, prestige: 5 },
+        { name: 'Woodside Energy', payMult: 1.25, benefits: ['health', 'pension'], stability: 0.85, prestige: 4 }
+      ]
+    },
+    deu: {
+      tech: [
+        { name: 'Zalando', payMult: 1.15, benefits: ['health', 'stock', 'wfh'], stability: 0.85, prestige: 4 },
+        { name: 'Delivery Hero', payMult: 1.10, benefits: ['health', 'stock'], stability: 0.75, prestige: 4 },
+        { name: 'Infineon', payMult: 1.25, benefits: ['health', 'bonus', 'pension'], stability: 0.90, prestige: 5 }
+      ],
+      engineering: [
+        { name: 'Bosch', payMult: 1.20, benefits: ['health', 'pension', 'bonus'], stability: 0.95, prestige: 5 },
+        { name: 'Audi', payMult: 1.20, benefits: ['health', 'pension', 'bonus'], stability: 0.90, prestige: 5 },
+        { name: 'Porsche', payMult: 1.30, benefits: ['health', 'pension', 'bonus'], stability: 0.90, prestige: 5 }
+      ],
+      pharma: [
+        { name: 'BioNTech', payMult: 1.30, benefits: ['health', 'bonus', 'stock'], stability: 0.85, prestige: 5 },
+        { name: 'Merck KGaA', payMult: 1.20, benefits: ['health', 'pension'], stability: 0.95, prestige: 5 }
+      ]
+    }
+  };
+
+  Object.keys(additions).forEach(function(country) {
+    Object.keys(additions[country]).forEach(function(industry) {
+      if (!CAR_COMPANIES[country]) CAR_COMPANIES[country] = {};
+      if (!CAR_COMPANIES[country][industry]) CAR_COMPANIES[country][industry] = [];
+      additions[country][industry].forEach(function(company) {
+        var exists = CAR_COMPANIES[country][industry].some(function(c) { return c.name === company.name; });
+        if (!exists) CAR_COMPANIES[country][industry].push(company);
+      });
+    });
+  });
+})();
