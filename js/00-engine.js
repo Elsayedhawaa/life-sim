@@ -1045,7 +1045,7 @@ function migrateDualState() {
   if (!Array.isArray(S.bank.creditCards)) S.bank.creditCards = [];
   if (!S.evtMemory || typeof S.evtMemory !== 'object') S.evtMemory = {};
   if (!Array.isArray(S.pendingQueue)) S.pendingQueue = [];
-
+  if (!S.relMemory || typeof S.relMemory !== 'object') S.relMemory = {};
   /* --- JOB: legacy S.job → S.career.job --- */
   if (S.job && !S.career.job) {
     S.career.job = {
@@ -1890,15 +1890,60 @@ function computeHousehold() {
     }
   }
 
-  if (S.marriage && S.marriage.partner && S.marriage.partner.income && S.marriage.partner.alive !== false) {
+   /* Spouse income — depends on finance model */
+  if (S.marriage && S.marriage.partner && S.marriage.partner.alive !== false) {
+    var p = S.marriage.partner;
     var fm = S.marriage.financeModel;
-    var includeSpouse = !fm || fm === 'male_provider' || fm === 'egalitarian' || fm === 'joint_account' || fm === 'shared_savings' || fm === 'proportional';
+    var spouseWorking = !p.career || p.career.working !== false;
+    var pInc = p.income || 0;
+    var includeSpouse = false;
+
+    if (spouseWorking && pInc > 0) {
+      if (fm === 'egalitarian' || fm === 'proportional' || fm === 'joint_account' || fm === 'shared_savings' || fm === 'custom') {
+        includeSpouse = true;
+      } else if (fm === 'traditional_wife' && S.gender === 'm') {
+        includeSpouse = true;
+      } else if (fm === 'one_earner' && S.gender === 'f') {
+        includeSpouse = true;
+      } else if (!fm) {
+        includeSpouse = true;
+      }
+      /* male_provider, princess_treatment, separate_accounts: spouse keeps her income */
+    }
+
     if (includeSpouse) {
-      income += S.marriage.partner.income;
-      incomeItems.push({ label: 'Spouse — ' + S.marriage.partner.name, yearly: S.marriage.partner.income, country: S.country });
+      income += pInc;
+      incomeItems.push({ label: 'Spouse (' + p.name + ')', yearly: pInc, country: S.country });
+    } else if (spouseWorking && pInc > 0) {
+      /* Show spouse income as "kept separate" — for transparency, not income */
+      incomeItems.push({
+        label: 'Spouse (' + p.name + ') — kept separate',
+        yearly: pInc,
+        country: S.country,
+        separate: true
+      });
     }
   }
 
+  /* Princess treatment: player pays spouse allowance */
+  if (S.marriage && S.marriage.partner && S.marriage.financeModel === 'princess_treatment' && S.gender === 'm') {
+    var pSalary = (S.career && S.career.job) ? (S.career.job.salary || 0) : 0;
+    if (pSalary > 0) {
+      var allowance = Math.round(pSalary * 0.10);
+      expenses += allowance;
+      expenseItems.push({ label: 'Spouse allowance — ' + (S.marriage.partner.name || 'Wife'), yearly: allowance, country: S.country });
+    }
+  }
+
+  /* Male provider with working wife: small allowance she keeps as her own */
+  if (S.marriage && S.marriage.partner && S.marriage.financeModel === 'male_provider' && S.gender === 'm') {
+    var pSalary2 = (S.career && S.career.job) ? (S.career.job.salary || 0) : 0;
+    if (pSalary2 > 0 && S.marriage.partner.career && S.marriage.partner.career.working === false) {
+      var allowance2 = Math.round(pSalary2 * 0.05);
+      expenses += allowance2;
+      expenseItems.push({ label: 'Household spending money', yearly: allowance2, country: S.country });
+    }
+  }
   if (S.career && Array.isArray(S.career.businesses)) {
     S.career.businesses.forEach(function(biz) {
       var y = (biz.monthlyProfit || 0) * 12;
@@ -2264,7 +2309,90 @@ function householdBreakdownHtml() {
   return html;
 }
 window.householdBreakdownHtml = householdBreakdownHtml;
+/* ============================================================
+   UNITY PASS — WEEK 4: RELATIONSHIP MEMORY
+   Every person remembers what you did. Promises echo forward.
+   ============================================================ */
+function relKey(rel) {
+  if (!rel) return null;
+  if (typeof rel === 'string') return rel;
+  if (rel.id) return 'id_' + rel.id;
+  if (rel.name) return 'name_' + rel.name;
+  return null;
+}
+window.relKey = relKey;
 
+function relRemember(rel, kind, text, resolved) {
+  if (!S) return;
+  var key = relKey(rel);
+  if (!key) return;
+  if (!S.relMemory) S.relMemory = {};
+  if (!S.relMemory[key]) S.relMemory[key] = [];
+  S.relMemory[key].push({
+    year: gameYear(),
+    kind: kind,
+    text: text,
+    resolved: !!resolved
+  });
+  if (S.relMemory[key].length > 40) S.relMemory[key].shift();
+}
+window.relRemember = relRemember;
+
+function relGet(rel) {
+  var key = relKey(rel);
+  if (!S || !S.relMemory || !S.relMemory[key]) return [];
+  return S.relMemory[key];
+}
+window.relGet = relGet;
+
+function relGetUnresolved(rel) {
+  return relGet(rel).filter(function(r) { return !r.resolved; });
+}
+window.relGetUnresolved = relGetUnresolved;
+
+function relCount(rel, kind) {
+  return relGet(rel).filter(function(r) { return r.kind === kind; }).length;
+}
+window.relCount = relCount;
+
+function relResolveLatest(rel, kind) {
+  var arr = relGet(rel);
+  for (var i = arr.length - 1; i >= 0; i--) {
+    if (arr[i].kind === kind && !arr[i].resolved) {
+      arr[i].resolved = true;
+      return true;
+    }
+  }
+  return false;
+}
+window.relResolveLatest = relResolveLatest;
+
+/* Yearly echo — unresolved hurts compound into relationship tension */
+GameHooks.on('year', function() {
+  if (!S) return;
+  if (!S.relMemory) return;
+
+  /* Partner: 2+ unresolved hurts over 3 years → bond drop + potential crisis */
+  if (S.marriage && S.marriage.partner && S.marriage.partner.alive !== false) {
+    var hurts = relGetUnresolved(S.marriage.partner).filter(function(r) {
+      return r.kind === 'hurt' && gameYear() - r.year < 3;
+    });
+    if (hurts.length >= 2) {
+      S.marriage.partner.bond = Math.max(0, (S.marriage.partner.bond || 70) - 3);
+      S.marriage.partner.trust = Math.max(0, (S.marriage.partner.trust || 50) - 4);
+      if (hurts.length >= 3 && S.marriage.partner.bond < 30 && !S.marriage.pendingConflict) {
+        S.marriage.pendingConflict = 'communication';
+      }
+    }
+    /* Promises kept resolve over time */
+    var promises = relGet(S.marriage.partner).filter(function(r) {
+      return r.kind === 'promise' && !r.resolved && gameYear() - r.year >= 2;
+    });
+    if (promises.length >= 2) {
+      S.marriage.partner.bond = Math.max(0, (S.marriage.partner.bond || 70) - 2);
+    }
+  }
+});
 /* ============================================================
    EXPANDED MARRIAGE LIFE EVENTS
    ============================================================
