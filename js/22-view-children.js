@@ -768,55 +768,27 @@ GameHooks.on('year', function() {
     c.birthYear = year - c.age;
 
     /* School fees */
-        /* School fees (SKIPPED in monthly — settlement spreads it) */
-    if (!(typeof isMonthly === 'function' && isMonthly())) {
-      if (c.school && c.age >= 4 && c.age <= 18) {
-        const s = chBySchoolLabel(c.school);
-        if (s) {
-          const fee = chEGP(s.annualEGP);
-          if (S.wealth >= fee) {
-            S.wealth -= fee;
-          } else {
-            log('⚠️ Could not afford ' + c.name + "'s school fees. Moved to Public School.");
-            c.school = 'Public School';
-            c.smarts = Math.max(0, c.smarts - 5);
-          }
-        }
-      }
+               /* School fees charge handled by chargeHousehold — only track affordability */
+    if (c.school && c.age >= 4 && c.age <= 18 && S.wealth < 0) {
+      log('⚠️ Could not afford ' + c.name + "'s school fees. Moved to Public School.");
+      c.school = 'Public School';
+      c.smarts = Math.max(0, c.smarts - 5);
     }
-
-        /* Lifestyle monthly cost (SKIPPED in monthly — settlement spreads it) */
-    if (!(typeof isMonthly === 'function' && isMonthly())) {
-      const ageGroup = chBabyAgeCategory(c.age);
-      const tier = CHILDREN_EXPENSE_TIERS[ageGroup][c.lifestyle] || CHILDREN_EXPENSE_TIERS[ageGroup].standard;
-      const monthlyCost = chEGP(tier.monthlyEGP * 12);
-      if (S.wealth >= monthlyCost) {
-        S.wealth -= monthlyCost;
-      } else {
-        log('⚠️ Cannot afford ' + c.name + "'s lifestyle. Downgraded.");
-        c.lifestyle = 'basic';
-        c.happiness = Math.max(0, c.happiness - 10);
-      }
+             /* Lifestyle charge handled by chargeHousehold — only track downgrades */
+    if (S.wealth < 0) {
+      log('⚠️ Cannot afford ' + c.name + "'s lifestyle. Downgraded.");
+      c.lifestyle = 'basic';
+      c.happiness = Math.max(0, c.happiness - 10);
     }
-        /* Activity effects — cash charge SKIPPED in monthly; stat gains stay annual */
+               /* Activity charge handled by chargeHousehold — stat effects apply here */
     c.activities.forEach(function(aid) {
       const act = CHILDREN_ACTIVITIES.find(function(a) { return a.id === aid; });
       if (!act) return;
-      const cost = act.monthlyEGP ? chEGP(act.monthlyEGP * 12) : chEGP(act.annualEGP);
-      if (typeof isMonthly === 'function' && isMonthly()) {
-        c.smarts = Math.min(100, c.smarts + (act.smarts || 0));
-        c.social = Math.min(100, c.social + (act.social || 0));
-        c.health = Math.min(100, c.health + (act.health || 0));
-        c.happiness = Math.min(100, c.happiness + (act.happiness || 0));
-      } else if (S.wealth >= cost) {
-        S.wealth -= cost;
-        c.smarts = Math.min(100, c.smarts + (act.smarts || 0));
-        c.social = Math.min(100, c.social + (act.social || 0));
-        c.health = Math.min(100, c.health + (act.health || 0));
-        c.happiness = Math.min(100, c.happiness + (act.happiness || 0));
-      }
+      c.smarts = Math.min(100, c.smarts + (act.smarts || 0));
+      c.social = Math.min(100, c.social + (act.social || 0));
+      c.health = Math.min(100, c.health + (act.health || 0));
+      c.happiness = Math.min(100, c.happiness + (act.happiness || 0));
     });
-
     /* Bond decay (if player doesn't spend time) */
     if (c.bond > 20) c.bond = Math.max(0, c.bond - 2);
 
