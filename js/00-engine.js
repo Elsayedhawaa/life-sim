@@ -2309,6 +2309,346 @@ function householdBreakdownHtml() {
 }
 window.householdBreakdownHtml = householdBreakdownHtml;
 /* ============================================================
+   UNITY PASS — WEEK 5: THE SOUL PASS
+   Chapters, Moments, Reflections, Character Evolution
+   ============================================================ */
+
+/* ---------- CHAPTERS — life is a book, not a number line ---------- */
+const CHAPTERS = [
+  { key: 'childhood',  maxAge: 5,   name: 'Childhood',            color: '#fbbf24', note: 'The world is being handed to you.' },
+  { key: 'school',     maxAge: 12,  name: 'The School Years',     color: '#fbbf24', note: 'You are learning who you are.' },
+  { key: 'teen',       maxAge: 17,  name: 'The Teenage Years',    color: '#8b5cf6', note: 'Everything feels enormous.' },
+  { key: 'university', maxAge: 22,  name: 'The Early Years',      color: '#22d3ee', note: 'You are becoming someone.' },
+  { key: 'founding',   maxAge: 29,  name: 'The Founding Years',   color: '#34d399', note: 'You are building the foundation of an adult life.' },
+  { key: 'building',   maxAge: 39,  name: 'The Building Years',   color: '#34d399', note: 'You are assembling a life worth living.' },
+  { key: 'peak',       maxAge: 49,  name: 'The Peak Years',       color: '#fbbf24', note: 'You are at the height of your powers.' },
+  { key: 'later',      maxAge: 59,  name: 'The Later Years',      color: '#8b5cf6', note: 'Some things are ending. Others are beginning.' },
+  { key: 'twilight',   maxAge: 69,  name: 'The Twilight Years',   color: '#fb7185', note: 'You are watching the world you built.' },
+  { key: 'reflection', maxAge: 79,  name: 'The Reflection Years', color: '#fb7185', note: 'You are counting what matters.' },
+  { key: 'final',      maxAge: 200, name: 'The Final Chapter',    color: '#888',    note: 'What is left is what you made.' }
+];
+
+function getChapter() {
+  if (!S) return CHAPTERS[0];
+  for (var i = 0; i < CHAPTERS.length; i++) {
+    if (S.age <= CHAPTERS[i].maxAge) return CHAPTERS[i];
+  }
+  return CHAPTERS[CHAPTERS.length - 1];
+}
+window.getChapter = getChapter;
+
+/* ---------- MOMENTS — days that stay ---------- */
+function recordMoment(title, description, options) {
+  if (!S) return;
+  options = options || {};
+  if (!S.lifeMoments) S.lifeMoments = [];
+  /* Prevent exact duplicates within 2 years */
+  var dupKey = options.key || title;
+  var exists = S.lifeMoments.some(function(m) {
+    return m.key === dupKey && Math.abs(m.year - gameYear()) < 2;
+  });
+  if (exists) return;
+  S.lifeMoments.push({
+    key: dupKey,
+    title: title,
+    description: description || '',
+    year: gameYear(),
+    age: S.age,
+    chapter: getChapter().key,
+    icon: options.icon || '📌',
+    weight: options.weight || 1
+  });
+  log('📌 ' + title);
+}
+window.recordMoment = recordMoment;
+
+function getMoments() {
+  if (!S || !Array.isArray(S.lifeMoments)) return [];
+  return S.lifeMoments.slice().sort(function(a, b) { return b.year - a.year; });
+}
+window.getMoments = getMoments;
+
+/* ---------- REFLECTIONS — the inner voice ---------- */
+function emitReflection(text, options) {
+  if (!S || !text) return;
+  options = options || {};
+  if (!S.log) S.log = [];
+  S.log.unshift({
+    age: S.age,
+    year: gameYear(),
+    month: S.month || null,
+    msg: text,
+    isReflection: true,
+    mood: options.mood || 'neutral'
+  });
+  if (S.log.length > 300) S.log.pop();
+  if (!S.reflections) S.reflections = [];
+  S.reflections.push({ year: gameYear(), age: S.age, text: text, mood: options.mood || 'neutral' });
+  if (S.reflections.length > 80) S.reflections.shift();
+}
+window.emitReflection = emitReflection;
+
+/* ---------- REFLECTION POOL — triggered by life state ---------- */
+function checkReflectionTriggers(kind, data) {
+  if (!S) return;
+  var age = S.age;
+
+  /* Post-divorce */
+  if (kind === 'divorce') {
+    var pool = [
+      'You sit alone in the apartment. It is too quiet. You wonder if you did the right thing.',
+      'You see an old photo of the two of you. You feel nothing and everything at once.',
+      'You try to remember when it stopped working. The memory is already fading.'
+    ];
+    emitReflection(pool[Math.floor(Math.random() * pool.length)], { mood: 'sad' });
+    return;
+  }
+
+  /* Post-parent death */
+  if (kind === 'parentDied') {
+    var pool2 = [
+      'You call your parent\'s number, out of habit. It rings. Nobody answers.',
+      'You realize you can never ask them anything again. The weight of that is enormous.',
+      'You catch yourself doing something they used to do. You stop, and just stand there.'
+    ];
+    emitReflection(pool2[Math.floor(Math.random() * pool2.length)], { mood: 'sad' });
+    return;
+  }
+
+  /* Post-baby */
+  if (kind === 'childBorn') {
+    var pool3 = [
+      'You hold the baby and suddenly understand why the world keeps turning.',
+      'You feel the weight of the whole future in your arms. It terrifies and comforts you.',
+      'You realize your own life is no longer the most important thing.'
+    ];
+    emitReflection(pool3[Math.floor(Math.random() * pool3.length)], { mood: 'hopeful' });
+    return;
+  }
+
+  /* Post-migration */
+  if (kind === 'migrated') {
+    var pool4 = [
+      'You are in a city that is not yours. Everyone here has a life that is not yours.',
+      'You miss the sound of Arabic. Or whatever the sound was that used to be home.',
+      'You take a photo of something small, to send to someone who is very far away.'
+    ];
+    emitReflection(pool4[Math.floor(Math.random() * pool4.length)], { mood: 'nostalgic' });
+    return;
+  }
+
+  /* Age milestones */
+  if (kind === 'milestone') {
+    var ms = data && data.age;
+    var pool5 = [];
+    if (ms === 30) pool5 = [
+      'Thirty. Your twenties are gone. You do not know if you used them well.',
+      'Thirty. You had imagined something different by now. You are not sure what.'
+    ];
+    if (ms === 40) pool5 = [
+      'Forty. The years ahead feel shorter than the years behind.',
+      'Forty. You look at people in their twenties and remember being that uncertain.'
+    ];
+    if (ms === 50) pool5 = [
+      'Fifty. Half a century. Your parents were this age once. Now you are.',
+      'Fifty. What have you built? What have you let slip?'
+    ];
+    if (ms === 60) pool5 = [
+      'Sixty. The word "retirement" is no longer abstract.',
+      'Sixty. You wonder what you would tell yourself at twenty, if you could.'
+    ];
+    if (ms === 70) pool5 = [
+      'Seventy. You are surrounded by what you made. And by what you lost.',
+      'Seventy. You are the old person now. You feel exactly the same inside.'
+    ];
+    if (pool5.length > 0) {
+      emitReflection(pool5[Math.floor(Math.random() * pool5.length)], { mood: 'reflective' });
+    }
+    return;
+  }
+
+  /* Wealth milestones */
+  if (kind === 'rich') {
+    emitReflection('You buy something expensive without checking the price. The old you would have cried at the price.', { mood: 'reflective' });
+    return;
+  }
+  if (kind === 'poor') {
+    emitReflection('You count the money in your pocket before buying bread.', { mood: 'sad' });
+    return;
+  }
+
+  /* Health deterioration */
+  if (kind === 'health') {
+    emitReflection('You wake up and nothing hurts. You notice this because it does not happen often anymore.', { mood: 'tender' });
+    return;
+  }
+}
+
+/* ---------- CHARACTER EVOLUTION — your people grow with you ---------- */
+function evolveSpouse() {
+  if (!S || !S.marriage || !S.marriage.partner) return;
+  var p = S.marriage.partner;
+  if (p.alive === false) return;
+
+  var yearsMarried = gameYear() - (p.marriedYear || gameYear());
+  var bond = p.bond || 70;
+
+  /* Personality deepens with time */
+  if (!Array.isArray(p.evolvedTraits)) p.evolvedTraits = [];
+
+  if (yearsMarried === 5) {
+    if (bond > 70 && p.traits && p.traits.indexOf('romantic') >= 0) {
+      p.evolvedTraits.push('still_romantic');
+      emitReflection('You notice ' + p.name + ' still leaves you small notes on the fridge. Ten years and it still means something.', { mood: 'tender' });
+    }
+    if (bond < 40 && p.traits && p.traits.indexOf('grumpy') >= 0) {
+      p.evolvedTraits.push('more_distant');
+    }
+  }
+
+  if (yearsMarried === 10) {
+    if (bond > 75) {
+      p.traits = (p.traits || []).concat(['patient']);
+      emitReflection('You and ' + p.name + ' can sit in silence now without it feeling wrong.', { mood: 'tender' });
+    }
+  }
+
+  if (yearsMarried === 15 && bond > 60) {
+    emitReflection(p.name + ' knows what you are thinking before you say it. It is comforting and slightly unnerving.', { mood: 'tender' });
+  }
+
+  /* Age-related shifts */
+  if (p.age >= 55 && (p.health === undefined || p.health > 60)) {
+    p.health = Math.max(60, (p.health || 100) - 2);
+  }
+  if (p.age >= 65) {
+    p.bond = Math.max(0, (p.bond || 70) - 1); /* spouses need more care at old age */
+  }
+
+  /* Spouse reacts to being neglected */
+  var recentHurt = (typeof relGetUnresolved === 'function') ? relGetUnresolved(p).filter(function(r) { return r.kind === 'hurt'; }) : [];
+  if (recentHurt.length >= 3 && !p.spokenUp) {
+    p.spokenUp = true;
+    p.bond = Math.max(0, (p.bond || 70) - 5);
+    emitReflection(p.name + ' said nothing today. That is unusual. You know what it means.', { mood: 'sad' });
+  }
+}
+window.evolveSpouse = evolveSpouse;
+
+function evolveParents() {
+  if (!S || !Array.isArray(S.family)) return;
+  S.family.forEach(function(m) {
+    if (m.alive === false) return;
+    if (m.role !== 'Mother' && m.role !== 'Father') return;
+
+    /* Health decline begins at 65 */
+    if (m.age >= 65 && typeof m.health === 'number') {
+      m.health = Math.max(0, m.health - (m.age >= 80 ? 4 : 2));
+    }
+
+    /* Old parents need more contact */
+    if (m.age >= 70 && m.bond > 30 && Math.random() < 0.20) {
+      m.bond = Math.max(0, (m.bond || 70) - 2);
+      emitReflection('You have not spoken to ' + m.name + ' in weeks. You should call.', { mood: 'guilt' });
+    }
+
+    /* Parent personality softens or hardens */
+    if (m.age >= 70 && !m.finalWord) {
+      m.finalWord = true;
+      if ((m.bond || 70) >= 60) {
+        emitReflection(m.name + ' looks tired but content. They seem at peace with you.', { mood: 'tender' });
+      } else if ((m.bond || 70) < 40) {
+        emitReflection(m.name + ' is quieter now. You cannot fix everything. You wonder if you should have tried.', { mood: 'sad' });
+      }
+    }
+  });
+}
+window.evolveParents = evolveParents;
+
+function evolveChildren() {
+  if (!S || !Array.isArray(S.childrenList)) return;
+  S.childrenList.forEach(function(c) {
+    /* Assign personality at age 8 */
+    if (c.age === 8 && !c.personality) {
+      var pool = ['curious', 'shy', 'outgoing', 'bookish', 'sporty', 'artistic', 'stubborn', 'kind', 'sensitive', 'ambitious'];
+      c.personality = pool[Math.floor(Math.random() * pool.length)];
+      if (!Array.isArray(c.traits)) c.traits = [];
+      c.traits.push(c.personality);
+      recordMoment('The day you first saw who ' + c.name + ' is', c.name + ' is 8 now. Already, unmistakably, themself.', { icon: '👦', key: 'personality_' + c.id, weight: 2 });
+    }
+
+    /* Teenage rebellion or deepening at 15 */
+    if (c.age === 15 && !c.teenMoment) {
+      c.teenMoment = true;
+      if ((c.bond || 55) > 60) {
+        emitReflection(c.name + ' still tells you things. You are grateful for this.', { mood: 'tender' });
+      } else if ((c.bond || 55) < 40) {
+        emitReflection(c.name + ' barely speaks to you now. You cannot remember the last real conversation.', { mood: 'sad' });
+      }
+    }
+
+    /* At 18, they choose their path */
+    if (c.age === 18 && !c.adulthoodMoment) {
+      c.adulthoodMoment = true;
+      recordMoment(c.name + ' turned 18', c.name + ' is an adult now. You watch them make their first real choices.', { icon: '🎓', key: 'adult_' + c.id, weight: 2 });
+    }
+
+    /* At 22, they leave — record the moment */
+    if (c.age === 22 && c.movedOut && !c.leavingMoment) {
+      c.leavingMoment = true;
+      recordMoment(c.name + ' left home', 'The room is still theirs. It still smells like them. It is too quiet now.', { icon: '🚪', key: 'left_' + c.id, weight: 2 });
+    }
+  });
+}
+window.evolveChildren = evolveChildren;
+
+/* ---------- YEARLY EVOLUTION TRIGGER ---------- */
+GameHooks.on('year', function() {
+  if (!S) return;
+  evolveSpouse();
+  evolveParents();
+  evolveChildren();
+
+  /* Age milestones */
+  var milestones = [30, 40, 50, 60, 70];
+  if (milestones.indexOf(S.age) >= 0) {
+    checkReflectionTriggers('milestone', { age: S.age });
+  }
+
+  /* Wealth milestones */
+  if (S.age >= 18) {
+    var w = S.wealth || 0;
+    if (w >= 1000000 && !S.flags.richMoment) {
+      S.flags.richMoment = true;
+      checkReflectionTriggers('rich');
+    }
+    if (w < 0 && !S.flags.poorMoment) {
+      S.flags.poorMoment = true;
+      checkReflectionTriggers('poor');
+    }
+    if (w >= 0) S.flags.poorMoment = false;
+    if (w < 1000000) S.flags.richMoment = false;
+  }
+
+  /* Health reflection */
+  if (S.age > 45 && S.health > 70 && !S.flags.healthRelief) {
+    S.flags.healthRelief = true;
+    checkReflectionTriggers('health');
+  }
+});
+
+/* ---------- MIGRATION ---------- */
+(function() {
+  var origMigrate = migrateDualState;
+  migrateDualState = function() {
+    origMigrate();
+    if (!S) return;
+    if (!S.lifeMoments) S.lifeMoments = [];
+    if (!S.reflections) S.reflections = [];
+  };
+})();
+window.migrateDualState = migrateDualState;
+/* ============================================================
    UNITY PASS — WEEK 4: RELATIONSHIP MEMORY
    Every person remembers what you did. Promises echo forward.
    ============================================================ */
