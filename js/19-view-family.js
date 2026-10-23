@@ -240,6 +240,39 @@ function renderRelativesTab() {
     siblings.forEach(function(sib) { html += familyRenderRelative(sib); });
     html += '</div>';
   }
+      /* In-laws */
+  var inlaws = (typeof getInLaws === 'function') ? getInLaws().filter(function(m) { return m.alive !== false; }) : [];
+  if (inlaws.length) {
+    html += '<div class="card" style="border-color:#fb7185"><h3 style="color:#fb7185">👨‍👩‍👧 In-Laws</h3>';
+    inlaws.forEach(function(m) { html += familyRenderRelative(m); });
+    html += '</div>';
+  }
+
+  /* Nieces & Nephews */
+  var niecesNephews = (typeof getAllNiecesNephews === 'function') ? getAllNiecesNephews() : [];
+  if (niecesNephews.length) {
+    html += '<div class="card" style="border-color:#22d3ee"><h3 style="color:#22d3ee">👶 Nieces & Nephews (' + niecesNephews.length + ')</h3>';
+    niecesNephews.forEach(function(nc) {
+      html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
+        '<div style="display:flex;justify-content:space-between"><b>' + nc.name + '</b><span class="muted small">age ' + nc.age + ' · ' + (nc.gender === 'm' ? '👦' : '👧') + '</span></div>' +
+        '<div class="muted small">Child of ' + nc.parentName + (nc.parentRole ? ' (' + nc.parentRole + ')' : '') + '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  /* Grandchildren */
+  var grandchildren = (typeof getAllGrandchildren === 'function') ? getAllGrandchildren() : [];
+  if (grandchildren.length) {
+    html += '<div class="card" style="border-color:#fbbf24"><h3 style="color:#fbbf24">👶 Grandchildren (' + grandchildren.length + ')</h3>';
+    grandchildren.forEach(function(gc) {
+      html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
+        '<div style="display:flex;justify-content:space-between"><b>' + gc.name + '</b><span class="muted small">age ' + gc.age + ' · ' + (gc.gender === 'm' ? '👦' : '👧') + '</span></div>' +
+        '<div class="muted small">Child of ' + gc.parentName + ' · bond ' + (gc.bond || 70) + '%</div>' +
+        '</div>';
+    });
+    html += '</div>';
+  }
 
   if (familyPlayerAbroad() && livingParents.length) {
       const homeCountry = familyHomeCountry();
@@ -264,7 +297,8 @@ function renderRelativesTab() {
 
 function familyRenderRelative(p) {
   const isParent = p.role === 'Mother' || p.role === 'Father';
-  const hColor = familyHealthColor(p.health || 100);
+  const isInLaw = p.relation === 'inlaw';
+  const isSiblingRole = isSiblingOf(p);  const hColor = familyHealthColor(p.health || 100);
   const bColor = familyBondColor(p.bond || 70);
   const lastContact = p.lastContactYear ? ('last contact ' + (gameYear() - p.lastContactYear) + 'y ago') : 'never contacted';
   const traitObj = PERSONALITY_TRAITS[p.trait] || PERSONALITY_TRAITS.balanced;
@@ -283,8 +317,7 @@ function familyRenderRelative(p) {
   let html = '<div style="padding:12px 0;border-bottom:1px solid #1a1a2a">' +
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">' +
     '<div><div style="font-weight:700">' + p.name + ' · ' + p.role + '</div>' +
-    '<div class="muted small">age ' + p.age + ' · ' + extraLabel + '</div>' +
-    '<div class="muted small" style="color:#8b5cf6">Trait: ' + traitObj.label + '</div></div>' +
+    '<div class="muted small">age ' + p.age + ' · ' + extraLabel + (p.spouse ? ' · married to ' + p.spouse.name : '') + (p.children && p.children.length > 0 ? ' · ' + p.children.length + ' child' + (p.children.length > 1 ? 'ren' : '') : '') + '</div>' +    '<div class="muted small" style="color:#8b5cf6">Trait: ' + traitObj.label + '</div></div>' +
     '<div class="muted" style="font-size:.7rem;text-align:right">' + lastContact + '</div></div>' +
     '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:#888;margin-bottom:2px"><span>Health</span><span>' + (p.health || 100) + '%</span></div>' +
     '<div style="height:4px;background:#1a1a2a;border-radius:2px;margin-bottom:6px"><div style="height:100%;width:' + (p.health || 100) + '%;background:' + hColor + ';border-radius:2px"></div></div>' +
@@ -296,9 +329,12 @@ function familyRenderRelative(p) {
     '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyVisit(\'' + p.id + '\')">☕ Visit</button>' +
     '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyHelpPrompt(\'' + p.id + '\', 500)">💵 Help</button>';
     
-  if (isParent) {
+    if (isParent) {
     html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familySetAllowance(\'' + p.id + '\')">💰 Allowance</button>';
     html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;background:#34d39920;border-color:#34d399;color:#34d399" onclick="askFamilyForMoney()">💸 Ask for Cash</button>';
+  } else if (isInLaw) {
+    html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyOpenGiftPicker(\'' + p.id + '\')">🎁 Gift</button>';
+    html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem;border-color:#fb7185;color:#fb7185" onclick="familyCutTies(\'' + p.id + '\')">💔 Cut ties</button>';
   } else {
     html += '<button class="opt" style="flex:1;padding:6px;font-size:.72rem" onclick="familyOpenGiftPicker(\'' + p.id + '\')">🎁 Gift</button>';
   }
