@@ -265,6 +265,20 @@ function chDoBirth() {
   const countLabel = babyCount === 3 ? 'TRIPLETS!' : babyCount === 2 ? 'TWINS!' : 'A ' + (babies[0].gender === 'm' ? 'boy' : 'girl') + '!';
   log('🍼 ' + countLabel + ' ' + babies.map(function(b) { return b.name; }).join(' & ') + ' born safely. Outcome: ' + outcome.desc + '. Total Cost: ' + money(hospitalCost + extraCost) + '.');
   fx({ happiness: 35 });
+     /* SOUL PASS — record the moment */
+  if (typeof recordMoment === 'function') {
+    var babyNames = babies.map(function(b) { return b.name; }).join(' and ');
+    recordMoment(
+      'The day ' + babyNames + ' was born',
+      hospitalCost + extraCost > 50000
+        ? 'Private room. Soft lighting. Everyone said the right things. You remember the exact weight of the baby in your arms.'
+        : 'Basic hospital. Fluorescent lights. Nobody said the right things. You remember the exact weight of the baby in your arms.',
+      { icon: '👶', key: 'birth_' + babies[0].id, weight: 4 }
+    );
+  }
+  if (typeof emitReflection === 'function') {
+    emitReflection('You are a parent now. The word feels too big to fit you. You already love them more than you knew was possible.', { mood: 'hopeful' });
+  }
   S.pregnancy = null;
   S.childrenTab = 'list';
 }
