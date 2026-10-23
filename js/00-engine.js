@@ -4574,3 +4574,422 @@ migrateDualState = function() {
   }
 };
 window.migrateDualState = migrateDualState;
+/* ============================================================
+   SESSION 11: GENERATIONAL ECHO
+   Inherited traits, family patterns, real death, legacy.
+   ============================================================ */
+
+/* ---------- INHERITED TRAITS ---------- */
+function getPlayerTraitsForInheritance() {
+  var traits = [];
+  if (!S) return ['kind'];
+  if ((S.happiness || 50) > 70) traits.push('kind');
+  if (S.career && S.career.job && (S.career.job.performance || 50) > 70) traits.push('ambitious');
+  if ((S.social || 50) > 70) traits.push('outgoing');
+  if ((S.social || 50) < 40) traits.push('shy');
+  if (S.marriage && S.marriage.partner && (S.marriage.partner.bond || 70) > 70) traits.push('romantic');
+  if ((S.smarts || 50) > 70) traits.push('curious');
+  if (traits.length === 0) traits.push('kind');
+  return traits;
+}
+
+function inheritTraitsToChild(child) {
+  if (!child) return;
+  var motherTraits = [];
+  var fatherTraits = [];
+
+  if (S.gender === 'f') {
+    motherTraits = getPlayerTraitsForInheritance();
+    fatherTraits = (S.marriage && S.marriage.partner && Array.isArray(S.marriage.partner.traits))
+      ? S.marriage.partner.traits : ['kind'];
+  } else {
+    fatherTraits = getPlayerTraitsForInheritance();
+    motherTraits = (S.marriage && S.marriage.partner && Array.isArray(S.marriage.partner.traits))
+      ? S.marriage.partner.traits : ['kind'];
+  }
+
+  var inherited = [];
+  if (motherTraits.length) inherited.push(motherTraits[Math.floor(Math.random() * motherTraits.length)]);
+  if (fatherTraits.length) inherited.push(fatherTraits[Math.floor(Math.random() * fatherTraits.length)]);
+
+  var pool = ['curious', 'shy', 'outgoing', 'ambitious', 'funny', 'romantic', 'stubborn', 'sensitive', 'calm', 'bookish'];
+  inherited.push(pool[Math.floor(Math.random() * pool.length)]);
+
+  /* dedupe */
+  inherited = inherited.filter(function(t, i) { return inherited.indexOf(t) === i; });
+
+  child.inheritedTraits = inherited;
+  if (!Array.isArray(child.traits)) child.traits = [];
+  inherited.slice(0, 2).forEach(function(t) {
+    if (child.traits.indexOf(t) < 0) child.traits.push(t);
+  });
+}
+window.inheritTraitsToChild = inheritTraitsToChild;
+
+/* ---------- COMPUTE PERSONALITY AT 8 (traits × environment) ---------- */
+function computeChildPersonality(child) {
+  if (!child) return;
+  var inherited = child.inheritedTraits || child.traits || [];
+  var envBond = 50;
+  if (S) {
+    var bs = [];
+    bs.push(S.happiness || 50);
+    if (S.marriage && S.marriage.partner && S.marriage.partner.alive !== false) {
+      bs.push(S.marriage.partner.bond || 70);
+    }
+    envBond = bs.reduce(function(a, b) { return a + b; }, 0) / bs.length;
+  }
+
+  var candidates = [];
+  if (inherited.indexOf('ambitious') >= 0) candidates.push('ambitious', 'diligent');
+  if (inherited.indexOf('kind') >= 0) candidates.push('kind', 'supportive');
+  if (inherited.indexOf('shy') >= 0) candidates.push('shy', 'sensitive');
+  if (inherited.indexOf('outgoing') >= 0) candidates.push('outgoing', 'charismatic');
+  if (inherited.indexOf('curious') >= 0) candidates.push('curious', 'bookish');
+  if (inherited.indexOf('romantic') >= 0) candidates.push('sentimental');
+
+  if (envBond > 70) {
+    candidates.push('confident', 'kind', 'outgoing');
+  } else if (envBond < 40) {
+    candidates.push('anxious', 'sensitive', 'stubborn');
+  }
+
+  if (S && (S.wealth || 0) < 0) {
+    candidates.push('ambitious', 'resourceful');
+  } else if (S && (S.wealth || 0) > 500000) {
+    candidates.push('calm', 'confident');
+  }
+
+  /* Random fallbacks */
+  var fallbacks = ['curious', 'bookish', 'sporty', 'artistic', 'sensitive', 'outgoing', 'quiet', 'diligent'];
+  fallbacks.forEach(function(f) { candidates.push(f); });
+
+  child.personality = candidates[Math.floor(Math.random() * Math.min(6, candidates.length))];
+  if (!Array.isArray(child.traits)) child.traits = [];
+  if (child.traits.indexOf(child.personality) < 0) child.traits.push(child.personality);
+}
+window.computeChildPersonality = computeChildPersonality;
+
+/* ---------- FAMILY PATTERN DETECTION ---------- */
+function detectFamilyPatterns() {
+  if (!S) return {};
+
+  var parents = (S.family || []).filter(function(m) {
+    return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false;
+  });
+  var kids = (S.childrenList || []).filter(function(c) { return !c.movedOut; });
+
+  var avgParentBond = parents.length ? parents.reduce(function(s, p) { return s + (p.bond || 70); }, 0) / parents.length : 70;
+  var avgChildBond = kids.length ? kids.reduce(function(s, c) { return s + (c.bond || 55); }, 0) / kids.length : 55;
+
+  var parentsMarried = (S.family || []).filter(function(m) { return m.role === 'Mother' || m.role === 'Father'; }).length >= 2 &&
+                       !S.family.some(function(m) { return m.role === 'Mother' && m.alive === false; }) &&
+                       !S.family.some(function(m) { return m.role === 'Father' && m.alive === false; });
+
+  var playerMarried = !!(S.marriage && S.marriage.status === 'married' && S.marriage.partner);
+  var playerDivorced = !!(S.marriage && S.marriage.status === 'divorced');
+
+  return {
+    wasRaisedLovingly: avgParentBond > 65,
+    wasRaisedDistant: avgParentBond < 40,
+    isLovingParent: avgChildBond > 65,
+    isDistantParent: avgChildBond < 40 && kids.length > 0,
+    parentsStayedMarried: parentsMarried,
+    playerMarriageStrong: playerMarried && (S.marriage.partner.bond || 70) > 65,
+    playerMarriedOrDivorced: playerMarried || playerDivorced,
+    isPoorFamily: (S.wealth || 0) < 0,
+    isWealthyFamily: (S.wealth || 0) > 1000000,
+    valuesEducation: kids.some(function(c) { return c.age >= 6 && c.age <= 18 && c.school && ['igcse', 'american', 'ib', 'international', 'language', 'private', 'private_top', 'boarding_elite'].indexOf(c.school) >= 0; }),
+    workingParentAbsent: !!((S.career && S.career.job) && (S.career.job.tenure || 0) > 2 && (S.career.job.performance || 50) > 70)
+  };
+}
+window.detectFamilyPatterns = detectFamilyPatterns;
+
+/* ---------- REAL DEATH HANDLER ---------- */
+function checkDeath() {
+  if (!S) return;
+  if (S.alive === false) return;
+  if (S._deathScreenShown) return;
+
+  var deathTriggered = false;
+  var reason = '';
+
+  if (S.health <= 0) {
+    deathTriggered = true;
+    reason = 'Your body could not hold on any longer.';
+  } else if (S.age >= 100) {
+    deathTriggered = true;
+    reason = 'You lived a long life. It was enough.';
+  }
+
+  if (!deathTriggered) return;
+
+  S.alive = false;
+  S.deathYear = gameYear();
+  S.deathReason = reason;
+
+  try { save(); } catch (e) {}
+  showLegacyScreen();
+}
+window.checkDeath = checkDeath;
+
+/* ---------- LEGACY SCREEN ---------- */
+function buildLegacySummary() {
+  var lines = [];
+  var patterns = detectFamilyPatterns();
+
+  /* Life summary */
+  var j = S.career && S.career.job;
+  lines.push('<div class="card" style="border-color:#8b5cf6;margin-top:12px"><h4 style="color:#8b5cf6;font-size:.85rem">Your Life</h4>' +
+    '<div class="row"><span>Age at death</span><b>' + S.age + '</b></div>' +
+    '<div class="row"><span>Final wealth</span><b>' + money(S.wealth || 0) + '</b></div>' +
+    (j ? '<div class="row"><span>Career</span><b>' + j.title + '</b></div>' : '') +
+    '<div class="row"><span>Children</span><b>' + (S.childrenList || []).length + '</b></div>' +
+    '<div class="row"><span>Grandchildren</span><b>' + (typeof getAllGrandchildren === 'function' ? getAllGrandchildren().length : 0) + '</b></div>' +
+    '</div>');
+
+  /* Family patterns */
+  var patternLines = [];
+  if (patterns.wasRaisedDistant && patterns.isDistantParent) {
+    patternLines.push('💔 You grew up with distant parents — and your children grew up distant from you. <b style="color:#fb7185">The cycle continued.</b>');
+  } else if (patterns.wasRaisedDistant && patterns.isLovingParent) {
+    patternLines.push('💪 You grew up with distant parents — but you raised your children with love. <b style="color:#34d399">You broke the cycle.</b>');
+  } else if (patterns.wasRaisedLovingly && patterns.isLovingParent) {
+    patternLines.push('❤️ You grew up loved — and you passed that love to your children.');
+  } else if (patterns.wasRaisedLovingly && patterns.isDistantParent) {
+    patternLines.push('😔 You grew up loved — but your children drifted from you.');
+  }
+
+  if (patterns.parentsStayedMarried && patterns.playerMarriageStrong) {
+    patternLines.push('💍 Your parents stayed married. So did you. The pattern held.');
+  } else if (patterns.parentsStayedMarried && patterns.playerMarriedOrDivorced && !patterns.playerMarriageStrong) {
+    patternLines.push('💔 Your parents stayed married. Your marriage did not.');
+  } else if (!patterns.parentsStayedMarried && patterns.playerMarriageStrong) {
+    patternLines.push('💪 Your parents\' marriage broke. Yours did not. <b style="color:#34d399">You broke the cycle.</b>');
+  }
+
+  if (patterns.valuesEducation) {
+    patternLines.push('🎓 You invested in your children\'s education. It will echo for generations.');
+  }
+
+  if (patternLines.length > 0) {
+    lines.push('<div class="card" style="border-color:#fbbf24"><h4 style="color:#fbbf24;font-size:.85rem">Family Patterns</h4>' +
+      patternLines.map(function(p) { return '<div style="padding:4px 0;font-size:.78rem;line-height:1.4">' + p + '</div>'; }).join('') +
+      '</div>');
+  }
+
+  /* Inheritance */
+  var children = (S.childrenList || []).filter(function(c) { return c.age >= 18; });
+  if (children.length > 0 && (S.wealth || 0) > 0) {
+    var perChild = Math.round((S.wealth || 0) / children.length);
+    lines.push('<div class="card" style="border-color:#34d399"><h4 style="color:#34d399;font-size:.85rem">Inheritance</h4>' +
+      children.map(function(c) {
+        return '<div class="row"><span>' + c.name + '</span><b class="good">' + money(perChild) + '</b></div>';
+      }).join('') +
+      '</div>');
+  }
+
+  return lines.join('');
+}
+window.buildLegacySummary = buildLegacySummary;
+
+function showLegacyScreen() {
+  var existing = document.getElementById('legacy-screen');
+  if (existing) existing.remove();
+
+  var gcList = (typeof getAllGrandchildren === 'function') ? getAllGrandchildren().filter(function(gc) { return (gc.age || 0) >= 6; }) : [];
+  var gcButtons = '';
+  if (gcList.length > 0) {
+    gcButtons = '<div style="margin-top:16px"><div class="muted small" style="text-align:center;margin-bottom:8px;letter-spacing:.06em;font-weight:700">CONTINUE THE FAMILY LINE</div>';
+    gcList.forEach(function(gc) {
+      gcButtons += '<button onclick="continueAsGrandchild(\'' + gc.id + '\')" class="opt" style="width:100%;margin-top:6px;text-align:left;padding:10px;font-size:.78rem;background:#8b5cf620;border-color:#8b5cf6;border-radius:8px;cursor:pointer">' +
+        '<div style="display:flex;justify-content:space-between"><b>Play as ' + gc.name + '</b><span>Age ' + gc.age + '</span></div>' +
+        '<div class="muted small" style="margin-top:3px">Your grandchild. Their parent is ' + (gc.parentName || 'your child') + '.</div>' +
+        '</button>';
+    });
+    gcButtons += '</div>';
+  }
+
+  var modal = document.createElement('div');
+  modal.id = 'legacy-screen';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(4,5,12,0.92);backdrop-filter:blur(8px);z-index:3000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto';
+  modal.innerHTML = '<div style="max-width:450px;width:100%;background:#14141f;border:1px solid #8b5cf6;border-radius:14px;padding:22px;box-shadow:0 10px 40px rgba(139,92,246,0.5);margin:auto">' +
+    '<div style="text-align:center;margin-bottom:16px">' +
+    '<div style="font-size:2.4rem">🕊</div>' +
+    '<div style="font-size:1.4rem;font-weight:900;color:#8b5cf6;margin-top:8px">' + S.name + '</div>' +
+    '<div class="muted small" style="margin-top:2px">' + gameYear() + ' · Age ' + S.age + '</div>' +
+    '<div class="muted small" style="margin-top:8px;font-style:italic">' + (S.deathReason || 'You passed away.') + '</div>' +
+    '</div>' +
+    buildLegacySummary() +
+    gcButtons +
+    '<button onclick="dismissLegacyScreen()" class="opt" style="width:100%;margin-top:14px;text-align:center;background:#25253a;color:#e8e8f2;font-weight:700;padding:12px;border-radius:8px;cursor:pointer;font-size:.85rem">Start a Fresh Life</button>' +
+    '</div>';
+  document.body.appendChild(modal);
+  S._deathScreenShown = true;
+}
+window.showLegacyScreen = showLegacyScreen;
+
+function dismissLegacyScreen() {
+  var el = document.getElementById('legacy-screen');
+  if (el) el.remove();
+  localStorage.removeItem(SAVE_KEY);
+  S = null;
+  renderStart();
+}
+window.dismissLegacyScreen = dismissLegacyScreen;
+
+/* ---------- CONTINUE AS GRANDCHILD ---------- */
+function continueAsGrandchild(gcId) {
+  if (!S) return false;
+  var allGCs = (typeof getAllGrandchildren === 'function') ? getAllGrandchildren() : [];
+  var gc = allGCs.find(function(g) { return g.id === gcId; });
+  if (!gc) return false;
+
+  var gcParent = (S.childrenList || []).find(function(c) {
+    return (c.children || []).some(function(ch) { return ch.id === gcId; });
+  });
+  if (!gcParent) return false;
+
+  var oldS = S;
+  var deathYear = gameYear();
+  var oldHomeCountry = oldS.homeCountry || oldS.country;
+
+  /* Build new family from grandchild's POV */
+  var newFamily = [];
+  if (gcParent) {
+    var gpRole = gcParent.gender === 'm' ? 'Father' : 'Mother';
+    newFamily.push({
+      id: gcParent.id,
+      name: gcParent.name,
+      role: gpRole,
+      relation: 'parent',
+      gender: gcParent.gender,
+      age: (gcParent.age || 30),
+      alive: true,
+      bond: 70,
+      traits: gcParent.traits || ['kind'],
+      isParent: true
+    });
+
+    if (gcParent.spouse) {
+      var otherRole = gcParent.spouse.gender === 'm' ? 'Father' : 'Mother';
+      newFamily.push({
+        id: gcParent.spouse.id,
+        name: gcParent.spouse.name,
+        role: otherRole,
+        relation: 'parent',
+        gender: gcParent.spouse.gender,
+        age: gcParent.spouse.age || 30,
+        alive: true,
+        bond: 65,
+        traits: ['kind'],
+        isParent: true
+      });
+    }
+
+    /* Siblings from the same parent */
+    (gcParent.children || []).forEach(function(sib) {
+      if (sib.id === gcId) return;
+      newFamily.push({
+        id: sib.id,
+        name: sib.name,
+        role: sib.gender === 'm' ? 'Brother' : 'Sister',
+        relation: 'sibling',
+        gender: sib.gender,
+        age: sib.age || 5,
+        alive: true,
+        bond: 55,
+        isSibling: true,
+        traits: ['kind']
+      });
+    });
+  }
+
+  /* Deceased grandparent memory (the old player) */
+  newFamily.push({
+    id: 'gp_mem_' + Math.random().toString(36).slice(2, 6),
+    name: oldS.name,
+    role: oldS.gender === 'm' ? 'Grandfather' : 'Grandmother',
+    relation: 'grandparent',
+    gender: oldS.gender,
+    age: oldS.age,
+    alive: false,
+    deathYear: deathYear,
+    bond: 70,
+    legacyMemory: true
+  });
+
+  /* Reset S with grandchild state */
+  var newS = {
+    name: gc.name,
+    gender: gc.gender || 'm',
+    country: oldS.country,
+    currency: oldS.currency,
+    month: 1,
+    pacing: oldS.pacing || 'yearly',
+    pacingSwitchYear: 0,
+    age: Math.max(6, gc.age || 6),
+    health: 100,
+    happiness: 60,
+    smarts: 55,
+    social: 55,
+    wealth: Math.round((oldS.wealth || 0) * 0.15),
+    school: null,
+    uni: null,
+    degree: null,
+    job: null,
+    spouse: null,
+    children: 0,
+    housing: 'parents',
+    family: newFamily,
+    familyTier: oldS.familyTier,
+    parentType: oldS.parentType,
+    log: [],
+    flags: {},
+    pending: null,
+    evId: null,
+    evtMemory: {},
+    pendingQueue: [],
+    homeCountry: oldHomeCountry,
+    childrenList: [],
+    relMemory: {},
+    lifeMoments: [],
+    reflections: [],
+    generation: (oldS.generation || 1) + 1,
+    legacies: (oldS.legacies || []).concat([{
+      name: oldS.name,
+      ageAtDeath: oldS.age,
+      year: deathYear,
+      finalWealth: oldS.wealth || 0,
+      career: (oldS.career && oldS.career.job) ? oldS.career.job.title : null,
+      childrenCount: (oldS.childrenList || []).length,
+      grandchildrenCount: allGCs.length
+    }]),
+    _deathScreenShown: false
+  };
+
+  S = newS;
+  unityPass();
+  GameHooks.run('newGame', S);
+
+  log('✨ You are now ' + gc.name + ', age ' + S.age + '. Generation ' + S.generation + '.');
+  log('Your grandparent ' + oldS.name + ' passed away in ' + deathYear + '. Their story is now part of yours.');
+  if (S.wealth > 0) log('💰 You inherited ' + money(S.wealth) + ' from them.');
+
+  dismissLegacyScreen();
+  render();
+  return true;
+}
+window.continueAsGrandchild = continueAsGrandchild;
+
+/* ---------- WIRE DEATH CHECK INTO RENDER ---------- */
+GameHooks.on('render', function() {
+  if (!S) return;
+  if (S.alive === false && !S._deathScreenShown) {
+    setTimeout(function() { if (S && S.alive === false && !S._deathScreenShown) showLegacyScreen(); }, 100);
+    return;
+  }
+  if (S.age >= 18) {
+    checkDeath();
+  }
+});
