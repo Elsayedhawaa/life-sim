@@ -3893,364 +3893,245 @@ GameHooks.on('year', function() {
   }
 });
 /* ============================================================
-   SESSION 8: ECONOMY ENGINE DATA
-   Real 2027 numbers. Real struggles. Scales 2001-2100.
+   SESSION 8: ECONOMY ENGINE
    ============================================================ */
 
-/* Base monthly salary USD — mid-career worker, US market (level 2 = 1.0×) */
-const ECON_TRACK_BASE_USD = {
-  tech: 5000, business: 4500, accounting: 4000, investment: 6500,
-  marketing: 4000, sales: 3500, hr: 3500, consulting: 5500,
-  product: 6000, medicine: 8500, surgery: 11000, pediatrics: 7500,
-  cardiology: 9500, nursing: 3500, pharmacy: 4000, dentistry: 6000,
-  psychology: 4000, veterinary: 3000, physiotherapy: 3000,
-  law: 5500, prosecutor: 4000, engineering: 4500, architect: 4500,
-  civil_eng: 4200, data_science: 6000, cybersecurity: 5500,
-  product_design: 4500, qa_engineering: 3500, teaching: 3000,
-  academia: 3500, bpo: 2000, hospitality: 2200, aviation: 5000,
-  media: 3000, government: 2800, trades: 2500, entry: 1800
-};
+function econProfile(country) {
+  if (typeof ECON_PROFILES === 'undefined') return null;
+  return ECON_PROFILES[country] || ECON_PROFILES.egy;
+}
 
-const ECON_LEVEL_MULT = [0.5, 0.8, 1.0, 1.4, 2.0, 2.8, 3.6];
-const ECON_SECTOR_MULT = { government: 0.75, private: 1.0, international: 1.35, ngo: 0.85, self: 1.15 };
+/* Cumulative inflation from 2027 reference to target year */
+function econCPI(country, year) {
+  var prof = econProfile(country);
+  if (!prof || !prof.inflationHistory) return 1;
+  var target = year || gameYear();
+  if (target === 2027) return 1;
 
-/* Per-country economic profile — real 2027 reality */
-const ECON_PROFILES = {
-  egy: {
-    diff: 8,
-    salaryMult: 0.12,
-    rentMult: 0.35,
-    costMult: 0.45,
-    socialRate: 0.11,
-    taxBrackets: [
-      { upTo: 40000, rate: 0 },
-      { upTo: 55000, rate: 0.10 },
-      { upTo: 70000, rate: 0.15 },
-      { upTo: 200000, rate: 0.20 },
-      { upTo: 400000, rate: 0.225 },
-      { upTo: Infinity, rate: 0.25 }
-    ],
-    inflationHistory: { 2001: 0.03, 2005: 0.05, 2008: 0.18, 2011: 0.12, 2014: 0.10, 2016: 0.10, 2017: 0.30, 2020: 0.05, 2022: 0.14, 2023: 0.34, 2024: 0.28, 2025: 0.22, 2026: 0.18, 2027: 0.15, 2028: 0.12, 2030: 0.10, 2035: 0.08, 2040: 0.07 },
-    struggles: [
-      { icon: '🏠', text: 'A decent 2BR apartment costs 20+ years of full salary' },
-      { icon: '📉', text: 'The EGP has lost 90% of its value since 2010' },
-      { icon: '🚗', text: 'A new car = 4-5 years of entire income' },
-      { icon: '💍', text: 'Marriage (shabka + apartment + gold) = 500,000+ EGP' },
-      { icon: '✈️', text: 'Millions have left for Gulf/Europe to survive' },
-      { icon: '🍞', text: 'Food prices double every 2-3 years' },
-      { icon: '💊', text: 'Good private healthcare is unaffordable' }
-    ]
-  },
-  usa: {
-    diff: 6,
-    salaryMult: 1.0,
-    rentMult: 1.0,
-    costMult: 1.0,
-    socialRate: 0.0765,
-    taxBrackets: [
-      { upTo: 11600, rate: 0.10 },
-      { upTo: 47150, rate: 0.12 },
-      { upTo: 100525, rate: 0.22 },
-      { upTo: 191950, rate: 0.24 },
-      { upTo: 243725, rate: 0.32 },
-      { upTo: 609350, rate: 0.35 },
-      { upTo: Infinity, rate: 0.37 }
-    ],
-    inflationHistory: { 2001: 0.03, 2008: 0.04, 2020: 0.01, 2022: 0.08, 2023: 0.04, 2024: 0.03, 2027: 0.03, 2030: 0.025, 2040: 0.025 },
-    struggles: [
-      { icon: '🏥', text: 'Medical bankruptcy is the #1 cause of US bankruptcies' },
-      { icon: '🎓', text: 'Student loan debt: $30k-100k on average' },
-      { icon: '🏠', text: 'Housing crisis: median home = 6× median salary' },
-      { icon: '👶', text: 'Daycare costs $1,500-2,500/month per child' },
-      { icon: '🚗', text: 'Car-dependent cities require car ownership' },
-      { icon: '💼', text: 'At-will employment — fired with no notice' }
-    ]
-  },
-  gbr: {
-    diff: 6,
-    salaryMult: 0.85,
-    rentMult: 1.15,
-    costMult: 1.05,
-    socialRate: 0.12,
-    taxBrackets: [
-      { upTo: 12570, rate: 0 },
-      { upTo: 50270, rate: 0.20 },
-      { upTo: 125140, rate: 0.40 },
-      { upTo: Infinity, rate: 0.45 }
-    ],
-    inflationHistory: { 2001: 0.02, 2008: 0.04, 2011: 0.05, 2020: 0.01, 2022: 0.09, 2023: 0.07, 2024: 0.04, 2027: 0.03, 2030: 0.025, 2040: 0.02 },
-    struggles: [
-      { icon: '🏠', text: 'London rent eats 50%+ of after-tax income' },
-      { icon: '💡', text: 'Energy bills tripled post-2022 crisis' },
-      { icon: '🚆', text: 'Commute £200-400/month if you work in London' },
-      { icon: '👶', text: 'Nursery costs £1,200-2,000/month per child' },
-      { icon: '🏥', text: 'NHS waitlists — 6-12 months for specialists' },
-      { icon: '🥶', text: 'You cannot afford to heat your home properly' }
-    ]
-  },
-  deu: {
-    diff: 5,
-    salaryMult: 0.85,
-    rentMult: 0.9,
-    costMult: 0.95,
-    socialRate: 0.20,
-    taxBrackets: [
-      { upTo: 11604, rate: 0 },
-      { upTo: 17005, rate: 0.14 },
-      { upTo: 66760, rate: 0.24 },
-      { upTo: 277825, rate: 0.42 },
-      { upTo: Infinity, rate: 0.45 }
-    ],
-    inflationHistory: { 2001: 0.02, 2008: 0.03, 2022: 0.08, 2023: 0.06, 2024: 0.03, 2027: 0.025, 2030: 0.02, 2040: 0.02 },
-    struggles: [
-      { icon: '💸', text: '42% marginal tax + 20% social insurance' },
-      { icon: '🏠', text: 'Housing shortage in Berlin, Munich, Frankfurt' },
-      { icon: '📋', text: 'Bureaucracy — Anmeldung, tax returns, paperwork' },
-      { icon: '☁️', text: 'Depression from dark winters' },
-      { icon: '👶', text: 'Birth rate lowest in Europe — childcare scarce' },
-      { icon: '🌧️', text: 'Weather is grey 200+ days per year' }
-    ]
-  },
-  sau: {
-    diff: 5,
-    salaryMult: 0.90,
-    rentMult: 0.65,
-    costMult: 0.65,
-    socialRate: 0,
-    taxBrackets: [{ upTo: Infinity, rate: 0 }],
-    inflationHistory: { 2001: 0.02, 2008: 0.09, 2020: 0.03, 2024: 0.02, 2027: 0.02, 2030: 0.025 },
-    struggles: [
-      { icon: '🪪', text: 'No PR — you are sponsored by ONE employer forever' },
-      { icon: '🚫', text: 'Job loss = deportation in 30-90 days' },
-      { icon: '👨‍👩‍👧', text: 'Can only sponsor family if salary above threshold' },
-      { icon: '🚷', text: 'Kafala system — sponsor controls your travel' },
-      { icon: '🌡️', text: '50°C summers, 9 months of brutal heat' },
-      { icon: '🏛️', text: 'No political voice, no path to citizenship' }
-    ]
-  },
-  uae: {
-    diff: 5,
-    salaryMult: 0.92,
-    rentMult: 0.95,
-    costMult: 0.75,
-    socialRate: 0,
-    taxBrackets: [{ upTo: Infinity, rate: 0 }],
-    inflationHistory: { 2001: 0.02, 2008: 0.12, 2020: 0.02, 2024: 0.02, 2027: 0.025, 2030: 0.025 },
-    struggles: [
-      { icon: '🪪', text: 'No PR for most — sponsor-dependent forever' },
-      { icon: '💸', text: 'Rent doubled in Dubai 2022-2025' },
-      { icon: '🚗', text: 'Cost of living now rivals Western cities' },
-      { icon: '🕌', text: 'Strict social rules, cultural constraints' },
-      { icon: '🌡️', text: 'Six months of unbearable heat' },
-      { icon: '🛂', text: 'Golden Visa requires 2M AED property' }
-    ]
-  },
-  can: {
-    diff: 5,
-    salaryMult: 0.80,
-    rentMult: 1.10,
-    costMult: 1.0,
-    socialRate: 0.08,
-    taxBrackets: [
-      { upTo: 15705, rate: 0.15 },
-      { upTo: 53528, rate: 0.205 },
-      { upTo: 100392, rate: 0.26 },
-      { upTo: 155625, rate: 0.29 },
-      { upTo: Infinity, rate: 0.33 }
-    ],
-    inflationHistory: { 2001: 0.03, 2008: 0.03, 2020: 0.01, 2022: 0.07, 2024: 0.03, 2027: 0.025, 2030: 0.02 },
-    struggles: [
-      { icon: '🏠', text: 'Toronto/Vancouver housing: 10-15× median income' },
-      { icon: '🥶', text: 'Winters hit -30°C, heating costly' },
-      { icon: '🩺', text: 'Family doctor waitlist: years in some provinces' },
-      { icon: '🚗', text: 'Cities sprawl — car almost mandatory' },
-      { icon: '💸', text: 'High income tax + 13% sales tax (Ontario)' }
-    ]
-  },
-  aus: {
-    diff: 5,
-    salaryMult: 0.90,
-    rentMult: 1.20,
-    costMult: 1.05,
-    socialRate: 0.10,
-    taxBrackets: [
-      { upTo: 18200, rate: 0 },
-      { upTo: 45000, rate: 0.16 },
-      { upTo: 135000, rate: 0.30 },
-      { upTo: 190000, rate: 0.37 },
-      { upTo: Infinity, rate: 0.45 }
-    ],
-    inflationHistory: { 2001: 0.03, 2008: 0.04, 2020: 0.01, 2022: 0.07, 2024: 0.03, 2027: 0.025, 2030: 0.025 },
-    struggles: [
-      { icon: '🏠', text: 'Sydney/Melbourne housing most unaffordable globally' },
-      { icon: '🌏', text: 'Everything is 2,000+ km apart' },
-      { icon: '🔥', text: 'Bushfire summers, flooding winters' },
-      { icon: '🥕', text: 'Groceries 40% more than Europe' },
-      { icon: '🐍', text: 'Wildlife everywhere' }
-    ]
-  },
-  nld: {
-    diff: 5,
-    salaryMult: 0.85,
-    rentMult: 1.0,
-    costMult: 1.0,
-    socialRate: 0.14,
-    taxBrackets: [
-      { upTo: 37149, rate: 0.09 },
-      { upTo: 73031, rate: 0.375 },
-      { upTo: Infinity, rate: 0.495 }
-    ],
-    inflationHistory: { 2001: 0.02, 2008: 0.03, 2022: 0.10, 2023: 0.04, 2024: 0.03, 2027: 0.025 },
-    struggles: [
-      { icon: '🏠', text: 'Massive housing shortage — 390,000 short' },
-      { icon: '🌧️', text: 'Grey and rainy most of the year' },
-      { icon: '🚲', text: 'You must cycle in rain and wind' },
-      { icon: '💸', text: '49.5% top tax bracket' }
-    ]
-  },
-  fra: {
-    diff: 6,
-    salaryMult: 0.75,
-    rentMult: 1.0,
-    costMult: 0.95,
-    socialRate: 0.22,
-    taxBrackets: [
-      { upTo: 11295, rate: 0 },
-      { upTo: 28798, rate: 0.11 },
-      { upTo: 82342, rate: 0.30 },
-      { upTo: 177107, rate: 0.41 },
-      { upTo: Infinity, rate: 0.45 }
-    ],
-    inflationHistory: { 2001: 0.02, 2008: 0.03, 2022: 0.06, 2024: 0.03, 2027: 0.025 },
-    struggles: [
-      { icon: '🏠', text: 'Paris rent = 40-50% of income' },
-      { icon: '💸', text: '45% tax + 22% social charges' },
-      { icon: '✊', text: 'Frequent strikes — trains, airports, fuel' },
-      { icon: '📋', text: 'Bureaucracy legendary even by European standards' },
-      { icon: '😔', text: 'Youth unemployment 17%' }
-    ]
-  },
-  jpn: {
-    diff: 6,
-    salaryMult: 0.70,
-    rentMult: 0.85,
-    costMult: 0.9,
-    socialRate: 0.15,
-    taxBrackets: [
-      { upTo: 1950000, rate: 0.05 },
-      { upTo: 3300000, rate: 0.10 },
-      { upTo: 6950000, rate: 0.20 },
-      { upTo: 9000000, rate: 0.23 },
-      { upTo: 18000000, rate: 0.33 },
-      { upTo: 40000000, rate: 0.40 },
-      { upTo: Infinity, rate: 0.45 }
-    ],
-    inflationHistory: { 2001: -0.005, 2008: 0.01, 2022: 0.02, 2024: 0.025, 2027: 0.02 },
-    struggles: [
-      { icon: '💼', text: 'Karoshi — death from overwork. 80-hour weeks normal' },
-      { icon: '🏠', text: 'Tokyo apartments are 20-40 m² for a family' },
-      { icon: '👶', text: 'Lowest birth rate in world — population shrinking' },
-      { icon: '🎌', text: 'Foreigners never fully integrate' },
-      { icon: '💸', text: 'Seniority system — you earn based on years, not merit' }
-    ]
-  },
-  ita: {
-    diff: 7,
-    salaryMult: 0.65,
-    rentMult: 0.85,
-    costMult: 0.9,
-    socialRate: 0.30,
-    taxBrackets: [
-      { upTo: 15000, rate: 0.23 },
-      { upTo: 28000, rate: 0.25 },
-      { upTo: 50000, rate: 0.35 },
-      { upTo: Infinity, rate: 0.43 }
-    ],
-    inflationHistory: { 2001: 0.025, 2008: 0.035, 2022: 0.08, 2024: 0.02, 2027: 0.02 },
-    struggles: [
-      { icon: '📉', text: 'Youth unemployment 22% — brain drain to Germany/UK' },
-      { icon: '💸', text: '30% social charges + income tax' },
-      { icon: '🏚️', text: 'Stagnant economy for 20 years' },
-      { icon: '📋', text: 'Bureaucracy brutal — weeks to open bank account' }
-    ]
-  },
-  sgp: {
-    diff: 4,
-    salaryMult: 1.0,
-    rentMult: 1.4,
-    costMult: 1.05,
-    socialRate: 0.20,
-    taxBrackets: [
-      { upTo: 20000, rate: 0 },
-      { upTo: 30000, rate: 0.02 },
-      { upTo: 40000, rate: 0.035 },
-      { upTo: 80000, rate: 0.07 },
-      { upTo: 120000, rate: 0.115 },
-      { upTo: 160000, rate: 0.15 },
-      { upTo: 200000, rate: 0.18 },
-      { upTo: 240000, rate: 0.19 },
-      { upTo: 280000, rate: 0.20 },
-      { upTo: 320000, rate: 0.22 },
-      { upTo: Infinity, rate: 0.24 }
-    ],
-    inflationHistory: { 2001: 0.01, 2008: 0.065, 2020: -0.001, 2022: 0.06, 2024: 0.03, 2027: 0.025 },
-    struggles: [
-      { icon: '🏠', text: 'Rent in private housing: S$3,500-6,000/month' },
-      { icon: '🚗', text: 'Car COE alone = S$100,000-150,000' },
-      { icon: '😰', text: 'Kiasu culture — extreme academic + career pressure' },
-      { icon: '🪪', text: 'HDB (public housing) only for citizens' }
-    ]
-  },
-  bra: {
-    diff: 7,
-    salaryMult: 0.22,
-    rentMult: 0.55,
-    costMult: 0.55,
-    socialRate: 0.11,
-    taxBrackets: [
-      { upTo: 24511, rate: 0 },
-      { upTo: 33919, rate: 0.075 },
-      { upTo: 45012, rate: 0.15 },
-      { upTo: 55976, rate: 0.225 },
-      { upTo: Infinity, rate: 0.275 }
-    ],
-    inflationHistory: { 2001: 0.08, 2003: 0.12, 2011: 0.06, 2015: 0.10, 2020: 0.04, 2022: 0.10, 2024: 0.04, 2027: 0.04 },
-    struggles: [
-      { icon: '🚨', text: 'Violent crime — neighborhoods restricted' },
-      { icon: '📉', text: 'Currency devalues 20-40% every few years' },
-      { icon: '🏚️', text: 'Inequality gap between rich and poor is enormous' },
-      { icon: '🚑', text: 'Good healthcare only via private insurance' }
-    ]
-  },
-  ind: {
-    diff: 7,
-    salaryMult: 0.14,
-    rentMult: 0.35,
-    costMult: 0.30,
-    socialRate: 0.12,
-    taxBrackets: [
-      { upTo: 300000, rate: 0 },
-      { upTo: 600000, rate: 0.05 },
-      { upTo: 900000, rate: 0.10 },
-      { upTo: 1200000, rate: 0.15 },
-      { upTo: 1500000, rate: 0.20 },
-      { upTo: Infinity, rate: 0.30 }
-    ],
-    inflationHistory: { 2001: 0.04, 2008: 0.08, 2013: 0.11, 2020: 0.05, 2023: 0.06, 2024: 0.05, 2027: 0.04 },
-    struggles: [
-      { icon: '🏠', text: 'Family often multi-generational under one roof' },
-      { icon: '💍', text: 'Arranged marriage + dowry pressure' },
-      { icon: '🚨', text: 'Pollution — Delhi AQI above 300 regularly' },
-      { icon: '🚗', text: 'Traffic gridlock — 2-hour commutes normal' },
-      { icon: '🩺', text: 'Private healthcare needed for anything serious' }
-    ]
+  var cumulative = 1;
+  var keys = Object.keys(prof.inflationHistory).map(Number).sort(function(a, b) { return a - b; });
+
+  if (target > 2027) {
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      if (k >= 2027 && k < target) cumulative *= (1 + prof.inflationHistory[k]);
+    }
+    /* Extrapolate past last known year */
+    var lastKey = keys[keys.length - 1];
+    if (target > lastKey) {
+      var lastRate = prof.inflationHistory[lastKey];
+      cumulative *= Math.pow(1 + lastRate, target - lastKey);
+    }
+  } else if (target < 2027) {
+    for (var j = keys.length - 1; j >= 0; j--) {
+      var kj = keys[j];
+      if (kj < 2027 && kj >= target) cumulative /= (1 + prof.inflationHistory[kj]);
+    }
   }
+  return cumulative;
+}
+
+function econSalary(trackId, level, countryCode, year, sector) {
+  if (typeof ECON_TRACK_BASE_USD === 'undefined') return 0;
+  year = year || gameYear();
+  countryCode = countryCode || (S ? S.country : 'egy');
+  level = Math.max(0, Math.min(6, level || 0));
+  var baseUSD = ECON_TRACK_BASE_USD[trackId] || ECON_TRACK_BASE_USD.entry;
+  var levelMult = ECON_LEVEL_MULT[level] || 1.0;
+  var prof = econProfile(countryCode);
+  var sectorMult = ECON_SECTOR_MULT[sector || 'private'] || 1.0;
+  var cpi = econCPI(countryCode, year);
+  var country = COUNTRIES[countryCode];
+  var rate = country ? (country.rate || 1) : 1;
+
+  /* Annual local salary */
+  var usdAnnual = baseUSD * 12 * levelMult * prof.salaryMult * sectorMult * cpi;
+  return Math.round(usdAnnual * rate);
+}
+window.econSalary = econSalary;
+
+function econPriceMonthly(category, countryCode, year) {
+  year = year || gameYear();
+  countryCode = countryCode || (S ? S.country : 'egy');
+  var baseUSD = { food: 400, phone: 30, transport: 150, internet: 40, utilities: 100, misc: 80 }[category] || 100;
+  var prof = econProfile(countryCode);
+  var cpi = econCPI(countryCode, year);
+  var country = COUNTRIES[countryCode];
+  var rate = country ? (country.rate || 1) : 1;
+  return Math.round(baseUSD * prof.costMult * cpi * rate);
+}
+window.econPriceMonthly = econPriceMonthly;
+
+function econRent(tier, countryCode, year) {
+  year = year || gameYear();
+  countryCode = countryCode || (S ? S.country : 'egy');
+  var baseUSD = {
+    shared_room: 100, studio: 200, br1: 350, br2: 550,
+    br3: 800, furnished: 700, compound: 1200, villa: 3000
+  }[tier] || 350;
+  var prof = econProfile(countryCode);
+  var cpi = econCPI(countryCode, year);
+  var country = COUNTRIES[countryCode];
+  var rate = country ? (country.rate || 1) : 1;
+  var monthlyUSD = baseUSD * prof.rentMult * cpi;
+  return Math.round(monthlyUSD * rate * 12);
+}
+window.econRent = econRent;
+
+function econTax(annualSalary, countryCode, year) {
+  var prof = econProfile(countryCode || (S ? S.country : 'egy'));
+  if (!prof || !prof.taxBrackets) return 0;
+  var rate = COUNTRIES[countryCode || (S ? S.country : 'egy')];
+  var cpi = econCPI(countryCode || (S ? S.country : 'egy'), year);
+  var rate2 = rate ? (rate.rate || 1) : 1;
+
+  /* Convert brackets to current-year local currency */
+  var remaining = annualSalary;
+  var prev = 0;
+  var tax = 0;
+  for (var i = 0; i < prof.taxBrackets.length; i++) {
+    var b = prof.taxBrackets[i];
+    var upTo = b.upTo === Infinity ? Infinity : b.upTo * cpi * (rate2 / 52.7);
+    var taxable = Math.min(remaining, upTo - prev);
+    if (taxable <= 0) break;
+    tax += taxable * b.rate;
+    remaining -= taxable;
+    prev = upTo;
+    if (remaining <= 0) break;
+  }
+  return Math.round(tax);
+}
+window.econTax = econTax;
+
+function econDifficulty(countryCode) {
+  var prof = econProfile(countryCode || (S ? S.country : 'egy'));
+  return prof ? prof.diff : 5;
+}
+window.econDifficulty = econDifficulty;
+
+function econStruggles(countryCode) {
+  var prof = econProfile(countryCode || (S ? S.country : 'egy'));
+  return (prof && prof.struggles) || [];
+}
+window.econStruggles = econStruggles;
+
+/* ============================================================
+   APPLY ECONOMY TO EXISTING CAREER STATE
+   ============================================================ */
+function econRefreshJobSalary(job) {
+  if (!job) return;
+  if (!job.track) return;
+  var sector = 'private';
+  if (job.sector) sector = job.sector;
+  else if (job.company) {
+    var cname = (job.company || '').toLowerCase();
+    if (cname.indexOf('ministry') >= 0 || cname.indexOf('government') >= 0 || cname.indexOf('public') >= 0) sector = 'government';
+    else if (cname.indexOf('united nations') >= 0 || cname.indexOf('world bank') >= 0 || cname.indexOf('unicef') >= 0) sector = 'ngo';
+  }
+  var newSalary = econSalary(job.track, job.level || 0, S.country, gameYear(), sector);
+  if (newSalary > 0) {
+    job.salary = newSalary;
+    job.baseSalaryEGP = newSalary;
+    job.sector = sector;
+  }
+}
+window.econRefreshJobSalary = econRefreshJobSalary;
+
+/* Correct spouse salary based on their actual career level */
+function econCorrectSpouseSalary() {
+  if (!S || !S.marriage || !S.marriage.partner) return;
+  var p = S.marriage.partner;
+  if (!p.career || !p.career.track || p.career.working === false) {
+    if (p.income !== 0) p.income = 0;
+    return;
+  }
+  var expected = econSalary(p.career.track, p.career.level || 0, S.country, gameYear(), 'private');
+  if (expected > 0) {
+    p.career.salary = expected;
+    p.income = expected;
+  }
+  if (p.career.working === 'part-time') {
+    p.income = Math.round(expected * 0.6);
+    p.career.salary = p.income;
+  }
+}
+window.econCorrectSpouseSalary = econCorrectSpouseSalary;
+
+/* Run correction on year tick + migrate */
+GameHooks.on('year', function() {
+  if (!S) return;
+  if (typeof econCorrectSpouseSalary === 'function') econCorrectSpouseSalary();
+  if (S.career && S.career.job && typeof econRefreshJobSalary === 'function') {
+    /* Only refresh base if salary is wildly off (>30%) */
+    var expected = econSalary(S.career.job.track, S.career.job.level || 0, S.country, gameYear(), S.career.job.sector || 'private');
+    if (expected > 0 && Math.abs(S.career.job.salary - expected) > expected * 0.3) {
+      S.career.job.salary = expected;
+      S.career.job.baseSalaryEGP = expected;
+      log('🔧 Your salary corrected to market rate: ' + money(expected) + '/year.');
+    }
+  }
+});
+
+/* Migrate hook */
+var _origMigrateEcon = migrateDualState;
+migrateDualState = function() {
+  _origMigrateEcon();
+  if (!S) return;
+  if (typeof econCorrectSpouseSalary === 'function') econCorrectSpouseSalary();
 };
+window.migrateDualState = migrateDualState;
 
-window.ECON_TRACK_BASE_USD = ECON_TRACK_BASE_USD;
-window.ECON_LEVEL_MULT = ECON_LEVEL_MULT;
-window.ECON_SECTOR_MULT = ECON_SECTOR_MULT;
-window.ECON_PROFILES = ECON_PROFILES;
+/* ============================================================
+   UPDATE computeHousehold TO USE ECON
+   Replace food/rent/phone/transport references
+   ============================================================ */
+var _origComputeHousehold = computeHousehold;
+computeHousehold = function() {
+  var h = _origComputeHousehold();
+  if (!S) return h;
 
-window.HISTORICAL_RATES = HISTORICAL_RATES;
-window.COUNTRIES = COUNTRIES;
+  var c = C();
+  var year = gameYear();
+
+  /* Replace fallback items with econ-priced values */
+  var useLifestyle = S.lifestyle && S.lifestyle.active;
+  if (!useLifestyle) {
+    /* Rebuild base costs from econ */
+    var newFood = econPriceMonthly('food', S.country, year) * 12;
+    var newPhone = econPriceMonthly('phone', S.country, year) * 12;
+    var newTransport = econPriceMonthly('transport', S.country, year) * 12;
+
+    /* Update the fallback expense items */
+    h.expenseItems.forEach(function(item) {
+      if (item.label === 'Food' || item.label === 'Food & Groceries') item.yearly = newFood;
+      if (item.label === 'Phone' || item.label === 'Phone (at parents)') item.yearly = newPhone;
+      if (item.label === 'Transport') item.yearly = newTransport;
+    });
+
+    /* Recompute totals */
+    h.income = h.incomeItems.reduce(function(s, i) { return s + i.yearly; }, 0);
+    h.expenses = h.expenseItems.reduce(function(s, i) { return s + i.yearly; }, 0);
+    h.net = h.income - h.expenses;
+  }
+
+  /* Use econ-based tax */
+  var taxIdx = h.expenseItems.findIndex(function(i) { return i.label === 'Income tax'; });
+  if (taxIdx >= 0 && S.career && S.career.job) {
+    var realTax = econTax(S.career.job.salary, S.country, year);
+    if (realTax > 0 || h.expenseItems[taxIdx].yearly > 0) {
+      h.expenses -= h.expenseItems[taxIdx].yearly;
+      h.expenseItems[taxIdx].yearly = realTax;
+      h.expenses += realTax;
+      h.net = h.income - h.expenses;
+    }
+  }
+
+  /* Recalculate stress */
+  if (h.income === 0 && h.expenses > 0) h.stress = 'critical';
+  else if (h.expenses > h.income) h.stress = 'critical';
+  else if (h.expenses > h.income * 0.85) h.stress = 'tight';
+  else h.stress = 'healthy';
+
+  return h;
+};
+window.computeHousehold = computeHousehold;
