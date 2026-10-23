@@ -118,6 +118,16 @@ function evtMigrateTo(newCountry) {
   S.homeCountry = S.homeCountry || oldCountry;
   log('✈️ You moved from ' + (COUNTRIES[oldCountry] ? COUNTRIES[oldCountry].name : oldCountry) +
       ' to ' + (COUNTRIES[newCountry] ? COUNTRIES[newCountry].name : newCountry) + '.');
+     if (typeof recordMoment === 'function') {
+    recordMoment(
+      'The day you moved to ' + (COUNTRIES[newCountry] ? COUNTRIES[newCountry].name : newCountry),
+      'You packed what mattered most. You gave the rest away. You boarded a plane with your whole life in two bags.',
+      { icon: '✈️', key: 'migration_' + newCountry + '_' + gameYear(), weight: 3 }
+    );
+  }
+  if (typeof checkReflectionTriggers === 'function') {
+    checkReflectionTriggers('migrated', { from: oldCountry, to: newCountry });
+  }
   return true;
 }
 window.evtMigrateTo = evtMigrateTo;
@@ -1742,6 +1752,12 @@ const DEEP_EVENTS = [
           relRemember(p, 'decision', 'Gave up her career to become a housewife', true);
           fx({ happiness: -4, health: 2, smarts: -1 });
           log('🏡 You left your job. Your identity shifts — you are now a housewife.');
+                     if (typeof recordMoment === 'function') {
+            recordMoment('The day you became a housewife', 'You folded up your work clothes. You did not know what to do with your mornings.', { icon: '🏡', key: 'stay_home_marriage', weight: 2 });
+          }
+          if (typeof emitReflection === 'function') {
+            emitReflection('You are a housewife now. The word sounds like someone else. You are not sure how you feel about that.', { mood: 'reflective' });
+          }
           log('💼 ' + p.name + ': "Thank you. I will take care of everything."');
         } else {
           if (p.career) {
@@ -1756,6 +1772,9 @@ const DEEP_EVENTS = [
           relRemember(p, 'decision', 'Supported her choice to become a housewife', true);
           fx({ happiness: 6 });
           log('🏡 ' + p.name + ' quit her job. She is now home full-time.');
+                     if (typeof recordMoment === 'function') {
+            recordMoment('The day ' + p.name + ' quit her job', 'She seemed lighter. You felt a strange weight, being the only earner now.', { icon: '🏡', key: 'wife_stay_home_marriage', weight: 2 });
+          }
           log('💼 ' + p.name + ': "I feel like I can breathe for the first time in years."');
         }
       }
@@ -1853,6 +1872,9 @@ const DEEP_EVENTS = [
           evtBumpPartner(15);
           fx({ happiness: 3, health: 5, smarts: -2 });
           log('🍼 You left your job to raise ' + babyName + '. Your career is on hold.');
+                     if (typeof recordMoment === 'function') {
+            recordMoment('The day you left work to raise ' + babyName, 'The apartment is quieter in the mornings now. You still wake up at office hours out of habit.', { icon: '🍼', key: 'stay_home_baby', weight: 3 });
+          }
         } else {
           if (p.career) {
             p.career.working = false;
