@@ -2017,6 +2017,383 @@ const DEEP_EVENTS = [
 
 window.DEEP_EVENTS = DEEP_EVENTS;
 /* ============================================================
+   SESSION 9B: CAREER & MARKET EVENTS
+   Real crisis notifications, recruiter events, professional milestone events
+   ============================================================ */
+
+DEEP_EVENTS.push(
+
+/* ---------- SECTOR CRISIS EVENTS ---------- */
+{ id: 'crisis_financial_2008', minAge: 22, maxAge: 65, weight: 3, maxFires: 1,
+  condition: s => {
+    if (gameYear() !== 2008) return false;
+    if (!s.career || !s.career.job) return false;
+    var track = (typeof carTrackById === 'function') ? carTrackById(s.career.job.track) : null;
+    if (!track) return false;
+    return ['banking','consulting','law','engineering'].indexOf(track.industry) >= 0;
+  },
+  title: '📉 Lehman Brothers Collapses',
+  text: s => 'It is September 15, 2008. Lehman Brothers files for bankruptcy. Your industry is in chaos.\n\nWithin 48 hours, your company announces emergency meetings. Hiring frozen. Bonuses cancelled. Rumors of layoffs.\n\nYou watch the news in disbelief. Your job is no longer secure.',
+  choices: [
+    { label: 'Stay put and hope for the best',
+      effect: s => {
+        if (Math.random() < 0.55) {
+          log('🎲 Your company survived. You kept your job.');
+          fx({ happiness: -5 });
+        } else {
+          if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('2008 financial crisis');
+          fx({ happiness: -30, health: -5 });
+          log('💸 You were laid off in the crisis.');
+        }
+      }
+    },
+    { label: 'Quit and try to find something safer',
+      effect: s => {
+        if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('left during crisis');
+        fx({ happiness: -10 });
+        log('🚪 You left. Better to be job-hunting on your terms.');
+      }
+    }
+  ]
+},
+
+{ id: 'crisis_covid_2020', minAge: 22, maxAge: 65, weight: 5, maxFires: 1,
+  condition: s => {
+    if (gameYear() !== 2020) return false;
+    if (!s.career || !s.career.job) return false;
+    var track = (typeof carTrackById === 'function') ? carTrackById(s.career.job.track) : null;
+    if (!track) return false;
+    return ['hotels','aviation','retail','restaurants','media'].indexOf(track.industry) >= 0;
+  },
+  title: '🦠 COVID-19 Lockdown',
+  text: s => 'March 2020. The world shuts down. Your industry is hit first — travel, dining, gatherings all stopped.\n\nYour employer sends an email: "Due to unprecedented circumstances, we are forced to reduce our workforce."\n\nYou are being furloughed — or laid off.',
+  choices: [
+    { label: 'Accept the furlough (reduced pay, return if things recover)',
+      effect: s => {
+        if (s.career && s.career.job) {
+          s.career.job.salary = Math.round((s.career.job.salary || 0) * 0.40);
+          log('📉 You are furloughed. Salary reduced to ' + money(s.career.job.salary) + '/year.');
+        }
+        fx({ happiness: -15 });
+      }
+    },
+    { label: 'Take the severance and leave',
+      effect: s => {
+        if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('COVID-19 layoff');
+        fx({ happiness: -20 });
+        log('💼 You were laid off due to COVID. Job hunting during a pandemic.');
+      }
+    }
+  ]
+},
+
+{ id: 'crisis_tech_winter_2022', minAge: 22, maxAge: 60, weight: 4, maxFires: 1,
+  condition: s => {
+    if (gameYear() !== 2022 && gameYear() !== 2023) return false;
+    if (!s.career || !s.career.job) return false;
+    var track = (typeof carTrackById === 'function') ? carTrackById(s.career.job.track) : null;
+    if (!track) return false;
+    return ['tech','bpo'].indexOf(track.industry) >= 0;
+  },
+  title: '❄️ The Tech Winter',
+  text: s => 'Meta laid off 11,000. Amazon 18,000. Google 12,000. Twitter half the company.\n\nYour company announced a "strategic realignment" — code for layoffs. Slack channels are going quiet one by one.\n\nYou do not know if you are next.',
+  choices: [
+    { label: 'Stay — you have strong performance',
+      effect: s => {
+        var perf = (s.career && s.career.job && s.career.job.performance) || 50;
+        if (perf > 70 || Math.random() < 0.6) {
+          log('✅ You survived the cuts. Others did not.');
+          fx({ happiness: 3 });
+        } else {
+          if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('tech winter layoff');
+          fx({ happiness: -30 });
+          log('💸 You were caught in the layoffs.');
+        }
+      }
+    },
+    { label: 'Leave now to control your exit',
+      effect: s => {
+        if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('left during tech winter');
+        fx({ happiness: -10 });
+        log('🚪 You left before being pushed.');
+      }
+    }
+  ]
+},
+
+{ id: 'crisis_egp_2023', minAge: 22, maxAge: 70, weight: 4, maxFires: 1,
+  condition: s => {
+    if (gameYear() !== 2023 && gameYear() !== 2024) return false;
+    return s.country === 'egy';
+  },
+  title: '💱 The Pound Collapses Again',
+  text: s => 'The EGP is devalued for the fourth time in a decade. Prices triple overnight. Your salary in real terms just halved.\n\nBread, fuel, medicine — all up 60-100%. Landlords are raising rent. Grocery bills are unrecognizable.',
+  choices: [
+    { label: 'Cut expenses, hold on',
+      effect: s => {
+        fx({ happiness: -12, health: -3 });
+        log('💸 Prices are impossible. You are barely keeping up.');
+      }
+    },
+    { label: 'Ask your employer for a raise',
+      effect: s => {
+        if (Math.random() < 0.30) {
+          if (s.career && s.career.job) {
+            s.career.job.salary = Math.round(s.career.job.salary * 1.30);
+          }
+          log('💪 Your employer gave you a 30% raise to compensate.');
+          fx({ happiness: 5 });
+        } else {
+          log('❌ They said no. "Everybody is suffering."');
+          fx({ happiness: -8 });
+        }
+      }
+    },
+    { label: 'Start seriously considering leaving Egypt',
+      effect: s => {
+        if (typeof evtRemember === 'function') evtRemember('wantsToEmigrate', true, 10);
+        fx({ happiness: -3 });
+        log('✈️ You started looking at jobs abroad.');
+      }
+    }
+  ]
+},
+
+{ id: 'crisis_ai_2026', minAge: 22, maxAge: 60, weight: 4, maxFires: 1,
+  condition: s => {
+    if (gameYear() !== 2026 && gameYear() !== 2027 && gameYear() !== 2028) return false;
+    if (!s.career || !s.career.job) return false;
+    var track = (typeof carTrackById === 'function') ? carTrackById(s.career.job.track) : null;
+    if (!track) return false;
+    return ['bpo','media','consulting','law'].indexOf(track.industry) >= 0;
+  },
+  title: '🤖 AI Replaced Your Junior Team',
+  text: s => 'Management announced that AI tools can now do what your junior team does. The juniors are being "transitioned out."\n\nSenior roles like yours are safe — for now. But the writing on the wall is clear.',
+  choices: [
+    { label: 'Learn the AI tools quickly',
+      effect: s => {
+        if (s.career && s.career.job) {
+          s.career.job.performance = Math.min(100, (s.career.job.performance || 50) + 5);
+        }
+        fx({ smarts: 5 });
+        log('🧠 You are adapting. Learning fast.');
+      }
+    },
+    { label: 'Refuse to adapt — keep doing things the old way',
+      effect: s => {
+        if (s.career && s.career.job) {
+          s.career.job.performance = Math.max(0, (s.career.job.performance || 50) - 10);
+        }
+        fx({ happiness: -5 });
+        log('⚠️ Your boss noticed. Your future here is uncertain.');
+      }
+    }
+  ]
+},
+
+/* ---------- RECRUITER REACHES OUT ---------- */
+{ id: 'recruiter_linkedin', minAge: 25, maxAge: 55, weight: 5, maxFires: 6,
+  condition: s => {
+    if (!s.career || !s.career.job) return false;
+    if ((s.career.job.performance || 50) < 65) return false;
+    if ((s.career.job.tenure || 0) < 1) return false;
+    return true;
+  },
+  title: '📩 LinkedIn Message',
+  text: s => {
+    var job = s.career.job;
+    return 'A recruiter messages you on LinkedIn: "Your profile caught my eye. We are hiring at ' +
+      (s.country === 'egy' ? 'a major company' : 'an exciting firm') +
+      '. Would you be open to a conversation? The package could be significantly better than your current ' + money(job.salary) + '/year."';
+  },
+  choices: [
+    { label: 'Yes, send me the details',
+      effect: s => {
+        if (typeof evtPushOffer === 'function' && s.career && s.career.job) {
+          var job = s.career.job;
+          var bump = 1.20 + Math.random() * 0.15;
+          var newSalary = Math.round(job.salary * bump);
+          var pool = (typeof CAR_COMPANIES !== 'undefined' && CAR_COMPANIES[s.country] && CAR_COMPANIES[s.country][(carTrackById(job.track) || {}).industry]) || [];
+          var target = pool.filter(function(c) { return c.name !== job.company; })[0] || { name: 'A competitor', payMult: 1.2, benefits: ['health', 'bonus'], prestige: 4 };
+          evtPushOffer(s, {
+            company: target.name,
+            title: job.title,
+            track: job.track,
+            level: job.level || 0,
+            salary: newSalary,
+            message: 'Recruiter offer. ' + Math.round((bump - 1) * 100) + '% raise.'
+          });
+          log('📬 Offer in Career → Offers tab.');
+          fx({ happiness: 6 });
+        }
+      }
+    },
+    { label: 'Not interested right now',
+      effect: s => { fx({ happiness: 1 }); }
+    }
+  ]
+},
+
+{ id: 'recruiter_former_colleague', minAge: 28, maxAge: 55, weight: 4, maxFires: 4,
+  condition: s => {
+    if (!s.career || !s.career.job) return false;
+    if ((s.career.job.performance || 50) < 70) return false;
+    return (s.career.jobHistory && s.career.jobHistory.length > 0);
+  },
+  title: '📞 A Former Colleague Called',
+  text: s => {
+    var lastJob = (s.career.jobHistory && s.career.jobHistory[s.career.jobHistory.length - 1]) || { company: 'your old company' };
+    return 'A former colleague from ' + lastJob.company + ' calls you directly.\n\n"We just got funding for a new team. I want you on it. The pay is better. Are you interested?"';
+  },
+  choices: [
+    { label: 'Tell me more',
+      effect: s => {
+        if (typeof evtPushOffer === 'function' && s.career && s.career.job) {
+          var job = s.career.job;
+          var newSalary = Math.round(job.salary * (1.18 + Math.random() * 0.10));
+          evtPushOffer(s, {
+            company: (s.career.jobHistory && s.career.jobHistory[s.career.jobHistory.length - 1] ? s.career.jobHistory[s.career.jobHistory.length - 1].company : 'Startup'),
+            title: job.title,
+            track: job.track,
+            level: (job.level || 0) + 1,
+            salary: newSalary,
+            message: 'Colleague referral offer.'
+          });
+          log('📬 Offer in Career → Offers.');
+          fx({ happiness: 5 });
+        }
+      }
+    },
+    { label: 'Politely decline',
+      effect: s => { fx({ happiness: 1 }); }
+    }
+  ]
+},
+
+/* ---------- PROFESSIONAL MILESTONES ---------- */
+{ id: 'career_first_million', minAge: 30, maxAge: 65, weight: 3, maxFires: 1,
+  condition: s => {
+    if (!s.career || !s.career.job) return false;
+    if (typeof econSalary !== 'function') return false;
+    var track = (typeof carTrackById === 'function') ? carTrackById(s.career.job.track) : null;
+    if (!track) return false;
+    var econBase = econSalary(track.id, s.career.job.level || 0, s.country, gameYear(), 'private');
+    return econBase >= 1000000;
+  },
+  title: '💰 Seven-Figure Salary',
+  text: s => {
+    var job = s.career.job;
+    return 'Your salary just crossed ' + money(1000000) + '/year.\n\nYou look at the number on the offer letter and remember where you started. It feels unreal. Your parents would not believe it if you told them.';
+  },
+  choices: [
+    { label: 'Call your parents',
+      effect: s => {
+        (s.family || []).forEach(function(m) {
+          if (m.alive !== false && (m.role === 'Mother' || m.role === 'Father')) {
+            m.bond = Math.min(100, (m.bond || 70) + 10);
+          }
+        });
+        fx({ happiness: 8 });
+        log('📞 You told them. They cried.');
+      }
+    },
+    { label: 'Keep it quiet',
+      effect: s => { fx({ happiness: 3 }); }
+    }
+  ]
+},
+
+{ id: 'career_retirement_decision', minAge: 60, maxAge: 67, weight: 6, maxFires: 1,
+  condition: s => {
+    if (!s.career || !s.career.job) return false;
+    if (typeof PENSION_PRODUCTS === 'undefined') return true;
+    return true;
+  },
+  title: '⏰ Time to Think About Retirement',
+  text: s => {
+    var job = s.career.job;
+    return 'You are ' + s.age + '. Retirement is no longer theoretical.\n\n' + job.company + ' has offered you a retirement package. Or you can keep working for a few more years.\n\nWhat matters more to you now — the money or the time?';
+  },
+  choices: [
+    { label: 'Retire now — the money is enough',
+      effect: s => {
+        if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('retired');
+        if (s.career) { s.career.retired = true; s.career.pension.retiredYear = gameYear(); }
+        fx({ happiness: 15, health: 3 });
+        log('🏛 You retired. Time is yours now.');
+      }
+    },
+    { label: 'Work 3 more years — save more',
+      effect: s => {
+        fx({ health: -3, happiness: -5 });
+        log('💼 You kept working. The salary is good. The exhaustion is real.');
+      }
+    }
+  ]
+},
+
+{ id: 'career_entrepreneurial_urge', minAge: 28, maxAge: 50, weight: 4, maxFires: 2,
+  condition: s => {
+    if (!s.career || !s.career.job) return false;
+    if ((s.career.job.tenure || 0) < 4) return false;
+    return s.wealth >= 100000;
+  },
+  title: '💡 "I Could Do This Better"',
+  text: s => 'You have been in the industry for years. You have seen how things are done. You are convinced you could run it better.\n\nThe thought will not leave you alone.\n\nShould you start your own business?',
+  choices: [
+    { label: 'Yes — quit and start my own thing',
+      effect: s => {
+        if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('left to start business');
+        if (typeof evtRemember === 'function') evtRemember('wantsOwnBusiness', true, 5);
+        fx({ happiness: 10, smarts: 3 });
+        log('🚀 You quit. Check Career → Business tab to open your business.');
+      }
+    },
+    { label: 'Stay — the steady paycheck wins',
+      effect: s => {
+        fx({ happiness: -2 });
+        log('💼 You stayed. Safer. But the thought lingers.');
+      }
+    }
+  ]
+},
+
+{ id: 'career_burnout_breaking', minAge: 28, maxAge: 55, weight: 5, maxFires: 3,
+  condition: s => {
+    if (!s.career || !s.career.job) return false;
+    if (s.health > 55) return false;
+    if ((s.career.job.performance || 50) > 40) return false;
+    return true;
+  },
+  title: '🔥 Burnout',
+  text: s => {
+    var job = s.career.job;
+    return 'You cannot get out of bed on Monday.\n\nYou call in sick. Then again Tuesday. Wednesday you just do not show up.\n\nYour body is telling you something your mind refuses to hear: you cannot keep doing ' + job.title + ' like this.';
+  },
+  choices: [
+    { label: 'Take medical leave (2 months, unpaid)',
+      effect: s => {
+        if (s.career && s.career.job) {
+          s.career.job.salary = Math.round((s.career.job.salary || 0) * 0.83);
+        }
+        fx({ health: 20, happiness: 15 });
+        log('🌿 You took medical leave. Slow recovery.');
+      }
+    },
+    { label: 'Push through — you cannot afford to stop',
+      effect: s => {
+        fx({ health: -10, happiness: -10 });
+        if (s.career && s.career.job) {
+          s.career.job.performance = Math.max(0, (s.career.job.performance || 50) - 5);
+        }
+        log('😰 You pushed through. Your body will remember this.');
+      }
+    }
+  ]
+}
+
+);
+/* ============================================================
    INIT
    ============================================================ */
 if (S && !S.evtMemory) S.evtMemory = {};
