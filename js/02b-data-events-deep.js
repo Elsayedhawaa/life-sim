@@ -2295,6 +2295,290 @@ DEEP_EVENTS.push(
 }
 
 );
+/* ============================================================
+   SESSION 11: GENERATIONAL ECHO EVENTS
+   ============================================================ */
+
+DEEP_EVENTS.push(
+
+{ id: 'echo_child_22', minAge: 40, maxAge: 65, weight: 6, maxFires: 4,
+  condition: s => {
+    if (!Array.isArray(S.childrenList)) return false;
+    return S.childrenList.some(function(c) { return c.age === 22; });
+  },
+  title: '🪞 Your Child Turns 22',
+  text: s => {
+    var c = S.childrenList.find(function(ch) { return ch.age === 22; });
+    if (!c) return 'Your child turned 22.';
+    return c.name + ' turned 22 today. You sat at the kitchen table and watched them.\n\nYou remember being 22. You had nothing figured out. You did not know then how the next decade would unfold.\n\nThey think they know.';
+  },
+  choices: [
+    { label: 'Tell them they will be fine',
+      effect: s => {
+        S.childrenList.forEach(function(c) { if (c.age === 22) c.bond = Math.min(100, (c.bond || 55) + 8); });
+        fx({ happiness: 4 });
+        log('💬 They nodded, half-believing you. But they will remember.');
+      }
+    },
+    { label: 'Tell them the truth — that it is hard',
+      effect: s => {
+        S.childrenList.forEach(function(c) {
+          if (c.age === 22) {
+            c.bond = Math.min(100, (c.bond || 55) + 12);
+            c.smarts = Math.min(100, (c.smarts || 50) + 3);
+          }
+        });
+        fx({ happiness: 2 });
+        log('💬 They respected the honesty.');
+      }
+    },
+    { label: 'Say nothing — just sit with them',
+      effect: s => {
+        S.childrenList.forEach(function(c) { if (c.age === 22) c.bond = Math.min(100, (c.bond || 55) + 6); });
+        fx({ happiness: 3 });
+      }
+    }
+  ]
+},
+
+{ id: 'cycle_continue_or_break', minAge: 45, maxAge: 65, weight: 5, maxFires: 2,
+  condition: s => {
+    if (typeof detectFamilyPatterns !== 'function') return false;
+    var p = detectFamilyPatterns();
+    return (p.wasRaisedDistant && p.isDistantParent) || (p.wasRaisedDistant && p.isLovingParent) ||
+           (!p.parentsStayedMarried && p.playerMarriageStrong) || (p.parentsStayedMarried && p.playerMarriedOrDivorced && !p.playerMarriageStrong);
+  },
+  title: '🪞 You Realize',
+  text: s => {
+    var p = detectFamilyPatterns();
+    if (p.wasRaisedDistant && p.isDistantParent) {
+      return 'You are looking at your child across the dinner table. They are quiet. Not unhappy. Just... quiet.\n\nAnd you realise: this is exactly what you did with your own parent. The same silence. The same distance. You inherited it and you passed it on.\n\nYou can see the cycle.';
+    }
+    if (p.wasRaisedDistant && p.isLovingParent) {
+      return 'You are sitting at your child\'s graduation. They are laughing with their friends. They are okay.\n\nYou did not have this. Your parent was not there for you. But you are here for them — and they are whole.\n\nYou broke it. You actually broke it.';
+    }
+    if (!p.parentsStayedMarried && p.playerMarriageStrong) {
+      return 'Your wife just laughed at something on the TV. You watched her face.\n\nYour parents could not do this. They did not know how. But you and her — you figured something out that they could not.\n\nYou broke the pattern without even trying.';
+    }
+    return 'You are looking at the divorce papers. The same papers your parents signed.\n\nYou told yourself you would be different. But here you are.';
+  },
+  choices: [
+    { label: 'Just sit with the realization',
+      effect: s => {
+        fx({ happiness: -3, smarts: 3 });
+        if (typeof emitReflection === 'function') {
+          emitReflection('You know the pattern now. What you do next is the only thing that matters.', { mood: 'reflective' });
+        }
+      }
+    },
+    { label: 'Change something — even small',
+      effect: s => {
+        var p = detectFamilyPatterns();
+        if (p.isDistantParent) {
+          S.childrenList.forEach(function(c) { c.bond = Math.min(100, (c.bond || 55) + 15); });
+          log('💪 You started showing up. Small things. Their face lit up.');
+        } else if (!p.playerMarriageStrong && S.marriage && S.marriage.partner) {
+          S.marriage.partner.bond = Math.min(100, (S.marriage.partner.bond || 70) + 20);
+          log('💪 You chose your marriage. Therapy. Honesty. The work.');
+        } else {
+          S.happiness = Math.min(100, (S.happiness || 50) + 10);
+        }
+        fx({ happiness: 6 });
+      }
+    }
+  ]
+},
+
+{ id: 'teach_child_trade', minAge: 42, maxAge: 65, weight: 6, maxFires: 3,
+  condition: s => {
+    if (!Array.isArray(S.childrenList)) return false;
+    if (!S.career || !S.career.job) return false;
+    return S.childrenList.some(function(c) { return c.age >= 18 && c.age <= 28; });
+  },
+  title: '🎓 Teach Them Your Trade',
+  text: s => {
+    var job = S.career && S.career.job;
+    var c = S.childrenList.find(function(ch) { return ch.age >= 18 && ch.age <= 28; });
+    return c.name + ' asks if you would teach them what you know — what you do as ' + (job ? job.title : 'your profession') + '.\n\n"I want to be like you."';
+  },
+  choices: [
+    { label: 'Take them under your wing',
+      effect: s => {
+        var c = S.childrenList.find(function(ch) { return ch.age >= 18 && ch.age <= 28; });
+        if (c) {
+          if (!c.career && S.career && S.career.job) {
+            c.career = {
+              track: S.career.job.track,
+              level: 0,
+              title: S.career.job.title,
+              company: 'Following you',
+              salary: (typeof carSalaryForLevel === 'function') ? carSalaryForLevel(S.career.job.track, 0) : 50000,
+              working: true
+            };
+            c.income = c.career.salary;
+          }
+          c.bond = Math.min(100, (c.bond || 55) + 20);
+          log('🎓 You started teaching ' + c.name + ' your trade. They are a natural.');
+          if (typeof recordMoment === 'function') {
+            recordMoment('The day you became ' + c.name + '\'s mentor',
+              'You handed down what you know. Your craft will outlive you.',
+              { icon: '🎓', key: 'mentor_' + c.id });
+          }
+        }
+        fx({ happiness: 10 });
+      }
+    },
+    { label: 'Tell them to find their own path',
+      effect: s => {
+        var c = S.childrenList.find(function(ch) { return ch.age >= 18 && ch.age <= 28; });
+        if (c) c.bond = Math.min(100, (c.bond || 55) + 5);
+        fx({ happiness: 2 });
+        log('💬 "You should be your own person. Not me." They nodded slowly.');
+      }
+    },
+    { label: 'Refuse — too busy',
+      effect: s => {
+        var c = S.childrenList.find(function(ch) { return ch.age >= 18 && ch.age <= 28; });
+        if (c) c.bond = Math.max(0, (c.bond || 55) - 12);
+        fx({ happiness: -5 });
+        log('😔 They said "fine" and walked away. Something closed between you.');
+      }
+    }
+  ]
+},
+
+{ id: 'grandchild_teach_legacy', minAge: 55, maxAge: 80, weight: 6, maxFires: 5,
+  condition: s => {
+    if (typeof getAllGrandchildren !== 'function') return false;
+    return getAllGrandchildren().some(function(gc) { return (gc.age || 0) >= 8 && (gc.age || 0) <= 18; });
+  },
+  title: '👶 Grandchild Wants to Learn',
+  text: s => {
+    var gcs = getAllGrandchildren();
+    var gc = gcs.find(function(g) { return (g.age || 0) >= 8 && (g.age || 0) <= 18; });
+    if (!gc) return 'Your grandchild wants to know about your life.';
+    return gc.name + ' sits next to you and asks:\n\n"Grandpa/Grandma, what was life like before I was born?"';
+  },
+  choices: [
+    { label: 'Tell them everything — the real story',
+      effect: s => {
+        (S.childrenList || []).forEach(function(c) {
+          (c.children || []).forEach(function(gc) {
+            gc.bond = Math.min(100, (gc.bond || 70) + 15);
+          });
+        });
+        fx({ happiness: 10 });
+        if (typeof emitReflection === 'function') {
+          emitReflection('You told them about your parents, your struggles, your dreams. They listened like you were the most interesting person in the world.', { mood: 'tender' });
+        }
+      }
+    },
+    { label: 'Tell them the fun stories only',
+      effect: s => {
+        (S.childrenList || []).forEach(function(c) {
+          (c.children || []).forEach(function(gc) {
+            gc.bond = Math.min(100, (gc.bond || 70) + 8);
+          });
+        });
+        fx({ happiness: 5 });
+      }
+    },
+    { label: 'Say "one day — not yet"',
+      effect: s => {
+        (S.childrenList || []).forEach(function(c) {
+          (c.children || []).forEach(function(gc) {
+            gc.bond = Math.max(0, (gc.bond || 70) - 5);
+          });
+        });
+        fx({ happiness: -2 });
+      }
+    }
+  ]
+},
+
+{ id: 'grandchild_drift', minAge: 60, maxAge: 85, weight: 5, maxFires: 3,
+  condition: s => {
+    if (typeof getAllGrandchildren !== 'function') return false;
+    var gcs = getAllGrandchildren();
+    return gcs.some(function(gc) { return (gc.bond || 70) < 35 && (gc.age || 0) >= 15; });
+  },
+  title: '👶 Your Grandchild Has Grown Distant',
+  text: s => {
+    var gc = getAllGrandchildren().find(function(g) { return (g.bond || 70) < 35 && (g.age || 0) >= 15; });
+    if (!gc) return 'Your grandchild barely speaks to you now.';
+    return gc.name + ' barely calls anymore. When they visit, they are on their phone. You have become someone in the background of their life.';
+  },
+  choices: [
+    { label: 'Call them and be honest about how you feel',
+      effect: s => {
+        if (Math.random() < 0.60) {
+          (S.childrenList || []).forEach(function(c) {
+            (c.children || []).forEach(function(gc) {
+              gc.bond = Math.min(100, (gc.bond || 70) + 20);
+            });
+          });
+          fx({ happiness: 8 });
+          log('💬 They were surprised. But they listened. They agreed to visit.');
+        } else {
+          fx({ happiness: -6 });
+          log('💔 They said "I am just busy." You know it is more than that.');
+        }
+      }
+    },
+    { label: 'Let them go — kids grow up',
+      effect: s => {
+        fx({ happiness: -3 });
+        if (typeof emitReflection === 'function') {
+          emitReflection('You remember holding them as a baby. Now they have their own life. You are not sure if they will come back.', { mood: 'sad' });
+        }
+      }
+    }
+  ]
+},
+
+{ id: 'family_business_offer', minAge: 45, maxAge: 70, weight: 5, maxFires: 2,
+  condition: s => {
+    if (!S.career || !Array.isArray(S.career.businesses)) return false;
+    if (S.career.businesses.length === 0) return false;
+    if (!Array.isArray(S.childrenList)) return false;
+    return S.childrenList.some(function(c) { return c.age >= 22 && c.age <= 35; });
+  },
+  title: '🏪 Your Child Wants Into the Business',
+  text: s => {
+    var biz = S.career.businesses[0];
+    var c = S.childrenList.find(function(ch) { return ch.age >= 22 && ch.age <= 35; });
+    return c.name + ' approaches you seriously.\n\n"I want to take over ' + biz.name + ' one day. Let me start learning the business now."';
+  },
+  choices: [
+    { label: 'Yes — teach them the business',
+      effect: s => {
+        var c = S.childrenList.find(function(ch) { return ch.age >= 22 && ch.age <= 35; });
+        if (c) {
+          c.bond = Math.min(100, (c.bond || 55) + 20);
+          c.smarts = Math.min(100, (c.smarts || 50) + 5);
+          c.futureSuccession = 'family_business';
+        }
+        fx({ happiness: 10 });
+        log('🏪 ' + c.name + ' is now learning the business. This is your legacy.');
+        if (typeof recordMoment === 'function') {
+          recordMoment(c.name + ' joined the family business',
+            'You handed them the keys — metaphorically, for now.',
+            { icon: '🏪', key: 'biz_succession' });
+        }
+      }
+    },
+    { label: 'No — they should earn their own path',
+      effect: s => {
+        var c = S.childrenList.find(function(ch) { return ch.age >= 22 && ch.age <= 35; });
+        if (c) c.bond = Math.max(0, (c.bond || 55) - 8);
+        fx({ happiness: -3 });
+        log('💬 They said "I understand." They did not.');
+      }
+    }
+  ]
+}
+
+);
 window.DEEP_EVENTS = DEEP_EVENTS;
 /* ============================================================
    SESSION 9B: CAREER & MARKET EVENTS
