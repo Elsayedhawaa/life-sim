@@ -455,8 +455,25 @@ function advanceMonth(silent) {
 
 function ageUp() {
   if (!S) return;
+  if (S.pending) {
+    if (isMonthly()) advanceMonth();
+    else advanceYear();
+    return;
+  }
+
+  var _before = snapshotForNarrative();
   if (isMonthly()) advanceMonth();
   else advanceYear();
+  var _after = snapshotForNarrative();
+
+  /* If a big event fired, don't show beat — player resolves the event first */
+  if (S.pending) return;
+
+  /* Show year beat */
+  try {
+    var _bullets = narrateYear(_before, _after);
+    if (_bullets && _bullets.length) showYearBeat(gameYear(), S.age, _bullets);
+  } catch (e) { console.warn('[Beat]', e); }
 }
 
 function chooseEvent(i) {
@@ -2882,6 +2899,357 @@ function checkWhispers() {
 window.checkWhispers = checkWhispers;
 window.whisperFire = whisperFire;
 window.whisperClear = whisperClear;
+/* ============================================================
+   UNITY PASS — WEEK 7: THE BEAT PASS
+   Every year becomes a moment you feel.
+   ============================================================ */
+
+/* ---------- SPOUSE CAREER LEVEL FIX ---------- */
+/* Old bug: partner_promotion multiplied salary each time (14 × 1.15 = 7x).
+   Fix: salary follows career level, not multiplier. Cap at track max. */
+function correctSpouseCareerSalary() {
+  if (!S || !S.marriage || !S.marriage.partner) return;
+  var p = S.marriage.partner;
+  if (!p.career || typeof p.career.level !== 'number' || !p.career.track) return;
+  if (typeof carTrackById !== 'function') return;
+
+  var track = carTrackById(p.career.track);
+  if (!track || !track.levels || !track.levels.length) return;
+
+  var maxLevel = track.levels.length - 1;
+  if (p.career.level > maxLevel) p.career.level = maxLevel;
+
+  var levelDef = track.levels[p.career.level];
+  if (!levelDef) return;
+
+  var rate = (C().rate || 1) / 52.7;
+  var expected = Math.round(levelDef.baseSalaryEGP * rate);
+
+  /* If income is way off (more than 50% higher than level suggests), correct it */
+  if (p.income > expected * 1.5 || p.income < expected * 0.5) {
+    var oldIncome = p.income;
+    p.career.salary = expected;
+    p.income = expected;
+    if (typeof log === 'function' && Math.abs(oldIncome - expected) > expected * 0.3) {
+      log('🔧 ' + p.name + '\'s salary corrected to match their career level (' + money(expected) + ').');
+    }
+  }
+  /* Ensure career.salary and income match */
+  if (p.career.salary !== p.income) p.career.salary = p.income;
+  /* Update title to match level */
+  if (levelDef.title && p.career.title !== levelDef.title) {
+    p.career.title = levelDef.title;
+  }
+}
+window.correctSpouseCareerSalary = correctSpouseCareerSalary;
+
+/* Run correction on migrate */
+var _origMigrateDualState = migrateDualState;
+migrateDualState = function() {
+  _origMigrateDualState();
+  if (typeof correctSpouseCareerSalary === 'function') correctSpouseCareerSalary();
+};
+window.migrateDualState = migrateDualState;
+
+/* ---------- YEAR SNAPSHOT ---------- */
+function snapshotForNarrative() {
+  if (!S) return {};
+  return {
+    age: S.age,
+    wealth: S.wealth || 0,
+    health: S.health || 100,
+    happiness: S.happiness || 50,
+    jobTitle: (S.career && S.career.job) ? S.career.job.title : null,
+    jobSalary: (S.career && S.career.job) ? (S.career.job.salary || 0) : 0,
+    marriageStatus: (S.marriage && S.marriage.status) || 'single',
+    partnerName: (S.marriage && S.marriage.partner) ? S.marriage.partner.name : null,
+    partnerBond: (S.marriage && S.marriage.partner) ? (S.marriage.partner.bond || 70) : 0,
+    childrenCount: (S.childrenList || []).length,
+    childrenAges: (S.childrenList || []).map(function(c) {
+      return { id: c.id, name: c.name, age: c.age, bond: c.bond || 55 };
+    }),
+    housing: S.housing,
+    country: S.country,
+    logLength: (S.log || []).length
+  };
+}
+
+/* ---------- NARRATE THE YEAR ---------- */
+function narrateYear(before, after) {
+  var b = [];
+
+  /* Job */
+  if (before.jobTitle !== after.jobTitle) {
+    if (!before.jobTitle && after.jobTitle) {
+      b.push('💼 You started a new job as ' + after.jobTitle + '.');
+    } else if (before.jobTitle && !after.jobTitle) {
+      b.push('💼 You lost your job.');
+    } else if (after.jobSalary > before.jobSalary * 1.05) {
+      b.push('📈 You were promoted to ' + after.jobTitle + '.');
+    }
+  }
+
+  /* Marriage status */
+  if (before.marriageStatus !== after.marriageStatus) {
+    if (after.marriageStatus === 'married') b.push('💍 You married ' + after.partnerName + '.');
+    else if (after.marriageStatus === 'divorced') b.push('💔 You divorced ' + before.partnerName + '.');
+    else if (after.marriageStatus === 'engaged') b.push('💍 You got engaged to ' + after.partnerName + '.');
+  }
+
+  /* Marriage bond */
+  if (before.marriageStatus === 'married' && after.marriageStatus === 'married') {
+    var bondDelta = after.partnerBond - before.partnerBond;
+    if (bondDelta <= -10) b.push('💔 Your marriage grew strained.');
+    else if (bondDelta >= 10) b.push('💞 Your bond with ' + after.partnerName + ' deepened.');
+  }
+
+  /* Children born */
+  if (after.childrenCount > before.childrenCount) {
+    var newKids = after.childrenCount - before.childrenCount;
+    b.push('👶 ' + (newKids === 1 ? 'You had a child.' : 'You had ' + newKids + ' children.'));
+  }
+
+  /* Children milestones */
+  after.childrenAges.forEach(function(afterChild) {
+    var beforeChild = before.childrenAges.find(function(b) { return b.id === afterChild.id; });
+    if (!beforeChild) return;
+    if (afterChild.age === 5) b.push('👧 ' + afterChild.name + ' turned 5.');
+    if (afterChild.age === 13) b.push('👦 ' + afterChild.name + ' is now a teenager.');
+    if (afterChild.age === 18) b.push('🎓 ' + afterChild.name + ' became an adult.');
+    if (beforeChild.bond - afterChild.bond > 15) b.push('💔 ' + afterChild.name + ' is pulling away from you.');
+    else if (afterChild.bond - beforeChild.bond > 15) b.push('💞 You grew closer to ' + afterChild.name + '.');
+  });
+
+  /* Money */
+  var delta = after.wealth - before.wealth;
+  if (Math.abs(delta) >= 20000) {
+    if (delta > 0) b.push('💰 Your savings grew by ' + money(delta) + '.');
+    else b.push('💸 You spent ' + money(-delta) + ' more than you earned.');
+  }
+
+  /* Health */
+  if (after.health < before.health - 10) b.push('❤️ Your health declined.');
+  else if (after.health > before.health + 10) b.push('💚 Your health improved.');
+
+  /* Housing */
+  if (before.housing !== after.housing) {
+    if (after.housing === 'owned') b.push('🏡 You became a homeowner.');
+    else if (after.housing === 'rented') b.push('🏠 You moved into a rental.');
+    else if (after.housing === 'parents') b.push('🏠 You moved back in with family.');
+  }
+
+  /* Country */
+  if (before.country !== after.country) {
+    b.push('🌍 You moved abroad.');
+  }
+
+  /* Nothing is also a story */
+  if (b.length === 0) {
+    b.push('A quiet year. Nothing much changed.');
+    b.push('You kept going.');
+  }
+
+  return b;
+}
+
+/* ---------- SHOW THE BEAT MODAL ---------- */
+function showYearBeat(year, age, bullets) {
+  var existing = document.getElementById('year-beat');
+  if (existing) existing.remove();
+
+  var bulletsHtml = '';
+  bullets.forEach(function(bullet) {
+    bulletsHtml += '<div style="padding:7px 0;font-size:.88rem;line-height:1.45;color:#e8e8f2;border-bottom:1px solid #1a1a2a">' + bullet + '</div>';
+  });
+
+  var modal = document.createElement('div');
+  modal.id = 'year-beat';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(4,5,12,0.82);backdrop-filter:blur(6px);z-index:2500;display:flex;align-items:center;justify-content:center;padding:20px;animation:ybFade .3s ease-out';
+  modal.innerHTML =
+    '<div style="max-width:400px;width:100%;background:#14141f;border:1px solid #8b5cf6;border-radius:14px;padding:20px;box-shadow:0 10px 40px rgba(139,92,246,0.35)">' +
+    '<div style="text-align:center;margin-bottom:14px">' +
+    '<div style="font-size:2.4rem;font-weight:900;color:#8b5cf6;letter-spacing:.04em;line-height:1;font-family:monospace">' + year + '</div>' +
+    '<div style="font-size:.75rem;color:#888;margin-top:6px;letter-spacing:.12em;font-weight:700">AGE ' + age + '</div>' +
+    '</div>' +
+    '<div>' + bulletsHtml + '</div>' +
+    '<button onclick="dismissYearBeat()" style="width:100%;margin-top:16px;padding:14px;background:#8b5cf6;color:#fff;border:none;border-radius:10px;font-size:.92rem;font-weight:700;cursor:pointer">Continue →</button>' +
+    '</div>';
+
+  /* Add animation keyframes if not present */
+  if (!document.getElementById('yb-keyframes')) {
+    var style = document.createElement('style');
+    style.id = 'yb-keyframes';
+    style.textContent = '@keyframes ybFade{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}';
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(modal);
+}
+
+window.dismissYearBeat = function() {
+  var el = document.getElementById('year-beat');
+  if (!el) return;
+  el.style.transition = 'opacity .2s';
+  el.style.opacity = '0';
+  setTimeout(function() { el.remove(); }, 200);
+};
+
+/* ---------- AMBIENT SMALL CHOICES ---------- */
+const AMBIENT_CHOICES = [
+  {
+    id: 'free_evening',
+    weight: 10,
+    minAge: 16, maxAge: 80,
+    text: 'You have a free evening. How do you spend it?',
+    choices: [
+      { label: '📖 Read a book', effect: function(s) { fx({ smarts: 3, happiness: 2 }); } },
+      { label: '💪 Exercise', effect: function(s) { fx({ health: 3, happiness: 1 }); } },
+      { label: '📞 Call your mother', effect: function(s) {
+          var mom = (s.family || []).find(function(m) { return m.role === 'Mother' && m.alive !== false; });
+          if (mom) mom.bond = Math.min(100, (mom.bond || 70) + 4);
+          fx({ happiness: 2 });
+        }
+      },
+      { label: '💼 Work late', effect: function(s) {
+          if (s.career && s.career.job) s.career.job.performance = Math.min(100, (s.career.job.performance || 50) + 4);
+          fx({ happiness: -2, health: -1 });
+        }
+      }
+    ]
+  },
+  {
+    id: 'windfall',
+    weight: 6,
+    minAge: 20, maxAge: 70,
+    text: 'You have some unexpected cash this month. What do you do?',
+    choices: [
+      { label: '💰 Save it for later', effect: function(s) { fx({ wealth: evtMoney(3000), happiness: 2 }); } },
+      { label: '🎁 Treat yourself', effect: function(s) { s.wealth -= evtMoney(2000); fx({ happiness: 5 }); } },
+      { label: '👨‍👩‍👧 Give it to family', effect: function(s) {
+          var fam = (s.family || []).filter(function(m) { return m.alive !== false; });
+          fam.forEach(function(m) { m.bond = Math.min(100, (m.bond || 70) + 3); });
+          fx({ happiness: 3 });
+        }
+      }
+    ]
+  },
+  {
+    id: 'coworker_lunch',
+    weight: 8,
+    minAge: 22, maxAge: 65,
+    condition: function(s) { return !!(s.career && s.career.job); },
+    text: 'A coworker invites you to lunch. You have work to catch up on.',
+    choices: [
+      { label: '🍽 Go anyway', effect: function(s) { s.wealth -= evtMoney(500); fx({ happiness: 3, social: 2 }); } },
+      { label: '💼 Stay and work through lunch', effect: function(s) {
+          if (s.career && s.career.job) s.career.job.performance = Math.min(100, (s.career.job.performance || 50) + 3);
+          fx({ social: -2 });
+        }
+      },
+      { label: '🥪 Suggest eating at your desks together', effect: function(s) { fx({ social: 2, happiness: 1 }); } }
+    ]
+  },
+  {
+    id: 'partner_gift',
+    weight: 8,
+    minAge: 24, maxAge: 65,
+    condition: function(s) { return !!(s.marriage && s.marriage.status === 'married' && s.marriage.partner); },
+    text: 'Your spouse has seemed down lately. You could do something to cheer them up.',
+    choices: [
+      { label: '🎁 Buy them a gift', effect: function(s) {
+          if (s.wealth >= evtMoney(3000)) {
+            s.wealth -= evtMoney(3000);
+            if (s.marriage && s.marriage.partner) s.marriage.partner.bond = Math.min(100, (s.marriage.partner.bond || 70) + 8);
+            fx({ happiness: 4 });
+          }
+        }
+      },
+      { label: '💬 Have a real conversation', effect: function(s) {
+          if (s.marriage && s.marriage.partner) {
+            s.marriage.partner.bond = Math.min(100, (s.marriage.partner.bond || 70) + 5);
+            s.marriage.partner.trust = Math.min(100, (s.marriage.partner.trust || 50) + 5);
+          }
+          fx({ happiness: 3 });
+        }
+      },
+      { label: '😶 Say nothing — you are tired', effect: function(s) {
+          if (s.marriage && s.marriage.partner) s.marriage.partner.bond = Math.max(0, (s.marriage.partner.bond || 70) - 2);
+        }
+      }
+    ]
+  },
+  {
+    id: 'child_time',
+    weight: 10,
+    minAge: 26, maxAge: 65,
+    condition: function(s) { return (s.childrenList || []).length > 0; },
+    text: 'One of your children wants your attention. You have work and errands.',
+    choices: [
+      { label: '⏰ Make time for them', effect: function(s) {
+          (s.childrenList || []).forEach(function(c) {
+            c.bond = Math.min(100, (c.bond || 55) + 6);
+            c.happiness = Math.min(100, (c.happiness || 70) + 5);
+          });
+          fx({ happiness: 4 });
+        }
+      },
+      { label: '💼 Tell them later', effect: function(s) {
+          (s.childrenList || []).forEach(function(c) { c.bond = Math.max(0, (c.bond || 55) - 3); });
+        }
+      },
+      { label: '💰 Promise to buy them something instead', effect: function(s) {
+          if (s.wealth >= evtMoney(1000)) {
+            s.wealth -= evtMoney(1000);
+            (s.childrenList || []).forEach(function(c) {
+              c.bond = Math.min(100, (c.bond || 55) + 2);
+              c.happiness = Math.min(100, (c.happiness || 70) + 3);
+            });
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'weekend_sleep',
+    weight: 7,
+    minAge: 18, maxAge: 75,
+    text: 'It is the weekend. You have no obligations.',
+    choices: [
+      { label: '😴 Sleep in and rest', effect: function(s) { fx({ health: 2, happiness: 3 }); } },
+      { label: '🧹 Clean the house', effect: function(s) { fx({ happiness: 1, social: 1 }); } },
+      { label: '🚶 Go for a long walk', effect: function(s) { fx({ health: 3, happiness: 2 }); } }
+    ]
+  }
+];
+
+function fireAmbientChoice() {
+  if (!S || S.pending) return false;
+  var eligible = AMBIENT_CHOICES.filter(function(c) {
+    if (S.age < c.minAge || S.age > c.maxAge) return false;
+    if (c.condition && !c.condition(S)) return false;
+    return true;
+  });
+  if (eligible.length === 0) return false;
+
+  var totalW = eligible.reduce(function(s, c) { return s + (c.weight || 1); }, 0);
+  var roll = Math.random() * totalW;
+  var chosen = eligible[0];
+  for (var i = 0; i < eligible.length; i++) {
+    roll -= (eligible[i].weight || 1);
+    if (roll <= 0) { chosen = eligible[i]; break; }
+  }
+
+  S.pending = {
+    title: '🤔 A Small Choice',
+    text: chosen.text,
+    choices: chosen.choices.map(function(ch) {
+      return { label: ch.label, effect: ch.effect };
+    })
+  };
+  S.evId = 'ambient_' + chosen.id;
+  return true;
+}
+window.fireAmbientChoice = fireAmbientChoice;
 
 /* Wire whisper clearing to the signals that resolve each category */
 if (typeof onSignal === 'function') {
@@ -2895,7 +3263,26 @@ if (typeof onSignal === 'function') {
 GameHooks.on('year', function() {
   if (!S) return;
   if (typeof syncSpouseFinancials === 'function') syncSpouseFinancials();
+  if (typeof correctSpouseCareerSalary === 'function') correctSpouseCareerSalary();
   if (typeof checkWhispers === 'function') checkWhispers();
+});
+
+/* Ambient small choices — fire ~55% of years, after big event resolution */
+GameHooks.on('render', function() {
+  if (!S) return;
+  if (S.pending) return;
+  if (S._ambientFiredThisYear === gameYear()) return;
+  if (S.age < 16) return;
+  /* Only fire if no beat modal is showing AND no event is pending */
+  if (document.getElementById('year-beat')) return;
+  if (Math.random() > 0.55) {
+    S._ambientFiredThisYear = gameYear();
+    return;
+  }
+  var fired = false;
+  try { fired = fireAmbientChoice(); } catch (e) { console.warn('[Ambient]', e); }
+  S._ambientFiredThisYear = gameYear();
+  if (fired) render();
 });
 
 GameHooks.on('render', function() {
