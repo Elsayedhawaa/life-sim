@@ -2570,9 +2570,9 @@ function marAssignPartnerCareer() {
   if (!trackDef) trackDef = carTrackById('business');
   level = Math.min(level, trackDef.levels.length - 1);
   var levelDef = trackDef.levels[level];
-  var baseSalEGP = levelDef.baseSalaryEGP;
-  var rate = (C().rate || 1) / 52.7;
-  var salaryLocal = Math.round(baseSalEGP * rate);
+  var salaryLocal = (typeof carSalaryForLevel === 'function')
+    ? carSalaryForLevel(track, level)
+    : Math.round(levelDef.baseSalaryEGP * ((C().rate || 1) / 52.7));
 
   var pool = carCompaniesFor(trackDef.industry);
   var company = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : { name: 'Local Firm', payMult: 1.0 };
@@ -3114,12 +3114,13 @@ function marFireYearEvent(evt) {
         log('💬 ' + p.name + ' is already at the top of their career. No further promotions available right now.');
         return;
       }
-      p.career.level = Math.min(_maxLevel, p.career.level + 1);
-      var _rate = (C().rate || 1) / 52.7;
+         p.career.level = Math.min(_maxLevel, p.career.level + 1);
       if (_track && _track.levels[p.career.level]) {
         var _lvlDef = _track.levels[p.career.level];
         p.career.title = _lvlDef.title;
-        p.career.salary = Math.round(_lvlDef.baseSalaryEGP * _rate);
+        p.career.salary = (typeof carSalaryForLevel === 'function')
+          ? carSalaryForLevel(p.career.track, p.career.level)
+          : Math.round(_lvlDef.baseSalaryEGP * ((C().rate || 1) / 52.7));
         p.income = p.career.salary;
       }
     } else {
