@@ -1704,10 +1704,296 @@ const DEEP_EVENTS = [
   ]
 }
 
+/* ============================================================
+   WEEK 4 — STAY-HOME EVENTS (both POVs, real career mutations)
+   ============================================================ */
+
+{ id: 'stay_home_early_marriage', minAge: 23, maxAge: 45, weight: 9, maxFires: 1,
+  condition: s => {
+    if (!evtIsMarried()) return false;
+    var p = evtPartner();
+    if (!p || !p.career) return false;
+    if (!p.career.working) return false;
+    if (S.gender === 'f' && !(s.career && s.career.job)) return false;
+    if (S.gender === 'm' && !p.career.working) return false;
+    var married = (S.marriage.partner && S.marriage.partner.marriedYear) || gameYear();
+    var years = gameYear() - married;
+    return years >= 1 && years <= 4;
+  },
+  title: '🏡 The Stay-Home Question',
+  text: s => {
+    var p = evtPartner();
+    if (S.gender === 'f') {
+      return p.name + ' brings it up after dinner, casually at first then with growing seriousness.\n\n"I have been thinking. Your job takes so much of you. What if you stopped working? Stayed home. Managed our life. Made this a real home instead of two exhausted people passing each other."\n\nHe waits. This is not a small ask.';
+    }
+    return p.name + ' sits down with you one evening, hands wrapped around her tea.\n\n"I am so tired. I love my job, but I come home and I am empty. I have been thinking — what if I stopped working? Stayed home, took care of the house, maybe we try for a baby."\n\nShe is not asking for permission. She is asking for your blessing.';
+  },
+  choices: [
+    { label: s => S.gender === 'f'
+        ? 'Accept — quit my job and become a housewife'
+        : 'Support her — she can stop working',
+      effect: s => {
+        var p = evtPartner();
+        if (S.gender === 'f') {
+          if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('became housewife at husband\'s request');
+          if (s.career) s.career.job = null;
+          s.marriage.financeModel = 'male_provider';
+          evtBumpPartner(10);
+          relRemember(p, 'decision', 'Gave up her career to become a housewife', true);
+          fx({ happiness: -4, health: 2, smarts: -1 });
+          log('🏡 You left your job. Your identity shifts — you are now a housewife.');
+          log('💼 ' + p.name + ': "Thank you. I will take care of everything."');
+        } else {
+          if (p.career) {
+            p.career.working = false;
+            p.career.quitYear = gameYear();
+            if (!p.career.gaps) p.career.gaps = [];
+            p.career.gaps.push({ start: gameYear(), reason: 'stayed home with husband' });
+            p.income = 0;
+          }
+          s.marriage.financeModel = 'male_provider';
+          evtBumpPartner(10);
+          relRemember(p, 'decision', 'Supported her choice to become a housewife', true);
+          fx({ happiness: 6 });
+          log('🏡 ' + p.name + ' quit her job. She is now home full-time.');
+          log('💼 ' + p.name + ': "I feel like I can breathe for the first time in years."');
+        }
+      }
+    },
+    { label: s => S.gender === 'f'
+        ? 'Refuse — my career is not negotiable'
+        : 'Refuse — we need her income',
+      effect: s => {
+        var p = evtPartner();
+        if (S.gender === 'f') {
+          evtBumpPartner(-15);
+          relRemember(p, 'hurt', 'Refused his request to quit her job', false);
+          fx({ happiness: -3, social: -2 });
+          log('💢 ' + p.name + ': "So your career matters more than our home. I will remember this."');
+        } else {
+          evtBumpPartner(-10);
+          relRemember(p, 'hurt', 'Refused her request to stay home', false);
+          fx({ happiness: -4 });
+          log('💔 ' + p.name + ' looked away. "Fine. Forget I asked."');
+        }
+      }
+    },
+    { label: 'Compromise — try part-time or remote work',
+      effect: s => {
+        var p = evtPartner();
+        if (S.gender === 'f') {
+          if (s.career && s.career.job) {
+            s.career.job.salary = Math.round((s.career.job.salary || 0) * 0.6);
+            s.career.job.hours = 'part-time';
+            log('🕐 You cut your hours to part-time. A middle path.');
+          }
+          relRemember(p, 'compromise', 'Reduced her hours to part-time as a compromise', true);
+        } else {
+          if (p.career) {
+            p.career.working = 'part-time';
+            p.income = Math.round((p.career.salary || 0) * 0.6);
+            p.career.salary = p.income;
+            log('🕐 ' + p.name + ' cut back to part-time work.');
+          }
+          relRemember(p, 'compromise', 'Agreed to part-time rather than full quit', true);
+        }
+        evtBumpPartner(6);
+        fx({ happiness: 3 });
+      }
+    },
+    { label: 'Defer — "Let us talk again after a baby"',
+      effect: s => {
+        var p = evtPartner();
+        if (!p.career) p.career = {};
+        p.career.deferredDiscussion = true;
+        relRemember(p, 'promise', 'Promised to revisit the stay-home question later', false);
+        evtBumpPartner(1);
+        log('💬 You put the question off for now.');
+      }
+    }
+  ]
+},
+
+{ id: 'stay_home_after_baby', minAge: 26, maxAge: 45, weight: 12, maxFires: 1,
+  condition: s => {
+    if (!evtIsMarried()) return false;
+    if (!evtHasChildren()) return false;
+    var p = evtPartner();
+    if (!p) return false;
+    if (p.career && p.career.working === false) return false;
+    if (S.gender === 'f' && !(s.career && s.career.job)) return false;
+    var youngest = (S.childrenList || []).reduce(function(a, c) {
+      return (a === null || c.age < a.age) ? c : a;
+    }, null);
+    return youngest && youngest.age <= 2;
+  },
+  title: '👶 The Baby Changes Everything',
+  text: s => {
+    var p = evtPartner();
+    var baby = (S.childrenList || []).reduce(function(a, c) {
+      return (a === null || c.age < a.age) ? c : a;
+    }, null);
+    var babyName = baby ? baby.name : 'the baby';
+    if (S.gender === 'f') {
+      return 'You have not slept through a night in weeks. ' + babyName + ' is crying again. Your work performance is falling apart. ' + p.name + ' holds the baby and looks at you with tired eyes.\n\n"Please. Stop working. Just until the baby is older. My salary can cover us. I cannot watch you destroy yourself trying to do both."';
+    }
+    return p.name + ' is on the edge of tears. ' + babyName + ' is finally asleep. She has not slept in weeks.\n\n"I cannot do both. I cannot be a mother and work like this. Something has to give. Please — let me stay home. Just while the baby is small."';
+  },
+  choices: [
+    { label: s => S.gender === 'f'
+        ? 'Agree — take a career break for the baby'
+        : 'Agree — she stays home with the baby',
+      effect: s => {
+        var p = evtPartner();
+        if (S.gender === 'f') {
+          if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('took career break for baby');
+          if (s.career) s.career.job = null;
+          s.marriage.financeModel = 'male_provider';
+          relRemember(p, 'decision', 'Left job to raise the baby at husband\'s request', true);
+          evtBumpPartner(15);
+          fx({ happiness: 3, health: 5, smarts: -2 });
+          log('🍼 You left your job to raise ' + babyName + '. Your career is on hold.');
+        } else {
+          if (p.career) {
+            p.career.working = false;
+            p.career.quitYear = gameYear();
+            if (!p.career.gaps) p.career.gaps = [];
+            p.career.gaps.push({ start: gameYear(), reason: 'baby' });
+            p.income = 0;
+          }
+          s.marriage.financeModel = 'male_provider';
+          relRemember(p, 'decision', 'Supported her staying home with the baby', true);
+          evtBumpPartner(15);
+          fx({ happiness: 8 });
+          log('🍼 ' + p.name + ' is home with ' + babyName + ' now.');
+        }
+      }
+    },
+    { label: s => S.gender === 'f'
+        ? 'Refuse — I need my career and my income'
+        : 'Refuse — we need her income',
+      effect: s => {
+        var p = evtPartner();
+        evtBumpPartner(-18);
+        relRemember(p, 'hurt', 'Refused to allow stay-home after baby', false);
+        fx({ happiness: -10, health: -3 });
+        if (s.marriage) s.marriage.pendingConflict = 'children';
+        if (S.gender === 'f') {
+          log('💔 ' + p.name + ' quietly left the room. The silence between you was heavy.');
+        } else {
+          log('💔 ' + p.name + ' cried. She did not say anything. You both knew something broke.');
+        }
+      }
+    },
+    { label: 'Compromise — part-time for now',
+      effect: s => {
+        var p = evtPartner();
+        if (S.gender === 'f') {
+          if (s.career && s.career.job) s.career.job.salary = Math.round((s.career.job.salary || 0) * 0.6);
+          relRemember(p, 'compromise', 'Agreed to part-time work while baby was young', true);
+        } else {
+          if (p.career) {
+            p.career.working = 'part-time';
+            p.income = Math.round((p.career.salary || 0) * 0.6);
+            p.career.salary = p.income;
+          }
+          relRemember(p, 'compromise', 'Agreed to part-time while baby was young', true);
+        }
+        evtBumpPartner(8);
+        fx({ happiness: 4 });
+      }
+    },
+    { label: 'Hire a nanny instead',
+      available: s => s.wealth >= evtMoney(20000),
+      effect: s => {
+        s.wealth -= evtMoney(20000);
+        var p = evtPartner();
+        relRemember(p, 'compromise', 'Hired a nanny so both could keep working', true);
+        evtBumpPartner(6);
+        fx({ happiness: 3 });
+        log('👶 You hired a nanny for ' + evtMoney(20000).toLocaleString() + ' ' + C().currency + '/year.');
+      }
+    }
+  ]
+},
+
+{ id: 'stay_home_return_to_work', minAge: 30, maxAge: 52, weight: 7, maxFires: 2,
+  condition: s => {
+    if (!evtIsMarried()) return false;
+    if (!evtHasChildren()) return false;
+    var p = evtPartner();
+    if (!p) return false;
+    if (S.gender === 'f') {
+      return !(s.career && s.career.job) && (S.childrenList || []).some(function(c) { return c.age >= 3 && c.age <= 7; });
+    }
+    if (!p.career || p.career.working !== false) return false;
+    return (S.childrenList || []).some(function(c) { return c.age >= 3 && c.age <= 7; });
+  },
+  title: '💼 The Restless Years',
+  text: s => {
+    var p = evtPartner();
+    if (S.gender === 'f') {
+      return 'The youngest just started school. You have spent years at home. You love your children — but you miss who you used to be.\n\nYou bring it up with ' + p.name + ': "I think I want to work again."';
+    }
+    return p.name + ' has been home with the children. Now the youngest is in school. She sits you down quietly.\n\n"I want to go back to work. Not full-time, maybe. But I need something for myself. I am losing who I am."';
+  },
+  choices: [
+    { label: s => S.gender === 'f'
+        ? 'Yes — start looking for work again'
+        : 'Support her — she can go back to work',
+      effect: s => {
+        var p = evtPartner();
+        if (S.gender === 'f') {
+          if (s.career) {
+            var rate = C().rate || 1;
+            var sal = Math.round(80000 / 52.7 * rate);
+            s.career.job = {
+              title: 'Returning Professional',
+              salary: sal,
+              level: 0,
+              company: 'New Employer',
+              track: 'entry',
+              baseSalaryEGP: sal,
+              payMult: 1.0,
+              performance: 50,
+              hiredYear: gameYear(),
+              tenure: 0,
+              benefits: [],
+              stability: 0.85,
+              prestige: 3,
+              salaryCurrency: C().currency
+            };
+            log('💼 You found a job. Salary is lower than before, but you are back.');
+          }
+          relRemember(p, 'decision', 'Chose to return to work after raising children', true);
+        } else {
+          if (p.career) {
+            p.career.working = true;
+            p.income = Math.round((p.career.salary || 0) * 0.7);
+            p.career.salary = p.income;
+            log('💼 ' + p.name + ' returned to work. Her salary is lower after the gap.');
+          }
+          relRemember(p, 'decision', 'Supported her return to work after children', true);
+        }
+        evtBumpPartner(8);
+        fx({ happiness: 6 });
+      }
+    },
+    { label: 'Refuse — we do not need the money',
+      effect: s => {
+        var p = evtPartner();
+        evtBumpPartner(-10);
+        relRemember(p, 'hurt', 'Refused her request to return to work', false);
+        fx({ happiness: -6 });
+        log('💔 She did not argue. That was worse.');
+      }
+    }
+  ]
+}
+
 ];
 
 window.DEEP_EVENTS = DEEP_EVENTS;
-
 /* ============================================================
    INIT
    ============================================================ */
