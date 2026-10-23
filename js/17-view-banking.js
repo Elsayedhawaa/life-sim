@@ -1508,22 +1508,21 @@ function bankYearTick() {
     }
   });
 
+  /* Pension charge handled by chargeHousehold — apply growth here */
   let pensionContrib = 0;
   b.pension.active.forEach(p => {
     const yearly = p.monthlyContribution * 12;
-    if (S.wealth >= yearly) {
-      S.wealth -= yearly;
-      p.value = Math.round(p.value * 1.07 + yearly);
-      b.pension.totalContributed = (b.pension.totalContributed || 0) + yearly;
-      pensionContrib += yearly;
-    }
+    p.value = Math.round(p.value * 1.07 + yearly);
+    b.pension.totalContributed = (b.pension.totalContributed || 0) + yearly;
+    pensionContrib += yearly;
   });
-  if (pensionContrib > 0) log(`🏛️ Pension contributions this year: ${money(pensionContrib)}.`);
+  if (pensionContrib > 0 && !(typeof isMonthly === 'function' && isMonthly())) {
+    log(`🏛️ Pension contributions this year: ${money(pensionContrib)}.`);
+  }
 
+  /* Bank insurance charge handled by chargeHousehold */
   b.insurance.forEach(ins => {
-    if (S.wealth >= ins.annualPremium) {
-      S.wealth -= ins.annualPremium;
-    } else {
+    if (S.wealth < 0) {
       log(`⚠️ Could not pay premium on ${ins.name}. Policy may lapse.`);
     }
   });
