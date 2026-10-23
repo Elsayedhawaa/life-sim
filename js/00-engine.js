@@ -4155,3 +4155,422 @@ migrateDualState = function() {
   job.branchChoiceAvailable = false;
 };
 window.migrateDualState = migrateDualState;
+/* ============================================================
+   SESSION 10: PEOPLE SYSTEM — 3-generation family tree
+   ============================================================ */
+
+/* ---------- NORMALIZE FAMILY ---------- */
+function isSiblingOf(m) {
+  return !!(m && (m.isSibling || m.relation === 'sibling' || m.role === 'Brother' || m.role === 'Sister'));
+}
+
+function normalizeFamilyMembers() {
+  if (!S || !Array.isArray(S.family)) return;
+  S.family.forEach(function(m) {
+    if (!m.id) m.id = 'fam_' + Math.random().toString(36).slice(2, 8);
+    if (!m.relation) {
+      if (m.role === 'Mother' || m.role === 'Father') m.relation = 'parent';
+      else if (isSiblingOf(m)) { m.relation = 'sibling'; m.isSibling = true; }
+      else if (m.role === 'Mother-in-law' || m.role === 'Father-in-law' || m.role === 'Brother-in-law' || m.role === 'Sister-in-law') m.relation = 'inlaw';
+      else m.relation = 'extended';
+    }
+    if (typeof m.alive !== 'boolean') m.alive = true;
+    if (typeof m.health !== 'number') m.health = 100;
+    if (typeof m.bond !== 'number') m.bond = 70;
+    if (!Array.isArray(m.traits)) m.traits = m.trait ? [m.trait] : [];
+    if (!Array.isArray(m.children)) m.children = [];
+  });
+}
+
+/* ---------- NAME / TRAIT HELPERS ---------- */
+function randPersonName(gender, country) {
+  var pool = (typeof MARRIAGE_PARTNER_NAMES !== 'undefined') ? MARRIAGE_PARTNER_NAMES : null;
+  var c = (pool && pool[country]) || (pool && pool.egy) || { m: ['Omar', 'Kareem', 'Hassan'], f: ['Sarah', 'Layla', 'Mona'] };
+  var list = gender === 'm' ? c.m : c.f;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function randTraitId() {
+  return ['kind', 'grumpy', 'romantic', 'ambitious', 'traditional', 'modern', 'religious', 'generous', 'moody', 'funny', 'loyal', 'practical'][Math.floor(Math.random() * 12)];
+}
+
+/* ---------- CAREER / MARRIAGE / CHILDREN FOR NPCs ---------- */
+function assignCareerToNPC(person) {
+  if (!person || !person.age) return;
+  if (person.career && person.career.track) return;
+  if (typeof carTrackById !== 'function' || typeof carSalaryForLevel !== 'function') return;
+
+  var tracks = ['business', 'engineering', 'tech', 'teaching', 'nursing', 'accounting', 'law', 'media', 'hospitality', 'trades'];
+  var track = tracks[Math.floor(Math.random() * tracks.length)];
+  var trackDef = carTrackById(track);
+  if (!trackDef) return;
+
+  var salary = carSalaryForLevel(track, 0);
+  person.career = {
+    track: track,
+    level: 0,
+    title: trackDef.levels[0].title,
+    company: 'Local Company',
+    salary: salary,
+    working: true
+  };
+  person.income = salary;
+}
+
+function marryNPC(person) {
+  if (!person || person.spouse) return;
+  var spouseGender = person.gender === 'm' ? 'f' : 'm';
+  var name = randPersonName(spouseGender, S.country);
+  var spAge = Math.max(18, (person.age || 25) + Math.floor(Math.random() * 5) - 2);
+  assignCareerToNPC({ age: spAge, gender: spouseGender, career: null });
+  var tracks = ['business', 'engineering', 'teaching', 'nursing', 'accounting', 'tech'];
+  var tr = tracks[Math.floor(Math.random() * tracks.length)];
+  var trackDef = (typeof carTrackById === 'function') ? carTrackById(tr) : null;
+  var sal = (typeof carSalaryForLevel === 'function') ? carSalaryForLevel(tr, 0) : 50000;
+  person.spouse = {
+    id: 'sp_' + Math.random().toString(36).slice(2, 8),
+    name: name,
+    gender: spouseGender,
+    age: spAge,
+    career: {
+      track: tr,
+      level: 0,
+      title: trackDef ? trackDef.levels[0].title : 'Worker',
+      company: 'Local Firm',
+      salary: sal,
+      working: true
+    },
+    income: sal
+  };
+  person.isMarried = true;
+}
+
+function addChildToNPC(person) {
+  if (!person) return null;
+  if (!Array.isArray(person.children)) person.children = [];
+  var gender = Math.random() < 0.5 ? 'm' : 'f';
+  var name = randPersonName(gender, S.country);
+  var child = {
+    id: 'npc_' + Math.random().toString(36).slice(2, 8),
+    name: name,
+    gender: gender,
+    age: 0,
+    parentId: person.id || person.name,
+    bond: 60
+  };
+  person.children.push(child);
+  return child;
+}
+
+/* ---------- CREATE IN-LAWS ON MARRIAGE ---------- */
+function createInLaws() {
+  if (!S || !S.marriage || !S.marriage.partner) return;
+  var p = S.marriage.partner;
+  if (!Array.isArray(S.family)) S.family = [];
+  if (S.family.some(function(m) { return m.relation === 'inlaw' && m.alive !== false; })) return;
+
+  var spouseGender = p.gender || (S.gender === 'm' ? 'f' : 'm');
+  var momGender = spouseGender === 'm' ? 'f' : 'm';
+  var dadGender = spouseGender === 'm' ? 'm' : 'f';
+
+  var momAge = (p.age || 28) + 25 + Math.floor(Math.random() * 10);
+  var dadAge = (p.age || 28) + 28 + Math.floor(Math.random() * 10);
+
+  var mom = {
+    id: 'mil_' + Math.random().toString(36).slice(2, 8),
+    name: randPersonName(momGender, S.country),
+    role: 'Mother-in-law',
+    relation: 'inlaw',
+    gender: momGender,
+    age: momAge,
+    alive: true,
+    health: 65 + Math.floor(Math.random() * 25),
+    bond: 50,
+    traits: [randTraitId()],
+    country: p.country || S.country,
+    isParentInLaw: true,
+    children: []
+  };
+  var dad = {
+    id: 'fil_' + Math.random().toString(36).slice(2, 8),
+    name: randPersonName(dadGender, S.country),
+    role: 'Father-in-law',
+    relation: 'inlaw',
+    gender: dadGender,
+    age: dadAge,
+    alive: true,
+    health: 60 + Math.floor(Math.random() * 25),
+    bond: 50,
+    traits: [randTraitId()],
+    country: p.country || S.country,
+    isParentInLaw: true,
+    children: []
+  };
+  S.family.push(mom, dad);
+
+  var silCount = Math.floor(Math.random() * 3);
+  for (var i = 0; i < silCount; i++) {
+    var sg = Math.random() < 0.5 ? 'm' : 'f';
+    var sibName = randPersonName(sg, S.country);
+    var sibAge = Math.max(18, (p.age || 28) + Math.floor(Math.random() * 12) - 6);
+    S.family.push({
+      id: 'sil_' + Math.random().toString(36).slice(2, 8),
+      name: sibName,
+      role: sg === 'm' ? 'Brother-in-law' : 'Sister-in-law',
+      relation: 'inlaw',
+      gender: sg,
+      age: sibAge,
+      alive: true,
+      health: 90,
+      bond: 50,
+      traits: [randTraitId()],
+      country: p.country || S.country,
+      isSiblingInLaw: true,
+      children: []
+    });
+  }
+
+  /* Update mother-in-law bond to marriage tab's value */
+  if (S.marriage.motherInLawBond) {
+    S.family.filter(function(m) { return m.role === 'Mother-in-law'; }).forEach(function(m) {
+      m.bond = S.marriage.motherInLawBond;
+    });
+  }
+
+  log('👨‍👩‍👧 You gained ' + (S.family.filter(function(m) { return m.relation === 'inlaw'; }).length) + ' new in-laws.');
+  if (typeof recordMoment === 'function') {
+    recordMoment(
+      'The day you met your in-laws',
+      mom.name + ' sized you up over tea. ' + dad.name + ' barely spoke. You were terrified.',
+      { icon: '👵', key: 'inlaws_met' }
+    );
+  }
+}
+window.createInLaws = createInLaws;
+
+/* ---------- EVOLUTION TICK ---------- */
+function evolveExtendedFamily() {
+  if (!S) return;
+  var year = gameYear();
+
+  /* SIBLINGS */
+  (S.family || []).forEach(function(m) {
+    if (m.alive === false) return;
+    if (!isSiblingOf(m)) return;
+    m.age = (m.age || 0) + 1;
+
+    if (m.age === 22 && !m.career) {
+      assignCareerToNPC(m);
+      if (m.bond >= 40) log('💼 Your ' + (m.role || 'sibling') + ' ' + m.name + ' started working as a ' + m.career.title + '.');
+    }
+
+    if (m.career && m.career.level < 3 && Math.random() < 0.15) {
+      m.career.level = (m.career.level || 0) + 1;
+      var trackDef = (typeof carTrackById === 'function') ? carTrackById(m.career.track) : null;
+      if (trackDef) m.career.title = trackDef.levels[Math.min(m.career.level, trackDef.levels.length - 1)].title;
+      m.career.salary = (typeof carSalaryForLevel === 'function') ? carSalaryForLevel(m.career.track, m.career.level) : m.career.salary;
+      m.income = m.career.salary;
+    }
+
+    if (!m.spouse && m.age >= 22 && m.age <= 32 && Math.random() < 0.18) {
+      marryNPC(m);
+      log('💍 Your ' + (m.role || 'sibling') + ' ' + m.name + ' married ' + m.spouse.name + '.');
+      fx({ happiness: 5 });
+      if (typeof recordMoment === 'function') {
+        recordMoment('Your ' + (m.role || 'sibling').toLowerCase() + ' got married',
+          m.name + ' married ' + m.spouse.name + '. The family gathered. You were happy for them — and a little nostalgic.',
+          { icon: '💍', key: 'sib_wed_' + m.id, weight: 2 });
+      }
+    }
+
+    if (m.spouse && m.age >= 25 && m.age <= 40 && (m.children || []).length < 3 && Math.random() < 0.20) {
+      var nc = addChildToNPC(m);
+      if (nc) {
+        var relation = m.gender === 'm' ? 'Nephew' : 'Niece';
+        log('👶 Your ' + relation.toLowerCase() + ' ' + nc.name + ' was born!');
+        fx({ happiness: 8 });
+        if (typeof recordMoment === 'function') {
+          recordMoment('Your ' + relation.toLowerCase() + ' was born',
+            m.name + ' and ' + m.spouse.name + ' welcomed ' + nc.name + ' into the world.',
+            { icon: '👶', key: 'niece_' + nc.id, weight: 2 });
+        }
+      }
+    }
+
+    (m.children || []).forEach(function(nc) {
+      nc.age = (nc.age || 0) + 1;
+      if (nc.age === 18 && !nc.career) assignCareerToNPC(nc);
+      if (!nc.spouse && nc.age >= 22 && nc.age <= 32 && Math.random() < 0.15) marryNPC(nc);
+      if (nc.spouse && nc.age >= 25 && nc.age <= 38 && (nc.children || []).length < 3 && Math.random() < 0.18) addChildToNPC(nc);
+      (nc.children || []).forEach(function(ggc) { ggc.age = (ggc.age || 0) + 1; });
+    });
+
+    if (m.age >= 72) {
+      var dChance = 0.04 + (m.age - 72) * 0.015;
+      if (Math.random() < dChance) {
+        m.alive = false;
+        m.deathYear = year;
+        log('🕊 Your ' + (m.role || 'sibling') + ' ' + m.name + ' passed away at ' + m.age + '.');
+        fx({ happiness: -10 });
+        if (typeof emitSignal === 'function') emitSignal('siblingDied', { sibling: m });
+      }
+    }
+  });
+
+  /* IN-LAWS */
+  (S.family || []).forEach(function(m) {
+    if (m.alive === false) return;
+    if (m.relation !== 'inlaw') return;
+    m.age = (m.age || 0) + 1;
+
+    if (m.age >= 68) {
+      var dChance = 0.04 + (m.age - 68) * 0.015;
+      if (Math.random() < dChance) {
+        m.alive = false;
+        m.deathYear = year;
+        log('🕊 Your ' + m.role + ' ' + m.name + ' passed away at ' + m.age + '.');
+        fx({ happiness: -6 });
+        if (S.marriage && S.marriage.partner) {
+          S.marriage.partner.bond = Math.min(100, (S.marriage.partner.bond || 70) + 5);
+          S.marriage.partner.trust = Math.min(100, (S.marriage.partner.trust || 50) + 3);
+          log('💬 ' + S.marriage.partner.name + ' is grieving. You held them through the night.');
+        }
+      }
+    }
+  });
+
+  /* CHILDREN (yours) growing up */
+  (S.childrenList || []).forEach(function(c) {
+    if (c.age === 18 && !c.career) {
+      assignCareerToNPC(c);
+      if (c.career) log('🎓 Your child ' + c.name + ' started working as a ' + c.career.title + '.');
+      if (typeof recordMoment === 'function') {
+        recordMoment(c.name + ' became an adult',
+          'They turned 18 and started their first job. You watched them become someone.',
+          { icon: '🎓', key: 'child_adult_' + c.id, weight: 2 });
+      }
+    }
+
+    if (c.career && c.career.level < 4 && Math.random() < 0.18) {
+      c.career.level = (c.career.level || 0) + 1;
+      var trackDef = (typeof carTrackById === 'function') ? carTrackById(c.career.track) : null;
+      if (trackDef) c.career.title = trackDef.levels[Math.min(c.career.level, trackDef.levels.length - 1)].title;
+      c.career.salary = (typeof carSalaryForLevel === 'function') ? carSalaryForLevel(c.career.track, c.career.level) : c.career.salary;
+      c.income = c.career.salary;
+    }
+
+    if (!c.spouse && c.age >= 22 && c.age <= 32 && Math.random() < 0.20) {
+      marryNPC(c);
+      log('💍 Your child ' + c.name + ' married ' + c.spouse.name + '!');
+      fx({ happiness: 15 });
+      if (typeof recordMoment === 'function') {
+        recordMoment(c.name + ' got married',
+          'You watched your child say "I do." You cried. They pretended not to notice.',
+          { icon: '💍', key: 'child_wed_' + c.id, weight: 3 });
+      }
+      if (typeof emitSignal === 'function') emitSignal('childMarried', { child: c });
+    }
+
+    if (c.spouse && c.age >= 24 && c.age <= 38 && (c.children || []).length < 4 && Math.random() < 0.22) {
+      var gc = addChildToNPC(c);
+      if (gc) {
+        gc.relation = 'grandchild';
+        gc.grandparentId = 'player';
+        gc.bond = 70;
+        log('👶 You became a grandparent! ' + c.name + ' had a baby: ' + gc.name + '.');
+        fx({ happiness: 20 });
+        if (typeof recordMoment === 'function') {
+          recordMoment('The day you became a grandparent',
+            c.name + ' placed ' + gc.name + ' in your arms. They have your eyes. You cried in front of everyone.',
+            { icon: '👶', key: 'grandchild_' + gc.id, weight: 4 });
+        }
+        if (typeof emitSignal === 'function') emitSignal('grandchildBorn', { child: c, grandchild: gc });
+      }
+    }
+
+    (c.children || []).forEach(function(gc) {
+      gc.age = (gc.age || 0) + 1;
+      if (!Array.isArray(gc.events)) gc.events = [];
+      if (gc.age === 5) gc.events.push({ year: year, event: 'Started school' });
+      if (gc.age === 13) gc.events.push({ year: year, event: 'Became a teenager' });
+      if (gc.age === 18) {
+        gc.events.push({ year: year, event: 'Became an adult' });
+        if (typeof recordMoment === 'function') {
+          recordMoment(gc.name + ' grew up',
+            'Your grandchild turned 18. You remember when they fit in your arms.',
+            { icon: '🌟', key: 'gc_adult_' + gc.id, weight: 2 });
+        }
+      }
+    });
+  });
+}
+window.evolveExtendedFamily = evolveExtendedFamily;
+
+/* ---------- ACCESS HELPERS ---------- */
+function getAllGrandchildren() {
+  if (!S || !Array.isArray(S.childrenList)) return [];
+  var out = [];
+  S.childrenList.forEach(function(c) {
+    (c.children || []).forEach(function(gc) {
+      out.push(Object.assign({}, gc, { parentName: c.name, parentId: c.id }));
+    });
+  });
+  return out;
+}
+window.getAllGrandchildren = getAllGrandchildren;
+
+function getAllNiecesNephews() {
+  if (!S || !Array.isArray(S.family)) return [];
+  var out = [];
+  S.family.forEach(function(m) {
+    if (!isSiblingOf(m)) return;
+    (m.children || []).forEach(function(nc) {
+      out.push(Object.assign({}, nc, { parentName: m.name, parentRole: m.role }));
+    });
+  });
+  return out;
+}
+window.getAllNiecesNephews = getAllNiecesNephews;
+
+function getInLaws() {
+  if (!S || !Array.isArray(S.family)) return [];
+  return S.family.filter(function(m) { return m.relation === 'inlaw'; });
+}
+window.getInLaws = getInLaws;
+
+function getSiblingFamilyTree() {
+  if (!S || !Array.isArray(S.family)) return [];
+  return S.family.filter(isSiblingOf).map(function(sib) {
+    return {
+      sibling: sib,
+      spouse: sib.spouse || null,
+      children: sib.children || []
+    };
+  });
+}
+window.getSiblingFamilyTree = getSiblingFamilyTree;
+
+/* ---------- YEAR HOOK ---------- */
+GameHooks.on('year', function() {
+  if (!S) return;
+  normalizeFamilyMembers();
+  evolveExtendedFamily();
+});
+
+/* ---------- MIGRATION ---------- */
+var _origMigrateForPeople = migrateDualState;
+migrateDualState = function() {
+  _origMigrateForPeople();
+  normalizeFamilyMembers();
+  /* Ensure children have children arrays */
+  (S && S.childrenList || []).forEach(function(c) {
+    if (!Array.isArray(c.children)) c.children = [];
+  });
+  /* If married and no in-laws yet, create them */
+  if (S && S.marriage && S.marriage.status === 'married' && S.marriage.partner) {
+    if (!S.family.some(function(m) { return m.relation === 'inlaw'; })) {
+      createInLaws();
+    }
+  }
+};
+window.migrateDualState = migrateDualState;
