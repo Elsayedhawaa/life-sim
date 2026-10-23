@@ -33,9 +33,10 @@ function lifeView() {
     if (isMonthlyPace) return 'Age ' + entry.age + ' · ' + (entry.year || '');
     return 'Age ' + entry.age + (entry.year ? ' · ' + entry.year : '');
   }
-
+  const happinessPanel = (typeof happinessBreakdownHtml === 'function') ? happinessBreakdownHtml() : '';
   return `
-    <div class="card">
+  ${happinessPanel}
+    <div class="card">  
       <h3>Life Log</h3>
       <div style="max-height:400px;overflow-y:auto;font-size:.85rem">
         ${grouped.map(function(g) {
