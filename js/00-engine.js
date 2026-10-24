@@ -2079,7 +2079,52 @@ if (S.evtMemory && S.evtMemory.bornPoorTrap) {
       expenseItems.push({ label: 'Rent', yearly: rentY, country: S.country });
     }
   }
+     /* ===== JOB BENEFITS: reduce real expenses ===== */
+  var _benefits = (typeof getJobBenefits === 'function') ? getJobBenefits() : [];
 
+  if (_benefits.indexOf('wfh') >= 0) {
+    var _tItem = expenseItems.find(function(i) { return i.label === 'Transport'; });
+    if (_tItem) {
+      var _wfhSave = Math.round(_tItem.yearly * 0.40);
+      _tItem.yearly -= _wfhSave;
+      expenses -= _wfhSave;
+      _tItem.label = 'Transport (WFH 40% saved)';
+    }
+  }
+  if (_benefits.indexOf('meals') >= 0) {
+    var _fItem = expenseItems.find(function(i) { return i.label === 'Food'; });
+    if (_fItem) {
+      var _mealSave = Math.round(_fItem.yearly * 0.30);
+      _fItem.yearly -= _mealSave;
+      expenses -= _mealSave;
+      _fItem.label = 'Food (30% company meals)';
+    }
+  }
+  if (_benefits.indexOf('transport') >= 0) {
+    var _t2Item = expenseItems.find(function(i) { return i.label === 'Transport' || i.label.indexOf('Transport') === 0; });
+    if (_t2Item) {
+      expenses -= _t2Item.yearly;
+      _t2Item.yearly = 0;
+      _t2Item.label = 'Transport (company provided)';
+    }
+  }
+  if (_benefits.indexOf('housing') >= 0 && S.country !== 'sau' && S.country !== 'uae' && S.country !== 'kwt' && S.country !== 'qat' && S.country !== 'omn' && S.country !== 'bhr') {
+    /* Non-Gulf companies with housing benefit: direct housing subsidy */
+    var _housingSubsidy = Math.round((S.career.job.salary || 0) * 0.10);
+    if (_housingSubsidy > 0) {
+      expenses -= _housingSubsidy;
+      expenseItems.push({ label: 'Housing allowance (employer)', yearly: -_housingSubsidy, country: S.country });
+    }
+  }
+  /* Childcare — from marriage childcare selection */
+  if (S.marriage && S.marriage.status === 'married' && S.marriage.childcare && typeof MARRIAGE_CHILDCARE_OPTIONS !== 'undefined' && (S.childrenList || []).length > 0) {
+    var _cc = MARRIAGE_CHILDCARE_OPTIONS.find(function(o) { return o.id === S.marriage.childcare; });
+    if (_cc && _cc.monthlyCostEGP > 0) {
+      var _ccYear = Math.round(_cc.monthlyCostEGP * 12);
+      expenses += _ccYear;
+      expenseItems.push({ label: 'Childcare — ' + _cc.label, yearly: _ccYear, country: S.country });
+    }
+  }
   /* Children — living, school, activities (all EGP-based, convert) */
   (S.childrenList || []).forEach(function(child) {
     if (child.movedOut) return;
@@ -4807,6 +4852,15 @@ function checkDeath() {
   S.alive = false;
   S.deathYear = gameYear();
   S.deathReason = reason;
+     /* Life insurance benefit — pays out to estate */
+  var _bens = (typeof getJobBenefits === 'function') ? getJobBenefits() : [];
+  if (_bens.indexOf('life') >= 0 && S.career && S.career.job) {
+    var _lifePayout = Math.round((S.career.job.salary || 0) * 100);
+    if (_lifePayout > 0) {
+      S.wealth = (S.wealth || 0) + _lifePayout;
+      if (typeof log === 'function') log('🛡 Life insurance paid out ' + money(_lifePayout) + ' to your estate.');
+    }
+  }
 
   try { save(); } catch (e) {}
   showLegacyScreen();
@@ -5648,6 +5702,49 @@ GameHooks.on('year', function() {
   applyAmbientHealthDecline();
   checkClassShift();
   checkCareerCeiling();
+     /* ===== BROKEN ITEMS: ongoing comfort penalty ===== */
+  if (S.shopping && Array.isArray(S.shopping.inventory)) {
+    var _broken = 0, _critical = 0;
+    S.shopping.inventory.forEach(function(item) {
+      if (!item.broken) return;
+      _broken++;
+      var sub = (item.subcat || '').toLowerCase();
+      var cat = (item.cat || '').toLowerCase();
+      if (['fridge', 'washer', 'dishwasher', 'oven', 'ac', 'washing', 'stove'].indexOf(sub) >= 0 ||
+          cat === 'appliances') {
+        _critical++;
+      }
+    });
+    if (_broken > 0) {
+      var _penalty = -Math.min(15, _broken * 2 + _critical * 2);
+      fx({ happiness: _penalty });
+      if (typeof log === 'function') {
+        log('🔧 ' + _broken + ' broken item' + (_broken > 1 ? 's' : '') + ' dragging down your home (' + _penalty + ' happiness). Repair in Shopping tab.');
+      }
+    }
+  }
+     /* ===== JOB BENEFITS: non-financial (pension, stock, gym) ===== */
+  var _bens = (typeof getJobBenefits === 'function') ? getJobBenefits() : [];
+  var _jobSal = (S.career && S.career.job) ? (S.career.job.salary || 0) : 0;
+  if (_jobSal > 0) {
+    if (_bens.indexOf('pension') >= 0 && S.bank && S.bank.pension) {
+      var _match = Math.round(_jobSal * 0.05);
+      S.bank.pension.totalValue = (S.bank.pension.totalValue || 0) + _match;
+      log('🏛 Employer pension match: +' + money(_match) + '.');
+    }
+    if (_bens.indexOf('stock') >= 0) {
+      var _vest = Math.round(_jobSal * 0.10);
+      S.wealth += _vest;
+      log('📈 Stock vest this year: +' + money(_vest) + '.');
+    }
+    if (_bens.indexOf('gym') >= 0) {
+      fx({ health: 2 });
+    }
+    if (_bens.indexOf('travel') >= 0) {
+      S._vacationDiscountPct = 0.30;
+      log('✈️ Travel benefits active — 30% off personal vacations this year.');
+    }
+  }
 
   if (!S.pending) rollMisfortune();
   if (!S.pending) rollMarriageCrisis();
@@ -5666,3 +5763,35 @@ if (typeof migrateDualState === 'function') {
   };
   window.migrateDualState = migrateDualState;
 }
+/* ============================================================
+   SESSION 12B: JOB BENEFITS → REAL BUDGET EFFECTS
+   ============================================================ */
+function getJobBenefits() {
+  if (!S || !S.career || !S.career.job) return [];
+  var b = S.career.job.benefits;
+  return Array.isArray(b) ? b : [];
+}
+window.getJobBenefits = getJobBenefits;
+
+function applyBenefitToExpense(items, expenses, label, matchLabels, savingPct) {
+  var item = items.find(function(i) { return matchLabels.indexOf(i.label) >= 0 || i.label.indexOf(matchLabels[0]) === 0; });
+  if (!item) return expenses;
+  var saving = Math.round(item.yearly * savingPct);
+  item.yearly -= saving;
+  item.label = label;
+  return expenses - saving;
+}
+/* ============================================================
+   SESSION 12B: VISA BAN ENFORCEMENT
+   ============================================================ */
+function isBannedFrom(country) {
+  if (!S || !Array.isArray(S.visaBans)) return false;
+  var currentAbs = (gameYear() - 2001) * 12 + ((typeof isMonthly === 'function' && isMonthly()) ? currentMonth() : 1);
+  var ban = S.visaBans.find(function(b) {
+    return b.country === country && b.untilAbsMonth > currentAbs;
+  });
+  if (!ban) return false;
+  var yearsLeft = Math.max(1, Math.ceil((ban.untilAbsMonth - currentAbs) / 12));
+  return { banned: true, untilAbsMonth: ban.untilAbsMonth, yearsLeft: yearsLeft };
+}
+window.isBannedFrom = isBannedFrom;
