@@ -239,11 +239,13 @@ GameHooks.on('year', function() {
     f.age++;
     f.contactedThisYear = false;
 
-    /* Bond decay based on trait */
-    const traitDef = FRIEND_TRAITS[f.trait] || { bondDecay: 1.0 };
-    let decay = 2 * traitDef.bondDecay;
-    if (f.country !== S.country) decay *= 2;
-    f.bond = Math.max(0, f.bond - Math.round(decay));
+       /* Bond decay based on trait — but SKIPPED if contacted this year */
+    if (!f.contactedThisYear) {
+      const traitDef = FRIEND_TRAITS[f.trait] || { bondDecay: 1.0 };
+      let decay = 2 * traitDef.bondDecay;
+      if (f.country !== S.country) decay *= 2;
+      f.bond = Math.max(0, f.bond - Math.round(decay));
+    }
 
     if (!Array.isArray(f.events)) f.events = [];
   });
