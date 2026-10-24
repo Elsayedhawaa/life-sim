@@ -266,11 +266,9 @@ window.studyAbroadApplyJob = function(companyIdx) {
   const company = companies[companyIdx];
   if (!company) return;
 
-  const baseTrack = (typeof CAR_TRACKS !== 'undefined') ? CAR_TRACKS.find(function(t) { return t.industry === industry; }) : null;
-  const baseSalaryEGP = baseTrack ? baseTrack.levels[0].baseSalaryEGP : 100000;
-  
-  // Syntax error fixed here:
-  const salaryLocal = Math.round(baseSalaryEGP / 52.7 * (COUNTRIES[sa.country] ? COUNTRIES[sa.country].rate : 1) * company.payMult);
+  const countryObj = (typeof COUNTRIES !== 'undefined' && COUNTRIES[sa.country]) || (typeof C === 'function' ? C() : { salary: 50000 });
+  const entryBase = (countryObj.salaryTiers && countryObj.salaryTiers.entry) || countryObj.salary || 50000;
+  const salaryLocal = Math.round(entryBase * (company.payMult || 1));
 
   const rules = STUDY_ABROAD_RULES[sa.country] || { jobMarketStrength: 0.5 };
   const gpa = S.graduation ? S.graduation.gpa : 3.0;
@@ -601,13 +599,12 @@ function _saRenderJobMarket(sa) {
   let companies = (typeof CAR_COMPANIES !== 'undefined' && CAR_COMPANIES[sa.country] && CAR_COMPANIES[sa.country][industry]) ? CAR_COMPANIES[sa.country][industry] : [];
   if (!companies.length) return '<div class="card"><p class="muted small">No companies listed for your major here.</p></div>';
 
-  const baseTrack = (typeof CAR_TRACKS !== 'undefined') ? CAR_TRACKS.find(function(t) { return t.industry === industry; }) : null;
-  const baseSalaryEGP = baseTrack ? baseTrack.levels[0].baseSalaryEGP : 100000;
+  const countryObj = (typeof COUNTRIES !== 'undefined' && COUNTRIES[sa.country]) || (typeof C === 'function' ? C() : { salary: 50000 });
+  const entryBase = (countryObj.salaryTiers && countryObj.salaryTiers.entry) || countryObj.salary || 50000;
 
   let html = '<div class="card"><h4 style="font-size:.85rem;color:#22d3ee">💼 ' + industry.charAt(0).toUpperCase() + industry.slice(1) + ' Job Market</h4>';
   companies.slice(0, 8).forEach(function(c, i) {
-    // Syntax error fixed here:
-    const salaryLocal = Math.round(baseSalaryEGP / 52.7 * (COUNTRIES[sa.country] ? COUNTRIES[sa.country].rate : 1) * c.payMult);
+    const salaryLocal = Math.round(entryBase * (c.payMult || 1));
     const applied = sa.jobApplications.some(function(a) { return a.company === c.name; });
     html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a">' +
       '<div style="display:flex;justify-content:space-between"><b>' + c.name + '</b><b class="mono">' + money(salaryLocal) + '/yr</b></div>' +

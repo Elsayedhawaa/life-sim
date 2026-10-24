@@ -86,8 +86,8 @@ const CASH_JOB_STRICTNESS = {
 function _iwRate() { return C().rate || 1; }
 function _iwLocal(usd) { return Math.round(usd * _iwRate()); }
 function _iwCashCeiling() {
-  const baseSalary = (C().salary || 84000) / 52.7;
-  return Math.round(baseSalary * _iwRate() * 0.25);
+  const localSalary = (C().salary || 84000);
+  return Math.round(localSalary * 0.25);
 }
 function _iwDeportationChance() {
   if (!isUndocumented()) return 0;

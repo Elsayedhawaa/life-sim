@@ -1,86 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#080b12">
-<title>World Life — Life Simulation</title>
-<link rel="stylesheet" href="css/style.css?v=v2_redesign">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080b12">
+  <title>World Life — Life Simulation</title>
+  <meta name="description" content="A deep, realistic life simulation game where every choice shapes your career, wealth, relationships, and journey across the globe.">
+  <meta property="og:title" content="World Life — Life Simulation">
+  <meta property="og:description" content="A deep, realistic life simulation game where every choice shapes your career, wealth, relationships, and journey across the globe.">
 </head>
 <body>
-<div id="header"></div>
-<div id="view"></div>
-<div id="bottom"></div>
+  <div id="root"></div>
 
-<!-- Bottom Navigation -->
-<div id="tabs"></div>
-
-<!-- "More" menu overlay -->
-<div id="more-menu">
-  <div class="hub-header">
-    <h2>Life Directory & Hubs</h2>
-    <p>Explore every aspect of your career, wealth, family, and journey.</p>
+  <!-- Legacy container for engine DOM compatibility -->
+  <div id="legacy-dom-host" style="display:none;" aria-hidden="true">
+    <div id="header"></div>
+    <div id="view"></div>
+    <div id="bottom"></div>
+    <div id="tabs"></div>
+    <div id="more-menu">
+      <div id="more-grid-content"></div>
+    </div>
   </div>
-  <div id="more-grid-content">
-    <!-- Filled by engine -->
-  </div>
-  <button id="more-close-btn" onclick="closeMoreMenu()">✕ Close Directory</button>
-</div>
 
-<!-- 1. Engine first -->
+  <!-- 1. Data and Engine scripts -->
+  <script src="/game/01-data-countries.js"></script>
+  <script src="/game/00-engine.js"></script>
+  <script src="/game/02-data-events.js"></script>
+  <script src="/game/02b-data-events-deep.js"></script>
+  <script src="/game/03-data-realestate.js"></script>
+  <script src="/game/04-data-banks.js"></script>
+  <script src="/game/05-data-cars.js"></script>
+  <script src="/game/06-data-family.js"></script>
+  <script src="/game/07-data-immigration.js"></script>
+  <script src="/game/08-data-marriage.js"></script>
+  <script src="/game/09-data-children.js"></script>
+  <script src="/game/10-data-medical.js"></script>
+  <script src="/game/11-data-career.js"></script>
+  <script src="/game/13-data-education.js"></script>
+  <script src="/game/14-data-lifestyle.js"></script>
+  <script src="/game/15-data-shopping.js"></script>
+  <script src="/game/16-data-vacations.js"></script>
+  <script src="/game/17-month-settlement.js"></script>
+  <script src="/game/24-data-friends.js"></script>
 
+  <!-- 2. View logic modules -->
+  <script src="/game/10-view-life.js"></script>
+  <script src="/game/11-view-school.js"></script>
+  <script src="/game/12-view-career.js"></script>
+  <script src="/game/14-view-assets.js"></script>
+  <script src="/game/15-view-realestate.js"></script>
+  <script src="/game/16-view-home-manage.js"></script>
+  <script src="/game/17-view-banking.js"></script>
+  <script src="/game/18-view-cars.js"></script>
+  <script src="/game/19-view-family.js"></script>
+  <script src="/game/20-view-immigration.js"></script>
+  <script src="/game/21-view-marriage.js"></script>
+  <script src="/game/22-view-children.js"></script>
+  <script src="/game/23-view-medical.js"></script>
+  <script src="/game/25-view-friends.js"></script>
+  <script src="/game/26-view-vacations.js"></script>
+  <script src="/game/27-view-lifestyle.js"></script>
+  <script src="/game/28-view-shopping.js"></script>
+  <script src="/game/29-family-depth.js"></script>
+  <script src="/game/30-study-abroad.js"></script>
+  <script src="/game/31-illegal-work.js"></script>
+  <script src="/game/32-marry-for-visa.js"></script>
+  <script src="/game/33-data-gulf-work.js"></script>
+  <script src="/game/34-gulf-sponsorship.js"></script>
+  <script src="/game/35-family-visits.js"></script>
+  <script src="/game/36-expat-life.js"></script>
+  <script src="/game/37-life-goals.js"></script>
+  <script src="/game/98-signal-bridges.js"></script>
 
-<!-- 2. Data -->
-<script src="js/01-data-countries.js"></script>
-  <script src="js/00-engine.js?v=pass7"></script>
-<script src="js/02-data-events.js?v=2"></script>
-  <script src="js/02b-data-events-deep.js?v=pass3"></script>
-<script src="js/03-data-realestate.js"></script>
-<script src="js/04-data-banks.js"></script>
-<script src="js/05-data-cars.js"></script>
-<script src="js/06-data-family.js?v=3"></script>
-<script src="js/07-data-immigration.js"></script>   
-<script src="js/08-data-marriage.js"></script>
-<script src="js/09-data-children.js"></script>
-<script src="js/10-data-medical.js?v=5"></script>
-<script src="js/11-data-career.js?v=25"></script>
-<script src="js/13-data-education.js?v=3"></script>
-<script src="js/14-data-lifestyle.js?v=3"></script>
-<script src="js/15-data-shopping.js?v=5"></script>
-<script src="js/16-data-vacations.js?v=1"></script>
-<script src="js/17-month-settlement.js?v=4"></script>
-<script src="js/24-data-friends.js"></script>
-
-<!-- 3. Views -->
-<script src="js/10-view-life.js"></script>
-<script src="js/11-view-school.js?v=6"></script>
-<script src="js/12-view-career.js?v=37"></script>
-<script src="js/14-view-assets.js?v=11"></script>
-<script src="js/15-view-realestate.js?v=4"></script>
-<script src="js/16-view-home-manage.js?v=5"></script>
-<script src="js/17-view-banking.js?v=4"></script>
-<script src="js/18-view-cars.js?v=4"></script>
-<script src="js/19-view-family.js?v=15"></script>
-<script src="js/20-view-immigration.js?v=4"></script>
-<script src="js/21-view-marriage.js?v=9"></script>
-<script src="js/22-view-children.js"></script>
-<script src="js/23-view-medical.js?v=5"></script>
-<script src="js/25-view-friends.js?v=1"></script>
-<script src="js/26-view-vacations.js?v=2"></script>
-<script src="js/27-view-lifestyle.js?v=5"></script>
-<script src="js/28-view-shopping.js?v=26"></script>
-<script src="js/29-family-depth.js?v=3"></script>
-<script src="js/30-study-abroad.js?v=1"></script>
-<script src="js/31-illegal-work.js?v=1"></script>
-<script src="js/32-marry-for-visa.js?v=1"></script>
-<script src="js/33-data-gulf-work.js?v=1"></script>
-<script src="js/34-gulf-sponsorship.js?v=3"></script>
-<script src="js/35-family-visits.js?v=2"></script>
-<script src="js/36-expat-life.js?v=4"></script>
-<script src="js/37-life-goals.js?v=1"></script>
-<script src="js/98-signal-bridges.js?v=1"></script>
-
-<!-- 4. Boot last -->
-<script src="js/99-boot.js"></script>
+  <!-- 3. React Application Entry -->
+  <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

@@ -62,6 +62,30 @@ function gameYear() { return 2001 + (S?.age || 6); }
 function money(n) { const c = C(); return Math.round(n).toLocaleString() + ' ' + c.currency; }
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, Math.round(v))); }
 
+function convertToPlayerCurrency(amount, fromCountry, isServiceOrWage) {
+  if (!amount || !S) return 0;
+  fromCountry = fromCountry || 'egy';
+  const toCountry = S.country || 'egy';
+  if (fromCountry === toCountry) return Math.round(amount);
+
+  const countries = (typeof COUNTRIES !== 'undefined') ? COUNTRIES : {};
+  const fromC = countries[fromCountry] || { rate: 52.7, salary: 84000 };
+  const toC = countries[toCountry] || C();
+
+  // For services, wages, and family allowances, use wage-based PPP scaling:
+  if (isServiceOrWage || fromCountry === 'egy') {
+    const fromSalary = fromC.salary || 84000;
+    const toSalary = toC.salary || (toC.rate === 1 ? 63000 : 84000);
+    const ratio = amount / fromSalary;
+    return Math.round(ratio * toSalary);
+  }
+
+  const rateFrom = fromC.rate || 52.7;
+  const rateTo = toC.rate || 1;
+  return Math.round((amount / rateFrom) * rateTo);
+}
+window.convertToPlayerCurrency = convertToPlayerCurrency;
+
 /* ---------- PACING & CALENDAR HELPERS ---------- */
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -198,11 +222,8 @@ function computeHappiness() {
     h -= 12;
   }
   if (S.career && S.career.partTime) {
-    var ptAnnual = Number(S.career.partTime.salary) || 0;
-    if (ptAnnual > 0) {
-      income += ptAnnual;
-      incomeItems.push({ label: 'Part-time — ' + (S.career.partTime.title || 'Work'), yearly: ptAnnual, country: S.country });
-    }
+    if (!S.career.job) h += 3;
+    else h -= 1;
   }
 
   /* --- MONEY --- */
@@ -258,6 +279,7 @@ function newLife() {
     name: START.name || 'You',
     gender: START.gender,
     country: START.country,
+    homeCountry: START.country,
     currency: c.currency,
     month: 1,
     pacing: START.pacing || 'yearly',
@@ -338,7 +360,24 @@ function engineYearTick() {
   if (S.age === 18 && S.school && !S.uni && !S.degree) {
     const score = clamp(S.smarts + Math.random() * 20 - 10, 0, 100);
     S.thanaweyaScore = score;
-    log(`Thanaweya amma result: ${score.toFixed(1)}%`);
+    const examNames = {
+      egy: 'Thanaweya Amma score',
+      usa: 'High School GPA / SAT percentile',
+      gbr: 'A-Levels exam score',
+      deu: 'Abitur score',
+      fra: 'Baccalauréat score',
+      can: 'High School Diploma average',
+      aus: 'ATAR score',
+      sau: 'Thanawiya graduation score',
+      uae: 'High School graduation score',
+      jpn: 'National Center Entrance Exam score',
+      ita: 'Maturità score',
+      bra: 'ENEM exam score',
+      ind: 'Class 12 Board Exam score',
+      nld: 'VWO/HAVO exam score'
+    };
+    const examLabel = examNames[S.country] || 'High school graduation score';
+    log(`🎯 ${examLabel}: ${score.toFixed(1)}%`);
   }
 
   if (S.uni) {
@@ -2315,6 +2354,13 @@ function computeHousehold() {
       incomeItems.push({ label: 'Salary — ' + (S.career.job.title || 'Job'), yearly: sal, country: S.country });
     }
   }
+  if (S.career && S.career.partTime) {
+    var ptSal = Number(S.career.partTime.salary) || 0;
+    if (ptSal > 0) {
+      income += ptSal;
+      incomeItems.push({ label: 'Part-time — ' + (S.career.partTime.title || 'Job'), yearly: ptSal, country: S.country });
+    }
+  }
 
    /* Spouse income — depends on finance model */
   if (S.marriage && S.marriage.partner && S.marriage.partner.alive !== false) {
@@ -2350,10 +2396,6 @@ function computeHousehold() {
       });
     }
   }
-if (S.evtMemory && S.evtMemory.bornPoorTrap) {
-  /* Small but real drag on growth: 3% higher expenses from poor background patterns */
-  expenses = Math.round(expenses * 1.03);
-}
   /* Princess treatment: player pays spouse allowance */
   if (S.marriage && S.marriage.partner && S.marriage.financeModel === 'princess_treatment' && S.gender === 'm') {
     var pSalary = (S.career && S.career.job) ? (S.career.job.salary || 0) : 0;
@@ -2691,6 +2733,10 @@ if (S.evtMemory && S.evtMemory.bornPoorTrap) {
       expenses += tax;
       expenseItems.push({ label: 'Income tax', yearly: tax, country: S.country });
     }
+  }
+
+  if (S.evtMemory && S.evtMemory.bornPoorTrap && expenses > 0) {
+    expenses = Math.round(expenses * 1.03);
   }
 
   var net = income - expenses;

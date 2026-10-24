@@ -64,8 +64,12 @@ GameHooks.on('migrate', ensureMedicalState);
 /* ---------- HELPERS ---------- */
 // Medical data is authored in EGP. C().rate is local-currency units per USD,
 // so convert EGP to the player's currency by dividing by the EGP/USD rate.
-function medRate() { return C().rate || 1; }
-function medEGP(n) { return Math.round((n || 0) * medRate() / 52.7); }
+function medEGP(n) {
+  if (typeof convertToPlayerCurrency === 'function') {
+    return convertToPlayerCurrency(n, 'egy', true);
+  }
+  return Math.round((n || 0) * medRate() / 52.7);
+}
 function medSetTab(tab) { S.medical.tab = tab; render(); }
 window.medSetTab = medSetTab;
 function medConditionById(id) {

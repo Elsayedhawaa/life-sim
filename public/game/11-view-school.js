@@ -81,14 +81,44 @@ function eduFamilyWealth() {
     'wealthy': 5000000,
     'ultra': 50000000
   };
-  return map[S.familyTier] || 0;
+  var base = map[S.familyTier] || 0;
+  return typeof eduEGP === 'function' ? eduEGP(base) : base;
 }
 
 function eduSetTab(tab) { S.educationTab = tab; render(); }
 window.eduSetTab = eduSetTab;
 
 function eduSchoolById(id) { return EDU_SCHOOLS.find(function(s) { return s.id === id; }); }
-function eduUniById(id) { return EDU_UNIVERSITIES.find(function(u) { return u.id === id; }); }
+
+function eduGetUniversities() {
+  if (!S) return EDU_UNIVERSITIES;
+  if (S.country === 'egy') return EDU_UNIVERSITIES;
+  var c = (typeof COUNTRIES !== 'undefined') ? COUNTRIES[S.country] : null;
+  if (c && Array.isArray(c.universities) && c.universities.length > 0) {
+    return c.universities.map(function(u) {
+      return {
+        id: u.id,
+        name: u.name,
+        type: u.type || 'public',
+        city: c.name,
+        tuitionEGP: u.tuition,
+        isLocalCurrency: true,
+        quality: (u.cutoff || 60) >= 90 ? 10 : (u.cutoff || 60) >= 80 ? 9 : (u.cutoff || 60) >= 70 ? 8 : 7,
+        years: 4,
+        cutoffs: u.cutoff || 60
+      };
+    });
+  }
+  return EDU_UNIVERSITIES;
+}
+window.eduGetUniversities = eduGetUniversities;
+
+function eduUniById(id) {
+  var all = eduGetUniversities();
+  var found = all.find(function(u) { return u.id === id; });
+  if (found) return found;
+  return EDU_UNIVERSITIES.find(function(u) { return u.id === id; }) || null;
+}
 function eduMajorById(id) { return EDU_MAJORS.find(function(m) { return m.id === id; }); }
 function eduTrackById(id) { return EDU_TRACKS.find(function(t) { return t.id === id; }); }
 function eduCutoffFor(faculty) { return (EDU_CUTOFFS.find(function(c) { return c.faculty === faculty; }) || {}).cutoff || 60; }
@@ -198,7 +228,7 @@ function eduApplyToUni(uniId, facultyId, paymentMode) {
     render(); return;
   }
 
-  var tuition = eduEGP(uni.tuitionEGP);
+  var tuition = uni.isLocalCurrency ? uni.tuitionEGP : eduEGP(uni.tuitionEGP);
 
   if (paymentMode === 'self') {
     if (S.wealth < tuition) { log('❌ Cannot afford ' + money(tuition) + '/year.'); render(); return; }
@@ -787,17 +817,20 @@ function eduRenderTansik() {
     '<div class="muted small">' + faculty.label + ' · Public cutoff ' + cutoff + '%</div>' +
     '<button class="opt" style="margin-top:6px;padding:4px 8px;font-size:.7rem" onclick="S.uniPendingFaculty=null;render()">← Change faculty</button></div>';
 
+  var uniList = eduGetUniversities();
+  var isEgypt = !S || S.country === 'egy';
+
   /* Public */
   html += '<div class="card" style="border-color:#22d3ee"><h3 style="color:#22d3ee">🏛 Public Universities</h3>';
-  EDU_UNIVERSITIES.filter(function(u) { return u.type === 'public'; }).forEach(function(uni) {
-    var tuition = eduEGP(uni.tuitionEGP);
-    var meets = score >= cutoff;
+  uniList.filter(function(u) { return u.type === 'public'; }).forEach(function(uni) {
+    var tuition = uni.isLocalCurrency ? uni.tuitionEGP : eduEGP(uni.tuitionEGP);
+    var meets = score >= (uni.cutoffs || cutoff);
     var canSelf = S.wealth >= tuition;
     var canFam = eduFamilyWealth() >= tuition;
     html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a;' + (meets ? '' : 'opacity:.5') + '">' +
-      '<div style="display:flex;justify-content:space-between"><b>' + uni.name + '</b><b>' + money(tuition) + '/yr</b></div>' +
+      '<div style="display:flex;justify-content:space-between"><b>' + uni.name + '</b><b>' + (tuition === 0 ? 'Free (Govt Funded)' : money(tuition) + '/yr') + '</b></div>' +
       '<div class="muted small">' + uni.city + ' · Q' + uni.quality + '/10 · ' + faculty.years + ' yrs</div>' +
-      (!meets ? '<div class="bad small">Needs ' + cutoff + '%</div>' :
+      (!meets ? '<div class="bad small">Needs ' + (uni.cutoffs || cutoff) + '%</div>' :
         '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">' +
         (canSelf ? '<button class="opt" style="flex:1;padding:4px;font-size:.7rem;background:#34d399;color:#000;font-weight:700" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'self\')">Pay self</button>' : '') +
         (canFam ? '<button class="opt" style="flex:1;padding:4px;font-size:.7rem;background:#fbbf24;color:#000;font-weight:700" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'family\')">Family pays</button>' : '') +
@@ -808,27 +841,30 @@ function eduRenderTansik() {
   html += '</div>';
 
   /* Private */
-  html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">💼 Private Universities</h3>';
-  EDU_UNIVERSITIES.filter(function(u) { return u.type === 'private'; }).forEach(function(uni) {
-    var tuition = eduEGP(uni.tuitionEGP);
-    var minScore = uni.cutoffs || 50;
-    var meets = score >= minScore;
-    var canSelf = S.wealth >= tuition;
-    var canFam = eduFamilyWealth() >= tuition;
-    html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a;' + (meets ? '' : 'opacity:.5') + '">' +
-      '<div style="display:flex;justify-content:space-between"><b>' + uni.name + '</b><b>' + money(tuition) + '/yr</b></div>' +
-      '<div class="muted small">' + uni.city + ' · Q' + uni.quality + '/10 · Min ' + minScore + '% · ' + faculty.years + ' yrs</div>' +
-      (!meets ? '<div class="bad small">Needs ' + minScore + '%</div>' :
-        '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">' +
-        (canSelf ? '<button class="opt" style="flex:1;padding:4px;font-size:.7rem;background:#34d399;color:#000;font-weight:700" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'self\')">Pay self</button>' : '') +
-        (canFam ? '<button class="opt" style="flex:1;padding:4px;font-size:.7rem;background:#fbbf24;color:#000;font-weight:700" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'family\')">Family pays</button>' : '') +
-        '<button class="opt" style="flex:1;padding:4px;font-size:.7rem" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'loan\')">Loan</button>' +
-        '</div>') +
-      '</div>';
-  });
-  html += '</div>';
-     html += '<div class="card" style="border-color:#8b5cf6;margin-top:10px">' +
-    '<p class="muted small">Want to study abroad instead of an Egyptian university?</p>' +
+  var privateList = uniList.filter(function(u) { return u.type === 'private'; });
+  if (privateList.length > 0) {
+    html += '<div class="card" style="border-color:#8b5cf6"><h3 style="color:#8b5cf6">💼 Private Universities</h3>';
+    privateList.forEach(function(uni) {
+      var tuition = uni.isLocalCurrency ? uni.tuitionEGP : eduEGP(uni.tuitionEGP);
+      var minScore = uni.cutoffs || 50;
+      var meets = score >= minScore;
+      var canSelf = S.wealth >= tuition;
+      var canFam = eduFamilyWealth() >= tuition;
+      html += '<div style="padding:8px 0;border-bottom:1px solid #1a1a2a;' + (meets ? '' : 'opacity:.5') + '">' +
+        '<div style="display:flex;justify-content:space-between"><b>' + uni.name + '</b><b>' + money(tuition) + '/yr</b></div>' +
+        '<div class="muted small">' + uni.city + ' · Q' + uni.quality + '/10 · Min ' + minScore + '% · ' + faculty.years + ' yrs</div>' +
+        (!meets ? '<div class="bad small">Needs ' + minScore + '%</div>' :
+          '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">' +
+          (canSelf ? '<button class="opt" style="flex:1;padding:4px;font-size:.7rem;background:#34d399;color:#000;font-weight:700" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'self\')">Pay self</button>' : '') +
+          (canFam ? '<button class="opt" style="flex:1;padding:4px;font-size:.7rem;background:#fbbf24;color:#000;font-weight:700" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'family\')">Family pays</button>' : '') +
+          '<button class="opt" style="flex:1;padding:4px;font-size:.7rem" onclick="eduApplyToUni(\'' + uni.id + '\',\'' + facultyId + '\',\'loan\')">Loan</button>' +
+          '</div>') +
+        '</div>';
+    });
+    html += '</div>';
+  }
+  html += '<div class="card" style="border-color:#8b5cf6;margin-top:10px">' +
+    '<p class="muted small">Want to study abroad in another country?</p>' +
     '<button class="opt" style="width:100%;text-align:center;background:#8b5cf620;border-color:#8b5cf6;font-size:.78rem" onclick="switchTab(\'immigration\');S.immigrationTab=\'study\';render()">✈️ Go to Study Abroad</button>' +
     '</div>';
   return html;

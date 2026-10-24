@@ -2910,13 +2910,14 @@ DEEP_EVENTS.push(
       return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false && (m.age || 0) >= 72;
     });
     var p = parents[0];
-    return p.name + ' has been rushed to the hospital. The doctors say they need emergency surgery.\n\nThe bill: ' + (150000 * ((C().rate || 1) / 52.7)).toLocaleString() + ' ' + C().currency + '.\n\nYou have to decide. Fast.';
+    var cost = (typeof convertToPlayerCurrency === 'function') ? convertToPlayerCurrency(150000, 'egy', true) : Math.round(150000 * ((C().rate || 1) / 52.7));
+    return p.name + ' has been rushed to the hospital. The doctors say they need emergency surgery.\n\nThe bill: ' + money(cost) + '.\n\nYou have to decide. Fast.';
   },
   choices: [
     { label: 'Pay everything — do not think about the cost',
-      available: s => s.wealth >= (150000 * ((C().rate || 1) / 52.7)),
+      available: s => s.wealth >= ((typeof convertToPlayerCurrency === 'function') ? convertToPlayerCurrency(150000, 'egy', true) : (150000 * ((C().rate || 1) / 52.7))),
       effect: s => {
-        var cost = 150000 * ((C().rate || 1) / 52.7);
+        var cost = (typeof convertToPlayerCurrency === 'function') ? convertToPlayerCurrency(150000, 'egy', true) : Math.round(150000 * ((C().rate || 1) / 52.7));
         s.wealth -= cost;
         (s.family || []).forEach(function(m) {
           if (m.role === 'Mother' || m.role === 'Father') {
@@ -2933,12 +2934,12 @@ DEEP_EVENTS.push(
     },
     { label: 'Charge to credit card',
       available: s => {
-        var cost = 150000 * ((C().rate || 1) / 52.7);
+        var cost = (typeof convertToPlayerCurrency === 'function') ? convertToPlayerCurrency(150000, 'egy', true) : Math.round(150000 * ((C().rate || 1) / 52.7));
         if (!s.bank || !Array.isArray(s.bank.creditCards)) return false;
         return s.bank.creditCards.some(function(c) { return (c.limit || 0) - (c.balance || 0) >= cost; });
       },
       effect: s => {
-        var cost = 150000 * ((C().rate || 1) / 52.7);
+        var cost = (typeof convertToPlayerCurrency === 'function') ? convertToPlayerCurrency(150000, 'egy', true) : Math.round(150000 * ((C().rate || 1) / 52.7));
         var card = s.bank.creditCards.find(function(c) { return (c.limit || 0) - (c.balance || 0) >= cost; });
         if (card) {
           card.balance = (card.balance || 0) + cost;
@@ -2958,7 +2959,7 @@ DEEP_EVENTS.push(
           return m.alive !== false && (m.isSibling || m.role === 'Brother' || m.role === 'Sister');
         });
         if (sibs.length > 0 && Math.random() < 0.60) {
-          var total = 150000 * ((C().rate || 1) / 52.7);
+          var total = (typeof convertToPlayerCurrency === 'function') ? convertToPlayerCurrency(150000, 'egy', true) : Math.round(150000 * ((C().rate || 1) / 52.7));
           var share = Math.round(total / (1 + sibs.length));
           if (s.wealth >= share) {
             s.wealth -= share;

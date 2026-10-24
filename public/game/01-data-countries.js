@@ -134,6 +134,7 @@ const COUNTRIES = {
     ],
     events: [
       { id: 'sau_iqama', minAge: 22, maxAge: 40,
+        condition: s => s.country === 'sau' && s.homeCountry && s.homeCountry !== 'sau',
         title: 'Iqama renewal',
         text: 'Your residence permit is up for renewal. Employer is deciding.',
         choices: [
