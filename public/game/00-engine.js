@@ -12,6 +12,22 @@ let START = {
   })()
 };
 
+/* Bridge state to window for React, cross-module access, and debugging */
+try {
+  Object.defineProperty(window, 'S', {
+    get: function() { return S; },
+    set: function(val) { S = val; },
+    configurable: true,
+    enumerable: true
+  });
+  Object.defineProperty(window, 'activeTab', {
+    get: function() { return activeTab; },
+    set: function(val) { activeTab = val; },
+    configurable: true,
+    enumerable: true
+  });
+} catch (e) {}
+
 /* ============================================================
    GAMEHOOKS
    ============================================================ */
@@ -22,6 +38,7 @@ const GameHooks = {
   run(name, ...args) { if (this[name]) this[name].forEach(fn => { try { fn(...args); } catch(e) { console.error(e); } }); },
   registerTab(tab) { this.tabs.push(tab); },
 };
+window.GameHooks = GameHooks;
 
 /* ============================================================
    DATA GUARD
@@ -647,30 +664,40 @@ function render() {
     return;
   }
 
-  document.getElementById('header').innerHTML = header();
-  document.getElementById('tabs').innerHTML = tabs();
+  const headerEl = document.getElementById('header');
+  if (headerEl) headerEl.innerHTML = header();
+  const tabsEl = document.getElementById('tabs');
+  if (tabsEl) tabsEl.innerHTML = tabs();
   const viewFn = getViewFn(activeTab);
-  document.getElementById('view').innerHTML =
-    (S.pending ? eventCard(S.pending) : '') +
-    subnavHtml() +
-    sectionContextHtml() +
-    viewFn();
-  const b = document.getElementById('bottom');
-  if (S.pending) b.innerHTML = `<button disabled>⏳ Pending Decision — Choose an option above</button>`;
-  else if (S.age >= 100) b.innerHTML = `<button onclick="reset()">🕊 Life Complete — Begin Anew</button>`;
-  else if (isMonthly()) {
-    const nextMonth = (currentMonth() % 12) + 1;
-    const nextMonthName = monthName(nextMonth);
-    const yearLabel = nextMonth === 1 ? ` (Age ${S.age + 1})` : '';
-    const canFF = currentMonth() !== 1;
-    b.innerHTML = `<div class="action-deck-row">
-      <button onclick="ageUp()" style="flex:1">Advance Month → ${nextMonthName} ${gameYear()}${yearLabel}</button>
-      <button class="btn-fastforward" onclick="fastForwardToYearEnd()" ${canFF ? '' : 'disabled'} title="Fast-forward to Year End">⏩</button>
-    </div>`;
+  const viewEl = document.getElementById('view');
+  if (viewEl) {
+    viewEl.innerHTML =
+      (S.pending ? eventCard(S.pending) : '') +
+      subnavHtml() +
+      sectionContextHtml() +
+      viewFn();
   }
-  else b.innerHTML = `<button onclick="ageUp()">Advance Year → Age ${S.age + 1} (${gameYear() + 1})</button>`;
-  GameHooks.run('render', S);
+  const b = document.getElementById('bottom');
+  if (b) {
+    if (S.pending) b.innerHTML = `<button disabled>⏳ Pending Decision — Choose an option above</button>`;
+    else if (S.age >= 100) b.innerHTML = `<button onclick="reset()">🕊 Life Complete — Begin Anew</button>`;
+    else if (isMonthly()) {
+      const nextMonth = (currentMonth() % 12) + 1;
+      const nextMonthName = monthName(nextMonth);
+      const yearLabel = nextMonth === 1 ? ` (Age ${S.age + 1})` : '';
+      const canFF = currentMonth() !== 1;
+      b.innerHTML = `<div class="action-deck-row">
+        <button onclick="ageUp()" style="flex:1">Advance Month → ${nextMonthName} ${gameYear()}${yearLabel}</button>
+        <button class="btn-fastforward" onclick="fastForwardToYearEnd()" ${canFF ? '' : 'disabled'} title="Fast-forward to Year End">⏩</button>
+      </div>`;
+    }
+    else b.innerHTML = `<button onclick="ageUp()">Advance Year → Age ${S.age + 1} (${gameYear() + 1})</button>`;
+  }
+  if (typeof GameHooks !== 'undefined' && GameHooks.run) {
+    GameHooks.run('render', S);
+  }
 }
+window.render = render;
 
 function getViewFn(tabId) {
   const tab = GameHooks.tabs.find(t => t.id === tabId);
@@ -679,6 +706,7 @@ function getViewFn(tabId) {
   if (sorted.length) { activeTab = sorted[0].id; return sorted[0].view; }
   return () => '<div class="card"><h3>No views registered</h3><p class="muted">Add view files in js/ and load them in index.html.</p></div>';
 }
+window.getViewFn = getViewFn;
 
 function header() {
   if (!S) return '';
@@ -1405,6 +1433,23 @@ window.reset = reset;
 window.renderStart = renderStart;
 window.dataOK = dataOK;
 window.START = START;
+
+function togglePacing() {
+  if (!S) return;
+  S.pacing = S.pacing === 'monthly' ? 'yearly' : 'monthly';
+  S.pacingSwitchYear = gameYear();
+  if (S.pacing === 'monthly' && (!S.month || S.month < 1 || S.month > 12)) {
+    S.month = 1;
+  }
+  try { localStorage.setItem('wl_pacing', S.pacing); } catch(e) {}
+  if (typeof log === 'function') log('⏱ Switched time pacing to ' + S.pacing + ' mode.');
+  render();
+}
+window.togglePacing = togglePacing;
+window.header = header;
+window.tabs = tabs;
+window.subnavHtml = subnavHtml;
+window.eventCard = eventCard;
 /* ============================================================
    EVENT SELECTOR — gender-aware, weighted, respects maxFires
    ============================================================ */

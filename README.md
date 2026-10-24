@@ -28,7 +28,28 @@ A deep, realistic life simulation game rewritten as a React application with Vit
   - High-stakes critical decision events with keyboard shortcuts (A, B, C, D).
   - Chronological Life Log with reflections (💭), remembered moments (📌), and life milestones.
 
-## Architecture
-- **Framework**: React 19 + TypeScript + Vite
-- **Styling**: Bespoke dark luxury UI design system
-- **Port**: 3000 (`host: 0.0.0.0`)
+## Development & Running Locally
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Start the development server:
+   ```bash
+   npm run dev
+   ```
+3. Open `http://localhost:3000` in your browser.
+
+## Deploying to GitHub Pages
+
+This repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that builds and publishes your site automatically:
+
+1. In your GitHub repository (`Elsayedhawaa/life-sim`), go to **Settings** > **Pages**.
+2. Under **Build and deployment** > **Source**, select **GitHub Actions**.
+3. Push or sync your changes to the `main` branch. GitHub Actions will build and deploy the game to your GitHub Pages URL automatically with zero manual setup.
+
+## Static / Standalone Compatibility
+
+The application is structured so that:
+- Asset and script references use relative paths (`./`) compatible with custom domains, subpaths, and GitHub Pages.
+- Both `dist/` (compiled React bundle) and root static files are supported with fallback containers and ErrorBoundary guards so the screen never goes blank.
