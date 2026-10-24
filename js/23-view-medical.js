@@ -147,7 +147,22 @@ function medOutOfPocket(baseCostEGP) {
   const ins = medInsurance();
   const cost = medEGP(baseCostEGP);
   const covered = Math.min(cost * ins.coveragePct, medEGP(ins.capEGP));
-  return Math.max(0, cost - covered);
+  var outOfPocket = Math.max(0, cost - covered);
+
+  /* Additional coverage from bank insurance policies */
+  if (S && S.bank && Array.isArray(S.bank.insurance)) {
+    S.bank.insurance.forEach(function(policy) {
+      if (policy.type === 'health' && outOfPocket > 0) {
+        var _coverageLeft = policy.coverage || 0;
+        if (_coverageLeft > 0) {
+          var _pay = Math.min(outOfPocket, _coverageLeft);
+          outOfPocket = outOfPocket - _pay;
+        }
+      }
+    });
+  }
+
+  return Math.max(0, outOfPocket);
 }
 
 /* Try to pay — falls back to credit card if available and wealth insufficient */
