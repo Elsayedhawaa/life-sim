@@ -2032,7 +2032,15 @@ if (S.evtMemory && S.evtMemory.bornPoorTrap) {
       });
     }
   });
-
+  /* Marriage home — charged if you set it up and haven't moved to Assets rental */
+  if (S.marriage && S.marriage.status === 'married' && S.marriage.home && S.housing === 'parents' && typeof MARRIAGE_HOME_OPTIONS !== 'undefined') {
+    var _mh = MARRIAGE_HOME_OPTIONS.find(function(h) { return h.id === S.marriage.home; });
+    if (_mh && _mh.monthlyCostEGP > 0) {
+      var _mhYear = Math.round((typeof marEGP === 'function' ? marEGP(_mh.monthlyCostEGP) : _mh.monthlyCostEGP) * 12);
+      expenses += _mhYear;
+      expenseItems.push({ label: 'Marriage home — ' + _mh.label, yearly: _mhYear, country: S.country });
+    }
+  }
   /* ---------- EXPENSES ---------- */
   if (S.housing === 'parents') {
     var pPhone = Math.round((c.prices.phone || 0) * 0.5);
