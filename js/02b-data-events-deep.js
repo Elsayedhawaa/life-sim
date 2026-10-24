@@ -2296,6 +2296,460 @@ DEEP_EVENTS.push(
 
 );
 /* ============================================================
+   SESSION 12: REALISM EVENTS
+   ============================================================ */
+
+DEEP_EVENTS.push(
+
+{ id: 'realism_class_pressure', minAge: 25, maxAge: 55, weight: 7, maxFires: 4,
+  condition: s => {
+    var cls = (typeof getSocialClass === 'function') ? getSocialClass() : 'middle';
+    var born = (s.familyTier || 'middle');
+    return (born === 'poor' || born === 'lower-mid') && (cls === 'poor' || cls === 'lower-middle');
+  },
+  title: '🏚 Born Poor, Staying Poor',
+  text: s => 'You are ' + s.age + '. You have worked. You have tried. And yet — the rent went up, the salary did not.\n\nYour childhood friends from your neighborhood are in the same place. No one from your street has bought a home. Most have not even tried — they know the math.\n\nYou look at the classifieds. You close the app. You open it again.',
+  choices: [
+    { label: 'Keep grinding — something will break',
+      effect: s => { fx({ happiness: -4, smarts: 2 }); }
+    },
+    { label: 'Look abroad — maybe escape is the answer',
+      effect: s => {
+        if (typeof evtRemember === 'function') evtRemember('dreamsOfEscape', true, 10);
+        fx({ happiness: 3 });
+        if (typeof log === 'function') log('✈️ You started looking at jobs abroad seriously.');
+      }
+    },
+    { label: 'Accept it — this is your life',
+      effect: s => { fx({ happiness: -8 }); }
+    }
+  ]
+},
+
+{ id: 'realism_marriage_rough_patch', minAge: 28, maxAge: 55, weight: 8, maxFires: 5,
+  condition: s => {
+    if (!s.marriage || s.marriage.status !== 'married' || !s.marriage.partner) return false;
+    var marriedYears = gameYear() - (s.marriage.partner.marriedYear || gameYear());
+    return marriedYears >= 3 && (s.marriage.partner.bond || 70) < 55;
+  },
+  title: '💔 The Rough Patch',
+  text: s => {
+    var p = s.marriage.partner;
+    return p.name + ' has been distant for months. Tonight they finally speak:\n\n"I do not know if I am happy anymore. I do not know if you are. Are we just... going through the motions?"\n\nYou realise you have not had a real conversation in weeks.';
+  },
+  choices: [
+    { label: 'Fight for the marriage — therapy, honesty, work',
+      effect: s => {
+        if (s.wealth >= 15000 && s.marriage && s.marriage.partner) {
+          s.wealth -= 15000;
+          s.marriage.partner.bond = Math.min(100, (s.marriage.partner.bond || 70) + 20);
+          s.marriage.partner.trust = Math.min(100, (s.marriage.partner.trust || 50) + 15);
+          fx({ happiness: 5 });
+          if (typeof log === 'function') log('💪 You started couples therapy. It was hard. But you both showed up.');
+        } else {
+          fx({ happiness: -3 });
+          if (typeof log === 'function') log('💔 You cannot afford therapy. You promised to try harder.');
+        }
+      }
+    },
+    { label: 'Suggest a break — space to think',
+      effect: s => {
+        if (s.marriage && s.marriage.partner) {
+          s.marriage.partner.bond = Math.max(0, (s.marriage.partner.bond || 70) - 5);
+        }
+        fx({ happiness: -5 });
+      }
+    },
+    { label: 'Say nothing. Hope it passes.',
+      effect: s => {
+        if (s.marriage && s.marriage.partner) {
+          s.marriage.partner.bond = Math.max(0, (s.marriage.partner.bond || 70) - 12);
+        }
+        fx({ happiness: -8 });
+        if (typeof log === 'function') log('😶 You said nothing. The silence became a wall.');
+      }
+    }
+  ]
+},
+
+{ id: 'realism_aging_parents_burden', minAge: 30, maxAge: 60, weight: 8, maxFires: 6,
+  condition: s => {
+    var parents = (s.family || []).filter(function(m) {
+      return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false && (m.age || 0) >= 68;
+    });
+    return parents.length > 0;
+  },
+  title: '👴 Parents Need You',
+  text: s => {
+    var parents = (s.family || []).filter(function(m) {
+      return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false && (m.age || 0) >= 68;
+    });
+    var p = parents[0];
+    return p.name + ' calls. They are not okay. They need help — medically, financially, daily.\n\nThey cannot live alone anymore.\n\n"We do not want to be a burden. But we need you."';
+  },
+  choices: [
+    { label: 'Move them in with you',
+      effect: s => {
+        if (s.marriage && s.marriage.partner) s.marriage.partner.bond = Math.max(0, (s.marriage.partner.bond || 70) - 12);
+        (s.family || []).forEach(function(m) {
+          if (m.role === 'Mother' || m.role === 'Father') m.bond = Math.min(100, (m.bond || 70) + 25);
+        });
+        fx({ happiness: -8, health: -3 });
+        if (typeof log === 'function') log('🏠 Your parent moved in. Your home is full. Your marriage is strained.');
+      }
+    },
+    { label: 'Hire a caregiver (costly)',
+      effect: s => {
+        var cost = 20000 * ((C().rate || 1) / 52.7);
+        if (s.wealth >= cost) {
+          s.wealth -= cost;
+          (s.family || []).forEach(function(m) {
+            if (m.role === 'Mother' || m.role === 'Father') m.bond = Math.min(100, (m.bond || 70) + 10);
+          });
+          fx({ happiness: 2 });
+          if (typeof log === 'function') log('🏥 You hired a caregiver. Your parent is safe.');
+        } else {
+          fx({ happiness: -5 });
+          if (typeof log === 'function') log('💸 You cannot afford a caregiver.');
+        }
+      }
+    },
+    { label: 'Ask siblings to share the burden',
+      effect: s => {
+        var sibs = (s.family || []).filter(function(m) {
+          return m.alive !== false && (m.isSibling || m.role === 'Brother' || m.role === 'Sister');
+        });
+        if (sibs.length > 0 && Math.random() < 0.55) {
+          (s.family || []).forEach(function(m) {
+            if (m.role === 'Mother' || m.role === 'Father') m.bond = Math.min(100, (m.bond || 70) + 8);
+          });
+          fx({ happiness: 3 });
+          if (typeof log === 'function') log('💬 Your siblings agreed to share. It was not easy, but it worked.');
+        } else {
+          (s.family || []).forEach(function(m) {
+            if (m.role === 'Mother' || m.role === 'Father') m.bond = Math.max(0, (m.bond || 70) - 8);
+          });
+          fx({ happiness: -6 });
+          if (typeof log === 'function') log('💔 Your siblings refused. It is on you.');
+        }
+      }
+    }
+  ]
+},
+
+{ id: 'realism_child_struggle', minAge: 42, maxAge: 65, weight: 7, maxFires: 3,
+  condition: s => {
+    if (!Array.isArray(s.childrenList)) return false;
+    return s.childrenList.some(function(c) {
+      return c.age >= 18 && c.age <= 30 && (c.bond || 55) < 40;
+    });
+  },
+  title: '👶 Your Child Is Struggling',
+  text: s => {
+    var c = s.childrenList.find(function(ch) { return ch.age >= 18 && ch.age <= 30 && (ch.bond || 55) < 40; });
+    if (!c) return 'Your child is going through something.';
+    return c.name + ' is not okay. They lost their job. They are drinking too much. They do not call you anymore.\n\nYou hear from their sibling: "They do not want to see you. They said you were never there for them."';
+  },
+  choices: [
+    { label: 'Reach out anyway — show up at their door',
+      effect: s => {
+        var c = s.childrenList.find(function(ch) { return ch.age >= 18 && ch.age <= 30; });
+        if (c) c.bond = Math.min(100, (c.bond || 55) + 15);
+        fx({ happiness: 3 });
+        if (typeof log === 'function') log('💬 They were surprised. But they let you in. You talked for hours.');
+      }
+    },
+    { label: 'Give them space. They will come back.',
+      effect: s => {
+        var c = s.childrenList.find(function(ch) { return ch.age >= 18 && ch.age <= 30; });
+        if (c) c.bond = Math.max(0, (c.bond || 55) - 8);
+        fx({ happiness: -5 });
+      }
+    },
+    { label: 'Send money — let them know you love them',
+      effect: s => {
+        var cost = 8000 * ((C().rate || 1) / 52.7);
+        if (s.wealth >= cost) {
+          s.wealth -= cost;
+          var c = s.childrenList.find(function(ch) { return ch.age >= 18 && ch.age <= 30; });
+          if (c) c.bond = Math.min(100, (c.bond || 55) + 6);
+          if (typeof log === 'function') log('💸 You sent money. No message. They know.');
+        } else {
+          fx({ happiness: -4 });
+        }
+      }
+    }
+  ]
+},
+
+{ id: 'realism_career_ceiling_hit', minAge: 42, maxAge: 60, weight: 6, maxFires: 2,
+  condition: s => {
+    if (!s.career || !s.career.job) return false;
+    var ceiling = (typeof getCareerCeiling === 'function') ? getCareerCeiling(s.career.job.track) : 6;
+    return (s.career.job.level || 0) >= ceiling - 1;
+  },
+  title: '🚧 The Ceiling',
+  text: s => {
+    var j = s.career.job;
+    return 'You are ' + j.title + ' at ' + j.company + '. You have been for years.\n\nA younger colleague — from a different background, more connected — was just promoted above you. You know you are more capable. You also know it did not matter.\n\nYour manager says: "You are so valuable where you are. We cannot move you."';
+  },
+  choices: [
+    { label: 'Accept the ceiling — be great at what you do',
+      effect: s => { fx({ happiness: -5, smarts: 2 }); }
+    },
+    { label: 'Fight for the promotion anyway',
+      effect: s => {
+        if (Math.random() < 0.35) {
+          if (s.career && s.career.job) s.career.job.level = (s.career.job.level || 0) + 1;
+          fx({ happiness: 10 });
+          if (typeof log === 'function') log('💪 Against the odds, you got it.');
+        } else {
+          if (s.career && s.career.job) s.career.job.performance = Math.max(0, (s.career.job.performance || 50) - 8);
+          fx({ happiness: -10 });
+          if (typeof log === 'function') log('❌ You were denied. And marked.');
+        }
+      }
+    },
+    { label: 'Look for another company that will value you',
+      effect: s => {
+        if (typeof evtPushOffer === 'function' && s.career && s.career.job) {
+          evtPushOffer(s, {
+            company: 'A Rival Firm',
+            title: 'Senior ' + s.career.job.title,
+            track: s.career.job.track,
+            level: (s.career.job.level || 0) + 1,
+            salary: Math.round((s.career.job.salary || 0) * 1.20),
+            message: 'Offered a real promotion at a different company.'
+          });
+          if (typeof log === 'function') log('📬 Offer in Career tab.');
+          fx({ happiness: 5 });
+        }
+      }
+    }
+  ]
+},
+
+{ id: 'realism_gender_pay_gap', minAge: 28, maxAge: 55, weight: 6, maxFires: 2,
+  condition: s => s.gender === 'f' && s.career && s.career.job,
+  title: '💼 Same Work, Different Pay',
+  text: s => {
+    var j = s.career.job;
+    return 'You discover a male colleague at the same level — same title, same years of experience — earns 18% more than you.\n\nWhen you ask, they say: "He negotiated harder." You know that is not the whole story.';
+  },
+  choices: [
+    { label: 'Demand a raise — show the data',
+      effect: s => {
+        if (Math.random() < 0.45) {
+          if (s.career && s.career.job) s.career.job.salary = Math.round((s.career.job.salary || 0) * 1.15);
+          fx({ happiness: 8 });
+          if (typeof log === 'function') log('💪 They gave you a raise. Not an apology. But a raise.');
+        } else {
+          fx({ happiness: -8 });
+          if (typeof log === 'function') log('❌ They said "budget constraints." You know what that means.');
+        }
+      }
+    },
+    { label: 'Start looking elsewhere',
+      effect: s => {
+        if (typeof log === 'function') log('🚪 You started browsing job listings on your lunch break.');
+        fx({ happiness: -2 });
+      }
+    },
+    { label: 'Say nothing — not worth the fight',
+      effect: s => { fx({ happiness: -6 }); }
+    }
+  ]
+},
+
+{ id: 'realism_health_scare', minAge: 42, maxAge: 72, weight: 7, maxFires: 3,
+  condition: s => (s.health || 100) < 65,
+  title: '🏥 The Test Results',
+  text: s => 'You have been putting off the checkup. Now the results are in.\n\nThe doctor does not smile. "There are some markers we need to discuss."\n\nThe rest of the conversation is a blur of words you never thought would apply to you.';
+  choices: [
+    { label: 'Do everything they recommend',
+      effect: s => {
+        var cost = 15000 * ((C().rate || 1) / 52.7);
+        if (s.wealth >= cost) {
+          s.wealth -= cost;
+          s.health = Math.min(100, (s.health || 50) + 8);
+          fx({ happiness: 3 });
+          if (typeof log === 'function') log('🏥 You started treatment. It will take months.');
+        } else {
+          fx({ happiness: -10 });
+          if (typeof log === 'function') log('💸 You cannot afford the treatment.');
+        }
+      }
+    },
+    { label: 'Get a second opinion',
+      effect: s => {
+        var cost = 5000 * ((C().rate || 1) / 52.7);
+        if (s.wealth >= cost) {
+          s.wealth -= cost;
+          if (Math.random() < 0.4) {
+            s.health = Math.min(100, (s.health || 50) + 4);
+            if (typeof log === 'function') log('✅ The second doctor said it was less serious than feared.');
+          } else {
+            fx({ happiness: -5 });
+            if (typeof log === 'function') log('❌ The second opinion confirmed the first.');
+          }
+        }
+      }
+    },
+    { label: 'Ignore it. If it is bad, it is bad.',
+      effect: s => {
+        s.health = Math.max(0, (s.health || 50) - 5);
+        fx({ happiness: -12 });
+        if (typeof log === 'function') log('😶 You ignored it. For now.');
+      }
+    }
+  ]
+},
+
+{ id: 'realism_age_discrimination', minAge: 50, maxAge: 65, weight: 5, maxFires: 2,
+  condition: s => {
+    if (!s.career || !s.career.job) return false;
+    return (s.career.job.tenure || 0) < 2;
+  },
+  title: '👴 Too Old for the Job',
+  text: s => 'You applied to a job you are perfectly qualified for. They said they went with a "different profile."\n\nYou have seen this before. The profile they picked is younger. Younger and cheaper.\n\nYou are ' + s.age + '.';
+  choices: [
+    { label: 'Keep applying anyway',
+      effect: s => { fx({ happiness: -3 }); }
+    },
+    { label: 'Pivot — consult, freelance, start something',
+      effect: s => {
+        if (typeof evtRemember === 'function') evtRemember('pivotToConsulting', true, 5);
+        fx({ happiness: 3, smarts: 2 });
+        if (typeof log === 'function') log('🚀 You started pitching yourself as a consultant.');
+      }
+    }
+  ]
+},
+
+{ id: 'realism_loneliness', minAge: 45, maxAge: 75, weight: 6, maxFires: 4,
+  condition: s => {
+    if (s.marriage && s.marriage.status === 'married') return false;
+    if (s.marriage && s.marriage.status === 'divorced') return true;
+    return (s.social || 50) < 40;
+  },
+  title: '🥀 Loneliness',
+  text: s => 'You are sitting in your apartment. The TV is on. You are not watching it.\n\nYou realise you have not had a real conversation in weeks. The friends you had are busy with their own lives. Your children call sometimes. Not often.\n\nYou are ' + s.age + '. You wonder how this happened.';
+  choices: [
+    { label: 'Call someone — anyone',
+      effect: s => {
+        var friends = (s.friends || []).filter(function(f) { return f.alive !== false; });
+        if (friends.length > 0) {
+          friends[0].bond = Math.min(100, (friends[0].bond || 50) + 10);
+          fx({ happiness: 6, social: 3 });
+          if (typeof log === 'function') log('📞 You called ' + friends[0].name + '. They were glad to hear from you.');
+        } else {
+          fx({ happiness: -3 });
+        }
+      }
+    },
+    { label: 'Try to make new friends',
+      effect: s => {
+        if (!Array.isArray(s.friends)) s.friends = [];
+        var pool = ['Sarah', 'Ahmed', 'Mona', 'Karim', 'Layla', 'Hassan'];
+        s.friends.push({
+          id: 'fr_' + Math.random().toString(36).slice(2, 6),
+          name: pool[Math.floor(Math.random() * pool.length)],
+          gender: Math.random() < 0.5 ? 'm' : 'f',
+          age: s.age,
+          bond: 35,
+          trait: 'kind',
+          source: 'later_life',
+          sourceLabel: 'Met recently',
+          metYear: gameYear(),
+          country: s.country,
+          alive: true,
+          contactedThisYear: false
+        });
+        fx({ happiness: 5, social: 4 });
+        if (typeof log === 'function') log('👥 You joined a group. You met someone.');
+      }
+    },
+    { label: 'Stay in. It is easier.',
+      effect: s => { fx({ happiness: -8 }); }
+    }
+  ]
+},
+
+{ id: 'realism_family_secret', minAge: 35, maxAge: 70, weight: 4, maxFires: 2,
+  condition: s => (s.family || []).some(function(m) { return m.alive !== false; }),
+  title: '🤫 A Family Secret',
+  text: s => 'A relative is on their deathbed. They want to tell you something.\n\n"I have carried this for decades. I need to say it before I go."\n\nThe secret is not what you expected. It changes everything you thought you knew.';
+  choices: [
+    { label: 'Listen. Accept them as they are.',
+      effect: s => {
+        (s.family || []).forEach(function(m) {
+          if (m.alive !== false) m.bond = Math.min(100, (m.bond || 70) + 5);
+        });
+        fx({ happiness: -3, smarts: 3 });
+        if (typeof recordMoment === 'function') {
+          recordMoment('The family secret', 'You learned something you will never tell anyone.', { icon: '🤫', key: 'secret_' + gameYear(), weight: 2 });
+        }
+      }
+    },
+    { label: 'Refuse to listen. What is done is done.',
+      effect: s => {
+        (s.family || []).forEach(function(m) {
+          if (m.alive !== false) m.bond = Math.max(0, (m.bond || 70) - 8);
+        });
+        fx({ happiness: -2 });
+      }
+    }
+  ]
+},
+
+{ id: 'realism_debt_spiral', minAge: 25, maxAge: 65, weight: 6, maxFires: 3,
+  condition: s => {
+    if (!s.bank) return false;
+    var debt = (s.bank.loans || []).reduce(function(sum, l) { return sum + (l.remaining || 0); }, 0);
+    var cardDebt = (s.bank.creditCards || []).reduce(function(sum, c) { return sum + (c.balance || 0); }, 0);
+    return (debt + cardDebt) > (s.wealth || 0) * 0.8;
+  },
+  title: '💳 The Spiral',
+  text: s => 'You check your bank account and it is not what you hoped.\n\nMinimum card payments. Loan payments. Rent. Groceries. Everything is due.\n\nYou take a small loan to cover the cards. Now the loan is due too.';
+  choices: [
+    { label: 'Consolidate — one loan, lower rate',
+      effect: s => {
+        if (typeof bankDoConsolidateDebt === 'function') bankDoConsolidateDebt();
+        else {
+          if (s.bank && Array.isArray(s.bank.loans)) {
+            s.bank.loans.forEach(function(l) { l.monthlyPayment = Math.round((l.monthlyPayment || 0) * 0.85); });
+          }
+        }
+      }
+    },
+    { label: 'Cut spending to the bone',
+      effect: s => {
+        if (s.lifestyle) s.lifestyle.active = false;
+        fx({ happiness: -12 });
+        if (typeof log === 'function') log('🥖 You cut everything. Rice and beans. No entertainment.');
+      }
+    },
+    { label: 'Ask family for help',
+      effect: s => {
+        var parents = (s.family || []).filter(function(m) {
+          return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false;
+        });
+        if (parents.length > 0 && Math.random() < 0.5) {
+          var help = 10000 * ((C().rate || 1) / 52.7);
+          s.wealth += help;
+          parents.forEach(function(p) { p.bond = Math.max(0, (p.bond || 70) - 5); });
+          if (typeof log === 'function') log('💸 Your parents bailed you out.');
+        } else {
+          fx({ happiness: -5 });
+          if (typeof log === 'function') log('❌ They said no. Or could not.');
+        }
+      }
+    }
+  ]
+}
+
+);
+/* ============================================================
    SESSION 11: GENERATIONAL ECHO EVENTS
    ============================================================ */
 
