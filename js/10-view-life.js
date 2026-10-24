@@ -36,11 +36,13 @@ function lifeView() {
   const happinessPanel = (typeof happinessBreakdownHtml === 'function') ? happinessBreakdownHtml() : '';
      const lifeStoryPanel = (typeof lifeStoryHtml === 'function') ? lifeStoryHtml() : '';
      const realityPanel = (typeof realityCheckHtml === 'function') ? realityCheckHtml() : '';
+     const diffPanel = (typeof difficultyPanelHtml === 'function') ? difficultyPanelHtml() : '';
      const familyTreePanel = (typeof familyTreeSummaryHtml === 'function') ? familyTreeSummaryHtml() : '';
      const legacyPanel = (typeof legacyPanelHtml === 'function') ? legacyPanelHtml() : '';
      const householdPanel = (typeof householdBreakdownHtml === 'function') ? householdBreakdownHtml() : '';
   return `
     ${lifeStoryPanel}
+     ${realityPanel}
        ${legacyPanel}
     ${familyTreePanel}
      ${householdPanel}
@@ -321,3 +323,62 @@ function legacyPanelHtml() {
   return html;
 }
 window.legacyPanelHtml = legacyPanelHtml;
+/* ============================================================
+   SESSION 12: DIFFICULTY & STRESS PANEL
+   ============================================================ */
+function difficultyPanelHtml() {
+  if (!S) return '';
+  if (S.age < 16) return '';
+
+  var stress = S.stress || (typeof computeStress === 'function' ? computeStress() : 0);
+  var diff = (typeof getCountryDifficulty === 'function') ? getCountryDifficulty(S.country) : 60;
+  var cls = (typeof getSocialClass === 'function') ? getSocialClass() : 'middle';
+
+  var stressColor = stress >= 70 ? '#fb7185' : stress >= 45 ? '#fbbf24' : '#34d399';
+  var stressLabel = stress >= 70 ? 'Severe' : stress >= 45 ? 'Moderate' : 'Low';
+  var diffColor = diff >= 75 ? '#fb7185' : diff >= 60 ? '#fbbf24' : '#34d399';
+
+  var classLabels = {
+    'poor': { label: 'Poor', color: '#fb7185' },
+    'lower-middle': { label: 'Lower-middle', color: '#fbbf24' },
+    'middle': { label: 'Middle', color: '#22d3ee' },
+    'upper-middle': { label: 'Upper-middle', color: '#8b5cf6' },
+    'wealthy': { label: 'Wealthy', color: '#34d399' }
+  };
+  var clsInfo = classLabels[cls] || classLabels.middle;
+
+  var warnings = [];
+  if (stress >= 70) warnings.push('😰 Chronic stress is damaging your health.');
+  if (S.health < 40) warnings.push('❤️ Health critical.');
+  if (S.wealth < 0) warnings.push('💸 In debt.');
+  if (S.household && S.household.net < 0) warnings.push('📉 Overspending.');
+  if (S.marriage && S.marriage.partner && (S.marriage.partner.bond || 70) < 35) warnings.push('💔 Marriage failing.');
+
+  var html = '<div class="card" style="border-color:' + diffColor + '">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<div><div class="muted small" style="letter-spacing:.06em;font-weight:700;color:' + diffColor + '">LIFE REALITY</div>' +
+    '<div style="font-weight:700;font-size:.95rem;margin-top:2px">' + COUNTRIES[S.country].name + ' Difficulty: ' + diff + '/100</div></div>' +
+    '<div style="font-size:1.6rem">' + (diff >= 75 ? '🔥' : diff >= 60 ? '⚡' : '✓') + '</div></div>';
+
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">' +
+    '<div><div class="muted small" style="font-size:.7rem">STRESS</div>' +
+    '<div style="font-weight:700;color:' + stressColor + ';font-size:.95rem">' + stress + '% · ' + stressLabel + '</div>' +
+    '<div style="height:4px;background:#1a1a2a;border-radius:2px;margin-top:3px"><div style="height:100%;width:' + stress + '%;background:' + stressColor + ';border-radius:2px"></div></div>' +
+    '</div>' +
+    '<div><div class="muted small" style="font-size:.7rem">SOCIAL CLASS</div>' +
+    '<div style="font-weight:700;color:' + clsInfo.color + ';font-size:.95rem">' + clsInfo.label + '</div>' +
+    (S.familyTier && S.familyTier !== cls ? '<div class="muted small" style="font-size:.65rem">born ' + S.familyTier + '</div>' : '') +
+    '</div></div>';
+
+  if (warnings.length > 0) {
+    html += '<div style="margin-top:10px;padding-top:8px;border-top:1px solid #252a3a">';
+    warnings.forEach(function(w) {
+      html += '<div style="padding:2px 0;font-size:.75rem;color:#fb7185">' + w + '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+window.difficultyPanelHtml = difficultyPanelHtml;
