@@ -882,7 +882,36 @@ window.bankDoConsolidateDebt = function() {
   log(`✅ Consolidated ${money(total)} of debt into one ${years}-year loan.`);
   render();
 };
-
+  /* ===== OVERDRAFT EMERGENCY (Session 12B) ===== */
+  if (S.wealth < 0 && b.score >= 550 && typeof OVERDRAFT_PRODUCTS !== 'undefined') {
+    var _odOptions = OVERDRAFT_PRODUCTS[S.country] || [];
+    if (_odOptions.length > 0) {
+      var _od = _odOptions[0];
+      var _debt = -S.wealth;
+      var _maxOD = _od.maxAmount || 100000;
+      if (_debt <= _maxOD && !S._overdraftOfferedThisYear) {
+        S._overdraftOfferedThisYear = gameYear();
+        if (!Array.isArray(b.loans)) b.loans = [];
+        b.loans.push({
+          id: 'overdraft_' + Math.random().toString(36).slice(2, 8),
+          name: 'Emergency Overdraft — ' + _od.name,
+          loanType: 'overdraft',
+          principal: _debt,
+          remaining: Math.round(_debt * (1 + _od.apr)),
+          rate: _od.apr,
+          monthsLeft: 12,
+          monthsTotal: 12,
+          monthlyPayment: Math.round(_debt * (1 + _od.apr) / 12),
+          startYear: gameYear(),
+          missedPayments: 0
+        });
+        S.wealth = 0;
+        log('🏦 Bank converted your ' + money(_debt) + ' deficit into an overdraft loan at ' + Math.round(_od.apr * 100) + '% APR.');
+      }
+    }
+  } else if (S.wealth >= 0) {
+    S._overdraftOfferedThisYear = null;
+  };
 /* ---------- 5. SCORE & SIMULATOR ---------- */
 function bankScoreSection() {
   const b = S.bank;
