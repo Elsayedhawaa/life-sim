@@ -2226,7 +2226,15 @@ function computeHousehold() {
       expenseItems.push({ label: 'Pension contributions', yearly: penY, country: S.country });
     }
   }
-
+  /* Eldercare recurring cost (from aging parent event) */
+  if (S.household && S.household._eldercareMonthly > 0) {
+    var ecYear = Math.round(S.household._eldercareMonthly * 12);
+    expenses += ecYear;
+    var ecLabel = 'Eldercare — caregiver';
+    if (S.household._eldercareMode === 'moved_in') ecLabel = 'Eldercare — parent at home';
+    else if (S.household._eldercareMode === 'sibling_split') ecLabel = 'Eldercare — caregiver (split with ' + (S.household._eldercareSiblingShare || 1) + ')';
+    expenseItems.push({ label: ecLabel, yearly: ecYear, country: S.country });
+  }
   /* Bank insurance premiums */
   if (S.bank && Array.isArray(S.bank.insurance)) {
     var biY = 0;
@@ -5072,32 +5080,65 @@ function applyStressEffects() {
   S._lastStress = stress;
   S.stress = stress;
 
-  /* High stress for 2+ consecutive years → real damage */
+  /* Record consecutive high-stress years */
   if (stress >= 70) {
     S._stressHighYears = (S._stressHighYears || 0) + 1;
-    if (S._stressHighYears >= 2) {
-      S.health = Math.max(0, (S.health || 100) - 3);
-      if (typeof addHappiness === 'function') addHappiness(-5);
-      if (typeof log === 'function') log('😰 Chronic stress is affecting your body.');
-    }
-  } else {
+  } else if (stress < 50) {
     S._stressHighYears = 0;
   }
 
-  /* Extreme stress → heart attack risk */
-  if (stress >= 85 && S.age > 40 && Math.random() < 0.04) {
-    if (typeof log === 'function') log('🚨 You collapsed from stress. Emergency hospitalization.');
-    S.wealth -= 5000;
-    S.health = Math.max(0, S.health - 15);
+  /* === LONG-TERM STRESS → REAL MEDICAL CONDITIONS === */
+  if (S._stressHighYears >= 2 && S.age >= 18 && S.medical && Array.isArray(S.medical.conditions)) {
+    var hasAnxiety = S.medical.conditions.some(function(c) { return c.id === 'anxiety'; });
+    var hasDepression = S.medical.conditions.some(function(c) { return c.id === 'depression'; });
+    var hasHTN = S.medical.conditions.some(function(c) { return c.id === 'hypertension'; });
+
+    if (!hasAnxiety && typeof medAddCondition === 'function') {
+      medAddCondition('anxiety');
+      log('🏥 Chronic stress has manifested as anxiety. See a doctor in the Medical tab.');
+      if (typeof recordMoment === 'function') {
+        recordMoment('The year stress broke you',
+          'You started waking up at 3 AM with your heart racing. You could not explain why.',
+          { icon: '😰', key: 'stress_anxiety_' + gameYear(), weight: 2 });
+      }
+    }
+
+    if (S._stressHighYears >= 3 && !hasDepression && typeof medAddCondition === 'function') {
+      medAddCondition('depression');
+      log('🏥 Chronic stress has deepened into depression. Seek treatment.');
+      if (typeof emitReflection === 'function') {
+        emitReflection('You have not felt joy in months. You cannot remember the last time you laughed.', { mood: 'sad' });
+      }
+    }
+
+    if (S._stressHighYears >= 4 && S.age >= 30 && !hasHTN && typeof medAddCondition === 'function') {
+      medAddCondition('hypertension');
+      log('🏥 Years of stress have raised your blood pressure to dangerous levels.');
+    }
+
+    /* Ongoing physical damage while under chronic stress */
+    S.health = Math.max(0, (S.health || 100) - 2);
+    if (typeof addHappiness === 'function') addHappiness(-4);
+  }
+
+  /* === EMERGENCY: HIGH STRESS + POOR HEALTH → HEART ATTACK === */
+  if (stress >= 85 && S.age > 40 && (S.health || 100) < 60 && Math.random() < 0.04) {
+    log('🚨 You collapsed. Emergency hospitalization.');
+    S.wealth -= 5000 * ((C().rate || 1) / 52.7);
+    S.health = Math.max(0, S.health - 20);
+    if (typeof medAddCondition === 'function') medAddCondition('heart_attack');
     if (typeof emitSignal === 'function') emitSignal('healthCritical', { health: S.health, prev: prev });
+    if (typeof recordMoment === 'function') {
+      recordMoment('The collapse', 'You were in the ambulance before you understood what had happened.', { icon: '🚑', key: 'heart_attack_' + gameYear(), weight: 3 });
+    }
   }
 }
 window.applyStressEffects = applyStressEffects;
 
 /* ---------- 3. RANDOM MISFORTUNE ENGINE ---------- */
 const MISFORTUNE_POOL = [
-  { id: 'car_accident', weight: 8, minAge: 18, maxAge: 75, cost: 15000, health: -12, happiness: -8,
-    text: '🚗 Car accident. You were rear-ended at a red light. Hospital + repair.' },
+   { id: 'car_accident', weight: 8, minAge: 18, maxAge: 75, health: -12, happiness: -8, special: 'car_damage',
+    text: '🚗 Car accident. You were rear-ended at a red light.' },
   { id: 'sudden_illness', weight: 6, minAge: 18, maxAge: 90, cost: 8000, health: -18, happiness: -6,
     text: '🏥 Sudden illness. Food poisoning, or something worse. Hospital visit.' },
   { id: 'theft', weight: 10, minAge: 16, maxAge: 80, cost: 5000, happiness: -10,
@@ -5121,7 +5162,60 @@ const MISFORTUNE_POOL = [
   { id: 'traffic_fine', weight: 10, minAge: 20, maxAge: 70, cost: 2500, happiness: -3,
     text: '📋 Government fees or traffic fines. Unexplained charges.' }
 ];
+function _applyCarDamageFromAccident() {
+  if (!S || !Array.isArray(S.cars)) return;
+  var active = S.cars.filter(function(c) { return !c.storedIn && !c.stolen; });
+  if (active.length === 0) {
+    log('🚗 Fortunately you do not own a car — no vehicle damage.');
+    return;
+  }
+  var car = active[Math.floor(Math.random() * active.length)];
+  var cls = (typeof CAR_CLASSES !== 'undefined' && CAR_CLASSES[car.cls]) ? CAR_CLASSES[car.cls] : { maintenance: 500 };
+  var rate = (C().rate || 1);
+  var baseRepair = Math.round(cls.maintenance * rate * (2.5 + Math.random() * 3));
 
+  /* Insurance offset — comprehensive covers 75%, third-party fire covers 20%, TP covers 0 */
+  var insType = car.insurance || 'none';
+  var insuranceCovers = insType === 'compreh' || insType === 'compreh_pl' ? 0.75 :
+                        insType === 'tp_fire' ? 0.20 : 0;
+  var playerPays = Math.round(baseRepair * (1 - insuranceCovers));
+  var coverageText = insuranceCovers > 0 ? ' (Insurance covers ' + Math.round(insuranceCovers * 100) + '%)' : ' (No insurance)';
+
+  /* Damage the car */
+  car.condition = Math.max(0, (car.condition || 100) - (30 + Math.floor(Math.random() * 25)));
+  var severelyDamaged = Math.random() < 0.5 || car.condition < 40;
+  if (severelyDamaged) {
+    car.broken = true;
+    car.repairCost = playerPays;
+  }
+
+  log('🚗 Your ' + (car.brand || '') + ' ' + (car.model || 'car') + ' is damaged.' + coverageText);
+  log('🔧 Repair cost: ' + money(playerPays) + ' — check Cars tab.');
+  if (typeof recordMoment === 'function') {
+    recordMoment('The accident', 'A crash on a normal Tuesday. The car was not the only thing shaken.', { icon: '🚗', key: 'car_accident_' + gameYear(), weight: 2 });
+  }
+
+  /* Charge: try cash, then credit card, then go negative */
+  if (S.wealth >= playerPays) {
+    S.wealth -= playerPays;
+  } else if (S.bank && Array.isArray(S.bank.creditCards)) {
+    var card = S.bank.creditCards.find(function(c) { return (c.limit || 0) - (c.balance || 0) >= playerPays; });
+    if (card) {
+      card.balance = (card.balance || 0) + playerPays;
+      log('💳 Charged ' + money(playerPays) + ' to ' + card.name + '.');
+    } else {
+      S.wealth -= playerPays;
+      log('💸 You went into debt for the repair.');
+    }
+  } else {
+    S.wealth -= playerPays;
+  }
+
+  /* Fire insurance claim event if applicable */
+  if (insuranceCovers > 0 && typeof emitSignal === 'function') {
+    emitSignal('carAccident', { car: car, covered: insuranceCovers });
+  }
+}
 function rollMisfortune() {
   if (!S) return false;
   if (S.age < 16) return false;
@@ -5180,7 +5274,9 @@ function rollMisfortune() {
   }
   if (chosen.health && typeof fx === 'function') fx({ health: chosen.health });
   if (chosen.happiness && typeof addHappiness === 'function') addHappiness(chosen.happiness);
-
+  if (chosen.special === 'car_damage') {
+    _applyCarDamageFromAccident();
+  }
   if (chosen.special === 'job_loss') {
     if (S.career && S.career.job) {
       if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('random layoff');
@@ -5270,19 +5366,64 @@ function rollMarriageCrisis() {
 
   /* Affairs happen */
   var affairChance = 0.03 + (bond < 40 ? 0.04 : 0);
-  if (Math.random() < affairChance) {
+  if (Math.random() < affairChance && !S.pending) {
     var affairs = [
-      { label: 'an emotional affair', text: 'They have been confiding in someone else.' },
-      { label: 'a physical affair', text: 'You found evidence. They have been unfaithful.' }
+      { label: 'emotional', text: 'You discovered ' + p.name + ' has been confiding in someone else for months. The messages were not romantic yet — but they were heading there.' },
+      { label: 'physical', text: 'You found the messages. ' + p.name + ' has been having a physical affair for weeks. You saw everything.' }
     ];
     var chosen = affairs[Math.floor(Math.random() * affairs.length)];
     p.bond = Math.max(0, bond - 25);
     p.trust = Math.max(0, trust - 30);
-    if (typeof log === 'function') log('💔 You discovered ' + chosen.label + '. ' + chosen.text);
-    if (typeof recordMoment === 'function') {
-      recordMoment('The day you found out', chosen.text, { icon: '💔', key: 'affair_' + gameYear(), weight: 3 });
-    }
-    if (typeof emitSignal === 'function') emitSignal('spouseAffair', { partner: p });
+
+    /* Fire the real confrontation event — NOT just a log */
+    S.pending = {
+      title: '💔 You Found Out',
+      text: chosen.text + '\n\nYou sit on the couch. Your hands are shaking. You have to decide what to do.',
+      choices: [
+        {
+          label: 'Confront them directly',
+          effect: function(s) {
+            if (Math.random() < 0.5) {
+              p.bond = Math.max(0, p.bond - 20);
+              log('😢 ' + p.name + ' broke down and begged for forgiveness. You did not answer.');
+            } else {
+              p.bond = Math.max(0, p.bond - 40);
+              log('😡 ' + p.name + ' denied everything. Then packed a bag.');
+            }
+            if (typeof addHappiness === 'function') addHappiness(-20);
+            s.health = Math.max(0, (s.health || 100) - 3);
+            if (typeof recordMoment === 'function') {
+              recordMoment('The day you found out', chosen.text, { icon: '💔', key: 'affair_found_' + gameYear(), weight: 3 });
+            }
+          }
+        },
+        {
+          label: 'File for divorce immediately',
+          effect: function(s) {
+            if (typeof evtForceDivorce === 'function') {
+              evtForceDivorce(s, 'infidelity');
+              log('💔 You divorced ' + p.name + ' over infidelity.');
+            }
+            if (typeof recordMoment === 'function') {
+              recordMoment('The day you ended it', 'You filed the papers. It was the hardest thing you have done.', { icon: '💔', key: 'divorce_affair_' + gameYear(), weight: 3 });
+            }
+          }
+        },
+        {
+          label: 'Say nothing — plan your exit quietly',
+          effect: function(s) {
+            if (typeof evtRemember === 'function') {
+              evtRemember('quietExitPlan', true, 3);
+              evtRemember('spouseCheated', true, 5);
+            }
+            if (typeof addHappiness === 'function') addHappiness(-15);
+            log('🤫 You said nothing. You started planning.');
+          }
+        }
+      ]
+    };
+    S.evId = 'affair_discovery_' + gameYear();
+    return true;
   }
 
   /* Divorce roll */
