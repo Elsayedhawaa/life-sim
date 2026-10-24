@@ -469,6 +469,13 @@ window.immStartWorkApplication = function(dest) {
     log('❌ Cannot move to ' + immCountryName(dest) + ' yet — country pack not installed.');
     render(); return;
   }
+     if (typeof isBannedFrom === 'function') {
+    var _ban = isBannedFrom(dest);
+    if (_ban) {
+      log('🚫 You are banned from ' + immCountryName(dest) + ' for another ' + _ban.yearsLeft + ' year' + (_ban.yearsLeft > 1 ? 's' : '') + '.');
+      render(); return;
+    }
+  }
   const approval = immApprovalFor(dest, 'work');
   const fees = immFeesFor(dest, 'work');
   const lawyerFee = (VISA_FEES[dest] && VISA_FEES[dest].lawyer) || 1500;
