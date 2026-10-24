@@ -394,6 +394,14 @@ window.vacVisaApprovalChance = vacVisaApprovalChance;
 window.vacApplyVisa = function() {
   const plan = S.vacation.planning;
   if (!plan) return;
+     var _vacDest = VAC_DESTINATIONS.find(function(d) { return d.id === plan.destinationId; });
+  if (_vacDest && typeof isBannedFrom === 'function') {
+    var _vacBan = isBannedFrom(_vacDest.country);
+    if (_vacBan) {
+      log('🚫 You are banned from ' + (COUNTRIES[_vacDest.country] ? COUNTRIES[_vacDest.country].name : _vacDest.country) + ' for another ' + _vacBan.yearsLeft + ' year' + (_vacBan.yearsLeft > 1 ? 's' : '') + '.');
+      render(); return;
+    }
+  }c
   const info = vacVisaApprovalChance(plan);
   if (!vacNeedsVisa(plan.destinationId).needed) { log('✅ No visa needed.'); render(); return; }
   
