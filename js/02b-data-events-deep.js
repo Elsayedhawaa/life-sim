@@ -2386,32 +2386,31 @@ DEEP_EVENTS.push(
     });
     var p = parents[0];
     return p.name + ' calls. They are not okay. They need help — medically, financially, daily.\n\nThey cannot live alone anymore.\n\n"We do not want to be a burden. But we need you."';
-  },
-  choices: [
+    choices: [
     { label: 'Move them in with you',
       effect: s => {
         if (s.marriage && s.marriage.partner) s.marriage.partner.bond = Math.max(0, (s.marriage.partner.bond || 70) - 12);
         (s.family || []).forEach(function(m) {
           if (m.role === 'Mother' || m.role === 'Father') m.bond = Math.min(100, (m.bond || 70) + 25);
         });
+        if (!s.household) s.household = {};
+        s.household._eldercareMonthly = 5000 * ((C().rate || 1) / 52.7);  /* food + utilities + partial care */
+        s.household._eldercareMode = 'moved_in';
         fx({ happiness: -8, health: -3 });
-        if (typeof log === 'function') log('🏠 Your parent moved in. Your home is full. Your marriage is strained.');
+        if (typeof log === 'function') log('🏠 Your parent moved in. Household budget +' + money(s.household._eldercareMonthly * 12) + '/yr. Marriage strained.');
       }
     },
-    { label: 'Hire a caregiver (costly)',
+    { label: 'Hire a full-time caregiver',
       effect: s => {
-        var cost = 20000 * ((C().rate || 1) / 52.7);
-        if (s.wealth >= cost) {
-          s.wealth -= cost;
-          (s.family || []).forEach(function(m) {
-            if (m.role === 'Mother' || m.role === 'Father') m.bond = Math.min(100, (m.bond || 70) + 10);
-          });
-          fx({ happiness: 2 });
-          if (typeof log === 'function') log('🏥 You hired a caregiver. Your parent is safe.');
-        } else {
-          fx({ happiness: -5 });
-          if (typeof log === 'function') log('💸 You cannot afford a caregiver.');
-        }
+        var monthlyCost = 12000 * ((C().rate || 1) / 52.7);
+        if (!s.household) s.household = {};
+        s.household._eldercareMonthly = monthlyCost;
+        s.household._eldercareMode = 'caregiver';
+        (s.family || []).forEach(function(m) {
+          if (m.role === 'Mother' || m.role === 'Father') m.bond = Math.min(100, (m.bond || 70) + 15);
+        });
+        fx({ happiness: 2 });
+        if (typeof log === 'function') log('🏥 Hired a caregiver. Monthly cost: ' + money(monthlyCost) + '. This will show in your household budget.');
       }
     },
     { label: 'Ask siblings to share the burden',
@@ -2420,22 +2419,30 @@ DEEP_EVENTS.push(
           return m.alive !== false && (m.isSibling || m.role === 'Brother' || m.role === 'Sister');
         });
         if (sibs.length > 0 && Math.random() < 0.55) {
+          var totalCare = 12000 * ((C().rate || 1) / 52.7);
+          var perPerson = Math.round(totalCare / (1 + sibs.length));
+          if (!s.household) s.household = {};
+          s.household._eldercareMonthly = perPerson;
+          s.household._eldercareMode = 'sibling_split';
+          s.household._eldercareSiblingShare = sibs.length;
           (s.family || []).forEach(function(m) {
-            if (m.role === 'Mother' || m.role === 'Father') m.bond = Math.min(100, (m.bond || 70) + 8);
+            if (m.role === 'Mother' || m.role === 'Father') m.bond = Math.min(100, (m.bond || 70) + 12);
           });
-          fx({ happiness: 3 });
-          if (typeof log === 'function') log('💬 Your siblings agreed to share. It was not easy, but it worked.');
+          fx({ happiness: 4 });
+          if (typeof log === 'function') log('💬 Siblings agreed. Your share: ' + money(perPerson) + '/mo (' + sibs.length + ' siblings splitting).');
         } else {
           (s.family || []).forEach(function(m) {
             if (m.role === 'Mother' || m.role === 'Father') m.bond = Math.max(0, (m.bond || 70) - 8);
           });
+          if (!s.household) s.household = {};
+          s.household._eldercareMonthly = 12000 * ((C().rate || 1) / 52.7);
+          s.household._eldercareMode = 'alone';
           fx({ happiness: -6 });
-          if (typeof log === 'function') log('💔 Your siblings refused. It is on you.');
+          if (typeof log === 'function') log('💔 Siblings refused. It is all on you.');
         }
       }
     }
-  ]
-},
+  ],
 
 { id: 'realism_child_struggle', minAge: 42, maxAge: 65, weight: 7, maxFires: 3,
   condition: s => {
@@ -2748,6 +2755,114 @@ DEEP_EVENTS.push(
   ]
 }
 
+);DEEP_EVENTS.push(
+{ id: 'parent_surgery_emergency', minAge: 32, maxAge: 70, weight: 5, maxFires: 3,
+  condition: s => {
+    var parents = (s.family || []).filter(function(m) {
+      return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false && (m.age || 0) >= 72;
+    });
+    return parents.length > 0;
+  },
+  title: '🚑 Parent Medical Emergency',
+  text: s => {
+    var parents = (s.family || []).filter(function(m) {
+      return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false && (m.age || 0) >= 72;
+    });
+    var p = parents[0];
+    return p.name + ' has been rushed to the hospital. The doctors say they need emergency surgery.\n\nThe bill: ' + (150000 * ((C().rate || 1) / 52.7)).toLocaleString() + ' ' + C().currency + '.\n\nYou have to decide. Fast.';
+  },
+  choices: [
+    { label: 'Pay everything — do not think about the cost',
+      available: s => s.wealth >= (150000 * ((C().rate || 1) / 52.7)),
+      effect: s => {
+        var cost = 150000 * ((C().rate || 1) / 52.7);
+        s.wealth -= cost;
+        (s.family || []).forEach(function(m) {
+          if (m.role === 'Mother' || m.role === 'Father') {
+            m.bond = Math.min(100, (m.bond || 70) + 20);
+            m.health = Math.min(100, (m.health || 50) + 20);
+          }
+        });
+        fx({ happiness: 3 });
+        if (typeof log === 'function') log('💸 You paid ' + money(cost) + '. They survived. That is what matters.');
+        if (typeof recordMoment === 'function') {
+          recordMoment('The surgery', 'You watched the doors close. Then you waited.', { icon: '🚑', key: 'parent_surgery_' + gameYear(), weight: 3 });
+        }
+      }
+    },
+    { label: 'Charge to credit card',
+      available: s => {
+        var cost = 150000 * ((C().rate || 1) / 52.7);
+        if (!s.bank || !Array.isArray(s.bank.creditCards)) return false;
+        return s.bank.creditCards.some(function(c) { return (c.limit || 0) - (c.balance || 0) >= cost; });
+      },
+      effect: s => {
+        var cost = 150000 * ((C().rate || 1) / 52.7);
+        var card = s.bank.creditCards.find(function(c) { return (c.limit || 0) - (c.balance || 0) >= cost; });
+        if (card) {
+          card.balance = (card.balance || 0) + cost;
+          (s.family || []).forEach(function(m) {
+            if (m.role === 'Mother' || m.role === 'Father') {
+              m.bond = Math.min(100, (m.bond || 70) + 20);
+              m.health = Math.min(100, (m.health || 50) + 20);
+            }
+          });
+          if (typeof log === 'function') log('💳 Charged ' + money(cost) + ' to ' + card.name + '. You will pay this off for years.');
+        }
+      }
+    },
+    { label: 'Ask siblings to split the cost',
+      effect: s => {
+        var sibs = (s.family || []).filter(function(m) {
+          return m.alive !== false && (m.isSibling || m.role === 'Brother' || m.role === 'Sister');
+        });
+        if (sibs.length > 0 && Math.random() < 0.60) {
+          var total = 150000 * ((C().rate || 1) / 52.7);
+          var share = Math.round(total / (1 + sibs.length));
+          if (s.wealth >= share) {
+            s.wealth -= share;
+            (s.family || []).forEach(function(m) {
+              if (m.role === 'Mother' || m.role === 'Father') {
+                m.bond = Math.min(100, (m.bond || 70) + 15);
+                m.health = Math.min(100, (m.health || 50) + 20);
+              }
+            });
+            if (typeof log === 'function') log('💸 Siblings agreed. You paid ' + money(share) + ' of ' + money(total) + '.');
+          } else {
+            if (typeof log === 'function') log('❌ You could not afford your share. The surgery was delayed.');
+            (s.family || []).forEach(function(m) {
+              if (m.role === 'Mother' || m.role === 'Father') m.health = Math.max(0, (m.health || 50) - 15);
+            });
+          }
+        } else {
+          (s.family || []).forEach(function(m) {
+            if (m.role === 'Mother' || m.role === 'Father') m.health = Math.max(0, (m.health || 50) - 15);
+          });
+          if (typeof log === 'function') log('💔 Siblings refused. Health deteriorated.');
+          fx({ happiness: -10 });
+        }
+      }
+    },
+    { label: 'You cannot afford it',
+      effect: s => {
+        var parents = (s.family || []).filter(function(m) {
+          return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false;
+        });
+        parents.forEach(function(m) { m.health = Math.max(0, (m.health || 50) - 25); });
+        if (Math.random() < 0.40 && parents[0]) {
+          parents[0].alive = false;
+          parents[0].deathYear = gameYear();
+          if (typeof log === 'function') log('🕊 ' + parents[0].name + ' did not survive the night.');
+          if (typeof emitSignal === 'function') emitSignal('parentDied', { parent: parents[0] });
+        }
+        fx({ happiness: -25, health: -5 });
+        if (typeof recordMoment === 'function') {
+          recordMoment('The night you could not pay', 'You stood outside the hospital. There was nothing else to do.', { icon: '🕊', key: 'parent_died_unfunded_' + gameYear(), weight: 4 });
+        }
+      }
+    }
+  ]
+}
 );
 /* ============================================================
    SESSION 11: GENERATIONAL ECHO EVENTS
