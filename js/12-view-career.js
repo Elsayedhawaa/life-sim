@@ -2379,24 +2379,37 @@ GameHooks.on('year', function() {
       const perfOK = j.performance >= 80;
       const tenureOK = j.tenure >= reqYears;
 
-            if (perfOK && tenureOK) {
-        /* Guaranteed promotion — no random gate */
-        j.level++;
-        j.salary = carSalaryForLevel(j.track, j.level);
-        j.baseSalaryEGP = j.salary;
-        j.title = nextLevel.title;
-        if (S.job) { S.job.title = j.title; S.job.salary = j.salary; S.job.level = j.level; }
-        log('🎉 PROMOTED to ' + j.title + '! Salary: ' + money(j.salary) + '/year.');
-        fx({ happiness: 15 });
-        c.mood = 'satisfied';
-        if (j.level === 1 && c.jobHistory.length === 0) carAddMilestone('first_promotion', 'First Promotion');
-        if (j.level === track.levels.length - 1) carAddMilestone('top_of_ladder', 'Reached top of ' + track.label);
-        /* Reset perf slightly after promotion — new role, back to learning */
-        j.performance = Math.max(60, j.performance - 10);
-        j.tenure = 0;
-        if (S.job) S.job.years = 0;
-        if (typeof carCheckBranchPoint === 'function') carCheckBranchPoint();
-      }else if (j.tenure >= reqYears + 3 && !perfOK) {
+               if (perfOK && tenureOK) {
+        /* Ceiling check — birth class limits how high you can climb */
+        var _ceiling = (typeof getCareerCeiling === 'function') ? getCareerCeiling(j.track) : 6;
+
+        if (j.level + 1 > _ceiling) {
+          /* Blocked by ceiling — do NOT level up, but let the rest of year tick continue */
+          j.performance = Math.max(60, j.performance - 5);
+          if (!j._ceilingBlockedYear || j._ceilingBlockedYear !== gameYear()) {
+            j._ceilingBlockedYear = gameYear();
+            log('🚧 You are qualified, but the ceiling blocks you. Your background is holding you back.');
+            log('💡 Career ceiling: level ' + _ceiling + ' for someone with your background.');
+          }
+        } else {
+          /* Guaranteed promotion — no random gate */
+          j.level++;
+          j.salary = carSalaryForLevel(j.track, j.level);
+          j.baseSalaryEGP = j.salary;
+          j.title = nextLevel.title;
+          if (S.job) { S.job.title = j.title; S.job.salary = j.salary; S.job.level = j.level; }
+          log('🎉 PROMOTED to ' + j.title + '! Salary: ' + money(j.salary) + '/year.');
+          fx({ happiness: 15 });
+          c.mood = 'satisfied';
+          if (j.level === 1 && c.jobHistory.length === 0) carAddMilestone('first_promotion', 'First Promotion');
+          if (j.level === track.levels.length - 1) carAddMilestone('top_of_ladder', 'Reached top of ' + track.label);
+          /* Reset perf slightly after promotion — new role, back to learning */
+          j.performance = Math.max(60, j.performance - 10);
+          j.tenure = 0;
+          if (S.job) S.job.years = 0;
+          if (typeof carCheckBranchPoint === 'function') carCheckBranchPoint();
+        }
+      } else if (j.tenure >= reqYears + 3 && !perfOK) {
         /* Long tenure, low performance — manager conversation */
         if (Math.random() < 0.5) {
           log('⚠️ Your manager pulled you aside about performance. "You\'ve been here ' + j.tenure + ' years. We need to see more."');
