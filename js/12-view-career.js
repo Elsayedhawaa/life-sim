@@ -1371,10 +1371,8 @@ function carRenderOverview() {
   const pension = Math.round(j.salary * 0.11);
   const net = j.salary - tax - pension;
 
-  // Single declaration of h at the top level of the full-time view
   let h = '';
 
-  /* SESSION 9: Specialty card */
   if (c.job && typeof CAR_BRANCH_OPTIONS !== 'undefined') {
     var job = c.job;
     var branchDef = CAR_BRANCH_OPTIONS[job.track];
@@ -1385,7 +1383,7 @@ function carRenderOverview() {
       h += '<div class="card" style="border-color:#fbbf24;background:#fbbf2410">' +
         '<h4 style="color:#fbbf24;font-size:.88rem">🎓 Specialization Available</h4>' +
         '<p class="muted small" style="margin:6px 0">You have reached the point in your career where you must choose a specialty. This decision shapes your salary trajectory and long-term path.</p>' +
-        '<button class="opt" style="width:100%;text-align:center;background:#fbbf24;color:#000;font-weight:700;padding:10px;font-size:.78rem" onclick="if(typeof carCheckBranchPoint===\'function\')carCheckBranchPoint();render()">Choose Specialty Now →</button>' +
+        '<button class="opt" style="width:100%;text-align:center;background:#fbbf24;color:#000;font-weight:700;padding:10px;font-size:.78rem" onclick="if(typeof carCheckBranchPoint===\'function\') carCheckBranchPoint();">Choose Specialty</button>' +
         '</div>';
     } else if (job.branchChosen) {
       h += '<div class="card" style="border-color:#34d399">' +
@@ -1404,7 +1402,7 @@ function carRenderOverview() {
         '<p class="muted small" style="margin:4px 0">Switching tracks preserves your level progress. Your title and salary will update.</p>';
       branchDef.options.forEach(function(opt) {
         if (opt.trackId === job.track && job.branchChosen) return;
-        h += '<button class="opt" style="width:100%;margin-top:4px;text-align:left;padding:8px;font-size:.75rem" onclick="if(typeof carChooseSpecialty===\'function\'){carChooseSpecialty(\'' + opt.trackId + '\');S._showRespecUI=false;render();}">' +
+        h += '<button class="opt" style="width:100%;margin-top:4px;text-align:left;padding:8px;font-size:.75rem" onclick="if(typeof carChooseSpecialty===\'function\'){carChooseSpecialty(\'' + opt.trackId + '\');}">' +
           '<div><b>' + opt.label + '</b></div>' +
           '<div class="muted small">' + opt.desc + '</div></button>';
       });
@@ -1413,7 +1411,6 @@ function carRenderOverview() {
     }
   }
 
-  /* Session 9B: Active sector crisis banner */
   if (typeof carActiveCrisis === 'function') {
     var _crisis = carActiveCrisis();
     if (_crisis && _crisis.severity > 0) {
@@ -1436,9 +1433,9 @@ function carRenderOverview() {
 
   h += '<div class="card" style="padding:12px;background:linear-gradient(180deg,#8b5cf610 0%,transparent 100%);border-color:#8b5cf6">';
   h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">';
-  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">SALARY</div><div class="mono" style="font-weight:700;font-size:.9rem">' + money(j.salary) + '</div><div class="muted" style="font-size:.6rem">per year</div></div>';
-  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">LEVEL</div><div class="mono" style="font-weight:700;font-size:.9rem">' + (j.level + 1) + '/' + (track ? track.levels.length : 5) + '</div><div class="muted" style="font-size:.6rem">' + j.title + '</div></div>';
-  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">TENURE</div><div class="mono" style="font-weight:700;font-size:.9rem">' + (j.tenure || 0) + 'y</div><div class="muted" style="font-size:.6rem">since ' + j.hiredYear + '</div></div>';
+  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">SALARY</div><div class="mono" style="font-weight:700;font-size:.9rem">' + money(j.salary) + '</div><div class="muted" style="font-size:.58rem">Gross</div></div>';
+  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">LEVEL</div><div class="mono" style="font-weight:700;font-size:.9rem">' + (j.level + 1) + '/' + (track ? track.levels.length : 1) + '</div><div class="muted" style="font-size:.58rem">Current rank</div></div>';
+  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">TENURE</div><div class="mono" style="font-weight:700;font-size:.9rem">' + (j.tenure || 0) + 'y</div><div class="muted" style="font-size:.58rem">At company</div></div>';
   h += '</div></div>';
 
   h += '<div class="card" style="border-color:#8b5cf6">';
@@ -1507,135 +1504,7 @@ function carRenderOverview() {
   if (c.reviews.length) {
     var r = c.reviews[c.reviews.length - 1];
     var rColor = r.rating >= 4 ? '#34d399' : r.rating === 3 ? '#fbbf24' : '#fb7185';
-    h += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h4 style="font-size:.82rem;color:#8b5cf6">📄 REVIEW · ' + r.year + '</h4><b style="color:' + rColor + '">' + r.rating + '/5</b></div>';
-    h += '<p class="muted small" style="margin-top:4px;font-style:italic">"' + r.comment + '"</p></div>';
-  }
-
-  if (c.imtyaz && c.imtyaz.monthsLeft > 0) {
-    h += '<div class="card" style="border-color:#fbbf24"><h4 style="font-size:.82rem;color:#fbbf24">🏥 IMTYAZ · ' + c.imtyaz.monthsLeft + ' months left</h4></div>';
-  }
-
-  if (j.benefits && j.benefits.length) {
-    h += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:6px">🎁 BENEFITS</h4>';
-    j.benefits.forEach(function(b) {
-      var def = CAR_BENEFITS[b];
-      if (def) h += '<div style="padding:4px 0;font-size:.78rem"><b>' + def.label + '</b><div class="muted" style="font-size:.7rem">' + def.value + '</div></div>';
-    });
-    h += '</div>';
-  }
-
-  h += carRenderMilestonesSummary();
-
-  h += '<div class="card"><button class="opt" style="width:100%;text-align:center;border-color:#fb7185;color:#fb7185" onclick="carQuitJob()">🚪 Resign</button></div>';
-
-  return h;
-}
-        h += '<button class="opt" style="width:100%;margin-top:4px;text-align:left;padding:8px;font-size:.75rem" onclick="if(typeof carChooseSpecialty===\'function\'){carChooseSpecialty(\'' + opt.trackId + '\');S._showRespecUI=false;render();}">' +
-          '<div><b>' + opt.label + '</b></div>' +
-          '<div class="muted small">' + opt.desc + '</div></button>';
-      });
-      h += '<button class="opt" style="width:100%;margin-top:8px;text-align:center;font-size:.75rem;border-color:#666;color:#888" onclick="S._showRespecUI=false;render()">Cancel</button>';
-      h += '</div>';
-    }
-  }
-
-  /* Session 9B: Active sector crisis banner */
-  if (typeof carActiveCrisis === 'function') {
-    var _crisis = carActiveCrisis();
-    if (_crisis && _crisis.severity > 0) {
-      h += '<div class="card" style="border-color:#fb7185;background:#fb718510">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center">' +
-        '<div><div class="muted small" style="color:#fb7185;letter-spacing:.06em;font-weight:700">⚠️ SECTOR CRISIS ACTIVE</div>' +
-        '<div style="font-weight:700;font-size:.95rem;margin-top:2px">' + _crisis.label + '</div></div>' +
-        '<div style="font-size:1.6rem">🚨</div></div>' +
-        '<p class="muted small" style="margin-top:6px">' + _crisis.desc + '</p>' +
-        '<div class="muted small" style="margin-top:6px;color:#fb7185">Layoff risk elevated in your industry this year.</div>' +
-        '</div>';
-    } else if (_crisis && _crisis.severity < 0) {
-      h += '<div class="card" style="border-color:#34d399;background:#34d39910">' +
-        '<div class="muted small" style="color:#34d399;letter-spacing:.06em;font-weight:700">✨ BOOM PERIOD</div>' +
-        '<div style="font-weight:700;font-size:.95rem;margin-top:2px">' + _crisis.label + '</div>' +
-        '<p class="muted small" style="margin-top:6px">' + _crisis.desc + '</p>' +
-        '</div>';
-    }
-  }
-
-  // FIX: Appending to 'h' instead of redeclaring it
-  h += '<div class="card" style="padding:12px;background:linear-gradient(180deg,#8b5cf610 0%,transparent 100%);border-color:#8b5cf6">';
-  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">';
-  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">SALARY</div><div class="mono" style="font-weight:700;font-size:.9rem">' + money(j.salary) + '</div><div class="muted" style="font-size:.6rem">per year</div></div>';
-  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">LEVEL</div><div class="mono" style="font-weight:700;font-size:.9rem">' + (j.level + 1) + '/' + (track ? track.levels.length : 5) + '</div><div class="muted" style="font-size:.6rem">' + j.title + '</div></div>';
-  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">TENURE</div><div class="mono" style="font-weight:700;font-size:.9rem">' + (j.tenure || 0) + 'y</div><div class="muted" style="font-size:.6rem">since ' + j.hiredYear + '</div></div>';
-  h += '</div></div>';
-
-  h += '<div class="card" style="border-color:#8b5cf6">';
-  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
-  h += '<div><h3 style="color:#8b5cf6;margin-bottom:2px">' + j.title + '</h3><div class="muted small">' + j.company + '</div></div>';
-  h += '<div class="small" style="color:' + trend.color + '">' + trend.icon + ' ' + trend.label + '</div></div>';
-  if (j.boss) h += '<div class="row"><span>Manager</span><b>' + j.boss.name + '</b></div>';
-  h += '<div class="row"><span>Prestige</span><b>' + j.prestige + ' / 5</b></div>';
-  h += '<div class="row"><span>Skill</span><b style="color:' + skill.color + '">' + skill.label + ' (' + S.career.cv.skill + '%)</b></div>';
-  h += '</div>';
-
-  h += '<div class="card"><h4 style="font-size:.82rem;color:#34d399;margin-bottom:8px">💰 SALARY BREAKDOWN</h4>';
-  h += '<div class="row"><span>Gross</span><b>' + money(j.salary) + '</b></div>';
-  if (tax > 0) h += '<div class="row"><span>− Tax</span><b class="bad">' + money(tax) + '</b></div>';
-  h += '<div class="row"><span>− Pension (11%)</span><b class="bad">' + money(pension) + '</b></div>';
-  h += '<div class="row" style="border-top:1px solid #25253a;margin-top:6px;padding-top:6px"><b>Take-home</b><b class="good">' + money(net) + '</b></div>';
-  h += '<div class="row"><span>Per month</span><b>' + money(Math.round(net / 12)) + '</b></div>';
-  h += '</div>';
-
-  h += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:8px">⚙️ WORK MODE</h4>';
-  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
-  var modes = [
-    { id: 'slacking', label: '😴 Slacking', desc: '−8% perf' },
-    { id: 'normal', label: '🙂 Normal', desc: '+2% perf' },
-    { id: 'hard', label: '💪 Hard', desc: '+12% perf' },
-    { id: 'overtime', label: '🔥 Overtime', desc: '+18%, +10% pay' }
-  ];
-  modes.forEach(function(m) {
-    var active = c.workMode === m.id;
-    h += '<button class="pill ' + (active ? 'on' : '') + '" style="padding:6px;font-size:.68rem" onclick="carSetWorkMode(\'' + m.id + '\')">' + m.label + '<br><span class="muted" style="font-size:.6rem">' + m.desc + '</span></button>';
-  });
-  h += '</div></div>';
-
-  var reqYears = nextLevel ? (nextLevel.requirements.years || 0) : 0;
-  var perfPct = Math.min(100, j.performance / 80 * 100);
-  var tenPct = reqYears > 0 ? Math.min(100, j.tenure / reqYears * 100) : 100;
-
-  h += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:8px">📊 PROMOTION PROGRESS</h4>';
-  h += '<div class="muted small" style="margin-bottom:4px">Performance · <b style="color:' + perfColor + '">' + Math.round(j.performance) + '% / 80%</b></div>';
-  h += '<div style="height:8px;background:#1a1a2a;border-radius:4px;margin-bottom:10px;overflow:hidden"><div style="height:100%;width:' + perfPct + '%;background:' + perfColor + '"></div></div>';
-  if (nextLevel) {
-    h += '<div class="muted small" style="margin-bottom:4px">Tenure · <b>' + (j.tenure || 0) + ' / ' + reqYears + ' years</b></div>';
-    h += '<div style="height:8px;background:#1a1a2a;border-radius:4px;margin-bottom:10px;overflow:hidden"><div style="height:100%;width:' + tenPct + '%;background:' + (j.tenure >= reqYears ? '#34d399' : '#fbbf24') + '"></div></div>';
-    h += '<div class="muted small">Next: <b>' + nextLevel.title + '</b> · ' + money(nextLevel.baseSalaryEGP) + ' base</div>';
-
-    /* Show blocking reason if not ready */
-    var _perfOK = j.performance >= 80;
-    var _tenureOK = j.tenure >= reqYears;
-    if (!_perfOK) {
-      h += '<div class="muted small" style="color:#fb7185;margin-top:6px">⚠️ Need +' + Math.round(80 - j.performance) + '% more performance</div>';
-    }
-    if (!_tenureOK) {
-      h += '<div class="muted small" style="color:#fbbf24;margin-top:4px">⏳ Need ' + (reqYears - j.tenure) + ' more year(s) of tenure</div>';
-    }
-    if (_perfOK && _tenureOK) {
-      h += '<div style="margin-top:8px;padding:8px;background:#34d39920;border-left:3px solid #34d399;border-radius:6px">' +
-        '<b style="color:#34d399;font-size:.78rem">✅ Requirements met</b>' +
-        '<div class="muted small" style="margin-top:2px">Guaranteed promotion at year end — or request now for immediate effect.</div></div>';
-      h += '<button class="opt" style="margin-top:8px;width:100%;text-align:center;background:#34d399;color:#000;font-weight:700" onclick="carRequestPromotion()">🚀 Request Promotion to ' + nextLevel.title + '</button>';
-    }
-  } else {
-    h += '<div class="muted small">You are at the top of this track.</div>';
-  }
-  h += '<button class="opt" style="margin-top:8px;width:100%;text-align:center" onclick="carAskForRaise()">💰 Ask for raise</button>';
-  h += '</div>';
-
-  if (c.reviews.length) {
-    var r = c.reviews[c.reviews.length - 1];
-    var rColor = r.rating >= 4 ? '#34d399' : r.rating === 3 ? '#fbbf24' : '#fb7185';
-    h += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h4 style="font-size:.82rem;color:#8b5cf6">📄 REVIEW · ' + r.year + '</h4><b style="color:' + rColor + '">' + r.rating + '/5</b></div>';
+    h += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h4 style="font-size:.82rem;color:#8b5cf6">📄 REVIEW · ' + r.year + '</h4><b style="color:' + rColor + '">' + r.rating + ' / 5</b></div>';
     h += '<p class="muted small" style="margin-top:4px;font-style:italic">"' + r.comment + '"</p></div>';
   }
 
@@ -1659,133 +1528,6 @@ function carRenderOverview() {
   return h;
 }
 
-  const j = c.job;
-  const track = carTrackById(j.track);
-  const perfColor = j.performance >= 80 ? '#34d399' : j.performance >= 50 ? '#fbbf24' : '#fb7185';
-  const skill = carSkillLevel();
-  const trend = carIndustryTrend(track ? track.industry : 'normal');
-  const nextLevel = carNextLevel(j);
-
-  const tax = (typeof carComputeTax === 'function') ? carComputeTax(j.salary) : 0;
-  const pension = Math.round(j.salary * 0.11);
-  const net = j.salary - tax - pension;
-     /* Session 9B: Active sector crisis banner */
-  if (typeof carActiveCrisis === 'function') {
-    var _crisis = carActiveCrisis();
-    if (_crisis && _crisis.severity > 0) {
-      h += '<div class="card" style="border-color:#fb7185;background:#fb718510">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center">' +
-        '<div><div class="muted small" style="color:#fb7185;letter-spacing:.06em;font-weight:700">⚠️ SECTOR CRISIS ACTIVE</div>' +
-        '<div style="font-weight:700;font-size:.95rem;margin-top:2px">' + _crisis.label + '</div></div>' +
-        '<div style="font-size:1.6rem">🚨</div></div>' +
-        '<p class="muted small" style="margin-top:6px">' + _crisis.desc + '</p>' +
-        '<div class="muted small" style="margin-top:6px;color:#fb7185">Layoff risk elevated in your industry this year.</div>' +
-        '</div>';
-    } else if (_crisis && _crisis.severity < 0) {
-      h += '<div class="card" style="border-color:#34d399;background:#34d39910">' +
-        '<div class="muted small" style="color:#34d399;letter-spacing:.06em;font-weight:700">✨ BOOM PERIOD</div>' +
-        '<div style="font-weight:700;font-size:.95rem;margin-top:2px">' + _crisis.label + '</div>' +
-        '<p class="muted small" style="margin-top:6px">' + _crisis.desc + '</p>' +
-        '</div>';
-    }
-  }
-  let h = '<div class="card" style="padding:12px;background:linear-gradient(180deg,#8b5cf610 0%,transparent 100%);border-color:#8b5cf6">';
-  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">';
-  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">SALARY</div><div class="mono" style="font-weight:700;font-size:.9rem">' + money(j.salary) + '</div><div class="muted" style="font-size:.6rem">per year</div></div>';
-  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">LEVEL</div><div class="mono" style="font-weight:700;font-size:.9rem">' + (j.level + 1) + '/' + (track ? track.levels.length : 5) + '</div><div class="muted" style="font-size:.6rem">' + j.title + '</div></div>';
-  h += '<div><div class="muted" style="font-size:.62rem;letter-spacing:.06em">TENURE</div><div class="mono" style="font-weight:700;font-size:.9rem">' + (j.tenure || 0) + 'y</div><div class="muted" style="font-size:.6rem">since ' + j.hiredYear + '</div></div>';
-  h += '</div></div>';
-
-  h += '<div class="card" style="border-color:#8b5cf6">';
-  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
-  h += '<div><h3 style="color:#8b5cf6;margin-bottom:2px">' + j.title + '</h3><div class="muted small">' + j.company + '</div></div>';
-  h += '<div class="small" style="color:' + trend.color + '">' + trend.icon + ' ' + trend.label + '</div></div>';
-  if (j.boss) h += '<div class="row"><span>Manager</span><b>' + j.boss.name + '</b></div>';
-  h += '<div class="row"><span>Prestige</span><b>' + j.prestige + ' / 5</b></div>';
-  h += '<div class="row"><span>Skill</span><b style="color:' + skill.color + '">' + skill.label + ' (' + S.career.cv.skill + '%)</b></div>';
-  h += '</div>';
-
-  h += '<div class="card"><h4 style="font-size:.82rem;color:#34d399;margin-bottom:8px">💰 SALARY BREAKDOWN</h4>';
-  h += '<div class="row"><span>Gross</span><b>' + money(j.salary) + '</b></div>';
-  if (tax > 0) h += '<div class="row"><span>− Tax</span><b class="bad">' + money(tax) + '</b></div>';
-  h += '<div class="row"><span>− Pension (11%)</span><b class="bad">' + money(pension) + '</b></div>';
-  h += '<div class="row" style="border-top:1px solid #25253a;margin-top:6px;padding-top:6px"><b>Take-home</b><b class="good">' + money(net) + '</b></div>';
-  h += '<div class="row"><span>Per month</span><b>' + money(Math.round(net / 12)) + '</b></div>';
-  h += '</div>';
-
-  h += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:8px">⚙️ WORK MODE</h4>';
-  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
-  var modes = [
-    { id: 'slacking', label: '😴 Slacking', desc: '−8% perf' },
-    { id: 'normal', label: '🙂 Normal', desc: '+2% perf' },
-    { id: 'hard', label: '💪 Hard', desc: '+12% perf' },
-    { id: 'overtime', label: '🔥 Overtime', desc: '+18%, +10% pay' }
-  ];
-  modes.forEach(function(m) {
-    var active = c.workMode === m.id;
-    h += '<button class="pill ' + (active ? 'on' : '') + '" style="padding:6px;font-size:.68rem" onclick="carSetWorkMode(\'' + m.id + '\')">' + m.label + '<br><span class="muted" style="font-size:.6rem">' + m.desc + '</span></button>';
-  });
-  h += '</div></div>';
-
-  var reqYears = nextLevel ? (nextLevel.requirements.years || 0) : 0;
-  var perfPct = Math.min(100, j.performance / 80 * 100);
-  var tenPct = reqYears > 0 ? Math.min(100, j.tenure / reqYears * 100) : 100;
-
-  h += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:8px">📊 PROMOTION PROGRESS</h4>';
-  h += '<div class="muted small" style="margin-bottom:4px">Performance · <b style="color:' + perfColor + '">' + Math.round(j.performance) + '% / 80%</b></div>';
-  h += '<div style="height:8px;background:#1a1a2a;border-radius:4px;margin-bottom:10px;overflow:hidden"><div style="height:100%;width:' + perfPct + '%;background:' + perfColor + '"></div></div>';
-  if (nextLevel) {
-    h += '<div class="muted small" style="margin-bottom:4px">Tenure · <b>' + (j.tenure || 0) + ' / ' + reqYears + ' years</b></div>';
-    h += '<div style="height:8px;background:#1a1a2a;border-radius:4px;margin-bottom:10px;overflow:hidden"><div style="height:100%;width:' + tenPct + '%;background:' + (j.tenure >= reqYears ? '#34d399' : '#fbbf24') + '"></div></div>';
-    h += '<div class="muted small">Next: <b>' + nextLevel.title + '</b> · ' + money(nextLevel.baseSalaryEGP) + ' base</div>';
-
-    /* Show blocking reason if not ready */
-    var _perfOK = j.performance >= 80;
-    var _tenureOK = j.tenure >= reqYears;
-    if (!_perfOK) {
-      h += '<div class="muted small" style="color:#fb7185;margin-top:6px">⚠️ Need +' + Math.round(80 - j.performance) + '% more performance</div>';
-    }
-    if (!_tenureOK) {
-      h += '<div class="muted small" style="color:#fbbf24;margin-top:4px">⏳ Need ' + (reqYears - j.tenure) + ' more year(s) of tenure</div>';
-    }
-    if (_perfOK && _tenureOK) {
-      h += '<div style="margin-top:8px;padding:8px;background:#34d39920;border-left:3px solid #34d399;border-radius:6px">' +
-        '<b style="color:#34d399;font-size:.78rem">✅ Requirements met</b>' +
-        '<div class="muted small" style="margin-top:2px">Guaranteed promotion at year end — or request now for immediate effect.</div></div>';
-      h += '<button class="opt" style="margin-top:8px;width:100%;text-align:center;background:#34d399;color:#000;font-weight:700" onclick="carRequestPromotion()">🚀 Request Promotion to ' + nextLevel.title + '</button>';
-    }
-  } else {
-    h += '<div class="muted small">You are at the top of this track.</div>';
-  }
-  h += '<button class="opt" style="margin-top:8px;width:100%;text-align:center" onclick="carAskForRaise()">💰 Ask for raise</button>';
-  h += '</div>';
-
-  if (c.reviews.length) {
-    var r = c.reviews[c.reviews.length - 1];
-    var rColor = r.rating >= 4 ? '#34d399' : r.rating === 3 ? '#fbbf24' : '#fb7185';
-    h += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h4 style="font-size:.82rem;color:#8b5cf6">📄 REVIEW · ' + r.year + '</h4><b style="color:' + rColor + '">' + r.rating + '/5</b></div>';
-    h += '<p class="muted small" style="margin-top:4px;font-style:italic">"' + r.comment + '"</p></div>';
-  }
-
-  if (c.imtyaz && c.imtyaz.monthsLeft > 0) {
-    h += '<div class="card" style="border-color:#fbbf24"><h4 style="font-size:.82rem;color:#fbbf24">🏥 IMTYAZ · ' + c.imtyaz.monthsLeft + ' months left</h4></div>';
-  }
-
-  if (j.benefits && j.benefits.length) {
-    h += '<div class="card"><h4 style="font-size:.82rem;color:#8b5cf6;margin-bottom:6px">🎁 BENEFITS</h4>';
-    j.benefits.forEach(function(b) {
-      var def = CAR_BENEFITS[b];
-      if (def) h += '<div style="padding:4px 0;font-size:.78rem"><b>' + def.label + '</b><div class="muted" style="font-size:.7rem">' + def.value + '</div></div>';
-    });
-    h += '</div>';
-  }
-
-  h += carRenderMilestonesSummary();
-
-  h += '<div class="card"><button class="opt" style="width:100%;text-align:center;border-color:#fb7185;color:#fb7185" onclick="carQuitJob()">🚪 Resign</button></div>';
-
-  return h;
-}
 function carRenderMilestonesSummary() {
   if (!S.career.milestones.length) return '';
   let html = '<div class="card"><h3>🏆 Career Milestones</h3>';
