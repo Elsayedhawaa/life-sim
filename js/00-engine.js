@@ -4993,3 +4993,416 @@ GameHooks.on('render', function() {
     checkDeath();
   }
 });
+/* ============================================================
+   SESSION 12: REALISM ENGINE
+   Real difficulty. Real misfortunes. Real consequences.
+   ============================================================ */
+
+/* ---------- 1. COUNTRY DIFFICULTY (0-100) ---------- */
+function getCountryDifficulty(country) {
+  country = country || (S ? S.country : 'egy');
+  var base = {
+    egy: 82, sau: 58, uae: 55, kwt: 54, qat: 54, omn: 58, bhr: 56,
+    usa: 62, gbr: 60, deu: 55, can: 58, aus: 60,
+    nld: 58, fra: 65, jpn: 70, ita: 72, sgp: 52,
+    bra: 75, ind: 78, tur: 76
+  }[country] || 60;
+  return base;
+}
+window.getCountryDifficulty = getCountryDifficulty;
+
+/* ---------- 2. STRESS SYSTEM ---------- */
+function computeStress() {
+  if (!S) return 0;
+  if (S.age < 16) return 0;
+
+  var stress = 0;
+
+  /* Financial */
+  if (S.wealth < 0) stress += 25;
+  else if (S.household && S.household.net < 0) stress += 15;
+  else if (S.household && S.household.net < S.household.expenses * 0.15) stress += 5;
+
+  /* Work */
+  if (S.career && S.career.job) {
+    var perf = S.career.job.performance || 50;
+    if (perf < 40) stress += 15;
+    var workMode = S.career.workMode || 'normal';
+    if (workMode === 'overtime') stress += 12;
+    else if (workMode === 'hard') stress += 6;
+  } else if (S.age >= 25 && S.age < 60) {
+    stress += 18;
+  }
+
+  /* Health */
+  if (S.health < 40) stress += 15;
+  else if (S.health < 60) stress += 6;
+
+  /* Marriage */
+  if (S.marriage && S.marriage.status === 'married' && S.marriage.partner) {
+    var bond = S.marriage.partner.bond || 70;
+    if (bond < 35) stress += 20;
+    else if (bond < 50) stress += 10;
+  }
+
+  /* Children */
+  if (S.childrenList && S.childrenList.length > 0) {
+    var unhappy = S.childrenList.filter(function(c) { return (c.bond || 55) < 40; }).length;
+    stress += unhappy * 6;
+    stress += S.childrenList.length * 2;
+  }
+
+  /* Parents aging */
+  var agingParents = (S.family || []).filter(function(m) {
+    return (m.role === 'Mother' || m.role === 'Father') && m.alive !== false && (m.age || 0) >= 70;
+  });
+  stress += agingParents.length * 8;
+
+  /* Country modifier */
+  stress += getCountryDifficulty(S.country) * 0.15;
+
+  return Math.max(0, Math.min(100, Math.round(stress)));
+}
+window.computeStress = computeStress;
+
+function applyStressEffects() {
+  if (!S) return;
+  var stress = computeStress();
+  var prev = S._lastStress || stress;
+  S._lastStress = stress;
+  S.stress = stress;
+
+  /* High stress for 2+ consecutive years → real damage */
+  if (stress >= 70) {
+    S._stressHighYears = (S._stressHighYears || 0) + 1;
+    if (S._stressHighYears >= 2) {
+      S.health = Math.max(0, (S.health || 100) - 3);
+      if (typeof addHappiness === 'function') addHappiness(-5);
+      if (typeof log === 'function') log('😰 Chronic stress is affecting your body.');
+    }
+  } else {
+    S._stressHighYears = 0;
+  }
+
+  /* Extreme stress → heart attack risk */
+  if (stress >= 85 && S.age > 40 && Math.random() < 0.04) {
+    if (typeof log === 'function') log('🚨 You collapsed from stress. Emergency hospitalization.');
+    S.wealth -= 5000;
+    S.health = Math.max(0, S.health - 15);
+    if (typeof emitSignal === 'function') emitSignal('healthCritical', { health: S.health, prev: prev });
+  }
+}
+window.applyStressEffects = applyStressEffects;
+
+/* ---------- 3. RANDOM MISFORTUNE ENGINE ---------- */
+const MISFORTUNE_POOL = [
+  { id: 'car_accident', weight: 8, minAge: 18, maxAge: 75, cost: 15000, health: -12, happiness: -8,
+    text: '🚗 Car accident. You were rear-ended at a red light. Hospital + repair.' },
+  { id: 'sudden_illness', weight: 6, minAge: 18, maxAge: 90, cost: 8000, health: -18, happiness: -6,
+    text: '🏥 Sudden illness. Food poisoning, or something worse. Hospital visit.' },
+  { id: 'theft', weight: 10, minAge: 16, maxAge: 80, cost: 5000, happiness: -10,
+    text: '🔓 Break-in. Your home was burglarized. Items stolen.' },
+  { id: 'scam', weight: 8, minAge: 18, maxAge: 75, cost: 12000, happiness: -12,
+    text: '📞 Phone scam. They got your bank details. Money gone.' },
+  { id: 'lawsuit', weight: 3, minAge: 25, maxAge: 70, cost: 25000, happiness: -15,
+    text: '⚖️ Someone is suing you. Legal fees piling up.' },
+  { id: 'home_damage', weight: 7, minAge: 22, maxAge: 80, cost: 18000, happiness: -8,
+    text: '🏠 Home damage. Burst pipe, electrical fire, something broke. Repairs needed.' },
+  { id: 'job_loss_random', weight: 5, minAge: 22, maxAge: 60, happiness: -20, health: -3, special: 'job_loss',
+    text: '💼 Laid off — restructuring. Nothing personal. Just business.' },
+  { id: 'medical_emergency', weight: 4, minAge: 18, maxAge: 90, cost: 40000, health: -30, happiness: -20,
+    text: '🚑 Medical emergency. Surgery needed. Life or debt — impossible choice.' },
+  { id: 'family_death_unexpected', weight: 3, minAge: 25, maxAge: 80, happiness: -25, special: 'family_death',
+    text: '🕊 A family member died unexpectedly. The news hit like a wall.' },
+  { id: 'friendship_betrayal', weight: 6, minAge: 20, maxAge: 70, happiness: -10, special: 'friend_betray',
+    text: '💔 A close friend betrayed you. Trust broken.' },
+  { id: 'inflation_spike', weight: 6, minAge: 18, maxAge: 80, cost: 4000, happiness: -5,
+    text: '💸 Prices surged this year. Everything costs more.' },
+  { id: 'traffic_fine', weight: 10, minAge: 20, maxAge: 70, cost: 2500, happiness: -3,
+    text: '📋 Government fees or traffic fines. Unexplained charges.' }
+];
+
+function rollMisfortune() {
+  if (!S) return false;
+  if (S.age < 16) return false;
+  if (S.pending) return false;
+
+  var countryDiff = getCountryDifficulty(S.country);
+
+  /* Base chance: 8% per year, scaled by country difficulty */
+  var baseChance = 0.08 + (countryDiff - 50) * 0.002;
+  /* Egypt: 0.08 + 0.064 = ~14% chance per year */
+  /* USA: 0.08 + 0.024 = ~10% */
+  /* Saudi: 0.08 + 0.016 = ~10% */
+  baseChance = Math.max(0.03, Math.min(0.22, baseChance));
+
+  /* Wealth buffer: having money reduces some misfortunes (insurance, etc.) */
+  if (S.wealth > 500000) baseChance *= 0.7;
+  else if (S.wealth > 100000) baseChance *= 0.85;
+
+  if (Math.random() > baseChance) return false;
+
+  /* Pick weighted */
+  var eligible = MISFORTUNE_POOL.filter(function(m) {
+    return S.age >= m.minAge && S.age <= m.maxAge;
+  });
+  var total = eligible.reduce(function(s, m) { return s + m.weight; }, 0);
+  var roll = Math.random() * total;
+  var chosen = eligible[0];
+  for (var i = 0; i < eligible.length; i++) {
+    roll -= eligible[i].weight;
+    if (roll <= 0) { chosen = eligible[i]; break; }
+  }
+
+  /* Apply */
+  if (typeof log === 'function') log(chosen.text);
+
+  if (chosen.cost && chosen.cost > 0) {
+    var costLocal = chosen.cost * ((C().rate || 1) / 52.7);
+    /* Try credit card if not enough cash */
+    if (S.wealth < costLocal) {
+      if (S.bank && Array.isArray(S.bank.creditCards)) {
+        var card = S.bank.creditCards.find(function(c) {
+          return (c.limit || 0) - (c.balance || 0) >= costLocal;
+        });
+        if (card) {
+          card.balance = (card.balance || 0) + costLocal;
+          log('💳 Charged ' + money(costLocal) + ' to ' + card.name + '.');
+        } else {
+          S.wealth -= costLocal;
+        }
+      } else {
+        S.wealth -= costLocal;
+      }
+    } else {
+      S.wealth -= costLocal;
+    }
+  }
+  if (chosen.health && typeof fx === 'function') fx({ health: chosen.health });
+  if (chosen.happiness && typeof addHappiness === 'function') addHappiness(chosen.happiness);
+
+  if (chosen.special === 'job_loss') {
+    if (S.career && S.career.job) {
+      if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('random layoff');
+    }
+  }
+  if (chosen.special === 'family_death') {
+    var familyCandidates = (S.family || []).filter(function(m) {
+      return m.alive !== false && m.role !== 'Spouse' && m.age < 65;
+    });
+    if (familyCandidates.length > 0) {
+      var m = familyCandidates[Math.floor(Math.random() * familyCandidates.length)];
+      m.alive = false;
+      m.deathYear = gameYear();
+      log('🕊 ' + m.name + ' passed away. You were not prepared.');
+    }
+  }
+  if (chosen.special === 'friend_betray') {
+    var friends = (S.friends || []).filter(function(f) { return f.alive !== false; });
+    if (friends.length > 0) {
+      var f = friends[Math.floor(Math.random() * friends.length)];
+      f.bond = Math.max(0, (f.bond || 50) - 30);
+    }
+  }
+
+  /* Record as moment */
+  if (typeof recordMoment === 'function') {
+    recordMoment('The year things went wrong', chosen.text.replace(/^[^\s]+\s/, ''), { icon: '💥', key: 'misf_' + chosen.id + '_' + gameYear(), weight: 1 });
+  }
+  return true;
+}
+window.rollMisfortune = rollMisfortune;
+
+/* ---------- 4. AMBIENT HEALTH DECLINE AFTER 40 ---------- */
+function applyAmbientHealthDecline() {
+  if (!S) return;
+  if (S.age < 40) return;
+
+  var decline = 0;
+  if (S.age >= 40 && S.age < 50) decline = 0.5;
+  else if (S.age >= 50 && S.age < 60) decline = 1;
+  else if (S.age >= 60 && S.age < 70) decline = 1.5;
+  else if (S.age >= 70 && S.age < 80) decline = 2.5;
+  else if (S.age >= 80) decline = 4;
+
+  /* Accelerators */
+  if (S.stress >= 70) decline *= 1.8;
+  if (S.happiness < 30) decline *= 1.4;
+
+  var before = S.health || 100;
+  S.health = Math.max(0, before - decline);
+
+  /* Threshold warnings */
+  if (before > 50 && S.health <= 50 && S.health > 40) {
+    if (typeof log === 'function') log('❤️ Your body is slowing down. Health is degrading.');
+  }
+  if (before > 30 && S.health <= 30) {
+    if (typeof log === 'function') log('⚠️ Health critical. See a doctor.');
+    if (typeof emitSignal === 'function') emitSignal('healthCritical', { health: S.health, prev: before });
+  }
+}
+window.applyAmbientHealthDecline = applyAmbientHealthDecline;
+
+/* ---------- 5. MARRIAGE CRISIS ROLL ---------- */
+function rollMarriageCrisis() {
+  if (!S || !S.marriage || S.marriage.status !== 'married' || !S.marriage.partner) return false;
+  if (S.marriage.partner.alive === false) return false;
+  if (S.pending) return false;
+
+  var p = S.marriage.partner;
+  var bond = p.bond || 70;
+  var trust = p.trust || 50;
+  var countryDiff = getCountryDifficulty(S.country);
+
+  /* Base divorce rate per year (Egypt ~4%, USA ~5%, Western Europe ~3%) */
+  var baseRate = countryDiff >= 80 ? 0.04 : countryDiff >= 60 ? 0.05 : 0.03;
+
+  /* Marriage quality modifiers */
+  if (bond < 30) baseRate *= 4;
+  else if (bond < 45) baseRate *= 2.5;
+  else if (bond < 60) baseRate *= 1.5;
+  if (trust < 40) baseRate *= 2;
+
+  /* Years married modifier (first 3 years higher, 5-10 lower, 10+ starts rising again) */
+  var marriedYears = gameYear() - (p.marriedYear || gameYear());
+  if (marriedYears < 3) baseRate *= 1.3;
+  else if (marriedYears > 15) baseRate *= 1.2;
+
+  /* Affairs happen */
+  var affairChance = 0.03 + (bond < 40 ? 0.04 : 0);
+  if (Math.random() < affairChance) {
+    var affairs = [
+      { label: 'an emotional affair', text: 'They have been confiding in someone else.' },
+      { label: 'a physical affair', text: 'You found evidence. They have been unfaithful.' }
+    ];
+    var chosen = affairs[Math.floor(Math.random() * affairs.length)];
+    p.bond = Math.max(0, bond - 25);
+    p.trust = Math.max(0, trust - 30);
+    if (typeof log === 'function') log('💔 You discovered ' + chosen.label + '. ' + chosen.text);
+    if (typeof recordMoment === 'function') {
+      recordMoment('The day you found out', chosen.text, { icon: '💔', key: 'affair_' + gameYear(), weight: 3 });
+    }
+    if (typeof emitSignal === 'function') emitSignal('spouseAffair', { partner: p });
+  }
+
+  /* Divorce roll */
+  if (Math.random() < baseRate) {
+    /* Small chance of reconciliation attempt */
+    if (bond >= 50 && Math.random() < 0.4) {
+      if (typeof log === 'function') log('💬 ' + p.name + ' asked for space. Not divorce. Yet.');
+      p.bond = Math.max(0, bond - 5);
+    } else if (typeof evtForceDivorce === 'function') {
+      if (typeof log === 'function') log('💔 ' + p.name + ' asked for a divorce.');
+      evtForceDivorce(S, 'irreconcilable differences');
+      return true;
+    }
+  }
+  return false;
+}
+window.rollMarriageCrisis = rollMarriageCrisis;
+
+/* ---------- 6. CLASS TRACKING ---------- */
+function getSocialClass() {
+  if (!S) return 'middle';
+  var w = S.wealth || 0;
+  var income = (S.household && S.household.income) || 0;
+  var countryDiff = getCountryDifficulty(S.country);
+
+  /* Thresholds scaled by country */
+  var poorThreshold = 30000 * (countryDiff / 50);
+  var middleThreshold = 500000 * (countryDiff / 50);
+  var upperThreshold = 2000000 * (countryDiff / 50);
+  var richThreshold = 8000000 * (countryDiff / 50);
+
+  var score = w + income * 2;
+  if (score < poorThreshold) return 'poor';
+  if (score < middleThreshold) return 'lower-middle';
+  if (score < upperThreshold) return 'middle';
+  if (score < richThreshold) return 'upper-middle';
+  return 'wealthy';
+}
+window.getSocialClass = getSocialClass;
+
+function checkClassShift() {
+  if (!S) return;
+  if (S.age < 18) return;
+  var current = getSocialClass();
+  var prev = S._lastClass;
+  S._lastClass = current;
+
+  if (prev && prev !== current) {
+    var classes = ['poor', 'lower-middle', 'middle', 'upper-middle', 'wealthy'];
+    var prevIdx = classes.indexOf(prev);
+    var currIdx = classes.indexOf(current);
+    if (currIdx > prevIdx) {
+      if (typeof log === 'function') log('⬆️ Your social class rose: ' + prev + ' → ' + current);
+    } else if (currIdx < prevIdx) {
+      if (typeof log === 'function') log('⬇️ Your social class fell: ' + prev + ' → ' + current);
+    }
+  }
+}
+window.checkClassShift = checkClassShift;
+
+/* ---------- 7. CAREER CEILING ---------- */
+function getCareerCeiling(trackId) {
+  if (!S) return 6;
+  var countryDiff = getCountryDifficulty(S.country);
+  var bornClass = (S.familyTier || 'middle');
+  var currentClass = getSocialClass();
+
+  /* Born poor: harder to reach top */
+  if (bornClass === 'poor' && currentClass === 'poor') return countryDiff >= 75 ? 3 : 4;
+  if (bornClass === 'poor' && currentClass !== 'poor') return 5;
+
+  /* Middle class can reach level 4-5 */
+  if (bornClass === 'middle' || bornClass === 'lower-mid') return 5;
+
+  /* Upper class can reach top */
+  if (bornClass === 'upper-mid' || bornClass === 'wealthy' || bornClass === 'ultra') return 6;
+
+  return 5;
+}
+window.getCareerCeiling = getCareerCeiling;
+
+function checkCareerCeiling() {
+  if (!S || !S.career || !S.career.job) return;
+  var ceiling = getCareerCeiling(S.career.job.track);
+  var level = S.career.job.level || 0;
+  if (level >= ceiling && !S._ceilingWarned) {
+    S._ceilingWarned = true;
+    if (typeof log === 'function') log('🚧 You have reached the practical ceiling for your background. Going further requires breaking through.');
+    if (typeof recordMoment === 'function') {
+      recordMoment('The ceiling', 'You are as high as your birth allows. Anything more is you breaking the rules.', { icon: '🚧', key: 'ceiling_' + S.career.job.track, weight: 2 });
+    }
+  }
+}
+window.checkCareerCeiling = checkCareerCeiling;
+
+/* ---------- 8. WIRE INTO YEAR TICK ---------- */
+GameHooks.on('year', function() {
+  if (!S) return;
+  if (S.age < 16) return;
+  if (S.alive === false) return;
+
+  applyStressEffects();
+  applyAmbientHealthDecline();
+  checkClassShift();
+  checkCareerCeiling();
+
+  if (!S.pending) rollMisfortune();
+  if (!S.pending) rollMarriageCrisis();
+});
+
+/* Initialize migration */
+if (typeof migrateDualState === 'function') {
+  var _origMigrate12 = migrateDualState;
+  migrateDualState = function() {
+    _origMigrate12();
+    if (S) {
+      if (typeof S.stress !== 'number') S.stress = 0;
+      if (typeof S._stressHighYears !== 'number') S._stressHighYears = 0;
+      if (typeof S._lastClass !== 'string') S._lastClass = getSocialClass();
+    }
+  };
+  window.migrateDualState = migrateDualState;
+}
