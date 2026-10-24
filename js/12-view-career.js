@@ -503,6 +503,43 @@ function carSmartSuggestions() {
 function carAddMilestone(id, label) {
   if (S.career.milestones.some(function(m) { return m.id === id; })) return;
   S.career.milestones.push({ id: id, label: label, year: gameYear() });
+
+  /* ===== MILESTONE REWARDS: real cash + real effects ===== */
+  var rewards = {
+    'first_job':        { cash: 15000, hap: 5, log: '🎉 First job! Signing bonus from life itself: +15,000 EGP.' },
+    'first_promotion':  { cash: 25000, hap: 8, log: '🎉 First promotion! Celebration bonus: +25,000 EGP.' },
+    'top_of_ladder':    { cash: 80000, hap: 15, log: '🎉 Top of your career ladder! A lifetime achievement bonus: +80,000 EGP.' },
+    'imtyaz_done':      { cash: 5000,  hap: 3,  log: '🎉 Imtyaz complete. Government stipend release: +5,000 EGP.' },
+    'fired':            { cash: -5000, hap: -5, log: '💼 Fired. Severance gap costs you 5,000 EGP.' },
+    'millionaire':      { cash: 50000, hap: 10, log: '💰 You crossed the millionaire threshold. Interest + celebration: +50,000 EGP.' }
+  };
+  var r = rewards[id];
+  if (r) {
+    var _rate = (C().rate || 1) / 52.7;
+    var _cash = Math.round(r.cash * _rate);
+    if (_cash > 0) S.wealth += _cash;
+    else S.wealth += _cash; /* negative cash reduces wealth */
+    if (r.hap) fx({ happiness: r.hap });
+    log(r.log);
+    if (id === 'top_of_ladder' && typeof evtPushOffer === 'function' && S.career && S.career.job) {
+      var track = carTrackById(S.career.job.track);
+      var industry = track ? track.industry : 'business';
+      var pool = (typeof CAR_COMPANIES !== 'undefined' && CAR_COMPANIES[S.country] && CAR_COMPANIES[S.country][industry]) || [];
+      var competitors = pool.filter(function(c) { return c.name !== S.career.job.company; });
+      if (competitors.length > 0) {
+        var target = competitors[Math.floor(Math.random() * competitors.length)];
+        evtPushOffer(S, {
+          company: target.name,
+          title: 'Head of ' + industry.charAt(0).toUpperCase() + industry.slice(1),
+          track: S.career.job.track,
+          level: (S.career.job.level || 0),
+          salary: Math.round((S.career.job.salary || 0) * 1.30),
+          message: 'Because you reached the top, competitors are circling. 30% raise offered.'
+        });
+        log('📬 A competitor reached out. Check Career → Offers.');
+      }
+    }
+  }
 }
 
 /* ============================================================
