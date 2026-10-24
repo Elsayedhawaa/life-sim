@@ -209,11 +209,6 @@ function eduApplyToUni(uniId, facultyId, paymentMode) {
       log('❌ Family cannot afford ' + money(tuition) + '/year (tier: ' + S.familyTier + ').');
       render(); return;
     }
-       if (paymentMode === 'family') {
-    if (eduFamilyWealth() < tuition) {
-      log('❌ Family cannot afford ' + money(tuition) + '/year (tier: ' + S.familyTier + ').');
-      render(); return;
-    }
     log('👨‍👩‍👧 Family paying ' + money(tuition) + '/year.');
     // The family pays directly, S.wealth is not deducted
   }
@@ -418,11 +413,13 @@ function eduApplyStudyAbroad(uniId, mode) {
   }
   if (uni.requiresGPA && eduComputeGPA() < uni.requiresGPA && S.uni) {
     log('❌ GPA too low (need ' + uni.requiresGPA + '+).'); render(); return;
-    if (typeof isBannedFrom === 'function') {
+   }
+     if (typeof isBannedFrom === 'function') {
     var _ban = isBannedFrom(uni.country);
     if (_ban) {
       log('🚫 You are banned from ' + (COUNTRIES[uni.country] ? COUNTRIES[uni.country].name : uni.country) + ' for another ' + _ban.yearsLeft + ' year' + (_ban.yearsLeft > 1 ? 's' : '') + '.');
-      render(); return;
+      render(); 
+       return;
     }
   }
 
