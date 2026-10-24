@@ -1094,6 +1094,7 @@ GameHooks.on('year', function() {
         if (!car.broken && Math.random() < bChance) {
           const cls = CAR_CLASSES[car.cls] || CAR_CLASSES.compact;
           car.broken = true;
+           if (typeof emitSignal === 'function') emitSignal('carBroken', { car: car });
           car.repairCost = Math.round(cls.maintenance * carRate() * (0.8 + Math.random() * 1.5));
           log('⚠️ ' + (brand ? brand.name : car.brand) + ' ' + car.model + ' broke down. Repair: ' + money(car.repairCost));
         }
@@ -1136,7 +1137,9 @@ GameHooks.on('year', function() {
                      if(selectedEvent.hap) fx({happiness: selectedEvent.hap});
                      if(selectedEvent.soc) fx({social: selectedEvent.soc});
                      if(selectedEvent.stolen) { car.stolen = true; }
-
+                   if (selectedEvent.stolen) { car.stolen = true;
+                 if (typeof emitSignal === 'function') emitSignal('carStolen', { car: car });
+                                             }
                      if(selectedEvent.id === 'fine_speed') S.carsLicense.points += 2;
                      if(selectedEvent.id === 'red_light_cam') S.carsLicense.points += 3;
                      if(selectedEvent.id === 'road_rage' || selectedEvent.id === 'race_challenge') S.carsLicense.points += 4;
