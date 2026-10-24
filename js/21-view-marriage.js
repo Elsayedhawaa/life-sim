@@ -2719,6 +2719,7 @@ window.marConfirmWedding = function() {
 
   log('🎉 You married ' + m.partner.name + '! Cost paid: ' + money(playerTotalLocal));
   fx({ happiness: 30 });
+   if (typeof emitSignal === 'function') emitSignal('married', { partner: m.partner });
      /* SOUL PASS — record the moment */
   if (typeof recordMoment === 'function') {
     recordMoment(
