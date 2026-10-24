@@ -227,6 +227,13 @@ window.gulfStartApplication = function(sourceId, countryId) {
   if (S.age < 18) { log('❌ Must be 18+.'); render(); return; }
   if (_gulfIsInGulf()) { log('❌ You are already in the Gulf.'); render(); return; }
   if (!GULF_COUNTRIES.includes(countryId)) { log('❌ Invalid Gulf country.'); render(); return; }
+     if (typeof isBannedFrom === 'function') {
+    var _ban = isBannedFrom(countryId);
+    if (_ban) {
+      log('🚫 You are banned from ' + (COUNTRIES[countryId] ? COUNTRIES[countryId].name : countryId) + ' for another ' + _ban.yearsLeft + ' year' + (_ban.yearsLeft > 1 ? 's' : '') + '.');
+      render(); return;
+    }
+  }
 
   const source = GULF_JOB_SOURCES.find(function(s) { return s.id === sourceId; });
   if (!source) return;
