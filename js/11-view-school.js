@@ -418,9 +418,16 @@ function eduApplyStudyAbroad(uniId, mode) {
   }
   if (uni.requiresGPA && eduComputeGPA() < uni.requiresGPA && S.uni) {
     log('❌ GPA too low (need ' + uni.requiresGPA + '+).'); render(); return;
+    if (typeof isBannedFrom === 'function') {
+    var _ban = isBannedFrom(uni.country);
+    if (_ban) {
+      log('🚫 You are banned from ' + (COUNTRIES[uni.country] ? COUNTRIES[uni.country].name : uni.country) + ' for another ' + _ban.yearsLeft + ' year' + (_ban.yearsLeft > 1 ? 's' : '') + '.');
+      render(); return;
+    }
   }
 
   var appFee = eduUSD(100);
+   
   if (S.wealth < appFee) { log('❌ Need ' + money(appFee) + ' application fee.'); render(); return; }
   S.wealth -= appFee;
 
