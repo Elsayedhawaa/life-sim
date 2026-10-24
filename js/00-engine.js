@@ -4596,6 +4596,7 @@ function evolveExtendedFamily() {
       }
     }
 
+   
     (c.children || []).forEach(function(gc) {
       gc.age = (gc.age || 0) + 1;
       if (!Array.isArray(gc.events)) gc.events = [];
@@ -4610,6 +4611,28 @@ function evolveExtendedFamily() {
         }
       }
     });
+
+    /* College tuition — actually charged when child hits 18 */
+    if (c.age === 18 && c.collegeHelp && c.collegeHelp !== 'none' && !c._collegeCharged) {
+      c._collegeCharged = true;
+      c.collegeYearsLeft = 4;
+    }
+
+    if (c.collegeYearsLeft && c.collegeYearsLeft > 0 && c.age >= 18 && c.age <= 22) {
+      var _tuitionLocal = Math.round(20000 * ((C().rate || 1) / 52.7));
+      var _pct = c.collegeHelp === 'full' ? 1 : 0.5;
+      var _fee = Math.round(_tuitionLocal * _pct);
+
+      if (S.wealth >= _fee) {
+        S.wealth -= _fee;
+        log('🎓 Tuition payment for ' + c.name + ': ' + money(_fee) + ' (' + Math.round(_pct * 100) + '%).');
+      } else {
+        log('⚠️ Could not pay ' + c.name + '\'s tuition (' + money(_fee) + '). They may have to drop out.');
+        c.smarts = Math.max(0, (c.smarts || 50) - 10);
+      }
+
+      c.collegeYearsLeft--;
+    }
   });
 }
 window.evolveExtendedFamily = evolveExtendedFamily;
@@ -4639,25 +4662,9 @@ function getAllNiecesNephews() {
   return out;
 }
 window.getAllNiecesNephews = getAllNiecesNephews;
-    /* College tuition — actually charged when child hits 18 */
-    if (c.age === 18 && c.collegeHelp && c.collegeHelp !== 'none' && !c._collegeCharged) {
-      c._collegeCharged = true;
-      c.collegeYearsLeft = 4;
-    }
-    if (c.collegeYearsLeft && c.collegeYearsLeft > 0 && c.age >= 18 && c.age <= 22) {
-      var _tuitionLocal = Math.round(20000 * ((C().rate || 1) / 52.7));  /* 20K EGP baseline per year */
-      var _pct = c.collegeHelp === 'full' ? 1 : 0.5;
-      var _fee = Math.round(_tuitionLocal * _pct);
-      if (S.wealth >= _fee) {
-        S.wealth -= _fee;
-        log('🎓 Tuition payment for ' + c.name + ': ' + money(_fee) + ' (' + Math.round(_pct * 100) + '%).');
-      } else {
-        log('⚠️ Could not pay ' + c.name + '\'s tuition (' + money(_fee) + '). They may have to drop out.');
-        c.smarts = Math.max(0, (c.smarts || 50) - 10);
-      }
-      c.collegeYearsLeft--;
-    }
+
 function getInLaws() {
+
   if (!S || !Array.isArray(S.family)) return [];
   return S.family.filter(function(m) { return m.relation === 'inlaw'; });
 }
