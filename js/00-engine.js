@@ -265,8 +265,11 @@ function newLife() {
     evtMemory: {},
     pendingQueue: [],
   };
-  S.family.push({ role: 'Mother', name: 'Mother', age: 30, bond: 70, alive: true });
-  S.family.push({ role: 'Father', name: 'Father', age: 32, bond: 70, alive: true });
+   var _parentBondStart = 70;
+  if (START.parentType === 'warm') _parentBondStart = 80;
+  else if (START.parentType === 'strict') _parentBondStart = 60;
+  S.family.push({ role: 'Mother', name: 'Mother', age: 30, bond: _parentBondStart, alive: true });
+  S.family.push({ role: 'Father', name: 'Father', age: 32, bond: _parentBondStart, alive: true });
   log(`Born in ${c.name}, 2007. You are 6 years old.`);
   log(START.gender === 'f' ? 'You are a girl.' : 'You are a boy.');
   log(`Family: ${START.familyTier} · Parents: ${START.parentType}.`);
@@ -1923,6 +1926,23 @@ function computeHousehold() {
   }
 
   /* ---------- INCOME ---------- */
+     /* Retirement pension — actually paid */
+  if (S.career && S.career.retired && S.career.pension) {
+    var _finalSal = S.career.pension.finalSalary || 0;
+    var _accumulated = S.career.pension.accumulated || 0;
+    var _careerPension = Math.round(Math.max(_finalSal * 0.30, _accumulated * 0.05));
+    if (_careerPension > 0) {
+      income += _careerPension;
+      incomeItems.push({ label: 'Career pension', yearly: _careerPension, country: S.country });
+    }
+  }
+  if (S.bank && S.bank.pension && S.bank.pension.totalValue > 0) {
+    var _bankPension = Math.round(S.bank.pension.totalValue * 0.06);
+    if (_bankPension > 0) {
+      income += _bankPension;
+      incomeItems.push({ label: 'Private pension', yearly: _bankPension, country: S.country });
+    }
+  }
   if (S.career && S.career.job) {
     var sal = S.career.job.salary || 0;
     if (sal > 0) {
@@ -2664,6 +2684,17 @@ window.evolveChildren = evolveChildren;
 /* ---------- YEARLY EVOLUTION TRIGGER ---------- */
 GameHooks.on('year', function() {
   if (!S) return;
+     /* Parent type affects parent bonds during childhood */
+  if (S.age < 18 && Array.isArray(S.family) && S.parentType) {
+    var _mod = S.parentType === 'warm' ? 1 : S.parentType === 'strict' ? -1 : 0;
+    if (_mod !== 0) {
+      S.family.forEach(function(m) {
+        if ((m.role === 'Mother' || m.role === 'Father') && m.alive !== false) {
+          m.bond = Math.max(0, Math.min(100, (m.bond || 70) + _mod));
+        }
+      });
+    }
+  }
   evolveSpouse();
   evolveParents();
   evolveChildren();
@@ -4222,15 +4253,23 @@ function assignCareerToNPC(person) {
   if (!trackDef) return;
 
   var salary = carSalaryForLevel(track, 0);
+  var _startLevel = 0;
+  var _personality = person.personality || '';
+  if (_personality === 'ambitious' || _personality === 'diligent') _startLevel = 1;
+  else if (_personality === 'shy' || _personality === 'anxious' || _personality === 'sensitive') _startLevel = 0;
+  _startLevel = Math.min(_startLevel, trackDef.levels.length - 1);
+  var _startTitle = trackDef.levels[_startLevel].title;
+  var _startSalary = (typeof carSalaryForLevel === 'function') ? carSalaryForLevel(track, _startLevel) : salary;
+
   person.career = {
     track: track,
-    level: 0,
-    title: trackDef.levels[0].title,
+    level: _startLevel,
+    title: _startTitle,
     company: 'Local Company',
-    salary: salary,
+    salary: _startSalary,
     working: true
   };
-  person.income = salary;
+  person.income = _startSalary;
 }
 
 function marryNPC(person) {
@@ -4547,7 +4586,24 @@ function getAllNiecesNephews() {
   return out;
 }
 window.getAllNiecesNephews = getAllNiecesNephews;
-
+    /* College tuition — actually charged when child hits 18 */
+    if (c.age === 18 && c.collegeHelp && c.collegeHelp !== 'none' && !c._collegeCharged) {
+      c._collegeCharged = true;
+      c.collegeYearsLeft = 4;
+    }
+    if (c.collegeYearsLeft && c.collegeYearsLeft > 0 && c.age >= 18 && c.age <= 22) {
+      var _tuitionLocal = Math.round(20000 * ((C().rate || 1) / 52.7));  /* 20K EGP baseline per year */
+      var _pct = c.collegeHelp === 'full' ? 1 : 0.5;
+      var _fee = Math.round(_tuitionLocal * _pct);
+      if (S.wealth >= _fee) {
+        S.wealth -= _fee;
+        log('🎓 Tuition payment for ' + c.name + ': ' + money(_fee) + ' (' + Math.round(_pct * 100) + '%).');
+      } else {
+        log('⚠️ Could not pay ' + c.name + '\'s tuition (' + money(_fee) + '). They may have to drop out.');
+        c.smarts = Math.max(0, (c.smarts || 50) - 10);
+      }
+      c.collegeYearsLeft--;
+    }
 function getInLaws() {
   if (!S || !Array.isArray(S.family)) return [];
   return S.family.filter(function(m) { return m.relation === 'inlaw'; });
