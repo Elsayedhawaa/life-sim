@@ -1965,7 +1965,10 @@ function computeHousehold() {
       });
     }
   }
-
+if (S.evtMemory && S.evtMemory.bornPoorTrap) {
+  /* Small but real drag on growth: 3% higher expenses from poor background patterns */
+  expenses = Math.round(expenses * 1.03);
+}
   /* Princess treatment: player pays spouse allowance */
   if (S.marriage && S.marriage.partner && S.marriage.financeModel === 'princess_treatment' && S.gender === 'm') {
     var pSalary = (S.career && S.career.job) ? (S.career.job.salary || 0) : 0;
@@ -2280,7 +2283,12 @@ function chargeHousehold(months) {
     S.household = { income: 0, expenses: 0, net: 0, incomeItems: [], expenseItems: [], stress: 'child' };
     return;
   }
-
+/* Apply inflation spike multiplier if active */
+if (S.household && S.household._inflationSpike > 0) {
+  var _spike = 1 + S.household._inflationSpike;
+  expenses = Math.round(expenses * _spike);
+  S.household._inflationSpike = 0;  /* one-shot */
+}
   /* Skip monthly charge during the year-of-switch (avoids double charge) */
   if (months === 1 && S.pacingSwitchYear === gameYear()) {
     var h0 = computeHousehold();
@@ -5052,6 +5060,11 @@ function computeStress() {
     if (bond < 35) stress += 20;
     else if (bond < 50) stress += 10;
   }
+   if (S.marriage && typeof S.marriage.stress === 'number' && typeof S.stress === 'number') {
+  var _avgStress = Math.round((S.stress * 0.6) + (S.marriage.stress * 0.4));
+  S.marriage.stress = _avgStress;
+  S.stress = _avgStress;
+}
 
   /* Children */
   if (S.childrenList && S.childrenList.length > 0) {
@@ -5277,6 +5290,44 @@ function rollMisfortune() {
   if (chosen.special === 'car_damage') {
     _applyCarDamageFromAccident();
   }
+   if (chosen.id === 'sudden_illness' && typeof medAddCondition === 'function') {
+  var _illPool = ['anxiety', 'depression', 'hypertension', 'type2_diabetes'];
+  medAddCondition(_illPool[Math.floor(Math.random() * _illPool.length)]);
+}
+
+if (chosen.id === 'theft' && S.shopping && Array.isArray(S.shopping.inventory) && S.shopping.inventory.length > 0) {
+  var _stolenIdx = Math.floor(Math.random() * S.shopping.inventory.length);
+  var _stolenItem = S.shopping.inventory[_stolenIdx];
+  S.shopping.inventory.splice(_stolenIdx, 1);
+  log('🔓 Stolen: ' + (_stolenItem.brand || '') + ' ' + (_stolenItem.name || 'an item') + '.');
+}
+
+if (chosen.id === 'scam' && S.bank) {
+  S.bank.score = Math.max(300, (S.bank.score || 680) - 15);
+  log('📉 Credit score dropped due to the fraud.');
+}
+
+if (chosen.id === 'lawsuit' && S.career && S.career.job) {
+  S.career.job.performance = Math.max(0, (S.career.job.performance || 50) - 10);
+  log('💼 The lawsuit is distracting you at work.');
+}
+
+if (chosen.id === 'home_damage' && S.ownedHomes) {
+  var _damagedHome = S.ownedHomes.find(function(h) { return h.status === 'occupied'; });
+  if (_damagedHome) {
+    _damagedHome.condition = Math.max(0, (_damagedHome.condition || 100) - 20);
+    log('🔨 The repair will need to happen eventually. Condition now ' + _damagedHome.condition + '%.');
+  }
+}
+
+if (chosen.id === 'medical_emergency' && typeof medAddCondition === 'function') {
+  medAddCondition(Math.random() < 0.5 ? 'fracture' : 'heart_attack');
+}
+
+if (chosen.id === 'inflation_spike' && S.household) {
+  S.household._inflationSpike = (S.household._inflationSpike || 0) + 0.08;
+  log('💸 Household prices jumped 8% this year.');
+}
   if (chosen.special === 'job_loss') {
     if (S.career && S.career.job) {
       if (typeof carLeaveCurrentJob === 'function') carLeaveCurrentJob('random layoff');
@@ -5404,6 +5455,10 @@ function rollMarriageCrisis() {
               evtForceDivorce(s, 'infidelity');
               log('💔 You divorced ' + p.name + ' over infidelity.');
             }
+             /* Clear in-laws — they are no longer family */
+if (Array.isArray(S.family)) {
+  S.family = S.family.filter(function(m) { return m.relation !== 'inlaw'; });
+}
             if (typeof recordMoment === 'function') {
               recordMoment('The day you ended it', 'You filed the papers. It was the hardest thing you have done.', { icon: '💔', key: 'divorce_affair_' + gameYear(), weight: 3 });
             }
