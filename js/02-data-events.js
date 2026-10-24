@@ -1055,14 +1055,48 @@ const GLOBAL_EVENTS = [
     ]
   },
   { id: 'child_opportunity', minAge: 27, maxAge: 40,
-    condition: s => !!(s.spouse || (s.marriage && s.marriage.status === 'married' && s.marriage.partner)),
+       condition: s => {
+      if (!(s.spouse || (s.marriage && s.marriage.status === 'married' && s.marriage.partner))) return false;
+      var fp = s.marriage && s.marriage.familyPlanning;
+      if (fp === 'wait') return false;
+      if (fp === 'career_first' && Math.random() > 0.15) return false;
+      var kids = (s.childrenList || []).length;
+      if (fp === 'one_child' && kids >= 1) return false;
+      if (fp === 'two_children' && kids >= 2) return false;
+      if (fp === 'large_family' && kids >= 4) return false;
+      return true;
+    },
     title: 'Starting a family',
     text: 'You and your partner talk about having a child.',
     choices: [
-      { label: 'Have a child', effect: s => {
-        s.children = (s.children || 0) + 1;
-        s.happiness += 10; s.wealth -= 36000;
-        if (s.spouse) s.spouse.bond = Math.min(100, s.spouse.bond + 5);
+          { label: 'Have a child', effect: s => {
+        if (!s.childrenList) s.childrenList = [];
+        var _g = Math.random() < 0.5 ? 'm' : 'f';
+        var _pool = (typeof CHILDREN_BABY_NAMES !== 'undefined' && CHILDREN_BABY_NAMES[s.country]) ? CHILDREN_BABY_NAMES[s.country] : (CHILDREN_BABY_NAMES || {}).egy || { m: ['Omar'], f: ['Layla'] };
+        var _name = (_g === 'm' ? _pool.m : _pool.f)[Math.floor(Math.random() * (_g === 'm' ? _pool.m : _pool.f).length)];
+        var _kid = {
+          id: 'child_' + Math.random().toString(36).slice(2, 8),
+          name: _name,
+          gender: _g,
+          age: 0,
+          birthYear: gameYear(),
+          bond: 55,
+          happiness: 70,
+          smarts: 50,
+          health: 100,
+          social: 50,
+          lifestyle: 'standard',
+          activities: [],
+          milestones: [],
+          events: [],
+          traits: [],
+          school: null,
+          movedOut: false
+        };
+        s.childrenList.push(_kid);
+        s.happiness += 10;
+        s.wealth -= 36000;
+        if (s.marriage && s.marriage.partner) s.marriage.partner.bond = Math.min(100, (s.marriage.partner.bond || 70) + 5);
       } },
       { label: 'Not yet', effect: s => { s.happiness += 2; } }
     ]
