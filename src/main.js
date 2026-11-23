@@ -288,6 +288,8 @@ import {
   getSavedTheme,
   saveTheme
 } from './ui/views.js';
+/* Turn result card: after every advance / decision, say what changed. */
+import { snapshotTurn, buildTurnResult, renderTurnResultCardHtml } from './ui/turnResult.js';
 import {
   resolveFurnishTarget,
   migrateFurnishedRoomsToNumbers
@@ -396,7 +398,7 @@ export function renderApp(preserveFilterKey = null, caretPos = null) {
     <div class="app-shell">
       ${renderHudHtml(S)}
       ${renderNavTabsHtml(S, uiState.activeTab)}
-      <main id="main-content">${tabContent}</main>
+      <main id="main-content">${renderTurnResultCardHtml(S, uiState)}${tabContent}</main>
     </div>
     ${renderBottomDockHtml(S)}
     ${uiState.showNewLifeModal ? renderNewLifeModalHtml({ country: S.homeCountry, birthYear: 1998, gender: S.player.gender }) : ''}
@@ -1087,30 +1089,37 @@ if (typeof document !== 'undefined') {
 
     /* ---- TURN ADVANCEMENT & SCENES ---- */
     if (action === 'advance-one') {
+      const before = snapshotTurn(S);
       const res = advanceSingleTurn(S);
       try { evaluateProgress(S); } catch (_) {}
+      uiState.turnResult = buildTurnResult(S, before, S.pacing === 'monthly' ? 'month' : 'year');
       if (res.pausedForScene || res.gameOver) uiState.activeTab = 'life';
       renderApp();
       return;
     }
 
     if (action === 'fast-forward-year') {
+      const before = snapshotTurn(S);
       const res = fastForwardTurns(S, 12);
       try { evaluateProgress(S); } catch (_) {}
-      if (res.pausedForScene || S.gameOver) {
-        uiState.activeTab = 'life';
-        showToast(`Paused after ${res.stepsRun} month(s) for an important moment.`);
-      } else {
-        showToast(`Simulated ${res.stepsRun} months smoothly.`);
-      }
+      uiState.turnResult = buildTurnResult(S, before, 'fastforward', res.stepsRun);
+      if (res.pausedForScene || S.gameOver) uiState.activeTab = 'life';
       renderApp();
       return;
     }
 
     if (action === 'choose-scene') {
       const idx = Number(btn.dataset.idx || 0);
+      const before = snapshotTurn(S);
       resolveActiveSceneChoice(S, idx);
       try { evaluateProgress(S); } catch (_) {}
+      uiState.turnResult = buildTurnResult(S, before, 'choice');
+      renderApp();
+      return;
+    }
+
+    if (action === 'dismiss-turn-result') {
+      uiState.turnResult = null;
       renderApp();
       return;
     }
