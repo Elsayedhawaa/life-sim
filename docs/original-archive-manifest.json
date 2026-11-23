@@ -1,0 +1,1430 @@
+[
+  {
+    "path": "tests/coherence_suite.mjs",
+    "status": "identical",
+    "original_sha256": "edfa15bc5c0abd2aa95213ed37bb7f7fe1f25a8588bff7dcb86ec6d0e3d4b94c",
+    "current_sha256": "edfa15bc5c0abd2aa95213ed37bb7f7fe1f25a8588bff7dcb86ec6d0e3d4b94c"
+  },
+  {
+    "path": "tests/mortality_probe.mjs",
+    "status": "identical",
+    "original_sha256": "82325fc9d06a24a550d864259e1dc626714c71b43d74c63002a7fa64f9c1de1a",
+    "current_sha256": "82325fc9d06a24a550d864259e1dc626714c71b43d74c63002a7fa64f9c1de1a"
+  },
+  {
+    "path": "tests/v210-verify.mjs",
+    "status": "identical",
+    "original_sha256": "d0ae5ca4d95cddddd952e0e3d89007796e2bd3a56d259811ee35a1de86dcebf7",
+    "current_sha256": "d0ae5ca4d95cddddd952e0e3d89007796e2bd3a56d259811ee35a1de86dcebf7"
+  },
+  {
+    "path": "tests/v211-verify.mjs",
+    "status": "identical",
+    "original_sha256": "97b1d2b5adfbe2fb927368f0b5b54e97682a174a8cce86d0aa96b4dfc3402f40",
+    "current_sha256": "97b1d2b5adfbe2fb927368f0b5b54e97682a174a8cce86d0aa96b4dfc3402f40"
+  },
+  {
+    "path": "tests/v212-verify.mjs",
+    "status": "identical",
+    "original_sha256": "ad101a3cf96e9a58b85191e8e94afb8eb0c330b063491f3919554551b8f3367c",
+    "current_sha256": "ad101a3cf96e9a58b85191e8e94afb8eb0c330b063491f3919554551b8f3367c"
+  },
+  {
+    "path": "tests/v212-w1-verify.mjs",
+    "status": "identical",
+    "original_sha256": "37c946edd6fea2e3066d11439aee3ef1d2ac5d18a93cc15801c5aaa7cfda638c",
+    "current_sha256": "37c946edd6fea2e3066d11439aee3ef1d2ac5d18a93cc15801c5aaa7cfda638c"
+  },
+  {
+    "path": "tests/v212-w2-verify.mjs",
+    "status": "identical",
+    "original_sha256": "433197ad84b417dd45dc7eabfa2cda8c06d6ae22d62bd455a65865526174f6ba",
+    "current_sha256": "433197ad84b417dd45dc7eabfa2cda8c06d6ae22d62bd455a65865526174f6ba"
+  },
+  {
+    "path": "tests/v212-w3-verify.mjs",
+    "status": "identical",
+    "original_sha256": "03ea28df6fcbdefcd0460ce3a0eec5f7a001a104c2b5f3ae4e1c386121a0532e",
+    "current_sha256": "03ea28df6fcbdefcd0460ce3a0eec5f7a001a104c2b5f3ae4e1c386121a0532e"
+  },
+  {
+    "path": "tests/v212-w4-verify.mjs",
+    "status": "identical",
+    "original_sha256": "3924d73e81e1e89acbb465f200eed802c27b6f377576b9ac606c7db6ad31838a",
+    "current_sha256": "3924d73e81e1e89acbb465f200eed802c27b6f377576b9ac606c7db6ad31838a"
+  },
+  {
+    "path": "tests/v212-w5-verify.mjs",
+    "status": "identical",
+    "original_sha256": "9835650147575ee9832197db25d65d2e2de752a2cb84c5ec3fe6a136ed78a4ae",
+    "current_sha256": "9835650147575ee9832197db25d65d2e2de752a2cb84c5ec3fe6a136ed78a4ae"
+  },
+  {
+    "path": "tests/v212-w6-verify.mjs",
+    "status": "identical",
+    "original_sha256": "f3cde13fd5fec5d1491f53912c63aa0f92b11705b5f79b4786da35a791dca55e",
+    "current_sha256": "f3cde13fd5fec5d1491f53912c63aa0f92b11705b5f79b4786da35a791dca55e"
+  },
+  {
+    "path": "tests/v213-verify.mjs",
+    "status": "identical",
+    "original_sha256": "c1cb0c027a58b4a5f7bc184c2f85dd4631be0cd7ef0c1a776a36748a3d705425",
+    "current_sha256": "c1cb0c027a58b4a5f7bc184c2f85dd4631be0cd7ef0c1a776a36748a3d705425"
+  },
+  {
+    "path": "tests/v213-w1-verify.mjs",
+    "status": "identical",
+    "original_sha256": "5c131a51aa28e9cf3131ca4b86c5e2039d9c372e092e50c912108e86b7c5dd8e",
+    "current_sha256": "5c131a51aa28e9cf3131ca4b86c5e2039d9c372e092e50c912108e86b7c5dd8e"
+  },
+  {
+    "path": "tests/v213-w2-baseline.sha256",
+    "status": "identical",
+    "original_sha256": "7504d6059fcd16c7941389c49f8460ff9ace928cc44eb888a9964314f1135937",
+    "current_sha256": "7504d6059fcd16c7941389c49f8460ff9ace928cc44eb888a9964314f1135937"
+  },
+  {
+    "path": "tests/v213-w2-verify.mjs",
+    "status": "identical",
+    "original_sha256": "2fb94eac1437d025fd2981b42eb5cd6785ed293b44b19714be87d2015f9c86a7",
+    "current_sha256": "2fb94eac1437d025fd2981b42eb5cd6785ed293b44b19714be87d2015f9c86a7"
+  },
+  {
+    "path": "tests/v213-w3-verify.mjs",
+    "status": "identical",
+    "original_sha256": "4e73ed1b3fcdbe5d13fd338acfb17434a2ee0bf8956bd0f41dbdafc9e7a6fdac",
+    "current_sha256": "4e73ed1b3fcdbe5d13fd338acfb17434a2ee0bf8956bd0f41dbdafc9e7a6fdac"
+  },
+  {
+    "path": "tests/v213-w4-verify.mjs",
+    "status": "identical",
+    "original_sha256": "990b39ef9fdd94cfe9220627d37eb3ca1cff28f7ade31672b69759ce8f80cfe6",
+    "current_sha256": "990b39ef9fdd94cfe9220627d37eb3ca1cff28f7ade31672b69759ce8f80cfe6"
+  },
+  {
+    "path": "tests/v214-verify.mjs",
+    "status": "identical",
+    "original_sha256": "069bde122ddee6a31bb37b38bfb6de92b0116cf3fce340806b699ff61204046b",
+    "current_sha256": "069bde122ddee6a31bb37b38bfb6de92b0116cf3fce340806b699ff61204046b"
+  },
+  {
+    "path": "tests/v214-w1-verify.mjs",
+    "status": "identical",
+    "original_sha256": "ee169df454630adb580f91d3602f0d88b2af01582819b5f04eae6bb87e99966c",
+    "current_sha256": "ee169df454630adb580f91d3602f0d88b2af01582819b5f04eae6bb87e99966c"
+  },
+  {
+    "path": "tests/v214-w2-verify.mjs",
+    "status": "identical",
+    "original_sha256": "9e12bb2fa911423f02cac86c92f535a0c7a55e844f713705a730c8cf9e990554",
+    "current_sha256": "9e12bb2fa911423f02cac86c92f535a0c7a55e844f713705a730c8cf9e990554"
+  },
+  {
+    "path": "tests/v214-w3-verify.mjs",
+    "status": "identical",
+    "original_sha256": "aea86cfa596af98b94e5f7f249603cc1c775caaeab0f834819a42863e5ae0496",
+    "current_sha256": "aea86cfa596af98b94e5f7f249603cc1c775caaeab0f834819a42863e5ae0496"
+  },
+  {
+    "path": "tests/v214-w4-verify.mjs",
+    "status": "identical",
+    "original_sha256": "d78b463421ce4b06747c7a2645b334ceb470bce923ae863a215e5a3042ec274d",
+    "current_sha256": "d78b463421ce4b06747c7a2645b334ceb470bce923ae863a215e5a3042ec274d"
+  },
+  {
+    "path": "tests/v214-w5-verify.mjs",
+    "status": "identical",
+    "original_sha256": "f7fcf948404abfaef58a3848ea5eb20e2c427180f3204e2c558b931e590e5f85",
+    "current_sha256": "f7fcf948404abfaef58a3848ea5eb20e2c427180f3204e2c558b931e590e5f85"
+  },
+  {
+    "path": "tests/v215-verify.mjs",
+    "status": "identical",
+    "original_sha256": "d895adff3739878e2fa16218938828b910193dd8b194591ad916974109ebfb2f",
+    "current_sha256": "d895adff3739878e2fa16218938828b910193dd8b194591ad916974109ebfb2f"
+  },
+  {
+    "path": "tests/v215-w1-verify.mjs",
+    "status": "identical",
+    "original_sha256": "e0390f517e99c8fe22a6d117e464b7b69797728333c1d189850320e0103d4f4e",
+    "current_sha256": "e0390f517e99c8fe22a6d117e464b7b69797728333c1d189850320e0103d4f4e"
+  },
+  {
+    "path": "tests/v215-w2-verify.mjs",
+    "status": "identical",
+    "original_sha256": "3e2435c4b63f091dfe52640556594e2d78115831a5baba2e49e75a1de94291bb",
+    "current_sha256": "3e2435c4b63f091dfe52640556594e2d78115831a5baba2e49e75a1de94291bb"
+  },
+  {
+    "path": "tests/v215-w3-verify.mjs",
+    "status": "identical",
+    "original_sha256": "49f845864bd0b3c74cd57f467bc7c0b7b0eac890038469b6bff2ef4616c11fc8",
+    "current_sha256": "49f845864bd0b3c74cd57f467bc7c0b7b0eac890038469b6bff2ef4616c11fc8"
+  },
+  {
+    "path": "tests/v215-w4-verify.mjs",
+    "status": "identical",
+    "original_sha256": "6a8439f062fe35f2d0c20d330416b11a9bae646e813f5a242516019da772aa81",
+    "current_sha256": "6a8439f062fe35f2d0c20d330416b11a9bae646e813f5a242516019da772aa81"
+  },
+  {
+    "path": "tests/v215-w5-verify.mjs",
+    "status": "identical",
+    "original_sha256": "95c68675711cca5432fe5aca34e1c8e8ab2aa60576bd0c7c42ecb8ebae2b9929",
+    "current_sha256": "95c68675711cca5432fe5aca34e1c8e8ab2aa60576bd0c7c42ecb8ebae2b9929"
+  },
+  {
+    "path": "tests/v216-verify.mjs",
+    "status": "identical",
+    "original_sha256": "077294e7df1b4d4f3150a3e6b952399f7968e707334cafb98f50bf1ebbc803dd",
+    "current_sha256": "077294e7df1b4d4f3150a3e6b952399f7968e707334cafb98f50bf1ebbc803dd"
+  },
+  {
+    "path": "tests/v216-w1-verify.mjs",
+    "status": "identical",
+    "original_sha256": "396b5aa5b5b3182e3bccbb7140c610bc0357547aea1eda27665d42c599b960b9",
+    "current_sha256": "396b5aa5b5b3182e3bccbb7140c610bc0357547aea1eda27665d42c599b960b9"
+  },
+  {
+    "path": "tests/v216-w2-achievements.mjs",
+    "status": "identical",
+    "original_sha256": "8269d2986bc4fd6d546e3f13310b121dbe5013858af511d394a4d6d77e56c72e",
+    "current_sha256": "8269d2986bc4fd6d546e3f13310b121dbe5013858af511d394a4d6d77e56c72e"
+  },
+  {
+    "path": "tests/v216-w3-contrast.mjs",
+    "status": "identical",
+    "original_sha256": "ab73176c2ffc088b805b64baccb6059e9eb33ed9727c52fcf2d876edab27f1a8",
+    "current_sha256": "ab73176c2ffc088b805b64baccb6059e9eb33ed9727c52fcf2d876edab27f1a8"
+  },
+  {
+    "path": "tests/v216-w3-modal-probe.mjs",
+    "status": "identical",
+    "original_sha256": "2940c8e9fd7bf91c6a5410a39d9c1512f9cd009be605a2600109e0308b2561fe",
+    "current_sha256": "2940c8e9fd7bf91c6a5410a39d9c1512f9cd009be605a2600109e0308b2561fe"
+  },
+  {
+    "path": "tests/v28-verify.mjs",
+    "status": "identical",
+    "original_sha256": "3ec4281427c65abcf457f619f0e935adf0211d2b68fa75e40678dd6a39e3327f",
+    "current_sha256": "3ec4281427c65abcf457f619f0e935adf0211d2b68fa75e40678dd6a39e3327f"
+  },
+  {
+    "path": "tests/v28-w2-verify.mjs",
+    "status": "identical",
+    "original_sha256": "6e981c578786df4a89cec88f9af88f235a8c8cef45b81e4b8b5a8eadda564662",
+    "current_sha256": "6e981c578786df4a89cec88f9af88f235a8c8cef45b81e4b8b5a8eadda564662"
+  },
+  {
+    "path": "tests/v29-verify.mjs",
+    "status": "identical",
+    "original_sha256": "adc449901170c5cd974d80f1010f02b8eb99dacbafcf1ac2d1cdf06ef5077e5a",
+    "current_sha256": "adc449901170c5cd974d80f1010f02b8eb99dacbafcf1ac2d1cdf06ef5077e5a"
+  },
+  {
+    "path": "tests/v29-worker-a-verify.mjs",
+    "status": "identical",
+    "original_sha256": "40c9ee0ed2f5f6666fba46d6135cda20dd7d05f9f7d3d1c95438805de37ebeb8",
+    "current_sha256": "40c9ee0ed2f5f6666fba46d6135cda20dd7d05f9f7d3d1c95438805de37ebeb8"
+  },
+  {
+    "path": "tests/verify_data.mjs",
+    "status": "identical",
+    "original_sha256": "383bb85e4f90fb9547cd3386a07da6671bf105a0857d6a10a403aee4b282a7e2",
+    "current_sha256": "383bb85e4f90fb9547cd3386a07da6671bf105a0857d6a10a403aee4b282a7e2"
+  },
+  {
+    "path": "tests/verify_ui_renders.mjs",
+    "status": "identical",
+    "original_sha256": "c91ba326f9119439e6f2b4ee2178d4c955aec8d8f9ac696b62d26ce22891edbf",
+    "current_sha256": "c91ba326f9119439e6f2b4ee2178d4c955aec8d8f9ac696b62d26ce22891edbf"
+  },
+  {
+    "path": "tests/v217-w2-verify.mjs",
+    "status": "identical",
+    "original_sha256": "dde5f587d3e351fcb32f3636b2e7dcf85fb46cc1380f8acba81b6e6f832caf16",
+    "current_sha256": "dde5f587d3e351fcb32f3636b2e7dcf85fb46cc1380f8acba81b6e6f832caf16"
+  },
+  {
+    "path": "tests/v217-w3-verify.mjs",
+    "status": "identical",
+    "original_sha256": "ebfd5e5fdeb50a66e5cd29f4067dae74650313db59e136d662bf4baa4871564a",
+    "current_sha256": "ebfd5e5fdeb50a66e5cd29f4067dae74650313db59e136d662bf4baa4871564a"
+  },
+  {
+    "path": "tests/v217-w4-verify.mjs",
+    "status": "identical",
+    "original_sha256": "49f7fe98df5253fa6f951c25cabf0fffd3c924b7519713d1c8685d8d48368888",
+    "current_sha256": "49f7fe98df5253fa6f951c25cabf0fffd3c924b7519713d1c8685d8d48368888"
+  },
+  {
+    "path": "tests/v217-verify.mjs",
+    "status": "identical",
+    "original_sha256": "f52d05505d3be061eeea9a80a92b7d4bf1b52a8783b5aa25c9494703f35a6a54",
+    "current_sha256": "f52d05505d3be061eeea9a80a92b7d4bf1b52a8783b5aa25c9494703f35a6a54"
+  },
+  {
+    "path": "tests/v217-distribution.mjs",
+    "status": "identical",
+    "original_sha256": "02552d2181035db5ac10347ad622908d7b4ea59d973456c61712d1867dc8fb94",
+    "current_sha256": "02552d2181035db5ac10347ad622908d7b4ea59d973456c61712d1867dc8fb94"
+  },
+  {
+    "path": "tests/v218-w1-verify.mjs",
+    "status": "identical",
+    "original_sha256": "4c6f99894eba728b10ada5ff6e69e7c5e225005b374d10327b081cddf43475ab",
+    "current_sha256": "4c6f99894eba728b10ada5ff6e69e7c5e225005b374d10327b081cddf43475ab"
+  },
+  {
+    "path": "tests/v218-w2-verify.mjs",
+    "status": "identical",
+    "original_sha256": "a158402a39c242b8621cbda9487ee0c299ee0f91682c274a4bbe90ae081e1d18",
+    "current_sha256": "a158402a39c242b8621cbda9487ee0c299ee0f91682c274a4bbe90ae081e1d18"
+  },
+  {
+    "path": "tests/v218-w4-verify.mjs",
+    "status": "identical",
+    "original_sha256": "da020043ca73929dc1d9e3694929fe8138bae11e538d6f66f1271a7ced805141",
+    "current_sha256": "da020043ca73929dc1d9e3694929fe8138bae11e538d6f66f1271a7ced805141"
+  },
+  {
+    "path": "tests/v218-w3-verify.mjs",
+    "status": "identical",
+    "original_sha256": "56782186bec8ff6d327be9a171bdc042b373cc5f3a676459f2e2ea638331c901",
+    "current_sha256": "56782186bec8ff6d327be9a171bdc042b373cc5f3a676459f2e2ea638331c901"
+  },
+  {
+    "path": "tests/v218-verify.mjs",
+    "status": "identical",
+    "original_sha256": "439765aad606e080ed2622ca7ed6675a72b8bb12f7e68a76b3a4e6255530aab0",
+    "current_sha256": "439765aad606e080ed2622ca7ed6675a72b8bb12f7e68a76b3a4e6255530aab0"
+  },
+  {
+    "path": "tests/v219-w3-verify.mjs",
+    "status": "identical",
+    "original_sha256": "24064b930f0b2d88c205d2a770d0e9fbeb26f0c1b8f7ac198176fe49e0de5f93",
+    "current_sha256": "24064b930f0b2d88c205d2a770d0e9fbeb26f0c1b8f7ac198176fe49e0de5f93"
+  },
+  {
+    "path": "tests/v219-w4-verify.mjs",
+    "status": "identical",
+    "original_sha256": "2e1bd7aab03145fff3201e8ea2f66e77270d6eea54c7da62eda59f4f18ac8de2",
+    "current_sha256": "2e1bd7aab03145fff3201e8ea2f66e77270d6eea54c7da62eda59f4f18ac8de2"
+  },
+  {
+    "path": "tests/v219-w2-verify.mjs",
+    "status": "identical",
+    "original_sha256": "9ff1593602a3e5224ef4b744bd117eb11e1c64ff5b895e1178bc09ea4adb6912",
+    "current_sha256": "9ff1593602a3e5224ef4b744bd117eb11e1c64ff5b895e1178bc09ea4adb6912"
+  },
+  {
+    "path": "tests/v219-w5-verify.mjs",
+    "status": "identical",
+    "original_sha256": "6591d31e53f1c6f67cde1b1ac26276da1aed64fc76cbc1f336fa5d2c2232ad93",
+    "current_sha256": "6591d31e53f1c6f67cde1b1ac26276da1aed64fc76cbc1f336fa5d2c2232ad93"
+  },
+  {
+    "path": "tests/v219-verify.mjs",
+    "status": "identical",
+    "original_sha256": "52207bfb19b74bbfdc2ec5b04f5dd1b292e1af672d912a43361ae9028bf2a358",
+    "current_sha256": "52207bfb19b74bbfdc2ec5b04f5dd1b292e1af672d912a43361ae9028bf2a358"
+  },
+  {
+    "path": "tests/v220-i1-verify.mjs",
+    "status": "identical",
+    "original_sha256": "f0428cd870a37d9804c18c55f1eb6192bf1fed5d8c4b06953ddeb7b1564b35a4",
+    "current_sha256": "f0428cd870a37d9804c18c55f1eb6192bf1fed5d8c4b06953ddeb7b1564b35a4"
+  },
+  {
+    "path": "tests/v220-i2-verify.mjs",
+    "status": "identical",
+    "original_sha256": "238ea48d17253bb5224a98e2368778a33a1e64d41861f236f4290d49576768c4",
+    "current_sha256": "238ea48d17253bb5224a98e2368778a33a1e64d41861f236f4290d49576768c4"
+  },
+  {
+    "path": "tests/v220-i3-verify.mjs",
+    "status": "identical",
+    "original_sha256": "e508c6f100841c57fa7fb84c6d6eaf27b14e7ad3fa1515d0434d6c1727bcc2d1",
+    "current_sha256": "e508c6f100841c57fa7fb84c6d6eaf27b14e7ad3fa1515d0434d6c1727bcc2d1"
+  },
+  {
+    "path": "tests/v220-i4-verify.mjs",
+    "status": "identical",
+    "original_sha256": "10d0eaf61a763357a26a59cd303200dcc91e052888d8494d9b9e492573abbddc",
+    "current_sha256": "10d0eaf61a763357a26a59cd303200dcc91e052888d8494d9b9e492573abbddc"
+  },
+  {
+    "path": "tests/v220-verify.mjs",
+    "status": "identical",
+    "original_sha256": "66dabdb5a11b79d6a1d0a492d87e1cc84184f18c581338634f3aa3f2a515eee1",
+    "current_sha256": "66dabdb5a11b79d6a1d0a492d87e1cc84184f18c581338634f3aa3f2a515eee1"
+  },
+  {
+    "path": "styles/main.css",
+    "status": "updated",
+    "original_sha256": "ea38916e5de6906e55f0e2d851ae7f418bd18b191a3cd4a6025aaf2560595512",
+    "current_sha256": "4ba4eef6d6bda9ae247c0704c54fb9d223621b3a429d9a39e1110c4fe433e15b"
+  },
+  {
+    "path": "fonts/BebasNeue-Regular.woff2",
+    "status": "identical",
+    "original_sha256": "a7c90c89240c134f7fdd33d40c000ec90b79d675ea53e8cc5a6d423c073de412",
+    "current_sha256": "a7c90c89240c134f7fdd33d40c000ec90b79d675ea53e8cc5a6d423c073de412"
+  },
+  {
+    "path": "fonts/DMSans-Variable.woff2",
+    "status": "identical",
+    "original_sha256": "ca72d2bcea8f4daa783dbdfa2d9b46068c3ce38168e05918fb867aa453b4f890",
+    "current_sha256": "ca72d2bcea8f4daa783dbdfa2d9b46068c3ce38168e05918fb867aa453b4f890"
+  },
+  {
+    "path": "fonts/JetBrainsMono-Variable.woff2",
+    "status": "identical",
+    "original_sha256": "18be452724bfdc236c074ca94a249a7f41a86752c7d04ab258ce9ed5651f6a7e",
+    "current_sha256": "18be452724bfdc236c074ca94a249a7f41a86752c7d04ab258ce9ed5651f6a7e"
+  },
+  {
+    "path": "assets/banners/airport_departure_terminal_ink.jpg",
+    "status": "identical",
+    "original_sha256": "1f491c7745e09160f259383337334554047b12279964516bcb28c9326d8d26a6",
+    "current_sha256": "1f491c7745e09160f259383337334554047b12279964516bcb28c9326d8d26a6"
+  },
+  {
+    "path": "assets/banners/architecture_studio_ink.jpg",
+    "status": "identical",
+    "original_sha256": "0ab17fd39a170e065b86eef90c3c5bf44e35154860a1c35837296e030c45f371",
+    "current_sha256": "0ab17fd39a170e065b86eef90c3c5bf44e35154860a1c35837296e030c45f371"
+  },
+  {
+    "path": "assets/banners/asia_temple_garden_ink.jpg",
+    "status": "identical",
+    "original_sha256": "62c279062996bbda9e4e6844036cb5c4c9f5bbdba4688c7f7995c0b59ede2ee5",
+    "current_sha256": "62c279062996bbda9e4e6844036cb5c4c9f5bbdba4688c7f7995c0b59ede2ee5"
+  },
+  {
+    "path": "assets/banners/autumn_park_boulevard_ink.jpg",
+    "status": "identical",
+    "original_sha256": "1c11d8923561fbb56f6e71961526d1e8b9e6a12f7d1de8751cab8f4c0ebe4676",
+    "current_sha256": "1c11d8923561fbb56f6e71961526d1e8b9e6a12f7d1de8751cab8f4c0ebe4676"
+  },
+  {
+    "path": "assets/banners/business_office_ink.jpg",
+    "status": "identical",
+    "original_sha256": "6527f81f00e0fd706e17d4d86289582b6ec8b0fc40424395e2276464b44c3393",
+    "current_sha256": "6527f81f00e0fd706e17d4d86289582b6ec8b0fc40424395e2276464b44c3393"
+  },
+  {
+    "path": "assets/banners/cairo_nile_felucca_ink.jpg",
+    "status": "identical",
+    "original_sha256": "55fa27b580fc6d2513954ea98d9968cebcf435499d500472032ec93b052648bd",
+    "current_sha256": "55fa27b580fc6d2513954ea98d9968cebcf435499d500472032ec93b052648bd"
+  },
+  {
+    "path": "assets/banners/career_enterprise_ink.jpg",
+    "status": "identical",
+    "original_sha256": "bee7bd18f8a3b5243f7a91326138c6219bea0d61fe5f6177e1701945328f1c58",
+    "current_sha256": "bee7bd18f8a3b5243f7a91326138c6219bea0d61fe5f6177e1701945328f1c58"
+  },
+  {
+    "path": "assets/banners/city_europe_west.jpg",
+    "status": "identical",
+    "original_sha256": "aabe2e88fbc7925c52ff593b5b85c69f4a9421228a5879ddc4e3ec131fdf5b71",
+    "current_sha256": "aabe2e88fbc7925c52ff593b5b85c69f4a9421228a5879ddc4e3ec131fdf5b71"
+  },
+  {
+    "path": "assets/banners/city_gulf_skyline.jpg",
+    "status": "identical",
+    "original_sha256": "a8881217a751288c068e90487b156da00f65bae4353fe49ce77bef4a509436c3",
+    "current_sha256": "a8881217a751288c068e90487b156da00f65bae4353fe49ce77bef4a509436c3"
+  },
+  {
+    "path": "assets/banners/city_mena_cairo.jpg",
+    "status": "identical",
+    "original_sha256": "5e26866c37c03f38a062f0ddfe152da128b378b477479ec42f8a9f8be8da0594",
+    "current_sha256": "5e26866c37c03f38a062f0ddfe152da128b378b477479ec42f8a9f8be8da0594"
+  },
+  {
+    "path": "assets/banners/coastal_summer_chalet_ink.jpg",
+    "status": "identical",
+    "original_sha256": "f1ec19d978bb297c70ea5f4843ad18e23821000af46200ebe0acbaf613562e5b",
+    "current_sha256": "f1ec19d978bb297c70ea5f4843ad18e23821000af46200ebe0acbaf613562e5b"
+  },
+  {
+    "path": "assets/banners/desert_oasis_ink.jpg",
+    "status": "identical",
+    "original_sha256": "6eaa698d7c0d2c4f2c146457caf0d8b7031e2d4b05385c7635fd9783dcea7084",
+    "current_sha256": "6eaa698d7c0d2c4f2c146457caf0d8b7031e2d4b05385c7635fd9783dcea7084"
+  },
+  {
+    "path": "assets/banners/desert_road_trip_ink.jpg",
+    "status": "identical",
+    "original_sha256": "a64aa92f8afbe7504965007f5ad95cbf9c1a284758911be214cc586aae81b72a",
+    "current_sha256": "a64aa92f8afbe7504965007f5ad95cbf9c1a284758911be214cc586aae81b72a"
+  },
+  {
+    "path": "assets/banners/east_asia_skyline_ink.jpg",
+    "status": "identical",
+    "original_sha256": "325dfba2c59c3c9e5084bca4e20edc6a64c92f62826f1ee434fffb2f68faac87",
+    "current_sha256": "325dfba2c59c3c9e5084bca4e20edc6a64c92f62826f1ee434fffb2f68faac87"
+  },
+  {
+    "path": "assets/banners/era_modern_city_ink.jpg",
+    "status": "identical",
+    "original_sha256": "66430b47c9971254026c97800684b5517f536e7fab1e678467ae5ba2a0b0d98f",
+    "current_sha256": "66430b47c9971254026c97800684b5517f536e7fab1e678467ae5ba2a0b0d98f"
+  },
+  {
+    "path": "assets/banners/era_vintage_street_ink.jpg",
+    "status": "identical",
+    "original_sha256": "2f2fb84467aa4541c71bcf06ecdc78b4e4b8bb89dfa526f12d0b32029462b573",
+    "current_sha256": "2f2fb84467aa4541c71bcf06ecdc78b4e4b8bb89dfa526f12d0b32029462b573"
+  },
+  {
+    "path": "assets/banners/europe_old_town_ink.jpg",
+    "status": "identical",
+    "original_sha256": "9f00216bb8b9b21b3241242335fbab0ca8774a84d462ebaba75f1b80ebf7a57d",
+    "current_sha256": "9f00216bb8b9b21b3241242335fbab0ca8774a84d462ebaba75f1b80ebf7a57d"
+  },
+  {
+    "path": "assets/banners/family_hearth_home_ink.jpg",
+    "status": "identical",
+    "original_sha256": "6a59c8aeba86b5ee3bcd1c0b3e747bd04ca3309aee495c6d70913fe574b59b06",
+    "current_sha256": "6a59c8aeba86b5ee3bcd1c0b3e747bd04ca3309aee495c6d70913fe574b59b06"
+  },
+  {
+    "path": "assets/banners/family_kinship_ink.jpg",
+    "status": "identical",
+    "original_sha256": "d664abc6652cbdc0d0c2b02048fc46b6716ab1b91d0700c5f41cc422564d77f0",
+    "current_sha256": "d664abc6652cbdc0d0c2b02048fc46b6716ab1b91d0700c5f41cc422564d77f0"
+  },
+  {
+    "path": "assets/banners/finance_vault_ink.jpg",
+    "status": "identical",
+    "original_sha256": "ebe2b4bf873a11f59e015c058e3a9b9a199cc4814eb5844ad222c7e8fb77d6dd",
+    "current_sha256": "ebe2b4bf873a11f59e015c058e3a9b9a199cc4814eb5844ad222c7e8fb77d6dd"
+  },
+  {
+    "path": "assets/banners/graduation_ceremony_ink.jpg",
+    "status": "identical",
+    "original_sha256": "6db8dfb5b53c24b772555bf04b657fbf8450a5b16f7b24b760c7d15c0b213147",
+    "current_sha256": "6db8dfb5b53c24b772555bf04b657fbf8450a5b16f7b24b760c7d15c0b213147"
+  },
+  {
+    "path": "assets/banners/home_villa_compound.jpg",
+    "status": "identical",
+    "original_sha256": "d5af0b42bc965f64eadab6154551200003009b38797cc88a55d23c5bf6113ebd",
+    "current_sha256": "d5af0b42bc965f64eadab6154551200003009b38797cc88a55d23c5bf6113ebd"
+  },
+  {
+    "path": "assets/banners/life_stages_ink.jpg",
+    "status": "identical",
+    "original_sha256": "d9ee7040001441f8a88e26a44c7fda96eccd4a485918f6a2a4475512a2e2c0d8",
+    "current_sha256": "d9ee7040001441f8a88e26a44c7fda96eccd4a485918f6a2a4475512a2e2c0d8"
+  },
+  {
+    "path": "assets/banners/medical_courts_ink.jpg",
+    "status": "identical",
+    "original_sha256": "d1b9c8a9c8106dac00975ee40482fe349c34f6d2e63ae0c2e2d6d5ded23703fd",
+    "current_sha256": "d1b9c8a9c8106dac00975ee40482fe349c34f6d2e63ae0c2e2d6d5ded23703fd"
+  },
+  {
+    "path": "assets/banners/mediterranean_coast_ink.jpg",
+    "status": "identical",
+    "original_sha256": "3f2509a1ab956031577af845d36111340751e14c34d140345ad12eabf981e1b1",
+    "current_sha256": "3f2509a1ab956031577af845d36111340751e14c34d140345ad12eabf981e1b1"
+  },
+  {
+    "path": "assets/banners/mountain_lake_ink.jpg",
+    "status": "identical",
+    "original_sha256": "572d8361f245e47cd0002cfd05ed36f95c756d23731211858a9bd7352fbb436c",
+    "current_sha256": "572d8361f245e47cd0002cfd05ed36f95c756d23731211858a9bd7352fbb436c"
+  },
+  {
+    "path": "assets/banners/new_life_beginnings_ink.jpg",
+    "status": "identical",
+    "original_sha256": "445754dfb2bd21796f12e2677d49bfd181b08ebdbbb39c7c093207f1b7102bfe",
+    "current_sha256": "445754dfb2bd21796f12e2677d49bfd181b08ebdbbb39c7c093207f1b7102bfe"
+  },
+  {
+    "path": "assets/banners/newborn_family_ink.jpg",
+    "status": "identical",
+    "original_sha256": "ec274764131a4579303940ddc1773185aca63f2229af275ce11de9f983e31c08",
+    "current_sha256": "ec274764131a4579303940ddc1773185aca63f2229af275ce11de9f983e31c08"
+  },
+  {
+    "path": "assets/banners/north_america_skyline_ink.jpg",
+    "status": "identical",
+    "original_sha256": "c67ef6aa077e40d2d87b98f2f900315b4563469a2703d8f7af1cfe28c12f7ca8",
+    "current_sha256": "c67ef6aa077e40d2d87b98f2f900315b4563469a2703d8f7af1cfe28c12f7ca8"
+  },
+  {
+    "path": "assets/banners/passport_world_ink.jpg",
+    "status": "identical",
+    "original_sha256": "af37161619a02de2ee39f818751f7ba018f5866903f416ac77c3bf1936702eb0",
+    "current_sha256": "af37161619a02de2ee39f818751f7ba018f5866903f416ac77c3bf1936702eb0"
+  },
+  {
+    "path": "assets/banners/pilgrimage_travel.jpg",
+    "status": "identical",
+    "original_sha256": "d728984f0d93c5c0cb741fc646961b1fdd547cb46e35a718dc5f64a7106ba91a",
+    "current_sha256": "d728984f0d93c5c0cb741fc646961b1fdd547cb46e35a718dc5f64a7106ba91a"
+  },
+  {
+    "path": "assets/banners/ramadan_lantern_courtyard_ink.jpg",
+    "status": "identical",
+    "original_sha256": "a0d5e8ac00739bf4a3e50716c37dfc2f384261aa934273b678376d0dde9731bb",
+    "current_sha256": "a0d5e8ac00739bf4a3e50716c37dfc2f384261aa934273b678376d0dde9731bb"
+  },
+  {
+    "path": "assets/banners/red_sea_beach_vacation_ink.jpg",
+    "status": "identical",
+    "original_sha256": "22aeab0db2ec52e63205706aff346b1237f139fee92dabc87dc1c8acc876b0fc",
+    "current_sha256": "22aeab0db2ec52e63205706aff346b1237f139fee92dabc87dc1c8acc876b0fc"
+  },
+  {
+    "path": "assets/banners/safari_savanna_ink.jpg",
+    "status": "identical",
+    "original_sha256": "5cbf77cd76eb37cf631a5126e3b7159f431d373f4e5fa7b94e0d7bd67491da40",
+    "current_sha256": "5cbf77cd76eb37cf631a5126e3b7159f431d373f4e5fa7b94e0d7bd67491da40"
+  },
+  {
+    "path": "assets/banners/showroom_automotive.jpg",
+    "status": "identical",
+    "original_sha256": "0faa50ef0109e6ca92a3d36b65a83f48e1b74dcdf6e686e6dc2c4ad68afcd232",
+    "current_sha256": "0faa50ef0109e6ca92a3d36b65a83f48e1b74dcdf6e686e6dc2c4ad68afcd232"
+  },
+  {
+    "path": "assets/banners/sweden_stockholm_archipelago_ink.jpg",
+    "status": "identical",
+    "original_sha256": "bcb10004144e6b1dbd4fc9936d966b99a3537ed594f06eaa0dbe3b7912ade05c",
+    "current_sha256": "bcb10004144e6b1dbd4fc9936d966b99a3537ed594f06eaa0dbe3b7912ade05c"
+  },
+  {
+    "path": "assets/banners/switzerland_alps_lake_ink.jpg",
+    "status": "identical",
+    "original_sha256": "2236efa11a7366c00c052fb7c9dd673c7a8952936eb47fe2916643151687a817",
+    "current_sha256": "2236efa11a7366c00c052fb7c9dd673c7a8952936eb47fe2916643151687a817"
+  },
+  {
+    "path": "assets/banners/tropical_island_ink.jpg",
+    "status": "identical",
+    "original_sha256": "cd59c7d7ed869698989413959a43e48a122ea63ccdafa3bdbcd2d800e8f80e15",
+    "current_sha256": "cd59c7d7ed869698989413959a43e48a122ea63ccdafa3bdbcd2d800e8f80e15"
+  },
+  {
+    "path": "assets/banners/turkey_istanbul_bosphorus_ink.jpg",
+    "status": "identical",
+    "original_sha256": "3f7965f61b9293beb52cc4e8a13f4347ff204ae237d3f0bc51f397095553bd2f",
+    "current_sha256": "3f7965f61b9293beb52cc4e8a13f4347ff204ae237d3f0bc51f397095553bd2f"
+  },
+  {
+    "path": "assets/banners/uni_campus_courtyard_ink.jpg",
+    "status": "identical",
+    "original_sha256": "ef5587a9bb6027a7fc3d4677e54e4d9617df73bea01afda175d4b4cbd32a673d",
+    "current_sha256": "ef5587a9bb6027a7fc3d4677e54e4d9617df73bea01afda175d4b4cbd32a673d"
+  },
+  {
+    "path": "assets/banners/wedding_courtship_ink.jpg",
+    "status": "identical",
+    "original_sha256": "86423a7c56f2dfd0c6445614763d3e41af262417c0d4cf7572c400e2201c6da4",
+    "current_sha256": "86423a7c56f2dfd0c6445614763d3e41af262417c0d4cf7572c400e2201c6da4"
+  },
+  {
+    "path": "assets/banners/winter_city_ink.jpg",
+    "status": "identical",
+    "original_sha256": "4caa8fba682d6e7fd5a08e926dbfc70c28ca24ee126ec1cc3847ba3697d43438",
+    "current_sha256": "4caa8fba682d6e7fd5a08e926dbfc70c28ca24ee126ec1cc3847ba3697d43438"
+  },
+  {
+    "path": "assets/portraits/p_child_boy.jpg",
+    "status": "identical",
+    "original_sha256": "8fda5e1c235ca8897fdd744765aae1bfd1e4a548af1186832843c2dd8d606510",
+    "current_sha256": "8fda5e1c235ca8897fdd744765aae1bfd1e4a548af1186832843c2dd8d606510"
+  },
+  {
+    "path": "assets/portraits/p_child_girl.jpg",
+    "status": "identical",
+    "original_sha256": "6176033e78590369453116d786b52360e970e5c2994edd7753c7df9e8c89efc7",
+    "current_sha256": "6176033e78590369453116d786b52360e970e5c2994edd7753c7df9e8c89efc7"
+  },
+  {
+    "path": "assets/portraits/p_doctor_coat.jpg",
+    "status": "identical",
+    "original_sha256": "93550f3105e526ea166176200439a4f359a29982daf7e3f5b0cc2882cfce9819",
+    "current_sha256": "93550f3105e526ea166176200439a4f359a29982daf7e3f5b0cc2882cfce9819"
+  },
+  {
+    "path": "assets/portraits/p_elder_grandfather.jpg",
+    "status": "identical",
+    "original_sha256": "9f892f14fd4c3ffb1c5af4abf971f1bea8e699b2a655343f8a365f1828d9d50e",
+    "current_sha256": "9f892f14fd4c3ffb1c5af4abf971f1bea8e699b2a655343f8a365f1828d9d50e"
+  },
+  {
+    "path": "assets/portraits/p_elder_sage.jpg",
+    "status": "identical",
+    "original_sha256": "54a8d3814d889be318f789c4484cdad8111a9bba151e7c8c747aea2317589d9d",
+    "current_sha256": "54a8d3814d889be318f789c4484cdad8111a9bba151e7c8c747aea2317589d9d"
+  },
+  {
+    "path": "assets/portraits/p_elder_woman.jpg",
+    "status": "identical",
+    "original_sha256": "faee14b0fb334be1a6731fd526b0015ec94091769de9bb2c95c1241b5392e205",
+    "current_sha256": "faee14b0fb334be1a6731fd526b0015ec94091769de9bb2c95c1241b5392e205"
+  },
+  {
+    "path": "assets/portraits/p_european_student.jpg",
+    "status": "identical",
+    "original_sha256": "a0c4bdf39e0160731a3f9fc4df7918031e2084229c89d1ec223fa4cd6f29ec70",
+    "current_sha256": "a0c4bdf39e0160731a3f9fc4df7918031e2084229c89d1ec223fa4cd6f29ec70"
+  },
+  {
+    "path": "assets/portraits/p_female_doctor.jpg",
+    "status": "identical",
+    "original_sha256": "1bd0b17ccb184688020a4b0e1d4a0a6a62be8016b1768b80a9fc61a714764bfa",
+    "current_sha256": "1bd0b17ccb184688020a4b0e1d4a0a6a62be8016b1768b80a9fc61a714764bfa"
+  },
+  {
+    "path": "assets/portraits/p_gulf_businessman.jpg",
+    "status": "identical",
+    "original_sha256": "2658d33e0ed687ea16f88209544352cd7a2bd47556ac199fcafeaee31dd85224",
+    "current_sha256": "2658d33e0ed687ea16f88209544352cd7a2bd47556ac199fcafeaee31dd85224"
+  },
+  {
+    "path": "assets/portraits/p_man_ghutra.jpg",
+    "status": "identical",
+    "original_sha256": "0bcbfce17d5b52e60c62b4e32e07067415366dc13098e7da84255cadbe78bfd7",
+    "current_sha256": "0bcbfce17d5b52e60c62b4e32e07067415366dc13098e7da84255cadbe78bfd7"
+  },
+  {
+    "path": "assets/portraits/p_man_shemagh.jpg",
+    "status": "identical",
+    "original_sha256": "d66fdc74f26e953f87f04785daab5ebc459c8e9185bc2cbe832e4a962b81322c",
+    "current_sha256": "d66fdc74f26e953f87f04785daab5ebc459c8e9185bc2cbe832e4a962b81322c"
+  },
+  {
+    "path": "assets/portraits/p_mature_man.jpg",
+    "status": "identical",
+    "original_sha256": "f1d8635a5d6bb84dcfa02aa26c0ef0a571743119a8f68d1e77bea2dab1ea8402",
+    "current_sha256": "f1d8635a5d6bb84dcfa02aa26c0ef0a571743119a8f68d1e77bea2dab1ea8402"
+  },
+  {
+    "path": "assets/portraits/p_mature_woman.jpg",
+    "status": "identical",
+    "original_sha256": "8ee3076235d9f22aa3c0d79aa44475542f847ae9a240997fc1a023dc2a5bac33",
+    "current_sha256": "8ee3076235d9f22aa3c0d79aa44475542f847ae9a240997fc1a023dc2a5bac33"
+  },
+  {
+    "path": "assets/portraits/p_mm_wali_mustache.jpg",
+    "status": "identical",
+    "original_sha256": "311411d6c9de0461afc97c86da5cd78a0539e7374e13c3aceea3d926dba5ac61",
+    "current_sha256": "311411d6c9de0461afc97c86da5cd78a0539e7374e13c3aceea3d926dba5ac61"
+  },
+  {
+    "path": "assets/portraits/p_mw_hijab_mother.jpg",
+    "status": "identical",
+    "original_sha256": "97c9692f3eaba209aa324a2593a5b2e2228e96e4f64bd54947fcd788fdc650ed",
+    "current_sha256": "97c9692f3eaba209aa324a2593a5b2e2228e96e4f64bd54947fcd788fdc650ed"
+  },
+  {
+    "path": "assets/portraits/p_teen_boy.jpg",
+    "status": "identical",
+    "original_sha256": "4233af62d79897790b2031852201e1313b2d8a5402f016c4e3688ce0487e0146",
+    "current_sha256": "4233af62d79897790b2031852201e1313b2d8a5402f016c4e3688ce0487e0146"
+  },
+  {
+    "path": "assets/portraits/p_teen_girl.jpg",
+    "status": "identical",
+    "original_sha256": "49a3b05c8202c226b4164e9dc3527ac30934152e5329687421a2a1ee233fa417",
+    "current_sha256": "49a3b05c8202c226b4164e9dc3527ac30934152e5329687421a2a1ee233fa417"
+  },
+  {
+    "path": "assets/portraits/p_toddler.jpg",
+    "status": "identical",
+    "original_sha256": "781c4bf3e9e70ac8495485f34d984b3d307d2689e40aac6290ccbe1b99403cbf",
+    "current_sha256": "781c4bf3e9e70ac8495485f34d984b3d307d2689e40aac6290ccbe1b99403cbf"
+  },
+  {
+    "path": "assets/portraits/p_turkish_grandmother.jpg",
+    "status": "identical",
+    "original_sha256": "efcffbe1aff994adef0f4617d126b6574d61d91f12e2173300077c24cf6d6446",
+    "current_sha256": "efcffbe1aff994adef0f4617d126b6574d61d91f12e2173300077c24cf6d6446"
+  },
+  {
+    "path": "assets/portraits/p_woman_hijab.jpg",
+    "status": "identical",
+    "original_sha256": "4d2b46d92b79042a4ec53e154ed61a80918965aec582afd9d55f3449fb05085d",
+    "current_sha256": "4d2b46d92b79042a4ec53e154ed61a80918965aec582afd9d55f3449fb05085d"
+  },
+  {
+    "path": "assets/portraits/p_ym_beard_exec.jpg",
+    "status": "identical",
+    "original_sha256": "e1d3fa801455aa6c09a0302ff0b953937304dbedb540bcb06559a486d8872fde",
+    "current_sha256": "e1d3fa801455aa6c09a0302ff0b953937304dbedb540bcb06559a486d8872fde"
+  },
+  {
+    "path": "assets/portraits/p_ym_creative_linen.jpg",
+    "status": "identical",
+    "original_sha256": "302c375a54c48902faddaf6e7be4916a7c1732f41ac97dfa479591510df84061",
+    "current_sha256": "302c375a54c48902faddaf6e7be4916a7c1732f41ac97dfa479591510df84061"
+  },
+  {
+    "path": "assets/portraits/p_ym_curly_scholar.jpg",
+    "status": "identical",
+    "original_sha256": "bfcae5fc63d93cbc1a5ec226512b758a0ed82c9b5961cbdcd27528a6494320b6",
+    "current_sha256": "bfcae5fc63d93cbc1a5ec226512b758a0ed82c9b5961cbdcd27528a6494320b6"
+  },
+  {
+    "path": "assets/portraits/p_ym_east_asian.jpg",
+    "status": "identical",
+    "original_sha256": "871ab89df20708833c936b5b425bd5d1ad239b6b181997b81b7e91e725412009",
+    "current_sha256": "871ab89df20708833c936b5b425bd5d1ad239b6b181997b81b7e91e725412009"
+  },
+  {
+    "path": "assets/portraits/p_ym_western.jpg",
+    "status": "identical",
+    "original_sha256": "91a684f93fdd3c28cf84664397e7ae130bb1a41da11227868bd79106250489cb",
+    "current_sha256": "91a684f93fdd3c28cf84664397e7ae130bb1a41da11227868bd79106250489cb"
+  },
+  {
+    "path": "assets/portraits/p_young_man.jpg",
+    "status": "identical",
+    "original_sha256": "b6b4235d68a22e33cdafb7e6b0f00e31212cc13fc43e867f17e18460d2aaa57c",
+    "current_sha256": "b6b4235d68a22e33cdafb7e6b0f00e31212cc13fc43e867f17e18460d2aaa57c"
+  },
+  {
+    "path": "assets/portraits/p_young_mother_baby.jpg",
+    "status": "identical",
+    "original_sha256": "ac6f830cdff62bf799215dbcb8b9314ff2404316214a248f8570a681ec344456",
+    "current_sha256": "ac6f830cdff62bf799215dbcb8b9314ff2404316214a248f8570a681ec344456"
+  },
+  {
+    "path": "assets/portraits/p_young_woman.jpg",
+    "status": "identical",
+    "original_sha256": "ceb8cc6ca3dec34b37796a565cc3e3797a28f0a91842e7be13cd3e4f9f8cf30c",
+    "current_sha256": "ceb8cc6ca3dec34b37796a565cc3e3797a28f0a91842e7be13cd3e4f9f8cf30c"
+  },
+  {
+    "path": "assets/portraits/p_yw_curly_artist.jpg",
+    "status": "identical",
+    "original_sha256": "c17e2e3cdca68d76631632ffcfc418ba64c5d8957d372b764cf68f1c669670a7",
+    "current_sha256": "c17e2e3cdca68d76631632ffcfc418ba64c5d8957d372b764cf68f1c669670a7"
+  },
+  {
+    "path": "assets/portraits/p_yw_east_asian.jpg",
+    "status": "identical",
+    "original_sha256": "a81cfe34465ad125174c183219620cc1ada9002cab3adda63ebcd8281ff381b6",
+    "current_sha256": "a81cfe34465ad125174c183219620cc1ada9002cab3adda63ebcd8281ff381b6"
+  },
+  {
+    "path": "assets/portraits/p_yw_hijab_ochre.jpg",
+    "status": "identical",
+    "original_sha256": "7eab5e5ff4acd6a180b1bbac528df37caf76fc02671c441c3215a6aa98f36609",
+    "current_sha256": "7eab5e5ff4acd6a180b1bbac528df37caf76fc02671c441c3215a6aa98f36609"
+  },
+  {
+    "path": "assets/portraits/p_yw_western.jpg",
+    "status": "identical",
+    "original_sha256": "79b1931d7200869976c4e5404e054311400c50f39be1ff421c4585b6c54b38f4",
+    "current_sha256": "79b1931d7200869976c4e5404e054311400c50f39be1ff421c4585b6c54b38f4"
+  },
+  {
+    "path": "assets/furniture/furn_bathroom.jpg",
+    "status": "identical",
+    "original_sha256": "c5a30d0d9dc025fa50e2ab7c9de2f3b4ab824f3f5dc405c78348b3568b12a09e",
+    "current_sha256": "c5a30d0d9dc025fa50e2ab7c9de2f3b4ab824f3f5dc405c78348b3568b12a09e"
+  },
+  {
+    "path": "assets/furniture/furn_bathroom_lux.jpg",
+    "status": "identical",
+    "original_sha256": "a705d376149ae5573e32fe3eafb3af7d7e65f98e99ff30693fe3621356c49d95",
+    "current_sha256": "a705d376149ae5573e32fe3eafb3af7d7e65f98e99ff30693fe3621356c49d95"
+  },
+  {
+    "path": "assets/furniture/furn_bedroom.jpg",
+    "status": "identical",
+    "original_sha256": "7bf32969a9771e103764e8ec1a662bb604aa0684a9e43818c7ac821769782227",
+    "current_sha256": "7bf32969a9771e103764e8ec1a662bb604aa0684a9e43818c7ac821769782227"
+  },
+  {
+    "path": "assets/furniture/furn_bedroom_lux.jpg",
+    "status": "identical",
+    "original_sha256": "498e5ea657bd9986755871da7d2823cdf1e9313e46cc4969a7f6524f02cd8391",
+    "current_sha256": "498e5ea657bd9986755871da7d2823cdf1e9313e46cc4969a7f6524f02cd8391"
+  },
+  {
+    "path": "assets/furniture/furn_kids.jpg",
+    "status": "identical",
+    "original_sha256": "3f6eca6fb984b3962f16fc2071de8013c047c7106c85a0f9ec0a5b0e470467d4",
+    "current_sha256": "3f6eca6fb984b3962f16fc2071de8013c047c7106c85a0f9ec0a5b0e470467d4"
+  },
+  {
+    "path": "assets/furniture/furn_kids_lux.jpg",
+    "status": "identical",
+    "original_sha256": "3115d9a50eb06218eb42aadebcb1e3e6eef19b66408196cdba2dddc4c5831be0",
+    "current_sha256": "3115d9a50eb06218eb42aadebcb1e3e6eef19b66408196cdba2dddc4c5831be0"
+  },
+  {
+    "path": "assets/furniture/furn_kitchen.jpg",
+    "status": "identical",
+    "original_sha256": "f9047ae7c9658f642fc7932865e5b6674d1f71cb3d2bbf2acb376fcf3900dd6c",
+    "current_sha256": "f9047ae7c9658f642fc7932865e5b6674d1f71cb3d2bbf2acb376fcf3900dd6c"
+  },
+  {
+    "path": "assets/furniture/furn_kitchen_lux.jpg",
+    "status": "identical",
+    "original_sha256": "cdcd7e21163f804acf87768c562eec85a5eee48a8ded387b71e53722cf74df11",
+    "current_sha256": "cdcd7e21163f804acf87768c562eec85a5eee48a8ded387b71e53722cf74df11"
+  },
+  {
+    "path": "assets/furniture/furn_living.jpg",
+    "status": "identical",
+    "original_sha256": "1b2dd0d2588068b103460851526a3295df2243d6d3aa3ad51ad09f5747acf2ba",
+    "current_sha256": "1b2dd0d2588068b103460851526a3295df2243d6d3aa3ad51ad09f5747acf2ba"
+  },
+  {
+    "path": "assets/furniture/furn_living_antique.jpg",
+    "status": "identical",
+    "original_sha256": "bc7146883f791b8e57f7802907052409d7843ac136db76df33b88e4ba8b12916",
+    "current_sha256": "bc7146883f791b8e57f7802907052409d7843ac136db76df33b88e4ba8b12916"
+  },
+  {
+    "path": "assets/furniture/furn_living_bohemian.jpg",
+    "status": "identical",
+    "original_sha256": "e4989a64fd4ce9f1c2c31bea058fcbdc63ec7700a7930949db9fe73ee1c8892a",
+    "current_sha256": "e4989a64fd4ce9f1c2c31bea058fcbdc63ec7700a7930949db9fe73ee1c8892a"
+  },
+  {
+    "path": "assets/furniture/furn_living_classic.jpg",
+    "status": "identical",
+    "original_sha256": "28b54a4f29681919c723c29474afd1f328d80ab8fffa08f0cf6e2c60bc5d3ea4",
+    "current_sha256": "28b54a4f29681919c723c29474afd1f328d80ab8fffa08f0cf6e2c60bc5d3ea4"
+  },
+  {
+    "path": "assets/furniture/furn_living_industrial.jpg",
+    "status": "identical",
+    "original_sha256": "625b40312f5e31a4acce7d3b9ad7b8965688dcb1b42ee665088beeda9bf289e1",
+    "current_sha256": "625b40312f5e31a4acce7d3b9ad7b8965688dcb1b42ee665088beeda9bf289e1"
+  },
+  {
+    "path": "assets/furniture/furn_living_lux.jpg",
+    "status": "identical",
+    "original_sha256": "37f50d133467d159fca1c6f196b0ddee7b511ef40c89701b199d26084e7d5caa",
+    "current_sha256": "37f50d133467d159fca1c6f196b0ddee7b511ef40c89701b199d26084e7d5caa"
+  },
+  {
+    "path": "assets/furniture/furn_living_minimalism.jpg",
+    "status": "identical",
+    "original_sha256": "a5cc54642e0e0103caff6d22b393c3ee1265f2de0b5970bb5de20bf60d7a9557",
+    "current_sha256": "a5cc54642e0e0103caff6d22b393c3ee1265f2de0b5970bb5de20bf60d7a9557"
+  },
+  {
+    "path": "assets/furniture/furn_living_modern.jpg",
+    "status": "identical",
+    "original_sha256": "5580a955374737461ac1e4ac06e7f3caca3ed932e415b7f876f0f82f08c89774",
+    "current_sha256": "5580a955374737461ac1e4ac06e7f3caca3ed932e415b7f876f0f82f08c89774"
+  },
+  {
+    "path": "assets/furniture/furn_living_scandinavian.jpg",
+    "status": "identical",
+    "original_sha256": "8b6826f2ecc9e276056a9d571b57b5fa437c1a47267c40023ffacf2983f8b6bd",
+    "current_sha256": "8b6826f2ecc9e276056a9d571b57b5fa437c1a47267c40023ffacf2983f8b6bd"
+  },
+  {
+    "path": "assets/furniture/furn_living_ultra.jpg",
+    "status": "identical",
+    "original_sha256": "395077249f2ecbe99ce8a4a078e2b8a991b994ecdd02eaa379529f966b5d2224",
+    "current_sha256": "395077249f2ecbe99ce8a4a078e2b8a991b994ecdd02eaa379529f966b5d2224"
+  },
+  {
+    "path": "assets/furniture/furn_living_vintage.jpg",
+    "status": "identical",
+    "original_sha256": "a402f1097eaba028107ba1a57820777be2bd593887a011bdaa6672e103d39f3c",
+    "current_sha256": "a402f1097eaba028107ba1a57820777be2bd593887a011bdaa6672e103d39f3c"
+  },
+  {
+    "path": "assets/furniture/furn_office.jpg",
+    "status": "identical",
+    "original_sha256": "357285add2c478940cee1252df13635a06526b2be953c663aabc3acf281c8c9f",
+    "current_sha256": "357285add2c478940cee1252df13635a06526b2be953c663aabc3acf281c8c9f"
+  },
+  {
+    "path": "assets/furniture/furn_office_lux.jpg",
+    "status": "identical",
+    "original_sha256": "e9e43ca040c0e05b7052287bd93fbda82d2906bf929dd9ad5b9155e30a3c177e",
+    "current_sha256": "e9e43ca040c0e05b7052287bd93fbda82d2906bf929dd9ad5b9155e30a3c177e"
+  },
+  {
+    "path": "src/ui/careerMarket.js",
+    "status": "identical",
+    "original_sha256": "b85dc2a9fd1077fb83b55e1962fccff2a1aa5e798c29404773b3e190067c22d0",
+    "current_sha256": "b85dc2a9fd1077fb83b55e1962fccff2a1aa5e798c29404773b3e190067c22d0"
+  },
+  {
+    "path": "src/ui/documents.js",
+    "status": "updated",
+    "original_sha256": "72634ed41adc21c53b7325186b025959b67dd833dc6aa02ddcefc37101fc9fee",
+    "current_sha256": "1527f4aecda1778fcc089c64c8b81540daf35b8f61a2b36506a31dc18ce8a9a9"
+  },
+  {
+    "path": "src/ui/editorialSketches.js",
+    "status": "identical",
+    "original_sha256": "d157d1475136324bd53a168a24c5dd8b6433f3df266de242bdf68e212465916f",
+    "current_sha256": "d157d1475136324bd53a168a24c5dd8b6433f3df266de242bdf68e212465916f"
+  },
+  {
+    "path": "src/ui/icons.js",
+    "status": "identical",
+    "original_sha256": "526a630a643714dcc101f07e2f3a2eb0bded01fabd07b44cb96f65b90a5ec6bb",
+    "current_sha256": "526a630a643714dcc101f07e2f3a2eb0bded01fabd07b44cb96f65b90a5ec6bb"
+  },
+  {
+    "path": "src/ui/liveCanvas3d.js",
+    "status": "identical",
+    "original_sha256": "07306e64aacdbfca2c28bc6297d600664930bc9f3dc0b30d799d06bf9682a63a",
+    "current_sha256": "07306e64aacdbfca2c28bc6297d600664930bc9f3dc0b30d799d06bf9682a63a"
+  },
+  {
+    "path": "src/ui/lockReason.js",
+    "status": "identical",
+    "original_sha256": "3736b6e97da78e9af3aa568e48f33a8b4b81766572bfb2243d3fe36e699f5b19",
+    "current_sha256": "3736b6e97da78e9af3aa568e48f33a8b4b81766572bfb2243d3fe36e699f5b19"
+  },
+  {
+    "path": "src/ui/planRoomLookup.js",
+    "status": "identical",
+    "original_sha256": "6de36b92d024bdf7a88c33841b5a729bea7e89a391737527bd5a994f1dd756fa",
+    "current_sha256": "6de36b92d024bdf7a88c33841b5a729bea7e89a391737527bd5a994f1dd756fa"
+  },
+  {
+    "path": "src/ui/portraits.js",
+    "status": "updated",
+    "original_sha256": "f56b18a15258b9a7ff3b37182abf7c60e8dd94c599f0d2bc1ece8bc81fe7736b",
+    "current_sha256": "8340077e3f0c901de1c3f144a7c714bf56589a73976690e44c8cb6e06b7bb1b7"
+  },
+  {
+    "path": "src/ui/propertyLandlord.js",
+    "status": "identical",
+    "original_sha256": "ea3e6f79a290185f94b22cfa08c75026ecec2e0e07a1ec4a9dbe3ef185e3d0b3",
+    "current_sha256": "ea3e6f79a290185f94b22cfa08c75026ecec2e0e07a1ec4a9dbe3ef185e3d0b3"
+  },
+  {
+    "path": "src/ui/socialEnergy.js",
+    "status": "identical",
+    "original_sha256": "77bdfd0c157ff45bb86ae6bc20e60cf3e581e995ec1e1068d06da80c94b5703a",
+    "current_sha256": "77bdfd0c157ff45bb86ae6bc20e60cf3e581e995ec1e1068d06da80c94b5703a"
+  },
+  {
+    "path": "src/ui/visualEngine3d.js",
+    "status": "identical",
+    "original_sha256": "8bf93138e3b01f16324ec75b58fab1c72bc0529c889bf699e6ccff71e7b70334",
+    "current_sha256": "8bf93138e3b01f16324ec75b58fab1c72bc0529c889bf699e6ccff71e7b70334"
+  },
+  {
+    "path": "src/ui/worldEvents.js",
+    "status": "identical",
+    "original_sha256": "073bc451da59d59b77e1c2e5110abd56ae811714bfb10cafb0b089ac11fd9495",
+    "current_sha256": "073bc451da59d59b77e1c2e5110abd56ae811714bfb10cafb0b089ac11fd9495"
+  },
+  {
+    "path": "src/ui/worldMap.js",
+    "status": "identical",
+    "original_sha256": "c82eb7856c869b44bc0587ffcb28710ac3bc3391f40b7894b919d591d93eab8b",
+    "current_sha256": "c82eb7856c869b44bc0587ffcb28710ac3bc3391f40b7894b919d591d93eab8b"
+  },
+  {
+    "path": "src/ui/views.js",
+    "status": "updated",
+    "original_sha256": "73fc9e0bc0db203bba2843e1fd146fc24fe144ee46c2ed54411c6054db823197",
+    "current_sha256": "2a10f264d3584d23d5690710f5eee34f428f50ea2d4dd452149e849417783b83"
+  },
+  {
+    "path": "src/core/gameLoop.js",
+    "status": "updated",
+    "original_sha256": "8b05e2fec21d14299b446f03ea42be8c976d10390f50ed6fd05785f2560cf299",
+    "current_sha256": "e4917a672c11c65ffd41fd73d3bf2649981ecee9bf809404515b076f9a3d78f0"
+  },
+  {
+    "path": "src/core/rng.js",
+    "status": "identical",
+    "original_sha256": "62b0cb448db1a505102978b219544483720d3ae9cae686f3dc53399bc2dc3ea9",
+    "current_sha256": "62b0cb448db1a505102978b219544483720d3ae9cae686f3dc53399bc2dc3ea9"
+  },
+  {
+    "path": "src/core/schema.js",
+    "status": "updated",
+    "original_sha256": "6a17bc1c066bc54f3d316e42e4c270ae13b9b91ae0fe187e425cf96fb9fdfcf3",
+    "current_sha256": "9eb98e047d034840561884182cecbd791c82550a94ea1c5f83fb670cc3205dd7"
+  },
+  {
+    "path": "src/systems/businessAcquisitions.js",
+    "status": "identical",
+    "original_sha256": "4e9ecf2d4022cafa3dafa8547fbbf8f7e9b941a1a1cf5edd74549e13bf886ea4",
+    "current_sha256": "4e9ecf2d4022cafa3dafa8547fbbf8f7e9b941a1a1cf5edd74549e13bf886ea4"
+  },
+  {
+    "path": "src/systems/businessExits.js",
+    "status": "identical",
+    "original_sha256": "95d0ba56e656f2001fb99594b9d2987d47b0787ed059de3d3d33f48c026069f3",
+    "current_sha256": "95d0ba56e656f2001fb99594b9d2987d47b0787ed059de3d3d33f48c026069f3"
+  },
+  {
+    "path": "src/systems/businessLegacy.js",
+    "status": "identical",
+    "original_sha256": "7da23f7410f5ed45612e85acea3d4e695e4af276b4ff425f22c5375446dd86c8",
+    "current_sha256": "7da23f7410f5ed45612e85acea3d4e695e4af276b4ff425f22c5375446dd86c8"
+  },
+  {
+    "path": "src/systems/businessLoans.js",
+    "status": "identical",
+    "original_sha256": "458ebd70eb2ab9277eab36be539848e89b3bcae42fedf8b46cd9570eb8a771e1",
+    "current_sha256": "458ebd70eb2ab9277eab36be539848e89b3bcae42fedf8b46cd9570eb8a771e1"
+  },
+  {
+    "path": "src/systems/careerActions.js",
+    "status": "identical",
+    "original_sha256": "66b12c70077d1e24e72f01aa83006ae56d068de75ba91b1c354d173f6164f31c",
+    "current_sha256": "66b12c70077d1e24e72f01aa83006ae56d068de75ba91b1c354d173f6164f31c"
+  },
+  {
+    "path": "src/systems/careerMarket.js",
+    "status": "identical",
+    "original_sha256": "39c84033bfc5e4110957d575743ed45776ffa960e19d25c6ba04173a201cb74e",
+    "current_sha256": "39c84033bfc5e4110957d575743ed45776ffa960e19d25c6ba04173a201cb74e"
+  },
+  {
+    "path": "src/systems/completeLifeSystems.js",
+    "status": "updated",
+    "original_sha256": "0bf074a4ef33518098aa42a32b3e05f820c058cf9318180b71773a0b2cab56f6",
+    "current_sha256": "44583b7e3a4c65da42b5abfb0ff4812ed4fad44ee2a7ee79189d3b8e2eb4c0e4"
+  },
+  {
+    "path": "src/systems/eventEngine.js",
+    "status": "updated",
+    "original_sha256": "3d03e0fcb156d586854d33552ce5c4afa5c137a79be1d9bd7b8d8fc3c010599f",
+    "current_sha256": "e0ef8cd5c81fb907ca4e83575e71f600e6856247c045a38ade6ee17733cfb231"
+  },
+  {
+    "path": "src/systems/healthDirectorEngine.js",
+    "status": "identical",
+    "original_sha256": "b2f952603fb402195fb724ce4981bfe97e8b238da85d64ae610ae21a99382866",
+    "current_sha256": "b2f952603fb402195fb724ce4981bfe97e8b238da85d64ae610ae21a99382866"
+  },
+  {
+    "path": "src/systems/marriageFamilyEngine.js",
+    "status": "identical",
+    "original_sha256": "aa3600eb19bc664c527ec1418c7ecc5f4e1335d798e9de7aee7c14fe4c578cc8",
+    "current_sha256": "aa3600eb19bc664c527ec1418c7ecc5f4e1335d798e9de7aee7c14fe4c578cc8"
+  },
+  {
+    "path": "src/systems/mortalityModel.js",
+    "status": "identical",
+    "original_sha256": "25445f748506fcf3001f41d1cbb360ef175c2519ec2d248f3957be282dba3138",
+    "current_sha256": "25445f748506fcf3001f41d1cbb360ef175c2519ec2d248f3957be282dba3138"
+  },
+  {
+    "path": "src/systems/npcMemory.js",
+    "status": "identical",
+    "original_sha256": "08cc093ad5b688a106a63e5a056c3c2acaf12d380d5f88ad536fc11c77bcce8b",
+    "current_sha256": "08cc093ad5b688a106a63e5a056c3c2acaf12d380d5f88ad536fc11c77bcce8b"
+  },
+  {
+    "path": "src/systems/progressEngine.js",
+    "status": "identical",
+    "original_sha256": "bf9057e027bed43337d1803e6532ec420c8876087595eb27aadbb16641355d8a",
+    "current_sha256": "bf9057e027bed43337d1803e6532ec420c8876087595eb27aadbb16641355d8a"
+  },
+  {
+    "path": "src/systems/propertyLandlord.js",
+    "status": "identical",
+    "original_sha256": "f3a6cd1699a84d447b0f061acd01e12e68dad3a04ad8e1def0db2bff51e7a4d5",
+    "current_sha256": "f3a6cd1699a84d447b0f061acd01e12e68dad3a04ad8e1def0db2bff51e7a4d5"
+  },
+  {
+    "path": "src/systems/socialEnergy.js",
+    "status": "updated",
+    "original_sha256": "f705b1ec00b844f568b87c04d2a343ee291eaefc239ab021646078cb9e4e37b4",
+    "current_sha256": "f5a75b67cce7ecc6580adb93669d0db87227f8aaf10654e92fdcd7bd007aaf7d"
+  },
+  {
+    "path": "src/systems/soulEngine.js",
+    "status": "identical",
+    "original_sha256": "86aade388ad51db33da0567199ce4aa1a0f68a9aac1d2db85a99f7a5f62c6f7e",
+    "current_sha256": "86aade388ad51db33da0567199ce4aa1a0f68a9aac1d2db85a99f7a5f62c6f7e"
+  },
+  {
+    "path": "src/systems/storyLibrary.js",
+    "status": "updated",
+    "original_sha256": "2747a3d70c08e042701b73025f3baeefc99fbf949436671e941f70812214fef4",
+    "current_sha256": "d783696999e9debd827119815f78d56efb77dbb6d87b079c282bb9b5b9eb8eff"
+  },
+  {
+    "path": "src/systems/threadResolution.js",
+    "status": "identical",
+    "original_sha256": "8a3a8d62f0c4c5710cc26b30dadab7d5ec9c578504fc9f38c8f305471cab8cf4",
+    "current_sha256": "8a3a8d62f0c4c5710cc26b30dadab7d5ec9c578504fc9f38c8f305471cab8cf4"
+  },
+  {
+    "path": "src/systems/visaMigrationEngine.js",
+    "status": "identical",
+    "original_sha256": "abff0c814bd068c60ec668ae297e787e172ca09fbde82e0ecb593a5214722b86",
+    "current_sha256": "abff0c814bd068c60ec668ae297e787e172ca09fbde82e0ecb593a5214722b86"
+  },
+  {
+    "path": "src/systems/worldEvents.js",
+    "status": "identical",
+    "original_sha256": "09e35c60767fb807b310888539232f10ea6627b59eef75ce360193b22904b22a",
+    "current_sha256": "09e35c60767fb807b310888539232f10ea6627b59eef75ce360193b22904b22a"
+  },
+  {
+    "path": "src/systems/businessFate.js",
+    "status": "identical",
+    "original_sha256": "507adf54c37c59593fb21b5de41662759bdce9e676516aaff5e502d98770cd69",
+    "current_sha256": "507adf54c37c59593fb21b5de41662759bdce9e676516aaff5e502d98770cd69"
+  },
+  {
+    "path": "src/systems/careerWork.js",
+    "status": "identical",
+    "original_sha256": "ecf8ad9c0fdf73e7fd34fbd5665e646adf6dd753d9d14cea16731f93563f2c1f",
+    "current_sha256": "ecf8ad9c0fdf73e7fd34fbd5665e646adf6dd753d9d14cea16731f93563f2c1f"
+  },
+  {
+    "path": "src/systems/moneyTruth.js",
+    "status": "identical",
+    "original_sha256": "083b998342afe26924ecdd3e9fa15d02965d9178158f2cfe294583786d66f9a9",
+    "current_sha256": "083b998342afe26924ecdd3e9fa15d02965d9178158f2cfe294583786d66f9a9"
+  },
+  {
+    "path": "src/systems/careerConsequences.js",
+    "status": "identical",
+    "original_sha256": "1eb7457f15bdd391e7bf623f49f961d5cf3862f50f3a5c65eaca8c58d99610d4",
+    "current_sha256": "1eb7457f15bdd391e7bf623f49f961d5cf3862f50f3a5c65eaca8c58d99610d4"
+  },
+  {
+    "path": "src/systems/careerEducationEngine.js",
+    "status": "updated",
+    "original_sha256": "ffc28c8729a6041dbd09de16a4e68297ba1932bb1f2abdc0f5365978d2203584",
+    "current_sha256": "26137fbd42c09020a03b3a9472be6a1886452f62aba26e577522975771a2a365"
+  },
+  {
+    "path": "src/systems/businessDecisions.js",
+    "status": "identical",
+    "original_sha256": "60cead5f67d6f7209d3f69df174d05ea1145e568bc2ef9da712b02c8d1f82755",
+    "current_sha256": "60cead5f67d6f7209d3f69df174d05ea1145e568bc2ef9da712b02c8d1f82755"
+  },
+  {
+    "path": "src/systems/businessMonthly.js",
+    "status": "identical",
+    "original_sha256": "388e7643166c17671a36fe4ffe5e42ce510af83559a72a13d40e399a777e476d",
+    "current_sha256": "388e7643166c17671a36fe4ffe5e42ce510af83559a72a13d40e399a777e476d"
+  },
+  {
+    "path": "src/systems/businessStaff.js",
+    "status": "identical",
+    "original_sha256": "31ccef3f88f3753caa43712de7addb864621f0ed9556b82bd3fbb94116ceeb98",
+    "current_sha256": "31ccef3f88f3753caa43712de7addb864621f0ed9556b82bd3fbb94116ceeb98"
+  },
+  {
+    "path": "src/systems/economyEngine.js",
+    "status": "updated",
+    "original_sha256": "7a132505624596d53b76a430b0a9fa6155663285ba07edd5cefc137db938195a",
+    "current_sha256": "af9100a4be58990eb6e731b2a094b4a034a58d0857b71b38a6bdb6e948d6e42c"
+  },
+  {
+    "path": "src/systems/businessBranches.js",
+    "status": "identical",
+    "original_sha256": "fec69ce6bab8cccea252ee0fe3c669bdb6b5916df542e04f48f648295c975283",
+    "current_sha256": "fec69ce6bab8cccea252ee0fe3c669bdb6b5916df542e04f48f648295c975283"
+  },
+  {
+    "path": "src/systems/businessCapacity.js",
+    "status": "identical",
+    "original_sha256": "de5cba738bc9d2fc0ae252d1cd134d9a3eddad652d194844a7f1c4abd99edec2",
+    "current_sha256": "de5cba738bc9d2fc0ae252d1cd134d9a3eddad652d194844a7f1c4abd99edec2"
+  },
+  {
+    "path": "src/systems/businessEngine.js",
+    "status": "identical",
+    "original_sha256": "da60dce2dadc7c2a9b089d778bbf26ad7f12778066ca1b1e06c78e1b80b0f3f9",
+    "current_sha256": "da60dce2dadc7c2a9b089d778bbf26ad7f12778066ca1b1e06c78e1b80b0f3f9"
+  },
+  {
+    "path": "src/systems/businessGrowth.js",
+    "status": "identical",
+    "original_sha256": "c5ddc30e9186754335e37dd507d7a5745329e6f0642ffd2a98a363cebc000fa6",
+    "current_sha256": "c5ddc30e9186754335e37dd507d7a5745329e6f0642ffd2a98a363cebc000fa6"
+  },
+  {
+    "path": "src/systems/businessManager.js",
+    "status": "identical",
+    "original_sha256": "281b05f8d24594591f30312758dc631bd4196099d0bf32a0360fe33dc59ac5ab",
+    "current_sha256": "281b05f8d24594591f30312758dc631bd4196099d0bf32a0360fe33dc59ac5ab"
+  },
+  {
+    "path": "src/systems/businessOperations.js",
+    "status": "identical",
+    "original_sha256": "0edd022a2ca84384b26171e8bfebcfb744ede484596c204cb0485240c98befec",
+    "current_sha256": "0edd022a2ca84384b26171e8bfebcfb744ede484596c204cb0485240c98befec"
+  },
+  {
+    "path": "src/systems/businessPremises.js",
+    "status": "identical",
+    "original_sha256": "619035a03400be0f3a11a0fd06ccf2b135bd4de10df0851d24057fb6ce7b0b78",
+    "current_sha256": "619035a03400be0f3a11a0fd06ccf2b135bd4de10df0851d24057fb6ce7b0b78"
+  },
+  {
+    "path": "src/systems/businessRoles.js",
+    "status": "identical",
+    "original_sha256": "b715f6a3540d036d642f5bac831599e0d5099714379a7cc2a0c4c9c77cb21057",
+    "current_sha256": "b715f6a3540d036d642f5bac831599e0d5099714379a7cc2a0c4c9c77cb21057"
+  },
+  {
+    "path": "src/data/careerMarketData.js",
+    "status": "identical",
+    "original_sha256": "695750be238110819657d2f6b6571ddce48f8db52cd556f6a224444822390a2b",
+    "current_sha256": "695750be238110819657d2f6b6571ddce48f8db52cd556f6a224444822390a2b"
+  },
+  {
+    "path": "src/data/countries.js",
+    "status": "identical",
+    "original_sha256": "9a0f1791620f1527dab8f2d40f58e49982723248e5bec72aea32bb1a393160ba",
+    "current_sha256": "9a0f1791620f1527dab8f2d40f58e49982723248e5bec72aea32bb1a393160ba"
+  },
+  {
+    "path": "src/data/economy.js",
+    "status": "identical",
+    "original_sha256": "97199db53532cef00bf0376ada55cbfadf89ccc8db6cf8c5dfa2eb6513341afa",
+    "current_sha256": "97199db53532cef00bf0376ada55cbfadf89ccc8db6cf8c5dfa2eb6513341afa"
+  },
+  {
+    "path": "src/data/educationExtras.js",
+    "status": "identical",
+    "original_sha256": "319a1789afec6cf794315b10f21207f0e4278641cd6527919bc86a586892d206",
+    "current_sha256": "319a1789afec6cf794315b10f21207f0e4278641cd6527919bc86a586892d206"
+  },
+  {
+    "path": "src/data/eventsBusiness.js",
+    "status": "identical",
+    "original_sha256": "9e51f799d005988d0547bc013bf5049cbd6dabadc086bfec5ac64f6aba943b00",
+    "current_sha256": "9e51f799d005988d0547bc013bf5049cbd6dabadc086bfec5ac64f6aba943b00"
+  },
+  {
+    "path": "src/data/eventsEverydayFamily.js",
+    "status": "updated",
+    "original_sha256": "2263da769835a3326934b9804dcdba14885f3f1ee0972b9879eb9dc45271f785",
+    "current_sha256": "76d5311c34a63b6909a922066e150987fc543385bae50d17a511bc588df87259"
+  },
+  {
+    "path": "src/data/eventsMemory.js",
+    "status": "identical",
+    "original_sha256": "a261b5934fd39f5ae1eb9fbbf5a4f80f0dfa1992efd7d59dacc19e2b3ee2c5bf",
+    "current_sha256": "a261b5934fd39f5ae1eb9fbbf5a4f80f0dfa1992efd7d59dacc19e2b3ee2c5bf"
+  },
+  {
+    "path": "src/data/institutions.js",
+    "status": "updated",
+    "original_sha256": "4c35380d39ad790b2c576193bb4ec1084ea68f4e96977dc2b5722ee0933907b6",
+    "current_sha256": "61ab55624ef467685f7749d8bbfa2760401a1d49988f6bb1ed3ab8269a2fb0e2"
+  },
+  {
+    "path": "src/data/megaCareerEduMedical.js",
+    "status": "identical",
+    "original_sha256": "85586ce8c8dd8d9a7523ab47d4e94dfe9eda26373a1c5d582b40a2c355280de9",
+    "current_sha256": "85586ce8c8dd8d9a7523ab47d4e94dfe9eda26373a1c5d582b40a2c355280de9"
+  },
+  {
+    "path": "src/data/megaCarsAndShop.js",
+    "status": "identical",
+    "original_sha256": "74e7036b59756a72bc11913d37b3d5f304906a5c7bb72119eb9861eb09750162",
+    "current_sha256": "74e7036b59756a72bc11913d37b3d5f304906a5c7bb72119eb9861eb09750162"
+  },
+  {
+    "path": "src/data/megaFinanceAndMarkets.js",
+    "status": "identical",
+    "original_sha256": "9266ac575d023c99ae48acdd3c767b2fe1890087611e83795ee528cdffac73cd",
+    "current_sha256": "9266ac575d023c99ae48acdd3c767b2fe1890087611e83795ee528cdffac73cd"
+  },
+  {
+    "path": "src/data/megaRealEstate.js",
+    "status": "identical",
+    "original_sha256": "0d6702390dfaac858e44a1b549a588ae48e085c48c59ab12bdd14ee106360c99",
+    "current_sha256": "0d6702390dfaac858e44a1b549a588ae48e085c48c59ab12bdd14ee106360c99"
+  },
+  {
+    "path": "src/data/names.js",
+    "status": "identical",
+    "original_sha256": "d62daf5ccb198cb2b5bcd98cdf580dd9aa0bc68bc28c2dd7c6448c158faddf63",
+    "current_sha256": "d62daf5ccb198cb2b5bcd98cdf580dd9aa0bc68bc28c2dd7c6448c158faddf63"
+  },
+  {
+    "path": "src/data/propertyLandlordData.js",
+    "status": "identical",
+    "original_sha256": "8cadf68d287335ceb0b137a2c3bc00a7811d2b6310eb1dbd7aeadd4e6fea5c8b",
+    "current_sha256": "8cadf68d287335ceb0b137a2c3bc00a7811d2b6310eb1dbd7aeadd4e6fea5c8b"
+  },
+  {
+    "path": "src/data/visasAndMarriage.js",
+    "status": "identical",
+    "original_sha256": "6cac911ba697c22f61532a6dd5e4a92dde27d1bcf83a77993774efa1d4343a2f",
+    "current_sha256": "6cac911ba697c22f61532a6dd5e4a92dde27d1bcf83a77993774efa1d4343a2f"
+  },
+  {
+    "path": "src/data/worldEvents.js",
+    "status": "identical",
+    "original_sha256": "7e2e84fda7ba16b5d2e13053ab8b6fc9f30a6f6426c0f82a79cff65a95f57f1f",
+    "current_sha256": "7e2e84fda7ba16b5d2e13053ab8b6fc9f30a6f6426c0f82a79cff65a95f57f1f"
+  },
+  {
+    "path": "src/data/eventsMoneyHealthCareer.js",
+    "status": "updated",
+    "original_sha256": "7ec82f15375d248587130ec534e9b6c9c4bb05f29e9420465f31ca6dae6891cb",
+    "current_sha256": "cddc958c0a704d8d4795f8c7f0a7a81064106a49c65fdb737e340fee068ce950"
+  },
+  {
+    "path": "src/main.js",
+    "status": "updated",
+    "original_sha256": "f4cd05c9c9f978a31af30d3f39f1b9e679b56532b5ff05873384b0c298b189d1",
+    "current_sha256": "be3a18f4efc753e200647cf247a837fc3e2d2723b8236ce111865008b5aaf15a"
+  },
+  {
+    "path": "scripts/build.mjs",
+    "status": "updated",
+    "original_sha256": "59215b5a6c84ac5bb160c451cb48d585d1a7af1aff765e93c7f2817948c569bc",
+    "current_sha256": "9cbeee0983f56e32ba8589ce8d1f8a5ef4698bbef1c0e24efc727907aaa25b06"
+  },
+  {
+    "path": "dist/world-life.bundle.js",
+    "status": "updated",
+    "original_sha256": "8957156c3188648ed2c66651c450e3d6aaeed051c6d9c261d9b81c701fadf2c5",
+    "current_sha256": "986c3f187ca0b68f50a03eaaa322d8cf03baddf40914c3ba410c9b60edc3efb7"
+  },
+  {
+    "path": "CHANGELOG.md",
+    "status": "updated",
+    "original_sha256": "2fbb90ab26c71f8fadbc40f8c7cd86608db9188784fa5fa2795bac8f0f7c4ad5",
+    "current_sha256": "f872129492dbfc2b0ff2d1007bf8019d8e2af8d038324f10e3ab8086e2f540f3"
+  },
+  {
+    "path": "README-RUN-ME.txt",
+    "status": "identical",
+    "original_sha256": "7c7957f53e8b458d6b90d9ab6ebe7af396654a64027881992e0ff14ee827aa76",
+    "current_sha256": "7c7957f53e8b458d6b90d9ab6ebe7af396654a64027881992e0ff14ee827aa76"
+  },
+  {
+    "path": "index.html",
+    "status": "updated",
+    "original_sha256": "46771e607d4875f37c657bb518f8467202dcff712025c9fc665db769befc7694",
+    "current_sha256": "4c14a832f80e5710ff2ef37b0b74a75c2a932c4881ae8df575022dfa4866f4f3"
+  },
+  {
+    "path": "serve.py",
+    "status": "identical",
+    "original_sha256": "8525f331d3c6aa66810aff8a2b987c49f030635a1c11e2c77d585aa9e613777d",
+    "current_sha256": "8525f331d3c6aa66810aff8a2b987c49f030635a1c11e2c77d585aa9e613777d"
+  },
+  {
+    "path": "start-game.command",
+    "status": "identical",
+    "original_sha256": "21db64d8a107f95015b34c15e4ea7cafef62bd38e97ec33bb4973346e323c3d4",
+    "current_sha256": "21db64d8a107f95015b34c15e4ea7cafef62bd38e97ec33bb4973346e323c3d4"
+  }
+]

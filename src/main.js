@@ -297,7 +297,7 @@ import {
 
 // Supplied source may not include the optional art pack. Hide failed art
 // instead of exposing broken icons or repeating the caption as alt text.
-document.addEventListener('error', event => {
+if (typeof document !== 'undefined') document.addEventListener('error', event => {
   const img = event.target;
   if (!(img instanceof HTMLImageElement) && !(img instanceof SVGImageElement)) return;
   img.hidden = true;

@@ -8,13 +8,13 @@ Open [World Life](https://elsayedhawaa.github.io/life-sim/) in your browser. No 
 
 Your life is saved in this browser on this device. Use the same browser and URL to continue. Private browsing, clearing site data, or changing devices can lose access to the save. There is no cloud-save account yet.
 
-The optional original art pack is not in this repository. The hosted game uses a plain fallback wherever that art is missing.
+The original banner, portrait, furniture and font assets are included. Missing images still have a plain fallback.
 
 ## Run
 
 Open `index.html` in your browser. `dist/world-life.bundle.js` is prebuilt, so Node.js and a build step are not needed to play.
 
-**Art and other assets are not included in this repository.** Keep the assets from your original full game folder. The full v2.20 ZIP was about 43 MB; this repository starts from the lean source archive instead.
+The original art and font assets were restored from the supplied full v2.20 archive. Source changes and the prebuilt bundle are maintained here together.
 
 ## Put an update into your existing game folder
 
