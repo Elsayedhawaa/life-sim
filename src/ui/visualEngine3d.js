@@ -1182,6 +1182,34 @@ export function renderArchitecturalFloorplanSvg(
   `;
 }
 
+// Phone-first plan: geometry and room identity stay together; detailed CAD is optional.
+export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms = {}, floorIdx = 0, propertyId = null) {
+  const floors = A101_SCHEMATICS[shape] || A101_SCHEMATICS.apartment;
+  const idx = Math.min(floors.length - 1, Math.max(0, Number(floorIdx) || 0));
+  const plan = floors[idx];
+  if (shape === 'land') return renderArchitecturalFloorplanSvg(shape);
+  const sh = plan.shell;
+  const attrs = rm => `data-action="room-info" data-room="${escAttr(rm.key)}" data-no="${escAttr(rm.no)}" data-name="${escAttr(planRoomName(rm))}" data-m2="${rm.m2 || 0}" data-floor="${escAttr(plainFloorLabel(idx))}"`;
+  return `<section class="readable-floor" style="border:1px solid #c9c2b5;border-radius:12px;padding:12px;background:#fcfbf7;color:#292524;min-width:0">
+    <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx))}</h4>
+    <p style="font-size:0.78rem;margin:0 0 12px;color:#625b50">Room numbers match the list below. Layout diagram, not to scale.</p>
+    <svg viewBox="${sh.x - 12} ${sh.y - 12} ${sh.w + 24} ${sh.h + 24}" width="100%" role="img" aria-label="${escAttr(plainFloorLabel(idx))} room layout" style="display:block;border-radius:6px;background:#eee9df">
+      ${plan.rooms.map(rm => `<g ${attrs(rm)} tabindex="0" role="button" aria-label="Room ${escAttr(rm.no)}: ${escAttr(planRoomName(rm))}">
+        <rect x="${rm.x}" y="${rm.y}" width="${rm.w}" height="${rm.h}" fill="${isRoomFurnished(furnishedRooms, rm) ? '#e4eee3' : '#f8f5ee'}" stroke="#524c43" stroke-width="3"/>
+        <text x="${rm.x + rm.w/2}" y="${rm.y + rm.h/2 + 7}" text-anchor="middle" font-size="24" font-family="sans-serif" font-weight="700" fill="#292524">${escAttr(rm.no)}</text>
+      </g>`).join('')}
+    </svg>
+    <div style="margin-top:10px;display:grid;gap:6px">
+      ${plan.rooms.map(rm => `<button type="button" ${attrs(rm)} style="display:flex;align-items:center;gap:10px;text-align:left;width:100%;min-height:48px;padding:10px;border:1px solid #d8d1c5;border-radius:8px;background:#fffdf8;color:#292524;white-space:normal">
+        <span style="font-weight:800;color:#a6442f">${escAttr(rm.no)}</span>
+        <span style="flex:1;font-size:0.82rem;line-height:1.35;text-transform:capitalize">${escAttr(planRoomName(rm).toLowerCase())}</span>
+        <span style="font-size:0.78rem;white-space:nowrap">${rm.m2} m²${isRoomFurnished(furnishedRooms, rm) ? ' ✓' : ''}</span>
+      </button>`).join('')}
+    </div>
+    <p style="font-size:0.74rem;margin:10px 0 0;color:#625b50">${plan.rooms.reduce((sum, r) => sum + (r.m2 || 0), 0)} m² across listed rooms. Use the furnishing controls below to furnish a room.</p>
+  </section>`;
+}
+
 export function renderAllPropertyFloorsHtml(
   shape = 'apartment',
   finish = 'standard',
@@ -1335,9 +1363,14 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
         </div>
       </div>
 
-      ${(isMultiFloor && cadFloor === -1)
-        ? renderAllPropertyFloorsHtml(shape, finish, furnishedRooms, home?.areaM2 || null, home?.id || null, { cyanotype, showMep, viewMode, timeOfDay })
-        : renderArchitecturalFloorplanSvg(shape, finish, furnishedRooms, home?.areaM2 || null, Math.max(0, cadFloor), home?.id || null, { cyanotype, showMep, viewMode, timeOfDay })}
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px">
+        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id)).join('')}
+      </div>
+      <details style="margin-top:12px"><summary style="cursor:pointer;font-size:0.82rem">Detailed architectural sheets</summary>
+        <div style="margin-top:10px">${(isMultiFloor && cadFloor === -1)
+          ? renderAllPropertyFloorsHtml(shape, finish, furnishedRooms, home?.areaM2 || null, home?.id || null, { cyanotype, showMep, viewMode, timeOfDay })
+          : renderArchitecturalFloorplanSvg(shape, finish, furnishedRooms, home?.areaM2 || null, Math.max(0, cadFloor), home?.id || null, { cyanotype, showMep, viewMode, timeOfDay })}</div>
+      </details>
     </div>
   `;
 }
