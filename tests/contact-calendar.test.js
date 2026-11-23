@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {createNewLifeState,createPerson} from '../src/core/schema.js';
+import {monthsSinceContact,noteSocialContact} from '../src/systems/socialEnergy.js';
+const s=createNewLifeState({seed:4,birthYear:1998});s.turn=7;s.year=2005;s.month=9;
+const p=createPerson(s,{age:7});assert.equal(monthsSinceContact(s,p),0);
+s.turn=8;s.year=2006;assert.equal(monthsSinceContact(s,p),12);
+s.turn=18;s.year=2016;s.month=7;s.pacing='monthly';assert.equal(monthsSinceContact(s,p),130,'switching pacing cannot compress eleven years into eleven months');
+noteSocialContact(s,p);assert.equal(monthsSinceContact(s,p),0);s.month=8;s.turn++;assert.equal(monthsSinceContact(s,p),1);
+s.year=2017;s.month=7;assert.equal(monthsSinceContact(s,p),12);
+const legacy={rel:{lastContactTurn:s.turn-2}};assert.equal(monthsSinceContact(s,legacy),2,'legacy saves still work');
+console.log('Passed contact calendar checks across the childhood/adult pacing boundary.');

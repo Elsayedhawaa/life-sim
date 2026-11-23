@@ -136,6 +136,8 @@ export function createPerson(S, opts = {}) {
       resentment: clamp(opts.resentment ?? 0),
       chemistry: clamp(opts.chemistry ?? randInt(S, 40, 88)),
       lastContactTurn: S.turn || 0,
+      lastContactYear: S.year,
+      lastContactMonth: S.month,
       memories: [],
       promises: [],
       currentWant: null

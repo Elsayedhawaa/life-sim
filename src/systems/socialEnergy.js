@@ -168,6 +168,8 @@ export function energyCostFor(key, S, p) {
 export function noteSocialContact(S, p) {
   if (!p || !p.rel) return;
   p.rel.lastContactTurn = S.turn;
+  p.rel.lastContactYear = S.year;
+  p.rel.lastContactMonth = S.month;
   p.rel.lastContactUnknown = false;
   if (p.rel.driftState === 'drifting' || p.rel.driftState === 'noticed') {
     p.rel.driftState = 'none';
@@ -178,6 +180,9 @@ export function noteSocialContact(S, p) {
    and years in childhood pacing. */
 export function monthsSinceContact(S, p) {
   if (!p || !p.rel || typeof p.rel.lastContactTurn !== 'number') return 0;
+  if (Number.isFinite(p.rel.lastContactYear) && Number.isFinite(p.rel.lastContactMonth)) {
+    return Math.max(0, (S.year - p.rel.lastContactYear) * 12 + S.month - p.rel.lastContactMonth);
+  }
   const turns = Math.max(0, (S.turn || 0) - p.rel.lastContactTurn);
   return S.pacing === 'monthly' ? turns : turns * 12;
 }
@@ -195,6 +200,10 @@ export function backfillLastContact(S, p) {
   );
   if (entry) {
     p.rel.lastContactTurn = entry.turn;
+    if (Number.isFinite(entry.year) && Number.isFinite(entry.month)) {
+      p.rel.lastContactYear = entry.year;
+      p.rel.lastContactMonth = entry.month;
+    }
     p.rel.lastContactUnknown = false;
     return entry.turn;
   }
@@ -266,8 +275,8 @@ function buildDriftNoticeScene(S, p) {
     maxPerLife: 99,
     category: 'relationship',
     speakerId: p.id,
-    title: `You have not spoken to ${p.firstName} in a year`,
-    text: `It has been a year since you last spoke to ${p.fullName}. ${close ? `${p.firstName} was one of your closest friends — the kind of friend you do not replace. ` : ''}You have both been busy. The friendship is fading, but it will not end unless you choose to let it go.`,
+    title: `It has been a while: ${p.firstName}`,
+    text: `You have not caught up with ${p.fullName} in ${monthsSinceContact(S, p)} months. ${close ? `${p.firstName} was one of your closest friends — the kind of friend you do not replace. ` : ''}You have both been busy. The friendship is fading, but it will not end unless you choose to let it go.`,
     choices: [
       {
         label: `Reach out now — call ${p.firstName} (${DRIFT_REACH_OUT_COST} energy)`,
