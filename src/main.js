@@ -475,6 +475,13 @@ if (typeof document !== 'undefined') {
     if (!btn) return;
     const action = btn.dataset.action;
 
+    if(action==='zoom-floorplan'){
+      const svg=btn.closest('.readable-floor')?.querySelector('svg.architectural-plan');
+      if(!svg)return;
+      const dialog=document.createElement('dialog');dialog.style.cssText='width:96vw;max-width:1100px;padding:12px;background:#faf8f0;border-radius:12px';
+      const close=document.createElement('button');close.textContent='Close plan';close.className='btn';close.onclick=()=>dialog.close();dialog.append(close);
+      const panel=document.createElement('div');panel.style.cssText='overflow:auto;max-height:80vh';const copy=svg.cloneNode(true);copy.style.width='950px';copy.style.maxWidth='none';panel.append(copy);dialog.append(panel);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();return;
+    }
     /* ---- NAVIGATION & SUB-TABS ---- */
     if (action === 'switch-tab') {
       uiState.activeTab = btn.dataset.tab || 'life';
