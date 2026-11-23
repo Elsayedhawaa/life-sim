@@ -51,3 +51,7 @@ Dubai neighborhood, apartment interior and elder male portrait with appearance-a
 ## UK first regional batch
 
 Manchester terraced street, compact flat interior, and an elder woman portrait gated by age, uncovered appearance and compatible complexion. Manchester art is not presented as Edinburgh or London. Earlier years retain a vintage fallback. Flat and terraced-townhouse layouts have separate geometry. Two no-spend stories cover reporting persistent damp in a rented home and balancing commute reliability against sleep. These are fictional decisions, not legal advice or evidence of repairs. Other UK property templates still need deeper local treatment. No wage/rent benchmarks were changed.
+
+## USA first regional batch
+
+Chicago residential two-flat street, modest apartment interior and an elder male portrait limited to compatible dark complexion, uncovered hair and clean-shaven appearance. Chicago's named street is city/year gated. US apartment/villa geometry has a first template pass; other types still inherit the common type families. Two no-spend stories cover commute trade-offs before accepting a role and shared-building laundry. No insurance, salary, tax or rent claims were added. USA is diverse; one street and portrait are not universal coverage.

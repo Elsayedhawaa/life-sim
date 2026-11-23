@@ -34,6 +34,7 @@ export function homeStyleNote(country = '', shape = '') {
   if (shape === 'studio') return 'Compact studio: living and sleeping zones share one small home.';
   if (shape === 'chalet') return 'Holiday chalet: shared living space and a compact sleeping area.';
   if (shape === 'penthouse') return 'Top-floor home with living and sleeping rooms on one level.';
+  if (country === 'usa') return 'US-inspired home layout with a shared living and dining area. Regional and property details vary.';
   if (country === 'gbr') return shape === 'townhouse' ? 'British terraced-home layout with front sitting space, stairs and a rear kitchen.' : 'British flat layout with a compact entrance, living room and separate sleeping spaces.';
   if (country === 'jpn') return 'Japan-inspired layout with a genkan entrance and separate washroom spaces.';
   if (country === 'uae') return 'UAE-inspired home layout. Apartment living and villa guest spaces use different plans.';

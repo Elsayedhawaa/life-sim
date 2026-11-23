@@ -623,6 +623,16 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
     floors[0].terrace.hasPool = false;
     floors[0].terrace.label = 'GARDEN ACCESS TERRACE';
   }
+  if (country === 'usa' && shape === 'apartment') {
+    const layout={'101':[454,292,100,136],'102':[554,362,130,66],'103':[84,238,470,54],'104':[84,292,370,136],'105':[554,238,130,124],'106':[84,92,196,146],'107':[554,92,130,146],'108':[280,92,138,146],'109':[418,92,136,146]};
+    for(const r of floors[0].rooms){[r.x,r.y,r.w,r.h]=layout[r.no];delete r.door;}
+    floors[0].core=null;
+  }
+  if (country === 'usa' && shape === 'villa') {
+    const layout={'101':[246,290,110,128],'102':[76,236,170,182],'103':[76,88,110,148],'104':[246,236,330,54],'105':[356,290,336,128],'106':[356,88,220,148],'107':[576,88,116,202]};
+    for(const r of floors[0].rooms){[r.x,r.y,r.w,r.h]=layout[r.no];delete r.door;}
+    floors[0].terrace.hasPool=false;
+  }
   if (country === 'gbr' && shape === 'townhouse') {
     // Terraced-home template: front sitting room, central stairs, rear kitchen.
     const layout={'101':[134,246,112,178],'102':[246,246,388,178],'103':[134,92,220,154],'104':[354,92,180,154],'105':[534,168,100,78]};

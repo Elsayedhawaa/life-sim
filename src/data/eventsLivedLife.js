@@ -46,6 +46,17 @@ const localPlace = S => ({
 }[S.country] || 'a small neighbourhood cafe');
 
 export const EVENTS_LIVED_LIFE = [
+  story('ev_usa_offer_commute', 'An Offer and a Journey', {minAge:18,countries:['usa'],hasJob:false},
+    S => `A possible job in ${S.city} sounds appealing until you map the journey. The pay is only one part of the choice; the time getting there would become part of every workday.`, [
+      ['Ask about the actual schedule before deciding', 'You asked for the schedule and work location in writing. You had not accepted the offer or received any pay.', {'skills.charisma':2}],
+      ['Compare travel time with the hours you want at home', 'You compared the commute with your own priorities instead of assuming the highest headline pay was always best. The job remained only a possibility.', {'vitals.smarts':2,'vitals.stress':-1}],
+    ], {category:'career'}),
+  story('ev_usa_shared_laundry', 'The Last Load', {minAge:18,countries:['usa'],housingModes:['rent']},
+    S => `You reach the shared laundry in your rented building in ${S.city} and find the machine still full. You have enough time for one load before bed, if the other resident comes back soon.`, [
+      ['Wait a little and leave a polite note', 'You waited briefly and left a polite note without moving another resident’s clothes. The laundry could wait until tomorrow if needed.', {'vitals.stress':-1}],
+      ['Choose tomorrow and use the evening for something else', 'You moved laundry to tomorrow rather than turning a small delay into the whole evening.', {'vitals.stress':-2}],
+    ], {category:'home'}),
+
   story('ev_gbr_damp_report', 'The Patch by the Window', {minAge:18,countries:['gbr'],housingModes:['rent']},
     S => `After a wet week in ${S.city}, you notice a damp patch beside the window in your rented home. Wiping it away does not tell you why it keeps returning.`, [
       ['Photograph it and ask the landlord for an inspection', 'You recorded the damp patch and asked for its cause to be checked. You kept the report instead of assuming a repair had happened.', {'vitals.smarts':2,'vitals.stress':-1}],
