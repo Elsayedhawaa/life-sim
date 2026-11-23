@@ -1574,3 +1574,5 @@ html[data-theme="dark"] .turn-result-card { background: #1b1814; }
 @media(max-width:480px){.education-screen .item-row{flex-wrap:wrap}.education-screen .item-row>.btn{width:100%}.education-screen>.card{padding:16px}.education-screen .editorial-banner{margin:0}.education-screen .section-head>.muted{font-size:12px}}
 .education-screen .btn-primary:hover,.education-screen .btn-primary:focus{background:#214c43;border-color:#214c43;color:#fff}
 .education-screen .btn-primary:focus-visible{outline:3px solid #8bb7a7;outline-offset:3px}
+.edu-programme>.btn{margin-top:7px}.edu-funding-reason{display:block;font-size:11px;color:#74796d;line-height:1.5;margin:4px 0 8px}
+.education-screen .item-row-main>span{display:block;margin-top:4px}

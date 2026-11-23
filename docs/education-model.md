@@ -28,3 +28,8 @@ Duplicate institution aliases preserve old admission IDs. KAUST is excluded from
 - https://www.lsac.org/discover-law/types-law-programs/jd-degree-programs
 
 These references support selected system features, not a claim that every game subject/fee is an official university offer.
+
+## State and funding audit
+School-age controls no longer appear after school. Enrolled students see the current degree; graduates see compact history and extra study. Withdrawal has an explicit non-refund warning and confirmation. Parent funding debits living parents' actual savings for one year and renews annually if enough remains. If renewal fails, billing changes to self-pay and a journal warning is recorded. Self-pay bills monthly, with a first-year cash buffer required. Country-matched undergraduate scholarship awards change tuition coverage, including while enrolled. Postgraduate scholarship buttons are hidden because no funding settlement was wired. Finance offers ordinary personal loans, not a student-loan product. Master and doctorate study charge the displayed one-off game fee, progress monthly and require prior study. Association membership is a game benefit, not a real licence.
+
+Remaining limits: school tuition and tutoring still use older simplified family coverage, not the new university parent ledger. Generic ordinary-subject catalogues and many professional credential rules remain simplified. The broad720screen render audit is not proof that every button or life outcome is correct. Floor-plan circulation repair is still pending.

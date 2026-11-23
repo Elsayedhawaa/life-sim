@@ -2964,7 +2964,7 @@ export const UNIVERSITIES = {
       "prestige": 7,
       "founded": 1950,
       "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
-      "sectorLabel": "Publicly funded, independent"
+      "sectorLabel": "UK university"
     },
     {
       "id": "gbr_imperial",
@@ -2976,7 +2976,7 @@ export const UNIVERSITIES = {
       "prestige": 9,
       "founded": 1950,
       "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
-      "sectorLabel": "Publicly funded, independent"
+      "sectorLabel": "UK university"
     },
     {
       "id": "gbr_oxbridge",
@@ -2988,7 +2988,7 @@ export const UNIVERSITIES = {
       "prestige": 9,
       "founded": 1096,
       "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
-      "sectorLabel": "Publicly funded, independent"
+      "sectorLabel": "UK university"
     },
     {
       "id": "x3-uni-st-andrews",
@@ -3000,7 +3000,7 @@ export const UNIVERSITIES = {
       "prestige": 9,
       "founded": 1413,
       "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
-      "sectorLabel": "Publicly funded, independent"
+      "sectorLabel": "UK university"
     },
     {
       "id": "x3-uni-warwick",
@@ -3012,7 +3012,7 @@ export const UNIVERSITIES = {
       "prestige": 9,
       "founded": 1965,
       "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
-      "sectorLabel": "Publicly funded, independent"
+      "sectorLabel": "UK university"
     },
     {
       "id": "x-uni-edinburgh",
@@ -3024,7 +3024,7 @@ export const UNIVERSITIES = {
       "prestige": 10,
       "founded": 1582,
       "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
-      "sectorLabel": "Publicly funded, independent"
+      "sectorLabel": "UK university"
     },
     {
       "id": "x-uni-manchester",
@@ -3036,7 +3036,7 @@ export const UNIVERSITIES = {
       "prestige": 9,
       "founded": 1824,
       "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
-      "sectorLabel": "Publicly funded, independent"
+      "sectorLabel": "UK university"
     },
     {
       "id": "x-uni-kings",
@@ -3048,7 +3048,7 @@ export const UNIVERSITIES = {
       "prestige": 9,
       "founded": 1829,
       "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
-      "sectorLabel": "Publicly funded, independent"
+      "sectorLabel": "UK university"
     },
     {
       "id": "x-uni-bristol",
@@ -3060,7 +3060,7 @@ export const UNIVERSITIES = {
       "prestige": 9,
       "founded": 1909,
       "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
-      "sectorLabel": "Publicly funded, independent"
+      "sectorLabel": "UK university"
     },
     {
       "id": "x-uni-durham",
@@ -3072,7 +3072,7 @@ export const UNIVERSITIES = {
       "prestige": 9,
       "founded": 1832,
       "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
-      "sectorLabel": "Publicly funded, independent"
+      "sectorLabel": "UK university"
     },
     {
       "id": "x-uni-glasgow",
@@ -3084,7 +3084,7 @@ export const UNIVERSITIES = {
       "prestige": 9,
       "founded": 1451,
       "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
-      "sectorLabel": "Publicly funded, independent"
+      "sectorLabel": "UK university"
     }
   ],
   "usa": [

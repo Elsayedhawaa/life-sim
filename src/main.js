@@ -1352,21 +1352,18 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='education-withdraw-confirm'){
+      const u=S.education.university;if(!u)return;
+      S.education.history=S.education.history||[];S.education.history.push({kind:'withdrawn',name:u.name,majorLabel:u.majorLabel,year:S.year});S.education.university=null;S.education.stage='completed';handleActionResult({ok:true,msg:'You left the degree. Prior tuition is not refunded.'});return;
+    }
     if (action === 'apply-university') {
-      handleActionResult(applyToUniversity(S, btn.dataset.uid, btn.dataset.major));
+      handleActionResult(applyToUniversity(S, btn.dataset.uid, btn.dataset.major,btn.dataset.funding||'auto'));
       return;
     }
 
     if (action === 'enroll-local-uni') {
-      const unis = getUniversitiesFor(S.country, S.year);
-      const u = unis.find(x => x.id === btn.dataset.uid) || unis[0];
-      enrollInUniversity(S, u, btn.dataset.major || 'business', 0);
-      showToast(`Enrolled at ${u.name}!`);
-      saveGameToStorage(S);
-      renderApp();
-      return;
+      handleActionResult(applyToUniversity(S,btn.dataset.uid,btn.dataset.major||'business'));return;
     }
-
     if (action === 'sit-exam') {
       handleActionResult(sitExamOrLicensingBoard(S, btn.dataset.kind, btn.dataset.id));
       return;

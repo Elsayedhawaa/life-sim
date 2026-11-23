@@ -2045,14 +2045,14 @@ export function registerProfessionalSyndicate(S) {
     law: 'Bar & Advocates Syndicate',
     business: 'Commerce & Chartered Accountants Syndicate'
   };
-  const synName = `${getCountry(S.country).adjective} ${titles[deg] || 'Professional Syndicate'}`;
+  const synName = `${getCountry(S.country).adjective} ${deg==='medicine'?'Medical':deg==='engineering'?'Engineering':'Professional'} Association (game membership)`;
   const fee = Math.round(convertCurrency(185, 'usa', S.country, S.year));
-  if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} for syndicate registration & practicing card.` };
+  if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} for game professional-association membership.` };
 
   walletMove(S, -fee, `Syndicate registration: ${synName}`, 'career');
   S.syndicate = { registered: true, name: synName, joinedYear: S.year };
   S.player.vitals.happiness = clamp(S.player.vitals.happiness + 4);
-  recordJournal(S, `Issued official practicing card at the ${synName} (unlocks syndicate healthcare discount & retirement supplement).`, 'milestone');
+  recordJournal(S, `Joined ${synName}. This game membership grants a healthcare discount and retirement supplement; it is not a professional licence.`, 'milestone');
   return { ok: true, msg: `Registered in ${synName}!` };
 }
 
@@ -2064,14 +2064,16 @@ export function enrollPostgraduateProgram(S, tier = 'masters_mba') {
   if (S.postgrad.active) return { ok: false, msg: `Already enrolled in ${S.postgrad.active.label}.` };
   if (S.postgrad.completed.some(p => p.tier === tier)) return { ok: false, msg: 'You already hold this postgraduate credential!' };
 
+  if(!['masters_mba','fellowship_phd'].includes(tier))return {ok:false,msg:'Unknown postgraduate programme.'};
   const isDoc = tier === 'fellowship_phd';
+  if(isDoc&&!S.postgrad.completed.some(p=>p.tier==='masters_mba'))return {ok:false,msg:'Complete the master’s game credential first.'};
   const label = isDoc
     ? (S.education.degrees.includes('medicine') ? 'Clinical Specialty Fellowship (MD / Board)' : 'Doctoral Research Degree (PhD)')
     : (S.education.degrees.includes('business') ? 'Executive MBA' : 'Master of Science (MSc)');
   const totalMonths = isDoc ? 36 : 24;
   const usdFee = isDoc ? 8500 : 6200;
   const feeLocal = Math.round(convertCurrency(usdFee, 'usa', S.country, S.year));
-  if (S.money.cash < feeLocal) return { ok: false, msg: `Need ${formatMoney(feeLocal, S.country)} tuition deposit for ${label}.` };
+  if (S.money.cash < feeLocal) return { ok: false, msg: `Need ${formatMoney(feeLocal, S.country)} upfront game tuition for ${label}.` };
 
   walletMove(S, -feeLocal, `Postgraduate enrollment: ${label}`, 'career');
   S.postgrad.active = { tier, label, monthsLeft: totalMonths, totalMonths };

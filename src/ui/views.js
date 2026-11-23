@@ -1,3 +1,4 @@
+import {familyCoversUniversity} from '../systems/educationFunding.js';
 import {annualUniversityBudget,universityBudgetRange} from '../data/universityCosts.js';
 import {degreeProgramFor,programsForCountry} from '../data/degreePrograms.js';
 import {universitySectorLabel} from '../data/institutions.js';
@@ -1531,7 +1532,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
               <div class="item-row-main">
                 <strong>${esc(sc.name)}</strong>
                 <span>${fee > 0 ? `${esc(formatMoney(fee, S.country))}/yr` : 'Free'} · ${esc(sysLabel)}</span>
-                <span class="muted">${esc(payerLine)}</span>
+                ${fee>0?`<span class="muted">${esc(payerLine)}</span>`:''}
               </div>
               ${isCurrent
                 ? '<span class="hud-pill">Your school</span>'
@@ -1591,7 +1592,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
         `;
       }).join('');
       return `
-        <div class="muted" style="margin-top:8px"><strong>${esc(info.label)}:</strong> Opens: ${esc(info.benefit)} · Cost: ${esc(info.cost)} · Risk: ${esc(info.risk)}</div>
+        <div class="edu-tip"><strong>${esc(info.label)}</strong><br>${esc(info.benefit)} ${esc(info.risk)}</div>
         ${cards}
       `;
     }).join('');
@@ -1626,13 +1627,17 @@ export function renderEducationTabHtml(S, uiState = {}) {
       const courseAff=universityAffordability(S,u,m.id);
       const eligible = supported && !already && score >= bar && courseAff.status!=='cannot';
       const fee=annualUniversityBudget(S,u,m.id);
-      return `<div class="edu-programme"><div class="edu-programme-top"><strong>${esc(m.label)}</strong><span>${m.years} yrs</span></div><div class="edu-programme-meta">${esc(m.level)} · Entry ${bar}%</div><div class="edu-programme-price">${esc(formatMoney(fee,S.country))}<small> / year</small></div><div class="edu-funding">${esc(supported?courseAff.short:"Requires an earlier degree")}</div><button class="btn btn-sm ${eligible && canApply ? 'btn-primary' : ''}" data-action="apply-university" data-uid="${u.id}" data-major="${m.id}" ${(eligible && canApply) ? '' : 'disabled'}>${already?"Degree held":!supported?"First degree required":score<bar?"Score too low":courseAff.status==='cannot'?"Funding needed":`Enrol in ${esc(m.label)}` }</button>${!canApply ? lockReason(age < 18 ? 'Applications open at 18' : edu.university ? `Already enrolled at ${edu.university.name}` : 'Finish secondary school first', age < 18 ? `You are ${age}` : edu.university ? 'Finish or leave your current degree first' : 'You need a secondary-school result first') : ''}</div>`;
+      const gate=canApply&&supported&&!already&&score>=bar;
+      const familyOk=familyCoversUniversity(S,fee,u.country);
+      const scholarshipOk=courseAff.short==='scholarship pays it in full';
+      const fundsButton=(kind,label,ok,why)=>`<button class="btn btn-sm ${ok&&gate?'btn-primary':''}" data-action="apply-university" data-uid="${u.id}" data-major="${m.id}" data-funding="${kind}" ${ok&&gate?'':'disabled'}>${esc(label)}</button>${!ok?`<small class="edu-funding-reason">${esc(why)}</small>`:''}`;
+      return `<div class="edu-programme"><div class="edu-programme-top"><strong>${esc(m.label)}</strong><span>${m.years} yrs</span></div><div class="edu-programme-meta">${esc(m.level)} · Entry index ${bar}/100</div><div class="edu-programme-price">${esc(formatMoney(fee,S.country))}<small> / year</small></div><div class="edu-funding">${esc(supported?courseAff.short:"Requires an earlier degree")}</div>${fee<=0?fundsButton('self','Enrol · no tuition',true,''):fundsButton('family','Ask parents to pay',familyOk,'Not enough savings from living parents for year one.')+fundsButton('self','Pay tuition myself',S.money.cash>=fee,'Needs a first-year cash buffer. Charged monthly.')+fundsButton('scholarship','Use awarded scholarship',scholarshipOk,'Apply under Scholarships first.')}<div class="edu-programme-meta">${!supported?'First degree required.':already?'Degree already held.':score<bar?'Your game score is below the entry index.':''}</div>${!canApply ? lockReason(age < 18 ? 'Applications open at 18' : edu.university ? `Already enrolled at ${edu.university.name}` : 'Finish secondary school first', age < 18 ? `You are ${age}` : edu.university ? 'Finish or leave your current degree first' : 'You need a secondary-school result first') : ''}</div>`;
     }).join('');
     return `
       <article class="edu-university">
         <div class="item-row-main">
           <div class="edu-overline">${esc(universitySectorLabel(u))}</div><strong class="edu-university-name">${esc(u.name)}</strong>
-          <span>${tuit > 0 ? `${esc(formatMoney(range.min, S.country))}${range.min!==range.max?` to ${esc(formatMoney(range.max,S.country))}`:''}/yr game budget` : 'No tuition in this game pathway'}</span>
+          <span>${tuit > 0 ? `${esc(formatMoney(range.min, S.country))}${range.min!==range.max?` to ${esc(formatMoney(range.max,S.country))}`:''}/yr game budget${S.country==='gbr'?' · eligible-local cap model':''}` : 'No tuition in this game pathway'}</span>
 
         </div>
         <details class="university-programmes"><summary>Explore programmes <span>${programsForCountry(S.country,u,S.year).filter(m=>uniSupportsMajor(u.name,m.id)).length}</span></summary><div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">${majorsHtml}</div><details class="edu-fee-note"><summary>Budget details</summary><p>${esc(u.feeBasis || "Game budget, not a fee quote.")}</p></details></details>
@@ -1646,8 +1651,8 @@ export function renderEducationTabHtml(S, uiState = {}) {
      above the list instead of on every unaffordable row. */
   const affordPaths = (unis.map(u => universityAffordability(S, u)).find(a => a.paths.length) || { paths: [] }).paths;
 
-  const scholarshipRows = SCHOLARSHIPS.map(sch => {
-    const app = (edu.scholarships || []).find(a => a.id === sch.id);
+  const scholarshipRows = SCHOLARSHIPS.filter(sch=>sch.level!=='postgrad'&&(sch.country===S.country||sch.country==='eu')).map(sch => {
+    const app = (edu.scholarships || []).find(a => a.id === sch.id&&(a.status==='awarded'||a.year===S.year));
     const lock = scholarshipLockReason(S, sch);
     const bars = [`GPA ${sch.requiresGPA} (about ${sch.minScore}%)`, sch.requiresIELTS ? `IELTS ${sch.requiresIELTS}` : null, sch.requiresGerman ? 'German B1+' : null, sch.requiresFrench ? 'French B1+' : null, sch.requiresWork ? `${sch.requiresWork} yrs work` : null, sch.requiresLeadership ? 'Leadership' : null, sch.level === 'postgrad' ? 'Needs a degree' : sch.level === 'undergrad' ? 'Before first degree' : 'Any stage'].filter(Boolean).join(' · ');
     return `
@@ -1683,7 +1688,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
     <div class="card card-elevated">
       <div class="section-head">
         <h2>${icon('graduation', 18)} Education</h2>
-        <span class="hud-pill">${esc(({graduated_high:'Ready for university',high:'Secondary school',middle:'Middle school',primary:'Primary school',infancy:'Early years',completed:'Studies completed',university:'At university'})[edu.stage]||edu.stage)}</span>
+        <span class="hud-pill">${esc(S.postgrad?.active?'Postgraduate student':({graduated_high:'Ready for university',high:'Secondary school',middle:'Middle school',primary:'Primary school',infancy:'Early years',completed:'Studies completed',university:'At university'})[edu.stage]||edu.stage)}</span>
       </div>
       <div class="item-row">
         <div class="item-row-main">
@@ -1691,24 +1696,27 @@ export function renderEducationTabHtml(S, uiState = {}) {
           <span>${edu.university
             ? `Enrolled: ${esc(edu.university.name)} — ${esc(edu.university.majorLabel)} (Year ${edu.university.yearInProgram}/${edu.university.totalYears})`
             : edu.degrees.length > 0
-            ? `Degrees Earned: ${edu.degrees.map(d => d.toUpperCase()).join(', ')}`
+            ? `Degrees Earned: ${edu.degrees.map(d => esc(degreeProgramFor(S.country,d)?.label||d)).join(', ')}`
             : edu.highSchoolScore != null
             ? `${esc(cObj.examSystem.name)} Score: ${edu.highSchoolScore}%`
             : `${esc(edu.schoolName || 'School')} · Effort: ${edu.studyEffort}`}</span>
-          <span class="muted">Academic skill: ${Math.round(edu.academicSkill || 0)}/100 · Languages: ${esc(edu.languages.join(' · '))}${currentTrack ? ` · Track: ${esc(currentTrack.label)}` : ''}${edu.privateTutoring ? ' · Private tutor' : ''}${(edu.clubs || []).length ? ` · Clubs: ${(edu.clubs || []).length}` : ''}</span>
+          ${edu.university?`<span class="muted">Funding: ${esc(edu.university.fundingSource||'legacy contract')}${edu.university.fundingSource==='family'?` · ${edu.university.familyMonthsRemaining||0} prepaid months`:edu.university.fundingSource==='self'?` · ${esc(formatMoney(Math.round(edu.university.annualTuition/12),S.country))}/month`:``}</span>`:''}
+          <span class="muted">Academic skill ${Math.round(edu.academicSkill || 0)}/100 · ${esc(edu.languages.join(' · '))}${inSchool&&currentTrack?` · ${esc(currentTrack.label)}`:''}</span>
         </div>
       </div>
     </div>
 
-    ${hasResult ? `
+    ${S.postgrad?.active?`<div class="card"><h3>Current postgraduate study</h3><p>${esc(S.postgrad.active.label)} · ${S.postgrad.active.monthsLeft} months remaining</p></div>`:''}
+    ${edu.university?`<div class="card"><h3>Current degree</h3><p>${esc(edu.university.majorLabel)} at ${esc(edu.university.name)}</p><p>Year ${edu.university.yearInProgram} of ${edu.university.totalYears}</p><details><summary>Leave this degree</summary><p>All progress is lost. Paid tuition is not refunded. Applying again starts from year one.</p><button class="btn" data-action="education-withdraw-confirm">Confirm withdrawal</button></details></div>`:''}
+    ${edu.university||edu.degrees.length>0?`<details class="card edu-section"><summary>Education history</summary><p>${esc(edu.schoolName||'Secondary school')} · Secondary complete${edu.highSchoolScore!=null?` · Game score ${edu.highSchoolScore}/100`:``}</p>${edu.degrees.map(id=>`<p>${esc(degreeProgramFor(S.country,id)?.label||id)} · Completed</p>`).join('')}${(edu.history||[]).map(h=>`<p>${esc(h.majorLabel)} at ${esc(h.name)} · Left in ${h.year}</p>`).join('')}${(S.postgrad?.completed||[]).map(p=>`<p>${esc(p.label)} · ${p.year}</p>`).join('')}</details>`:hasResult ? `
     <div class="card">
       <div class="section-head">
         <h3>Universities <span class="edu-count">${unis.length}</span></h3>
-        <span class="muted">Entry score ${score}%</span>
+        <span class="muted">Game score ${score}/100</span>
       </div>
       <p class="muted">${canApplyNote(age, edu)}</p>
 <details class="edu-model-note"><summary>About these game pathways</summary><p>${esc(tansikFootnote)} Fees are game budgets, not quotes. Clinical coverage is limited to checked examples; other clinical courses are not yet modelled.</p></details>
-      ${affordPaths.length ? `<p class="muted">If you cannot afford a university: ${esc(affordPaths.join(' '))}</p>` : ''}
+      ${affordPaths.length ? `<details class="edu-model-note"><summary>Need funding?</summary><p>${esc(affordPaths.join(' '))}</p><button class="btn btn-sm" data-action="switch-tab" data-tab="finance">View bank loan options</button></details>` : ''}
       ${edu.university ? `<p class="muted">You are currently enrolled at ${esc(edu.university.name)} — ${esc(edu.university.majorLabel)}.</p>` : ''}
       ${uniRows}
     </div>` : `
@@ -1721,12 +1729,12 @@ export function renderEducationTabHtml(S, uiState = {}) {
       <p class="muted">Your final game score arrives at 18 and opens university applications. Study hard to improve it; coasting lowers it.</p>
     </div>`}
 
-    <details class="card edu-section"><summary>Schools</summary>
+    ${age<18?`    <details class="card edu-section"><summary>Schools</summary>
       <p class="muted">Choose before age 6. Change schools at 6-17. Each option shows who pays.</p>
       ${schoolRows}
-    </details>
+    </details>`:''}
 
-    <details class="card edu-section" ${inSchool?'open':''}><summary>Study routine &amp; exam track</summary>
+    ${inSchool?`    <details class="card edu-section" ${inSchool?'open':''}><summary>Study routine &amp; exam track</summary>
       <p class="muted">${esc(mySystemLabel)} · Switch tracks at 12-17. A different exam system requires a different school.</p>
       <div class="edu-tip">Hard study improves your score but adds stress. Tutor: ${esc(formatMoney(tutorFee,S.country))}/term${['middle', 'upper_middle', 'wealthy'].includes(S.familyTier)?' · family pays':''}.</div>
       ${trackCards}
@@ -1736,24 +1744,24 @@ export function renderEducationTabHtml(S, uiState = {}) {
         <button type="button" class="btn btn-sm ${edu.studyEffort === 'coasting' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="coasting">Coast</button>
         <button type="button" class="btn btn-sm ${edu.privateTutoring ? '' : 'btn-primary'}" data-action="hire-tutor" ${edu.privateTutoring ? 'disabled' : ''}>${edu.privateTutoring ? '✓ Tutor Hired' : `Hire a Tutor — ${esc(cObj.examSystem.tutoringLabel)} (${esc(formatMoney(tutorFee, S.country))}/term)`}</button>
       </div>
-    </details>
+    </details>`:''}
 
-    <details class="card edu-section" ${inSchool||edu.university?'open':''}><summary>Clubs</summary>
-      ${inSchool ? `<p class="muted">School clubs (ages 6–17):</p>${clubRows('school')}` : '<p class="muted">School clubs are behind you now.</p>'}
+    ${inSchool||edu.university?`    <details class="card edu-section" ${inSchool||edu.university?'open':''}><summary>Clubs</summary>
+      ${inSchool ? `<p class="muted">School clubs (ages 6-17):</p>${clubRows('school')}` : ''}
       ${edu.university ? `<p class="muted" style="margin-top:8px">University clubs at ${esc(edu.university.name)}:</p>${clubRows('university')}` : '<p class="muted" style="margin-top:8px">University clubs open once you enrol.</p>'}
-    </details>
+    </details>`:''}
 
 
 
-    <details class="card edu-section" ><summary>Scholarships</summary>
-      <p class="muted">Scholarships use game eligibility rules for age, education, score and language. An award covers tuition as described here, not a real-world application.</p>
-      ${scholarshipRows}
-    </details>
+    ${!edu.degrees.length?`    <details class="card edu-section" ><summary>Scholarships</summary>
+      <p class="muted">Simulated awards inspired by real programmes, not their full rules. Game awards check results, language and stage, then draw an outcome. Tuition only. No living stipend or overseas admission is simulated.</p>
+      ${scholarshipRows||'<p class="muted">No undergraduate scholarship route is modelled in this country yet. Postgraduate awards are not wired and are not offered.</p>'}
+    </details>`:''}
 
-    <details class="card edu-section" ><summary>Internships</summary>
+    ${edu.university?`    <details class="card edu-section" ><summary>Internships</summary>
       <p class="muted">Build work experience. Pay is credited to your game balance.</p>
       ${internshipRows}
-    </details>
+    </details>`:''}
 
     <details class="card edu-section"><summary>Languages &amp; professional licences</summary>${renderEduAndLicensingHtml(S)}</details>
     </div>
@@ -2206,7 +2214,7 @@ function renderEduAndLicensingHtml(S) {
     <div class="card card-elevated">
       <div class="section-head">
         <h3>${icon('graduation', 18)} Academic Degrees & Conscription</h3>
-        <span class="hud-pill">${esc(edu.stage.replace('_', ' ').toUpperCase())}</span>
+        <span class="hud-pill">${esc(({graduated_high:'Secondary complete',high:'Secondary school',middle:'Middle school',primary:'Primary school',infancy:'Early years',completed:'Studies completed',university:'At university'})[edu.stage]||edu.stage)}</span>
       </div>
       ${/* v2.7 — the Academic Record line lived here AND in the Education
              tab's own top card: it rendered twice. The top card owns it now;
@@ -2216,14 +2224,14 @@ function renderEduAndLicensingHtml(S) {
         <div class="item-row">
           <div class="item-row-main">
             <strong>Degrees Earned</strong>
-            <span>${esc(edu.degrees.map(d => d.toUpperCase()).join(', '))} · Languages: ${esc(edu.languages.join(' · '))}</span>
+            <span>${esc(edu.degrees.map(d => esc(degreeProgramFor(S.country,d)?.label||d)).join(', '))} · Languages: ${esc(edu.languages.join(' · '))}</span>
           </div>
         </div>
       ` : `
         <div class="item-row">
           <div class="item-row-main">
             <strong>Degrees Earned</strong>
-            <span>${edu.highSchoolScore != null ? `${esc(cObj.examSystem.name)} Score: ${edu.highSchoolScore}%` : 'No degree yet — see Academic Record above.'} · Languages: ${esc(edu.languages.join(' · '))}</span>
+            <span>${edu.highSchoolScore != null ? `${esc(cObj.examSystem.name)} Score: ${edu.highSchoolScore}%` : 'No degree yet.'} · Languages: ${esc(edu.languages.join(' · '))}</span>
           </div>
         </div>
       `}
@@ -2239,17 +2247,18 @@ function renderEduAndLicensingHtml(S) {
 
       ${edu.degrees.length > 0 ? `
         <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line-soft);display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-          <button class="btn btn-sm ${S.syndicate?.registered ? '' : 'btn-primary'}" data-action="register-syndicate" ${S.syndicate?.registered ? 'disabled' : ''}>
-            ${S.syndicate?.registered ? `✓ ${esc(S.syndicate.name)}` : 'Register in Professional Syndicate (Niqaba)'}
+          <button class="btn btn-sm ${S.syndicate?.registered ? '' : 'btn-primary'}" data-action="register-syndicate" ${S.syndicate?.registered || S.money.cash<Math.round(convertCurrency(185,'usa',S.country,S.year)) ? 'disabled' : ''}>
+            ${S.syndicate?.registered ? `✓ ${esc(S.syndicate.name)}` : `Game association · ${esc(formatMoney(Math.round(convertCurrency(185,'usa',S.country,S.year)),S.country))}`}
           </button>
           ${S.postgrad?.active ? `<span class="hud-pill">Studying ${esc(S.postgrad.active.label)} (${S.postgrad.active.monthsLeft}m left)</span>` : `
-            <button class="btn btn-sm" data-action="enroll-postgrad" data-tier="masters_mba" ${S.postgrad?.completed?.some(p => p.tier === 'masters_mba') ? 'disabled' : ''}>
-              ${S.postgrad?.completed?.some(p => p.tier === 'masters_mba') ? '✓ Holds MSc/MBA' : 'Enroll 2-Yr MSc / MBA (+26% Pay)'}
+            <button class="btn btn-sm" data-action="enroll-postgrad" data-tier="masters_mba" ${S.postgrad?.completed?.some(p => p.tier === 'masters_mba') || S.education.university || S.money.cash<Math.round(convertCurrency(6200,'usa',S.country,S.year)) ? 'disabled' : ''}>
+              ${S.postgrad?.completed?.some(p => p.tier === 'masters_mba') ? '✓ Holds MSc/MBA' : `2-year master’s · ${esc(formatMoney(Math.round(convertCurrency(6200,'usa',S.country,S.year)),S.country))} upfront`}
             </button>
-            <button class="btn btn-sm" data-action="enroll-postgrad" data-tier="fellowship_phd" ${S.postgrad?.completed?.some(p => p.tier === 'fellowship_phd') ? 'disabled' : ''}>
-              ${S.postgrad?.completed?.some(p => p.tier === 'fellowship_phd') ? '✓ Holds Fellowship/PhD' : 'Enroll 3-Yr Fellowship / PhD (+42% Pay)'}
+            <button class="btn btn-sm" data-action="enroll-postgrad" data-tier="fellowship_phd" ${S.postgrad?.completed?.some(p => p.tier === 'fellowship_phd') || S.education.university || !S.postgrad?.completed?.some(p=>p.tier==='masters_mba') || S.money.cash<Math.round(convertCurrency(8500,'usa',S.country,S.year)) ? 'disabled' : ''}>
+              ${S.postgrad?.completed?.some(p => p.tier === 'fellowship_phd') ? '✓ Holds Fellowship/PhD' : `3-year doctorate · ${esc(formatMoney(Math.round(convertCurrency(8500,'usa',S.country,S.year)),S.country))} upfront`}
             </button>
           `}
+          <p class="muted">If a study button is unavailable, finish the current degree, meet its prerequisite or save the upfront fee shown. Postgraduate costs are one-off game fees. A doctorate requires the master’s game credential. Pay effects are simplified bonuses, not guaranteed real salaries.</p>
         </div>
       ` : ''}
     </div>

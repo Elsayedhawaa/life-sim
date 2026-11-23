@@ -170,69 +170,15 @@ export const EGY_TANSIK_UNI_DELTA = {
    never a free button. Every system states its benefit in plain words.
    ========================================================================== */
 export const TRACK_SYSTEM_INFO = {
-  national: {
-    label: 'National system',
-    schoolNoun: 'national school',
-    benefit: 'The national exam and placement system (Tansik in Egypt). Opens every public university in your country at public fees, and every local employer.',
-    cost: 'Nothing extra at a state school; private national schools charge fees.',
-    risk: 'One exam decides your university — your score is everything.'
-  },
-  british: {
-    label: 'British system',
-    schoolNoun: 'British-curriculum school',
-    benefit: 'IGCSE then A-Levels. Opens UK universities through UCAS and private universities at home without the national placement exam. A-Level grades are recognised worldwide.',
-    cost: 'Needs a British-curriculum school — see the cheapest one listed below.',
-    risk: 'You leave the national system: no Tansik place at a public university, and switching back means starting the national track again.'
-  },
-  american: {
-    label: 'American system',
-    schoolNoun: 'American-curriculum school',
-    benefit: 'US high-school diploma with SAT / ACT. Opens American universities and private universities at home (AUC-style) without the national exam.',
-    cost: 'Needs an American-curriculum school — see the cheapest one listed below.',
-    risk: 'No national placement place, and US university fees are very high without a scholarship.'
-  },
-  french: {
-    label: 'French system',
-    schoolNoun: 'French-language school',
-    benefit: 'Baccalauréat in French. Opens French universities and francophone employers; French is a working language in diplomacy and international organisations.',
-    cost: 'Needs a French-language school — see the cheapest one listed below.',
-    risk: 'You study in French — weak French means weak grades. No national placement place.'
-  },
-  german: {
-    label: 'German system',
-    schoolNoun: 'German school',
-    benefit: 'Gymnasium and the Abitur, or a German school diploma. Opens German universities, which charge little or no tuition, and German employers.',
-    cost: 'Needs a German school — see the cheapest one listed below.',
-    risk: 'You study in German. No national placement place.'
-  },
-  ib: {
-    label: 'International Baccalaureate',
-    schoolNoun: 'IB school',
-    benefit: 'The IB Diploma. Opens universities in almost every country — the strongest all-round passport to study abroad.',
-    cost: 'Needs an IB school — see the cheapest one listed below.',
-    risk: 'The heaviest school workload of all the systems. No national placement place.'
-  },
-  stem: {
-    label: 'STEM school',
-    schoolNoun: 'STEM school',
-    benefit: 'Science, technology, engineering and maths in English. The strongest road to medicine, engineering and computing, and to scholarships abroad.',
-    cost: 'Needs a STEM school — entry is competitive and by exam.',
-    risk: 'Very heavy workload. If you do not get in, you stay on the national track.'
-  },
-  vocational: {
-    label: 'Vocational stream',
-    schoolNoun: 'technical school',
-    benefit: 'A trade or technical qualification alongside school. You can earn sooner, and skilled trades are in demand everywhere.',
-    cost: 'Usually free at a state technical school.',
-    risk: 'University needs a bridging year in some countries; medicine and law stay closed without the academic track.'
-  },
-  international: {
-    label: 'International system',
-    schoolNoun: 'international school',
-    benefit: 'An international curriculum at an international school. Opens universities abroad and private universities at home.',
-    cost: 'Needs an international school — see the cheapest one listed below.',
-    risk: 'No national placement place.'
-  }
+ national:{label:'National system',schoolNoun:'national school',benefit:'Local secondary-school pathway.',cost:'School fees are shown in Schools.',risk:'Your final game score affects available university choices.'},
+ british:{label:'British curriculum',schoolNoun:'British-curriculum school',benefit:'GCSE/IGCSE and A-Level pathway.',cost:'School fees are shown in Schools.',risk:'Changing curriculum can reset your current track.'},
+ american:{label:'American curriculum',schoolNoun:'American-curriculum school',benefit:'US-style secondary diploma pathway.',cost:'School fees are shown in Schools.',risk:'Test and qualification details are simplified.'},
+ french:{label:'French curriculum',schoolNoun:'French-language school',benefit:'French-language secondary pathway.',cost:'School fees are shown in Schools.',risk:'Changing curriculum can reset your current track.'},
+ german:{label:'German curriculum',schoolNoun:'German school',benefit:'German-language secondary pathway.',cost:'School fees are shown in Schools.',risk:'School qualification details are simplified.'},
+ ib:{label:'International Baccalaureate',schoolNoun:'IB school',benefit:'International secondary-diploma pathway.',cost:'School fees are shown in Schools.',risk:'Real subject and qualification requirements are not fully simulated.'},
+ stem:{label:'STEM school',schoolNoun:'STEM school',benefit:'Science, technology, engineering and maths focus.',cost:'School fees are shown in Schools.',risk:'School entry requirements are simplified.'},
+ vocational:{label:'Vocational stream',schoolNoun:'technical school',benefit:'Applied and technical subjects.',cost:'School fees are shown in Schools.',risk:'Real trade qualifications are not fully simulated.'},
+ international:{label:'International curriculum',schoolNoun:'international school',benefit:'International-school pathway.',cost:'School fees are shown in Schools.',risk:'Confirm your game track after changing schools.'}
 };
 
 /* Named scholarships. Bars from the old game's EDU_SCHOLARSHIPS table:

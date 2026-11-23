@@ -1,4 +1,4 @@
-import { monthlyUniversityTuition } from './educationFunding.js';
+import { monthlyUniversityTuition,settleFamilyUniversityMonth } from './educationFunding.js';
 /* ============================================================================
    World Life 2.0 — Household Economy, Banking, Gold, Real Estate & Cars Engine
    Exact monthly accounting, progressive taxes, inflation-linked CDs, physical
@@ -1020,6 +1020,7 @@ export function settleHouseholdMonth(S) {
   }
 
   // The funding shown before enrollment is the funding used for billing.
+  settleFamilyUniversityMonth(S);
   monthlyLiving += monthlyUniversityTuition(S);
 
   netDelta -= monthlyLiving;

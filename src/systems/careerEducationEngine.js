@@ -7,7 +7,7 @@ import {canonicalUniversityId,universitySectorLabel} from '../data/institutions.
    conscription rules, CV-verified job offers, boss politics, and enterprises.
    ========================================================================== */
 
-import { familyCoversUniversity } from './educationFunding.js';
+import { familyCoversUniversity,chargeFamilyEducation } from './educationFunding.js';
 import { rand, randInt, pick, chance, clamp } from '../core/rng.js';
 import { nextId, recordJournal, walletMove, moveBalance, queueScene, ensureExtendedState } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
@@ -275,7 +275,11 @@ export function tansikCutoffFor(countryId, uni, majorId, year) {
   }
   let cutoff = base + delta + yearShift;
   // Ownership does not imply easier admission. Keep selectivity separate.
-  if (uni.cutoff != null && countryId !== 'egy') cutoff = Math.max(cutoff, uni.cutoff);
+  if (countryId !== 'egy') {
+    // A labelled game selectivity index, not a percentage from real admissions.
+    const offsets={medicine:7,dentistry:6,pharmacy:4,engineering:3,architecture:2,cs:4,psychology:-1,business:0,law:2,media:-4,education:-5};
+    cutoff=(uni.cutoff ?? 70)+(offsets[majorId]??0)+yearShift+(hash01(`${uni.id}|${majorId}`)-.5)*2;
+  }
   cutoff = clamp(Math.round(cutoff * 10) / 10, 40, 99);
   return { cutoff, modelled: !(countryId === 'egy' && realBase) };
 }
@@ -335,7 +339,7 @@ export function presentUniversityMajorPicker(S, uni) {
   const aff = universityAffordability(S, uni);
 
   const choices = majors.map(m => ({
-    label: `${m.label} (${m.level}, ${m.years} yrs, ${formatMoney(annualUniversityBudget(S,uni,m.id),S.country)}/yr game budget, needs ${tansikCutoffFor(S.country, uni, m.id, S.year).cutoff}% at ${uni.name} — you scored ${score}%)`,
+    label: `${m.label} (${m.level}, ${m.years} yrs, ${formatMoney(annualUniversityBudget(S,uni,m.id),S.country)}/yr game budget, entry index ${tansikCutoffFor(S.country, uni, m.id, S.year).cutoff}/100 at ${uni.name} — you scored ${score}%)`,
     available: st => universityAffordability(st, uni,m.id).status !== 'cannot',
     lockReason: 'You need funding first. Check scholarships, a cheaper university, or work and save.',
     effect: (st) => {
@@ -413,10 +417,7 @@ export function enrollInUniversity(S, uniObj, majorId, scholarshipPct = 0) {
     S.legal.military.status = 'deferred_student';
   }
 
-  if (['cs', 'medicine', 'engineering', 'business'].includes(major.id) && !S.education.languages.includes('English (Fluent)')) {
-    S.education.languages = S.education.languages.filter(l => l !== 'English (Basic)');
-    S.education.languages.push('English (Fluent)');
-  }
+
 
   spawnUniversityPeer(S, uniObj.name, major.label);
   recordJournal(S, `Matriculated at ${uniObj.name} reading ${major.label} (${major.years}-year program).`, 'milestone');
@@ -480,6 +481,8 @@ export function hasCertifiedEnglish(S) {
 export function scholarshipLockReason(S, sch) {
   const edu = S.education;
   if (S.player.age < 17) return 'Apply from age 17';
+  if(sch.level==='postgrad')return 'Postgraduate award funding is not modelled yet';
+  if(sch.country!=='eu'&&sch.country!==S.country)return 'Study-country scholarship, not available in your current country';
   if (sch.level === 'postgrad' && edu.degrees.length === 0) return 'Needs a degree';
   if (sch.level === 'undergrad' && edu.degrees.length > 0) return 'For students before their first degree';
   if (sch.level === 'undergrad' && !['graduated_high', 'completed', 'university'].includes(edu.stage)) {
@@ -529,8 +532,10 @@ function cheapestPublicUniversity(S) {
 function playerHasFullScholarship(S, uni) {
   const edu = S.education;
   if (!edu.awardedScholarship || edu.awardedScholarship.coverage !== 'full') return null;
+  const award=SCHOLARSHIPS.find(x=>x.id===edu.awardedScholarship.schId);if(award?.level==='postgrad')return null;
+  if(award&&award.country!=='eu'&&award.country!==uni.country)return null;
   const req = edu.awardedScholarship.reqUni;
-  if (req && !(uni.name || '').toLowerCase().includes('american university in cairo') && !String(uni.id).includes(req)) return null;
+  if(req&&!(String(uni.id).includes(req)||(req==='auc'&&/american university in cairo/i.test(uni.name))))return null;
   const sch = SCHOLARSHIPS.find(x => x.id === edu.awardedScholarship.schId);
   return sch || { name: 'Your scholarship' };
 }
@@ -559,8 +564,8 @@ export function universityAffordability(S, uni,majorId=null) {
   }
   if (familyCoversUniversity(S, annualTuition, uni.country || S.country)) {
     return {
-      annualTuition, status: 'covered', short: 'your family covers it',
-      line: `Your family covers the ${formatMoney(annualTuition, S.country)} a year — you can afford this.`,
+      annualTuition, status: 'covered', short: 'parents can pay from savings',
+      line: `Your family covers the ${formatMoney(annualTuition, S.country)} for one year from their savings. Later years need renewed funding.`,
       paths: []
     };
   }
@@ -570,7 +575,7 @@ export function universityAffordability(S, uni,majorId=null) {
     paths.push(`A cheaper university: ${cheap.name} (public, ${formatMoney(eraLocalCost(cheap.annualTuition2026, S.country, S.year), S.country)}/yr).`);
   }
   paths.push('A full scholarship — see Named Scholarships below; winning one pays tuition in full.');
-  paths.push('A bank loan may help, but monthly repayments start under the loan terms. Check Finance before borrowing.');
+  paths.push(S.player.age<21?'Personal bank loans open at21in this game; no student-loan product is modelled.':'Finance has ordinary personal loans, subject to credit checks and repayments. No special student loan is modelled.');
   paths.push('Work for a year first, save, then reapply.');
   if (cash >= annualTuition) {
     return {
@@ -624,7 +629,7 @@ export function schoolSystemFor(school, countryId) {
   if (/stem/.test(n)) return 'stem';
   if (/british|english school|modern english/.test(n)) return 'british';
   if (/american/.test(n)) return 'american';
-  if (/french|sainte|st-marc|saint-marc|coll[eè]ge/.test(n)) return 'french';
+  if (/french|sainte|st-marc|saint-marc|collège/.test(n)) return 'french';
   if (/german|deo/.test(n)) return 'german';
   if (/\bib\b/.test(n)) return 'ib';
   if (school.tier === 'international') return 'international';
@@ -825,6 +830,7 @@ export function applyScholarship(S, schId) {
   edu.scholarships.push({ id: schId, status: won ? 'awarded' : 'rejected', year: S.year });
   if (won) {
     edu.awardedScholarship = { schId, coverage: sch.coverage, reqUni: sch.reqUni || null };
+    if(edu.university&&sch.level!=='postgrad'&&playerHasFullScholarship(S,edu.university)){edu.university.fundingSource='scholarship';edu.university.scholarshipPct=1;edu.awardedScholarship=null;}
     S.player.vitals.happiness = clamp(S.player.vitals.happiness + 8);
     recordJournal(S, `You WON the ${sch.name} — full funding!`, 'milestone');
     return { ok: true, msg: `You won the ${sch.name}! Full funding secured.` };
@@ -865,7 +871,7 @@ export function applyInternship(S, intId) {
   return { ok: true, msg: total > 0 ? `Internship done at ${intn.company} — earned ${formatMoney(total, S.country)}!` : `Internship done at ${intn.company}!` };
 }
 
-export function applyToUniversity(S, uniId, majorId) {
+export function applyToUniversity(S, uniId, majorId,funding='auto') {
   const edu = ensureEduExtras(S);
   if (edu.university) return { ok: false, msg: 'You are already enrolled at university — finish or leave first.' };
   if (S.player.age < 18) return { ok: false, msg: 'University opens at 18, after your secondary exam.' };
@@ -890,7 +896,9 @@ export function applyToUniversity(S, uniId, majorId) {
   const aff = universityAffordability(S, uni,majorId);
   const hasFullScholarship = !!playerHasFullScholarship(S, uni);
   /* Use the same family rule as the admission screen and monthly billing. */
-  const familyPaysTuition = familyCoversUniversity(S, annualTuition, uni.country || S.country);
+  const familyPaysTuition = !['self','scholarship'].includes(funding)&&familyCoversUniversity(S, annualTuition, uni.country || S.country);
+  if(funding==='family'&&!familyPaysTuition)return {ok:false,msg:'Living parents do not have enough savings for the first year.'};
+  if(funding==='scholarship'&&!hasFullScholarship)return {ok:false,msg:'Win an eligible undergraduate scholarship first.'};
   const familyCovers = familyPaysTuition;
   if (!familyCovers && !hasFullScholarship && annualTuition > 0 && S.money.cash < annualTuition) {
     /* v2.7 — the refusal names the total and the parts, and offers the real
@@ -901,10 +909,14 @@ export function applyToUniversity(S, uniId, majorId) {
       msg: `${uni.name} costs ${formatMoney(annualTuition, S.country)} a year — ${formatMoney(total, S.country)} over the ${major.years}-year ${major.label} degree. You hold ${formatMoney(S.money.cash, S.country)} in cash and need at least ${formatMoney(annualTuition, S.country)} in hand to start. ${aff.paths.join(' ')}`
     };
   }
-  const pct = (hasFullScholarship || familyPaysTuition) ? 1.0 : 0;
-  if (hasFullScholarship) edu.awardedScholarship = null;
+  const scholarshipPays=hasFullScholarship&&!['self','family'].includes(funding);
+  if(funding==='self'&&S.money.cash<annualTuition)return {ok:false,msg:'You need a first-year cash buffer to self-fund.'};
+  const pct = scholarshipPays ? 1.0 : 0;
+  if(familyPaysTuition&&!chargeFamilyEducation(S,annualTuition))return {ok:false,msg:'Parent savings changed. Choose another funding route.'};
+  if (scholarshipPays) edu.awardedScholarship = null;
   enrollInUniversity(S, uni, majorId, pct);
-  edu.university.fundingSource = hasFullScholarship ? 'scholarship' : familyPaysTuition ? 'family' : 'self';
+  edu.university.fundingSource = scholarshipPays ? 'scholarship' : familyPaysTuition ? 'family' : 'self';
+  if(familyPaysTuition){edu.university.familyMonthsRemaining=12;edu.university.familyPaidTotal=annualTuition;}
   return { ok: true, msg: `Enrolled at ${uni.name} — ${major.label}${pct === 1.0 ? ' (fully funded)' : ''}!` };
 }
 
@@ -942,7 +954,7 @@ export function tickUniversityAndConscriptionMonthly(S) {
           key: `egy_takleef_${S.year}`,
           category: 'career',
           title: `Syndicate Registration & Ministry Takleef Assignment`,
-          text: `Having completed your mandatory clinical Imtiyaz rotations at ${gradUniName}, the Ministry of Health & Population posts your state Takleef assignment (${formatMoney(takleefPay, 'egy')}/mo) alongside Syndicate (Niqaba) registration.`,
+          text: `You completed academic study at ${gradUniName}. This simplified game route now offers a Ministry role; real clinical internship and licensing requirements are not simulated. Proposed pay: (${formatMoney(takleefPay, 'egy')}/mo) alongside Syndicate (Niqaba) registration.`,
           choices: [
             {
               label: `Register at the Syndicate & accept Ministry Takleef (${formatMoney(takleefPay, 'egy')}/mo + clinical experience)`,
