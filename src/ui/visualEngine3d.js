@@ -964,8 +964,10 @@ function drawScaleCadFixtures(rm, isFurnished, cyanMode) {
 }
 
 /* --- Plain-words dossier helpers (v2.3) --- */
-function plainFloorLabel(idx) {
-  return idx === 0 ? 'Ground floor' : idx === 1 ? 'First floor' : 'Roof';
+function plainFloorLabel(idx, shape = '') {
+  if(shape==='brownstone')return ['Lower-ground floor','Raised ground floor','First floor','Second floor'][idx]||`Level ${idx+1}`;
+  if(shape==='victorian'&&idx===2)return 'Attic floor';
+  return idx===0?'Ground floor':idx===1?'First floor':idx===2?'Second floor':`Level ${idx+1}`;
 }
 function plainViewLabel(mode) {
   return mode === 'cutaway' ? 'Inside, roof off' : mode === 'exploded' ? 'Floors pulled apart' : 'From outside';
@@ -1075,7 +1077,7 @@ export function renderArchitecturalFloorplanSvg(
   const sh = plan.shell;
   const finishLabel = String(finish || 'standard').replace(/_/g, ' ').toUpperCase();
   const isRoof = plan.code === 'A-103';
-  const floorLabel = plainFloorLabel(idx);
+  const floorLabel = plainFloorLabel(idx, shape);
   const viewLabel = plainViewLabel(viewMode);
   const timeLabel = plainTimeLabel(timeOfDay);
   // The sheet itself tints with the time of day (warm morning, bright midday,
@@ -1363,9 +1365,9 @@ export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms 
   const plan = floors[idx];
   if (shape === 'land') return renderArchitecturalFloorplanSvg(shape);
   const sh = plan.shell;
-  const attrs = rm => `data-action="room-info" data-room="${escAttr(rm.key)}" data-no="${escAttr(rm.no)}" data-name="${escAttr(planRoomName(rm))}" data-m2="${rm.m2 || 0}" data-floor="${escAttr(plainFloorLabel(idx))}"`;
+  const attrs = rm => `data-action="room-info" data-room="${escAttr(rm.key)}" data-no="${escAttr(rm.no)}" data-name="${escAttr(planRoomName(rm))}" data-m2="${rm.m2 || 0}" data-floor="${escAttr(plainFloorLabel(idx, shape))}"`;
   return `<section class="readable-floor" style="border:1px solid #c9c2b5;border-radius:12px;padding:12px;background:#faf5e9;color:#3c3228;min-width:0">
-    <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx))}</h4>${idx === 0 ? `<p style="font-size:0.78rem;line-height:1.5;margin:4px 0 8px">${escAttr(outdoorFeatures.styleNote || homeStyleNote(country, shape))}</p>` : ''}
+    <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx, shape))}</h4>${idx === 0 ? `<p style="font-size:0.78rem;line-height:1.5;margin:4px 0 8px">${escAttr(outdoorFeatures.styleNote || homeStyleNote(country, shape))}</p>` : ''}
     <p style="font-size:0.78rem;margin:0 0 12px;color:#625b50">Room numbers match the list below. Fictional layout, not to scale.</p>
     ${illustratedPlanSvg(plan, idx, outdoorFeatures, attrs)}
     <p style="font-size:0.74rem;line-height:1.5;color:#89765c">Illustrative furnished layout. Furniture is a preview, not an installed purchase.${idx===0&&(outdoorFeatures.hasPool||outdoorFeatures.hasGarden)?' Outdoor features are on the same plot; outdoor area is not included in the indoor room total.':''}</p>
@@ -1401,7 +1403,7 @@ export function renderAllPropertyFloorsHtml(
       ${floors.map((fl, fIdx) => `
         <div style="display:flex;flex-direction:column;gap:4px">
           <div class="mono" style="font-size:0.72rem;font-weight:800;color:#524C43;display:flex;justify-content:space-between;padding:0 2px">
-            <span>${levelLabels[fIdx] || fl.code}</span>
+            <span>${plainFloorLabel(fIdx, shape)}</span>
             <span>${fIdx + 1} of ${floors.length}</span>
           </div>
           ${renderArchitecturalFloorplanSvg(shape, finish, furnishedRooms, customAreaM2, fIdx, clickablePropId, cadOptions)}
@@ -1495,7 +1497,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
             <div style="display:flex;flex-wrap:wrap;gap:6px">
               <button type="button" class="btn btn-sm ${cadFloor === -1 ? 'btn-navy' : ''}" data-action="set-cad-floor" data-fl="-1">All ${floors.length} floors</button>
               ${floors.map((fl, fi) => `
-                <button type="button" class="btn btn-sm ${cadFloor === fi ? 'btn-navy' : ''}" data-action="set-cad-floor" data-fl="${fi}">${plainFloorLabel(fi)}</button>
+                <button type="button" class="btn btn-sm ${cadFloor === fi ? 'btn-navy' : ''}" data-action="set-cad-floor" data-fl="${fi}">${plainFloorLabel(fi, shape)}</button>
               `).join('')}
             </div>
           </div>

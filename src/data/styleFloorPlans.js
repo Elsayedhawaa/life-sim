@@ -47,3 +47,18 @@ STYLE_FLOOR_PLANS.chalet_one=[floor([
 STYLE_FLOOR_PLANS.family_duplex=[floor([
  room('101','foyer','Entrance hall',60,350,160,130),room('102','living','Reception and dining',60,60,310,290),room('103','kitchen','Separate kitchen',370,60,290,175),room('104','bathroom','Guest washroom',510,235,150,100),room('105','corridor','Internal stair hall',220,350,290,130),room('106','office','Study',370,235,140,115)
 ],{x:265,y:365,w:150,h:100}),upper()];
+
+// Lower ground is physically below the raised entrance, not a fourth upper storey.
+const brownstoneLevels=STYLE_FLOOR_PLANS.brownstone;
+const lowerGround=brownstoneLevels[3];
+lowerGround.rooms.forEach(r=>{r.name=r.name.replace('Top-floor','Lower-ground').replace('Top stair','Lower-ground stair');});
+STYLE_FLOOR_PLANS.brownstone=[lowerGround,brownstoneLevels[0],brownstoneLevels[1],brownstoneLevels[2]];
+
+// Three-storey attached family houses: two bedrooms on each sleeping floor.
+const upperTwo=JSON.parse(JSON.stringify(upper()));
+upperTwo.rooms=upperTwo.rooms.filter(r=>r.no!=='203');
+upperTwo.rooms.find(r=>r.no==='202').w=340;
+const topTwo=JSON.parse(JSON.stringify(upperTwo));
+topTwo.rooms.forEach(r=>{r.no=String(Number(r.no)+100);r.name=r.name.replace('Main bedroom','Third bedroom').replace('Second bedroom','Fourth bedroom');});
+STYLE_FLOOR_PLANS.terrace_three=[lower('terrace'),upperTwo,topTwo];
+STYLE_FLOOR_PLANS.cottage_two=[floor([room('101','foyer','Entrance',60,350,160,130),room('102','living','Sitting and dining room',60,60,330,290),room('103','kitchen','Kitchen',390,60,270,230),room('104','wc','Downstairs toilet',510,290,150,190),room('105','corridor','Stair hall',220,350,290,130),room('106','office','Utility and storage',390,290,120,60)]),upperTwo];

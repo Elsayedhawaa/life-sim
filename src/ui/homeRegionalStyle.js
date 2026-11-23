@@ -1,7 +1,8 @@
+import {STYLE_FLOOR_PLANS} from '../data/styleFloorPlans.js';
 // Fictional regional templates, not a survey of any real address.
 const GULF = new Set(['sau', 'uae', 'qat', 'kwt']);
 export function regionalRoomName(room, country = '', shape = '') {
-  if (['courtyard_single','courtyard_double','modern_villa','bungalow','ranch','colonial','victorian','brownstone','chalet_one','family_duplex'].includes(shape)) return room.name;
+  if (STYLE_FLOOR_PLANS[shape]) return room.name;
   if (shape === 'commercial' || shape === 'land') return room.name;
   const countryCode = String(country || '').toLowerCase();
   const jp = countryCode === 'jpn';
