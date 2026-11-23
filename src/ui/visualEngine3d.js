@@ -965,6 +965,7 @@ function drawScaleCadFixtures(rm, isFurnished, cyanMode) {
 
 /* --- Plain-words dossier helpers (v2.3) --- */
 function plainFloorLabel(idx, shape = '') {
+  if(shape==='aus_highset'&&idx===0)return 'Raised living floor';
   if(shape==='brownstone')return ['Lower-ground floor','Raised ground floor','First floor','Second floor'][idx]||`Level ${idx+1}`;
   if(shape==='victorian'&&idx===2)return 'Attic floor';
   return idx===0?'Ground floor':idx===1?'First floor':idx===2?'Second floor':`Level ${idx+1}`;

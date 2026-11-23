@@ -76,3 +76,7 @@ for(const [target,base] of [['jpn_family','family_duplex'],['jpn_single','bungal
  }
  STYLE_FLOOR_PLANS[target]=levels;
 }
+
+// One raised living level; shaded open undercroft is not an extra indoor floor.
+STYLE_FLOOR_PLANS.aus_highset=JSON.parse(JSON.stringify(STYLE_FLOOR_PLANS.bungalow));
+STYLE_FLOOR_PLANS.aus_highset[0].rooms.find(r=>r.key==='foyer').name='Veranda entry';

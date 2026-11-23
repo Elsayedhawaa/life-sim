@@ -105,3 +105,6 @@ Fictional static illustrations and shared type plans, not measured buildings or 
 - https://www.lingoda.com/blog/en/german-house-types/
 - https://www.oreb.ca/faq/housing-types/
 A Canadian duplex selection is one apartment, not ownership of both floors. Basements are not silently added. Gardens are explicit catalog features.
+
+## Australia
+Fictional Queenslander-inspired raised timber, Federation-inspired brick, iron-lace terrace, bungalow, modern house and apartment variants. Raised timber home has one elevated living level, not a second residence below. Gardens and pool are explicit. Reference: https://en.wikipedia.org/wiki/Australian_residential_architectural_styles
