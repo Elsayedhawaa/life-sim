@@ -1,3 +1,4 @@
+import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget} from '../data/propertyAreas.js';
 /* ============================================================================
    World Life Complete Edition — Deep Systems & Causal Chain Wiring
    Connects 100% of v1 + 50% Web Expansion into live monthly simulation:
@@ -97,7 +98,7 @@ export function buyCompoundOrDistrictUnit(S, opts = {}) {
   const plan = PAYMENT_PLANS.find(p => p.id === opts.planId) || PAYMENT_PLANS[0];
 
   const basePpmLocal = eraLocalCost(dev.ppm2026, targetCountry, S.year);
-  let rawNativePrice = Math.round(basePpmLocal * unit.area * unit.priceMult * finish.costMult * (plan.totalMarkup || 1.0));
+  let rawNativePrice = Math.round(basePpmLocal * pricedPropertyArea(unit) * unit.priceMult * finish.costMult * (plan.totalMarkup || 1.0));
 
   /* Saudi Sakani 150,000 SAR Non-Refundable State Grant for First Home! */
   let stateGrantNote = '';
@@ -136,6 +137,8 @@ export function buyCompoundOrDistrictUnit(S, opts = {}) {
     tier: dev.tier,
     rooms: unit.rooms,
     areaM2: unit.area,
+    ...propertyAreas(unit),
+    outdoorAnnualNative:outdoorAnnualBudget(unit,basePpmLocal),
     shape: unit.shape || 'apartment',
     finishing: finish.id,
     nativeValue: rawNativePrice,

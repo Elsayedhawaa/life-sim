@@ -14,7 +14,7 @@ for(const style of LOCAL_PROPERTY_STYLES){
  for(const f of plans)for(const r of f.rooms){assert.ok(r.x>=f.shell.x&&r.y>=f.shell.y&&r.x+r.w<=f.shell.x+f.shell.w&&r.y+r.h<=f.shell.y+f.shell.h);}
  const ids=rooms.map(r=>r.no);assert.equal(new Set(ids).size,ids.length);
  for(const r of furnishablePlanRooms(style.shape,style.country,style.rooms))assert.ok(ids.includes(r.no));
- const h=renderHome3dAndFloorplanHtml({...style,styleId:style.id,areaM2:style.area});assert.ok(h.includes(style.art));assert.ok(!h.includes('undefined'));assert.equal(h.includes('>Private pool<'),style.hasPool===true);if(style.shape.startsWith('courtyard')&&!style.hasGarden)assert.ok(!h.includes('>Garden<'));
+ const h=renderHome3dAndFloorplanHtml({...style,styleId:style.id,areaM2:style.area});assert.ok(h.includes(style.art));assert.ok(!h.includes('undefined'));assert.equal(/>Private pool(?: [0-9]+ m²)?</.test(h),style.hasPool===true);if(style.shape.startsWith('courtyard')&&!style.hasGarden)assert.ok(!h.includes('>Garden<'));
  const s=createNewLifeState({country:style.country,seed:23});s.player.age=30;s.year=2026;s.money.cash=1e12;const res=buyCompoundOrDistrictUnit(s,{country:style.country,unitId:style.id});assert.ok(res.ok,res.msg);assert.equal(res.prop.styleId,style.id);assert.equal(res.prop.shape,style.shape);assert.equal(res.prop.hasPool,style.hasPool===true);assert.equal(res.prop.hasGarden,style.hasGarden===true||/garden/i.test(style.name));
 }
 assert.equal(propertyFloorPlans('courtyard_single','egy').length,1);assert.equal(propertyFloorPlans('courtyard_double','egy').length,2);assert.equal(propertyFloorPlans('modern_villa','egy').length,2);

@@ -1,3 +1,4 @@
+import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget,outdoorAreaSummary} from '../data/propertyAreas.js';
 import {familyCoversUniversity} from '../systems/educationFunding.js';
 import {annualUniversityBudget,universityBudgetRange} from '../data/universityCosts.js';
 import {degreeProgramFor,programsForCountry} from '../data/degreePrograms.js';
@@ -3059,7 +3060,7 @@ export function affordableFundsLocal(S) {
    the plan's down share (full cash when the plan has no instalments). */
 function compoundListingPrice(S, propMarket, dev, selUnit, selFinish, selPlan) {
   const basePpm = eraLocalCost(dev.ppm2026 || 35000, propMarket, S.year);
-  const rawNative = Math.round(basePpm * selUnit.area * selUnit.priceMult * selFinish.costMult * (selPlan.totalMarkup || 1.0));
+  const rawNative = Math.round(basePpm * pricedPropertyArea(selUnit) * selUnit.priceMult * selFinish.costMult * (selPlan.totalMarkup || 1.0));
   const downPct = selPlan.years > 0 ? Math.max(0.05, Number(selPlan.downPct ?? 0.10)) : 1.0;
   const downPlayer = Math.round(convertCurrency(rawNative * downPct, propMarket, S.country, S.year));
   const fullPlayer = Math.round(convertCurrency(rawNative, propMarket, S.country, S.year));
@@ -3206,7 +3207,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
         ` : `<span class="hud-pill">${allDevs.length} Developments</span>`}
       </div>
 
-      ${LOCAL_PROPERTY_STYLES.some(p=>p.country===propMarket)?`<div class="local-property-styles" style="margin:12px 0"><h3>Homes by local style</h3><p class="muted" style="font-size:.83rem">Fictional examples, not a real address or a promise of exact construction. Choose a style to see its rooms and purchase options below.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px">${LOCAL_PROPERTY_STYLES.filter(p=>p.country===propMarket).map(p=>`<button type="button" class="btn" data-action="choose-property-style" data-unit="${p.id}" style="display:flex;flex-direction:column;align-items:stretch;text-align:left;white-space:normal;padding:8px;background:#faf5e9;border:${selUnit.id===p.id?'2px solid #9a523c':'1px solid #d4c7ae'}"><img src="assets/homes/${p.art}" alt="${esc(p.name)}" style="width:100%;height:145px;object-fit:contain"><strong style="font-size:.85rem">${esc(p.name)}</strong><span class="muted" style="font-size:.76rem">${p.area} m² · ${p.rooms===1?'Studio':`${p.rooms-1} bedroom${p.rooms>2?'s':''}`}</span></button>`).join('')}</div></div>`:''}
+      ${LOCAL_PROPERTY_STYLES.some(p=>p.country===propMarket)?`<div class="local-property-styles" style="margin:12px 0"><h3>Homes by local style</h3><p class="muted" style="font-size:.83rem">Fictional examples, not a real address or a promise of exact construction. Choose a style to see its rooms and purchase options below.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px">${LOCAL_PROPERTY_STYLES.filter(p=>p.country===propMarket).map(p=>`<button type="button" class="btn" data-action="choose-property-style" data-unit="${p.id}" style="display:flex;flex-direction:column;align-items:stretch;text-align:left;white-space:normal;padding:8px;background:#faf5e9;border:${selUnit.id===p.id?'2px solid #9a523c':'1px solid #d4c7ae'}"><img src="assets/homes/${p.art}" alt="${esc(p.name)}" style="width:100%;height:145px;object-fit:contain"><strong style="font-size:.85rem">${esc(p.name)}</strong><span class="muted" style="font-size:.76rem">${p.area} m² indoor${outdoorAreaSummary(p)?` · ${outdoorAreaSummary(p)}`:''} · ${p.rooms===1?'Studio':`${p.rooms-1} bedroom${p.rooms>2?'s':''}`}</span></button>`).join('')}</div></div>`:''}
       <div class="catalog-filter-bar">
         <select class="filter-select" data-filter="reUnitId" aria-label="Unit Type">
           ${getPropertyUnits(propMarket).map(u => `<option value="${u.id}" ${u.id === selUnit.id ? 'selected' : ''}>${esc(u.name)} (${u.area}m² · ${u.shape})</option>`).join('')}
@@ -3224,7 +3225,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
           ${renderHomeTypeArt(selUnit.shape, propMarket, 110, selUnit.styleId || selUnit.id)}
           <div class="muted" style="font-size:0.8rem">
-            Selected unit illustration: <strong>${esc(selUnit.name)} (${selUnit.area} m²)</strong> · <strong>${esc(selFinish.label)}</strong> · Plan: <strong>${esc(selPlan.label)}</strong>
+            Selected unit: <strong>${esc(selUnit.name)} (${selUnit.area} m² indoor)</strong><br>${esc(outdoorAreaSummary(selUnit))}${propertyAreas(selUnit).plotM2?` · Plot ${propertyAreas(selUnit).plotM2} m²`:``}<br> · <strong>${esc(selFinish.label)}</strong> · Plan: <strong>${esc(selPlan.label)}</strong>
             ${propMarket === 'sau' && S.year >= 2019 ? ' · <em>4M+ SAR cash deed unlocks Saudi Property Premium Residency!</em>' : ''}
             ${propMarket === 'uae' && S.year >= 2019 ? ' · <em>2M+ AED deed unlocks 10-Yr UAE Golden Visa!</em>' : ''}
           </div>
@@ -3253,6 +3254,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
               <div class="item-row-main">
                 <strong>${esc(dev.name)} ${dev.developer ? `· ${esc(dev.developer)}` : ''} (${esc(mktCountryObj.name)})</strong>
                 <span>Total: <strong class="mono">${esc(formatMoney(fullPlayer, S.country, true))}</strong> · ${selPlan.years > 0 ? `Down: <strong>${esc(formatMoney(downPlayer, S.country, true))}</strong> + ${esc(formatMoney(monthlyPlayer, S.country, true))}/mo (${selPlan.years}y)` : 'Full Cash'} ${dev.program ? `· [${esc(dev.program.toUpperCase())}]` : ''}</span>
+                <span>${esc(outdoorAreaSummary(selUnit))} · Outdoor upkeep ${esc(formatMoney(Math.round(convertCurrency(outdoorAnnualBudget(selUnit,eraLocalCost(dev.ppm2026,propMarket,S.year)),propMarket,S.country,S.year)),S.country))}/yr game budget</span>
                 ${saving ? `<span class="text-good">Saving for this — see Life Goals on the Timeline tab.</span>` : ''}
               </div>
             </div>
@@ -3362,6 +3364,7 @@ function renderLandAndBuildSubtabHtml(S, uiState) {
               <div class="item-row-main">
                 <strong>${esc(pl.name)} (${area} m²)</strong>
                 <span>Zoning: ${esc(pl.zoning || 'residential')} · Deed Price: <strong class="mono">${esc(formatMoney(costPlayer, S.country, true))}</strong></span>
+                <span>${esc(outdoorAreaSummary(selUnit))} · Outdoor upkeep ${esc(formatMoney(Math.round(convertCurrency(outdoorAnnualBudget(selUnit,eraLocalCost(dev.ppm2026,propMarket,S.year)),propMarket,S.country,S.year)),S.country))}/yr game budget</span>
                 ${saving ? `<span class="text-good">Saving for this — see Life Goals on the Timeline tab.</span>` : ''}
               </div>
             </div>

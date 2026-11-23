@@ -1,3 +1,4 @@
+import {propertyAreas,outdoorAreaSummary} from '../data/propertyAreas.js';
 import {STYLE_FLOOR_PLANS} from '../data/styleFloorPlans.js';
 import {propertyStyle} from '../data/localPropertyStyles.js';
 import {illustratedPlanSvg} from './illustratedPlan.js';
@@ -1378,6 +1379,7 @@ export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms 
     <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx, shape))}</h4>${idx === 0 ? `<p style="font-size:0.78rem;line-height:1.5;margin:4px 0 8px">${escAttr(outdoorFeatures.styleNote || homeStyleNote(country, shape))}</p>` : ''}
     <p style="font-size:0.78rem;margin:0 0 12px;color:#625b50">Room numbers match the list below. Fictional layout, not to scale.</p>
     ${illustratedPlanSvg(plan, idx, outdoorFeatures, attrs)}
+    ${idx===0&&outdoorFeatures.areas?`<p style="font-size:.78rem;line-height:1.6"><strong>${outdoorFeatures.areas.indoorM2} m² indoor floor area</strong>${outdoorFeatures.areas.plotM2?` · ${outdoorFeatures.areas.plotM2} m² plot (building footprint ${outdoorFeatures.areas.footprintM2} m²)`:``}<br>${outdoorAreaSummary(outdoorFeatures.areas)}<br>Outdoor areas are separate, non-overlapping game deed allocations, not part of indoor room totals.</p>`:''}
     <p style="font-size:0.74rem;line-height:1.5;color:#89765c">Illustrative furnished layout. Furniture is a preview, not an installed purchase.${idx===0&&(outdoorFeatures.hasPool||outdoorFeatures.hasGarden)?' Outdoor features are on the same plot; outdoor area is not included in the indoor room total.':''}</p>
     <div style="margin-top:10px;display:grid;gap:6px">
       ${plan.rooms.map(rm => `<button type="button" ${attrs(rm)} style="display:flex;align-items:center;gap:10px;text-align:left;width:100%;min-height:48px;padding:10px;border:1px solid #d8d1c5;border-radius:8px;background:#fffdf8;color:#292524;white-space:normal">
@@ -1546,7 +1548,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px">
-        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2, home?.rooms, {hasPool,hasGarden,planTitle:style?.name,styleNote:style?.note,placement:home?.outdoorPlacement || style?.outdoorPlacement || (['townhouse','twin_house'].includes(shape)?'front':'rear')})).join('')}
+        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2, home?.rooms, {hasPool,hasGarden,areas:propertyAreas(home),planTitle:style?.name,styleNote:style?.note,placement:home?.outdoorPlacement || style?.outdoorPlacement || (['townhouse','twin_house'].includes(shape)?'front':'rear')})).join('')}
       </div>
 
       <details style="margin-top:12px"><summary style="cursor:pointer;font-size:0.82rem">Detailed architectural sheets</summary>

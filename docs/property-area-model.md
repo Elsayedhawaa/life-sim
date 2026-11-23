@@ -1,0 +1,7 @@
+# Property area and cost model
+
+Fictional game allocations, not surveyed real estate. Indoor floor area is the sum of rooms across floors. Building footprint is estimated using the style family floor count. Plot area includes footprint plus ground outdoor zones, never upper-floor living area or roof terraces. Garden is planted space exclusive of pool water, courtyard, terrace and private parking. Shared-block land is not given to an apartment owner. An unlisted parking allocation is zero, even if the exterior art contains a car or garage.
+
+Outdoor sizes depend on property type, country density group and indoor size. These are static simulation figures, not real market facts. Garden, pool, terrace and courtyard add differently weighted value to the indoor-price basis. Outdoor annual upkeep is based on local development price per square metre and area-specific game maintenance rates. Both the preview and purchase use the same weighted price basis; the purchased deed stores areas and annual upkeep, which is charged monthly. Old saves without outdoor financial fields are not retrospectively charged or repriced.
+
+Outdoor sizes are listed beside the plan, with garden and pool sizes on the drawing. Courtyard and terrace may be listed rather than drawn to proportional size; schematic drawings are not measured geometry. No claim that all individual exterior artwork is an exact representation of these plot boundaries.

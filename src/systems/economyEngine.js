@@ -217,6 +217,7 @@ export function finalizePropertyPurchase(S, spec, plan, opts = {}) {
     tier: spec.tier,
     rooms: spec.rooms,
     areaM2: spec.areaM2,
+    gardenM2:spec.gardenM2,poolM2:spec.poolM2,terraceM2:spec.terraceM2,courtyardM2:spec.courtyardM2,parkingM2:spec.parkingM2,footprintM2:spec.footprintM2,plotM2:spec.plotM2,outdoorAnnualNative:spec.outdoorAnnualNative||0,
     unitId: spec.unitId || null,
     styleId: spec.styleId || null,
     hasGarden: spec.hasGarden === true,
@@ -1022,6 +1023,7 @@ export function settleHouseholdMonth(S) {
   // The funding shown before enrollment is the funding used for billing.
   settleFamilyUniversityMonth(S);
   monthlyLiving += monthlyUniversityTuition(S);
+  monthlyLiving += (S.housing.properties||[]).reduce((n,p)=>n+Math.round(convertCurrency((p.outdoorAnnualNative||0)/12,p.country,S.country,S.year)),0);
 
   netDelta -= monthlyLiving;
   summary.living += monthlyLiving;
