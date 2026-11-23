@@ -125,6 +125,9 @@ export function buyCompoundOrDistrictUnit(S, opts = {}) {
   // active bankruptcy, as with every other contract.)
   const res = finalizePropertyPurchase(S, {
     catalogId: dev.id,
+    unitId: unit.id,
+    hasGarden: /garden/i.test(unit.name),
+    hasPool: /private pool/i.test(unit.name),
     name: `${dev.name} — ${unit.name}`,
     country: targetCountry,
     city: dev.city || getCountry(targetCountry).cities[0],

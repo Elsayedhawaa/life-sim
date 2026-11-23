@@ -523,10 +523,10 @@ export function buildHome3DSceneFaces(spec = {}) {
   }
 
   // Swimming Pool OR Courtyard Stone Fountain (varied by seed & upgrades)
-  if (spec.hasPool || shape === 'mansion' || (shape === 'villa' && finish === 'royal_smart')) {
+  if (spec.hasPool) {
     addPrism(faces, 44, 0.2, -26, 34, 2.0, 22, '#FAF6EE', '#FAF6EE', { lightVec, bias: -0.4 });
     addPrism(faces, 44, 0.5, -26, 29, 1.9, 17, '#0284C7', isNight ? '#38BDF8' : '#0EA5E9', { lightVec, bias: -0.6 });
-  } else if (vHash % 3 === 1 && shape !== 'studio') {
+  } else if (spec.hasGarden && vHash % 3 === 1 && shape !== 'studio') {
     // Octagonal Courtyard Limestone Fountain
     addPrism(faces, 42, 0.2, -26, 14, 2.0, 14, '#EAE2D3', '#FAF6EE', { lightVec, bias: -0.4 });
     addPrism(faces, 42, 0.6, -26, 10, 1.8, 10, '#0284C7', '#38BDF8', { lightVec, bias: -0.5 });

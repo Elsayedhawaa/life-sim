@@ -27,3 +27,9 @@ All art is prebuilt static files. No in-game AI calls or paid services were adde
 New Riyadh neighborhood, guest-room interior and older male portrait (only when the character's shemagh/attire setting permits). Riyadh art is not used for Jeddah, and its modern skyline is era-gated. Country templates preserve guest/family separation and property bedroom counts, with mirrored arrangements for apartment, villa, duplex and attached-house types. This is a fictional template pass, not a measured or exhaustive claim of local authenticity.
 
 Two local decisions add written-offer scrutiny and household consent before inviting guests. Neither invents a job or spends money. Initial school selection now prefers the chosen city when the catalog has local schools, rather than assigning a Riyadh child to Dhahran. The newborn HUD says "Before school" instead of presenting a future school as current attendance. No wage/rent numbers were silently changed without source checking.
+
+## Egypt villa and outdoor follow-up
+
+Egypt villa now has its own ground-floor circulation and plain guest/family/roof-room labels, distinct from Japan's villa arrangement and the smaller apartment plan. Other Egypt types remain inherited type-specific templates pending their own layout pass; do not mark that matrix complete.
+
+Owned properties now persist garden/pool flags and unit ID on purchase. Old saves recover explicit named garden/private-pool variants, and installed pool upgrades are honored. A separate outdoor diagram shows actual garden/pool features only, with dry-climate planting for Egypt/Saudi/UAE. Indoor area totals do not include invented garden dimensions. The 3D view no longer adds a pool merely because a home is a mansion or highly finished villa. The optional technical drawing also suppresses its default pool unless the property really has one.

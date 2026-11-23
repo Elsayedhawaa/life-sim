@@ -1,3 +1,4 @@
+import {propertyOutdoorFeatures,renderOutdoorPlanHtml} from './propertyOutdoor.js';
 import {regionalRoomName, homeStyleNote, roomBelongsToHome} from './homeRegionalStyle.js';
 /* ============================================================================
    World Life — Sheet A-101 Floor Plan & Drafting Engine (v2.3)
@@ -565,6 +566,18 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
     }
     floors[0].core = null;
   }
+  if (country === 'egy' && shape === 'villa') {
+    const ground = {
+      '101':[246,290,110,128], '102':[76,236,170,182],
+      '103':[76,88,110,148], '104':[246,236,446,54],
+      '105':[356,290,336,128], '106':[356,88,220,148],
+      '107':[576,88,116,148]
+    };
+    for (const room of floors[0].rooms) { [room.x,room.y,room.w,room.h] = ground[room.no]; delete room.door; }
+    // Two storeys with a usable roof, not a royal suite/servants palace.
+    floors[0].terrace.hasPool = false;
+    floors[0].terrace.label = 'GARDEN ACCESS TERRACE';
+  }
   if (country === 'jpn' && shape === 'villa') {
     const ground = {
       '101':[246,290,110,128], '102':[76,290,170,128],
@@ -958,6 +971,7 @@ export function renderArchitecturalFloorplanSvg(
   const floors = propertyFloorPlans(shape, cadOptions.country, customAreaM2, cadOptions.totalRooms, furnishedRooms);
   const idx = Math.min(floors.length - 1, Math.max(0, Number(floorIdx) || 0));
   const plan = floors[idx];
+  if (plan.terrace) { plan.terrace.hasPool = !!cadOptions.hasPool; if (!cadOptions.hasPool) plan.terrace.label = 'OUTDOOR TERRACE'; }
 
   const cyanMode = !!cadOptions.cyanotype;
   const showMep = !!cadOptions.showMep;
@@ -1338,7 +1352,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
   const cyanotype = !!opts.cyanotype;
   const showMep = !!opts.showMep;
 
-  const hasPool = upgrades.includes('pool') || shape === 'mansion' || (shape === 'villa' && finish === 'royal_smart');
+  const {hasPool,hasGarden} = propertyOutdoorFeatures(home);
   const hasSolar = upgrades.includes('solar');
 
   const variantSeed = opts.variantSeed || home?.id || home?.name || 0;
@@ -1354,6 +1368,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
     viewMode,
     timeOfDay,
     hasPool,
+    hasGarden,
     hasSolar,
     variantSeed,
     country,
@@ -1443,10 +1458,11 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px">
         ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2, home?.rooms)).join('')}
       </div>
+      ${renderOutdoorPlanHtml(home, country)}
       <details style="margin-top:12px"><summary style="cursor:pointer;font-size:0.82rem">Detailed architectural sheets</summary>
         <div style="margin-top:10px">${(isMultiFloor && cadFloor === -1)
-          ? renderAllPropertyFloorsHtml(shape, finish, furnishedRooms, home?.areaM2 || null, home?.id || null, { cyanotype, showMep, viewMode, timeOfDay, country, totalRooms: home?.rooms })
-          : renderArchitecturalFloorplanSvg(shape, finish, furnishedRooms, home?.areaM2 || null, Math.max(0, cadFloor), home?.id || null, { cyanotype, showMep, viewMode, timeOfDay, country, totalRooms: home?.rooms })}</div>
+          ? renderAllPropertyFloorsHtml(shape, finish, furnishedRooms, home?.areaM2 || null, home?.id || null, { cyanotype, showMep, viewMode, timeOfDay, country, totalRooms: home?.rooms, hasPool })
+          : renderArchitecturalFloorplanSvg(shape, finish, furnishedRooms, home?.areaM2 || null, Math.max(0, cadFloor), home?.id || null, { cyanotype, showMep, viewMode, timeOfDay, country, totalRooms: home?.rooms, hasPool })}</div>
       </details>
     </div>
   `;

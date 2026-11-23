@@ -4,6 +4,10 @@ export function regionalRoomName(room, country = '', shape = '') {
   if (shape === 'commercial' || shape === 'land') return room.name;
   const countryCode = String(country || '').toLowerCase();
   const jp = countryCode === 'jpn';
+  if (countryCode === 'egy' && shape === 'villa') {
+    const villaNames = {'101':'Entrance vestibule','102':'Guest reception / study','103':'Guest toilet','104':'Stair hall','105':'Family reception and dining','106':'Separate kitchen','107':'Laundry and washroom','201':'Main bedroom','202':'Family bathroom','203':'Upstairs family hall','204':'Family bedrooms','205':'Study / guest bedroom','206':'Stair landing','301':'Roof laundry and toilet','302':'Roof hobby room'};
+    if (villaNames[room.no]) return villaNames[room.no];
+  }
   const names = {
     foyer: jp ? 'Genkan entrance and shoe storage' : 'Entrance hall',
     wc: jp ? 'Separate toilet' : 'Guest toilet',
