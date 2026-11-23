@@ -105,3 +105,5 @@ STYLE_FLOOR_PLANS.nld_gable=JSON.parse(JSON.stringify(STYLE_FLOOR_PLANS.terrace_
 const nldAttic=JSON.parse(JSON.stringify(STYLE_FLOOR_PLANS.victorian[2]));
 for(const r of nldAttic.rooms)r.no=String(Number(r.no)+100);
 STYLE_FLOOR_PLANS.nld_gable.push(nldAttic);
+
+STYLE_FLOOR_PLANS.tur_court_two=JSON.parse(JSON.stringify(STYLE_FLOOR_PLANS.ita_court_two));

@@ -123,3 +123,8 @@ Gabled townhouse, row house, paired brick home, detached house, bungalow and bal
 Fictional forms, shared schematic plans and game pricing. Swedish apartment purchases do not claim to model cooperative tenure rights. Brazilian sobrado is a multi-level house; studio art represents its shared block, not ownership of it. References:
 - https://www.skatteverket.se/privat/fastigheterochbostad/fastighetstaxering/deklarerasmahus/olikatyperavsmahus.4.3aa8c78a1466c584587385c.html
 - https://exame.com/mercado-imobiliario/quais-sao-os-principais-tipos-de-moradia-que-existem/
+
+## Switzerland and Turkey
+12fictional forms each. Swiss timber chalet has two main floors and two bedrooms, not a guessed full attic. Turkish waterfront timber home is family scale, not labeled as a measured historic yali or mansion. Courtyard remains open and excluded from indoor area. All prices are game formulas, not current property quotes. References:
+- https://www.expatica.com/ch/housing/housing-basics/housing-in-switzerland-1117795/
+- https://antalyahomes.com/blog/tips-advice/ultimate-house-type-guide-which-house-type-is-ideal
