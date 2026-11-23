@@ -709,11 +709,14 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
   const rooms = floors.flatMap(f => f.rooms);
   for (const room of rooms) room.name = regionalRoomName(room, country, shape);
   const target = Number(areaM2);
-  const total = rooms.reduce((n, r) => n + (r.m2 || 0), 0);
+  // A drawing is schematic. Service/traffic boxes must not consume a
+  // bedroom-sized allocation merely because the symbol needs space.
+  const weight=r=>r.w*r.h*({corridor:.25,foyer:.45,wc:.22,bathroom:.5,kitchen:.85}[r.key]??1);
+  const total=rooms.reduce((n,r)=>n+weight(r),0);
   if (target > 0 && total > 0) {
     // Largest-remainder allocation: displayed room areas equal the deed area.
     const units = Math.round(target * 10);
-    const shares = rooms.map(r => ({room:r, raw:units * (r.m2 || 0) / total}));
+    const shares = rooms.map(r => ({room:r, raw:units * weight(r) / total}));
     let allocated = 0;
     for (const share of shares) { share.units = Math.floor(share.raw); allocated += share.units; }
     const ranked = [...shares].sort((a,b) => (b.raw-b.units)-(a.raw-a.units));
