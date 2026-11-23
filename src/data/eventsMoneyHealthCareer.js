@@ -434,7 +434,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_school_fees_due',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 24, "hasChildren": true, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['child'],"minAge": 24, "hasChildren": true, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -485,7 +485,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_sibling_loan',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 20, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['sib'],"minAge": 20, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -536,7 +536,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_parent_medicine',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 20, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['mom', 'dad'],"minAge": 20, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -587,7 +587,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_friend_loan',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 18, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['friend'],"minAge": 18, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1034,7 +1034,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_wedding_gift_cash',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 20},
+    gates: { requiredPeople: ['mom'],"minAge": 20},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1133,7 +1133,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_eid_children',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 24, "hasChildren": true, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['child'],"minAge": 24, "hasChildren": true, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1183,7 +1183,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_ramadan_food',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 22, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['mom'],"minAge": 22, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1232,7 +1232,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_uniform_cost',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 24, "hasChildren": true, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['child'],"minAge": 24, "hasChildren": true, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1380,7 +1380,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_stolen_wallet',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 16, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['friend'],"minAge": 16, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1530,7 +1530,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_investment_tip',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 25, "hasJob": true},
+    gates: { requiredPeople: ['friend'],"minAge": 25, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1677,7 +1677,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_moving_costs',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 20, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['friend'],"minAge": 20, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1727,7 +1727,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_baby_costs',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 24, "hasChildren": true, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['mom', 'spouse', 'child'],"minAge": 24, "hasChildren": true, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1777,7 +1777,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_child_phone',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 30, "hasChildren": true, "minYear": 2005},
+    gates: { requiredPeople: ['child'],"minAge": 30, "hasChildren": true, "minYear": 2005},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1844,7 +1844,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_child_tutor',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 28, "hasChildren": true, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['child'],"minAge": 28, "hasChildren": true, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1893,7 +1893,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_spouse_sofa',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 26, "relationship": ["married"]},
+    gates: { requiredPeople: ['spouse'],"minAge": 26, "relationship": ["married"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1961,7 +1961,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_spouse_family_gift',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 26, "relationship": ["married"], "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['spouse'],"minAge": 26, "relationship": ["married"], "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -2263,7 +2263,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_sell_old_phone',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 18, "minYear": 2005},
+    gates: { requiredPeople: ['child'],"minAge": 18, "minYear": 2005},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -2409,7 +2409,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_inheritance_small',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 30},
+    gates: { requiredPeople: ['mom', 'dad'],"minAge": 30},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -2559,7 +2559,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_utility_reconnection',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 20, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['mom'],"minAge": 20, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -2608,7 +2608,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_school_trip_fee',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 26, "hasChildren": true, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['child'],"minAge": 26, "hasChildren": true, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -2659,7 +2659,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'money',
     repeatable: true,
     cooldownYears: 2,
-    gates: {"minAge": 16, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['mom'],"minAge": 16, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -2906,7 +2906,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_birthday_gift_spouse',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 26, "relationship": ["married"]},
+    gates: { requiredPeople: ['spouse'],"minAge": 26, "relationship": ["married"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -3657,7 +3657,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_health_anxiety',
     category: 'health',
     repeatable: false,
-    gates: {"minAge": 18},
+    gates: { requiredPeople: ['mom'],"minAge": 18},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -3709,7 +3709,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_health_low_mood',
     category: 'health',
     repeatable: false,
-    gates: {"minAge": 20},
+    gates: { requiredPeople: ['friend'],"minAge": 20},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -4204,7 +4204,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_health_child_fever',
     category: 'health',
     repeatable: false,
-    gates: {"minAge": 25, "hasChildren": true},
+    gates: { requiredPeople: ['mom', 'child'],"minAge": 25, "hasChildren": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -4254,7 +4254,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_health_parent_falls',
     category: 'health',
     repeatable: false,
-    gates: {"minAge": 30},
+    gates: { requiredPeople: ['mom', 'dad'],"minAge": 30},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -4304,7 +4304,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_health_spouse_sick',
     category: 'health',
     repeatable: false,
-    gates: {"minAge": 26, "relationship": ["married"]},
+    gates: { requiredPeople: ['spouse'],"minAge": 26, "relationship": ["married"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -5102,7 +5102,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_health_heart_scare',
     category: 'health',
     repeatable: false,
-    gates: {"minAge": 45, "maxAge": 75},
+    gates: { requiredPeople: ['spouse'],"minAge": 45, "maxAge": 75},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -5298,7 +5298,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_health_sleep_apnea',
     category: 'health',
     repeatable: false,
-    gates: {"minAge": 40},
+    gates: { requiredPeople: ['spouse'],"minAge": 40},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -5347,7 +5347,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_health_pregnancy_check',
     category: 'health',
     repeatable: false,
-    gates: {"minAge": 22, "maxAge": 42, "gender": ["f"], "relationship": ["married"]},
+    gates: { requiredPeople: ['spouse'],"minAge": 22, "maxAge": 42, "gender": ["f"], "relationship": ["married"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -5495,7 +5495,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_health_dentist_child',
     category: 'health',
     repeatable: false,
-    gates: {"minAge": 28, "hasChildren": true},
+    gates: { requiredPeople: ['child'],"minAge": 28, "hasChildren": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -5546,7 +5546,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'career',
     repeatable: true,
     cooldownYears: 2,
-    gates: {"minAge": 20, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 20, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -5596,7 +5596,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'career',
     repeatable: true,
     cooldownYears: 2,
-    gates: {"minAge": 20, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 20, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -5694,7 +5694,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_passed_over',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 24, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 24, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -5743,7 +5743,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_credit_stolen',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 22, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 22, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -5792,7 +5792,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_colleague_quits',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 22, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 22, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -5890,7 +5890,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'career',
     repeatable: true,
     cooldownYears: 2,
-    gates: {"minAge": 20, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 20, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -5941,7 +5941,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_client_win',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 22, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 22, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -5991,7 +5991,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_client_loss',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 22, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 22, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -6041,7 +6041,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'career',
     repeatable: true,
     cooldownYears: 2,
-    gates: {"minAge": 20, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 20, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -6238,7 +6238,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_raise_denied',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 24, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 24, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -6286,7 +6286,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_raise_granted',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 24, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 24, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -6337,7 +6337,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'career',
     repeatable: true,
     cooldownYears: 3,
-    gates: {"minAge": 24, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 24, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -6676,7 +6676,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_train_intern',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 28, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 28, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -6725,7 +6725,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'career',
     repeatable: true,
     cooldownYears: 2,
-    gates: {"minAge": 22, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 22, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -6919,7 +6919,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_burnout',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 26, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 26, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -7168,7 +7168,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_idea_stolen_boss',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 24, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 24, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -7217,7 +7217,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'career',
     repeatable: true,
     cooldownYears: 3,
-    gates: {"minAge": 20, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 20, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -7265,7 +7265,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_mistake_costly',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 22, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 22, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -7363,7 +7363,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_fired_warning',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 24, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 24, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -7411,7 +7411,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_fired',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 24, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 24, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -7657,7 +7657,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_promotion_celebration',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 26, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 26, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -7706,7 +7706,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_work_friendship',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 20, "hasJob": true},
+    gates: { requiredPeople: ['friend'],"minAge": 20, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -7801,7 +7801,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_boss_leaves',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 24, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 24, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -7898,7 +7898,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'career',
     repeatable: true,
     cooldownYears: 2,
-    gates: {"minAge": 24, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 24, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -7998,7 +7998,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_client_dinner',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 26, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 26, "hasJob": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -8243,7 +8243,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_bully',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 8, "maxAge": 16, "education": ["inSchool"]},
+    gates: { requiredPeople: ['mom', 'dad'],"minAge": 8, "maxAge": 16, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -8303,7 +8303,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'school',
     repeatable: true,
     cooldownYears: 2,
-    gates: {"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['friend'],"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -8547,7 +8547,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_trip',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['friend'],"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -8643,7 +8643,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_club_join',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 10, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['friend'],"minAge": 10, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -8700,7 +8700,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'school',
     repeatable: true,
     cooldownYears: 3,
-    gates: {"minAge": 12, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['friend'],"minAge": 12, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -8748,7 +8748,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'school',
     repeatable: true,
     cooldownYears: 2,
-    gates: {"minAge": 10, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['mom'],"minAge": 10, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -8795,7 +8795,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_lost_book',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 7, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['mom', 'friend'],"minAge": 7, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -8843,7 +8843,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_new_uniform',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 7, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['mom'],"minAge": 7, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -8893,7 +8893,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_fees_rise',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 7, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['mom', 'dad'],"minAge": 7, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -8992,7 +8992,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'school',
     repeatable: true,
     cooldownYears: 2,
-    gates: {"minAge": 10, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['mom'],"minAge": 10, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -9039,7 +9039,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_grade_rise',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 10, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['mom', 'friend'],"minAge": 10, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -9137,7 +9137,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_art_competition',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['friend'],"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -9332,7 +9332,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_friend_moves',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['friend'],"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -9380,7 +9380,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'school',
     repeatable: true,
     cooldownYears: 3,
-    gates: {"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['friend'],"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -9523,7 +9523,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_library_discovery',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['friend'],"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -9666,7 +9666,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_graduation_party',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 17, "maxAge": 18, "education": ["inSchool"]},
+    gates: { requiredPeople: ['friend'],"minAge": 17, "maxAge": 18, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -9712,7 +9712,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_headteacher_call',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['mom', 'dad'],"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -9810,7 +9810,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'school',
     repeatable: true,
     cooldownYears: 3,
-    gates: {"minAge": 7, "maxAge": 15, "education": ["inSchool"]},
+    gates: { requiredPeople: ['mom', 'friend'],"minAge": 7, "maxAge": 15, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -9858,7 +9858,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'school',
     repeatable: true,
     cooldownYears: 3,
-    gates: {"minAge": 7, "maxAge": 17, "education": ["inSchool"]},
+    gates: { requiredPeople: ['friend'],"minAge": 7, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -9905,7 +9905,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_uni_first_lecture',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 18, "maxAge": 26, "education": ["inUni"]},
+    gates: { requiredPeople: ['friend'],"minAge": 18, "maxAge": 26, "education": ["inUni"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -9953,7 +9953,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'school',
     repeatable: true,
     cooldownYears: 2,
-    gates: {"minAge": 18, "maxAge": 26, "education": ["inUni"]},
+    gates: { requiredPeople: ['friend'],"minAge": 18, "maxAge": 26, "education": ["inUni"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -10003,7 +10003,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'school',
     repeatable: true,
     cooldownYears: 1,
-    gates: {"minAge": 18, "maxAge": 26, "education": ["inUni"]},
+    gates: { requiredPeople: ['friend'],"minAge": 18, "maxAge": 26, "education": ["inUni"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -10199,7 +10199,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_uni_scholarship_win',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 18, "maxAge": 25, "education": ["inUni"]},
+    gates: { requiredPeople: ['mom'],"minAge": 18, "maxAge": 25, "education": ["inUni"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -10448,7 +10448,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_uni_club_society',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 18, "maxAge": 26, "education": ["inUni"]},
+    gates: { requiredPeople: ['friend'],"minAge": 18, "maxAge": 26, "education": ["inUni"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -10645,7 +10645,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'school',
     repeatable: true,
     cooldownYears: 2,
-    gates: {"minAge": 18, "maxAge": 25, "education": ["inUni"]},
+    gates: { requiredPeople: ['friend'],"minAge": 18, "maxAge": 25, "education": ["inUni"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -10740,7 +10740,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_uni_money_tight',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 18, "maxAge": 26, "education": ["inUni"]},
+    gates: { requiredPeople: ['mom', 'dad'],"minAge": 18, "maxAge": 26, "education": ["inUni"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -10839,7 +10839,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_uni_graduation',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 21, "maxAge": 28, "education": ["inUni"]},
+    gates: { requiredPeople: ['mom', 'dad'],"minAge": 21, "maxAge": 28, "education": ["inUni"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -10937,7 +10937,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_uni_mental_health',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 18, "maxAge": 26, "education": ["inUni"]},
+    gates: { requiredPeople: ['friend'],"minAge": 18, "maxAge": 26, "education": ["inUni"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -10985,7 +10985,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_uni_housing_deposit',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 18, "maxAge": 26, "education": ["inUni"]},
+    gates: { requiredPeople: ['mom'],"minAge": 18, "maxAge": 26, "education": ["inUni"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -11231,7 +11231,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_uni_dorm_flood',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 18, "maxAge": 25, "education": ["inUni"]},
+    gates: { requiredPeople: ['friend'],"minAge": 18, "maxAge": 25, "education": ["inUni"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -11279,7 +11279,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_uni_sports_team',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 18, "maxAge": 25, "education": ["inUni"]},
+    gates: { requiredPeople: ['friend'],"minAge": 18, "maxAge": 25, "education": ["inUni"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -11517,7 +11517,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_gulf_homesick',
     category: 'life',
     repeatable: false,
-    gates: {"minAge": 20, "abroad": true},
+    gates: { requiredPeople: ['mom', 'dad', 'friend'],"minAge": 20, "abroad": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -11568,7 +11568,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_gulf_remittance_pressure',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 22, "abroad": true, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['mom', 'dad'],"minAge": 22, "abroad": true, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -11670,7 +11670,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_gulf_ramadan_hours',
     category: 'life',
     repeatable: false,
-    gates: {"minAge": 22, "hasJob": true, "abroad": true, "countries": ["sau", "uae"]},
+    gates: { requiredPeople: ['boss'],"minAge": 22, "hasJob": true, "abroad": true, "countries": ["sau", "uae"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -11766,7 +11766,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_gulf_compound_life',
     category: 'life',
     repeatable: false,
-    gates: {"minAge": 24, "abroad": true, "countries": ["sau", "uae"]},
+    gates: { requiredPeople: ['friend'],"minAge": 24, "abroad": true, "countries": ["sau", "uae"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -11913,7 +11913,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_gulf_school_abroad_kids',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 30, "hasChildren": true, "abroad": true, "countries": ["sau", "uae"]},
+    gates: { requiredPeople: ['child'],"minAge": 30, "hasChildren": true, "abroad": true, "countries": ["sau", "uae"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12057,7 +12057,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_gulf_currency_remit',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 24, "abroad": true, "wealth": ["poor", "middle"]},
+    gates: { requiredPeople: ['mom'],"minAge": 24, "abroad": true, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12105,7 +12105,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_gulf_friend_deported',
     category: 'life',
     repeatable: false,
-    gates: {"minAge": 26, "abroad": true, "countries": ["sau", "uae"]},
+    gates: { requiredPeople: ['friend'],"minAge": 26, "abroad": true, "countries": ["sau", "uae"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12153,7 +12153,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_gulf_newcomer_help',
     category: 'life',
     repeatable: false,
-    gates: {"minAge": 28, "abroad": true},
+    gates: { requiredPeople: ['friend'],"minAge": 28, "abroad": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12202,7 +12202,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_gulf_umrah_trip',
     category: 'life',
     repeatable: false,
-    gates: {"minAge": 25, "abroad": true, "countries": ["sau", "uae"]},
+    gates: { requiredPeople: ['spouse'],"minAge": 25, "abroad": true, "countries": ["sau", "uae"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12303,7 +12303,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_gulf_eid_abroad',
     category: 'life',
     repeatable: false,
-    gates: {"minAge": 22, "abroad": true},
+    gates: { requiredPeople: ['mom', 'friend'],"minAge": 22, "abroad": true},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12353,7 +12353,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_friend_repays',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 20, "afterEvent": "ev_money_friend_loan", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['friend'],"minAge": 20, "afterEvent": "ev_money_friend_loan", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12403,7 +12403,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_sibling_repays',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 20, "afterEvent": "ev_money_sibling_loan", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['sib'],"minAge": 20, "afterEvent": "ev_money_sibling_loan", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12503,7 +12503,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_mother_promise',
     category: 'life',
     repeatable: false,
-    gates: {"minAge": 24, "afterEvent": "ev_money_parent_medicine", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['mom'],"minAge": 24, "afterEvent": "ev_money_parent_medicine", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12553,7 +12553,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_tutor_results',
     category: 'school',
     repeatable: false,
-    gates: {"minAge": 12, "maxAge": 17, "education": ["inSchool"], "afterEvent": "ev_school_tutor_offer", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['friend'],"minAge": 12, "maxAge": 17, "education": ["inSchool"], "afterEvent": "ev_school_tutor_offer", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12650,7 +12650,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_boss_remembers',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 22, "hasJob": true, "afterEvent": "ev_career_boss_praise", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['boss'],"minAge": 22, "hasJob": true, "afterEvent": "ev_career_boss_praise", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12696,7 +12696,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_child_thanks',
     category: 'life',
     repeatable: false,
-    gates: {"minAge": 28, "hasChildren": true, "afterEvent": "ev_money_child_phone", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['child'],"minAge": 28, "hasChildren": true, "afterEvent": "ev_money_child_phone", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12743,7 +12743,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_spouse_sofa_later',
     category: 'life',
     repeatable: false,
-    gates: {"minAge": 26, "relationship": ["married"], "afterEvent": "ev_money_spouse_sofa", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['spouse'],"minAge": 26, "relationship": ["married"], "afterEvent": "ev_money_spouse_sofa", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12792,7 +12792,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_loan_shop_returns',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 24, "afterEvent": "ev_money_payday_loan_shop", "afterEventMinTurns": 3},
+    gates: { requiredPeople: ['friend'],"minAge": 24, "afterEvent": "ev_money_payday_loan_shop", "afterEventMinTurns": 3},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -12843,7 +12843,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_colleague_credit_later',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 22, "hasJob": true, "afterEvent": "ev_career_credit_stolen", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['friend'],"minAge": 22, "hasJob": true, "afterEvent": "ev_career_credit_stolen", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -13087,7 +13087,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_friend_repays_l2',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 20, "afterEvent": "ev_back_friend_repays", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['friend'],"minAge": 20, "afterEvent": "ev_back_friend_repays", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const A = eraLocalCost(1500, S.country, S.year);
@@ -13133,7 +13133,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_sibling_repays_l2',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 20, "afterEvent": "ev_back_sibling_repays", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['sib'],"minAge": 20, "afterEvent": "ev_back_sibling_repays", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
       const A = eraLocalCost(2500, S.country, S.year);
@@ -13221,7 +13221,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_mother_promise_l2',
     category: 'life',
     repeatable: false,
-    gates: {"minAge": 24, "afterEvent": "ev_back_mother_promise", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['mom'],"minAge": 24, "afterEvent": "ev_back_mother_promise", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const A = eraLocalCost(700, S.country, S.year);
@@ -13264,7 +13264,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_boss_remembers_l2',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 22, "hasJob": true, "afterEvent": "ev_back_boss_remembers", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['boss'],"minAge": 22, "hasJob": true, "afterEvent": "ev_back_boss_remembers", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
       return {
@@ -13473,7 +13473,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_back_spouse_sofa_later_l2',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 26, "relationship": ["married"], "afterEvent": "ev_back_spouse_sofa_later", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['spouse'],"minAge": 26, "relationship": ["married"], "afterEvent": "ev_back_spouse_sofa_later", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
       const A = eraLocalCost(6000, S.country, S.year);
@@ -13518,7 +13518,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_promotion_celebration_l1',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 26, "hasJob": true, "afterEvent": "ev_career_promotion_celebration", "afterEventMinTurns": 3},
+    gates: { requiredPeople: ['boss'],"minAge": 26, "hasJob": true, "afterEvent": "ev_career_promotion_celebration", "afterEventMinTurns": 3},
     build: (S, ctx) => {
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
       return {
@@ -13560,7 +13560,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_fired_l1',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 24, "afterEvent": "ev_career_fired", "afterEventMinTurns": 3},
+    gates: { requiredPeople: ['boss'],"minAge": 24, "afterEvent": "ev_career_fired", "afterEventMinTurns": 3},
     build: (S, ctx) => {
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
       const A = eraLocalCost(2500, S.country, S.year);
@@ -13644,7 +13644,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_baby_costs_l1',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 24, "hasChildren": true, "afterEvent": "ev_money_baby_costs", "afterEventMinTurns": 6},
+    gates: { requiredPeople: ['spouse', 'child'],"minAge": 24, "hasChildren": true, "afterEvent": "ev_money_baby_costs", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';

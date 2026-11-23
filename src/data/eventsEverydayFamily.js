@@ -32,7 +32,7 @@ function live(S, ctx) {
   const c = ctx || {};
   const rel = (S && S.relations) || {};
   const people = (S && S.people) || {};
-  const byId = (id) => (id && people[id]) || null;
+  const byId = (id) => (id && people[id]?.alive ? people[id] : null);
   const firstAlive = (ids) => (Array.isArray(ids) ? ids.map(byId).find((p) => p && p.alive) : null) || null;
   const kids = (rel.childIds || []).map(byId).filter((p) => p && p.alive);
   return {
@@ -426,7 +426,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_life_old_photos',
     category: 'life',
-    gates: { minAge: 28, maxAge: 85 },
+    gates: { requiredPeople: ['mom'], minAge: 28, maxAge: 85 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       return {
@@ -811,7 +811,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_life_cooking_win',
     category: 'life',
-    gates: { minAge: 18, maxAge: 80, hasHome: true },
+    gates: { requiredPeople: ['friend'], minAge: 18, maxAge: 80, hasHome: true },
     repeatable: true, cooldownYears: 3,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -1242,7 +1242,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_life_dream_home',
     category: 'life',
-    gates: { minAge: 25, maxAge: 80 },
+    gates: { requiredPeople: ['mom'], minAge: 25, maxAge: 80 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       return {
@@ -1512,7 +1512,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_life_birthday_surprise',
     category: 'life',
-    gates: { minAge: 16, maxAge: 80 },
+    gates: { requiredPeople: ['mom'], minAge: 16, maxAge: 80 },
     repeatable: true, cooldownYears: 3,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -1679,7 +1679,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_life_water_cut',
     category: 'life',
-    gates: { minAge: 18, maxAge: 80, hasHome: true },
+    gates: { requiredPeople: ['friend'], minAge: 18, maxAge: 80, hasHome: true },
     repeatable: true, cooldownYears: 3,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -1808,7 +1808,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_life_ramadan_prep',
     category: 'life',
-    gates: { minAge: 14, maxAge: 80, countries: ['egy', 'sau', 'uae'] },
+    gates: { requiredPeople: ['mom'], minAge: 14, maxAge: 80, countries: ['egy', 'sau', 'uae'] },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -1913,7 +1913,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_loan_request',
     category: 'family',
-    gates: { minAge: 22, maxAge: 65, wealth: ['poor', 'middle'] },
+    gates: { requiredPeople: ['dad'], minAge: 22, maxAge: 65, wealth: ['poor', 'middle'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const ask = cost(S, 1500);
@@ -1948,7 +1948,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_loan_repaid',
     category: 'family',
-    gates: { minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const back = cost(S, 1500);
@@ -1980,7 +1980,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     /* v2.15 W5 — mutually exclusive with the repaid branch: once your
        father has repaid the loan, the unpaid-loan story cannot also
        happen. The engine's resolved-chain refusal is the second lock. */
-    gates: { minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterEventMinTurns: 18, notAfterEvent: 'ev_family_dad_loan_repaid' },
+    gates: { requiredPeople: ['dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterEventMinTurns: 18, notAfterEvent: 'ev_family_dad_loan_repaid' },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -2008,7 +2008,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_call_more',
     category: 'family',
-    gates: { minAge: 18, maxAge: 70 },
+    gates: { requiredPeople: ['mom'], minAge: 18, maxAge: 70 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -2034,7 +2034,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_birthday_forgot',
     category: 'family',
-    gates: { minAge: 18, maxAge: 70 },
+    gates: { requiredPeople: ['mom'], minAge: 18, maxAge: 70 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -2062,7 +2062,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_favourite_meal',
     category: 'family',
-    gates: { minAge: 10, maxAge: 70 },
+    gates: { requiredPeople: ['mom'], minAge: 10, maxAge: 70 },
     repeatable: true, cooldownYears: 3,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -2091,7 +2091,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_health_scare',
     category: 'family',
-    gates: { minAge: 25, maxAge: 70 },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 25, maxAge: 70 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -2121,7 +2121,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_health_followup',
     category: 'family',
-    gates: { minAge: 25, afterEvent: 'ev_family_dad_health_scare', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['dad'], minAge: 25, afterEvent: 'ev_family_dad_health_scare', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -2148,7 +2148,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_retires',
     category: 'family',
-    gates: { minAge: 30, maxAge: 65 },
+    gates: { requiredPeople: ['dad'], minAge: 30, maxAge: 65 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -2175,7 +2175,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_wants_grandkids',
     category: 'family',
-    gates: { minAge: 25, maxAge: 45, relationship: ['married'] },
+    gates: { requiredPeople: ['mom'], minAge: 25, maxAge: 45, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -2201,7 +2201,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_tuition',
     category: 'family',
-    gates: { minAge: 22, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['sib'], minAge: 22, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -2230,7 +2230,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_borrow_car',
     category: 'family',
-    gates: { minAge: 20, maxAge: 60, hasCar: true },
+    gates: { requiredPeople: ['sib'], minAge: 20, maxAge: 60, hasCar: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -2256,7 +2256,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_engaged',
     category: 'family',
-    gates: { minAge: 18, maxAge: 65 },
+    gates: { requiredPeople: ['sib'], minAge: 18, maxAge: 65 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -2283,7 +2283,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_wedding',
     category: 'family',
-    gates: { minAge: 18, afterEvent: 'ev_family_sib_engaged', afterEventMinTurns: 12 },
+    gates: { requiredPeople: ['sib'], minAge: 18, afterEvent: 'ev_family_sib_engaged', afterEventMinTurns: 12 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -2312,7 +2312,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_lost_job',
     category: 'family',
-    gates: { minAge: 22, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['sib'], minAge: 22, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -2346,7 +2346,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_moves_abroad',
     category: 'family',
-    gates: { minAge: 20, maxAge: 60 },
+    gates: { requiredPeople: ['sib'], minAge: 20, maxAge: 60 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -2372,7 +2372,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_parents_argue',
     category: 'family',
-    gates: { minAge: 14, maxAge: 50 },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 14, maxAge: 50 },
     repeatable: true, cooldownYears: 3,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -2408,7 +2408,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_parents_anniversary',
     category: 'family',
-    gates: { minAge: 16, maxAge: 70 },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 16, maxAge: 70 },
     repeatable: true, cooldownYears: 4,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -2445,7 +2445,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dads_old_friend',
     category: 'family',
-    gates: { minAge: 20, maxAge: 65 },
+    gates: { requiredPeople: ['dad'], minAge: 20, maxAge: 65 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -2472,7 +2472,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_aunt_visits',
     category: 'family',
-    gates: { minAge: 16, maxAge: 65 },
+    gates: { requiredPeople: ['mom'], minAge: 16, maxAge: 65 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -2500,7 +2500,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_photo_day',
     category: 'family',
-    gates: { minAge: 10, maxAge: 60 },
+    gates: { requiredPeople: ['mom'], minAge: 10, maxAge: 60 },
     repeatable: true, cooldownYears: 4,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -2527,7 +2527,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dinner_money_row',
     category: 'family',
-    gates: { minAge: 18, maxAge: 60, wealth: ['poor', 'middle'] },
+    gates: { requiredPeople: ['dad'], minAge: 18, maxAge: 60, wealth: ['poor', 'middle'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -2555,7 +2555,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_teaches_drive',
     category: 'family',
-    gates: { minAge: 16, maxAge: 20, hasCar: true },
+    gates: { requiredPeople: ['dad'], minAge: 16, maxAge: 20, hasCar: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -2583,7 +2583,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_recipe',
     category: 'family',
-    gates: { minAge: 14, maxAge: 50 },
+    gates: { requiredPeople: ['mom'], minAge: 14, maxAge: 50 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -2610,7 +2610,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_move_back_home',
     category: 'family',
-    gates: { minAge: 18, maxAge: 30 },
+    gates: { requiredPeople: ['mom'], minAge: 18, maxAge: 30 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -2637,7 +2637,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_parents_down_payment',
     category: 'family',
-    gates: { minAge: 22, maxAge: 40, wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 22, maxAge: 40, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -2667,7 +2667,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_car_breaks',
     category: 'family',
-    gates: { minAge: 20, maxAge: 55, hasJob: true },
+    gates: { requiredPeople: ['dad'], minAge: 20, maxAge: 55, hasJob: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -2695,7 +2695,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_falls_ill',
     category: 'family',
-    gates: { minAge: 25, maxAge: 70 },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 25, maxAge: 70 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -2726,7 +2726,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_recovery',
     category: 'family',
-    gates: { minAge: 25, afterEvent: 'ev_family_mom_falls_ill', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['mom'], minAge: 25, afterEvent: 'ev_family_mom_falls_ill', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -2754,7 +2754,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_birthday_gift',
     category: 'family',
-    gates: { minAge: 16, maxAge: 65 },
+    gates: { requiredPeople: ['dad'], minAge: 16, maxAge: 65 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -2782,7 +2782,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_borrows_money',
     category: 'family',
-    gates: { minAge: 20, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['sib'], minAge: 20, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -2810,7 +2810,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_money_never_back',
     category: 'family',
-    gates: { minAge: 20, afterEvent: 'ev_family_sib_borrows_money', afterEventMinTurns: 12 },
+    gates: { requiredPeople: ['sib'], minAge: 20, afterEvent: 'ev_family_sib_borrows_money', afterEventMinTurns: 12 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -2837,7 +2837,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_baby_born',
     category: 'family',
-    gates: { minAge: 20, maxAge: 60 },
+    gates: { requiredPeople: ['sib'], minAge: 20, maxAge: 60 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -2865,7 +2865,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_parents_sell_home',
     category: 'family',
-    gates: { minAge: 35, maxAge: 70 },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 35, maxAge: 70 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -2895,7 +2895,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_parents_move_in',
     category: 'family',
-    gates: { minAge: 40, maxAge: 75, hasHome: true },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 40, maxAge: 75, hasHome: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -2931,7 +2931,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_vs_spouse_cooking',
     category: 'family',
-    gates: { minAge: 22, maxAge: 65, relationship: ['married'] },
+    gates: { requiredPeople: ['mom', 'spouse'], minAge: 22, maxAge: 65, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -2960,7 +2960,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_disapproves_career',
     category: 'family',
-    gates: { minAge: 18, maxAge: 32, hasJob: true },
+    gates: { requiredPeople: ['dad'], minAge: 18, maxAge: 32, hasJob: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -2993,7 +2993,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_proud_promotion',
     category: 'family',
-    gates: { minAge: 22, maxAge: 60, hasJob: true },
+    gates: { requiredPeople: ['dad'], minAge: 22, maxAge: 60, hasJob: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -3019,7 +3019,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_weight_worry',
     category: 'family',
-    gates: { minAge: 25, maxAge: 60 },
+    gates: { requiredPeople: ['mom'], minAge: 25, maxAge: 60 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -3046,7 +3046,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_eid_gathering',
     category: 'family',
-    gates: { minAge: 12, maxAge: 80, countries: ['egy', 'sau', 'uae'] },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 12, maxAge: 80, countries: ['egy', 'sau', 'uae'] },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -3081,7 +3081,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_christmas_gathering',
     category: 'family',
-    gates: { minAge: 12, maxAge: 80, countries: ['gbr', 'usa', 'can', 'deu', 'fra', 'ita', 'nld', 'che', 'swe', 'aus'] },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 12, maxAge: 80, countries: ['gbr', 'usa', 'can', 'deu', 'fra', 'ita', 'nld', 'che', 'swe', 'aus'] },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -3116,7 +3116,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_will_discussion',
     category: 'family',
-    gates: { minAge: 45, maxAge: 75 },
+    gates: { requiredPeople: ['dad'], minAge: 45, maxAge: 75 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -3224,7 +3224,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_aunt_gossip',
     category: 'family',
-    gates: { minAge: 18, maxAge: 65 },
+    gates: { requiredPeople: ['mom'], minAge: 18, maxAge: 65 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -3251,7 +3251,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_grandmother_visit',
     category: 'family',
-    gates: { minAge: 8, maxAge: 20 },
+    gates: { requiredPeople: ['mom'], minAge: 8, maxAge: 20 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -3278,7 +3278,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_coast_trip',
     category: 'family',
-    gates: { minAge: 12, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 12, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -3308,7 +3308,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_breaks_thing',
     category: 'family',
-    gates: { minAge: 8, maxAge: 16 },
+    gates: { requiredPeople: ['sib'], minAge: 8, maxAge: 16 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -3335,7 +3335,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_covers_you',
     category: 'family',
-    gates: { minAge: 8, maxAge: 18 },
+    gates: { requiredPeople: ['mom', 'sib'], minAge: 8, maxAge: 18 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -3364,7 +3364,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sneaking_out',
     category: 'family',
-    gates: { minAge: 13, maxAge: 17 },
+    gates: { requiredPeople: ['dad'], minAge: 13, maxAge: 17 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -3392,7 +3392,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_finds_diary',
     category: 'family',
-    gates: { minAge: 12, maxAge: 16 },
+    gates: { requiredPeople: ['mom'], minAge: 12, maxAge: 16 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -3420,7 +3420,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_grounded',
     category: 'family',
-    gates: { minAge: 10, maxAge: 16 },
+    gates: { requiredPeople: ['dad'], minAge: 10, maxAge: 16 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -3448,7 +3448,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_babysit_niece',
     category: 'family',
-    gates: { minAge: 20, maxAge: 55 },
+    gates: { requiredPeople: ['sib'], minAge: 20, maxAge: 55 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -3475,7 +3475,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_abroad_call',
     category: 'family',
-    gates: { minAge: 20, maxAge: 70, abroad: true },
+    gates: { requiredPeople: ['mom'], minAge: 20, maxAge: 70, abroad: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -3502,7 +3502,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_parcel_abroad',
     category: 'family',
-    gates: { minAge: 20, maxAge: 65, abroad: true },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 20, maxAge: 65, abroad: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -3530,7 +3530,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_parents_visit_abroad',
     category: 'family',
-    gates: { minAge: 22, maxAge: 65, abroad: true },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 22, maxAge: 65, abroad: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -3561,7 +3561,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_new_phone',
     category: 'family',
-    gates: { minAge: 20, maxAge: 60, minYear: 2005, wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['mom'], minAge: 20, maxAge: 60, minYear: 2005, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -3599,7 +3599,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_debt_collector',
     category: 'family',
-    gates: { minAge: 20, maxAge: 60, wealth: ['poor', 'middle'] },
+    gates: { requiredPeople: ['dad'], minAge: 20, maxAge: 60, wealth: ['poor', 'middle'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -3626,7 +3626,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_neighbour_dispute',
     category: 'family',
-    gates: { minAge: 25, maxAge: 70, hasHome: true },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 25, maxAge: 70, hasHome: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -3654,7 +3654,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_lends_car',
     category: 'family',
-    gates: { minAge: 18, maxAge: 35, hasCar: false },
+    gates: { requiredPeople: ['dad'], minAge: 18, maxAge: 35, hasCar: false },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -3681,7 +3681,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_checkup',
     category: 'family',
-    gates: { minAge: 30, maxAge: 70 },
+    gates: { requiredPeople: ['mom'], minAge: 30, maxAge: 70 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -3711,7 +3711,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_forgot_anniversary',
     category: 'marriage',
-    gates: { minAge: 20, maxAge: 75, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 20, maxAge: 75, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -3739,7 +3739,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_anniversary_dinner',
     category: 'marriage',
-    gates: { minAge: 20, maxAge: 75, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 20, maxAge: 75, relationship: ['married'] },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -3769,7 +3769,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_birthday',
     category: 'marriage',
-    gates: { minAge: 20, maxAge: 75, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 20, maxAge: 75, relationship: ['married'] },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -3798,7 +3798,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_baby_question',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 38, relationship: ['married'], hasChildren: false },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 38, relationship: ['married'], hasChildren: false },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -3826,7 +3826,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_baby_question_followup',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 38, relationship: ['married'], afterEvent: 'ev_marriage_baby_question', afterEventMinTurns: 12 },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 38, relationship: ['married'], afterEvent: 'ev_marriage_baby_question', afterEventMinTurns: 12 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -3854,7 +3854,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_bigger_home',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 60, relationship: ['married'], hasHome: true },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 60, relationship: ['married'], hasHome: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -3881,7 +3881,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_big_purchase',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 65, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 65, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -3909,7 +3909,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_gift_for_spouse',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 75, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 75, relationship: ['married'] },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -3937,7 +3937,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_cooking',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 75, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 75, relationship: ['married'] },
     repeatable: true, cooldownYears: 3,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -3965,7 +3965,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_money_row',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 70, relationship: ['married'], wealth: ['poor', 'middle'] },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 70, relationship: ['married'], wealth: ['poor', 'middle'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -3993,7 +3993,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_money_row_makeup',
     category: 'marriage',
-    gates: { minAge: 22, relationship: ['married'], afterEvent: 'ev_marriage_money_row', afterEventMinTurns: 3 },
+    gates: { requiredPeople: ['spouse'], minAge: 22, relationship: ['married'], afterEvent: 'ev_marriage_money_row', afterEventMinTurns: 3 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4020,7 +4020,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_inlaws_visit',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 70, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 70, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4047,7 +4047,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_mother_in_law_lovely',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 70, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 70, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4073,7 +4073,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_family_abroad',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 65, relationship: ['married'], abroad: true },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 65, relationship: ['married'], abroad: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4099,7 +4099,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_loses_job',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 65, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 65, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4132,7 +4132,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_promotion',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 65, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 65, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4159,7 +4159,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_wants_car',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 65, relationship: ['married'], hasCar: false },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 65, relationship: ['married'], hasCar: false },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4186,7 +4186,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_holiday',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 65, relationship: ['married'], wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 65, relationship: ['married'], wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4215,7 +4215,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_working_late',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 65, relationship: ['married'], hasJob: true },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 65, relationship: ['married'], hasJob: true },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -4243,7 +4243,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_date_night',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 75, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 75, relationship: ['married'] },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -4273,7 +4273,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_phone_jealousy',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 65, relationship: ['married'], minYear: 2005 },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 65, relationship: ['married'], minYear: 2005 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4300,7 +4300,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_old_flame',
     category: 'marriage',
-    gates: { minAge: 25, maxAge: 60, relationship: ['married'], minYear: 2000 },
+    gates: { requiredPeople: ['spouse'], minAge: 25, maxAge: 60, relationship: ['married'], minYear: 2000 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4333,7 +4333,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_house_both_names',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 65, relationship: ['married'], hasHome: true },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 65, relationship: ['married'], hasHome: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4360,7 +4360,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_move_country',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 55, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 55, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4386,7 +4386,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_alone_time',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 70, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 70, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4413,7 +4413,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_ill',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 75, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 75, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4440,7 +4440,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_you_ill_spouse_cares',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 75, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 75, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4467,7 +4467,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_work_party',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 65, relationship: ['married'], hasJob: true },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 65, relationship: ['married'], hasJob: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4494,7 +4494,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_wedding_album',
     category: 'marriage',
-    gates: { minAge: 30, maxAge: 80, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 30, maxAge: 80, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4521,7 +4521,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_first_meeting_memory',
     category: 'marriage',
-    gates: { minAge: 25, maxAge: 80, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 25, maxAge: 80, relationship: ['married'] },
     repeatable: true, cooldownYears: 3,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -4548,7 +4548,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_renew_vows',
     category: 'marriage',
-    gates: { minAge: 40, maxAge: 80, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 40, maxAge: 80, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4576,7 +4576,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_separate_account',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 65, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 65, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4602,7 +4602,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_spending_habit',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 65, relationship: ['married'], wealth: ['middle', 'upper_middle'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 65, relationship: ['married'], wealth: ['middle', 'upper_middle'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4630,7 +4630,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_quit_smoking',
     category: 'marriage',
-    gates: { minAge: 25, maxAge: 65, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 25, maxAge: 65, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4656,7 +4656,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_couples_therapy',
     category: 'marriage',
-    gates: { minAge: 25, maxAge: 70, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 25, maxAge: 70, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4685,7 +4685,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_chores_row',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 70, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 70, relationship: ['married'] },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -4712,7 +4712,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_bad_day_meal',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 70, relationship: ['married'], hasJob: true },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 70, relationship: ['married'], hasJob: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4739,7 +4739,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_surprise_work',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 65, relationship: ['married'], hasJob: true },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 65, relationship: ['married'], hasJob: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4767,7 +4767,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_forgot_birthday',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 75, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 75, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4794,7 +4794,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_friends_over',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 70, relationship: ['married'], hasHome: true },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 70, relationship: ['married'], hasHome: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4821,7 +4821,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_asks_ex',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 60, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 60, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4848,7 +4848,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_ex_contacts',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 60, relationship: ['married'], minYear: 2000 },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 60, relationship: ['married'], minYear: 2000 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4874,7 +4874,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_honeymoon_memory',
     category: 'marriage',
-    gates: { minAge: 25, maxAge: 80, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 25, maxAge: 80, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4900,7 +4900,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_adoption',
     category: 'marriage',
-    gates: { minAge: 26, maxAge: 45, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 26, maxAge: 45, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4927,7 +4927,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_parents_money',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 65, relationship: ['married'], wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 65, relationship: ['married'], wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4955,7 +4955,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_study_again',
     category: 'marriage',
-    gates: { minAge: 25, maxAge: 42, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 25, maxAge: 42, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -4982,7 +4982,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_driving',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 60, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse'], minAge: 24, maxAge: 60, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -5010,7 +5010,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_spouse_flirt_friend',
     category: 'marriage',
-    gates: { minAge: 24, maxAge: 60, relationship: ['married'] },
+    gates: { requiredPeople: ['spouse', 'friend'], minAge: 24, maxAge: 60, relationship: ['married'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
@@ -5039,7 +5039,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_first_word',
     category: 'children',
-    gates: { minAge: 22, maxAge: 45, hasChildren: true },
+    gates: { requiredPeople: ['child', 'youngChild'], minAge: 22, maxAge: 45, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.youngChild || p.child, 'your little one');
@@ -5065,7 +5065,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_first_school_day',
     category: 'children',
-    gates: { minAge: 24, maxAge: 50, hasChildren: true },
+    gates: { requiredPeople: ['child', 'youngChild'], minAge: 24, maxAge: 50, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.youngChild || p.child, 'your child');
@@ -5091,7 +5091,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_bad_grades',
     category: 'children',
-    gates: { minAge: 28, maxAge: 60, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 60, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5123,7 +5123,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_top_marks',
     category: 'children',
-    gates: { minAge: 28, maxAge: 60, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 60, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5150,7 +5150,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_wants_bicycle',
     category: 'children',
-    gates: { minAge: 26, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 26, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5178,7 +5178,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_wants_phone',
     category: 'children',
-    gates: { minAge: 30, maxAge: 55, hasChildren: true, minYear: 2007 },
+    gates: { requiredPeople: ['child'], minAge: 30, maxAge: 55, hasChildren: true, minYear: 2007 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5215,7 +5215,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_wants_trainers',
     category: 'children',
-    gates: { minAge: 26, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 26, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5262,7 +5262,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_falls_bike',
     category: 'children',
-    gates: { minAge: 26, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 26, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5289,7 +5289,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_fever_night',
     category: 'children',
-    gates: { minAge: 24, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child', 'youngChild'], minAge: 24, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.youngChild || p.child, 'your child');
@@ -5317,7 +5317,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_refuses_vegetables',
     category: 'children',
-    gates: { minAge: 24, maxAge: 50, hasChildren: true },
+    gates: { requiredPeople: ['child', 'youngChild'], minAge: 24, maxAge: 50, hasChildren: true },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -5344,7 +5344,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_draws_wall',
     category: 'children',
-    gates: { minAge: 24, maxAge: 45, hasChildren: true },
+    gates: { requiredPeople: ['child', 'youngChild'], minAge: 24, maxAge: 45, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.youngChild || p.child, 'your child');
@@ -5372,7 +5372,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_where_babies',
     category: 'children',
-    gates: { minAge: 26, maxAge: 50, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 26, maxAge: 50, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5398,7 +5398,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_wants_pet',
     category: 'children',
-    gates: { minAge: 26, maxAge: 50, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 26, maxAge: 50, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5424,7 +5424,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_bullied',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5455,7 +5455,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_bullied_followup',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true, afterEvent: 'ev_child_bullied', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true, afterEvent: 'ev_child_bullied', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5481,7 +5481,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_bullies_other',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5508,7 +5508,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_wins_race',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5534,7 +5534,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_loses_race',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5560,7 +5560,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_teacher_praise',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5586,7 +5586,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_teacher_trouble',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5612,7 +5612,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_pocket_money_rise',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5639,7 +5639,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_spends_all_sweets',
     category: 'children',
-    gates: { minAge: 26, maxAge: 50, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 26, maxAge: 50, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5665,7 +5665,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_saves_for_toy',
     category: 'children',
-    gates: { minAge: 26, maxAge: 50, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 26, maxAge: 50, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -5692,7 +5692,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_teen_party',
     category: 'children',
-    gates: { minAge: 35, maxAge: 60, hasChildren: true },
+    gates: { requiredPeople: ['child', 'teen'], minAge: 35, maxAge: 60, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.teen || p.child, 'your teenager');
@@ -5718,7 +5718,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_teen_party_followup',
     category: 'children',
-    gates: { minAge: 35, maxAge: 60, hasChildren: true, afterEvent: 'ev_child_teen_party', afterEventMinTurns: 3 },
+    gates: { requiredPeople: ['child', 'teen'], minAge: 35, maxAge: 60, hasChildren: true, afterEvent: 'ev_child_teen_party', afterEventMinTurns: 3 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.teen || p.child, 'your teenager');
@@ -5745,7 +5745,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_teen_door_slam',
     category: 'children',
-    gates: { minAge: 35, maxAge: 60, hasChildren: true },
+    gates: { requiredPeople: ['child', 'teen'], minAge: 35, maxAge: 60, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.teen || p.child, 'your teenager');
@@ -5771,7 +5771,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_teen_university',
     category: 'children',
-    gates: { minAge: 38, maxAge: 62, hasChildren: true },
+    gates: { requiredPeople: ['child', 'teen'], minAge: 38, maxAge: 62, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.teen || p.child, 'your teenager');
@@ -5797,7 +5797,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_teen_first_job',
     category: 'children',
-    gates: { minAge: 38, maxAge: 62, hasChildren: true },
+    gates: { requiredPeople: ['child', 'teen'], minAge: 38, maxAge: 62, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.teen || p.child, 'your teenager');
@@ -5823,7 +5823,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_teen_cigarettes',
     category: 'children',
-    gates: { minAge: 38, maxAge: 62, hasChildren: true },
+    gates: { requiredPeople: ['child', 'teen'], minAge: 38, maxAge: 62, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.teen || p.child, 'your teenager');
@@ -5849,7 +5849,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_teen_driving_lessons',
     category: 'children',
-    gates: { minAge: 40, maxAge: 65, hasChildren: true },
+    gates: { requiredPeople: ['child', 'teen'], minAge: 40, maxAge: 65, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.teen || p.child, 'your teenager');
@@ -5878,7 +5878,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_adult_deposit_help',
     category: 'children',
-    gates: { minAge: 45, maxAge: 70, hasChildren: true, wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['child', 'adultChild'], minAge: 45, maxAge: 70, hasChildren: true, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.adultChild || p.child, 'your child');
@@ -5906,7 +5906,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_adult_moves_out',
     category: 'children',
-    gates: { minAge: 45, maxAge: 70, hasChildren: true },
+    gates: { requiredPeople: ['child', 'adultChild'], minAge: 45, maxAge: 70, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.adultChild || p.child, 'your child');
@@ -5933,7 +5933,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_adult_moves_back',
     category: 'children',
-    gates: { minAge: 48, maxAge: 72, hasChildren: true, hasHome: true },
+    gates: { requiredPeople: ['child', 'adultChild'], minAge: 48, maxAge: 72, hasChildren: true, hasHome: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.adultChild || p.child, 'your child');
@@ -5960,7 +5960,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_adult_engaged',
     category: 'children',
-    gates: { minAge: 45, maxAge: 72, hasChildren: true },
+    gates: { requiredPeople: ['child', 'adultChild'], minAge: 45, maxAge: 72, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.adultChild || p.child, 'your child');
@@ -5986,7 +5986,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_asks_grandparents_far',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true, abroad: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true, abroad: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -6012,7 +6012,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_language_fading',
     category: 'children',
-    gates: { minAge: 30, maxAge: 55, hasChildren: true, abroad: true },
+    gates: { requiredPeople: ['child'], minAge: 30, maxAge: 55, hasChildren: true, abroad: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -6038,7 +6038,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_birthday_party',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -6067,7 +6067,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_breaks_vase',
     category: 'children',
-    gates: { minAge: 24, maxAge: 50, hasChildren: true },
+    gates: { requiredPeople: ['child', 'youngChild'], minAge: 24, maxAge: 50, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.youngChild || p.child, 'your child');
@@ -6093,7 +6093,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_hides_report',
     category: 'children',
-    gates: { minAge: 30, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 30, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -6119,7 +6119,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_wants_change_school',
     category: 'children',
-    gates: { minAge: 30, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 30, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -6145,7 +6145,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_nightmare',
     category: 'children',
-    gates: { minAge: 24, maxAge: 45, hasChildren: true },
+    gates: { requiredPeople: ['child', 'youngChild'], minAge: 24, maxAge: 45, hasChildren: true },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -6173,7 +6173,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_friends_parents_divorce',
     category: 'children',
-    gates: { minAge: 30, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 30, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -6199,7 +6199,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_learn_instrument',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -6227,7 +6227,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_caught_lying',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -6254,7 +6254,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_asks_loan',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 65, wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 65, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6282,7 +6282,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_loan_repaid',
     category: 'friends',
-    gates: { minAge: 20, afterEvent: 'ev_friend_asks_loan', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['friend'], minAge: 20, afterEvent: 'ev_friend_asks_loan', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6311,7 +6311,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_best_man',
     category: 'friends',
-    gates: { minAge: 18, maxAge: 55 },
+    gates: { requiredPeople: ['friend'], minAge: 18, maxAge: 55 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6338,7 +6338,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_wedding_invite',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 60 },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 60 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6367,7 +6367,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_engaged_first',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 55 },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 55 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6393,7 +6393,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_loses_job_depressed',
     category: 'friends',
-    gates: { minAge: 22, maxAge: 60 },
+    gates: { requiredPeople: ['friend'], minAge: 22, maxAge: 60 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6425,7 +6425,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_dream_job',
     category: 'friends',
-    gates: { minAge: 22, maxAge: 60 },
+    gates: { requiredPeople: ['friend'], minAge: 22, maxAge: 60 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6452,7 +6452,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_moves_abroad',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 60 },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 60 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6480,7 +6480,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_moves_back',
     category: 'friends',
-    gates: { minAge: 25, maxAge: 60 },
+    gates: { requiredPeople: ['friend'], minAge: 25, maxAge: 60 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6506,7 +6506,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_job_referral',
     category: 'friends',
-    gates: { minAge: 22, maxAge: 60, hasJob: true },
+    gates: { requiredPeople: ['friend'], minAge: 22, maxAge: 60, hasJob: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6533,7 +6533,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_business_invest',
     category: 'friends',
-    gates: { minAge: 25, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['friend'], minAge: 25, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6561,7 +6561,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_birthday_forgot',
     category: 'friends',
-    gates: { minAge: 18, maxAge: 70 },
+    gates: { requiredPeople: ['friend'], minAge: 18, maxAge: 70 },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -6589,7 +6589,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_birthday_party',
     category: 'friends',
-    gates: { minAge: 18, maxAge: 70 },
+    gates: { requiredPeople: ['friend'], minAge: 18, maxAge: 70 },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -6643,7 +6643,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_politics_row',
     category: 'friends',
-    gates: { minAge: 25, maxAge: 70 },
+    gates: { requiredPeople: ['friend'], minAge: 25, maxAge: 70 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6671,7 +6671,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_money_owed_row',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 65 },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 65 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6698,7 +6698,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_stay_over',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 60, hasHome: true },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 60, hasHome: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6725,7 +6725,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_borrow_car',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 60, hasCar: true },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 60, hasCar: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6751,7 +6751,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_crashes_car',
     category: 'friends',
-    gates: { minAge: 20, hasCar: true, afterEvent: 'ev_friend_borrow_car', afterEventMinTurns: 3 },
+    gates: { requiredPeople: ['friend'], minAge: 20, hasCar: true, afterEvent: 'ev_friend_borrow_car', afterEventMinTurns: 3 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6779,7 +6779,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_car_breaks',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 60 },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 60 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6806,7 +6806,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_holiday_invite',
     category: 'friends',
-    gates: { minAge: 22, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['friend'], minAge: 22, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6835,7 +6835,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_football_match',
     category: 'friends',
-    gates: { minAge: 16, maxAge: 65 },
+    gates: { requiredPeople: ['friend'], minAge: 16, maxAge: 65 },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -6865,7 +6865,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_bet_challenge',
     category: 'friends',
-    gates: { minAge: 18, maxAge: 60 },
+    gates: { requiredPeople: ['friend'], minAge: 18, maxAge: 60 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6899,7 +6899,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_divorce_secret',
     category: 'friends',
-    gates: { minAge: 25, maxAge: 65 },
+    gates: { requiredPeople: ['friend'], minAge: 25, maxAge: 65 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6926,7 +6926,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_keeps_secret',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 65 },
+    gates: { requiredPeople: ['spouse', 'friend'], minAge: 20, maxAge: 65 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6954,7 +6954,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_stops_replying',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 65, minYear: 2005 },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 65, minYear: 2005 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -6986,7 +6986,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_apologises_row',
     category: 'friends',
-    gates: { minAge: 20, afterEvent: 'ev_friend_politics_row', afterEventMinTurns: 3 },
+    gates: { requiredPeople: ['friend'], minAge: 20, afterEvent: 'ev_friend_politics_row', afterEventMinTurns: 3 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -7013,7 +7013,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_childhood_visit',
     category: 'friends',
-    gates: { minAge: 25, maxAge: 65 },
+    gates: { requiredPeople: ['friend'], minAge: 25, maxAge: 65 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a childhood friend');
@@ -7040,7 +7040,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_help_moving',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 55 },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 55 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -7068,7 +7068,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_parent_dies',
     category: 'friends',
-    gates: { minAge: 25, maxAge: 65 },
+    gates: { requiredPeople: ['friend'], minAge: 25, maxAge: 65 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -7100,7 +7100,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_becomes_parent',
     category: 'friends',
-    gates: { minAge: 25, maxAge: 60 },
+    gates: { requiredPeople: ['friend'], minAge: 25, maxAge: 60 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -7128,7 +7128,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_godparent',
     category: 'friends',
-    gates: { minAge: 25, maxAge: 60 },
+    gates: { requiredPeople: ['friend'], minAge: 25, maxAge: 60 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -7155,7 +7155,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_business_fails',
     category: 'friends',
-    gates: { minAge: 28, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['friend'], minAge: 28, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -7184,7 +7184,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_borrows_disappears',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -7212,7 +7212,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_disappears_resurface',
     category: 'friends',
-    gates: { minAge: 20, afterEvent: 'ev_friend_borrows_disappears', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['friend'], minAge: 20, afterEvent: 'ev_friend_borrows_disappears', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -7246,7 +7246,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_introduces_someone',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 40, relationship: ['single'] },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 40, relationship: ['single'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -7273,7 +7273,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_new_restaurant',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 65 },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 65 },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -7302,7 +7302,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_join_gym',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 55 },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 55 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -7331,7 +7331,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_embarrassing_photo',
     category: 'friends',
-    gates: { minAge: 18, maxAge: 50, minYear: 2010 },
+    gates: { requiredPeople: ['friend'], minAge: 18, maxAge: 50, minYear: 2010 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
@@ -7359,7 +7359,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_airport_lift',
     category: 'friends',
-    gates: { minAge: 20, maxAge: 65, hasCar: true },
+    gates: { requiredPeople: ['friend'], minAge: 20, maxAge: 65, hasCar: true },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       const p = live(S, ctx);
@@ -7394,7 +7394,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_loan_repaid_l2',
     category: 'family',
-    gates: { minAge: 22, afterEvent: 'ev_family_dad_loan_repaid', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_repaid', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -7428,7 +7428,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_loan_unpaid_l2',
     category: 'family',
-    gates: { minAge: 22, afterEvent: 'ev_family_dad_loan_unpaid', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['mom', 'dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_unpaid', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -7460,7 +7460,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_health_followup_l2',
     category: 'family',
-    gates: { minAge: 25, afterEvent: 'ev_family_dad_health_followup', afterEventMinTurns: 12 },
+    gates: { requiredPeople: ['dad'], minAge: 25, afterEvent: 'ev_family_dad_health_followup', afterEventMinTurns: 12 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -7493,7 +7493,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_wedding_l2',
     category: 'family',
-    gates: { minAge: 18, afterEvent: 'ev_family_sib_wedding', afterEventMinTurns: 12 },
+    gates: { requiredPeople: ['sib'], minAge: 18, afterEvent: 'ev_family_sib_wedding', afterEventMinTurns: 12 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -7527,7 +7527,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_recovery_l2',
     category: 'family',
-    gates: { minAge: 25, afterEvent: 'ev_family_mom_recovery', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['mom'], minAge: 25, afterEvent: 'ev_family_mom_recovery', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -7561,7 +7561,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_money_never_back_l2',
     category: 'family',
-    gates: { minAge: 20, afterEvent: 'ev_family_sib_money_never_back', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['sib'], minAge: 20, afterEvent: 'ev_family_sib_money_never_back', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -7595,7 +7595,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_baby_question_followup_l2',
     category: 'marriage',
-    gates: { minAge: 22, maxAge: 38, relationship: ['married'], afterEvent: 'ev_marriage_baby_question_followup', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['spouse'], minAge: 22, maxAge: 38, relationship: ['married'], afterEvent: 'ev_marriage_baby_question_followup', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your partner');
@@ -7628,7 +7628,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_marriage_money_row_makeup_l2',
     category: 'marriage',
-    gates: { minAge: 22, relationship: ['married'], afterEvent: 'ev_marriage_money_row_makeup', afterEventMinTurns: 3 },
+    gates: { requiredPeople: ['spouse'], minAge: 22, relationship: ['married'], afterEvent: 'ev_marriage_money_row_makeup', afterEventMinTurns: 3 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your partner');
@@ -7659,7 +7659,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_bullied_followup_l2',
     category: 'children',
-    gates: { minAge: 28, maxAge: 55, hasChildren: true, afterEvent: 'ev_child_bullied_followup', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['child'], minAge: 28, maxAge: 55, hasChildren: true, afterEvent: 'ev_child_bullied_followup', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -7690,7 +7690,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_teen_party_followup_l2',
     category: 'children',
-    gates: { minAge: 35, maxAge: 60, hasChildren: true, afterEvent: 'ev_child_teen_party_followup', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['child'], minAge: 35, maxAge: 60, hasChildren: true, afterEvent: 'ev_child_teen_party_followup', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');
@@ -7721,7 +7721,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_loan_repaid_l2',
     category: 'friends',
-    gates: { minAge: 20, afterEvent: 'ev_friend_loan_repaid', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['friend'], minAge: 20, afterEvent: 'ev_friend_loan_repaid', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'your friend');
@@ -7752,7 +7752,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_crashes_car_l2',
     category: 'friends',
-    gates: { minAge: 20, hasCar: true, afterEvent: 'ev_friend_crashes_car', afterEventMinTurns: 3 },
+    gates: { requiredPeople: ['friend'], minAge: 20, hasCar: true, afterEvent: 'ev_friend_crashes_car', afterEventMinTurns: 3 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'your friend');
@@ -7786,7 +7786,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_apologises_row_l2',
     category: 'friends',
-    gates: { minAge: 25, afterEvent: 'ev_friend_apologises_row', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['friend'], minAge: 25, afterEvent: 'ev_friend_apologises_row', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'your friend');
@@ -7818,7 +7818,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_disappears_resurface_l2',
     category: 'friends',
-    gates: { minAge: 20, afterEvent: 'ev_friend_disappears_resurface', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['friend'], minAge: 20, afterEvent: 'ev_friend_disappears_resurface', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'your friend');
@@ -7850,7 +7850,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_birthday_forgot_l1',
     category: 'family',
-    gates: { minAge: 18, afterEvent: 'ev_family_mom_birthday_forgot', afterEventMinTurns: 3 },
+    gates: { requiredPeople: ['mom'], minAge: 18, afterEvent: 'ev_family_mom_birthday_forgot', afterEventMinTurns: 3 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -7883,7 +7883,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_birthday_forgot_l2',
     category: 'family',
-    gates: { minAge: 18, afterEvent: 'ev_family_mom_birthday_forgot_l1', afterEventMinTurns: 3 },
+    gates: { requiredPeople: ['mom'], minAge: 18, afterEvent: 'ev_family_mom_birthday_forgot_l1', afterEventMinTurns: 3 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
@@ -7916,7 +7916,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_moves_abroad_l1',
     category: 'family',
-    gates: { minAge: 20, afterEvent: 'ev_family_sib_moves_abroad', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['sib'], minAge: 20, afterEvent: 'ev_family_sib_moves_abroad', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -7950,7 +7950,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_baby_born_l1',
     category: 'family',
-    gates: { minAge: 20, afterEvent: 'ev_family_sib_baby_born', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['sib'], minAge: 20, afterEvent: 'ev_family_sib_baby_born', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
@@ -7984,7 +7984,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_adult_moves_out_l1',
     category: 'children',
-    gates: { minAge: 45, maxAge: 70, hasChildren: true, afterEvent: 'ev_child_adult_moves_out', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['child'], minAge: 45, maxAge: 70, hasChildren: true, afterEvent: 'ev_child_adult_moves_out', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const chName = nm(p.child, 'your child');

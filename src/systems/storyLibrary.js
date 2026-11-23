@@ -292,7 +292,7 @@ export function collectExtendedLifeScenes(S, addOnce) {
     }));
   }
 
-  if (S.career.employed && S.career.job && age >= 20 && age <= 29) {
+  if (S.career.employed && S.career.job && age >= 20 && age <= 29 && [dad, mom].some(p => p && p.alive)) {
     addOnce('st_first_paycheck_ritual', () => {
       const treatCost = Math.min(Math.max(50, Math.round(S.career.job.monthlyGross * 0.2)), Math.max(50, S.money.cash));
       return {

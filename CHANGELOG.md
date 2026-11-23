@@ -549,3 +549,13 @@ save format).
 World Life 2.0 as uploaded (`world-life-2-fixed-launcher-mac.zip`):
 ES-module codebase, Mac launcher (start-game.command + serve.py on
 port 8765), 15 countries, 1,111 cars, 83 career tracks.
+
+## State-aware events update
+
+- Added 22 globally playable personal and relationship events, including job searching, creative projects, friendships, family conversations, grief, community activities and living abroad.
+- Added explicit living-cast requirements to 329 existing random events. Parent, sibling, friend and partner scenes now need those people to exist and be alive.
+- Added parent-grief events that require a real deceased parent. Living-parent context no longer returns deceased people.
+- Recheck random scenes when the world changes and before a choice runs. Bind new queued scenes to their original people so another friend or partner cannot silently replace them.
+- New stories respect age, employment, study, era and country context. Follow-ups wait for their earlier story; relevant new stories have room in the existing event roll without adding more pop-ups.
+- Added an automated consistency test suite. Run: npx --yes esbuild@0.28.2 tests/events-consistency.test.js --bundle --platform=node --format=cjs --outfile=/tmp/events-test.cjs && node /tmp/events-test.cjs
+- Rebuilt the prebuilt browser bundle. Existing save format and art files are unchanged.

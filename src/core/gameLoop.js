@@ -28,7 +28,7 @@ import { tickMegaSystemsMonthly } from '../systems/completeLifeSystems.js';
 import { checkBusinessFate } from '../systems/businessFate.js';
 /* v2.18 W2 §3 — job loss reaches the mortgage, spouse, children and visa; crisis years warn, freeze pay and risk redundancy. */
 import { checkCareerConsequences } from '../systems/careerConsequences.js';
-import { noteRandomLifeEventFired } from '../systems/eventEngine.js';
+import { noteRandomLifeEventFired, isRandomLifeSceneCurrent } from '../systems/eventEngine.js';
 /* v2.15 W4 — era world events fire on the calendar tick. */
 import { tickWorldEvents } from '../systems/worldEvents.js';
 /* v2.15 W2 — career market monthly tick (headhunters, rivals, pension
@@ -37,6 +37,15 @@ import { tickWorldEvents } from '../systems/worldEvents.js';
 import { tickCareerMarketMonth } from '../systems/careerMarket.js';
 
 const PERSIST_KEY = 'world_life_2_save_v1';
+
+function discardOutdatedRandomScenes(S) {
+  S.sceneQueue = (S.sceneQueue || []).filter(scene => isRandomLifeSceneCurrent(scene, S));
+  if (S.activeScene && !isRandomLifeSceneCurrent(S.activeScene, S)) {
+    S.activeScene = null;
+    recordJournal(S, 'Circumstances changed before that decision could be made. The old situation no longer applies.', 'life');
+  }
+}
+
 
 export function saveGameToStorage(S) {
   try {
@@ -200,14 +209,16 @@ export function tickWorldWhileSceneOpen(S) {
     tickNpcAutonomyYearly(S);
     worldYears += 1;
   }
+  discardOutdatedRandomScenes(S);
   saveGameToStorage(S);
-  return { pausedForScene: true, worldTicked: worldYears > 0, worldYears };
+  return { pausedForScene: !!S.activeScene, worldTicked: worldYears > 0, worldYears };
 }
 
 /* Advance a single logical step (1 Year if <18, 1 Month if 18+) */
 export function advanceSingleTurn(S) {
   if (!S || S.gameOver) return { pausedForScene: false };
   ensureExtendedState(S);
+  discardOutdatedRandomScenes(S);
   /* v2.10 — THE FREEZE FIX (audit §1): the world used to stop entirely
      while a scene stayed open, because this function returned immediately.
      Now a blocked call runs a world-only step instead (below). The player's
@@ -349,6 +360,8 @@ export function fastForwardTurns(S, maxSteps = 12) {
 /* Resolve the player's choice on an open scene cleanly — NEVER logs raw button labels! */
 export function resolveActiveSceneChoice(S, choiceIdx) {
   if (!S || !S.activeScene) return { ok: false };
+  discardOutdatedRandomScenes(S);
+  if (!S.activeScene) return { ok: false, reason: 'circumstances_changed' };
   const scene = S.activeScene;
   const visibleChoices = scene.choices.filter(c => typeof c.available !== 'function' || c.available(S));
   const chosen = visibleChoices[choiceIdx] || scene.choices[choiceIdx];

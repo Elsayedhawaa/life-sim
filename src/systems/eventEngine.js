@@ -64,6 +64,7 @@ import { BUSINESS_EVENTS } from '../data/eventsBusiness.js';
    shape and the v2.11 businesses[] shape alike). */
 import { businessesOf, bizStaffCount, bizAgeMonths } from '../systems/businessPremises.js';
 /* v2.15 W5 — memory events, thread resolution, NPC memory readers. */
+import { EVENTS_LIVED_LIFE } from '../data/eventsLivedLife.js';
 import { EVENTS_MEMORY } from '../data/eventsMemory.js';
 import {
   buildChainIndex, isChainResolved, resolveThread, closeStaleThreads,
@@ -71,7 +72,7 @@ import {
 } from '../systems/threadResolution.js';
 import { findPeopleWithMemory } from '../systems/npcMemory.js';
 
-export const ALL_RANDOM_LIFE_EVENTS = [...EVENTS_EVERYDAY_FAMILY, ...EVENTS_MONEY_HEALTH_CAREER, ...BUSINESS_EVENTS, ...EVENTS_MEMORY];
+export const ALL_RANDOM_LIFE_EVENTS = [...EVENTS_EVERYDAY_FAMILY, ...EVENTS_MONEY_HEALTH_CAREER, ...BUSINESS_EVENTS, ...EVENTS_MEMORY, ...EVENTS_LIVED_LIFE];
 
 /* v2.15 W5 — the chain graph for the whole pool: event id -> root id,
    and root id -> { members, terminals }. A resolved chain refuses every
@@ -150,9 +151,9 @@ export function resolveEventCtx(S) {
   const firstAlive = (ids) => (Array.isArray(ids) ? ids.map(byId).find((p) => p && p.alive) : null) || null;
   const kids = aliveChildren(S);
   return {
-    spouse: firstAlive(S.relations.spouseIds) || byId(S.relations.partnerId),
-    mom: byId(S.relations.motherId),
-    dad: byId(S.relations.fatherId),
+    spouse: firstAlive(S.relations.spouseIds) || firstAlive([S.relations.partnerId]),
+    mom: firstAlive([S.relations.motherId]),
+    dad: firstAlive([S.relations.fatherId]),
     sib: firstAlive(S.relations.siblingIds),
     friend: firstAlive(S.relations.friendIds),
     child: kids[0] || null,
@@ -167,9 +168,22 @@ export function resolveEventCtx(S) {
    Gate evaluator — one function, every gate key the data files use.
    -------------------------------------------------------------------------- */
 
-export function eventGatePasses(ev, S) {
+export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
   if (!ev || !S) return false;
   const g = ev.gates || {};
+
+  // Explicit cast requirements apply to roots and follow-ups alike.
+  const cast = resolveEventCtx(S);
+  if ((g.requiredPeople || []).some(role => !cast[role] || !cast[role].alive)) return false;
+  if (g.hasLivingParent !== undefined) {
+    if (!!(cast.mom || cast.dad) !== !!g.hasLivingParent) return false;
+  }
+  if (g.deceasedParent) {
+    const ids = g.deceasedParent === 'dad' ? [S.relations.fatherId]
+      : g.deceasedParent === 'mom' ? [S.relations.motherId]
+      : [S.relations.fatherId, S.relations.motherId];
+    if (!ids.some(id => S.people[id]?.alive === false)) return false;
+  }
 
   const age = S.player.age;
   if (g.minAge !== undefined && age < g.minAge) return false;
@@ -309,6 +323,8 @@ export function eventGatePasses(ev, S) {
     if (has !== !!g.hasFriend) return false;
   }
 
+  if (ignoreHistory) return true;
+
   /* Repeatability: once-per-life events never repeat; repeatable ones
      wait out their cooldown in S.cooldowns. */
   const seen = (S.sceneCounts || {})[ev.id] || 0;
@@ -365,9 +381,15 @@ export function pickRandomLifeEvent(S) {
      per turn; only the draw inside that roll is weighted. If every due
      follow-up fails to build, the rest of the pool is tried as before. */
   const dueFollowUps = eligible.filter((ev) => ev.gates && ev.gates.afterEvent);
+  const livedIds = new Set(EVENTS_LIVED_LIFE.map(event => event.id));
+  const livedPool = eligible.filter(event => livedIds.has(event.id));
+  // Give relevant personal stories room beside the large legacy catalogue.
+  // Follow-ups still get first priority, and no extra event roll is added.
   const pools = (dueFollowUps.length && chance(S, 0.75))
     ? [dueFollowUps, eligible.filter((ev) => !(ev.gates && ev.gates.afterEvent))]
-    : [eligible];
+    : (livedPool.length && chance(S, 0.30))
+      ? [livedPool, eligible.filter(event => !livedIds.has(event.id))]
+      : [eligible];
   /* A build reads live people and era prices; if one event's build
      throws, try a few others rather than losing the whole roll. */
   for (const pool of pools) {
@@ -385,6 +407,9 @@ export function pickRandomLifeEvent(S) {
       scene.key = ev.id;
       scene.baseId = ev.id;
       scene.eventId = ev.id;
+      scene.eventParticipantIds = Object.fromEntries(
+        (ev.gates?.requiredPeople || []).map(role => [role, ctx[role]?.id]).filter(([, id]) => id)
+      );
       /* v2.15 W5 — thread bookkeeping on the scene. A terminal event
          (one with no follow-up of its own) closes its chain the moment
          the player picks a choice: the choice label is the ending, in
@@ -447,4 +472,14 @@ export function noteRandomLifeEventFired(S, scene) {
       return e2 ? eventGatePasses(e2, S) : false;
     });
   } catch (_) {}
+}
+
+// Queued scenes can outlive their cast while the world keeps ticking.
+export function isRandomLifeSceneCurrent(scene, S) {
+  const event = scene?.eventId ? EVENT_BY_ID.get(scene.eventId) : null;
+  if (!event) return true;
+  const current = resolveEventCtx(S);
+  if (Object.entries(scene.eventParticipantIds || {}).some(([role, id]) =>
+    !S.people[id]?.alive || current[role]?.id !== id)) return false;
+  return eventGatePasses(event, S, { ignoreHistory: true });
 }
