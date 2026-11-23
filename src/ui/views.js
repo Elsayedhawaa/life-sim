@@ -1,3 +1,4 @@
+import {renderHomeTypeArt} from './homeTypeArt.js';
 /* ============================================================================
    World Life Complete Edition — 7-Pillar Sub-Tabbed UI & 3D Scene Renderer
    100% of V1's Deep Catalogs + 50% Researched Expansion + 3D & BitLife Visuals.
@@ -2945,7 +2946,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
         ${S.housing.properties.map(pr => `
           <div class="item-row">
             <div style="display:flex;align-items:center;gap:10px">
-              ${renderBitlifePropertyShapeSvg(pr.shape || 'apartment', 42, '#C84B31', pr.id || pr.name)}
+              ${renderHomeTypeArt(pr.shape || 'apartment', pr.country || S.country, 64)}
               <div class="item-row-main">
                 <strong>${esc(pr.name)} (${esc(getCountry(pr.country).name)})</strong>
                 <span>Value: <strong class="mono">${esc(formatMoney(pr.valueLocal, S.country))}</strong> · Finish: ${esc((pr.finishing || 'standard').replace(/_/g, ' '))} · Condition: <strong class="${(pr.conditionPct ?? 100) < 70 ? 'text-bad' : 'text-good'}">${Math.round(pr.conditionPct ?? 100)}%</strong> ${pr.monthsLeft > 0 ? `· ${pr.monthsLeft}m Aqsat left` : '· Deed Clear'} ${pr.rentedOut ? `· [${pr.tenantMode === 'short_term' ? 'Short-Term Holiday +36%' : 'Long-Term Tenant'}]` : ''}${/* v2.11 W3: premises link on the property card */ (() => { const _b = businessUsingProperty(S, pr.id); return _b ? ` · <strong>Used by ${esc(_b.name)}</strong>` : ''; })()}</span>
@@ -3199,7 +3200,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
 
       <div style="padding:10px;background:var(--bg-accent-warm);border-radius:8px;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          ${renderBitlifePropertyShapeSvg(selUnit.shape, 44, '#C84B31', `${propMarket}_${selUnit.id}`)}
+          ${renderHomeTypeArt(selUnit.shape, propMarket, 68)}
           <div class="muted" style="font-size:0.8rem">
             Selected Unit Complete Architectural Sheet Set: <strong>${esc(selUnit.name)} (${selUnit.area} m²)</strong> · <strong>${esc(selFinish.label)}</strong> · Plan: <strong>${esc(selPlan.label)}</strong>
             ${propMarket === 'sau' && S.year >= 2019 ? ' · <em>4M+ SAR cash deed unlocks Saudi Property Premium Residency!</em>' : ''}
@@ -3226,7 +3227,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
         return `
           <div class="item-row">
             <div style="display:flex;align-items:center;gap:10px">
-              ${renderBitlifePropertyShapeSvg(dev.Coastal ? 'chalet' : selUnit.shape, 38, '#C84B31', `${propMarket}_${dev.id}`)}
+              ${renderHomeTypeArt(dev.Coastal ? 'chalet' : selUnit.shape, propMarket, 60)}
               <div class="item-row-main">
                 <strong>${esc(dev.name)} ${dev.developer ? `· ${esc(dev.developer)}` : ''} (${esc(dev.city || mktCountryObj.cities[0])})</strong>
                 <span>Total: <strong class="mono">${esc(formatMoney(fullPlayer, S.country, true))}</strong> · ${selPlan.years > 0 ? `Down: <strong>${esc(formatMoney(downPlayer, S.country, true))}</strong> + ${esc(formatMoney(monthlyPlayer, S.country, true))}/mo (${selPlan.years}y)` : 'Full Cash'} ${dev.program ? `· [${esc(dev.program.toUpperCase())}]` : ''}</span>

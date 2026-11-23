@@ -1,4 +1,6 @@
-import {propertyOutdoorFeatures,renderOutdoorPlanHtml} from './propertyOutdoor.js';
+import {illustratedPlanSvg} from './illustratedPlan.js';
+import {renderHomeTypeArt} from './homeTypeArt.js';
+import {propertyOutdoorFeatures} from './propertyOutdoor.js';
 import {regionalRoomName, homeStyleNote, roomBelongsToHome} from './homeRegionalStyle.js';
 /* ============================================================================
    World Life — Sheet A-101 Floor Plan & Drafting Engine (v2.3)
@@ -1004,7 +1006,7 @@ export function renderArchitecturalFloorplanSvg(
   const floors = propertyFloorPlans(shape, cadOptions.country, customAreaM2, cadOptions.totalRooms, furnishedRooms);
   const idx = Math.min(floors.length - 1, Math.max(0, Number(floorIdx) || 0));
   const plan = floors[idx];
-  if (plan.terrace) { plan.terrace.hasPool = !!cadOptions.hasPool; if (!cadOptions.hasPool) plan.terrace.label = 'OUTDOOR TERRACE'; }
+  if (plan.terrace) { plan.terrace.hasPool = !!cadOptions.hasPool && idx === 0; if (!cadOptions.hasPool) plan.terrace.label = 'OUTDOOR TERRACE'; }
 
   const cyanMode = !!cadOptions.cyanotype;
   const showMep = !!cadOptions.showMep;
@@ -1140,7 +1142,7 @@ export function renderArchitecturalFloorplanSvg(
       <!-- Interior Rooms, Flooring, Scale Furniture & Room Tags -->
       ${plan.rooms.map(rm => {
         const isFurn = isRoomFurnished(furnishedRooms, rm);
-        const canClick = clickablePropId && furnishableSet.has(rm.key);
+        const canClick = false;
         const tagLines = roomTagLines(rm);
         const tagBottom = roomTagBottom(rm);
         const fillPat = rm.flr === 'wood' ? `url(#a101Wood_${patKey})`
@@ -1280,7 +1282,7 @@ export function renderArchitecturalFloorplanSvg(
         <line x1="0" y1="264" x2="174" y2="264" stroke="${inkMain}" stroke-width="1"/>
         <text x="12" y="282" font-family="DM Sans, sans-serif" font-size="8.5" fill="${inkSub}">Thick dark edge = outside wall</text>
         <text x="12" y="298" font-family="DM Sans, sans-serif" font-size="8.5" fill="${inkSub}">Green tick = furnished room</text>
-        ${clickablePropId ? `<text x="12" y="322" font-family="DM Sans, sans-serif" font-size="8.5" font-weight="700" fill="#15803D">Tap a room to furnish it</text>` : ''}
+        ${clickablePropId ? `<text x="12" y="322" font-family="DM Sans, sans-serif" font-size="8.5" font-weight="700" fill="#15803D">Tap a room for details</text>` : ''}
 
         <text x="12" y="492" font-family="DM Sans, sans-serif" font-size="8.5" fill="${inkSub}">Layout diagram —</text>
         <text x="12" y="506" font-family="DM Sans, sans-serif" font-size="8.5" fill="${inkSub}">not to scale.</text>
@@ -1306,23 +1308,18 @@ export function renderArchitecturalFloorplanSvg(
 }
 
 // Phone-first plan: geometry and room identity stay together; detailed CAD is optional.
-export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms = {}, floorIdx = 0, propertyId = null, country = '', areaM2 = null, totalRooms = null) {
+export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms = {}, floorIdx = 0, propertyId = null, country = '', areaM2 = null, totalRooms = null, outdoorFeatures = {}) {
   const floors = propertyFloorPlans(shape, country, areaM2, totalRooms, furnishedRooms);
   const idx = Math.min(floors.length - 1, Math.max(0, Number(floorIdx) || 0));
   const plan = floors[idx];
   if (shape === 'land') return renderArchitecturalFloorplanSvg(shape);
   const sh = plan.shell;
   const attrs = rm => `data-action="room-info" data-room="${escAttr(rm.key)}" data-no="${escAttr(rm.no)}" data-name="${escAttr(planRoomName(rm))}" data-m2="${rm.m2 || 0}" data-floor="${escAttr(plainFloorLabel(idx))}"`;
-  return `<section class="readable-floor" style="border:1px solid #c9c2b5;border-radius:12px;padding:12px;background:#fcfbf7;color:#292524;min-width:0">
+  return `<section class="readable-floor" style="border:1px solid #c9c2b5;border-radius:12px;padding:12px;background:#faf5e9;color:#3c3228;min-width:0">
     <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx))}</h4>${idx === 0 ? `<p style="font-size:0.78rem;line-height:1.5;margin:4px 0 8px">${escAttr(homeStyleNote(country, shape))}</p>` : ''}
     <p style="font-size:0.78rem;margin:0 0 12px;color:#625b50">Room numbers match the list below. Fictional layout, not to scale.</p>
-    <svg viewBox="${sh.x - 12} ${sh.y - 12} ${sh.w + 24} ${sh.h + 24}" width="100%" role="img" aria-label="${escAttr(plainFloorLabel(idx))} room layout" style="display:block;border-radius:6px;background:#eee9df">
-      ${plan.core ? `<g><rect x="${plan.core.x}" y="${plan.core.y}" width="${plan.core.w}" height="${plan.core.h}" fill="#e5dfd1" stroke="#524c43" stroke-width="2"/><text x="${plan.core.x + plan.core.w/2}" y="${plan.core.y + plan.core.h/2}" text-anchor="middle" font-size="16" fill="#524c43">Stairs</text></g>` : ''}
-      ${plan.rooms.map(rm => `<g ${attrs(rm)} tabindex="0" role="button" aria-label="Room ${escAttr(rm.no)}: ${escAttr(planRoomName(rm))}">
-        <rect x="${rm.x}" y="${rm.y}" width="${rm.w}" height="${rm.h}" fill="${isRoomFurnished(furnishedRooms, rm) ? '#e4eee3' : '#f8f5ee'}" stroke="#524c43" stroke-width="3"/>
-        <text x="${rm.x + rm.w/2}" y="${rm.y + rm.h/2 + 7}" text-anchor="middle" font-size="24" font-family="sans-serif" font-weight="700" fill="#292524">${escAttr(rm.no)}</text>
-      </g>`).join('')}
-    </svg>
+    ${illustratedPlanSvg(plan, idx, outdoorFeatures, attrs)}
+    <p style="font-size:0.74rem;line-height:1.5;color:#89765c">Illustrative furnished layout. Furniture is a preview, not an installed purchase.${idx===0&&(outdoorFeatures.hasPool||outdoorFeatures.hasGarden)?' Outdoor features are on the same plot; outdoor area is not included in the indoor room total.':''}</p>
     <div style="margin-top:10px;display:grid;gap:6px">
       ${plan.rooms.map(rm => `<button type="button" ${attrs(rm)} style="display:flex;align-items:center;gap:10px;text-align:left;width:100%;min-height:48px;padding:10px;border:1px solid #d8d1c5;border-radius:8px;background:#fffdf8;color:#292524;white-space:normal">
         <span style="font-weight:800;color:#a6442f">${escAttr(rm.no)}</span>
@@ -1478,7 +1475,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
            floor and style choices live in the single control above. -->
       <div class="arch-toolbar" style="margin-top:4px">
         <div style="display:flex;align-items:center;gap:10px">
-          ${renderBitlifePropertyShapeSvg(shape, 40, '#C84B31', variantSeed)}
+          ${renderHomeTypeArt(shape, country, 92)}
           <div>
             <strong style="font-size:0.86rem;letter-spacing:0.01em">${shape === 'land' ? 'Your Land — Plot Plan' : `Your ${shapeName} — Floor Plan`}</strong>
             <div class="muted" style="font-size:0.75rem">
@@ -1489,9 +1486,9 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px">
-        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2, home?.rooms)).join('')}
+        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2, home?.rooms, {hasPool,hasGarden,placement:home?.outdoorPlacement || (['townhouse','twin_house'].includes(shape)?'front':'rear')})).join('')}
       </div>
-      ${renderOutdoorPlanHtml(home, country)}
+
       <details style="margin-top:12px"><summary style="cursor:pointer;font-size:0.82rem">Detailed architectural sheets</summary>
         <div style="margin-top:10px">${(isMultiFloor && cadFloor === -1)
           ? renderAllPropertyFloorsHtml(shape, finish, furnishedRooms, home?.areaM2 || null, home?.id || null, { cyanotype, showMep, viewMode, timeOfDay, country, totalRooms: home?.rooms, hasPool })
