@@ -623,6 +623,13 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
     floors[0].terrace.hasPool = false;
     floors[0].terrace.label = 'GARDEN ACCESS TERRACE';
   }
+  if (country === 'deu' && shape === 'apartment') {
+    const layout={'101':[474,292,80,136],'102':[554,366,130,62],'103':[84,238,470,54],'104':[84,292,300,136],'105':[384,292,90,136],'106':[84,92,196,146],'107':[554,92,130,146],'108':[280,92,138,146],'109':[418,92,136,146]};
+    for(const r of floors[0].rooms){[r.x,r.y,r.w,r.h]=layout[r.no];delete r.door;}
+    // Bathroom access from the hall beside the entrance.
+    const bath=floors[0].rooms.find(r=>r.no==='107');bath.x=554;bath.y=238;bath.w=130;bath.h=128;
+    floors[0].core=null;
+  }
   if (country === 'usa' && shape === 'apartment') {
     const layout={'101':[454,292,100,136],'102':[554,362,130,66],'103':[84,238,470,54],'104':[84,292,370,136],'105':[554,238,130,124],'106':[84,92,196,146],'107':[554,92,130,146],'108':[280,92,138,146],'109':[418,92,136,146]};
     for(const r of floors[0].rooms){[r.x,r.y,r.w,r.h]=layout[r.no];delete r.door;}
@@ -662,9 +669,9 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
     plan.rooms = plan.rooms.filter(r => roomBelongsToHome(r, shape, totalRooms, furnishedRooms));
     const beds = plan.rooms.filter(r => ['106','108','109'].includes(r.no));
     const jp = country === 'jpn';
-    const bedroomWidth = jp ? 600 : 470;
+    const bedroomWidth = (jp || country === 'deu') ? 600 : 470;
     beds.forEach((room, i) => { room.x = 84 + bedroomWidth * i / beds.length; room.y = 92; room.w = bedroomWidth / beds.length; room.h = 146; delete room.door; });
-    if (!jp) { const bath = plan.rooms.find(r => r.no === '107'); bath.x = 554; bath.y = 92; bath.w = 130; bath.h = 146; delete bath.door; }
+    if (!jp && country !== 'deu') { const bath = plan.rooms.find(r => r.no === '107'); bath.x = 554; bath.y = 92; bath.w = 130; bath.h = 146; delete bath.door; }
   }
   if (country === 'sau' && ['apartment','villa','duplex','townhouse','twin_house'].includes(shape)) {
     // Keep guest reception near the entrance, with the family rooms behind.

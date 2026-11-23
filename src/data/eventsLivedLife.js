@@ -46,6 +46,17 @@ const localPlace = S => ({
 }[S.country] || 'a small neighbourhood cafe');
 
 export const EVENTS_LIVED_LIFE = [
+  story('ev_deu_stairwell', 'The Note in the Stairwell', {minAge:18,countries:['deu'],housingModes:['rent']},
+    S => `A handwritten notice in your building in ${S.city} asks residents to keep the shared stairwell clear. You had left a box there while sorting your home.`, [
+      ['Bring the box inside and make room for it properly', 'You brought your box inside so the shared route stayed clear. A small household task was finally finished.', {'vitals.stress':-2}],
+      ['Ask the building contact where bulky items can go', 'You asked where bulky items could be stored instead of assuming the stairwell was available. You moved your box out of the way.', {'skills.charisma':2}],
+    ], {category:'home'}),
+  story('ev_deu_first_meeting', 'Before the First Meeting', {minAge:18,countries:['deu'],hasJob:true},
+    S => `Before a meeting at work in ${S.city}, a colleague sends a short agenda. One item is unfamiliar, but there is enough time to ask about it before everyone sits down.`, [
+      ['Ask the colleague what needs deciding', 'You asked what decision the unfamiliar item needed and arrived better prepared, without pretending expertise you did not have.', {'skills.charisma':2,'vitals.smarts':1}],
+      ['Write down a clear question to raise in the meeting', 'You prepared a clear question instead of silently guessing what the agenda meant.', {'vitals.smarts':2}],
+    ], {category:'career'}),
+
   story('ev_usa_offer_commute', 'An Offer and a Journey', {minAge:18,countries:['usa'],hasJob:false},
     S => `A possible job in ${S.city} sounds appealing until you map the journey. The pay is only one part of the choice; the time getting there would become part of every workday.`, [
       ['Ask about the actual schedule before deciding', 'You asked for the schedule and work location in writing. You had not accepted the offer or received any pay.', {'skills.charisma':2}],

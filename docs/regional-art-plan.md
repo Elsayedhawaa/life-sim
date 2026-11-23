@@ -55,3 +55,7 @@ Manchester terraced street, compact flat interior, and an elder woman portrait g
 ## USA first regional batch
 
 Chicago residential two-flat street, modest apartment interior and an elder male portrait limited to compatible dark complexion, uncovered hair and clean-shaven appearance. Chicago's named street is city/year gated. US apartment/villa geometry has a first template pass; other types still inherit the common type families. Two no-spend stories cover commute trade-offs before accepting a role and shared-building laundry. No insurance, salary, tax or rent claims were added. USA is diverse; one street and portrait are not universal coverage.
+
+## Germany first regional batch
+
+Berlin residential courtyard street, modest flat interior and age/appearance-gated elder male portrait. Modern Berlin art is city/year gated and not applied to Munich or Hamburg. Apartment geometry keeps a separate kitchen beside the hall, with bedroom-count redistribution preserving that wet-room placement. Other residential types retain their common type plans pending deeper country layouts. Two no-spend choices concern shared stairwell space and preparing questions for a work meeting. No legal, salary or rental-price claims were introduced.
