@@ -58,49 +58,31 @@ function launchCapitalLocal(S, venture) {
 
 export const EVENTS_MONEY_HEALTH_CAREER = [
   {
-    id: 'ev_money_rent_rise',
-    category: 'money',
-    repeatable: false,
-    gates: {"minAge": 18, "wealth": ["poor", "middle"], "hasHome": true},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(900, S.country, S.year);
+    id: 'ev_money_rent_rise', category: 'money',
+    gates: { minAge: 18, housingModes: ['rent'], minRent: 1 },
+    build: (S) => {
+      const oldRent = Math.round(S.housing.monthlyRent);
+      const requested = Math.round(oldRent * 1.08);
+      const negotiated = Math.round(oldRent * 1.04);
+      const applyRent = (st, rent, note) => {
+        st.housing.monthlyRent = rent;
+        st.player.vitals.stress = clamp(st.player.vitals.stress + 3);
+        recordJournal(st, `${note} Monthly rent is now ${formatMoney(rent, st.country)}. It will be charged in the next monthly settlement, not again today.`, 'housing');
+      };
       return {
-        key: 'ev_money_rent_rise',
-        category: 'money',
-        title: "The Landlord Raises the Rent",
-        text: `Your landlord knocks on the door in ${S.city} with a new figure: the rent is going up to ${formatMoney(A, S.country)} a month from next month. He says everything in the building has gone up, and he is not asking, he is telling.`,
+        key: 'ev_money_rent_rise', category: 'money', title: 'The Renewal Offer',
+        text: `The renewal offer for your home in ${S.city} raises monthly rent from ${formatMoney(oldRent, S.country)} to ${formatMoney(requested, S.country)}. There is room to discuss it before the next bill.`,
         choices: [
-          {
-            label: "Pay the new rent without a fight",
-            effect: (st) => {
-              walletMove(st, -A, 'Pay the new rent without a fight', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `The rent went up to ${formatMoney(A, S.country)} a month and you paid it, quietly, because moving would cost more.`, 'money');
-            },
-          },
-          {
-            label: "Argue and ask him to keep it as it is",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+8));
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-3));
-              recordJournal(st, `You argued with the landlord over the rent rise. He would not move, and the conversation ended badly.`, 'money');
-            },
-          },
-          {
-            label: "Start looking for a cheaper place",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
-              if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+2));
-              recordJournal(st, `Faced with a rent rise to ${formatMoney(A, S.country)}, you started hunting for somewhere cheaper in ${S.city}.`, 'money');
-            },
-          },
+          { label: `Accept ${formatMoney(requested, S.country)} per month`, effect: st => applyRent(st, requested, 'You accepted the renewal offer.') },
+          { label: 'Push for a smaller increase', effect: st => {
+            const agreed = chance(st, 0.55) ? negotiated : requested;
+            applyRent(st, agreed, agreed === negotiated ? 'The landlord agreed to a smaller increase.' : 'The landlord refused the counteroffer; you kept the home at the quoted rent.');
+            st.player.vitals.stress = clamp(st.player.vitals.stress + 2);
+          } },
+          { label: 'Keep the home for now, but start looking elsewhere', effect: st => {
+            applyRent(st, requested, 'You kept the home at the renewal price while looking elsewhere.');
+            recordJournal(st, 'No move or deposit has happened yet. Compare actual homes before signing another lease.', 'housing');
+          } },
         ],
       };
     },
@@ -499,7 +481,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_money_sibling_loan',
         category: 'money',
-        title: "$sib Asks for a Loan",
+        title: `${sibName} Asks for a Loan`,
         text: `${sibName} calls, embarrassed. The rent is due, the salary is late, and ${formatMoney(A, S.country)} would get through the month. ${sibName} promises to pay it back by the end of next month — and means it, you think.`,
         choices: [
           {
@@ -550,7 +532,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_money_parent_medicine',
         category: 'money',
-        title: "$mom Needs Medicine Money",
+        title: `${momName} Needs Medicine Money`,
         text: `${momName} calls from the pharmacy. Her blood pressure medicine costs ${formatMoney(A, S.country)} this month and her pension does not stretch. She says not to worry, she will manage — which is exactly how you know she will not.`,
         choices: [
           {
@@ -572,9 +554,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Tell her to ask $dad first",
+            label: `Tell her to ask ${dadName} first`,
             effect: (st) => {
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Tell her to ask $dad first', { affection: (-6) });
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Tell her to ask ${dadName} first`, { affection: (-6) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
               recordJournal(st, `You told ${momName} to ask ${dadName} for the medicine money. She did not call back that evening.`, 'money');
             },
@@ -1067,10 +1049,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Give half to $mom",
+            label: `Give half to ${momName}`,
             effect: (st) => {
-              walletMove(st, +A, 'Give half to $mom', 'money');
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Give half to $mom', { affection: (+5) });
+              walletMove(st, +A, `Give half to ${momName}`, 'money');
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Give half to ${momName}`, { affection: (+5) });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+3));
               recordJournal(st, `You gave half the wedding gift money to ${momName}. She tried to refuse, then kept it.`, 'money');
             },
@@ -1217,10 +1199,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Ask $mom to cook at her place instead",
+            label: `Ask ${momName} to cook at her place instead`,
             effect: (st) => {
-              walletMove(st, -B, 'Ask $mom to cook at her place instead', 'money');
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Ask $mom to cook at her place instead', { affection: (+4) });
+              walletMove(st, -B, `Ask ${momName} to cook at her place instead`, 'money');
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Ask ${momName} to cook at her place instead`, { affection: (+4) });
               recordJournal(st, `You asked ${momName} to host the family iftars this Ramadan, and brought ${formatMoney(B, S.country)} of food to her kitchen.`, 'money');
             },
           },
@@ -2436,19 +2418,30 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
           {
             label: "Pay off a debt with it",
             effect: (st) => {
-              walletMove(st, +A, 'Pay off a debt with it', 'money');
-              st.money.creditScore = clamp(st.money.creditScore + (+5), 300, 900);
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-4));
-              recordJournal(st, `You used the ${formatMoney(A, S.country)} inheritance to pay off a debt.`, 'money');
+              walletMove(st, A, 'Inheritance received', 'money');
+              let remaining = A;
+              for (const loan of st.money.loans || []) {
+                const paid = Math.min(remaining, Math.max(0, Number(loan.balance) || 0));
+                if (!paid) continue;
+                loan.balance -= paid; remaining -= paid;
+                walletMove(st, -paid, `Inheritance repayment: ${loan.label || 'loan'}`, 'debt');
+              }
+              st.money.loans = (st.money.loans || []).filter(loan => loan.balance > 0);
+              const paid = A - remaining;
+              st.player.vitals.stress = clamp(st.player.vitals.stress - (paid > 0 ? 4 : 0));
+              recordJournal(st, paid > 0
+                ? `You used ${formatMoney(paid, st.country)} of the inheritance to reduce your loans. The remaining ${formatMoney(remaining, st.country)} stayed in cash.`
+                : `You had no outstanding loans, so the ${formatMoney(A, st.country)} inheritance stayed in cash.`, 'money');
             },
           },
           {
-            label: "Share it with $mom and $dad",
+            label: `Share it with ${momName} and ${dadName}`,
             effect: (st) => {
-              walletMove(st, +A, 'Share it with $mom and $dad', 'money');
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Share it with $mom and $dad', { affection: (+5) });
-              if (ctx.dad) rememberDeed(st, ctx.dad, 'event', 'Share it with $mom and $dad', { affection: (+5) });
-              recordJournal(st, `You shared the ${formatMoney(A, S.country)} inheritance with ${momName} and ${dadName}. They were surprised, and proud.`, 'money');
+              walletMove(st, A, 'Inheritance received', 'money');
+              walletMove(st, -Math.round(A / 2), 'Shared half the inheritance with parents', 'family');
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Share it with ${momName} and ${dadName}`, { affection: (+5) });
+              if (ctx.dad) rememberDeed(st, ctx.dad, 'event', `Share it with ${momName} and ${dadName}`, { affection: (+5) });
+              recordJournal(st, `You gave half the inheritance (${formatMoney(Math.round(A / 2), st.country)}) to ${momName} and ${dadName}, keeping the rest in cash.`, 'money');
             },
           },
         ],
@@ -2456,54 +2449,22 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     },
   },
   {
-    id: 'ev_money_rent_deposit_new',
-    category: 'money',
-    repeatable: false,
-    gates: {"minAge": 20, "wealth": ["poor", "middle"]},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(6000, S.country, S.year);
-      const B = eraLocalCost(3000, S.country, S.year);
-      return {
-        key: 'ev_money_rent_deposit_new',
-        category: 'money',
-        title: "Two Months\u2019 Deposit Up Front",
-        text: `The flat you want is perfect — and the landlord wants two months’ deposit up front: ${formatMoney(A, S.country)}, before you get the keys. Without it, the next person in line takes it.`,
-        choices: [
-          {
-            label: "Pay the deposit",
-            effect: (st) => {
-              walletMove(st, -A, 'Pay the deposit', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              recordJournal(st, `You paid the ${formatMoney(A, S.country)} deposit and got the keys to the new flat.`, 'money');
-            },
-          },
-          {
-            label: "Negotiate one month instead",
-            effect: (st) => {
-              walletMove(st, -B, 'Negotiate one month instead', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
-              if (st.skills) st.skills.charisma = clamp(st.skills.charisma + (+2));
-              recordJournal(st, `You negotiated the deposit down to one month, ${formatMoney(B, S.country)}, and the landlord agreed.`, 'money');
-            },
-          },
-          {
-            label: "Walk away and keep looking",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-2));
-              recordJournal(st, `You walked away from the flat. The ${formatMoney(A, S.country)} deposit was more than you had.`, 'money');
-            },
-          },
-        ],
-      };
-    },
+    id: 'ev_money_rent_deposit_new', category: 'money',
+    gates: { minAge: 20, wealth: ['poor', 'middle'] },
+    build: (S) => ({
+      key: 'ev_money_rent_deposit_new', category: 'money', title: 'Before You Sign',
+      text: `A rental advert in ${S.city} looks affordable until you add the up-front costs. You have not chosen a home or signed anything yet.`,
+      choices: [
+        { label: 'Work out a move-in budget before booking a viewing', effect: st => {
+          st.skills.financialIq = clamp(st.skills.financialIq + 2);
+          recordJournal(st, 'You checked the up-front cost of moving. No money left your account and no lease was signed; actual homes are still available to compare.', 'housing');
+        } },
+        { label: 'Stay where you are for now', effect: st => {
+          st.player.vitals.stress = clamp(st.player.vitals.stress - 2);
+          recordJournal(st, 'You put the move on hold. Your home and rent stayed unchanged.', 'housing');
+        } },
+      ],
+    }),
   },
   {
     id: 'ev_money_wedding_contribution',
@@ -2593,9 +2554,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Cook at $mom\u2019s until it is sorted",
+            label: `Cook at ${momName}\u2019s until it is sorted`,
             effect: (st) => {
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Cook at $mom’s until it is sorted', { affection: (+2) });
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Cook at ${momName}’s until it is sorted`, { affection: (+2) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
               recordJournal(st, `With the gas cut off, you ate at ${momName}’s for three days while you sorted the bill.`, 'money');
             },
@@ -2693,9 +2654,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Ask $mom to cut it at home",
+            label: `Ask ${momName} to cut it at home`,
             effect: (st) => {
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Ask $mom to cut it at home', { affection: (+2) });
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Ask ${momName} to cut it at home`, { affection: (+2) });
               st.player.vitals.looks = clamp(st.player.vitals.looks + (-2));
               recordJournal(st, `You asked ${momName} to cut your hair at home. It is shorter on one side.`, 'money');
             },
@@ -3684,9 +3645,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Talk to $mom about it",
+            label: `Talk to ${momName} about it`,
             effect: (st) => {
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Talk to $mom about it', { affection: (+4) });
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Talk to ${momName} about it`, { affection: (+4) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (-3));
               st.player.vitals.health = clamp(st.player.vitals.health + (+2));
               recordJournal(st, `You told ${momName} about the anxiety. She listened, properly, for an hour.`, 'health');
@@ -4239,9 +4200,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Call $mom for advice",
+            label: `Call ${momName} for advice`,
             effect: (st) => {
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Call $mom for advice', { affection: (+3) });
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Call ${momName} for advice`, { affection: (+3) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
               recordJournal(st, `You called ${momName} at 2 a.m. about ${childName}Name’s fever. She talked you through it, calmly.`, 'health');
             },
@@ -4268,7 +4229,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_health_parent_falls',
         category: 'health',
-        title: "$dad Falls at Home",
+        title: `${dadName} Falls at Home`,
         text: `${momName} calls, shaken: ${dadName} fell in the bathroom and cannot get up on his own. He says he is fine, but his wrist is swelling and he will not admit how much it hurts.`,
         choices: [
           {
@@ -5562,7 +5523,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         text: `${bossName} stops by your desk after the meeting and says, plainly, that your work on the project was excellent. No audience, no ceremony — just a real compliment, from the person whose opinion matters.`,
         choices: [
           {
-            label: "Thank $boss and ask what is next",
+            label: `Thank ${bossName} and ask what is next`,
             effect: (st) => {
               if (st.career.job) st.career.job.performance = clamp((st.career.job.performance || 50) + (+5));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+3));
@@ -5630,7 +5591,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Ask $boss privately what went wrong",
+            label: `Ask ${bossName} privately what went wrong`,
             effect: (st) => {
               if (st.career.job) st.career.job.performance = clamp((st.career.job.performance || 50) + (+4));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+3));
@@ -5710,7 +5671,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         text: `The promotion goes to someone else — someone with less experience, but a louder voice in meetings. ${bossName} says "next time", and means it, or does not. The sting is real either way.`,
         choices: [
           {
-            label: "Ask $boss what you need to do differently",
+            label: `Ask ${bossName} what you need to do differently`,
             effect: (st) => {
               if (st.career.job) st.career.job.performance = clamp((st.career.job.performance || 50) + (+4));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+2));
@@ -5768,7 +5729,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Tell $boss privately afterwards",
+            label: `Tell ${bossName} privately afterwards`,
             effect: (st) => {
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+3));
               if (st.career.job) st.career.job.performance = clamp((st.career.job.performance || 50) + (+2));
@@ -5817,7 +5778,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Ask $boss how the work will be shared",
+            label: `Ask ${bossName} how the work will be shared`,
             effect: (st) => {
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+2));
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+2));
@@ -6075,7 +6036,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Tell $boss it cannot be done well",
+            label: `Tell ${bossName} it cannot be done well`,
             effect: (st) => {
               if (st.career.job) st.career.job.performance = clamp((st.career.job.performance || 50) + (-1));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+2));
@@ -6370,7 +6331,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Ask $boss directly",
+            label: `Ask ${bossName} directly`,
             effect: (st) => {
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+2));
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
@@ -6750,7 +6711,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Let $boss sort it out",
+            label: `Let ${bossName} sort it out`,
             effect: (st) => {
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (-1));
@@ -6944,7 +6905,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Ask $boss to cut your load",
+            label: `Ask ${bossName} to cut your load`,
             effect: (st) => {
               st.player.vitals.stress = clamp(st.player.vitals.stress + (-5));
               if (st.career.job) st.career.job.performance = clamp((st.career.job.performance || 50) + (+1));
@@ -7180,11 +7141,11 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_career_idea_stolen_boss',
         category: 'career',
-        title: "$boss Presents Your Idea as Their Own",
+        title: `${bossName} Presents Your Idea as Their Own`,
         text: `${bossName} presents your idea to the directors — your words, almost exactly — and takes the praise. Nobody in the room knows it was yours. ${bossName} thanks you afterwards, privately, "for the help".`,
         choices: [
           {
-            label: "Confront $boss privately",
+            label: `Confront ${bossName} privately`,
             effect: (st) => {
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+3));
               if (st.career.job) st.career.job.performance = clamp((st.career.job.performance || 50) + (+2));
@@ -7683,7 +7644,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Thank $boss privately",
+            label: `Thank ${bossName} privately`,
             effect: (st) => {
               if (st.career.job) st.career.job.monthlyGross = Math.round(st.career.job.monthlyGross * (1 + (+8) / 100));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+3));
@@ -7813,11 +7774,11 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_career_boss_leaves',
         category: 'career',
-        title: "$boss Leaves the Company",
+        title: `${bossName} Leaves the Company`,
         text: `${bossName} announces they are leaving — a better offer, a new city, a new life. The team is stunned. ${bossName} was the reason half of you stayed, and now the future of the department is an open question.`,
         choices: [
           {
-            label: "Ask $boss to take you along",
+            label: `Ask ${bossName} to take you along`,
             effect: (st) => {
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+3));
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
@@ -8268,10 +8229,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Tell $mom and $dad",
+            label: `Tell ${momName} and ${dadName}`,
             effect: (st) => {
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Tell $mom and $dad', { affection: (+4) });
-              if (ctx.dad) rememberDeed(st, ctx.dad, 'event', 'Tell $mom and $dad', { affection: (+4) });
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Tell ${momName} and ${dadName}`, { affection: (+4) });
+              if (ctx.dad) rememberDeed(st, ctx.dad, 'event', `Tell ${momName} and ${dadName}`, { affection: (+4) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (-2));
               recordJournal(st, `You told ${momName} and ${dadName} about the bully. They went to the school the next morning.`, 'school');
             },
@@ -8780,10 +8741,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Hide it from $mom",
+            label: `Hide it from ${momName}`,
             effect: (st) => {
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Hide it from $mom', { trust: (-3) });
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Hide it from ${momName}`, { trust: (-3) });
               recordJournal(st, `You hid the detention from ${momName}. She found out anyway, from another parent.`, 'school');
             },
           },
@@ -8812,10 +8773,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         text: `Your school books are gone — left on the bus, or in the playground, or somewhere you cannot remember. The teacher wants them tomorrow, and replacing them costs ${formatMoney(A, S.country)}.`,
         choices: [
           {
-            label: "Tell $mom and replace them",
+            label: `Tell ${momName} and replace them`,
             effect: (st) => {
-              walletMove(st, -A, 'Tell $mom and replace them', 'school');
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Tell $mom and replace them', { affection: (+2) });
+              walletMove(st, -A, `Tell ${momName} and replace them`, 'school');
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Tell ${momName} and replace them`, { affection: (+2) });
               recordJournal(st, `You told ${momName} about the lost books and replaced them for ${formatMoney(A, S.country)}.`, 'school');
             },
           },
@@ -9826,9 +9787,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         text: `Your lunch money runs out on Wednesday, and there are two days left in the week. The canteen does not give credit, and your friends are sharing — but not quite enough.`,
         choices: [
           {
-            label: "Tell $mom honestly",
+            label: `Tell ${momName} honestly`,
             effect: (st) => {
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Tell $mom honestly', { affection: (+3) });
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Tell ${momName} honestly`, { affection: (+3) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (-2));
               recordJournal(st, `You told ${momName} the lunch money had run out. She gave you more, and a lecture.`, 'school');
             },
@@ -10758,10 +10719,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         text: `It is the 20th, and your money is gone — food, books, and the bus have eaten it all. There are ten days left in the month, and your account is empty.`,
         choices: [
           {
-            label: "Ask $mom and $dad for help",
+            label: `Ask ${momName} and ${dadName} for help`,
             effect: (st) => {
-              walletMove(st, +A, 'Ask $mom and $dad for help', 'school');
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Ask $mom and $dad for help', { affection: (+3) });
+              walletMove(st, +A, `Ask ${momName} and ${dadName} for help`, 'school');
+              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Ask ${momName} and ${dadName} for help`, { affection: (+3) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (-3));
               recordJournal(st, `You asked ${momName} and ${dadName} for help when the money ran out, and they sent ${formatMoney(A, S.country)}.`, 'school');
             },
@@ -12417,7 +12378,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_back_sibling_repays',
         category: 'money',
-        title: "$sib Pays You Back",
+        title: `${sibName} Pays You Back`,
         text: `${sibName} turns up with an envelope: the loan, repaid in full, a month late but complete. ${sibName} is proud — and a little embarrassed that it took this long.`,
         choices: [
           {
@@ -12517,7 +12478,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_back_mother_promise',
         category: 'life',
-        title: "$mom Remembers the Medicine Money",
+        title: `${momName} Remembers the Medicine Money`,
         text: `${momName} calls — not to ask for anything, but to tell you she is better, the medicine worked, and she has been telling the neighbours about her child who sends money without being asked twice.`,
         choices: [
           {
@@ -12662,7 +12623,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_back_boss_remembers',
         category: 'career',
-        title: "$boss Brings Up Your Old Win",
+        title: `${bossName} Brings Up Your Old Win`,
         text: `Months after the praise, ${bossName} brings up your old project win in a meeting — as an example of how the work should be done. Your name, in front of everyone, attached to the standard.`,
         choices: [
           {

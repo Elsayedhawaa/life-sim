@@ -575,3 +575,11 @@ port 8765), 15 countries, 1,111 cars, 83 career tracks.
 - Results now report actual skill and named relationship changes. Those changes are expanded for decisions and tucked into details on regular turns.
 - Rewrote several vague, motivational event passages as shorter concrete situations. Removed unused discipline-stat rewards rather than imply that they progress a system that does not exist.
 - Added tests for result changes and focused rendering.
+
+## Financial events that match the ledger
+
+- Rent-renewal events now require a real rented home with positive rent, calculate from the current rent, and update future monthly rent without charging it a second time during the decision. Negotiating has a chance of reducing the increase.
+- Removed the phantom deposit/keys outcome from a generic rental advert event. It is now an honest planning choice: no charge or move happens without choosing an actual home.
+- Inheritance loan repayment now reduces actual loan balances and records cash movements. Any surplus stays in cash. Sharing with parents now actually transfers half out of the player's cash.
+- Resolved 53 template literals that could show raw role placeholders such as $mom or $boss in labels, memories and outcomes.
+- Added cross-country financial-event and placeholder regression checks.

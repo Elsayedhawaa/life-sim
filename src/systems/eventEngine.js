@@ -219,6 +219,8 @@ export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
     const has = (S.cars || []).length > 0;
     if (has !== !!g.hasCar) return false;
   }
+  if (g.housingModes && !g.housingModes.includes(S.housing.mode)) return false;
+  if (g.minRent !== undefined && !(Number(S.housing.monthlyRent) >= g.minRent)) return false;
   if (g.hasHome !== undefined) {
     const has = (S.housing.properties || []).length > 0
       || ['rent', 'owned', 'employer_provided'].includes(S.housing.mode);
