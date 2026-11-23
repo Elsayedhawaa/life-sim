@@ -253,6 +253,11 @@ export function pickDynamicBanner(S, section = 'life', sub = '') {
     ? 'east_asia_skyline_ink.jpg'
     : (month >= 9 && month <= 11 ? 'autumn_park_boulevard_ink.jpg' : 'city_europe_west.jpg');
 
+  // First regional set: no Mediterranean or Red Sea scenery in Japan's
+  // everyday life/home contexts. Other countries retain their own routes.
+  if (c === 'jpn' && section === 'realestate') return 'tokyo_apartment_evening_ink.jpg';
+  if (c === 'jpn' && ['life', 'people'].includes(section)) return 'japan_neighborhood_ink.jpg';
+
   if (section === 'life') {
     if (S?.education?.degrees?.length && rot % 2 === 0) return 'graduation_ceremony_ink.jpg';
     if (S?.education?.university && rot % 3 === 0) return 'uni_campus_courtyard_ink.jpg';
