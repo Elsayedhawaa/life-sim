@@ -16,3 +16,34 @@ export const STYLE_FLOOR_PLANS={
  room('201','bedroom','Main bedroom',60,60,220,175),room('202','kids','Family bedroom',280,60,220,175),room('203','office','Guest bedroom',500,60,160,175),room('204','bathroom','Family bathroom',500,235,160,135),room('205','corridor','Upstairs landing',60,235,440,85),room('206','living','Family sitting room',280,320,220,160)
  ],{x:90,y:340,w:120,h:115})]
 };
+
+// US form families: floor counts and circulation differ, not just facade color.
+STYLE_FLOOR_PLANS.bungalow=[floor([
+ room('101','foyer','Porch entry',60,350,140,130),room('102','living','Living and dining room',60,60,300,290),room('103','kitchen','Rear kitchen',360,60,150,175),room('104','bathroom','Shared bathroom',510,60,150,175),room('105','corridor','Bedroom hall',360,235,300,65),room('106','bedroom','Main bedroom',200,350,160,130),room('107','kids','Second bedroom',360,300,300,180)
+])];
+STYLE_FLOOR_PLANS.ranch=[floor([
+ room('101','foyer','Entry and mudroom',60,350,140,130),room('102','living','Open living and dining room',60,60,300,290),room('103','kitchen','Open kitchen',360,60,150,175),room('104','bathroom','Family bathroom',510,60,150,175),room('105','corridor','Bedroom wing hall',360,235,300,65),room('106','bedroom','Main bedroom',200,350,160,130),room('107','kids','Second bedroom',360,300,150,180),room('108','office','Third bedroom',510,300,150,180)
+])];
+const lower=(kind)=>floor([
+ room('101','foyer',kind==='brownstone'?'Stoop entry vestibule':'Entrance hall',60,350,160,130),room('102','living',kind==='victorian'?'Front parlor':'Front sitting room',60,60,260,175),room('103','living','Dining room',320,60,190,175),room('104','kitchen','Rear kitchen',510,60,150,175),room('105','wc','Downstairs toilet',510,235,150,100),room('106','corridor','Stair hall',220,235,290,245),room('107','office','Study',60,235,160,115)
+],{x:265,y:285,w:150,h:145});
+const upper=(offset=200)=>floor([
+ room(String(offset+1),'bedroom','Main bedroom',60,60,260,175),room(String(offset+2),'kids','Second bedroom',320,60,190,175),room(String(offset+3),'office','Third bedroom',510,60,150,175),room(String(offset+4),'bathroom','Family bathroom',510,235,150,145),room(String(offset+5),'corridor','Stair landing',60,235,450,100)
+],{x:265,y:350,w:150,h:110});
+STYLE_FLOOR_PLANS.colonial=[lower('colonial'),upper()];
+STYLE_FLOOR_PLANS.victorian=[lower('victorian'),upper(),floor([
+ room('301','office','Attic hobby room',60,60,300,175),room('302','bathroom','Attic washroom',360,60,150,175),room('303','corridor','Attic stair landing',60,235,450,100)
+],{x:265,y:350,w:150,h:110})];
+STYLE_FLOOR_PLANS.brownstone=[lower('brownstone'),upper(),floor([
+ room('301','bedroom','Upper main bedroom',60,60,260,175),room('302','office','Upper study',320,60,190,175),room('303','bathroom','Upper bathroom',510,60,150,175),room('304','corridor','Upper stair landing',60,235,450,100)
+],{x:265,y:350,w:150,h:110}),floor([
+ room('401','living','Top-floor family room',60,60,300,175),room('402','office','Top-floor studio',360,60,300,175),room('403','corridor','Top stair landing',60,235,450,100)
+],{x:265,y:350,w:150,h:110})];
+
+STYLE_FLOOR_PLANS.chalet_one=[floor([
+ room('101','living','Living and dining room',60,60,300,270),room('102','kitchen','Kitchenette',60,330,190,150),room('103','bedroom','Bedroom',360,60,300,270),room('104','bathroom','Bathroom',360,330,300,150),room('105','foyer','Entrance',250,330,110,150)
+])];
+
+STYLE_FLOOR_PLANS.family_duplex=[floor([
+ room('101','foyer','Entrance hall',60,350,160,130),room('102','living','Reception and dining',60,60,310,290),room('103','kitchen','Separate kitchen',370,60,290,175),room('104','bathroom','Guest washroom',510,235,150,100),room('105','corridor','Internal stair hall',220,350,290,130),room('106','office','Study',370,235,140,115)
+],{x:265,y:365,w:150,h:100}),upper()];

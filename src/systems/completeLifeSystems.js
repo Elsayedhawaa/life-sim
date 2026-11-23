@@ -129,7 +129,7 @@ export function buyCompoundOrDistrictUnit(S, opts = {}) {
     unitId: unit.id,
     styleId: unit.styleId || null,
     hasGarden: unit.hasGarden === true || /garden/i.test(unit.name),
-    hasPool: /private pool/i.test(unit.name),
+    hasPool: unit.hasPool === true || /private.pool/i.test(unit.name),
     name: `${dev.name} — ${unit.name}`,
     country: targetCountry,
     city: dev.city || getCountry(targetCountry).cities[0],
