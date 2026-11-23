@@ -567,3 +567,11 @@ port 8765), 15 countries, 1,111 cars, 83 career tracks.
 - Older non-random saved cards whose effects cannot be recovered are set aside with a journal explanation instead of leaving an unplayable card or pretending a choice worked. No outcome is awarded.
 - Failed choices now give a clear notice instead of displaying a false success result.
 - Added decision and reload regression tests across all 13 countries.
+
+## Decision-first mobile flow and honest feedback
+
+- When a decision is pending, the Life screen now puts that question first and collapses optional life context. The large banner, routines and journal do not compete with the choice.
+- Decision cards move into view when opened. Mobile cards use readable body text and larger touch targets; keyboard focus and reduced-motion preferences are supported.
+- Results now report actual skill and named relationship changes. Those changes are expanded for decisions and tucked into details on regular turns.
+- Rewrote several vague, motivational event passages as shorter concrete situations. Removed unused discipline-stat rewards rather than imply that they progress a system that does not exist.
+- Added tests for result changes and focused rendering.

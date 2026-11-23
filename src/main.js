@@ -415,6 +415,15 @@ export function renderApp(preserveFilterKey = null, caretPos = null) {
     }
   }
 
+  if (!preserveFilterKey && uiState.activeTab === 'life' && S.activeScene) {
+    requestAnimationFrame(() => {
+      const scene = root.querySelector('.decision-focus .scene-card');
+      if (scene) {
+        scene.scrollIntoView({ block: 'start', behavior: 'auto' });
+        scene.focus({ preventScroll: true });
+      }
+    });
+  }
   mountAllLive3DCanvases();
 }
 

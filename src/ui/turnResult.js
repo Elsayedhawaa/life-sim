@@ -32,6 +32,11 @@ export function snapshotTurn(S) {
     smarts: num(v.smarts),
     looks: num(v.looks),
     calm: 100 - num(v.stress),
+    skills: Object.fromEntries(Object.entries(S.skills || {}).filter(([, v]) => Number.isFinite(v))),
+    relationships: Object.fromEntries(Object.entries(S.people || {}).filter(([, person]) => person?.alive).map(([id, person]) => [id, {
+      name: person.firstName || person.fullName || 'Someone',
+      affection: num(person.rel?.affection), trust: num(person.rel?.trust), respect: num(person.rel?.respect),
+    }])),
     journalTopId: S.journal && S.journal[0] ? S.journal[0].id : null,
     ledgerTopId: S.ledger && S.ledger[0] ? S.ledger[0].id : null
   };
@@ -60,7 +65,7 @@ export function buildTurnResult(S, before, kind, stepsRun = 1) {
 
   let title;
   if (kind === 'choice') {
-    title = 'Your decision — what happened';
+    title = 'Decision result';
   } else if (kind === 'fastforward') {
     title = `${stepsRun} month${stepsRun === 1 ? '' : 's'} later — ${monthLabel(S)}, age ${after.age}`;
   } else if (S.pacing === 'monthly') {
@@ -94,6 +99,19 @@ export function buildTurnResult(S, before, kind, stepsRun = 1) {
   pushVital('Looks', after.looks - before.looks);
   pushVital('Peace of Mind', after.calm - before.calm);
 
+  const skillLabels = { charisma: 'Charisma', financialIq: 'Financial skill', fitness: 'Fitness', creativity: 'Creativity', wasta: 'Network' };
+  const skillDeltas = Object.entries(after.skills).filter(([key]) => before.skills?.[key] !== undefined)
+    .map(([key, value]) => ({ label: skillLabels[key] || key, delta: Math.round(value - before.skills[key]) })).filter(item => item.delta !== 0);
+  const relationshipDeltas = [];
+  for (const [id, person] of Object.entries(after.relationships)) {
+    const old = before.relationships?.[id];
+    if (!old) continue;
+    for (const key of ['affection', 'trust', 'respect']) {
+      const delta = Math.round(person[key] - old[key]);
+      if (delta) relationshipDeltas.push({ label: `${person.name}: ${key}`, delta });
+    }
+  }
+
   /* Story: the new journal lines, oldest first so it reads in order. */
   const storyLines = newEntriesSince(S.journal, before.journalTopId)
     .map(e => e.text)
@@ -109,6 +127,8 @@ export function buildTurnResult(S, before, kind, stepsRun = 1) {
     savingsDelta,
     moneyLines,
     vitalDeltas,
+    skillDeltas,
+    relationshipDeltas,
     storyLines,
     ageDelta: after.age - before.age,
     sceneWaiting: !!S.activeScene,
@@ -147,11 +167,15 @@ export function renderTurnResultCardHtml(S, uiState) {
         `<span class="trc-chip ${v.delta > 0 ? 'text-good' : 'text-bad'}">${esc(v.label)} ${v.delta > 0 ? '+' : '−'}${Math.abs(v.delta)}</span>`).join('')}</div>`
     : '';
 
+  const extraChanges = [...(r.skillDeltas || []), ...(r.relationshipDeltas || [])];
+  const extraBit = extraChanges.length
+    ? `<details class="trc-details" ${r.kind === 'choice' ? 'open' : ''}><summary>Skills & relationships (${extraChanges.length})</summary><div class="trc-vitals">${extraChanges.map(item => `<span class="trc-chip ${item.delta > 0 ? 'text-good' : 'text-bad'}">${esc(item.label)} ${item.delta > 0 ? '+' : '−'}${Math.abs(item.delta)}</span>`).join('')}</div></details>`
+    : '';
   const storyBit = r.storyLines.length
     ? `<div class="trc-story">${r.storyLines.map(t => `<div class="trc-story-line">${esc(t)}</div>`).join('')}</div>`
     : '';
 
-  const quiet = r.cashDelta === 0 && !r.vitalDeltas.length && !r.storyLines.length && !r.sceneWaiting && !r.gameOver;
+  const quiet = r.cashDelta === 0 && !r.vitalDeltas.length && !r.storyLines.length && !extraChanges.length && !r.sceneWaiting && !r.gameOver;
 
   const noteBits = [];
   if (S.player.age >= 18 && num(r.cashBalance) <= 0) {
@@ -175,6 +199,7 @@ export function renderTurnResultCardHtml(S, uiState) {
       ${moneyBits.join('')}
       ${S.player.age >= 18 ? `<div class="trc-note">Cash left: <strong class="mono ${r.cashBalance < 0 ? 'text-bad' : ''}">${esc(formatMoney(num(r.cashBalance), S.country))}</strong></div>` : ''}
       ${vitalsBit}
+      ${extraBit}
       ${storyBit}
       ${noteBits.join('')}
     </section>`;

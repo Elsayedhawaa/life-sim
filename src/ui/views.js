@@ -751,6 +751,9 @@ export function renderLifeTabHtml(S, uiState = {}) {
       <div class="muted" style="display:flex;flex-wrap:wrap;gap:14px">${salLine}${bizLine}</div>
     </div>`;
   })() : '';
+  if (S.activeScene) {
+    return `<div class="decision-focus">${topHtml}<p class="decision-pause-note">Choose a response before advancing your life. You can still check the other tabs.</p><details class="decision-background"><summary>Your life at a glance</summary>${chapterHtml}${glanceHtml}</details></div>`;
+  }
   return `${bannerHtml}${topHtml}${chapterHtml}${routineHtml}${glanceHtml}${renderGoalsCardHtml(S)}${renderProgressPanelHtml(S)}${renderStakesDashboardHtml(S)}${trajectoryHtml}${journalHtml}`;
 }
 
@@ -1027,7 +1030,7 @@ function renderActiveSceneHtml(S) {
   const chapter = getCurrentChapter(S);
 
   return `
-    <section class="scene-card" aria-live="polite">
+    <section class="scene-card" aria-live="polite" tabindex="-1">
       <div class="scene-kicker">${sc.urgent ? 'URGENT CROSSROADS' : `CHAPTER: ${esc(chapter.name.toUpperCase())} — A DECISION`}</div>
       <div class="scene-header" style="justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:220px">

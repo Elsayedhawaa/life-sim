@@ -1501,3 +1501,21 @@ html[data-theme="dark"] .turn-result-card { background: #1b1814; }
 .doc-slip-row { gap: 10px; }
 .doc-slip-row > span:first-child { min-width: 0; }
 .doc-slip-row > .mono { flex-shrink: 0; white-space: nowrap; }
+
+/* Decision-first layout: one immediate question, optional context. */
+.decision-focus { max-width: 850px; margin-inline: auto; }
+.decision-focus .scene-card { scroll-margin-top: 16px; outline: none; }
+.decision-pause-note { color: var(--ink-secondary); font-size: .82rem; margin: 6px 2px 16px; }
+.decision-background > summary, .trc-details > summary { cursor: pointer; padding: 12px 4px; font-weight: 700; }
+.trc-details { margin-top: 8px; }
+.choice-btn:focus-visible { outline: 3px solid var(--brand-terracotta); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .decision-focus .scene-card { padding: 18px 16px; }
+  .decision-focus .scene-header > svg { display: none; }
+  .decision-focus .scene-body { font-family: inherit; font-size: 1rem; line-height: 1.55; }
+  .decision-focus .choice-btn { min-height: 48px; padding: 13px 12px; line-height: 1.4; }
+  .trc-close { min-width: 44px; min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .turn-result-card, .choice-btn { animation: none; transition: none; }
+}
