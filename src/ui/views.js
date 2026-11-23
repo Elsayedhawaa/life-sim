@@ -1706,7 +1706,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
       </div>
     </div>
 
-    ${S.postgrad?.active?`<div class="card"><h3>Current postgraduate study</h3><p>${esc(S.postgrad.active.label)}</p><div class="edu-programme-top"><strong>${Math.max(0,S.postgrad.active.totalMonths-S.postgrad.active.monthsLeft)} / ${S.postgrad.active.totalMonths} months</strong><span>${Math.round(100*(1-S.postgrad.active.monthsLeft/S.postgrad.active.totalMonths))}%</span></div><progress max="${S.postgrad.active.totalMonths}" value="${S.postgrad.active.totalMonths-S.postgrad.active.monthsLeft}" style="width:100%;accent-color:#285b50;height:12px;margin:12px 0"></progress><p class="muted">Tuition paid upfront${S.postgrad.active.feePaid!=null?`: ${esc(formatMoney(S.postgrad.active.feePaid,S.country))}`:''}. No stipend. Each month adds study stress and moves you toward completion.</p><p class="muted">Outcome: ${S.postgrad.active.tier==='fellowship_phd'?'research credential, +9 smarts and42%game pay bonus':'master’s credential, +6 smarts and26%game pay bonus'}. Advance time to study.</p></div>`:''}
+    ${S.postgrad?.active?`<div class="card"><h3>Current postgraduate study</h3><p>${esc(S.postgrad.active.label)}</p><div class="edu-programme-top"><strong>${Math.max(0,S.postgrad.active.totalMonths-S.postgrad.active.monthsLeft)} / ${S.postgrad.active.totalMonths} months</strong><span>${Math.round(100*(1-S.postgrad.active.monthsLeft/S.postgrad.active.totalMonths))}%</span></div><progress max="${S.postgrad.active.totalMonths}" value="${S.postgrad.active.totalMonths-S.postgrad.active.monthsLeft}" style="width:100%;accent-color:#285b50;height:12px;margin:12px 0"></progress><p class="muted">Tuition paid upfront${S.postgrad.active.feePaid!=null?`: ${esc(formatMoney(S.postgrad.active.feePaid,S.country))}`:''}. No stipend. Each month adds study stress and moves you toward completion.</p><p class="muted">Outcome: ${S.postgrad.active.tier==='fellowship_phd'?'research credential, +9 smarts and a 42% game pay bonus':'master’s credential, +6 smarts and a 26% game pay bonus'}. Advance time to study.</p></div>`:''}
     ${edu.university?`<div class="card"><h3>Current degree</h3><p>${esc(edu.university.majorLabel)} at ${esc(edu.university.name)}</p><p>Year ${edu.university.yearInProgram} of ${edu.university.totalYears}</p><details><summary>Leave this degree</summary><p>All progress is lost. Paid tuition is not refunded. Applying again starts from year one.</p><button class="btn" data-action="education-withdraw-confirm">Confirm withdrawal</button></details></div>`:''}
     ${edu.university||edu.degrees.length>0?`<details class="card edu-section"><summary>Education history</summary><p>${esc(edu.schoolName||'Secondary school')} · Secondary complete${edu.highSchoolScore!=null?` · Game score ${edu.highSchoolScore}/100`:``}</p>${edu.degrees.map(id=>`<p>${esc(degreeProgramFor(S.country,id)?.label||id)} · Completed</p>`).join('')}${(edu.history||[]).map(h=>`<p>${esc(h.majorLabel)} at ${esc(h.name)} · Left in ${h.year}</p>`).join('')}${(S.postgrad?.completed||[]).map(p=>`<p>${esc(p.label)} · ${p.year}</p>`).join('')}</details>`:hasResult ? `
     <div class="card">
@@ -2967,7 +2967,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
         ${S.housing.properties.map(pr => `
           <div class="item-row">
             <div style="display:flex;align-items:center;gap:10px">
-              ${renderHomeTypeArt(pr.shape || 'apartment', pr.country || S.country, 64, pr.styleId || pr.unitId)}
+              ${renderHomeTypeArt(pr.shape || 'apartment', pr.country || S.country, 64, pr.styleId || pr.unitId || pr.id)}
               <div class="item-row-main">
                 <strong>${esc(pr.name)} (${esc(getCountry(pr.country).name)})</strong>
                 <span>Value: <strong class="mono">${esc(formatMoney(pr.valueLocal, S.country))}</strong> · Finish: ${esc((pr.finishing || 'standard').replace(/_/g, ' '))} · Condition: <strong class="${(pr.conditionPct ?? 100) < 70 ? 'text-bad' : 'text-good'}">${Math.round(pr.conditionPct ?? 100)}%</strong> ${pr.monthsLeft > 0 ? `· ${pr.monthsLeft}m Aqsat left` : '· Deed Clear'} ${pr.rentedOut ? `· [${pr.tenantMode === 'short_term' ? 'Short-Term Holiday +36%' : 'Long-Term Tenant'}]` : ''}${/* v2.11 W3: premises link on the property card */ (() => { const _b = businessUsingProperty(S, pr.id); return _b ? ` · <strong>Used by ${esc(_b.name)}</strong>` : ''; })()}</span>
@@ -3222,7 +3222,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
 
       <div style="padding:10px;background:var(--bg-accent-warm);border-radius:8px;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          ${renderHomeTypeArt(selUnit.shape, propMarket, 110, selUnit.styleId)}
+          ${renderHomeTypeArt(selUnit.shape, propMarket, 110, selUnit.styleId || selUnit.id)}
           <div class="muted" style="font-size:0.8rem">
             Selected unit illustration: <strong>${esc(selUnit.name)} (${selUnit.area} m²)</strong> · <strong>${esc(selFinish.label)}</strong> · Plan: <strong>${esc(selPlan.label)}</strong>
             ${propMarket === 'sau' && S.year >= 2019 ? ' · <em>4M+ SAR cash deed unlocks Saudi Property Premium Residency!</em>' : ''}
@@ -3249,7 +3249,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
         return `
           <div class="item-row">
             <div style="display:flex;align-items:center;gap:10px">
-              ${renderHomeTypeArt(selUnit.shape, propMarket, 88, selUnit.styleId)}
+              ${renderHomeTypeArt(selUnit.shape, propMarket, 88, selUnit.styleId || selUnit.id)}
               <div class="item-row-main">
                 <strong>${esc(dev.name)} ${dev.developer ? `· ${esc(dev.developer)}` : ''} (${esc(mktCountryObj.name)})</strong>
                 <span>Total: <strong class="mono">${esc(formatMoney(fullPlayer, S.country, true))}</strong> · ${selPlan.years > 0 ? `Down: <strong>${esc(formatMoney(downPlayer, S.country, true))}</strong> + ${esc(formatMoney(monthlyPlayer, S.country, true))}/mo (${selPlan.years}y)` : 'Full Cash'} ${dev.program ? `· [${esc(dev.program.toUpperCase())}]` : ''}</span>

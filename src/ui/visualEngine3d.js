@@ -700,7 +700,11 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
   }
   for (const floor of floors) {
     floor.title = `${String(shape).replace(/_/g, ' ').toUpperCase()} — FICTIONAL HOME LAYOUT`;
-    if (floor.core) floor.core.label = 'STAIRS / SHARED ACCESS';
+    if (floor.core) {
+      const hall=floor.rooms.find(r=>r.key==='corridor'&&/stair|landing/i.test(r.name))||floor.rooms.find(r=>r.key==='corridor');
+      if(hall){floor.core={x:hall.x+hall.w*.25,y:hall.y+hall.h*.12,w:hall.w*.5,h:hall.h*.65,label:'STAIRS / SHARED ACCESS'};}
+      else floor.core.label='STAIRS / SHARED ACCESS';
+    }
   }
   const rooms = floors.flatMap(f => f.rooms);
   for (const room of rooms) room.name = regionalRoomName(room, country, shape);
@@ -1462,7 +1466,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
   const allHomeRooms = floors.flatMap(f => f.rooms).filter(r => furnishableKeys.includes(r.key));
   const furnishedCount = allHomeRooms.filter(r => isRoomFurnished(furnishedRooms, r)).length;
   const totalFurnishable = allHomeRooms.length;
-  const style = propertyStyle(home?.styleId || home?.unitId);
+  const style = propertyStyle(home?.styleId || home?.unitId || home?.id);
   const shapeName = (style?.name || shape).split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
   return `
@@ -1528,7 +1532,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
            floor and style choices live in the single control above. -->
       <div class="arch-toolbar" style="margin-top:4px">
         <div style="display:flex;align-items:center;gap:10px">
-          ${renderHomeTypeArt(shape, country, 92, home?.styleId || home?.unitId)}
+          ${renderHomeTypeArt(shape, country, 92, home?.styleId || home?.unitId || home?.id)}
           <div>
             <strong style="font-size:0.86rem;letter-spacing:0.01em">${shape === 'land' ? 'Your Land — Plot Plan' : `Your ${shapeName} — Floor Plan`}</strong>
             <div class="muted" style="font-size:0.75rem">
@@ -1539,7 +1543,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px">
-        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2, home?.rooms, {hasPool,hasGarden,styleNote:style?.note,placement:home?.outdoorPlacement || style?.outdoorPlacement || (['townhouse','twin_house'].includes(shape)?'front':'rear')})).join('')}
+        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2, home?.rooms, {hasPool,hasGarden,planTitle:style?.name,styleNote:style?.note,placement:home?.outdoorPlacement || style?.outdoorPlacement || (['townhouse','twin_house'].includes(shape)?'front':'rear')})).join('')}
       </div>
 
       <details style="margin-top:12px"><summary style="cursor:pointer;font-size:0.82rem">Detailed architectural sheets</summary>
