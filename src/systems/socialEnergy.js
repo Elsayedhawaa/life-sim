@@ -246,8 +246,21 @@ export function queueDriftNoticeScene(S, p) {
   // Childhood is already fast yearly pacing. Keep drift visible on People,
   // without forcing several near-identical friend decisions per school year.
   if (S.player.age < 18 || S.lastDriftNoticeYear === S.year) return false;
+  const queued = queueScene(S, buildDriftNoticeScene(S, p));
+  if (queued) S.lastDriftNoticeYear = S.year;
+  return queued;
+}
+
+export function restoreDriftNoticeScene(S, saved) {
+  if (!saved?.baseId?.startsWith('drift_notice_')) return null;
+  const p = S.people[saved.speakerId];
+  if (!p?.alive || !S.relations.friendIds.includes(p.id)) return null;
+  return { ...saved, ...buildDriftNoticeScene(S, p) };
+}
+
+function buildDriftNoticeScene(S, p) {
   const close = (p.rel.affection || 0) >= BEST_FRIEND_AFFECTION;
-  const scene = {
+  return {
     key: `drift_${p.id}_${S.year}`,
     baseId: `drift_notice_${p.id}`,
     maxPerLife: 99,
@@ -275,9 +288,6 @@ export function queueDriftNoticeScene(S, p) {
       }
     ]
   };
-  const queued = queueScene(S, scene);
-  if (queued) S.lastDriftNoticeYear = S.year;
-  return queued;
 }
 
 /* Reach out through the notice: a call, costing a call's energy. If the

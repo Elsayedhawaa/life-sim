@@ -39,39 +39,13 @@ import {
    existing caller keeps working. */
 export { listAllBusinessVentures };
 
-export function tickEducationYearly(S) {
-  const age = S.player.age;
+function buildHighSchoolStrategyScene(S) {
   const cObj = getCountry(S.country);
-  const edu = S.education;
-
-  /* Age 6: Start Primary School */
-  if (age === 6 && edu.stage === 'infancy') {
-    edu.stage = 'primary';
-    const schools = getSchoolsFor(S.country, S.year);
-    const chosen = schools.find(s => s.id === edu.schoolId) || schools[0];
-    edu.schoolId = chosen.id;
-    edu.schoolName = chosen.name;
-    edu.schoolTier = chosen.tier;
-    if (chosen.tier === 'international' && !edu.languages.includes('English (Fluent)')) {
-      edu.languages = edu.languages.filter(l => l !== 'English (Basic)');
-      edu.languages.push('English (Fluent)');
-    }
-    recordJournal(S, `Started primary school at ${edu.schoolName}.`, 'milestone');
-  }
-
-  /* Age 12: Middle / Prep School */
-  if (age === 12 && edu.stage === 'primary') {
-    edu.stage = 'middle';
-  }
-
-  /* Age 15: Secondary / High School — Offer Study Effort & Private Tutoring (Dorous Khosousia) */
-  if (age === 15 && edu.stage === 'middle') {
-    edu.stage = 'high';
     const examName = cObj.examSystem.name;
     const tutorLabel = cObj.examSystem.tutoringLabel;
     const canFamilyAffordTutor = ['middle', 'upper_middle', 'wealthy'].includes(S.familyTier);
 
-    queueScene(S, {
+    return {
       key: 'high_school_strategy',
       category: 'career',
       title: `Entering Secondary School (${examName})`,
@@ -110,7 +84,38 @@ export function tickEducationYearly(S) {
           }
         }
       ]
-    });
+    };
+}
+
+export function tickEducationYearly(S) {
+  const age = S.player.age;
+  const cObj = getCountry(S.country);
+  const edu = S.education;
+
+  /* Age 6: Start Primary School */
+  if (age === 6 && edu.stage === 'infancy') {
+    edu.stage = 'primary';
+    const schools = getSchoolsFor(S.country, S.year);
+    const chosen = schools.find(s => s.id === edu.schoolId) || schools[0];
+    edu.schoolId = chosen.id;
+    edu.schoolName = chosen.name;
+    edu.schoolTier = chosen.tier;
+    if (chosen.tier === 'international' && !edu.languages.includes('English (Fluent)')) {
+      edu.languages = edu.languages.filter(l => l !== 'English (Basic)');
+      edu.languages.push('English (Fluent)');
+    }
+    recordJournal(S, `Started primary school at ${edu.schoolName}.`, 'milestone');
+  }
+
+  /* Age 12: Middle / Prep School */
+  if (age === 12 && edu.stage === 'primary') {
+    edu.stage = 'middle';
+  }
+
+  /* Age 15: Secondary / High School — Offer Study Effort & Private Tutoring (Dorous Khosousia) */
+  if (age === 15 && edu.stage === 'middle') {
+    edu.stage = 'high';
+    queueScene(S, buildHighSchoolStrategyScene(S));
   }
 
   /* Annual Academic Skill growth during K-12 */
@@ -281,7 +286,8 @@ export function presentPostHighSchoolCrossroads(S) {
     const aff = universityAffordability(S, uni);
     return {
       label: `${uni.name} — ${uni.sector === 'public' ? 'Public' : 'Private'} · ${formatMoney(tuit, S.country)}/yr · ${majors.length} major${majors.length === 1 ? '' : 's'} open to you (score ${score}%) · ${aff.short}`,
-      available: () => eligibleMajorsFor(S, uni, score).length > 0,
+      available: st => eligibleMajorsFor(st, uni, score).length > 0,
+      lockReason: `No majors meet your current admission score at ${uni.name}.`,
       effect: (st) => {
         presentUniversityMajorPicker(st, uni);
       }
@@ -343,6 +349,26 @@ export function presentUniversityMajorPicker(S, uni) {
     text: `Tuition is ${formatMoney(tuit, S.country)} a year. ${aff.line}${aff.paths.length ? ` ${aff.paths.join(' ')}` : ''} Your ${cObj.examSystem.name} score of ${score}% qualifies you for the majors below. Choose the one YOU want to study.`,
     choices
   }, true);
+}
+
+// Restore only supported, still-valid education decisions. Rebuild on a
+// queue-only shadow so loading does not count a second event or change RNG.
+export function restoreEducationDecision(S, saved) {
+  const key = String(saved?.key || '');
+  const shadow = { ...S, activeScene: null, sceneQueue: [], sceneCounts: {}, titleCounts: {}, cooldowns: {} };
+  if (key === 'high_school_strategy') {
+    if (S.education.stage !== 'high') return null;
+    return { ...saved, ...buildHighSchoolStrategyScene(S) };
+  } else if (key === 'post_highschool_choice') {
+    if (S.education.university || !['graduated_high', 'completed'].includes(S.education.stage)) return null;
+    presentPostHighSchoolCrossroads(shadow);
+  } else if (key.startsWith('pick_major_')) {
+    if (S.education.university) return null;
+    const uni = getUniversitiesFor(S.country, S.year).find(u => key === `pick_major_${u.id}_${S.year}`);
+    if (!uni) return null;
+    presentUniversityMajorPicker(shadow, uni);
+  } else return null;
+  return shadow.activeScene ? { ...saved, ...shadow.activeScene } : null;
 }
 
 export function enrollInUniversity(S, uniObj, majorId, scholarshipPct = 0) {

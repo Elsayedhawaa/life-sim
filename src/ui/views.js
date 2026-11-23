@@ -1015,11 +1015,6 @@ function renderGoalsCardHtml(S) {
 function sceneChoiceLockReason(S, ch, lbl) {
   const explicit = typeof ch.lockReason === 'function' ? ch.lockReason(S) : ch.lockReason;
   if (explicit) return lockReason(String(explicit), '');
-  const amounts = [...String(lbl).matchAll(/([\d][\d,]*\.?\d*)/g)].map(x => Number(x[1].replace(/,/g, ''))).filter(n => n > 0);
-  const price = amounts.length ? Math.max(...amounts) : 0;
-  if (price > 0 && (S.money.cash || 0) < price) {
-    return lockReason('Not enough cash for this choice', `Need ${formatMoney(Math.round(price - (S.money.cash || 0)), S.country)} more`);
-  }
   return lockReason('Not available right now', 'This choice needs something you do not have yet');
 }
 

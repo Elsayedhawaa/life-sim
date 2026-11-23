@@ -13,8 +13,9 @@ import { ensureSocialCast, tickNpcAutonomyYearly, maybePickDominoSoulScene } fro
 import { settleHouseholdMonth, settleChildAllowanceYear, tickAssetsAnnually } from '../systems/economyEngine.js';
 /* v2.15 W3 — social energy: the yearly childhood turn refills the budget
    (childhood has no monthly settlement to do it). */
-import { refillSocialEnergy } from '../systems/socialEnergy.js'; /* v2.15 W3 */
+import { restoreDriftNoticeScene, refillSocialEnergy } from '../systems/socialEnergy.js'; /* v2.15 W3 */
 import {
+  restoreEducationDecision,
   tickEducationYearly,
   tickUniversityAndConscriptionMonthly,
   tickCareerMonthly
@@ -69,7 +70,7 @@ export function loadGameFromStorage() {
       ensureExtendedState(parsed);
       const restore = scene => {
         if (!scene) return null;
-        if (!scene.eventId) return scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null;
+        if (!scene.eventId) return restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
         return restoreRandomLifeScene(parsed, scene);
       };
       const pending = parsed.activeScene;
