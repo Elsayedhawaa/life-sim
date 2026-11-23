@@ -13,3 +13,8 @@ assert.equal(pickDynamicBanner(s,'life'),'alexandria_neighborhood_ink.jpg');s.ci
 assert.equal(resolveInkPortraitFile({age:75,nationality:'egy',gender:'f',appearance:{headwearMode:'none'}}),'p_egypt_elder_woman.jpg');
 for(const e of EVENTS_LIVED_LIFE.filter(e=>e.id.startsWith('ev_egy_'))){assert.equal(eventGatePasses(e,s),true,e.id);const cash=s.money.cash;e.build(s,resolveEventCtx(s)).choices[0].effect(s);assert.equal(s.money.cash,cash);s.country='jpn';assert.equal(eventGatePasses(e,s),false);s.country='egy';}
 console.log('Passed Egypt city art, portrait, property bedrooms, furnished-save preservation and 3 local event gates.');
+for(const shape of ['studio','apartment','duplex','penthouse','townhouse','twin_house','villa','chalet','mansion']){
+ const ps=propertyFloorPlans(shape,'egy',245,4),rooms=ps.flatMap(f=>f.rooms);
+ assert.equal(Math.round(rooms.reduce((n,r)=>n+r.m2,0)*10),2450);
+ for(const p of ps)for(const r of p.rooms){assert.ok(r.x>=p.shell.x);assert.ok(r.y>=p.shell.y);assert.ok(r.x+r.w<=p.shell.x+p.shell.w+0.1);assert.ok(r.y+r.h<=p.shell.y+p.shell.h+0.1)}
+}

@@ -261,7 +261,13 @@ export function pickDynamicBanner(S, section = 'life', sub = '') {
     if (String(S.city || '').toLowerCase().includes('riyadh')) return 'riyadh_neighborhood_ink.jpg';
     return 'city_gulf_skyline.jpg';
   }
-  if (c === 'egy' && section === 'realestate') return 'egypt_apartment_evening_ink.jpg';
+  if (c === 'egy' && section === 'realestate') {
+    const selectedHome = resolveCurrentHome(S);
+    const shape = selectedHome?.shape || S.housing?.currentShape || 'apartment';
+    if (shape === 'chalet') return 'coastal_summer_chalet_ink.jpg';
+    if (['villa','mansion','twin_house','townhouse'].includes(shape)) return 'home_villa_compound.jpg';
+    return 'egypt_apartment_evening_ink.jpg';
+  }
   if (c === 'egy' && ['life', 'people'].includes(section)) {
     if (Number(S.year || 2000) < 1980) return 'era_vintage_street_ink.jpg';
     if (String(S.city || '').toLowerCase().includes('alexandria')) return 'alexandria_neighborhood_ink.jpg';

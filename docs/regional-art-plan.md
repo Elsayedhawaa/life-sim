@@ -33,3 +33,9 @@ Two local decisions add written-offer scrutiny and household consent before invi
 Egypt villa now has its own ground-floor circulation and plain guest/family/roof-room labels, distinct from Japan's villa arrangement and the smaller apartment plan. Other Egypt types remain inherited type-specific templates pending their own layout pass; do not mark that matrix complete.
 
 Owned properties now persist garden/pool flags and unit ID on purchase. Old saves recover explicit named garden/private-pool variants, and installed pool upgrades are honored. A separate outdoor diagram shows actual garden/pool features only, with dry-climate planting for Egypt/Saudi/UAE. Indoor area totals do not include invented garden dimensions. The 3D view no longer adds a pool merely because a home is a mansion or highly finished villa. The optional technical drawing also suppresses its default pool unless the property really has one.
+
+## Egypt residential-type layout audit
+
+Reviewed the nine residential plan families visually on a phone: studio, apartment, duplex, penthouse, townhouse, twin house, villa, chalet and mansion. Each has a distinct arrangement and floor count. Egypt-specific kitchen/service/entry proportions are now explicit for studio, duplex, penthouse, townhouse, twin house, chalet and mansion as well as apartment/villa. Room numbers and furnishing keys are preserved. The house banner now follows the current property's type instead of showing an apartment interior for every villa.
+
+This is a schematic game-layout pass. It does not yet include architectural doors/circulation validation or individual room-count variants for every non-apartment catalog unit. Type-specific is not the same as a bespoke measured floor plan for each property. Commercial units and land retain their separate non-residential plans.

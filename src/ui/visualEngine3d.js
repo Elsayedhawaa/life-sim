@@ -566,6 +566,39 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
     }
     floors[0].core = null;
   }
+  if (country === 'egy' && shape === 'studio') {
+    // Compact wet core beside entry, living/dining and sleeping zone opposite.
+    const layout = {'101':[430,330,140,90],'102':[430,110,140,105],'103':[430,215,140,115],'104':[150,255,280,165],'105':[150,110,280,145]};
+    for (const room of floors[0].rooms) { [room.x,room.y,room.w,room.h] = layout[room.no]; delete room.door; }
+  }
+  if (country === 'egy' && shape === 'duplex') {
+    // Reception downstairs, family sleeping rooms upstairs. Move the service
+    // bay beside the stair, leaving the separate guest study near the entry.
+    const layout = {'101':[294,296,170,132],'102':[84,92,210,336],'103':[464,296,220,132],'104':[464,92,220,204],'105':[294,92,96,120],'106':[294,212,170,84]};
+    for (const room of floors[0].rooms) { [room.x,room.y,room.w,room.h] = layout[room.no]; delete room.door; }
+  }
+  if (country === 'egy' && shape === 'townhouse') {
+    // Narrow attached home: entry/reception below, sleeping floor above.
+    const layout = {'101':[134,246,166,178],'102':[300,246,334,178],'103':[134,92,240,154],'104':[374,92,160,154],'105':[534,168,100,78]};
+    for (const room of floors[0].rooms) { [room.x,room.y,room.w,room.h] = layout[room.no]; delete room.door; }
+  }
+  if (country === 'egy' && shape === 'twin_house') {
+    // Side-entry semi-detached layout, distinct from the narrow townhouse.
+    const layout = {'101':[484,252,200,172],'102':[94,252,390,172],'103':[94,92,240,160],'104':[334,92,170,160],'105':[504,172,180,80]};
+    for (const room of floors[0].rooms) { [room.x,room.y,room.w,room.h] = layout[room.no]; delete room.door; }
+  }
+  if (country === 'egy' && shape === 'penthouse') {
+    const layout = {'101':[84,226,356,166],'102':[440,246,244,146],'103':[84,92,216,134],'104':[300,92,140,134],'105':[440,92,154,154]};
+    for (const room of floors[0].rooms) { [room.x,room.y,room.w,room.h] = layout[room.no]; delete room.door; }
+  }
+  if (country === 'egy' && shape === 'chalet') {
+    const layout = {'101':[104,248,360,148],'102':[464,248,200,148],'103':[104,96,220,152],'104':[324,96,110,152],'105':[434,96,230,152]};
+    for (const room of floors[0].rooms) { [room.x,room.y,room.w,room.h] = layout[room.no]; delete room.door; }
+  }
+  if (country === 'egy' && shape === 'mansion') {
+    const layout = {'101':[298,230,172,184],'102':[68,230,230,184],'103':[470,230,230,184],'104':[68,86,140,144],'105':[490,86,210,144],'106':[208,86,130,144]};
+    for (const room of floors[0].rooms) { [room.x,room.y,room.w,room.h] = layout[room.no]; delete room.door; }
+  }
   if (country === 'egy' && shape === 'villa') {
     const ground = {
       '101':[246,290,110,128], '102':[76,236,170,182],
@@ -1281,7 +1314,7 @@ export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms 
   const sh = plan.shell;
   const attrs = rm => `data-action="room-info" data-room="${escAttr(rm.key)}" data-no="${escAttr(rm.no)}" data-name="${escAttr(planRoomName(rm))}" data-m2="${rm.m2 || 0}" data-floor="${escAttr(plainFloorLabel(idx))}"`;
   return `<section class="readable-floor" style="border:1px solid #c9c2b5;border-radius:12px;padding:12px;background:#fcfbf7;color:#292524;min-width:0">
-    <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx))}</h4>${idx === 0 ? `<p style="font-size:0.78rem;line-height:1.5;margin:4px 0 8px">${escAttr(homeStyleNote(country))}</p>` : ''}
+    <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx))}</h4>${idx === 0 ? `<p style="font-size:0.78rem;line-height:1.5;margin:4px 0 8px">${escAttr(homeStyleNote(country, shape))}</p>` : ''}
     <p style="font-size:0.78rem;margin:0 0 12px;color:#625b50">Room numbers match the list below. Fictional layout, not to scale.</p>
     <svg viewBox="${sh.x - 12} ${sh.y - 12} ${sh.w + 24} ${sh.h + 24}" width="100%" role="img" aria-label="${escAttr(plainFloorLabel(idx))} room layout" style="display:block;border-radius:6px;background:#eee9df">
       ${plan.core ? `<g><rect x="${plan.core.x}" y="${plan.core.y}" width="${plan.core.w}" height="${plan.core.h}" fill="#e5dfd1" stroke="#524c43" stroke-width="2"/><text x="${plan.core.x + plan.core.w/2}" y="${plan.core.y + plan.core.h/2}" text-anchor="middle" font-size="16" fill="#524c43">Stairs</text></g>` : ''}

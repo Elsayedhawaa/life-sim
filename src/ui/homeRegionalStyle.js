@@ -29,7 +29,10 @@ export function regionalRoomName(room, country = '', shape = '') {
   if (String(room.no).startsWith('2') && room.key === 'office') return 'Study / extra bedroom';
   return names[room.key] || room.name;
 }
-export function homeStyleNote(country = '') {
+export function homeStyleNote(country = '', shape = '') {
+  if (shape === 'studio') return 'Compact studio: living and sleeping zones share one small home.';
+  if (shape === 'chalet') return 'Holiday chalet: shared living space and a compact sleeping area.';
+  if (shape === 'penthouse') return 'Top-floor home with living and sleeping rooms on one level.';
   if (country === 'jpn') return 'Japan-inspired layout with a genkan entrance and separate washroom spaces.';
   if (country === 'sau') return 'Saudi-inspired family layout with a guest reception area and separate family spaces.';
   if (GULF.has(country)) return 'Gulf-inspired family layout with space for receiving guests.';
