@@ -128,3 +128,9 @@ Fictional forms, shared schematic plans and game pricing. Swedish apartment purc
 12fictional forms each. Swiss timber chalet has two main floors and two bedrooms, not a guessed full attic. Turkish waterfront timber home is family scale, not labeled as a measured historic yali or mansion. Courtyard remains open and excluded from indoor area. All prices are game formulas, not current property quotes. References:
 - https://www.expatica.com/ch/housing/housing-basics/housing-in-switzerland-1117795/
 - https://antalyahomes.com/blog/tips-advice/ultimate-house-type-guide-which-house-type-is-ideal
+
+## France and Singapore
+12fictional forms each, with individual illustrations and shared schematic plan families. French stone cottage is one bedroom on one floor. Singapore bungalow example is single-storey, but the local bungalow category means detached housing and is not restricted to one floor. Housing-flat purchase is an abstract game mechanic, not real eligibility or tenure advice. Paired and terrace home cards own only one unit. References used only for local forms, not market values or legal claims:
+- https://www.completefrance.com/living-in-france/28-french-property-types-explained-8349780/
+- https://www.ura.gov.sg/guidelines/development-control/development-control-handbooks/residential/bungalows/
+- https://www.ura.gov.sg/guidelines/development-control/development-control-handbooks/residential/semi-detached-houses/
