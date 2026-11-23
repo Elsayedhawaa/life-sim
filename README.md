@@ -12,7 +12,7 @@ Open `index.html` in your browser. `dist/world-life.bundle.js` is prebuilt, so N
 
 1. Make a backup copy of your full game folder first.
 2. Download and extract this repository using GitHub's **Code > Download ZIP**.
-3. Copy the contents of the extracted `world-life-main` folder into your existing full game folder. Merge folders and replace matching files. Do not delete or replace the whole game folder: keep its existing art/assets.
+3. Copy the contents of the extracted `life-sim-main` folder into your existing full game folder. Merge folders and replace matching files. Do not delete or replace the whole game folder: keep its existing art/assets.
 4. Open `index.html` from the same game folder in the same browser as before.
 
 The source, CSS and prebuilt bundle are updated together. Keep the same location and browser to avoid switching to a different browser save location. Do not clear browser storage.
