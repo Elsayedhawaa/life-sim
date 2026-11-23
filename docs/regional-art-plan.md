@@ -92,3 +92,9 @@ Twelve separately illustrated choices per country, with studios, flats, penthous
 Design references: https://architsaudi.com/guides/al-adilla/najdi_eastern_book and https://www.homebuilding.co.uk/advice/house-styles . The UK and Saudi sets remain partial catalogs, not exhaustive national coverage. Prices are simulation formulas, not property-market quotations.
 
 US Craftsman/ranch image framing corrected to keep the complete building. Brownstone now labels its four levels lower ground, raised ground, first and second; Victorian attic is labeled attic rather than roof. Illustrated stairs draw in their stair room without a second orphan staircase.
+
+## Japan and UAE property catalogs
+
+Twelve named choices each, each with separate artwork. Japan includes studio, family condominium, modern detached, minka-inspired single-floor timber home, machiya-inspired townhouse, bungalow, penthouse, garden flat, attached townhouse, timber cottage, garden house and narrow three-storey home. Custom house plan families preserve genkan and living/dining/service room names. UAE includes studio, family flat, privacy villa, wind-tower courtyard home, paired villa, townhouse, penthouse, garden flat, single-floor courtyard garden villa, private-pool villa, one-bedroom coastal chalet and screened courtyard house. Wind tower is not an extra living floor. Courtyard and garden can coexist as separate explicit areas on one plot. Not all historic structural details are simulated.
+
+References: https://en.wikipedia.org/wiki/Housing_in_Japan , https://festival.si.edu/blog/modern-vernacular-emirati-architecture , https://link.springer.com/article/10.1186/s40410-016-0043-z . These remain fictional schematic game homes with simulation prices, not measured reproductions or current market listings. Shared type families are used by matching variants. Global coverage and deeper circulation validation remain unfinished.

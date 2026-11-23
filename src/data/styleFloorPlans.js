@@ -62,3 +62,17 @@ const topTwo=JSON.parse(JSON.stringify(upperTwo));
 topTwo.rooms.forEach(r=>{r.no=String(Number(r.no)+100);r.name=r.name.replace('Main bedroom','Third bedroom').replace('Second bedroom','Fourth bedroom');});
 STYLE_FLOOR_PLANS.terrace_three=[lower('terrace'),upperTwo,topTwo];
 STYLE_FLOOR_PLANS.cottage_two=[floor([room('101','foyer','Entrance',60,350,160,130),room('102','living','Sitting and dining room',60,60,330,290),room('103','kitchen','Kitchen',390,60,270,230),room('104','wc','Downstairs toilet',510,290,150,190),room('105','corridor','Stair hall',220,350,290,130),room('106','office','Utility and storage',390,290,120,60)]),upperTwo];
+
+// Japanese house families keep genkan, shared LDK and compact service spaces.
+for(const [target,base] of [['jpn_family','family_duplex'],['jpn_single','bungalow'],['jpn_cottage','cottage_two'],['jpn_three','terrace_three']]){
+ const levels=JSON.parse(JSON.stringify(STYLE_FLOOR_PLANS[base]));
+ for(const level of levels)for(const r of level.rooms){
+  if(r.key==='foyer')r.name='Genkan entrance and shoe storage';
+  if(r.key==='living')r.name=/Dining/.test(r.name)?'Dining and family space':'Living and dining room';
+  if(r.key==='kitchen')r.name='Kitchen beside living and dining';
+  if(r.key==='office'&&!/bedroom/i.test(r.name))r.name='Flexible room / storage';
+  if(r.key==='bathroom')r.name='Bath and washroom';
+  if(r.key==='wc')r.name='Separate toilet';
+ }
+ STYLE_FLOOR_PLANS[target]=levels;
+}
