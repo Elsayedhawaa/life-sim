@@ -47,3 +47,7 @@ The default now draws furniture, ink outlines, muted room fills and wood/tile te
 ## UAE first regional batch
 
 Dubai neighborhood, apartment interior and elder male portrait with appearance-appropriate white ghutra, all fictional static illustrations. The modern Dubai scene is city/year gated; other cities do not receive that named scene. Apartment/villa geometry has a separate first pass. Two no-spend local stories cover offer-package details and rental move-in timing. No unsupported wage or rent recalibration. This remains a first country batch, not completion of every UAE household/type/era.
+
+## UK first regional batch
+
+Manchester terraced street, compact flat interior, and an elder woman portrait gated by age, uncovered appearance and compatible complexion. Manchester art is not presented as Edinburgh or London. Earlier years retain a vintage fallback. Flat and terraced-townhouse layouts have separate geometry. Two no-spend stories cover reporting persistent damp in a rented home and balancing commute reliability against sleep. These are fictional decisions, not legal advice or evidence of repairs. Other UK property templates still need deeper local treatment. No wage/rent benchmarks were changed.

@@ -8,6 +8,7 @@ export function regionalRoomName(room, country = '', shape = '') {
     const villaNames = {'101':'Entrance vestibule','102':'Guest reception / study','103':'Guest toilet','104':'Stair hall','105':'Family reception and dining','106':'Separate kitchen','107':'Laundry and washroom','201':'Main bedroom','202':'Family bathroom','203':'Upstairs family hall','204':'Family bedrooms','205':'Study / guest bedroom','206':'Stair landing','301':'Roof laundry and toilet','302':'Roof hobby room'};
     if (villaNames[room.no]) return villaNames[room.no];
   }
+  if(countryCode==='gbr' && shape==='townhouse' && room.no==='102') return 'Sitting and dining room';
   const names = {
     foyer: jp ? 'Genkan entrance and shoe storage' : 'Entrance hall',
     wc: jp ? 'Separate toilet' : 'Guest toilet',
@@ -33,6 +34,7 @@ export function homeStyleNote(country = '', shape = '') {
   if (shape === 'studio') return 'Compact studio: living and sleeping zones share one small home.';
   if (shape === 'chalet') return 'Holiday chalet: shared living space and a compact sleeping area.';
   if (shape === 'penthouse') return 'Top-floor home with living and sleeping rooms on one level.';
+  if (country === 'gbr') return shape === 'townhouse' ? 'British terraced-home layout with front sitting space, stairs and a rear kitchen.' : 'British flat layout with a compact entrance, living room and separate sleeping spaces.';
   if (country === 'jpn') return 'Japan-inspired layout with a genkan entrance and separate washroom spaces.';
   if (country === 'uae') return 'UAE-inspired home layout. Apartment living and villa guest spaces use different plans.';
   if (country === 'sau') return 'Saudi-inspired family layout with a guest reception area and separate family spaces.';

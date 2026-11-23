@@ -256,6 +256,14 @@ export function pickDynamicBanner(S, section = 'life', sub = '') {
 
   // First regional set: no Mediterranean or Red Sea scenery in Japan's
   // everyday life/home contexts. Other countries retain their own routes.
+  if (c === 'gbr' && section === 'realestate') {
+    const shape=resolveCurrentHome(S)?.shape || S.housing?.currentShape || 'apartment';
+    return ['studio','apartment','duplex','penthouse'].includes(shape)?'uk_flat_evening_ink.jpg':'uk_terraced_neighborhood_ink.jpg';
+  }
+  if (c === 'gbr' && ['life','people'].includes(section)) {
+    if(Number(S.year||2000)<1990)return 'era_vintage_street_ink.jpg';
+    return String(S.city||'').toLowerCase()==='manchester'?'uk_terraced_neighborhood_ink.jpg':'city_europe_west.jpg';
+  }
   if (c === 'uae' && section === 'realestate') return 'uae_apartment_home_ink.jpg';
   if (c === 'uae' && ['life', 'people'].includes(section)) {
     if (Number(S.year || 2000) < 2010) return 'era_vintage_street_ink.jpg';
@@ -513,7 +521,7 @@ export function renderNavTabsHtml(S, activeTab) {
   const navArt = {
     life: pickDynamicBanner(S, 'life'),
     education: 'uni_campus_courtyard_ink.jpg',
-    people: ['jpn','egy','sau','uae'].includes(S.country) ? pickDynamicBanner(S, 'people') : 'family_kinship_ink.jpg',
+    people: ['jpn','egy','sau','uae','gbr'].includes(S.country) ? pickDynamicBanner(S, 'people') : 'family_kinship_ink.jpg',
     work: 'career_enterprise_ink.jpg',
     realestate: pickDynamicBanner(S, 'realestate'),
     finance: 'finance_vault_ink.jpg',

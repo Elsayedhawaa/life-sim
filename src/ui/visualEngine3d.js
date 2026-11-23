@@ -623,6 +623,16 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
     floors[0].terrace.hasPool = false;
     floors[0].terrace.label = 'GARDEN ACCESS TERRACE';
   }
+  if (country === 'gbr' && shape === 'townhouse') {
+    // Terraced-home template: front sitting room, central stairs, rear kitchen.
+    const layout={'101':[134,246,112,178],'102':[246,246,388,178],'103':[134,92,220,154],'104':[354,92,180,154],'105':[534,168,100,78]};
+    for(const r of floors[0].rooms){[r.x,r.y,r.w,r.h]=layout[r.no];delete r.door;}
+  }
+  if (country === 'gbr' && shape === 'apartment') {
+    const layout={'101':[450,292,104,136],'102':[554,356,130,72],'103':[84,238,470,54],'104':[84,292,366,136],'105':[554,238,130,118],'106':[84,92,196,146],'107':[554,92,130,146],'108':[280,92,138,146],'109':[418,92,136,146]};
+    for(const r of floors[0].rooms){[r.x,r.y,r.w,r.h]=layout[r.no];delete r.door;}
+    floors[0].core=null;
+  }
   if (country === 'jpn' && shape === 'villa') {
     const ground = {
       '101':[246,290,110,128], '102':[76,290,170,128],

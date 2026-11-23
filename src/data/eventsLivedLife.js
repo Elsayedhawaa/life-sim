@@ -46,6 +46,17 @@ const localPlace = S => ({
 }[S.country] || 'a small neighbourhood cafe');
 
 export const EVENTS_LIVED_LIFE = [
+  story('ev_gbr_damp_report', 'The Patch by the Window', {minAge:18,countries:['gbr'],housingModes:['rent']},
+    S => `After a wet week in ${S.city}, you notice a damp patch beside the window in your rented home. Wiping it away does not tell you why it keeps returning.`, [
+      ['Photograph it and ask the landlord for an inspection', 'You recorded the damp patch and asked for its cause to be checked. You kept the report instead of assuming a repair had happened.', {'vitals.smarts':2,'vitals.stress':-1}],
+      ['Record when it appears and keep the room aired', 'You noted when the patch appeared, aired the room where practical and kept the issue on your repair list. It was not magically fixed.', {'vitals.smarts':1}],
+    ], {category:'home'}),
+  story('ev_gbr_commute_options', 'The Earlier Train', {minAge:18,countries:['gbr'],hasJob:true},
+    S => `Checking tomorrow's journey to work in ${S.city}, you notice that the route you usually take leaves little room for delays. There is an earlier option, but it would cost you sleep.`, [
+      ['Prepare tonight and keep the usual departure', 'You packed what you needed and checked the route before bed. You kept your usual departure without pretending delays were impossible.', {'vitals.stress':-2}],
+      ['Try the earlier journey once and judge the trade-off', 'You planned one earlier commute as an experiment, rather than committing every morning to less sleep.', {'vitals.smarts':1,'vitals.stress':-1}],
+    ], {category:'career'}),
+
   story('ev_uae_offer_allowances', 'What the Package Actually Includes', {minAge:18,countries:['uae'],hasJob:false},
     S => `A recruiter in ${S.city} describes an attractive package. The message combines basic pay and allowances, but it does not explain when each amount is paid or what happens if the role ends.`, [
       ['Ask for the written breakdown and start date', 'You asked for the basic salary, allowances, pay dates and start date in writing. You did not accept a contract or count uncertain pay as cash.', {'skills.charisma':2,'vitals.smarts':1}],
