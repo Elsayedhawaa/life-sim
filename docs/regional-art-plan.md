@@ -98,3 +98,10 @@ US Craftsman/ranch image framing corrected to keep the complete building. Browns
 Twelve named choices each, each with separate artwork. Japan includes studio, family condominium, modern detached, minka-inspired single-floor timber home, machiya-inspired townhouse, bungalow, penthouse, garden flat, attached townhouse, timber cottage, garden house and narrow three-storey home. Custom house plan families preserve genkan and living/dining/service room names. UAE includes studio, family flat, privacy villa, wind-tower courtyard home, paired villa, townhouse, penthouse, garden flat, single-floor courtyard garden villa, private-pool villa, one-bedroom coastal chalet and screened courtyard house. Wind tower is not an extra living floor. Courtyard and garden can coexist as separate explicit areas on one plot. Not all historic structural details are simulated.
 
 References: https://en.wikipedia.org/wiki/Housing_in_Japan , https://festival.si.edu/blog/modern-vernacular-emirati-architecture , https://link.springer.com/article/10.1186/s40410-016-0043-z . These remain fictional schematic game homes with simulation prices, not measured reproductions or current market listings. Shared type families are used by matching variants. Global coverage and deeper circulation validation remain unfinished.
+
+
+## Germany and Canada catalog references
+Fictional static illustrations and shared type plans, not measured buildings or current market prices. Germany includes Altbau, balcony and garden flats, studio, penthouse, detached, paired, row, bungalow, half-timbered and maisonette forms. Canada includes bungalow, detached, paired, townhouse, duplex unit, condo, studio, penthouse, garden flat, cottage, three-storey Victorian-inspired and timber home forms.
+- https://www.lingoda.com/blog/en/german-house-types/
+- https://www.oreb.ca/faq/housing-types/
+A Canadian duplex selection is one apartment, not ownership of both floors. Basements are not silently added. Gardens are explicit catalog features.
