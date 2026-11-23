@@ -1,3 +1,6 @@
+import {annualUniversityBudget,universityBudgetRange} from '../data/universityCosts.js';
+import {degreeProgramFor,programsForCountry} from '../data/degreePrograms.js';
+import {universitySectorLabel} from '../data/institutions.js';
 import {LOCAL_PROPERTY_STYLES} from '../data/localPropertyStyles.js';
 import {renderHomeTypeArt} from './homeTypeArt.js';
 /* ============================================================================
@@ -1612,24 +1615,28 @@ export function renderEducationTabHtml(S, uiState = {}) {
   }).join('');
 
   const uniRows = unis.map(u => {
-    const tuit = eraLocalCost(u.annualTuition2026, S.country, S.year);
+    const tuit = annualUniversityBudget(S,u);
+    const range=universityBudgetRange(S,u,programsForCountry(S.country,u,S.year).filter(m=>uniSupportsMajor(u.name,m.id)));
     const aff = universityAffordability(S, u);
     const canApply = age >= 18 && ['graduated_high', 'completed'].includes(edu.stage) && !edu.university;
-    const majorsHtml = MAJORS.map(m => {
+    const majorsHtml = programsForCountry(S.country,u,S.year).filter(m=>uniSupportsMajor(u.name,m.id)).map(m => {
       const bar = tansikCutoffFor(S.country, u, m.id, S.year).cutoff;
-      const supported = uniSupportsMajor(u.name, m.id);
+      const supported = !m.graduateEntry || edu.degrees.length > 0;
       const already = edu.degrees.includes(m.id);
-      const eligible = supported && !already && score >= bar;
-      return `<button class="btn btn-sm ${eligible && canApply ? 'btn-primary' : ''}" data-action="apply-university" data-uid="${u.id}" data-major="${m.id}" ${(eligible && canApply) ? '' : 'disabled'}>${esc(m.label)} · needs ${bar}%${supported ? '' : ' · not taught here'}${already ? ' · degree held' : ''}${!supported || already ? '' : score < bar ? ` · you scored ${score}%` : ''}</button>${!canApply ? lockReason(age < 18 ? 'Applications open at 18' : edu.university ? `Already enrolled at ${edu.university.name}` : 'Finish secondary school first', age < 18 ? `You are ${age}` : edu.university ? 'Finish or leave your current degree first' : 'You need a secondary-school result first') : ''}`;
+      const courseAff=universityAffordability(S,u,m.id);
+      const eligible = supported && !already && score >= bar && courseAff.status!=='cannot';
+      const fee=annualUniversityBudget(S,u,m.id);
+      return `<div style="border:1px solid var(--line,#ded7cb);border-radius:10px;padding:10px"><div style="font-size:13px;line-height:1.6;margin-bottom:8px"><strong>${esc(m.label)}</strong> · ${m.years} yrs · ${esc(m.level)}<br>${esc(formatMoney(fee,S.country))}/yr game budget · needs ${bar}%<br>${esc(supported?courseAff.short:"Requires an earlier degree")}</div><button class="btn btn-sm ${eligible && canApply ? 'btn-primary' : ''}" data-action="apply-university" data-uid="${u.id}" data-major="${m.id}" ${(eligible && canApply) ? '' : 'disabled'}>${already?"Degree held":!supported?"First degree required":score<bar?"Score too low":courseAff.status==='cannot'?"Funding needed":`Choose ${esc(m.label)}` }</button>${!canApply ? lockReason(age < 18 ? 'Applications open at 18' : edu.university ? `Already enrolled at ${edu.university.name}` : 'Finish secondary school first', age < 18 ? `You are ${age}` : edu.university ? 'Finish or leave your current degree first' : 'You need a secondary-school result first') : ''}</div>`;
     }).join('');
     return `
       <div class="item-row" style="display:block">
         <div class="item-row-main" style="margin-bottom:6px">
           <strong>${esc(u.name)}</strong>
-          <span>${u.sector === 'public' ? 'Public' : 'Private'} · ${tuit > 0 ? `${esc(formatMoney(tuit, S.country))}/yr` : 'Free'} · ${esc(cObj.name)}</span>
-          <span><strong>Who pays:</strong> ${esc(aff.line)}</span>
+          <span>${esc(universitySectorLabel(u))} · ${tuit > 0 ? `${esc(formatMoney(range.min, S.country))}${range.min!==range.max?` to ${esc(formatMoney(range.max,S.country))}`:''}/yr game budget` : 'No tuition in this game pathway'} · ${esc(cObj.name)}</span>
+          <span class="muted">${esc(u.feeBasis || "Costs are game budgets, not fee quotes.")}</span>
+          <span>Each programme below shows its own game budget and funding status. Ordinary subjects are modelled pathways, not a university course catalogue. Clinical choices are limited to checked examples; other clinical courses are not yet modelled.</span>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">${majorsHtml}</div>
+        <details class="university-programmes"><summary>View modelled programmes, duration and funding</summary><div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">${majorsHtml}</div></details>
       </div>
     `;
   }).join('');

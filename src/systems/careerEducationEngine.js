@@ -1,3 +1,6 @@
+import {annualUniversityBudget,universityBudgetRange} from '../data/universityCosts.js';
+import {degreeProgramFor,programsForCountry} from '../data/degreePrograms.js';
+import {canonicalUniversityId,universitySectorLabel} from '../data/institutions.js';
 /* ============================================================================
    World Life 2.0 — Education, National Exams, Conscription, Career & Business
    Strict age-outs, real exam cutoffs (Tansik / UCAS / SAT / Abitur), authentic
@@ -177,13 +180,21 @@ export function tickEducationYearly(S) {
   }
 }
 
-const NON_MEDICAL_UNI_RE = /American University in Cairo|German University in Cairo|Nile University|Arab Academy|KFUPM|King Fahd|KAUST|MIT\b|London School of Economics/i;
 const CLINICAL_MAJOR_IDS = new Set(['medicine', 'dentistry', 'pharmacy', 'nursing', 'veterinary', 'physiotherapy']);
 
 export function uniSupportsMajor(uniName, majorId) {
-  if (CLINICAL_MAJOR_IDS.has(majorId) && NON_MEDICAL_UNI_RE.test(String(uniName || ''))) {
-    return false;
+  // Clinical coverage is intentionally narrow until named course evidence is checked.
+  if (CLINICAL_MAJOR_IDS.has(majorId)) {
+    const n=String(uniName||'');
+    return (majorId==='medicine' && /^(Cairo University|UCL|NUS|Harvard)$/.test(n)) || (majorId==='dentistry' && n==='NUS');
   }
+  const name=String(uniName||'');
+  if (name==='Harvard') return ['engineering','cs','psychology','law'].includes(majorId);
+  if (/Karolinska/i.test(name)) return CLINICAL_MAJOR_IDS.has(majorId)||majorId==='psychology';
+  if (/HEC|Bocconi|Singapore Management|^SMU$|FGV/i.test(name)) return ['business','cs','law','psychology'].includes(majorId);
+  if (/Delft|ETH Zurich|EPFL|KTH|Chalmers|KFUPM|King Fahd|Polytechnique|Politecnico|Fictional.*Technology|Middle East Technical|Istanbul Technical/i.test(name)) return ['engineering','architecture','cs'].includes(majorId);
+  if (/Sciences Po/i.test(name)) return ['business','law','media','psychology'].includes(majorId);
+  if (majorId==='vocational') return false; // University list is not a trade-school directory.
   return true;
 }
 
@@ -263,14 +274,15 @@ export function tansikCutoffFor(countryId, uni, majorId, year) {
     }
   }
   let cutoff = base + delta + yearShift;
-  if (uni.sector === 'private') cutoff -= 12;
+  // Ownership does not imply easier admission. Keep selectivity separate.
+  if (uni.cutoff != null && countryId !== 'egy') cutoff = Math.max(cutoff, uni.cutoff);
   cutoff = clamp(Math.round(cutoff * 10) / 10, 40, 99);
   return { cutoff, modelled: !(countryId === 'egy' && realBase) };
 }
 
 export function eligibleMajorsFor(S, uni, score = null) {
   const s = score ?? S.education.highSchoolScore ?? Math.round(S.education.academicSkill || 65);
-  return MAJORS.filter(m => s >= tansikCutoffFor(S.country, uni, m.id, S.year).cutoff && uniSupportsMajor(uni.name, m.id) && !S.education.degrees.includes(m.id));
+  return programsForCountry(S.country,uni,S.year).filter(m => (!m.graduateEntry || S.education.degrees.length > 0) && s >= tansikCutoffFor(S.country, uni, m.id, S.year).cutoff && uniSupportsMajor(uni.name, m.id) && !S.education.degrees.includes(m.id));
 }
 
 export function presentPostHighSchoolCrossroads(S) {
@@ -283,10 +295,11 @@ export function presentPostHighSchoolCrossroads(S) {
      the game never picks it for them. */
   const choices = unis.map(uni => {
     const majors = eligibleMajorsFor(S, uni, score);
-    const tuit = eraLocalCost(uni.annualTuition2026, S.country, S.year);
+    const tuit = annualUniversityBudget(S,uni);
+    const range=universityBudgetRange(S,uni,majors);
     const aff = universityAffordability(S, uni);
     return {
-      label: `${uni.name} — ${uni.sector === 'public' ? 'Public' : 'Private'} · ${formatMoney(tuit, S.country)}/yr · ${majors.length} major${majors.length === 1 ? '' : 's'} open to you (score ${score}%) · ${aff.short}`,
+      label: `${uni.name} — ${universitySectorLabel(uni)} · ${formatMoney(range.min, S.country)}${range.max!==range.min?` to ${formatMoney(range.max,S.country)}`:''}/yr game budget · ${majors.length} major${majors.length === 1 ? '' : 's'} open to you (score ${score}%) · ${aff.short}`,
       available: st => eligibleMajorsFor(st, uni, score).length > 0,
       lockReason: `No majors meet your current admission score at ${uni.name}.`,
       effect: (st) => {
@@ -318,12 +331,12 @@ export function presentUniversityMajorPicker(S, uni) {
   const cObj = getCountry(S.country);
   const score = S.education.highSchoolScore || 65;
   const majors = eligibleMajorsFor(S, uni, score);
-  const tuit = eraLocalCost(uni.annualTuition2026, S.country, S.year);
+  const tuit = annualUniversityBudget(S,uni);
   const aff = universityAffordability(S, uni);
 
   const choices = majors.map(m => ({
-    label: `${m.label} (${m.years} yrs, needs ${tansikCutoffFor(S.country, uni, m.id, S.year).cutoff}% at ${uni.name} — you scored ${score}%)`,
-    available: st => universityAffordability(st, uni).status !== 'cannot',
+    label: `${m.label} (${m.level}, ${m.years} yrs, ${formatMoney(annualUniversityBudget(S,uni,m.id),S.country)}/yr game budget, needs ${tansikCutoffFor(S.country, uni, m.id, S.year).cutoff}% at ${uni.name} — you scored ${score}%)`,
+    available: st => universityAffordability(st, uni,m.id).status !== 'cannot',
     lockReason: 'You need funding first. Check scholarships, a cheaper university, or work and save.',
     effect: (st) => {
       applyToUniversity(st, uni.id, m.id);
@@ -349,7 +362,7 @@ export function presentUniversityMajorPicker(S, uni) {
     key: `pick_major_${uni.id}_${S.year}`,
     category: 'career',
     title: `${uni.name} — Pick Your Major`,
-    text: `In-game tuition is ${formatMoney(tuit, S.country)} a year. ${aff.line} Your admission score is ${score}/100. Course availability, duration and entry scores are simplified for the game.`,
+    text: `Select a programme to see its annual budget. Each option shows the cost charged by the game. Programme-cost differences are modelled, not institutional quotes. Your admission score is ${score}/100. ${uni.feeBasis || 'Fees are game budgets, not official quotes.'} Course availability and entry scores are simplified. Durations are modelled study pathways, not verified named courses. Clinical programmes require additional supervised training/licensing; a degree alone is not a licence.`,
     choices
   }, true);
 }
@@ -375,8 +388,11 @@ export function restoreEducationDecision(S, saved) {
 }
 
 export function enrollInUniversity(S, uniObj, majorId, scholarshipPct = 0) {
-  const major = MAJORS.find(m => m.id === majorId) || MAJORS[4];
-  const annualTuition = eraLocalCost(uniObj.annualTuition2026 || 0, uniObj.country || S.country, S.year);
+  const major = degreeProgramFor(uniObj.country || S.country,majorId,uniObj,S.year);
+  if (!major) return {ok:false,msg:'Unknown programme.'};
+  if (!uniSupportsMajor(uniObj.name,majorId)) return {ok:false,msg:'Programme not available in this game pathway.'};
+  if (major.graduateEntry && !S.education.degrees.length) return {ok:false,msg:'A first degree is required for this professional pathway.'};
+  const annualTuition = annualUniversityBudget(S,uniObj,majorId);
 
   S.education.stage = 'university';
   S.education.university = {
@@ -387,6 +403,8 @@ export function enrollInUniversity(S, uniObj, majorId, scholarshipPct = 0) {
     majorLabel: major.label,
     yearInProgram: 1,
     totalYears: major.years,
+    qualificationLevel:major.level,
+    pathwayNote:major.note,
     annualTuition,
     scholarshipPct
   };
@@ -521,8 +539,8 @@ function playerHasFullScholarship(S, uni) {
    the player chooses, never as a refusal after. status: 'covered' (family
    or scholarship pays), 'you-can-start' (you can pay the first year
    yourself, but nobody covers the years after), 'cannot'. */
-export function universityAffordability(S, uni) {
-  const annualTuition = eraLocalCost(uni.annualTuition2026 || 0, S.country, S.year);
+export function universityAffordability(S, uni,majorId=null) {
+  const annualTuition = annualUniversityBudget(S,uni,majorId);
   const cash = S.money.cash || 0;
   const sch = playerHasFullScholarship(S, uni);
   if (sch) {
@@ -854,21 +872,22 @@ export function applyToUniversity(S, uniId, majorId) {
   if (!['graduated_high', 'completed'].includes(edu.stage)) {
     return { ok: false, msg: 'Finish secondary school and sit the national exam first.' };
   }
-  const uni = getUniversitiesFor(S.country, S.year).find(u => u.id === uniId);
+  const uni = getUniversitiesFor(S.country, S.year).find(u => u.id === canonicalUniversityId(uniId));
   if (!uni) return { ok: false, msg: 'That university is not in this country.' };
-  const major = MAJORS.find(m => m.id === majorId);
+  const major = degreeProgramFor(S.country,majorId,uni,S.year);
   if (!major) return { ok: false, msg: 'That major does not exist.' };
+  if (major.graduateEntry && !edu.degrees.length) return {ok:false,msg:'Complete a first degree before this graduate-entry professional pathway.'};
   if (edu.degrees.includes(majorId)) return { ok: false, msg: `You already hold a degree in ${major.label}.` };
   if (!uniSupportsMajor(uni.name, majorId)) {
-    return { ok: false, msg: `${uni.name} does not teach ${major.label}.` };
+    return { ok: false, msg: `${major.label} is not available in this game pathway at ${uni.name}.` };
   }
   const score = edu.highSchoolScore ?? Math.round(edu.academicSkill || 65);
   const bar = tansikCutoffFor(S.country, uni, majorId, S.year).cutoff;
   if (score < bar) {
-    return { ok: false, msg: `${major.label} at ${uni.name} needs ${bar}% in ${S.year} — you scored ${score}%. Try a major with a lower cutoff, or a private university.` };
+    return { ok: false, msg: `${major.label} at ${uni.name} needs ${bar}% in ${S.year} — you scored ${score}%. Try a programme or university with a lower game admission cutoff.` };
   }
-  const annualTuition = eraLocalCost(uni.annualTuition2026 || 0, S.country, S.year);
-  const aff = universityAffordability(S, uni);
+  const annualTuition = annualUniversityBudget(S,uni,majorId);
+  const aff = universityAffordability(S, uni,majorId);
   const hasFullScholarship = !!playerHasFullScholarship(S, uni);
   /* Use the same family rule as the admission screen and monthly billing. */
   const familyPaysTuition = familyCoversUniversity(S, annualTuition, uni.country || S.country);

@@ -2665,30 +2665,33 @@ export const UNIVERSITIES = {
       "name": "Cairo University",
       "country": "egy",
       "sector": "public",
-      "annualTuition2026": 12000,
+      "annualTuition2026": 3000,
       "cutoff": 78,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "egy_alex",
       "name": "Alexandria University",
       "country": "egy",
       "sector": "public",
-      "annualTuition2026": 12000,
+      "annualTuition2026": 3000,
       "cutoff": 75,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "egy_ain",
       "name": "Ain Shams University",
       "country": "egy",
       "sector": "public",
-      "annualTuition2026": 12000,
+      "annualTuition2026": 3000,
       "cutoff": 72,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "egy_auc",
@@ -2698,7 +2701,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 600000,
       "cutoff": 60,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "egy_guc",
@@ -2708,7 +2712,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 300000,
       "cutoff": 60,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "egy_bue",
@@ -2718,7 +2723,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 250000,
       "cutoff": 58,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "egy_aastmt",
@@ -2728,7 +2734,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 200000,
       "cutoff": 55,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "egy_miu",
@@ -2738,7 +2745,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 200000,
       "cutoff": 55,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "egy_msa",
@@ -2748,7 +2756,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 220000,
       "cutoff": 56,
       "prestige": 7,
-      "founded": 1996
+      "founded": 1996,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "egy_must",
@@ -2758,7 +2767,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 220000,
       "cutoff": 55,
       "prestige": 7,
-      "founded": 1996
+      "founded": 1996,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "egy_october",
@@ -2768,67 +2778,74 @@ export const UNIVERSITIES = {
       "annualTuition2026": 190000,
       "cutoff": 55,
       "prestige": 7,
-      "founded": 1996
+      "founded": 1996,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-mansoura",
       "name": "Mansoura University",
       "country": "egy",
       "sector": "public",
-      "annualTuition2026": 27915,
+      "annualTuition2026": 3000,
       "cutoff": 69,
       "prestige": 7,
-      "founded": 1972
+      "founded": 1972,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-tanta",
       "name": "Tanta University",
       "country": "egy",
       "sector": "public",
-      "annualTuition2026": 27915,
+      "annualTuition2026": 3000,
       "cutoff": 69,
       "prestige": 6,
-      "founded": 1972
+      "founded": 1972,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-zagazig",
       "name": "Zagazig University",
       "country": "egy",
       "sector": "public",
-      "annualTuition2026": 27915,
+      "annualTuition2026": 3000,
       "cutoff": 69,
       "prestige": 6,
-      "founded": 1974
+      "founded": 1974,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-helwan",
       "name": "Helwan University",
       "country": "egy",
       "sector": "public",
-      "annualTuition2026": 27915,
+      "annualTuition2026": 3000,
       "cutoff": 69,
       "prestige": 6,
-      "founded": 1975
+      "founded": 1975,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-assiut",
       "name": "Assiut University",
       "country": "egy",
       "sector": "public",
-      "annualTuition2026": 44664,
+      "annualTuition2026": 3000,
       "cutoff": 74,
       "prestige": 7,
-      "founded": 1957
+      "founded": 1957,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-menoufia",
       "name": "Menoufia University",
       "country": "egy",
       "sector": "public",
-      "annualTuition2026": 27915,
+      "annualTuition2026": 3000,
       "cutoff": 69,
       "prestige": 6,
-      "founded": 1976
+      "founded": 1976,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-nile",
@@ -2838,7 +2855,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 502470,
       "cutoff": 74,
       "prestige": 8,
-      "founded": 2006
+      "founded": 2006,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     }
   ],
   "sau": [
@@ -2850,7 +2868,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 0,
       "cutoff": 75,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Domestic public-study game budget, not a fee quote. Evening, international and specialist programmes may charge fees."
     },
     {
       "id": "sau_kfupm",
@@ -2860,7 +2879,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 0,
       "cutoff": 85,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Domestic public-study game budget, not a fee quote. Evening, international and specialist programmes may charge fees."
     },
     {
       "id": "sau_kaust",
@@ -2870,27 +2890,20 @@ export const UNIVERSITIES = {
       "annualTuition2026": 80000,
       "cutoff": 90,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate.",
+      "undergraduate": false
     },
     {
       "id": "x-uni-kau",
       "name": "King Abdulaziz University",
       "country": "sau",
-      "sector": "private",
-      "annualTuition2026": 22500,
+      "sector": "public",
+      "annualTuition2026": 0,
       "cutoff": 69,
       "prestige": 8,
-      "founded": 1967
-    },
-    {
-      "id": "x-uni-kfupm",
-      "name": "King Fahd University of Petroleum and Minerals (KFUPM)",
-      "country": "sau",
-      "sector": "private",
-      "annualTuition2026": 22500,
-      "cutoff": 78,
-      "prestige": 9,
-      "founded": 1963
+      "founded": 1967,
+      "feeBasis": "Domestic public-study game budget, not a fee quote. Evening, international and specialist programmes may charge fees."
     }
   ],
   "uae": [
@@ -2899,10 +2912,11 @@ export const UNIVERSITIES = {
       "name": "UAE University",
       "country": "uae",
       "sector": "public",
-      "annualTuition2026": 25000,
+      "annualTuition2026": 20000,
       "cutoff": 70,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "uae_aus",
@@ -2912,7 +2926,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 95000,
       "cutoff": 75,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "uae_nyuad",
@@ -2922,17 +2937,20 @@ export const UNIVERSITIES = {
       "annualTuition2026": 220000,
       "cutoff": 92,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "uae_khalifa",
       "name": "Khalifa University",
       "country": "uae",
-      "sector": "private",
+      "sector": "independent",
       "annualTuition2026": 95000,
       "cutoff": 85,
       "prestige": 9,
-      "founded": 2007
+      "founded": 2007,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate.",
+      "sectorLabel": "Independent non-profit"
     }
   ],
   "gbr": [
@@ -2941,132 +2959,157 @@ export const UNIVERSITIES = {
       "name": "UCL",
       "country": "gbr",
       "sector": "public",
-      "annualTuition2026": 9250,
+      "annualTuition2026": 9790,
       "cutoff": 80,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
+      "sectorLabel": "Publicly funded, independent"
     },
     {
       "id": "gbr_imperial",
       "name": "Imperial College",
       "country": "gbr",
       "sector": "public",
-      "annualTuition2026": 9250,
+      "annualTuition2026": 9790,
       "cutoff": 88,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
+      "sectorLabel": "Publicly funded, independent"
     },
     {
       "id": "gbr_oxbridge",
-      "name": "Oxford / Cambridge",
+      "name": "University of Oxford",
       "country": "gbr",
       "sector": "public",
-      "annualTuition2026": 9250,
+      "annualTuition2026": 9790,
       "cutoff": 95,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1096,
+      "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
+      "sectorLabel": "Publicly funded, independent"
     },
     {
       "id": "x3-uni-st-andrews",
       "name": "University of St Andrews",
       "country": "gbr",
-      "sector": "private",
-      "annualTuition2026": 21840,
+      "sector": "public",
+      "annualTuition2026": 9790,
       "cutoff": 80,
       "prestige": 9,
-      "founded": 1413
+      "founded": 1413,
+      "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
+      "sectorLabel": "Publicly funded, independent"
     },
     {
       "id": "x3-uni-warwick",
       "name": "University of Warwick",
       "country": "gbr",
-      "sector": "private",
-      "annualTuition2026": 21840,
+      "sector": "public",
+      "annualTuition2026": 9790,
       "cutoff": 78,
       "prestige": 9,
-      "founded": 1965
+      "founded": 1965,
+      "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
+      "sectorLabel": "Publicly funded, independent"
     },
     {
       "id": "x-uni-edinburgh",
       "name": "University of Edinburgh",
       "country": "gbr",
-      "sector": "private",
-      "annualTuition2026": 24960,
+      "sector": "public",
+      "annualTuition2026": 9790,
       "cutoff": 83,
       "prestige": 10,
-      "founded": 1582
+      "founded": 1582,
+      "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
+      "sectorLabel": "Publicly funded, independent"
     },
     {
       "id": "x-uni-manchester",
       "name": "University of Manchester",
       "country": "gbr",
-      "sector": "private",
-      "annualTuition2026": 21840,
+      "sector": "public",
+      "annualTuition2026": 9790,
       "cutoff": 78,
       "prestige": 9,
-      "founded": 1824
+      "founded": 1824,
+      "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
+      "sectorLabel": "Publicly funded, independent"
     },
     {
       "id": "x-uni-kings",
       "name": "King's College London",
       "country": "gbr",
-      "sector": "private",
-      "annualTuition2026": 23400,
+      "sector": "public",
+      "annualTuition2026": 9790,
       "cutoff": 80,
       "prestige": 9,
-      "founded": 1829
+      "founded": 1829,
+      "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
+      "sectorLabel": "Publicly funded, independent"
     },
     {
       "id": "x-uni-bristol",
       "name": "University of Bristol",
       "country": "gbr",
-      "sector": "private",
-      "annualTuition2026": 21060,
+      "sector": "public",
+      "annualTuition2026": 9790,
       "cutoff": 78,
       "prestige": 9,
-      "founded": 1909
+      "founded": 1909,
+      "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
+      "sectorLabel": "Publicly funded, independent"
     },
     {
       "id": "x-uni-durham",
       "name": "Durham University",
       "country": "gbr",
-      "sector": "private",
-      "annualTuition2026": 20280,
+      "sector": "public",
+      "annualTuition2026": 9790,
       "cutoff": 78,
       "prestige": 9,
-      "founded": 1832
+      "founded": 1832,
+      "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
+      "sectorLabel": "Publicly funded, independent"
     },
     {
       "id": "x-uni-glasgow",
       "name": "University of Glasgow",
       "country": "gbr",
-      "sector": "private",
-      "annualTuition2026": 19500,
+      "sector": "public",
+      "annualTuition2026": 9790,
       "cutoff": 78,
       "prestige": 9,
-      "founded": 1451
+      "founded": 1451,
+      "feeBasis": "England home-fee cap reference for 2026/27, used as a simplified game budget. Other UK nations, residency and years have different rules; not a university quote.",
+      "sectorLabel": "Publicly funded, independent"
     }
   ],
   "usa": [
     {
       "id": "usa_state",
-      "name": "State University",
+      "name": "Fictional State University",
       "country": "usa",
       "sector": "public",
-      "annualTuition2026": 22000,
+      "annualTuition2026": 15000,
       "cutoff": 60,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate.",
+      "fictional": true
     },
     {
       "id": "usa_uc_berkeley",
       "name": "UC Berkeley",
       "country": "usa",
       "sector": "public",
-      "annualTuition2026": 48000,
+      "annualTuition2026": 15000,
       "cutoff": 85,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "usa_harvard",
@@ -3076,7 +3119,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 60000,
       "cutoff": 90,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "usa_mit",
@@ -3086,7 +3130,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 62000,
       "cutoff": 92,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "usa_stanford",
@@ -3096,27 +3141,30 @@ export const UNIVERSITIES = {
       "annualTuition2026": 62000,
       "cutoff": 90,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x3-uni-michigan",
       "name": "University of Michigan",
       "country": "usa",
-      "sector": "private",
-      "annualTuition2026": 55000,
+      "sector": "public",
+      "annualTuition2026": 15000,
       "cutoff": 85,
       "prestige": 9,
-      "founded": 1817
+      "founded": 1817,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x3-uni-texas-austin",
       "name": "University of Texas at Austin",
       "country": "usa",
-      "sector": "private",
-      "annualTuition2026": 42000,
+      "sector": "public",
+      "annualTuition2026": 15000,
       "cutoff": 80,
       "prestige": 9,
-      "founded": 1883
+      "founded": 1883,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-yale",
@@ -3126,7 +3174,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 62000,
       "cutoff": 90,
       "prestige": 10,
-      "founded": 1701
+      "founded": 1701,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-princeton",
@@ -3136,7 +3185,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 60000,
       "cutoff": 90,
       "prestige": 10,
-      "founded": 1746
+      "founded": 1746,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-columbia",
@@ -3146,17 +3196,19 @@ export const UNIVERSITIES = {
       "annualTuition2026": 65000,
       "cutoff": 87,
       "prestige": 10,
-      "founded": 1754
+      "founded": 1754,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-ucla",
       "name": "University of California, Los Angeles (UCLA)",
       "country": "usa",
-      "sector": "private",
-      "annualTuition2026": 48000,
+      "sector": "public",
+      "annualTuition2026": 15000,
       "cutoff": 83,
       "prestige": 9,
-      "founded": 1919
+      "founded": 1919,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-nyu",
@@ -3166,7 +3218,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 58000,
       "cutoff": 83,
       "prestige": 9,
-      "founded": 1831
+      "founded": 1831,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-chicago",
@@ -3176,7 +3229,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 62000,
       "cutoff": 87,
       "prestige": 10,
-      "founded": 1890
+      "founded": 1890,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     }
   ],
   "deu": [
@@ -3185,80 +3239,77 @@ export const UNIVERSITIES = {
       "name": "TU Munich",
       "country": "deu",
       "sector": "public",
-      "annualTuition2026": 300,
+      "annualTuition2026": 600,
       "cutoff": 80,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "deu_heidelberg",
       "name": "Heidelberg University",
       "country": "deu",
       "sector": "public",
-      "annualTuition2026": 300,
+      "annualTuition2026": 600,
       "cutoff": 82,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "deu_lmu",
       "name": "LMU Munich",
       "country": "deu",
       "sector": "public",
-      "annualTuition2026": 300,
+      "annualTuition2026": 600,
       "cutoff": 80,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x3-uni-hamburg",
       "name": "University of Hamburg",
       "country": "deu",
       "sector": "public",
-      "annualTuition2026": 460,
+      "annualTuition2026": 600,
       "cutoff": 69,
       "prestige": 8,
-      "founded": 1919
-    },
-    {
-      "id": "x-uni-lmu",
-      "name": "Ludwig Maximilian University of Munich (LMU)",
-      "country": "deu",
-      "sector": "public",
-      "annualTuition2026": 460,
-      "cutoff": 74,
-      "prestige": 10,
-      "founded": 1472
+      "founded": 1919,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-rwth",
       "name": "RWTH Aachen University",
       "country": "deu",
       "sector": "public",
-      "annualTuition2026": 460,
+      "annualTuition2026": 600,
       "cutoff": 74,
       "prestige": 9,
-      "founded": 1870
+      "founded": 1870,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-freiburg",
       "name": "University of Freiburg",
       "country": "deu",
       "sector": "public",
-      "annualTuition2026": 460,
+      "annualTuition2026": 600,
       "cutoff": 69,
       "prestige": 9,
-      "founded": 1457
+      "founded": 1457,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-bonn",
       "name": "University of Bonn",
       "country": "deu",
       "sector": "public",
-      "annualTuition2026": 460,
+      "annualTuition2026": 600,
       "cutoff": 69,
       "prestige": 9,
-      "founded": 1818
+      "founded": 1818,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     }
   ],
   "can": [
@@ -3267,20 +3318,22 @@ export const UNIVERSITIES = {
       "name": "McGill University",
       "country": "can",
       "sector": "public",
-      "annualTuition2026": 8000,
+      "annualTuition2026": 8500,
       "cutoff": 80,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "can_ubc",
       "name": "UBC",
       "country": "can",
       "sector": "public",
-      "annualTuition2026": 7000,
+      "annualTuition2026": 8500,
       "cutoff": 82,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "can_uoft",
@@ -3290,57 +3343,52 @@ export const UNIVERSITIES = {
       "annualTuition2026": 8500,
       "cutoff": 85,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x3-uni-queens",
       "name": "Queen's University",
       "country": "can",
-      "sector": "private",
-      "annualTuition2026": 54000,
+      "sector": "public",
+      "annualTuition2026": 8500,
       "cutoff": 76,
       "prestige": 8,
-      "founded": 1841
-    },
-    {
-      "id": "x-uni-ubc",
-      "name": "University of British Columbia (UBC)",
-      "country": "can",
-      "sector": "private",
-      "annualTuition2026": 56700,
-      "cutoff": 80,
-      "prestige": 9,
-      "founded": 1908
+      "founded": 1841,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-waterloo",
       "name": "University of Waterloo",
       "country": "can",
-      "sector": "private",
-      "annualTuition2026": 54000,
+      "sector": "public",
+      "annualTuition2026": 8500,
       "cutoff": 80,
       "prestige": 9,
-      "founded": 1957
+      "founded": 1957,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-alberta",
       "name": "University of Alberta",
       "country": "can",
-      "sector": "private",
-      "annualTuition2026": 47250,
+      "sector": "public",
+      "annualTuition2026": 8500,
       "cutoff": 76,
       "prestige": 8,
-      "founded": 1908
+      "founded": 1908,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-mcmaster",
       "name": "McMaster University",
       "country": "can",
-      "sector": "private",
-      "annualTuition2026": 51300,
+      "sector": "public",
+      "annualTuition2026": 8500,
       "cutoff": 78,
       "prestige": 9,
-      "founded": 1887
+      "founded": 1887,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     }
   ],
   "aus": [
@@ -3349,60 +3397,55 @@ export const UNIVERSITIES = {
       "name": "UNSW",
       "country": "aus",
       "sector": "public",
-      "annualTuition2026": 9000,
+      "annualTuition2026": 10000,
       "cutoff": 75,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "aus_usyd",
       "name": "University of Sydney",
       "country": "aus",
       "sector": "public",
-      "annualTuition2026": 9000,
+      "annualTuition2026": 10000,
       "cutoff": 80,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "aus_unimelb",
       "name": "University of Melbourne",
       "country": "aus",
       "sector": "public",
-      "annualTuition2026": 9000,
+      "annualTuition2026": 10000,
       "cutoff": 82,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "anu",
       "name": "Australian National University",
       "country": "aus",
-      "sector": "private",
-      "annualTuition2026": 14250,
+      "sector": "public",
+      "annualTuition2026": 10000,
       "cutoff": 80,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-queensland",
       "name": "University of Queensland",
       "country": "aus",
-      "sector": "private",
-      "annualTuition2026": 48000,
+      "sector": "public",
+      "annualTuition2026": 10000,
       "cutoff": 78,
       "prestige": 9,
-      "founded": 1909
-    },
-    {
-      "id": "x-uni-unsw",
-      "name": "University of New South Wales (UNSW)",
-      "country": "aus",
-      "sector": "private",
-      "annualTuition2026": 51000,
-      "cutoff": 78,
-      "prestige": 9,
-      "founded": 1949
+      "founded": 1909,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     }
   ],
   "nld": [
@@ -3411,62 +3454,68 @@ export const UNIVERSITIES = {
       "name": "Leiden University",
       "country": "nld",
       "sector": "public",
-      "annualTuition2026": 2300,
+      "annualTuition2026": 2694,
       "cutoff": 75,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "2026/27 statutory-fee reference for eligible EEA/Swiss/Surinam students, used as a game budget. Institutional/non-EEA fees and second degrees differ."
     },
     {
       "id": "nld_amsterdam",
       "name": "University of Amsterdam",
       "country": "nld",
       "sector": "public",
-      "annualTuition2026": 2300,
+      "annualTuition2026": 2694,
       "cutoff": 78,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "2026/27 statutory-fee reference for eligible EEA/Swiss/Surinam students, used as a game budget. Institutional/non-EEA fees and second degrees differ."
     },
     {
       "id": "nld_delft",
       "name": "TU Delft",
       "country": "nld",
       "sector": "public",
-      "annualTuition2026": 2300,
+      "annualTuition2026": 2694,
       "cutoff": 82,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "2026/27 statutory-fee reference for eligible EEA/Swiss/Surinam students, used as a game budget. Institutional/non-EEA fees and second degrees differ."
     },
     {
       "id": "x-uni-utrecht",
       "name": "Utrecht University",
       "country": "nld",
-      "sector": "private",
-      "annualTuition2026": 13800,
+      "sector": "public",
+      "annualTuition2026": 2694,
       "cutoff": 78,
       "prestige": 9,
-      "founded": 1636
+      "founded": 1636,
+      "feeBasis": "2026/27 statutory-fee reference for eligible EEA/Swiss/Surinam students, used as a game budget. Institutional/non-EEA fees and second degrees differ."
     }
   ],
   "fra": [
     {
       "id": "fra_sorbonne",
-      "name": "Sorbonne Universit\u00e9",
+      "name": "Sorbonne Université",
       "country": "fra",
       "sector": "public",
-      "annualTuition2026": 200,
+      "annualTuition2026": 178,
       "cutoff": 75,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Public Licence registration-fee reference used as a game budget. CVEC, international differentiated fees, exemptions and specialist-school charges are not simulated."
     },
     {
       "id": "fra_polytechnique",
-      "name": "\u00c9cole Polytechnique",
+      "name": "École Polytechnique",
       "country": "fra",
       "sector": "public",
-      "annualTuition2026": 0,
+      "annualTuition2026": 178,
       "cutoff": 92,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Public Licence registration-fee reference used as a game budget. CVEC, international differentiated fees, exemptions and specialist-school charges are not simulated."
     },
     {
       "id": "fra_hec",
@@ -3476,47 +3525,53 @@ export const UNIVERSITIES = {
       "annualTuition2026": 25000,
       "cutoff": 88,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x3-uni-lyon",
       "name": "University of Lyon",
       "country": "fra",
       "sector": "public",
-      "annualTuition2026": 2760,
+      "annualTuition2026": 178,
       "cutoff": 69,
       "prestige": 7,
-      "founded": 1559
+      "founded": 1559,
+      "feeBasis": "Public Licence registration-fee reference used as a game budget. CVEC, international differentiated fees, exemptions and specialist-school charges are not simulated."
     },
     {
       "id": "x-uni-sciences-po",
       "name": "Sciences Po",
       "country": "fra",
-      "sector": "private",
+      "sector": "independent",
+      "sectorLabel": "Public institute / private foundation",
       "annualTuition2026": 12880,
       "cutoff": 80,
       "prestige": 9,
-      "founded": 1872
+      "founded": 1872,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-ens",
-      "name": "\u00c9cole Normale Sup\u00e9rieure (ENS)",
+      "name": "École Normale Supérieure (ENS)",
       "country": "fra",
       "sector": "public",
-      "annualTuition2026": 2760,
+      "annualTuition2026": 178,
       "cutoff": 85,
       "prestige": 10,
-      "founded": 1794
+      "founded": 1794,
+      "feeBasis": "Public Licence registration-fee reference used as a game budget. CVEC, international differentiated fees, exemptions and specialist-school charges are not simulated."
     },
     {
       "id": "x-uni-strasbourg",
       "name": "University of Strasbourg",
       "country": "fra",
       "sector": "public",
-      "annualTuition2026": 3220,
+      "annualTuition2026": 178,
       "cutoff": 69,
       "prestige": 8,
-      "founded": 1538
+      "founded": 1538,
+      "feeBasis": "Public Licence registration-fee reference used as a game budget. CVEC, international differentiated fees, exemptions and specialist-school charges are not simulated."
     }
   ],
   "jpn": [
@@ -3525,20 +3580,22 @@ export const UNIVERSITIES = {
       "name": "University of Tokyo",
       "country": "jpn",
       "sector": "public",
-      "annualTuition2026": 535800,
+      "annualTuition2026": 550000,
       "cutoff": 92,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "jpn_kyoto",
       "name": "Kyoto University",
       "country": "jpn",
       "sector": "public",
-      "annualTuition2026": 535800,
+      "annualTuition2026": 550000,
       "cutoff": 88,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "jpn_waseda",
@@ -3548,17 +3605,19 @@ export const UNIVERSITIES = {
       "annualTuition2026": 1200000,
       "cutoff": 80,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-osaka",
       "name": "Osaka University",
       "country": "jpn",
       "sector": "public",
-      "annualTuition2026": 750000,
+      "annualTuition2026": 550000,
       "cutoff": 78,
       "prestige": 9,
-      "founded": 1931
+      "founded": 1931,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     }
   ],
   "ita": [
@@ -3567,20 +3626,22 @@ export const UNIVERSITIES = {
       "name": "Sapienza University",
       "country": "ita",
       "sector": "public",
-      "annualTuition2026": 1000,
+      "annualTuition2026": 2000,
       "cutoff": 75,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "ita_polimi",
       "name": "Politecnico di Milano",
       "country": "ita",
       "sector": "public",
-      "annualTuition2026": 3000,
+      "annualTuition2026": 2000,
       "cutoff": 82,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "ita_bocconi",
@@ -3590,27 +3651,30 @@ export const UNIVERSITIES = {
       "annualTuition2026": 14000,
       "cutoff": 85,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-bologna",
       "name": "University of Bologna",
       "country": "ita",
       "sector": "public",
-      "annualTuition2026": 2760,
+      "annualTuition2026": 2000,
       "cutoff": 69,
       "prestige": 8,
-      "founded": 1088
+      "founded": 1088,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "x-uni-milan",
       "name": "University of Milan",
       "country": "ita",
       "sector": "public",
-      "annualTuition2026": 2760,
+      "annualTuition2026": 2000,
       "cutoff": 69,
       "prestige": 8,
-      "founded": 1924
+      "founded": 1924,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     }
   ],
   "sgp": [
@@ -3619,50 +3683,36 @@ export const UNIVERSITIES = {
       "name": "NUS",
       "country": "sgp",
       "sector": "public",
-      "annualTuition2026": 8000,
+      "annualTuition2026": 10000,
       "cutoff": 90,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Rounded local subsidised-course game budget. Tuition Grant eligibility, programme-specific fees and service bonds are not simulated.",
+      "sectorLabel": "Autonomous university"
     },
     {
       "id": "sgp_ntu",
       "name": "NTU",
       "country": "sgp",
       "sector": "public",
-      "annualTuition2026": 8000,
+      "annualTuition2026": 10000,
       "cutoff": 88,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Rounded local subsidised-course game budget. Tuition Grant eligibility, programme-specific fees and service bonds are not simulated.",
+      "sectorLabel": "Autonomous university"
     },
     {
       "id": "sgp_smu",
       "name": "SMU",
       "country": "sgp",
       "sector": "public",
-      "annualTuition2026": 11000,
+      "annualTuition2026": 10000,
       "cutoff": 85,
       "prestige": 9,
-      "founded": 1950
-    },
-    {
-      "id": "x-uni-ntu",
-      "name": "Nanyang Technological University (NTU)",
-      "country": "sgp",
-      "sector": "private",
-      "annualTuition2026": 24300,
-      "cutoff": 80,
-      "prestige": 9,
-      "founded": 1991
-    },
-    {
-      "id": "x-uni-smu",
-      "name": "Singapore Management University (SMU)",
-      "country": "sgp",
-      "sector": "private",
-      "annualTuition2026": 29700,
-      "cutoff": 76,
-      "prestige": 8,
-      "founded": 2000
+      "founded": 1950,
+      "feeBasis": "Rounded local subsidised-course game budget. Tuition Grant eligibility, programme-specific fees and service bonds are not simulated.",
+      "sectorLabel": "Autonomous university"
     }
   ],
   "bra": [
@@ -3674,7 +3724,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 0,
       "cutoff": 85,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "bra_unicamp",
@@ -3684,7 +3735,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 0,
       "cutoff": 82,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "bra_fgv",
@@ -3694,39 +3746,46 @@ export const UNIVERSITIES = {
       "annualTuition2026": 40000,
       "cutoff": 80,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     }
   ],
   "ind": [
     {
       "id": "ind_iit",
-      "name": "IIT",
+      "name": "Fictional Institute of Technology",
       "country": "ind",
       "sector": "public",
-      "annualTuition2026": 200000,
+      "annualTuition2026": 150000,
       "cutoff": 95,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate.",
+      "fictional": true
     },
     {
       "id": "ind_nit",
-      "name": "NIT",
+      "name": "Fictional National Technology Institute",
       "country": "ind",
       "sector": "public",
       "annualTuition2026": 150000,
       "cutoff": 88,
       "prestige": 9,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate.",
+      "fictional": true
     },
     {
       "id": "ind_private_uni",
-      "name": "Private University",
+      "name": "Fictional Private University",
       "country": "ind",
       "sector": "private",
       "annualTuition2026": 400000,
       "cutoff": 60,
       "prestige": 7,
-      "founded": 1950
+      "founded": 1950,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate.",
+      "fictional": true
     }
   ],
   "che": [
@@ -3735,60 +3794,66 @@ export const UNIVERSITIES = {
       "name": "ETH Zurich",
       "country": "che",
       "sector": "public",
-      "annualTuition2026": 1460,
+      "annualTuition2026": 2000,
       "cutoff": 88,
       "prestige": 10,
-      "founded": 1855
+      "founded": 1855,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "che_zurich",
       "name": "University of Zurich",
       "country": "che",
       "sector": "public",
-      "annualTuition2026": 1540,
+      "annualTuition2026": 2000,
       "cutoff": 83,
       "prestige": 9,
-      "founded": 1833
+      "founded": 1833,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "che_geneva",
       "name": "University of Geneva",
       "country": "che",
       "sector": "public",
-      "annualTuition2026": 1000,
+      "annualTuition2026": 2000,
       "cutoff": 82,
       "prestige": 9,
-      "founded": 1559
+      "founded": 1559,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "che_epfl",
       "name": "EPFL",
       "country": "che",
       "sector": "public",
-      "annualTuition2026": 1460,
+      "annualTuition2026": 2000,
       "cutoff": 85,
       "prestige": 10,
-      "founded": 1853
+      "founded": 1853,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "che_basel",
       "name": "University of Basel",
       "country": "che",
       "sector": "public",
-      "annualTuition2026": 1700,
+      "annualTuition2026": 2000,
       "cutoff": 80,
       "prestige": 8,
-      "founded": 1460
+      "founded": 1460,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "che_bern",
       "name": "University of Bern",
       "country": "che",
       "sector": "public",
-      "annualTuition2026": 1560,
+      "annualTuition2026": 2000,
       "cutoff": 78,
       "prestige": 8,
-      "founded": 1834
+      "founded": 1834,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     }
   ],
   "swe": [
@@ -3800,7 +3865,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 0,
       "cutoff": 78,
       "prestige": 9,
-      "founded": 1477
+      "founded": 1477,
+      "feeBasis": "No tuition in the domestic/EU game pathway. Non-EU tuition, exceptions and residence-based eligibility are not simulated."
     },
     {
       "id": "swe_lund",
@@ -3810,7 +3876,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 0,
       "cutoff": 80,
       "prestige": 9,
-      "founded": 1666
+      "founded": 1666,
+      "feeBasis": "No tuition in the domestic/EU game pathway. Non-EU tuition, exceptions and residence-based eligibility are not simulated."
     },
     {
       "id": "swe_stockholm",
@@ -3820,7 +3887,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 0,
       "cutoff": 76,
       "prestige": 8,
-      "founded": 1878
+      "founded": 1878,
+      "feeBasis": "No tuition in the domestic/EU game pathway. Non-EU tuition, exceptions and residence-based eligibility are not simulated."
     },
     {
       "id": "swe_kth",
@@ -3830,7 +3898,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 0,
       "cutoff": 82,
       "prestige": 9,
-      "founded": 1827
+      "founded": 1827,
+      "feeBasis": "No tuition in the domestic/EU game pathway. Non-EU tuition, exceptions and residence-based eligibility are not simulated."
     },
     {
       "id": "swe_karolinska",
@@ -3840,7 +3909,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 0,
       "cutoff": 88,
       "prestige": 10,
-      "founded": 1810
+      "founded": 1810,
+      "feeBasis": "No tuition in the domestic/EU game pathway. Non-EU tuition, exceptions and residence-based eligibility are not simulated."
     },
     {
       "id": "swe_gothenburg",
@@ -3850,17 +3920,20 @@ export const UNIVERSITIES = {
       "annualTuition2026": 0,
       "cutoff": 74,
       "prestige": 8,
-      "founded": 1891
+      "founded": 1891,
+      "feeBasis": "No tuition in the domestic/EU game pathway. Non-EU tuition, exceptions and residence-based eligibility are not simulated."
     },
     {
       "id": "swe_chalmers",
       "name": "Chalmers University of Technology",
       "country": "swe",
-      "sector": "public",
+      "sector": "independent",
       "annualTuition2026": 0,
       "cutoff": 80,
       "prestige": 8,
-      "founded": 1829
+      "founded": 1829,
+      "feeBasis": "No tuition in the domestic/EU game pathway. Non-EU tuition, exceptions and residence-based eligibility are not simulated.",
+      "sectorLabel": "Foundation university"
     }
   ],
   "tur": [
@@ -3869,50 +3942,55 @@ export const UNIVERSITIES = {
       "name": "Istanbul University",
       "country": "tur",
       "sector": "public",
-      "annualTuition2026": 15000,
+      "annualTuition2026": 0,
       "cutoff": 75,
       "prestige": 8,
-      "founded": 1453
+      "founded": 1453,
+      "feeBasis": "Domestic public-study game budget, not a fee quote. Evening, international and specialist programmes may charge fees."
     },
     {
       "id": "tur_metu",
       "name": "Middle East Technical University",
       "country": "tur",
       "sector": "public",
-      "annualTuition2026": 20000,
+      "annualTuition2026": 0,
       "cutoff": 85,
       "prestige": 9,
-      "founded": 1956
+      "founded": 1956,
+      "feeBasis": "Domestic public-study game budget, not a fee quote. Evening, international and specialist programmes may charge fees."
     },
     {
       "id": "tur_bogazici",
       "name": "Boğaziçi University",
       "country": "tur",
       "sector": "public",
-      "annualTuition2026": 20000,
+      "annualTuition2026": 0,
       "cutoff": 88,
       "prestige": 10,
-      "founded": 1863
+      "founded": 1863,
+      "feeBasis": "Domestic public-study game budget, not a fee quote. Evening, international and specialist programmes may charge fees."
     },
     {
       "id": "tur_ankara",
       "name": "Ankara University",
       "country": "tur",
       "sector": "public",
-      "annualTuition2026": 12000,
+      "annualTuition2026": 0,
       "cutoff": 72,
       "prestige": 7,
-      "founded": 1946
+      "founded": 1946,
+      "feeBasis": "Domestic public-study game budget, not a fee quote. Evening, international and specialist programmes may charge fees."
     },
     {
       "id": "tur_itu",
       "name": "Istanbul Technical University",
       "country": "tur",
       "sector": "public",
-      "annualTuition2026": 18000,
+      "annualTuition2026": 0,
       "cutoff": 83,
       "prestige": 9,
-      "founded": 1773
+      "founded": 1773,
+      "feeBasis": "Domestic public-study game budget, not a fee quote. Evening, international and specialist programmes may charge fees."
     },
     {
       "id": "tur_koc",
@@ -3922,7 +4000,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 1100000,
       "cutoff": 90,
       "prestige": 10,
-      "founded": 1993
+      "founded": 1993,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "tur_sabanci",
@@ -3932,7 +4011,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 950000,
       "cutoff": 88,
       "prestige": 9,
-      "founded": 1996
+      "founded": 1996,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     },
     {
       "id": "tur_bilkent",
@@ -3942,7 +4022,8 @@ export const UNIVERSITIES = {
       "annualTuition2026": 850000,
       "cutoff": 86,
       "prestige": 9,
-      "founded": 1984
+      "founded": 1984,
+      "feeBasis": "Estimated game budget for a local undergraduate, not an institutional fee quote. Fees vary by course and residency; living costs are separate."
     }
   ]
 };
@@ -11008,8 +11089,7 @@ export function getSchoolsFor(countryId, year) {
 export function getUniversitiesFor(countryId, year) {
   // v2.1: no silent wrong-country fallback (see getSchoolsFor).
   const list = UNIVERSITIES[countryId] || [];
-  const avail = list.filter(u => (u.founded || 1900) <= year);
-  return avail.length ? avail : list.slice(0, 2);
+  return list.filter(u => u.undergraduate !== false && (u.founded || 1900) <= year);
 }
 
 export function getBanksFor(countryId, year) {
@@ -11045,3 +11125,8 @@ export function getEmployersFor(countryId, trackId) {
   // countries now have real EMPLOYERS rows; an unknown country returns [].
   return [];
 }
+
+// Legacy duplicated IDs resolve to the same institution, without rewriting existing enrolments.
+export const UNIVERSITY_ID_ALIASES = {"x-uni-kfupm": "sau_kfupm", "x-uni-lmu": "deu_lmu", "x-uni-ubc": "can_ubc", "x-uni-unsw": "aus_unsw", "x-uni-ntu": "sgp_ntu", "x-uni-smu": "sgp_smu"};
+export function canonicalUniversityId(id) { return UNIVERSITY_ID_ALIASES[id] || id; }
+export function universitySectorLabel(u) { return u.sectorLabel || (u.sector === 'public' ? 'Public' : u.sector === 'private' ? 'Private' : 'Independent'); }
