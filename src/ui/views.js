@@ -4142,7 +4142,7 @@ function renderAppearanceStudioSubtabHtml(S) {
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px">
               <strong style="font-size:0.82rem">Portrait Rendering Medium:</strong>
               <div style="display:flex;gap:5px">
-                <button type="button" class="btn btn-sm ${app.portraitMode !== 'vector' ? 'btn-navy' : ''}" data-action="edit-appearance" data-field="portraitMode" data-val="ink">🖌 Hand-Drawn Ink &amp; Wash Art</button>
+                <button type="button" class="btn btn-sm ${app.portraitMode !== 'vector' ? 'btn-navy' : ''}" data-action="edit-appearance" data-field="portraitMode" data-val="ink">Hand-Drawn Ink &amp; Wash Art</button>
                 <button type="button" class="btn btn-sm ${app.portraitMode === 'vector' ? 'btn-navy' : ''}" data-action="edit-appearance" data-field="portraitMode" data-val="vector">✎ Custom Combinatorial Vector</button>
               </div>
             </div>
