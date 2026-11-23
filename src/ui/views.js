@@ -1304,19 +1304,19 @@ function renderChildrenSubtabHtml(S) {
                     return `
                 <button class="btn btn-sm" data-action="child-play" data-cid="${ch.id}">Play With</button>
                 ${ch.age < 4
-                  ? `<span class="hud-pill">🔒 Too young for lessons yet</span>`
+                  ? `<span class="hud-pill">Too young for lessons yet</span>`
                   : mySmarts < 50
-                  ? `<span class="hud-pill">🔒 Teach needs your Smarts at 50%+ (yours: ${mySmarts}%)</span>`
+                  ? `<span class="hud-pill">Teach needs your Smarts at 50%+ (yours: ${mySmarts}%)</span>`
                   : `<button class="btn btn-sm" data-action="child-teach" data-cid="${ch.id}">Teach</button>`}
                 ${ch.age < 4
-                  ? `<span class="hud-pill">🔒 Outings from age 4</span>`
+                  ? `<span class="hud-pill">Outings from age 4</span>`
                   : S.money.cash < outingCost
-                  ? `<span class="hud-pill">🔒 A day out costs ${esc(formatMoney(outingCost, S.country))} — you hold ${esc(formatMoney(S.money.cash, S.country))}</span>`
+                  ? `<span class="hud-pill">A day out costs ${esc(formatMoney(outingCost, S.country))} — you hold ${esc(formatMoney(S.money.cash, S.country))}</span>`
                   : `<button class="btn btn-sm" data-action="child-outing" data-cid="${ch.id}">Take Out (${esc(formatMoney(outingCost, S.country))})</button>`}
                 ${ch.age < 6
-                  ? `<span class="hud-pill">🔒 Not in school yet — homework help starts at 6</span>`
+                  ? `<span class="hud-pill">Not in school yet — homework help starts at 6</span>`
                   : ch.age >= 18
-                  ? `<span class="hud-pill">🔒 Finished school — no homework left</span>`
+                  ? `<span class="hud-pill">Finished school — no homework left</span>`
                   : `<button class="btn btn-sm" data-action="child-homework" data-cid="${ch.id}">Help With Homework</button>`}`;
                   })()}
               </div>
@@ -1396,25 +1396,25 @@ function renderNpcCardHtml(S, p) {
             const canGift = S.player.age >= 16 && (cheapestGift || S.money.cash >= cashAmt);
             return `
         ${p.age < 4
-          ? `<span class="hud-pill">🔒 Too young to talk on the phone</span>`
-          : `<button class="btn btn-sm" data-action="npc-call" data-id="${p.id}">📞 Call${/* v2.15 W3 */ socialEnergyCostLabel(S, p, 'call')}</button>`}
+          ? `<span class="hud-pill">Too young to talk on the phone</span>`
+          : `<button class="btn btn-sm" data-action="npc-call" data-id="${p.id}">Call${/* v2.15 W3 */ socialEnergyCostLabel(S, p, 'call')}</button>`}
         ${trip.cost > 0 && S.money.cash < trip.cost
-          ? `<span class="hud-pill">🔒 Visit costs ${esc(formatMoney(trip.cost, S.country))} for the trip — you hold ${esc(formatMoney(S.money.cash, S.country))}</span>`
+          ? `<span class="hud-pill">Visit costs ${esc(formatMoney(trip.cost, S.country))} for the trip — you hold ${esc(formatMoney(S.money.cash, S.country))}</span>`
           : `<button class="btn btn-sm" data-action="npc-visit" data-id="${p.id}">${trip.cost > 0 ? `Visit${socialEnergyCostLabel(S, p, 'visit')} · ${esc(formatMoney(trip.cost, S.country))} trip` : `Visit${socialEnergyCostLabel(S, p, 'visit')}`}</button>`}
         ${S.player.age < 16
-          ? `<span class="hud-pill">🔒 Gifts from 16</span>`
+          ? `<span class="hud-pill">Gifts from 16</span>`
           : !canGift
-          ? `<span class="hud-pill">🔒 No gift you can afford yet</span>`
+          ? `<span class="hud-pill">No gift you can afford yet</span>`
           : `<button class="btn btn-sm" data-action="npc-gift" data-id="${p.id}">${icon('gift', 13)} Give a Gift${socialEnergyCostLabel(S, p, 'gift')}</button>`}
         ${S.player.age < 18
-          ? `<span class="hud-pill">🔒 Ask for help from 18</span>`
+          ? `<span class="hud-pill">Ask for help from 18</span>`
           : p.age < 22
-          ? `<span class="hud-pill">🔒 ${esc(p.firstName)} is too young to help you out</span>`
+          ? `<span class="hud-pill">${esc(p.firstName)} is too young to help you out</span>`
           : `<button class="btn btn-sm" data-action="npc-ask-help" data-id="${p.id}">Ask for Help${socialEnergyCostLabel(S, p, 'askHelp')}</button>`}
         ${p.age < 4
-          ? `<span class="hud-pill">🔒 Too young for a real conversation</span>`
+          ? `<span class="hud-pill">Too young for a real conversation</span>`
           : p.rel.resentment >= 80
-          ? `<span class="hud-pill">🔒 Won't talk to you right now — clear the air first</span>`
+          ? `<span class="hud-pill">Won't talk to you right now — clear the air first</span>`
           : `<button class="btn btn-sm" data-action="npc-talk" data-id="${p.id}">Have a Conversation${socialEnergyCostLabel(S, p, 'talk')}</button>`}`;
           })()}
         ${openPromises.map(pr => `
@@ -1485,7 +1485,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
                 : !actionOk
                 ? `<span class="muted" style="font-size:0.82rem">${age < 6 ? 'Starts at 6' : 'School years over'}</span>`
                 : !aff.affordable
-                ? `<span class="hud-pill">🔒 Can't afford — ${esc(payerLine)}</span>`
+                ? `<span class="hud-pill">Can't afford — ${esc(payerLine)}</span>`
                 : canChoose
                 ? `<button class="btn btn-sm btn-primary" data-action="choose-school" data-id="${sc.id}">Choose</button>`
                 : `<button class="btn btn-sm btn-primary" data-action="change-school" data-id="${sc.id}">Move here</button>`}
@@ -1556,7 +1556,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
           <strong>${esc(c.label)}</strong>
           <span>${esc(c.desc)}</span>
         </div>
-        ${joined ? '<span class="hud-pill">Member</span>' : allowed ? `<button class="btn btn-sm btn-primary" data-action="join-club" data-id="${c.id}">Join</button>` : `<span class="hud-pill">🔒 ${esc(lockReason)}</span>`}
+        ${joined ? '<span class="hud-pill">Member</span>' : allowed ? `<button class="btn btn-sm btn-primary" data-action="join-club" data-id="${c.id}">Join</button>` : `<span class="hud-pill">${esc(lockReason)}</span>`}
       </div>
     `;
   }).join('');
@@ -1601,7 +1601,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
           <span>${esc(sch.desc)}</span>
           <span class="muted">Needs: ${esc(bars)} · Success rate: ${Math.round(sch.acceptanceRate * 100)}%</span>
         </div>
-        ${app ? `<span class="hud-pill">${app.status === 'awarded' ? '✓ Awarded' : 'Turned down'} (${app.year})</span>` : lock ? `<span class="hud-pill">🔒 ${esc(lock)}</span>` : `<button class="btn btn-sm btn-primary" data-action="apply-scholarship" data-id="${sch.id}">Apply</button>`}
+        ${app ? `<span class="hud-pill">${app.status === 'awarded' ? '✓ Awarded' : 'Turned down'} (${app.year})</span>` : lock ? `<span class="hud-pill">${esc(lock)}</span>` : `<button class="btn btn-sm btn-primary" data-action="apply-scholarship" data-id="${sch.id}">Apply</button>`}
       </div>
     `;
   }).join('');
@@ -1616,7 +1616,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
           <strong>${esc(intn.label)}${intn.modelled ? ' <span class="muted">(pay estimated)</span>' : ''}</strong>
           <span>${esc(intn.company)} · ${intn.months} months · ${intn.paid ? (payLocal > 0 ? `${esc(formatMoney(payLocal, S.country))}/mo` : 'Paid') : 'Unpaid'} · For: ${intn.requiresMajor.length ? esc(intn.requiresMajor.join('/').toUpperCase()) : 'Any major'}</span>
         </div>
-        ${app ? `<span class="hud-pill">${app.status === 'completed' ? '✓ Completed' : 'Turned down'} (${app.year})</span>` : lock ? `<span class="hud-pill">🔒 ${esc(lock)}</span>` : `<button class="btn btn-sm btn-primary" data-action="apply-internship" data-id="${intn.id}">Apply</button>`}
+        ${app ? `<span class="hud-pill">${app.status === 'completed' ? '✓ Completed' : 'Turned down'} (${app.year})</span>` : lock ? `<span class="hud-pill">${esc(lock)}</span>` : `<button class="btn btn-sm btn-primary" data-action="apply-internship" data-id="${intn.id}">Apply</button>`}
       </div>
     `;
   }).join('');
@@ -1834,7 +1834,7 @@ function renderMarketListingHtml(S, j) {
       </div>
       ${elig.eligible
         ? `<button class="btn btn-sm btn-primary" data-action="apply-job" data-idx="${j.origIdx}">Apply</button>`
-        : `<span class="hud-pill">🔒 ${esc(elig.blockedBy[0] || 'Not eligible')}</span>`}
+        : `<span class="hud-pill">${esc(elig.blockedBy[0] || 'Not eligible')}</span>`}
     </div>
   `;
 }
@@ -2231,7 +2231,7 @@ function renderEduAndLicensingHtml(S) {
                 <strong>${esc(ex.label)}</strong>
                 <span>Certifies: <strong>${esc(ex.lang)}</strong> · Fee: <strong class="mono">${esc(formatMoney(fee, S.country))}</strong> · Valid ${ex.validityYears} yrs</span>
               </div>
-              ${held ? '<span class="hud-pill">✓ Certified</span>' : lock ? `<span class="hud-pill">🔒 ${esc(lock)}</span>` : `<button class="btn btn-sm btn-primary" data-action="sit-exam" data-kind="language" data-id="${ex.id}">Sit Exam</button>`}
+              ${held ? '<span class="hud-pill">✓ Certified</span>' : lock ? `<span class="hud-pill">${esc(lock)}</span>` : `<button class="btn btn-sm btn-primary" data-action="sit-exam" data-kind="language" data-id="${ex.id}">Sit Exam</button>`}
             </div>
           `;
         }).join('')}
@@ -2259,7 +2259,7 @@ function renderEduAndLicensingHtml(S) {
                 <strong>${esc(lic.label)}</strong>
                 <span>${lic.reqDegree ? `Req: ${lic.reqDegree.toUpperCase()}` : 'Open'}${lic.reqLang ? ` + ${lic.reqLang}` : ''} · Fee: <strong class="mono">${esc(formatMoney(fee, S.country))}</strong>${tier1 ? ' · ★ Tier-1 UK/US Exam Exempt!' : ''}</span>
               </div>
-              ${held ? '<span class="hud-pill">✓ Licensed</span>' : lock ? `<span class="hud-pill">🔒 ${esc(lock)}</span>` : `<button class="btn btn-sm btn-primary" data-action="sit-exam" data-kind="board" data-id="${lic.id}">Sit Board</button>`}
+              ${held ? '<span class="hud-pill">✓ Licensed</span>' : lock ? `<span class="hud-pill">${esc(lock)}</span>` : `<button class="btn btn-sm btn-primary" data-action="sit-exam" data-kind="board" data-id="${lic.id}">Sit Board</button>`}
             </div>
           `;
         }).join('')}
@@ -2464,7 +2464,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
     const costFromHome = ev.costLocal + ev.wageEstimateLocal;
     const otherEstimateLocal = ev.costLocal;
     const locksHtml = ev.locks.length
-      ? `<div style="margin-top:4px">${ev.locks.map(l => `<div>🔒 ${esc(l)}</div>`).join('')}</div>` : '';
+      ? `<div style="margin-top:4px">${ev.locks.map(l => `<div>${esc(l)}</div>`).join('')}</div>` : '';
     /* v2.20 I1 — who runs it, chosen on the row: the engine already
        supports a manager-run launch (runBy:'manager' + a manager
        record keeps the job), but the screen never offered it. The
@@ -2619,7 +2619,7 @@ function renderSideGigsSubtabHtml(S) {
       ? `<span>Worked ${ev.monthsWorked} month${ev.monthsWorked > 1 ? 's' : ''} · reputation ${ev.reputation}/100${ev.complaints ? ` · ${ev.complaints} complaint${ev.complaints > 1 ? 's' : ''}` : ''}</span>`
       : '';
     const btn = !ev.available
-      ? `<span class="hud-pill">🔒 ${esc(ev.lockReason)}</span>`
+      ? `<span class="hud-pill">${esc(ev.lockReason)}</span>`
       : workedThisMonth
         ? `<span class="hud-pill">Worked this month</span>`
         : `<button class="btn btn-sm ${kind === 'parttime' ? 'btn-primary' : ''}" data-action="side-gig" data-kind="${kind}" data-idx="${ev.idx}">${kind === 'parttime' ? 'Work this gig for the month' : 'Hustle for cash'}</button>`;
@@ -2730,7 +2730,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
   /* The rooms of THIS home's own plan (every floor) — one row per real room,
      so Villa offices 102, 205 and 302 are independent rows, not one shared
      "office" that furnishes all three at once. */
-  const planRooms = curProp ? furnishablePlanRooms(curProp.shape || 'apartment') : [];
+  const planRooms = curProp ? furnishablePlanRooms(curProp.shape || 'apartment', curProp.country || S.country) : [];
   const staffRoles = Object.entries(HOUSEHOLD_STAFF_CATALOG || {}).slice(0, 8);
   const rentalUnits = getHousingFor(S.country, S.year).slice(0, 4);
 
@@ -2802,7 +2802,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
             `).join('')}
           </div>
 
-          <strong style="font-size:0.84rem;display:block;margin-bottom:6px">2. Furnish Rooms on 3D Blueprint (Builds Marital Gehaz &amp; Qa'ima!):</strong>
+          <strong style="font-size:0.84rem;display:block;margin-bottom:6px">2. Furnish the rooms in your home:</strong>
           <div style="margin-bottom:12px">
             ${planRooms.length ? planRooms.map(rm => {
               const done = isPlanRoomFurnished(curProp.furnishedRooms, rm);
@@ -2815,7 +2815,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
               return `
                 <div class="furnish-room">
                   <div class="furnish-room-head">
-                    <strong style="font-size:0.82rem">Room ${esc(rm.no)} — ${esc(rm.name)} · ${opts[0].roomM2} m²</strong>
+                    <strong style="font-size:0.82rem">Room ${esc(rm.no)} — ${esc(rm.name)}</strong>
                     <span class="muted" style="font-size:0.74rem">${done ? `✓ ${esc(label)}` : 'Empty — pick a style below'}</span>
                   </div>
                   <div class="furnish-styles">
@@ -2848,9 +2848,9 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
           <div style="display:flex;flex-wrap:wrap;gap:6px">
             ${[
               { k: 'solar', l: '☀ Rooftop Solar (−40% Bills)' },
-              { k: 'pool', l: '🏊 Heated Swimming Pool' },
-              { k: 'smart_security', l: '🛡 Smart CCTV & Automation' },
-              { k: 'home_gym', l: '🏋 Private Home Gym' },
+              { k: 'pool', l: 'Heated Swimming Pool' },
+              { k: 'smart_security', l: 'Smart CCTV & Automation' },
+              { k: 'home_gym', l: 'Private Home Gym' },
               { k: 'generator', l: '⚡ Silent Backup Generator' }
             ].map(u => {
               const has = (curProp.upgrades || []).includes(u.k);
@@ -3275,7 +3275,7 @@ function renderLandAndBuildSubtabHtml(S, uiState) {
                 <div class="muted">Land Value: <strong class="mono">${esc(formatMoney(lnd.valueLocal, S.country))}</strong></div>
               </div>
               ${lnd.buildProject ? `
-                <span class="hud-pill" style="background:#FEF7E6;color:#B67D1E">🏗 Building ${esc(lnd.buildProject.label)}: ${lnd.buildProject.progressPct}% (${lnd.buildProject.monthsLeft}m left)</span>
+                <span class="hud-pill" style="background:#FEF7E6;color:#B67D1E">Building ${esc(lnd.buildProject.label)}: ${lnd.buildProject.progressPct}% (${lnd.buildProject.monthsLeft}m left)</span>
               ` : `
                 <div style="display:flex;flex-wrap:wrap;gap:6px">
                   ${pTypes.slice(0, 3).map(pt => `
@@ -4294,14 +4294,14 @@ function renderPetsSubtabHtml(S) {
                 <span class="muted">Health: <strong>${Math.round(st.health)}%</strong> · Happiness: <strong>${Math.round(st.happiness)}%</strong> · Obedience: <strong>${Math.round(st.obedience)}%</strong></span>
                 <span style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
                   ${S.money.cash < feedCost
-                    ? `<span class="hud-pill">🔒 Feeding costs ${esc(formatMoney(feedCost, S.country))} — you hold ${esc(formatMoney(S.money.cash, S.country))}</span>`
+                    ? `<span class="hud-pill">Feeding costs ${esc(formatMoney(feedCost, S.country))} — you hold ${esc(formatMoney(S.money.cash, S.country))}</span>`
                     : `<button class="btn btn-sm" data-action="pet-feed" data-id="${pt.id}">Feed (${esc(formatMoney(feedCost, S.country))})</button>`}
                   <button class="btn btn-sm" data-action="pet-play" data-id="${pt.id}">Play</button>
                   <button class="btn btn-sm" data-action="pet-train" data-id="${pt.id}">Train</button>
                   ${st.health >= 95
-                    ? `<span class="hud-pill">🔒 ${esc(pt.name)} is in perfect health — no vet visit needed</span>`
+                    ? `<span class="hud-pill">${esc(pt.name)} is in perfect health — no vet visit needed</span>`
                     : S.money.cash < vetCost
-                    ? `<span class="hud-pill">🔒 A vet visit costs ${esc(formatMoney(vetCost, S.country))} — you hold ${esc(formatMoney(S.money.cash, S.country))}</span>`
+                    ? `<span class="hud-pill">A vet visit costs ${esc(formatMoney(vetCost, S.country))} — you hold ${esc(formatMoney(S.money.cash, S.country))}</span>`
                     : `<button class="btn btn-sm" data-action="pet-vet" data-id="${pt.id}">Take to the Vet (${esc(formatMoney(vetCost, S.country))})</button>`}
                 </span>
               </div>
@@ -4926,7 +4926,7 @@ function renderGlobalMigrationSubtabHtml(S) {
   return `
     <div class="card card-elevated">
       <div class="section-head">
-        <h3>🇩🇪 Germany Chancenkarte — Opportunity Card (June 2024+ · 6-Point System)</h3>
+        <h3>Germany Chancenkarte — Opportunity Card (June 2024+ · 6-Point System)</h3>
         <span class="hud-pill mono ${ckPts >= 6 ? 'text-good' : ''}">Your Score: ${ckPts} / 6 pts</span>
       </div>
       <p class="muted" style="margin-bottom:10px">

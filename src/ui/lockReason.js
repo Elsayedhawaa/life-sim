@@ -30,5 +30,5 @@ export function lockReason(reason, whatWouldUnlock) {
   const r = String(reason ?? '').trim();
   const u = String(whatWouldUnlock ?? '').trim();
   if (!r && !u) return '';
-  return `<span class="lock-reason">🔒 ${escLock(r)}${u ? ` — ${escLock(u)}` : ''}</span>`;
+  return `<span class="lock-reason">${escLock(r)}${u ? ` — ${escLock(u)}` : ''}</span>`;
 }

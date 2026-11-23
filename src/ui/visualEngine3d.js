@@ -1,3 +1,4 @@
+import {regionalRoomName, homeStyleNote} from './homeRegionalStyle.js';
 /* ============================================================================
    World Life — Sheet A-101 Floor Plan & Drafting Engine (v2.3)
    - Zero cheap 3-box clip-art floorplans; zero pointless spin buttons.
@@ -546,6 +547,59 @@ const A101_SCHEMATICS = {
   ]
 };
 
+export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = null) {
+  const floors = JSON.parse(JSON.stringify(A101_SCHEMATICS[shape] || A101_SCHEMATICS.apartment));
+  // Japanese apartment: wet rooms by the entrance, LDK at the rear, bedrooms
+  // off a central hall. Numbers and furnishing keys survive save upgrades.
+  if (country === 'jpn' && shape === 'apartment') {
+    const layout = {
+      '101':[504,292,90,136], '102':[594,360,90,68],
+      '103':[84,238,420,54], '104':[84,292,300,136],
+      '105':[384,292,120,136], '106':[84,92,196,146],
+      '107':[594,238,90,122], '108':[280,92,196,146],
+      '109':[476,92,208,146]
+    };
+    for (const room of floors[0].rooms) {
+      [room.x,room.y,room.w,room.h] = layout[room.no];
+      delete room.door;
+    }
+    floors[0].core = null;
+  }
+  if (country === 'jpn' && shape === 'villa') {
+    const ground = {
+      '101':[246,290,110,128], '102':[76,290,170,128],
+      '103':[76,88,110,148], '104':[76,236,280,54],
+      '105':[356,236,336,182], '106':[356,88,220,148],
+      '107':[576,88,116,148]
+    };
+    for (const room of floors[0].rooms) {
+      [room.x,room.y,room.w,room.h] = ground[room.no];
+      delete room.door;
+    }
+    floors[0].terrace.hasPool = false;
+    floors[0].terrace.label = 'GARDEN TERRACE';
+  }
+  for (const floor of floors) {
+    floor.title = `${String(shape).replace(/_/g, ' ').toUpperCase()} — FICTIONAL HOME LAYOUT`;
+    if (floor.core) floor.core.label = 'STAIRS / SHARED ACCESS';
+  }
+  const rooms = floors.flatMap(f => f.rooms);
+  for (const room of rooms) room.name = regionalRoomName(room, country, shape);
+  const target = Number(areaM2);
+  const total = rooms.reduce((n, r) => n + (r.m2 || 0), 0);
+  if (target > 0 && total > 0) {
+    // Largest-remainder allocation: displayed room areas equal the deed area.
+    const units = Math.round(target * 10);
+    const shares = rooms.map(r => ({room:r, raw:units * (r.m2 || 0) / total}));
+    let allocated = 0;
+    for (const share of shares) { share.units = Math.floor(share.raw); allocated += share.units; }
+    const ranked = [...shares].sort((a,b) => (b.raw-b.units)-(a.raw-a.units));
+    for (let i=0; i<units-allocated; i++) ranked[i % ranked.length].units++;
+    for (const share of shares) share.room.m2 = share.units / 10;
+  }
+  return floors;
+}
+
 function drawSlashDimensionH(x1, x2, y, label, col) {
   const mx = (x1 + x2) / 2;
   return `
@@ -879,7 +933,7 @@ export function renderArchitecturalFloorplanSvg(
   clickablePropId = null,
   cadOptions = {}
 ) {
-  const floors = A101_SCHEMATICS[shape] || A101_SCHEMATICS.apartment;
+  const floors = propertyFloorPlans(shape, cadOptions.country, customAreaM2);
   const idx = Math.min(floors.length - 1, Math.max(0, Number(floorIdx) || 0));
   const plan = floors[idx];
 
@@ -1123,7 +1177,7 @@ export function renderArchitecturalFloorplanSvg(
         <circle cx="0" cy="0" r="7" fill="${inkMain}"/>
         <polygon points="-7,0 0,-12 7,0" fill="${inkMain}"/>
         <text x="0" y="2.5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="7" font-weight="800" fill="${paperBg}">A</text>
-        <text x="14" y="3" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700" fill="${inkSub}">${isRoof ? 'Roof plan · No cut through the rooms · Scale 1:50' : 'Cut at 1.2 m above the floor · Scale 1:50'}</text>
+        <text x="14" y="3" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700" fill="${inkSub}">${isRoof ? 'Roof plan · No cut through the rooms · Diagram only' : 'Cut at 1.2 m above the floor · Diagram only'}</text>
       </g>
 
       <!-- Slim side block: plan name, floor, scale, view — no room list here any more -->
@@ -1146,7 +1200,7 @@ export function renderArchitecturalFloorplanSvg(
         <text x="87" y="118" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="9" font-weight="700" fill="${inkMain}">${escAttr(floorLabel)}</text>
 
         <line x1="0" y1="130" x2="174" y2="130" stroke="${inkMain}" stroke-width="1"/>
-        <text x="87" y="150" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" font-weight="700" fill="${dimBlue}">Scale 1 : 50</text>
+        <text x="87" y="150" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" font-weight="700" fill="${dimBlue}">Diagram only</text>
         <text x="12" y="172" font-family="JetBrains Mono, monospace" font-size="7.5" fill="${inkSub}">Plan</text>
         <text x="12" y="198" font-family="JetBrains Mono, monospace" font-size="22" font-weight="800" fill="${inkMain}">${escAttr(plan.code)}</text>
 
@@ -1177,23 +1231,24 @@ export function renderArchitecturalFloorplanSvg(
           <line x1="28" y1="${ry + 7}" x2="892" y2="${ry + 7}" stroke="${gridCol}" stroke-width="0.8"/>
         `;
       }).join('')}
-      <text x="28" y="${footY}" font-family="DM Sans, sans-serif" font-size="8.5" fill="${inkSub}">Drawings are layout diagrams, not to scale. The room sizes in this list are the real room sizes.</text>
+      <text x="28" y="${footY}" font-family="DM Sans, sans-serif" font-size="8.5" fill="${inkSub}">Drawings are layout diagrams, not to scale. Room sizes are simulated allocations of the property area.</text>
     </svg>
   `;
 }
 
 // Phone-first plan: geometry and room identity stay together; detailed CAD is optional.
-export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms = {}, floorIdx = 0, propertyId = null) {
-  const floors = A101_SCHEMATICS[shape] || A101_SCHEMATICS.apartment;
+export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms = {}, floorIdx = 0, propertyId = null, country = '', areaM2 = null) {
+  const floors = propertyFloorPlans(shape, country, areaM2);
   const idx = Math.min(floors.length - 1, Math.max(0, Number(floorIdx) || 0));
   const plan = floors[idx];
   if (shape === 'land') return renderArchitecturalFloorplanSvg(shape);
   const sh = plan.shell;
   const attrs = rm => `data-action="room-info" data-room="${escAttr(rm.key)}" data-no="${escAttr(rm.no)}" data-name="${escAttr(planRoomName(rm))}" data-m2="${rm.m2 || 0}" data-floor="${escAttr(plainFloorLabel(idx))}"`;
   return `<section class="readable-floor" style="border:1px solid #c9c2b5;border-radius:12px;padding:12px;background:#fcfbf7;color:#292524;min-width:0">
-    <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx))}</h4>
-    <p style="font-size:0.78rem;margin:0 0 12px;color:#625b50">Room numbers match the list below. Layout diagram, not to scale.</p>
+    <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx))}</h4>${idx === 0 ? `<p style="font-size:0.78rem;line-height:1.5;margin:4px 0 8px">${escAttr(homeStyleNote(country))}</p>` : ''}
+    <p style="font-size:0.78rem;margin:0 0 12px;color:#625b50">Room numbers match the list below. Fictional layout, not to scale.</p>
     <svg viewBox="${sh.x - 12} ${sh.y - 12} ${sh.w + 24} ${sh.h + 24}" width="100%" role="img" aria-label="${escAttr(plainFloorLabel(idx))} room layout" style="display:block;border-radius:6px;background:#eee9df">
+      ${plan.core ? `<g><rect x="${plan.core.x}" y="${plan.core.y}" width="${plan.core.w}" height="${plan.core.h}" fill="#e5dfd1" stroke="#524c43" stroke-width="2"/><text x="${plan.core.x + plan.core.w/2}" y="${plan.core.y + plan.core.h/2}" text-anchor="middle" font-size="16" fill="#524c43">Stairs</text></g>` : ''}
       ${plan.rooms.map(rm => `<g ${attrs(rm)} tabindex="0" role="button" aria-label="Room ${escAttr(rm.no)}: ${escAttr(planRoomName(rm))}">
         <rect x="${rm.x}" y="${rm.y}" width="${rm.w}" height="${rm.h}" fill="${isRoomFurnished(furnishedRooms, rm) ? '#e4eee3' : '#f8f5ee'}" stroke="#524c43" stroke-width="3"/>
         <text x="${rm.x + rm.w/2}" y="${rm.y + rm.h/2 + 7}" text-anchor="middle" font-size="24" font-family="sans-serif" font-weight="700" fill="#292524">${escAttr(rm.no)}</text>
@@ -1206,7 +1261,7 @@ export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms 
         <span style="font-size:0.78rem;white-space:nowrap">${rm.m2} m²${isRoomFurnished(furnishedRooms, rm) ? ' ✓' : ''}</span>
       </button>`).join('')}
     </div>
-    <p style="font-size:0.74rem;margin:10px 0 0;color:#625b50">${plan.rooms.reduce((sum, r) => sum + (r.m2 || 0), 0)} m² across listed rooms. Use the furnishing controls below to furnish a room.</p>
+    <p style="font-size:0.74rem;margin:10px 0 0;color:#625b50">${Math.round(plan.rooms.reduce((sum, r) => sum + (r.m2 || 0), 0) * 10) / 10} m² across listed rooms. Use the furnishing controls below to furnish a room.</p>
   </section>`;
 }
 
@@ -1218,7 +1273,7 @@ export function renderAllPropertyFloorsHtml(
   clickablePropId = null,
   cadOptions = {}
 ) {
-  const floors = A101_SCHEMATICS[shape] || A101_SCHEMATICS.apartment;
+  const floors = propertyFloorPlans(shape, cadOptions.country, customAreaM2);
   if (floors.length <= 1) {
     return renderArchitecturalFloorplanSvg(shape, finish, furnishedRooms, customAreaM2, 0, clickablePropId, cadOptions);
   }
@@ -1254,7 +1309,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
 
   const viewMode = opts.viewMode || (opts.cutaway ? 'cutaway' : 'elevation');
   const timeOfDay = opts.timeOfDay || (opts.nightMode ? 'night' : 'noon');
-  const floors = A101_SCHEMATICS[shape] || A101_SCHEMATICS.apartment;
+  const floors = propertyFloorPlans(shape, opts.country || home?.country, home?.areaM2);
   const isMultiFloor = floors.length > 1;
   // Default to -1 ('ALL LEVELS') on multi-story homes so Villa/Duplex/Townhouse ALWAYS display all floors consistently!
   const cadFloor = opts.cadFloor === undefined || opts.cadFloor === null ? -1 : Number(opts.cadFloor);
@@ -1364,12 +1419,12 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px">
-        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id)).join('')}
+        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2)).join('')}
       </div>
       <details style="margin-top:12px"><summary style="cursor:pointer;font-size:0.82rem">Detailed architectural sheets</summary>
         <div style="margin-top:10px">${(isMultiFloor && cadFloor === -1)
-          ? renderAllPropertyFloorsHtml(shape, finish, furnishedRooms, home?.areaM2 || null, home?.id || null, { cyanotype, showMep, viewMode, timeOfDay })
-          : renderArchitecturalFloorplanSvg(shape, finish, furnishedRooms, home?.areaM2 || null, Math.max(0, cadFloor), home?.id || null, { cyanotype, showMep, viewMode, timeOfDay })}</div>
+          ? renderAllPropertyFloorsHtml(shape, finish, furnishedRooms, home?.areaM2 || null, home?.id || null, { cyanotype, showMep, viewMode, timeOfDay, country })
+          : renderArchitecturalFloorplanSvg(shape, finish, furnishedRooms, home?.areaM2 || null, Math.max(0, cadFloor), home?.id || null, { cyanotype, showMep, viewMode, timeOfDay, country })}</div>
       </details>
     </div>
   `;

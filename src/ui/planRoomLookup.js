@@ -1,3 +1,4 @@
+import {regionalRoomName} from './homeRegionalStyle.js';
 /* ============================================================================
    Plan-room lookup — which room number is which room, for every home shape.
    ----------------------------------------------------------------------------
@@ -129,8 +130,8 @@ export function planRoomsForShape(shape) {
 }
 
 /* Only the rooms that can be furnished on a shape's plan. */
-export function furnishablePlanRooms(shape) {
-  return planRoomsForShape(shape).filter(r => FURNISHABLE_KEYS.includes(r.key));
+export function furnishablePlanRooms(shape, country = '') {
+  return planRoomsForShape(shape).filter(r => FURNISHABLE_KEYS.includes(r.key)).map(r => ({...r, name:regionalRoomName(r, country, shape)}));
 }
 
 /* Room number -> room ({ no, key, name }) on that shape's plan, or null. */
@@ -201,6 +202,7 @@ export function roomInfoMessage(key, no) {
   if (key === 'wc') return `${where} is a guest toilet — not a room you furnish.`;
   if (key === 'corridor') return `${where} is a hallway — it connects the rooms, it isn't a room you furnish.`;
   if (key === 'void') return `${where} is open space above the room below — nothing to furnish there.`;
+  if (FURNISHABLE_KEYS.includes(key)) return `${where} can be furnished using the room controls below the floor plan.`;
   return `${where} is part of the home's layout, not a room you furnish.`;
 }
 
