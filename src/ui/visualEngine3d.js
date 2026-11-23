@@ -967,7 +967,7 @@ function drawScaleCadFixtures(rm, isFurnished, cyanMode) {
 function plainFloorLabel(idx, shape = '') {
   if(shape==='aus_highset'&&idx===0)return 'Raised living floor';
   if(shape==='brownstone')return ['Lower-ground floor','Raised ground floor','First floor','Second floor'][idx]||`Level ${idx+1}`;
-  if(shape==='victorian'&&idx===2)return 'Attic floor';
+  if((['victorian','nld_attic'].includes(shape)&&idx===2)||(shape==='nld_gable'&&idx===3))return 'Attic floor';
   return idx===0?'Ground floor':idx===1?'First floor':idx===2?'Second floor':`Level ${idx+1}`;
 }
 function plainViewLabel(mode) {
@@ -1539,7 +1539,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px">
-        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2, home?.rooms, {hasPool,hasGarden,styleNote:style?.note,placement:home?.outdoorPlacement || (['townhouse','twin_house'].includes(shape)?'front':'rear')})).join('')}
+        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2, home?.rooms, {hasPool,hasGarden,styleNote:style?.note,placement:home?.outdoorPlacement || style?.outdoorPlacement || (['townhouse','twin_house'].includes(shape)?'front':'rear')})).join('')}
       </div>
 
       <details style="margin-top:12px"><summary style="cursor:pointer;font-size:0.82rem">Detailed architectural sheets</summary>

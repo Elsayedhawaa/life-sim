@@ -91,3 +91,17 @@ for(const [target,base] of [['ind_court_one','courtyard_single'],['ind_court_two
  }
  STYLE_FLOOR_PLANS[target]=levels;
 }
+
+STYLE_FLOOR_PLANS.ita_court_two=JSON.parse(JSON.stringify(STYLE_FLOOR_PLANS.courtyard_double));
+for(const level of STYLE_FLOOR_PLANS.ita_court_two)for(const r of level.rooms){
+ if(r.key==='foyer')r.name='Courtyard entrance';
+ if(r.name==='Screened courtyard gallery')r.name='Upper courtyard gallery';
+ if(r.name==='Family reception and dining')r.name='Family living and dining';
+}
+
+// Dutch pitched-roof homes include a smaller attic, not a full bedroom storey.
+STYLE_FLOOR_PLANS.nld_attic=JSON.parse(JSON.stringify(STYLE_FLOOR_PLANS.victorian));
+STYLE_FLOOR_PLANS.nld_gable=JSON.parse(JSON.stringify(STYLE_FLOOR_PLANS.terrace_three));
+const nldAttic=JSON.parse(JSON.stringify(STYLE_FLOOR_PLANS.victorian[2]));
+for(const r of nldAttic.rooms)r.no=String(Number(r.no)+100);
+STYLE_FLOOR_PLANS.nld_gable.push(nldAttic);

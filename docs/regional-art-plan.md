@@ -112,3 +112,9 @@ Fictional Queenslander-inspired raised timber, Federation-inspired brick, iron-l
 ## India
 12fictional illustrated forms. Shared courtyard families preserve open courts, floor counts and sleeping-room counts, not measured heritage circulation. Apartments are individual units, not whole blocks. Garden/pool flags are explicit. References:
 - https://housing.com/news/types-of-houses-in-india/
+
+## Italy
+12fictional forms: palazzo and modern apartments, garden villa, stone farmhouse and cottage, townhouse, studio, penthouse, garden flat, paired villa, courtyard house and pool villa. Shared type plans, not measured heritage homes. Farmhouse does not include land outside its garden. Reference: https://www.internations.org/italy-expats/guide/housing
+
+## Netherlands, first six forms
+Gabled townhouse, row house, paired brick home, detached house, bungalow and balcony flat. Pitched-roof row/paired homes include a smaller attic hobby floor; gabled townhouse has three main levels plus attic. Six additional variant illustrations remain unadded after generation failures. Partial catalog, not complete national coverage. Reference: https://access-nl.org/housing-netherlands/finding-place-to-live/what-are-the-types-of-housing-in-the-netherlands-2/
