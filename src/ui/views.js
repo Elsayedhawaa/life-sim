@@ -1521,7 +1521,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
           const aff = schoolAffordability(S, sc);
           const fee = aff.fee;
           const sysLabel = (TRACK_SYSTEM_INFO[schoolSystemFor(sc, S.country)] || TRACK_SYSTEM_INFO.national).label;
-          const payerLine = fee <= 0 ? 'Free' : aff.familyPays ? 'Your family covers the fees' : aff.youCanPay ? 'You would pay the first year yourself' : `Your family can't cover ${esc(formatMoney(fee, S.country))}/yr and you hold ${esc(formatMoney(S.money.cash || 0, S.country))}`;
+          const payerLine = fee <= 0 ? 'No fees' : aff.familyPays ? 'Your family covers the fees' : aff.youCanPay ? 'You would pay the first year yourself' : `Your family can't cover ${esc(formatMoney(fee, S.country))}/yr and you hold ${esc(formatMoney(S.money.cash || 0, S.country))}`;
           const isCurrent = sc.id === edu.schoolId;
           const canChange = age >= 6 && age <= 17 && inSchool && !isCurrent;
           const canChoose = age < 6 && !isCurrent;
@@ -1530,7 +1530,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
             <div class="item-row">
               <div class="item-row-main">
                 <strong>${esc(sc.name)}</strong>
-                <span>${fee > 0 ? `${esc(formatMoney(fee, S.country))}/yr` : 'Free'} · Teaches: ${esc(sysLabel)} · Founded ${sc.founded || '—'}</span>
+                <span>${fee > 0 ? `${esc(formatMoney(fee, S.country))}/yr` : 'Free'} · ${esc(sysLabel)}</span>
                 <span class="muted">${esc(payerLine)}</span>
               </div>
               ${isCurrent
@@ -1626,18 +1626,17 @@ export function renderEducationTabHtml(S, uiState = {}) {
       const courseAff=universityAffordability(S,u,m.id);
       const eligible = supported && !already && score >= bar && courseAff.status!=='cannot';
       const fee=annualUniversityBudget(S,u,m.id);
-      return `<div style="border:1px solid var(--line,#ded7cb);border-radius:10px;padding:10px"><div style="font-size:13px;line-height:1.6;margin-bottom:8px"><strong>${esc(m.label)}</strong> · ${m.years} yrs · ${esc(m.level)}<br>${esc(formatMoney(fee,S.country))}/yr game budget · needs ${bar}%<br>${esc(supported?courseAff.short:"Requires an earlier degree")}</div><button class="btn btn-sm ${eligible && canApply ? 'btn-primary' : ''}" data-action="apply-university" data-uid="${u.id}" data-major="${m.id}" ${(eligible && canApply) ? '' : 'disabled'}>${already?"Degree held":!supported?"First degree required":score<bar?"Score too low":courseAff.status==='cannot'?"Funding needed":`Choose ${esc(m.label)}` }</button>${!canApply ? lockReason(age < 18 ? 'Applications open at 18' : edu.university ? `Already enrolled at ${edu.university.name}` : 'Finish secondary school first', age < 18 ? `You are ${age}` : edu.university ? 'Finish or leave your current degree first' : 'You need a secondary-school result first') : ''}</div>`;
+      return `<div class="edu-programme"><div class="edu-programme-top"><strong>${esc(m.label)}</strong><span>${m.years} yrs</span></div><div class="edu-programme-meta">${esc(m.level)} · Entry ${bar}%</div><div class="edu-programme-price">${esc(formatMoney(fee,S.country))}<small> / year</small></div><div class="edu-funding">${esc(supported?courseAff.short:"Requires an earlier degree")}</div><button class="btn btn-sm ${eligible && canApply ? 'btn-primary' : ''}" data-action="apply-university" data-uid="${u.id}" data-major="${m.id}" ${(eligible && canApply) ? '' : 'disabled'}>${already?"Degree held":!supported?"First degree required":score<bar?"Score too low":courseAff.status==='cannot'?"Funding needed":`Enrol in ${esc(m.label)}` }</button>${!canApply ? lockReason(age < 18 ? 'Applications open at 18' : edu.university ? `Already enrolled at ${edu.university.name}` : 'Finish secondary school first', age < 18 ? `You are ${age}` : edu.university ? 'Finish or leave your current degree first' : 'You need a secondary-school result first') : ''}</div>`;
     }).join('');
     return `
-      <div class="item-row" style="display:block">
-        <div class="item-row-main" style="margin-bottom:6px">
-          <strong>${esc(u.name)}</strong>
-          <span>${esc(universitySectorLabel(u))} · ${tuit > 0 ? `${esc(formatMoney(range.min, S.country))}${range.min!==range.max?` to ${esc(formatMoney(range.max,S.country))}`:''}/yr game budget` : 'No tuition in this game pathway'} · ${esc(cObj.name)}</span>
-          <span class="muted">${esc(u.feeBasis || "Costs are game budgets, not fee quotes.")}</span>
-          <span>Each programme below shows its own game budget and funding status. Ordinary subjects are modelled pathways, not a university course catalogue. Clinical choices are limited to checked examples; other clinical courses are not yet modelled.</span>
+      <article class="edu-university">
+        <div class="item-row-main">
+          <div class="edu-overline">${esc(universitySectorLabel(u))}</div><strong class="edu-university-name">${esc(u.name)}</strong>
+          <span>${tuit > 0 ? `${esc(formatMoney(range.min, S.country))}${range.min!==range.max?` to ${esc(formatMoney(range.max,S.country))}`:''}/yr game budget` : 'No tuition in this game pathway'}</span>
+
         </div>
-        <details class="university-programmes"><summary>View modelled programmes, duration and funding</summary><div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">${majorsHtml}</div></details>
-      </div>
+        <details class="university-programmes"><summary>Explore programmes <span>${programsForCountry(S.country,u,S.year).filter(m=>uniSupportsMajor(u.name,m.id)).length}</span></summary><div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">${majorsHtml}</div><details class="edu-fee-note"><summary>Budget details</summary><p>${esc(u.feeBasis || "Game budget, not a fee quote.")}</p></details></details>
+      </article>
     `;
   }).join('');
 
@@ -1679,15 +1678,16 @@ export function renderEducationTabHtml(S, uiState = {}) {
   }).join('');
 
   return `
+    <div class="education-screen">
     ${banner}
     <div class="card card-elevated">
       <div class="section-head">
-        <h2>${icon('graduation', 18)} Education — ${esc(S.player.fullName || 'You')}</h2>
-        <span class="hud-pill">${esc(edu.stage.replace('_', ' ').toUpperCase())}</span>
+        <h2>${icon('graduation', 18)} Education</h2>
+        <span class="hud-pill">${esc(({graduated_high:'Ready for university',high:'Secondary school',middle:'Middle school',primary:'Primary school',infancy:'Early years',completed:'Studies completed',university:'At university'})[edu.stage]||edu.stage)}</span>
       </div>
       <div class="item-row">
         <div class="item-row-main">
-          <strong>Academic Record</strong>
+          <strong>Your progress</strong>
           <span>${edu.university
             ? `Enrolled: ${esc(edu.university.name)} — ${esc(edu.university.majorLabel)} (Year ${edu.university.yearInProgram}/${edu.university.totalYears})`
             : edu.degrees.length > 0
@@ -1700,47 +1700,14 @@ export function renderEducationTabHtml(S, uiState = {}) {
       </div>
     </div>
 
-    <div class="card">
-      <div class="section-head">
-        <h3>My School</h3>
-        <span class="muted">${esc(mySchool ? mySchool.name : 'No school yet')} · ${esc(tierLabel(edu.schoolTier || 'state'))}</span>
-      </div>
-      <p class="muted">Pick your school before age 6, or move schools between ages 6 and 17. A private or international school costs real fees — your family covers it if they can afford it, otherwise you pay the first year yourself.</p>
-      ${schoolRows}
-    </div>
-
-    <div class="card">
-      <div class="section-head">
-        <h3>Track &amp; Study — ${esc(cObj.examSystem.name)}</h3>
-        <span class="muted">Placement: ${esc(cObj.examSystem.placementName)}</span>
-      </div>
-      <p class="muted">Your school (${esc(mySchool ? mySchool.name : 'no school yet')}) teaches the ${esc(mySystemLabel)} — so your track comes from that system. Tracks inside it switch freely in secondary school (ages 12–17); a track from another system means changing school — you give up your current track and restart the new system's exams from the beginning. The cost is written on the track itself. Study hard for higher scores at the cost of stress; a tutor costs ${esc(formatMoney(tutorFee, S.country))} a term${['middle', 'upper_middle', 'wealthy'].includes(S.familyTier) ? ' (your family covers it)' : ''}.</p>
-      ${trackCards}
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
-        <button type="button" class="btn btn-sm ${edu.studyEffort === 'hard' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="hard">Study Hard</button>
-        <button type="button" class="btn btn-sm ${edu.studyEffort === 'normal' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="normal">Steady Routine</button>
-        <button type="button" class="btn btn-sm ${edu.studyEffort === 'coasting' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="coasting">Coast</button>
-        <button type="button" class="btn btn-sm ${edu.privateTutoring ? '' : 'btn-primary'}" data-action="hire-tutor" ${edu.privateTutoring ? 'disabled' : ''}>${edu.privateTutoring ? '✓ Tutor Hired' : `Hire a Tutor — ${esc(cObj.examSystem.tutoringLabel)} (${esc(formatMoney(tutorFee, S.country))}/term)`}</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-head">
-        <h3>Clubs</h3>
-        <span class="muted">${(edu.clubs || []).length} joined</span>
-      </div>
-      ${inSchool ? `<p class="muted">School clubs (ages 6–17):</p>${clubRows('school')}` : '<p class="muted">School clubs are behind you now.</p>'}
-      ${edu.university ? `<p class="muted" style="margin-top:8px">University clubs at ${esc(edu.university.name)}:</p>${clubRows('university')}` : '<p class="muted" style="margin-top:8px">University clubs open once you enrol.</p>'}
-    </div>
-
     ${hasResult ? `
     <div class="card">
       <div class="section-head">
-        <h3>${esc(cObj.examSystem.placementName)} — Universities in ${esc(cObj.name)} (${unis.length})</h3>
-        <span class="muted">Your score: ${score}%</span>
+        <h3>Universities <span class="edu-count">${unis.length}</span></h3>
+        <span class="muted">Entry score ${score}%</span>
       </div>
-      <p class="muted">Compare universities, course entry scores and who pays before enrolling. ${canApplyNote(age, edu)}</p>
-      <p class="muted">${esc(tansikFootnote)}</p>
+      <p class="muted">${canApplyNote(age, edu)}</p>
+<details class="edu-model-note"><summary>About these game pathways</summary><p>${esc(tansikFootnote)} Fees are game budgets, not quotes. Clinical coverage is limited to checked examples; other clinical courses are not yet modelled.</p></details>
       ${affordPaths.length ? `<p class="muted">If you cannot afford a university: ${esc(affordPaths.join(' '))}</p>` : ''}
       ${edu.university ? `<p class="muted">You are currently enrolled at ${esc(edu.university.name)} — ${esc(edu.university.majorLabel)}.</p>` : ''}
       ${uniRows}
@@ -1751,28 +1718,45 @@ export function renderEducationTabHtml(S, uiState = {}) {
         <span class="muted">Exam at 18</span>
       </div>
       <p>If you took the exam today, you would score about ${projection}% — keep studying to raise it.</p>
-      <p class="muted">The game gives an admission score at 18. This projection is not an official exam result. Studying hard raises the projection, coasting lowers it. Academic skill ${Math.round(edu.academicSkill || 0)}/100 · Effort: ${edu.studyEffort}${edu.privateTutoring ? ' · Private tutor' : ''}. The university list and cutoffs open after the exam.</p>
+      <p class="muted">Your final game score arrives at 18 and opens university applications. Study hard to improve it; coasting lowers it.</p>
     </div>`}
 
-    <div class="card">
-      <div class="section-head">
-        <h3>Named Scholarships (${SCHOLARSHIPS.length})</h3>
-        <span class="muted">Locked ones say why</span>
+    <details class="card edu-section"><summary>Schools</summary>
+      <p class="muted">Choose before age 6. Change schools at 6-17. Each option shows who pays.</p>
+      ${schoolRows}
+    </details>
+
+    <details class="card edu-section" ${inSchool?'open':''}><summary>Study routine &amp; exam track</summary>
+      <p class="muted">${esc(mySystemLabel)} · Switch tracks at 12-17. A different exam system requires a different school.</p>
+      <div class="edu-tip">Hard study improves your score but adds stress. Tutor: ${esc(formatMoney(tutorFee,S.country))}/term${['middle', 'upper_middle', 'wealthy'].includes(S.familyTier)?' · family pays':''}.</div>
+      ${trackCards}
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+        <button type="button" class="btn btn-sm ${edu.studyEffort === 'hard' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="hard">Study Hard</button>
+        <button type="button" class="btn btn-sm ${edu.studyEffort === 'normal' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="normal">Steady Routine</button>
+        <button type="button" class="btn btn-sm ${edu.studyEffort === 'coasting' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="coasting">Coast</button>
+        <button type="button" class="btn btn-sm ${edu.privateTutoring ? '' : 'btn-primary'}" data-action="hire-tutor" ${edu.privateTutoring ? 'disabled' : ''}>${edu.privateTutoring ? '✓ Tutor Hired' : `Hire a Tutor — ${esc(cObj.examSystem.tutoringLabel)} (${esc(formatMoney(tutorFee, S.country))}/term)`}</button>
       </div>
+    </details>
+
+    <details class="card edu-section" ${inSchool||edu.university?'open':''}><summary>Clubs</summary>
+      ${inSchool ? `<p class="muted">School clubs (ages 6–17):</p>${clubRows('school')}` : '<p class="muted">School clubs are behind you now.</p>'}
+      ${edu.university ? `<p class="muted" style="margin-top:8px">University clubs at ${esc(edu.university.name)}:</p>${clubRows('university')}` : '<p class="muted" style="margin-top:8px">University clubs open once you enrol.</p>'}
+    </details>
+
+
+
+    <details class="card edu-section" ><summary>Scholarships</summary>
       <p class="muted">Scholarships use game eligibility rules for age, education, score and language. An award covers tuition as described here, not a real-world application.</p>
       ${scholarshipRows}
-    </div>
+    </details>
 
-    <div class="card">
-      <div class="section-head">
-        <h3>Internships (${INTERNSHIPS.length})</h3>
-        <span class="muted">While at university</span>
-      </div>
-      <p class="muted">Named, paid internships tied to your major. They pay real money into your account and build your record.</p>
+    <details class="card edu-section" ><summary>Internships</summary>
+      <p class="muted">Build work experience. Pay is credited to your game balance.</p>
       ${internshipRows}
-    </div>
+    </details>
 
-    ${renderEduAndLicensingHtml(S)}
+    <details class="card edu-section"><summary>Languages &amp; professional licences</summary>${renderEduAndLicensingHtml(S)}</details>
+    </div>
   `;
 }
 
@@ -1780,7 +1764,7 @@ function canApplyNote(age, edu) {
   if (edu.university) return 'Finish your current degree first.';
   if (age < 18) return 'Applications open at 18, after your secondary exam.';
   if (!['graduated_high', 'completed'].includes(edu.stage)) return 'Finish secondary school first.';
-  return 'Tap a major to apply.';
+  return 'Choose a university, then a programme. Check your funding before enrolling.';
 }
 
 /* v2.8 §3 — job actions. Every button prints its cost and consequence

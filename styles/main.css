@@ -1535,3 +1535,42 @@ html[data-theme="dark"] .turn-result-card { background: #1b1814; }
 .nav-tabs-illustrated .nav-tile-art { display:block; width:100%; height:48px; object-fit:cover; object-position:center; border-bottom:1px solid rgba(82,76,67,.18); }
 .nav-tabs-illustrated .nav-tab-btn > span:not(.tab-badge) { padding:0 3px; }
 .nav-tabs-illustrated .tab-badge { position:absolute; top:4px; right:4px; }
+
+/* Education: quiet hierarchy, one decision per card, finger-sized actions. */
+.education-screen{--edu-ink:#263b39;--edu-line:#deded3;display:grid;gap:14px}
+.education-screen>.card{margin:0;border:1px solid var(--edu-line);box-shadow:0 3px 10px #263b3906;border-radius:18px;padding:18px}
+.education-screen .section-head{align-items:flex-start;flex-wrap:wrap;gap:8px}
+.education-screen h2,.education-screen h3{color:var(--edu-ink);line-height:1.35}
+.education-screen .item-row{gap:12px;align-items:flex-start;padding:14px 0}
+.education-screen .item-row-main{min-width:0}
+.education-screen .item-row-main span{line-height:1.55}
+.education-screen .btn{min-height:44px;white-space:normal;line-height:1.4;border-radius:10px;padding:10px 14px;box-shadow:none}
+.education-screen .btn-primary{background:#285b50;border-color:#285b50;color:#fff}
+.education-screen .btn:disabled{opacity:1;background:#eeeee7;color:#6d7269;border-color:#deded3;cursor:default}
+.education-screen .hud-pill{white-space:normal;max-width:100%;line-height:1.4;border-radius:8px}
+.education-screen .edu-section>summary{font-size:15px;font-weight:700;color:var(--edu-ink);cursor:pointer;min-height:28px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.education-screen .edu-section>summary:after{content:'+';font-size:22px;font-weight:400}
+.education-screen .edu-section[open]>summary:after{content:'−'}
+.education-screen .edu-section[open]>summary{margin-bottom:14px}
+.edu-university{border:1px solid var(--edu-line);border-radius:14px;margin:12px 0;overflow:hidden;background:#fff}
+.edu-university>.item-row-main{padding:16px}
+.edu-overline{text-transform:uppercase;letter-spacing:.08em;font-size:10px;font-weight:700;color:#5c726b;margin-bottom:5px}
+.edu-university-name{display:block;font-size:19px;color:var(--edu-ink);margin-bottom:5px}
+.university-programmes>summary{padding:13px 16px;background:#f2f5ef;border-top:1px solid #e3e8df;cursor:pointer;font-size:13px;font-weight:700;color:#285b50;list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:46px}
+.university-programmes>summary span{background:#fff;padding:2px 8px;border-radius:20px;font-size:11px}
+.university-programmes>div{padding:4px 12px 12px}
+.edu-programme{padding:14px;border:1px solid #dce3da;border-radius:12px;background:#fdfdfb}
+.edu-programme-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;color:var(--edu-ink);font-size:14px}
+.edu-programme-top>span{flex-shrink:0;background:#edf0e7;border-radius:6px;padding:2px 6px;font-size:11px;font-weight:700}
+.edu-programme-meta{font-size:11px;color:#72796d;margin-top:5px}
+.edu-programme-price{font-size:20px;font-weight:700;margin-top:14px;color:#263b39}
+.edu-programme-price small{font-size:11px;font-weight:400;color:#72796d}
+.edu-funding{font-size:12px;line-height:1.5;margin:5px 0 12px;color:#4b685e}
+.edu-programme>.btn{width:100%;font-size:12px}
+.edu-fee-note,.edu-model-note{font-size:12px;color:#73796d;line-height:1.6;margin:10px 0}
+.edu-fee-note{padding:0 16px 12px}.edu-model-note summary,.edu-fee-note summary{cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.edu-count{font-size:12px;color:#6b7c72;margin-left:5px}
+.edu-tip{font-size:12px;line-height:1.6;border-left:3px solid #8baf9f;padding:8px 12px;background:#f2f5ef;margin-bottom:12px}
+@media(max-width:480px){.education-screen .item-row{flex-wrap:wrap}.education-screen .item-row>.btn{width:100%}.education-screen>.card{padding:16px}.education-screen .editorial-banner{margin:0}.education-screen .section-head>.muted{font-size:12px}}
+.education-screen .btn-primary:hover,.education-screen .btn-primary:focus{background:#214c43;border-color:#214c43;color:#fff}
+.education-screen .btn-primary:focus-visible{outline:3px solid #8bb7a7;outline-offset:3px}
