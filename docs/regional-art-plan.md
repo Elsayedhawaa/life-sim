@@ -108,3 +108,7 @@ A Canadian duplex selection is one apartment, not ownership of both floors. Base
 
 ## Australia
 Fictional Queenslander-inspired raised timber, Federation-inspired brick, iron-lace terrace, bungalow, modern house and apartment variants. Raised timber home has one elevated living level, not a second residence below. Gardens and pool are explicit. Reference: https://en.wikipedia.org/wiki/Australian_residential_architectural_styles
+
+## India
+12fictional illustrated forms. Shared courtyard families preserve open courts, floor counts and sleeping-room counts, not measured heritage circulation. Apartments are individual units, not whole blocks. Garden/pool flags are explicit. References:
+- https://housing.com/news/types-of-houses-in-india/

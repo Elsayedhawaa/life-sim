@@ -80,3 +80,14 @@ for(const [target,base] of [['jpn_family','family_duplex'],['jpn_single','bungal
 // One raised living level; shaded open undercroft is not an extra indoor floor.
 STYLE_FLOOR_PLANS.aus_highset=JSON.parse(JSON.stringify(STYLE_FLOOR_PLANS.bungalow));
 STYLE_FLOOR_PLANS.aus_highset[0].rooms.find(r=>r.key==='foyer').name='Veranda entry';
+
+// Shared fictional courtyard families retain open courts and bedroom counts.
+for(const [target,base] of [['ind_court_one','courtyard_single'],['ind_court_two','courtyard_double']]){
+ const levels=JSON.parse(JSON.stringify(STYLE_FLOOR_PLANS[base]));
+ for(const level of levels)for(const r of level.rooms){
+  if(r.key==='foyer')r.name='Courtyard entrance';
+  if(r.name==='Screened courtyard gallery')r.name='Upper courtyard gallery';
+  if(r.name==='Family reception and dining')r.name='Family living and dining';
+ }
+ STYLE_FLOOR_PLANS[target]=levels;
+}
