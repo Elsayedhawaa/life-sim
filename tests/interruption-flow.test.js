@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import { createNewLifeState, createPerson, ensureExtendedState } from '../src/core/schema.js';
+import { queueDriftNoticeScene } from '../src/systems/socialEnergy.js';
+import { renderLifeTabHtml, renderNewLifeModalHtml } from '../src/ui/views.js';
+import { COUNTRY_IDS } from '../src/data/countries.js';
+const s=createNewLifeState({seed:55});ensureExtendedState(s);s.year=2026;
+const person=createPerson(s,{age:20,role:'friend'});s.people[person.id]=person;s.relations.friendIds=[person.id];
+s.player.age=12;assert.equal(queueDriftNoticeScene(s,person),false,'no childhood forced drift prompts');
+s.player.age=25;assert.equal(queueDriftNoticeScene(s,person),true);
+assert.equal(queueDriftNoticeScene(s,person),false,'at most one drift prompt per year');
+assert.ok(s.activeScene.choices.some(c=>c.label.includes('Keep the door open')));
+assert.ok(!s.activeScene.text.includes('will quietly end'));
+s.activeScene={title:'Many choices',text:'Pick one',choices:Array.from({length:12},(_,i)=>({label:'Option '+i,effect:()=>{}}))};
+const html=renderLifeTabHtml(s);
+assert.ok(html.includes('All other options (7)'));
+assert.ok(html.includes('data-idx="11"'),'progressive display preserves original indexes');
+assert.ok(renderNewLifeModalHtml().includes(COUNTRY_IDS.length+' available'));
+console.log('Passed interruption limits, deferred friendship and long-choice rendering checks.');

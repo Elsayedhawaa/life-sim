@@ -243,6 +243,9 @@ function rememberSocialDeed(S, person, kind, summary, impact = {}) {
    ends the friendship. The scene is the notice — it fires while the
    friendship is still alive, never after it is gone. */
 export function queueDriftNoticeScene(S, p) {
+  // Childhood is already fast yearly pacing. Keep drift visible on People,
+  // without forcing several near-identical friend decisions per school year.
+  if (S.player.age < 18 || S.lastDriftNoticeYear === S.year) return false;
   const close = (p.rel.affection || 0) >= BEST_FRIEND_AFFECTION;
   const scene = {
     key: `drift_${p.id}_${S.year}`,
@@ -251,11 +254,20 @@ export function queueDriftNoticeScene(S, p) {
     category: 'relationship',
     speakerId: p.id,
     title: `You have not spoken to ${p.firstName} in a year`,
-    text: `It has been a year since you last spoke to ${p.fullName}. ${close ? `${p.firstName} was one of your closest friends — the kind of friend you do not replace. ` : ''}Life got in the way, and now the silence is doing the talking. If you do nothing, this friendship will quietly end.`,
+    text: `It has been a year since you last spoke to ${p.fullName}. ${close ? `${p.firstName} was one of your closest friends — the kind of friend you do not replace. ` : ''}You have both been busy. The friendship is fading, but it will not end unless you choose to let it go.`,
     choices: [
       {
         label: `Reach out now — call ${p.firstName} (${DRIFT_REACH_OUT_COST} energy)`,
+        available: st => socialEnergy(st).energy >= DRIFT_REACH_OUT_COST,
+        lockReason: 'Not enough social energy to call this month.',
         effect: (st) => { reachOutToDriftingFriend(st, p); }
+      },
+      {
+        label: 'Not today. Keep the door open.',
+        effect: st => {
+          p.rel.driftState = 'noticed';
+          recordJournal(st, `You left the door open with ${p.fullName}. You have not reconnected yet; you can call or visit from People when you are ready.`, 'relationship');
+        }
       },
       {
         label: 'Let it go — the friendship ends',
@@ -263,7 +275,9 @@ export function queueDriftNoticeScene(S, p) {
       }
     ]
   };
-  return queueScene(S, scene);
+  const queued = queueScene(S, scene);
+  if (queued) S.lastDriftNoticeYear = S.year;
+  return queued;
 }
 
 /* Reach out through the notice: a call, costing a call's energy. If the
@@ -348,10 +362,11 @@ export function tickFriendshipDrift(S) {
         recordJournal(S, `You and ${p.fullName} are drifting apart — you have not spoken in ${months} months. A call or a visit would stop the drift.`, 'relationship');
         warned++;
       } else if (state !== 'noticed') {
-        p.rel.driftState = 'noticed';
-        queueDriftNoticeScene(S, p);
-        recordJournal(S, `You have not spoken to ${p.fullName} in a year. The friendship is hanging by a thread — reach out, or let it go.`, 'relationship');
-        noticed++;
+        if (queueDriftNoticeScene(S, p)) {
+          p.rel.driftState = 'noticed';
+          recordJournal(S, `You have not spoken to ${p.fullName} in a year. You can reconnect, leave the door open, or let the friendship go.`, 'relationship');
+          noticed++;
+        }
       } else {
         p.rel.affection = clamp(p.rel.affection - 3);
       }

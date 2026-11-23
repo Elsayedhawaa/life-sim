@@ -1519,3 +1519,7 @@ html[data-theme="dark"] .turn-result-card { background: #1b1814; }
 @media (prefers-reduced-motion: reduce) {
   .turn-result-card, .choice-btn { animation: none; transition: none; }
 }
+
+.scene-more-choices { margin-top: 6px; }
+.scene-more-choices summary { cursor: pointer; font-weight: 700; padding: 14px 4px; }
+.scene-more-choices[open] .choice-btn { margin-bottom: 8px; }

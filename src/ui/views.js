@@ -1044,7 +1044,8 @@ function renderActiveSceneHtml(S) {
       </div>
       <p class="scene-body">${esc(sc.text)}</p>
       <div class="scene-choices">
-        ${sc.choices.map((ch, idx) => {
+        ${(() => {
+          const choiceHtml = (ch, idx) => {
           const avail = typeof ch.available !== 'function' || ch.available(S);
           const lbl = typeof ch.label === 'function' ? ch.label(S) : ch.label;
           return `
@@ -1053,7 +1054,11 @@ function renderActiveSceneHtml(S) {
             </button>
             ${avail ? '' : sceneChoiceLockReason(S, ch, lbl)}
           `;
-        }).join('')}
+          };
+          if (sc.choices.length <= 6) return sc.choices.map(choiceHtml).join('');
+          return sc.choices.slice(0, 5).map(choiceHtml).join('') +
+            `<details class="scene-more-choices"><summary>All other options (${sc.choices.length - 5})</summary>${sc.choices.slice(5).map((ch, idx) => choiceHtml(ch, idx + 5)).join('')}</details>`;
+        })()}
       </div>
     </section>
   `;
@@ -5043,7 +5048,7 @@ export function renderNewLifeModalHtml(defaults = {}) {
 
         <form id="new-life-form" class="form-grid">
           <div class="form-field">
-            <label for="nl-country">Birth Country (All 15)</label>
+            <label for="nl-country">Birth Country (${COUNTRY_IDS.length} available)</label>
             <select id="nl-country" name="country">
               ${COUNTRY_IDS.map(cid => {
                 const c = COUNTRIES[cid];
