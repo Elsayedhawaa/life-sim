@@ -376,7 +376,7 @@ export function buildHome3DSceneFaces(spec = {}) {
   const ufH = 14;
   const lift1F = viewMode === 'exploded' ? 22 : 0; // Vertical Exploded Story separation!
   const liftRoof = viewMode === 'exploded' ? (isMulti ? 44 : 22) : 0;
-  const useFlatParapet = (isGulfOrMena && vHash % 3 === 1) || spec.facadeStyle === 'najdi_sandstone' || spec.facadeStyle === 'modern_travertine_glass';
+  const useFlatParapet = (country === 'egy' && shape !== 'chalet') || (isGulfOrMena && vHash % 3 === 1) || spec.facadeStyle === 'najdi_sandstone' || spec.facadeStyle === 'modern_travertine_glass';
 
   const datums = [{ y: 1, label: 'Ground floor · ground level' }];
 

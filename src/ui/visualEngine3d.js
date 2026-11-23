@@ -1,4 +1,4 @@
-import {regionalRoomName, homeStyleNote} from './homeRegionalStyle.js';
+import {regionalRoomName, homeStyleNote, roomBelongsToHome} from './homeRegionalStyle.js';
 /* ============================================================================
    World Life — Sheet A-101 Floor Plan & Drafting Engine (v2.3)
    - Zero cheap 3-box clip-art floorplans; zero pointless spin buttons.
@@ -547,7 +547,7 @@ const A101_SCHEMATICS = {
   ]
 };
 
-export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = null) {
+export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = null, totalRooms = null, furnishedRooms = {}) {
   const floors = JSON.parse(JSON.stringify(A101_SCHEMATICS[shape] || A101_SCHEMATICS.apartment));
   // Japanese apartment: wet rooms by the entrance, LDK at the rear, bedrooms
   // off a central hall. Numbers and furnishing keys survive save upgrades.
@@ -578,6 +578,15 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
     }
     floors[0].terrace.hasPool = false;
     floors[0].terrace.label = 'GARDEN TERRACE';
+  }
+  if (shape === 'apartment' && Number(totalRooms) > 0) {
+    const plan = floors[0];
+    plan.rooms = plan.rooms.filter(r => roomBelongsToHome(r, shape, totalRooms, furnishedRooms));
+    const beds = plan.rooms.filter(r => ['106','108','109'].includes(r.no));
+    const jp = country === 'jpn';
+    const bedroomWidth = jp ? 600 : 470;
+    beds.forEach((room, i) => { room.x = 84 + bedroomWidth * i / beds.length; room.y = 92; room.w = bedroomWidth / beds.length; room.h = 146; delete room.door; });
+    if (!jp) { const bath = plan.rooms.find(r => r.no === '107'); bath.x = 554; bath.y = 92; bath.w = 130; bath.h = 146; delete bath.door; }
   }
   for (const floor of floors) {
     floor.title = `${String(shape).replace(/_/g, ' ').toUpperCase()} — FICTIONAL HOME LAYOUT`;
@@ -933,7 +942,7 @@ export function renderArchitecturalFloorplanSvg(
   clickablePropId = null,
   cadOptions = {}
 ) {
-  const floors = propertyFloorPlans(shape, cadOptions.country, customAreaM2);
+  const floors = propertyFloorPlans(shape, cadOptions.country, customAreaM2, cadOptions.totalRooms, furnishedRooms);
   const idx = Math.min(floors.length - 1, Math.max(0, Number(floorIdx) || 0));
   const plan = floors[idx];
 
@@ -1237,8 +1246,8 @@ export function renderArchitecturalFloorplanSvg(
 }
 
 // Phone-first plan: geometry and room identity stay together; detailed CAD is optional.
-export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms = {}, floorIdx = 0, propertyId = null, country = '', areaM2 = null) {
-  const floors = propertyFloorPlans(shape, country, areaM2);
+export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms = {}, floorIdx = 0, propertyId = null, country = '', areaM2 = null, totalRooms = null) {
+  const floors = propertyFloorPlans(shape, country, areaM2, totalRooms, furnishedRooms);
   const idx = Math.min(floors.length - 1, Math.max(0, Number(floorIdx) || 0));
   const plan = floors[idx];
   if (shape === 'land') return renderArchitecturalFloorplanSvg(shape);
@@ -1273,7 +1282,7 @@ export function renderAllPropertyFloorsHtml(
   clickablePropId = null,
   cadOptions = {}
 ) {
-  const floors = propertyFloorPlans(shape, cadOptions.country, customAreaM2);
+  const floors = propertyFloorPlans(shape, cadOptions.country, customAreaM2, cadOptions.totalRooms, furnishedRooms);
   if (floors.length <= 1) {
     return renderArchitecturalFloorplanSvg(shape, finish, furnishedRooms, customAreaM2, 0, clickablePropId, cadOptions);
   }
@@ -1309,7 +1318,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
 
   const viewMode = opts.viewMode || (opts.cutaway ? 'cutaway' : 'elevation');
   const timeOfDay = opts.timeOfDay || (opts.nightMode ? 'night' : 'noon');
-  const floors = propertyFloorPlans(shape, opts.country || home?.country, home?.areaM2);
+  const floors = propertyFloorPlans(shape, opts.country || home?.country, home?.areaM2, home?.rooms, furnishedRooms);
   const isMultiFloor = floors.length > 1;
   // Default to -1 ('ALL LEVELS') on multi-story homes so Villa/Duplex/Townhouse ALWAYS display all floors consistently!
   const cadFloor = opts.cadFloor === undefined || opts.cadFloor === null ? -1 : Number(opts.cadFloor);
@@ -1419,12 +1428,12 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px">
-        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2)).join('')}
+        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2, home?.rooms)).join('')}
       </div>
       <details style="margin-top:12px"><summary style="cursor:pointer;font-size:0.82rem">Detailed architectural sheets</summary>
         <div style="margin-top:10px">${(isMultiFloor && cadFloor === -1)
-          ? renderAllPropertyFloorsHtml(shape, finish, furnishedRooms, home?.areaM2 || null, home?.id || null, { cyanotype, showMep, viewMode, timeOfDay, country })
-          : renderArchitecturalFloorplanSvg(shape, finish, furnishedRooms, home?.areaM2 || null, Math.max(0, cadFloor), home?.id || null, { cyanotype, showMep, viewMode, timeOfDay, country })}</div>
+          ? renderAllPropertyFloorsHtml(shape, finish, furnishedRooms, home?.areaM2 || null, home?.id || null, { cyanotype, showMep, viewMode, timeOfDay, country, totalRooms: home?.rooms })
+          : renderArchitecturalFloorplanSvg(shape, finish, furnishedRooms, home?.areaM2 || null, Math.max(0, cadFloor), home?.id || null, { cyanotype, showMep, viewMode, timeOfDay, country, totalRooms: home?.rooms })}</div>
       </details>
     </div>
   `;

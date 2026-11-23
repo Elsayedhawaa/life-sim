@@ -255,6 +255,11 @@ export function pickDynamicBanner(S, section = 'life', sub = '') {
 
   // First regional set: no Mediterranean or Red Sea scenery in Japan's
   // everyday life/home contexts. Other countries retain their own routes.
+  if (c === 'egy' && section === 'realestate') return 'egypt_apartment_evening_ink.jpg';
+  if (c === 'egy' && ['life', 'people'].includes(section)) {
+    if (String(S.city || '').toLowerCase().includes('alexandria')) return 'alexandria_neighborhood_ink.jpg';
+    return rot % 2 === 0 ? 'city_mena_cairo.jpg' : 'cairo_nile_felucca_ink.jpg';
+  }
   if (c === 'jpn' && section === 'realestate') return 'tokyo_apartment_evening_ink.jpg';
   if (c === 'jpn' && ['life', 'people'].includes(section)) return 'japan_neighborhood_ink.jpg';
 
@@ -488,7 +493,7 @@ export function renderNavTabsHtml(S, activeTab) {
   const navArt = {
     life: pickDynamicBanner(S, 'life'),
     education: 'uni_campus_courtyard_ink.jpg',
-    people: S.country === 'jpn' ? 'japan_neighborhood_ink.jpg' : 'family_kinship_ink.jpg',
+    people: ['jpn','egy'].includes(S.country) ? pickDynamicBanner(S, 'people') : 'family_kinship_ink.jpg',
     work: 'career_enterprise_ink.jpg',
     realestate: pickDynamicBanner(S, 'realestate'),
     finance: 'finance_vault_ink.jpg',
@@ -2740,7 +2745,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
   /* The rooms of THIS home's own plan (every floor) — one row per real room,
      so Villa offices 102, 205 and 302 are independent rows, not one shared
      "office" that furnishes all three at once. */
-  const planRooms = curProp ? furnishablePlanRooms(curProp.shape || 'apartment', curProp.country || S.country) : [];
+  const planRooms = curProp ? furnishablePlanRooms(curProp.shape || 'apartment', curProp.country || S.country, curProp.rooms, curProp.furnishedRooms) : [];
   const staffRoles = Object.entries(HOUSEHOLD_STAFF_CATALOG || {}).slice(0, 8);
   const rentalUnits = getHousingFor(S.country, S.year).slice(0, 4);
 

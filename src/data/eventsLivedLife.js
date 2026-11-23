@@ -46,6 +46,23 @@ const localPlace = S => ({
 }[S.country] || 'a small neighbourhood cafe');
 
 export const EVENTS_LIVED_LIFE = [
+  story('ev_egy_commute_tradeoff', 'The Route Before the Interview', {minAge:18,countries:['egy'],hasJob:false},
+    S => `An interview in ${S.city} is far enough away that the journey needs planning. A cheap route has two changes; the direct ride would leave less money for the rest of the week. The invitation gives you a contact number.`, [
+      ['Confirm the address and plan the cheaper route with extra time', 'You confirmed the interview address and wrote down the changes before setting out. Planning did not guarantee the job, but the route was no longer a guess.', {'vitals.stress':-3,'vitals.smarts':1}],
+      ['Ask whether a first phone conversation is possible', 'You asked whether the first conversation could happen by phone. The employer had not agreed yet; you had made a clear request rather than spending money you could not spare.', {'skills.charisma':2}],
+      ['Check a backup route and keep the invitation number handy', 'You kept a backup route and the interview contact number. A delay would not have to become a silent missed appointment.', {'vitals.stress':-2}]
+    ], {category:'career'}),
+  story('ev_egy_rental_inventory', 'Before the Keys Change Hands', {minAge:18,countries:['egy'],housingModes:['rent']},
+    S => `In your rented home in ${S.city}, a loose cupboard hinge and an old water stain catch your eye. You cannot tell from memory whether they were mentioned when you moved in.`, [
+      ['Write down the condition and ask the landlord to acknowledge it', 'You made a clear condition list and asked the landlord to acknowledge the existing damage. It was a record, not a promise that a dispute could never happen.', {'vitals.stress':-3}],
+      ['Ask which repairs are yours before agreeing to pay', 'You asked who was responsible for the hinge and water stain before agreeing to a repair bill. No money changed hands.', {'skills.charisma':2}],
+    ], {category:'money'}),
+  story('ev_egy_family_job_advice', 'A Relative Knows Someone', {minAge:20,countries:['egy'],hasJob:false,requiredPeople:['mom']},
+    (S,name) => `${name} mentions someone who might know about work in ${S.city}. She means well, but the role, hours and salary are still unclear. A friendly introduction is not an offer.`, [
+      ['Thank her and ask for the actual job details', 'You thanked your mother and asked for the role, hours and salary range before deciding. The introduction remained a possibility, not a job you already had.', {'skills.charisma':2}, {trust:3}],
+      ['Keep applying elsewhere while you wait', 'You kept applying elsewhere while the family introduction was uncertain. You did not stake the whole search on a favour.', {'vitals.stress':-2}],
+    ], {category:'family',person:'mom'}),
+
   story('ev_lived_inbox_silence', 'The Inbox Is Still Quiet', techHunt,
     S => `Three applications. Two automatic replies. No interview. It is almost noon in ${S.city}, and the same job has appeared under a third recruiter. You have enough patience left for one more thing.`, [
       ['Drop the duplicate listing and check the other two', 'You spotted a duplicate vacancy and stopped wasting applications on it. The other two still had no answer.', { 'vitals.stress': -5 }],

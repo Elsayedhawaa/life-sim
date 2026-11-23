@@ -13,3 +13,11 @@ The selected home's type chooses the plan family. The selected home's country ch
 Remaining: country-specific geometry for types/countries beyond the first Japan apartment/villa batch, property bedroom-count variants and local circulation/door audits. Generic naming fallbacks are not a claim of authentic local architecture. The plan is not yet individually designed for every catalog property. Do not mark the whole request complete based on the first batch.
 
 Primary navigation now uses illustration tiles from the game's art collection instead of line icons. Remaining small action icons are purpose-drawn SVGs rather than emoji; illustration replacements can proceed where artwork stays readable at that size. Decorative emoji locks/call/home-upgrade labels were removed.
+
+## Egypt batch
+
+New Alexandria neighborhood illustration, Egyptian apartment interior and older woman portrait without head covering (chosen only when character appearance permits it). Cairo and Alexandria get separate everyday routes. The Egyptian 3D home view uses flat parapets except for holiday chalets. Studio, apartment, duplex, villa and other type plans stay distinct. A catalog one-bedroom apartment now shows one bedroom rather than the universal three-bedroom template. Old furnished extra rooms stay visible to preserve prior purchases. Deed-area allocations remain fictional, not measured real-estate data.
+
+Three gated local stories: planning an interview commute, recording a rental home's condition before repair disputes, and a family job introduction that does not magically become employment. No invented cash awards, repair bills, guaranteed job or unsupported salary/rent benchmark changes. Existing prices remain simplified game estimates. Costs/wages/rents need a separate source-grounded calibration pass before any claim of current market accuracy.
+
+All art is prebuilt static files. No in-game AI calls or paid services were added. Next country is Saudi Arabia, followed by UAE and the remaining profiles in the country's data order, excluding already-started Japan until the others have their first batch.

@@ -31,3 +31,14 @@ export function homeStyleNote(country = '') {
   if (country === 'egy') return 'Egypt-inspired family layout with a separate reception area.';
   return 'Contemporary home layout. Local architectural detail is still being expanded.';
 }
+
+// The catalog's room count includes the living room. Keep furnished extra rooms
+// visible on old saves rather than discarding a room the player paid to equip.
+export function roomBelongsToHome(room, shape, totalRooms, furnishedRooms = {}) {
+  if (shape !== 'apartment' || !(Number(totalRooms) > 0)) return true;
+  if (furnishedRooms[room.no] || furnishedRooms[room.key]) return true;
+  const bedrooms = Math.max(1, Number(totalRooms) - 1);
+  if (bedrooms < 2 && room.no === '108') return false;
+  if (bedrooms < 3 && room.no === '109') return false;
+  return true;
+}

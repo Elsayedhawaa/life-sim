@@ -1,4 +1,4 @@
-import {regionalRoomName} from './homeRegionalStyle.js';
+import {regionalRoomName, roomBelongsToHome} from './homeRegionalStyle.js';
 /* ============================================================================
    Plan-room lookup — which room number is which room, for every home shape.
    ----------------------------------------------------------------------------
@@ -130,8 +130,8 @@ export function planRoomsForShape(shape) {
 }
 
 /* Only the rooms that can be furnished on a shape's plan. */
-export function furnishablePlanRooms(shape, country = '') {
-  return planRoomsForShape(shape).filter(r => FURNISHABLE_KEYS.includes(r.key)).map(r => ({...r, name:regionalRoomName(r, country, shape)}));
+export function furnishablePlanRooms(shape, country = '', totalRooms = null, furnishedRooms = {}) {
+  return planRoomsForShape(shape).filter(r => FURNISHABLE_KEYS.includes(r.key) && roomBelongsToHome(r, shape, totalRooms, furnishedRooms)).map(r => ({...r, name:regionalRoomName(r, country, shape)}));
 }
 
 /* Room number -> room ({ no, key, name }) on that shape's plan, or null. */
