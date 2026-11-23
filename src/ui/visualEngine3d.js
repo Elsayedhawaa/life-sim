@@ -1009,7 +1009,7 @@ export function renderArchitecturalFloorplanSvg(
   // The room list total is ALWAYS the sum of this floor's listed rooms — never
   // the deed area. The deed area (when one is passed) is shown separately.
   const schedRows = plan.rooms.filter(r => r.m2 > 0);
-  const totalPlanM2 = schedRows.reduce((s, r) => s + (r.m2 || 0), 0);
+  const totalPlanM2 = Math.round(schedRows.reduce((s, r) => s + (r.m2 || 0), 0) * 10) / 10;
   const showDeed = customAreaM2 && Number(customAreaM2) !== totalPlanM2;
 
   // Full-width room list below the drawing (same sheet, same styling).

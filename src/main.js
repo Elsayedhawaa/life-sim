@@ -1567,7 +1567,7 @@ if (typeof document !== 'undefined') {
          never furnish the wrong room, never fall back to another property,
          never charge for a preview. The shape actually pictured is the
          Explorer preview shape when one is picked, else the home's shape. */
-      const picturedShape = uiState.previewShape || null;
+      const picturedShape = S.housing.properties.find(p => p.id === btn.dataset.pid)?.shape || null;
       const target = resolveFurnishTarget(S.housing.properties, btn.dataset.pid, picturedShape, btn.dataset.room);
       if (!target.ok) {
         handleActionResult({ ok: false, msg: target.msg });

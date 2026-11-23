@@ -2744,7 +2744,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
   const staffRoles = Object.entries(HOUSEHOLD_STAFF_CATALOG || {}).slice(0, 8);
   const rentalUnits = getHousingFor(S.country, S.year).slice(0, 4);
 
-  const activeShape = uiState.previewShape || homeModel.shape || 'apartment';
+  const activeShape = homeModel.shape || 'apartment';
   const stageModel = { ...homeModel, country: curProp?.country || S.country, shape: activeShape };
 
   /* "Where do I live" (v2.7 item 5): for a home the player does NOT own,
@@ -2917,23 +2917,6 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
       ${S.housing.properties.length ? `<p style="font-size:0.85rem;line-height:1.55">You do own ${S.housing.properties.length} other home${S.housing.properties.length > 1 ? 's' : ''} — see ${S.housing.properties.length > 1 ? 'them' : 'it'} under <strong>Owned Real Estate Portfolio</strong> below.</p>` : ''}
       `}
     </div>
-
-    ${ownsCurrentHome ? `
-    <div class="card">
-      <div class="section-head">
-        <h3>Other home types — tap one to see its floor plan</h3>
-        <span class="muted">A look at each kind of home</span>
-      </div>
-      <div class="shape-strip">
-        ${shapesShowcase.map((sh, sIdx) => `
-          <button type="button" class="shape-card ${activeShape === sh ? 'active' : ''}" data-action="preview-shape" data-shape="${sh}">
-            ${renderBitlifePropertyShapeSvg(sh, 44, '#C84B31', `${S.country}_${sh}_${(S.seed || 1) + sIdx}`)}
-            <span>${esc(sh.replace('_', ' ').toUpperCase())}</span>
-          </button>
-        `).join('')}
-      </div>
-    </div>
-    ` : ''}
 
     ${S.housing.properties.length > 0 ? `
       <div class="card">
