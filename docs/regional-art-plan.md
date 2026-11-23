@@ -134,3 +134,6 @@ Fictional forms, shared schematic plans and game pricing. Swedish apartment purc
 - https://www.completefrance.com/living-in-france/28-french-property-types-explained-8349780/
 - https://www.ura.gov.sg/guidelines/development-control/development-control-handbooks/residential/bungalows/
 - https://www.ura.gov.sg/guidelines/development-control/development-control-handbooks/residential/semi-detached-houses/
+
+## Catalog breadth checkpoint
+USA, Netherlands and Sweden expanded from6to12each. All18supported countries now have at least12named forms, Egypt18. These are fictional examples, not exhaustive local inventories. USA manufactured-home game deed includes fictional plot and does not simulate leased pads. All prices remain balancing formulas; every property has distinct static art, but fitting floor families are deliberately shared and schematic. No paid services or runtime AI.
