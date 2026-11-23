@@ -485,11 +485,21 @@ export function renderNavTabsHtml(S, activeTab) {
     { id: 'world',      label: 'Passport',    iconName: 'world',      badge: visaAlert ? '!' : '' }
   ];
 
+  const navArt = {
+    life: pickDynamicBanner(S, 'life'),
+    education: 'uni_campus_courtyard_ink.jpg',
+    people: S.country === 'jpn' ? 'japan_neighborhood_ink.jpg' : 'family_kinship_ink.jpg',
+    work: 'career_enterprise_ink.jpg',
+    realestate: pickDynamicBanner(S, 'realestate'),
+    finance: 'finance_vault_ink.jpg',
+    lifestyle: 'family_hearth_home_ink.jpg',
+    world: 'passport_world_ink.jpg'
+  };
   return `
-    <nav class="nav-tabs" aria-label="Primary sections">
+    <nav class="nav-tabs nav-tabs-illustrated" aria-label="Primary sections">
       ${tabs.map(t => `
         <button type="button" class="nav-tab-btn ${activeTab === t.id ? 'active' : ''}" data-action="switch-tab" data-tab="${t.id}">
-          ${icon(t.iconName, 18)}
+          <img class="nav-tile-art" src="assets/banners/${esc(navArt[t.id])}" alt="" width="128" height="62" loading="eager">
           <span>${t.label}</span>
           ${t.badge ? `<span class="tab-badge">${t.badge}</span>` : ''}
         </button>

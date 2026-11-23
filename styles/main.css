@@ -1529,3 +1529,9 @@ html[data-theme="dark"] .turn-result-card { background: #1b1814; }
 
 .form-field { min-width: 0; }
 .form-field input, .form-field select { min-width: 0; max-width: 100%; box-sizing: border-box; }
+
+/* Illustrated section tiles use the same ink/watercolor art as the game. */
+.nav-tabs-illustrated .nav-tab-btn { padding:0 0 9px; overflow:hidden; gap:6px; position:relative; }
+.nav-tabs-illustrated .nav-tile-art { display:block; width:100%; height:48px; object-fit:cover; object-position:center; border-bottom:1px solid rgba(82,76,67,.18); }
+.nav-tabs-illustrated .nav-tab-btn > span:not(.tab-badge) { padding:0 3px; }
+.nav-tabs-illustrated .tab-badge { position:absolute; top:4px; right:4px; }
