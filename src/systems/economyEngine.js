@@ -1534,6 +1534,13 @@ export function resolveCurrentHome(S) {
   return null;
 }
 
+export function rentalMoveInQuote(S, item) {
+  const monthlyRent = Math.round(eraLocalCost(item.monthlyRent2026, S.country, S.year) * worldEventEffects(S, S.country).housePrice);
+  // This simulation has a one-month non-refundable setup cost, not a
+  // refundable deposit system. Keep a further month's rent in reserve.
+  return { monthlyRent, moveInFee: monthlyRent, cashRequired: monthlyRent * 2 };
+}
+
 export function rentHousingUnit(S, catalogId) {
   const kind = S.legal.residency.kind;
   if ((kind === 'grace_period' || kind === 'undocumented') && !S.legal.citizenships.includes(S.country)) {
@@ -1543,15 +1550,12 @@ export function rentHousingUnit(S, catalogId) {
   const item = list.find(h => h.id === catalogId);
   if (!item) return { ok: false, msg: 'Property unavailable.' };
 
-  /* v2.15 W4 — rent follows the world: a crash lowers the rent a landlord
-     can ask, a boom raises it. */
-  const monthlyRent = Math.round(eraLocalCost(item.monthlyRent2026, S.country, S.year) * worldEventEffects(S, S.country).housePrice);
-  const deposit = monthlyRent * 2;
-  if (S.money.cash < deposit) {
-    return { ok: false, msg: `Need 2 months deposit + first rent (${formatMoney(deposit, S.country)}) to sign the lease.` };
+  const { monthlyRent, moveInFee, cashRequired } = rentalMoveInQuote(S, item);
+  if (S.money.cash < cashRequired) {
+    return { ok: false, msg: `Need ${formatMoney(cashRequired, S.country)} cash: ${formatMoney(moveInFee, S.country)} non-refundable move-in fee plus one month's rent kept in reserve. Rent is billed on the next monthly turn.` };
   }
 
-  walletMove(S, -monthlyRent, `Security deposit & move-in for ${item.name}`, 'housing');
+  walletMove(S, -moveInFee, `Non-refundable move-in fee for ${item.name}`, 'housing');
   S.housing.mode = 'rent';
   S.housing.currentHomeId = item.id;
   S.housing.currentHomeName = item.name;

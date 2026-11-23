@@ -9,7 +9,7 @@ import { chance } from './rng.js';
 import { recordJournal, queueScene, computeNetWorthLocal, ensureExtendedState, syncPlayerCareerMirror, liquidFundsLocal } from './schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { eraSalary, goldPricePerGram } from '../data/economy.js';
-import { ensureSocialCast, tickNpcAutonomyYearly, maybePickDominoSoulScene } from '../systems/soulEngine.js';
+import { restorePeopleDecision, ensureSocialCast, tickNpcAutonomyYearly, maybePickDominoSoulScene } from '../systems/soulEngine.js';
 import { settleHouseholdMonth, settleChildAllowanceYear, tickAssetsAnnually } from '../systems/economyEngine.js';
 /* v2.15 W3 — social energy: the yearly childhood turn refills the budget
    (childhood has no monthly settlement to do it). */
@@ -70,7 +70,7 @@ export function loadGameFromStorage() {
       ensureExtendedState(parsed);
       const restore = scene => {
         if (!scene) return null;
-        if (!scene.eventId) return restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
+        if (!scene.eventId) return restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
         return restoreRandomLifeScene(parsed, scene);
       };
       const pending = parsed.activeScene;
@@ -375,6 +375,12 @@ export function resolveActiveSceneChoice(S, choiceIdx) {
   discardOutdatedRandomScenes(S);
   if (!S.activeScene) return { ok: false, reason: 'circumstances_changed' };
   const scene = S.activeScene;
+  if (/^npc_(gift_|ask_help_|conversation_)/.test(scene.baseId || '') && !S.people[scene.speakerId]?.alive) {
+    S.activeScene = null;
+    recordJournal(S, 'That conversation is no longer possible. No choice was made.', 'relationship');
+    saveGameToStorage(S);
+    return { ok: false, reason: 'circumstances_changed' };
+  }
   // UI data-idx is the original array index, not the position after filtering.
   if (!Number.isInteger(choiceIdx) || choiceIdx < 0) return { ok: false, reason: 'invalid_choice' };
   const chosen = scene.choices[choiceIdx];

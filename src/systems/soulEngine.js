@@ -1663,20 +1663,17 @@ function giftAffection(itemPriceUsd, p) {
 
 /* Give a gift: opens a scene — pick a real shop item (cheap / mid / dearest
    you can afford), give cash instead, or just warm words for free. */
-export function openGiftScene(S, personId) {
+export function openGiftScene(S, personId, rebuild = false) {
   const p = S.people[personId];
   if (!p || !p.alive) return { ok: false, msg: 'Person unavailable.' };
   if (S.player.age < 16) return { ok: false, msg: 'Wait until you are 16 and earning pocket money.' };
-  if (S.activeScene) return { ok: false, msg: 'Finish the open moment first.' };
+  if (!rebuild && S.activeScene) return { ok: false, msg: 'Finish the open moment first.' };
   const affordable = giftableShopItems(S).filter(i => i.priceLocal <= S.money.cash);
   const cashAmt = cashGiftAmountLocal(S);
   const spread = affordable.length
     ? [affordable[0], affordable[Math.floor(affordable.length / 2)], affordable[affordable.length - 1]]
         .filter((it, idx, arr) => it && arr.findIndex(x => x.id === it.id) === idx)
     : [];
-  if (!spread.length && S.money.cash < cashAmt) {
-    return { ok: false, msg: `You cannot afford a gift for ${p.firstName} right now — even the smallest gift costs ${formatMoney(spread[0]?.priceLocal || cashAmt, S.country)} and you hold ${formatMoney(S.money.cash, S.country)}.` };
-  }
   /* v2.15 W3 — a gift costs 2 social energy. Checked here, spent in the
      choice effect (the giving itself), so opening the scene and changing
      your mind never costs anything. */
@@ -1731,6 +1728,7 @@ export function openGiftScene(S, personId) {
       }
     ]
   };
+  if (rebuild) return scene;
   if (!queueScene(S, scene)) return { ok: false, msg: 'Finish the open moment first.' };
   return { ok: true, msg: `Choose a gift for ${p.firstName}.` };
 }
@@ -1738,12 +1736,12 @@ export function openGiftScene(S, personId) {
 /* Ask for help: money or advice, in one scene. Money reuses the existing
    ask-for-help rule (their savings, your relationship); a refusal says why,
    in the journal, in plain words. Advice is free but needs goodwill. */
-export function openAskHelpScene(S, personId) {
+export function openAskHelpScene(S, personId, rebuild = false) {
   const p = S.people[personId];
   if (!p || !p.alive) return { ok: false, msg: 'Person unavailable.' };
   if (S.player.age < 18) return { ok: false, msg: 'Your household already covers your needs until adulthood.' };
   if (p.age < 22) return { ok: false, msg: `${p.firstName} is too young to help you out.` };
-  if (S.activeScene) return { ok: false, msg: 'Finish the open moment first.' };
+  if (!rebuild && S.activeScene) return { ok: false, msg: 'Finish the open moment first.' };
   /* v2.15 W3 — asking for help costs 4 social energy. Checked here,
      spent in the choice effect (the asking itself); "never mind" costs
      nothing, because you never asked. */
@@ -1790,7 +1788,7 @@ export function openAskHelpScene(S, personId) {
             recordJournal(st, `You asked ${p.firstName} for advice, but they are too angry with you right now to help (resentment is high — clear the air first).`, 'relationship');
             return;
           }
-          S.player.vitals.smarts = clamp(S.player.vitals.smarts + 3);
+          st.player.vitals.smarts = clamp(st.player.vitals.smarts + 3);
           p.rel.trust = clamp(p.rel.trust + 2);
           recordJournal(st, `You asked ${p.firstName} for advice. They said: ${adviceLine} (+3 Smarts).`, 'relationship');
         }
@@ -1803,6 +1801,7 @@ export function openAskHelpScene(S, personId) {
       }
     ]
   };
+  if (rebuild) return scene;
   if (!queueScene(S, scene)) return { ok: false, msg: 'Finish the open moment first.' };
   return { ok: true, msg: `What do you ask ${p.firstName} for?` };
 }
@@ -1810,12 +1809,12 @@ export function openAskHelpScene(S, personId) {
 /* A real conversation: a scene whose choices come from who this person is —
    their job, their place in the family, your history together. Not a card
    that just opens the person card again. */
-export function openConversationScene(S, personId) {
+export function openConversationScene(S, personId, rebuild = false) {
   const p = S.people[personId];
   if (!p || !p.alive) return { ok: false, msg: 'Person unavailable.' };
   if (p.age < 4) return { ok: false, msg: `${p.firstName} is too young for a real conversation.` };
   if (p.rel.resentment >= 80) return { ok: false, msg: `${p.firstName} will not talk to you right now — clear the air first (Apologize / Clear Air).` };
-  if (S.activeScene) return { ok: false, msg: 'Finish the open moment first.' };
+  if (!rebuild && S.activeScene) return { ok: false, msg: 'Finish the open moment first.' };
   /* v2.15 W3 — a real conversation costs 2 social energy. Checked here,
      spent in the choice effect (the talking itself). */
   const talkEnergy = checkSocialEnergy(S, energyCostFor('talk', S, p));
@@ -1873,7 +1872,7 @@ export function openConversationScene(S, personId) {
           if (!spendSocialEnergy(st, energyCostFor('talk', st, p))) { recordJournal(st, `You meant to tell ${p.firstName} your real news, but you had no social energy left this month. It comes back at the start of next month.`, 'relationship'); return; }
           noteSocialContact(st, p);
           rememberDeed(st, p, 'visited', `Shared real news about your life.`, { affection: 4, trust: 3 });
-          S.player.vitals.happiness = clamp(S.player.vitals.happiness + 3);
+          st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
           recordJournal(st, `You told ${p.fullName} your real news — not the polite version. They listened properly.`, 'relationship');
         }
       },
@@ -1883,13 +1882,29 @@ export function openConversationScene(S, personId) {
           /* v2.15 W3 — the conversation costs 2 social energy and is a real contact. */
           if (!spendSocialEnergy(st, energyCostFor('talk', st, p))) { recordJournal(st, `You meant to ask ${p.firstName} for honest advice, but you had no social energy left this month. It comes back at the start of next month.`, 'relationship'); return; }
           noteSocialContact(st, p);
-          S.player.vitals.smarts = clamp(S.player.vitals.smarts + 2);
+          st.player.vitals.smarts = clamp(st.player.vitals.smarts + 2);
           p.rel.trust = clamp(p.rel.trust + 3);
           recordJournal(st, `You asked ${p.fullName} for honest advice, and took it seriously. ${generateContextualLine(st, p)}`, 'relationship');
         }
       }
     ]
   };
+  if (rebuild) return scene;
   if (!queueScene(S, scene)) return { ok: false, msg: 'Finish the open moment first.' };
   return { ok: true, msg: `A conversation with ${p.firstName} is waiting.` };
+}
+
+export function restorePeopleDecision(S, saved) {
+  const builders = [
+    ['npc_gift_', openGiftScene],
+    ['npc_ask_help_', openAskHelpScene],
+    ['npc_conversation_', openConversationScene]
+  ];
+  const match = builders.find(([prefix]) => String(saved?.baseId || '').startsWith(prefix));
+  if (!match) return null;
+  const p = S.people[saved.speakerId];
+  if (!p?.alive) return null;
+  const scene = match[1](S, p.id, true);
+  if (!scene?.choices) return null;
+  return { ...saved, ...scene, title: saved.title, text: saved.text };
 }

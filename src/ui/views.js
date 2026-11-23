@@ -84,7 +84,7 @@ import { buildLegacySummary, computeLiveLegacyScore, legacyScoreReasons } from '
 /* v2.13 Worker 1 — progress system + stakes dashboard (Timeline panel). */
 import { getProgress, computeStakes } from '../systems/progressEngine.js';
 import { getCurrentChapter, noteChapterChange, ambitionStatus, noteAmbitionOutcome } from '../systems/storyLibrary.js';
-import { childPocketMoneyMonthly, resolveCurrentHome } from '../systems/economyEngine.js';
+import { rentalMoveInQuote, childPocketMoneyMonthly, resolveCurrentHome } from '../systems/economyEngine.js';
 import { migrateBusinesses, evaluateBusinessLaunch, computeWorkload, ventureViabilityWarningHtml, BUSINESS_FULL_TIME_HOURS, BUSINESS_PART_TIME_HOURS } from '../systems/businessEngine.js';
 /* v2.14 — management capacity (W1), manager (W2), per-industry decisions
    (W3), buying + branches (W4), exits + cash (W5). The hard cap is gone:
@@ -2965,12 +2965,14 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
         <div style="border-top:1px solid var(--line-soft);padding-top:8px">
           <strong style="font-size:0.82rem">Quick Rental Apartments in ${esc(S.city)}:</strong>
           ${rentalUnits.map(h => {
-            const rCost = eraLocalCost(h.monthlyRent2026, S.country, S.year);
+            const quote = rentalMoveInQuote(S, h);
+            const rCost = quote.monthlyRent;
             return `
               <div class="item-row">
                 <div class="item-row-main">
                   <strong>Lease: ${esc(h.name)} (${h.rooms}BR)</strong>
-                  <span>Monthly Rent: <strong class="mono">${esc(formatMoney(rCost, S.country))}/mo</strong></span>
+                  <span>Rent: <strong class="mono">${esc(formatMoney(rCost, S.country))}/mo</strong>, billed from the next monthly turn.</span>
+                  <span>Move-in fee: ${esc(formatMoney(quote.moveInFee, S.country))}, non-refundable. Keep another month's rent in cash. Required: ${esc(formatMoney(quote.cashRequired, S.country))}.</span>
                 </div>
                 <button class="btn btn-sm" data-action="rent-home" data-id="${h.id}">Sign Lease</button>
               </div>
