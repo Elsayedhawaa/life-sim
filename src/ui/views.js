@@ -115,6 +115,7 @@ import { renderBusinessLoanSection } from '../systems/businessLoans.js';
 import { renderBusinessWillSection, renderWillHeirSection } from '../systems/businessLegacy.js';
 import { isSeriousCondition, treatmentOptions, oddsInWords } from '../systems/mortalityModel.js';
 import {
+  activityCostLocal,
   computeZakatDueLocal,
   computeChancenkartePoints,
   evaluateGig,
@@ -567,6 +568,7 @@ export function renderLifeTabHtml(S, uiState = {}) {
         ${quickActs.map(a => `
           <button type="button" class="btn btn-sm" data-action="do-activity" data-id="${esc(a.id)}">
             ${esc(a.label || a.name)}
+            <span class="muted"> · ${S.player.age < 18 ? 'Parents cover cost' : activityCostLocal(S, a) > 0 ? esc(formatMoney(activityCostLocal(S, a), S.country)) : 'Free'}</span>
           </button>
         `).join('')}
         ${(zakat.eligible && S.credentials.zakatLastYearPaid !== S.year) ? `

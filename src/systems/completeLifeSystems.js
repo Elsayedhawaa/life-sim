@@ -1531,9 +1531,19 @@ export function takeVacationOrPilgrimage(S, destId) {
   return { ok: true, msg: `Great trip to ${dest.name}!${staffNote}${leaveNote}` };
 }
 
+/* Activity prices are 2026 EGP amounts, not USD. Use the same price
+   for the button and the actual charge; a zero price stays free. */
+export function activityCostLocal(S, actOrId) {
+  const act = typeof actOrId === 'string' ? V1_ACTIVITIES.find(a => a.id === actOrId) : actOrId;
+  if (!act) return 0;
+  const egp = eraLocalCost(Math.max(0, Number(act.costEgp) || 0), 'egy', S.year);
+  return Math.round(convertCurrency(egp, 'egy', S.country, S.year));
+}
+
 export function doDailyActivity(S, actId) {
-  const act = V1_ACTIVITIES.find(a => a.id === actId) || { label: 'Gym & Fitness', health: 3, hap: 3, costUsd: 25 };
-  const cost = Math.round(convertCurrency(act.costUsd || 20, 'usa', S.country, S.year));
+  const act = V1_ACTIVITIES.find(a => a.id === actId);
+  if (!act) return { ok: false, msg: 'Unknown activity.' };
+  const cost = activityCostLocal(S, act);
   if (S.player.age >= 18 && cost > 0) {
     if (S.money.cash < cost) return { ok: false, msg: `Need ${formatMoney(cost, S.country)}.` };
     walletMove(S, -cost, `Activity: ${act.label || act.name}`, 'lifestyle');
@@ -1591,7 +1601,7 @@ export function doDailyActivity(S, actId) {
   const deltaTxt = deltas.length
     ? deltas.map(d => `${d.label} ${d.delta > 0 ? '+' : '−'}${Math.abs(d.delta)}`).join(', ')
     : 'no stat change (already maxed)';
-  return { ok: true, msg: `${act.label || act.name}: ${deltaTxt}`, deltas, actLabel: act.label || act.name };
+  return { ok: true, msg: `${act.label || act.name}: ${deltaTxt}. ${S.player.age < 18 ? 'Parents cover the cost.' : cost > 0 ? `Paid ${formatMoney(cost, S.country)}.` : 'Free.'}`, deltas, actLabel: act.label || act.name };
 }
 
 export function launchCivilLawsuit(S, suitId) {

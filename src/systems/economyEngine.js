@@ -566,7 +566,7 @@ export function settleHouseholdMonth(S) {
   if (!S || S.player.age < 18) return;
 
   const cObj = getCountry(S.country);
-  const summary = { income: 0, tax: 0, housing: 0, living: 0, debt: 0, support: 0, net: 0, incomeParts: [] };
+  const summary = { income: 0, tax: 0, housing: 0, living: 0, debt: 0, support: 0, net: 0, incomeParts: [], payrollDeductions: 0, businessTax: 0 };
   let netDelta = 0;
   /* v2.15 W2 — this month's pension amounts, captured in §1 from the
      pay that actually landed and accrued into the pot at the end of
@@ -632,6 +632,7 @@ export function settleHouseholdMonth(S) {
         : '';
       netDelta += addIncome(pay.net, `Salary — ${job.employer} (${job.title})${salaryNote}`);
       summary.tax += (pay.incomeTax + pay.socialSecurity);
+      summary.payrollDeductions += (pay.incomeTax + pay.socialSecurity);
       /* v2.15 W2 — pension: this month's contribution is taken from the
          payslip of the pay that actually landed (gross after any
          world-event pay move), so the pot never records money that was
@@ -688,6 +689,7 @@ export function settleHouseholdMonth(S) {
         addIncome(pl.revenue, `Business revenue — ${biz.name}`);
         summary.living += pl.costs;
         summary.tax += pl.tax;
+        summary.businessTax += pl.tax;
         bizSettleCosts += pl.costs;
         bizSettlePLs.push(pl);
         /* v2.20 I3 — a profitable month pays its old debt from its own
@@ -711,6 +713,7 @@ export function settleHouseholdMonth(S) {
           addIncome(pl.revenue, `Business revenue — ${biz.name}`);
           summary.living += pl.costs;
           summary.tax += pl.tax;
+          summary.businessTax += pl.tax;
           bizSettleCosts += pl.costs;
           bizSettlePLs.push(pl);
           /* v2.20 I3 — a covered losing month does NOT reset the miss

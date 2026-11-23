@@ -8,7 +8,6 @@
    ========================================================================== */
 
 import { getCountry, formatMoney } from '../data/countries.js';
-import { incomeTaxNote } from '../data/economy.js';
 import { childPocketMoneyMonthly } from '../systems/economyEngine.js';
 import { renderPortraitSvg } from './portraits.js';
 import { renderWorldMapHtml } from './worldMap.js';
@@ -381,8 +380,10 @@ export function renderMonthlyCashflowSlipHtml(S) {
       </div>
       ${isMinor ? `<div class="muted" style="margin-bottom:6px">You are under 18: your parents cover housing, food and school. The money below is your own — pocket money from your parents, gifts and anything you earned.</div>` : ''}
       ${incomeRows}
-      ${incomeTotal > 0 ? `<div class="doc-slip-row"><span>Total income this month</span><strong class="mono text-good">+${formatMoney(incomeTotal, S.country)}</strong></div>` : (isMinor ? `<div class="doc-slip-row muted-row"><span>No income of your own yet</span><span class="mono">0 ${getCountry(S.country).currency}</span></div>` : '')}
-      ${sum.tax > 0 ? `<div class="doc-slip-row muted-row"><span>Payroll Taxes &amp; Social Insurance Deducted</span><span class="mono">${formatMoney(sum.tax, S.country)}</span></div>` : `<div class="doc-slip-row muted-row"><span>Personal Income Tax (${getCountry(S.country).name})</span><span class="mono">0 ${getCountry(S.country).currency} — ${esc(incomeTaxNote(S.country))}</span></div>`}
+      ${incomeTotal > 0 ? `<div class="doc-slip-row"><span>Total income${sum.payrollDeductions > 0 ? ' (payroll deductions already taken)' : ''}</span><strong class="mono text-good">+${formatMoney(incomeTotal, S.country)}</strong></div>` : (isMinor ? `<div class="doc-slip-row muted-row"><span>No income of your own yet</span><span class="mono">0 ${getCountry(S.country).currency}</span></div>` : '')}
+      ${sum.payrollDeductions > 0 ? `<div class="doc-slip-row muted-row"><span>Payroll tax &amp; social insurance: already withheld, NOT charged again</span><span class="mono">${formatMoney(sum.payrollDeductions, S.country)}</span></div>` : ''}
+      ${sum.businessTax > 0 ? `<div class="doc-slip-row"><span>Business income tax</span><strong class="mono">−${formatMoney(sum.businessTax, S.country)}</strong></div>` : ''}
+      ${sum.tax > 0 && sum.payrollDeductions == null ? `<div class="muted">Tax and insurance were already accounted for in this saved statement. Advance a month for the separate payroll and business breakdown.</div>` : ''}
       <div class="doc-slip-row"><span>Housing (Lease / Aqsat / Mortgage / Staff)</span><strong class="mono">−${formatMoney(sum.housing, S.country)}</strong></div>
       <div class="doc-slip-row"><span>Living Basket, Tuition, Insurance &amp; Vehicles</span><strong class="mono">−${formatMoney(sum.living, S.country)}</strong></div>
       ${sum.support > 0 ? `<div class="doc-slip-row"><span>Family Remittances &amp; Expat Dependent Levies</span><strong class="mono">−${formatMoney(sum.support, S.country)}</strong></div>` : ''}

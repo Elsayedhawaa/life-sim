@@ -1494,3 +1494,10 @@ html[data-theme="dark"] .toast-banner { background: #0F0D0B; color: var(--ink-ma
 .trc-story-line { padding: 3px 0; }
 .trc-note { margin-top: 8px; font-size: 0.85rem; font-weight: 700; }
 html[data-theme="dark"] .turn-result-card { background: #1b1814; }
+
+/* Keep amounts together on narrow phones, let the description wrap. */
+.trc-lines li > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.trc-lines li > span:last-child { flex-shrink: 0; white-space: nowrap; }
+.doc-slip-row { gap: 10px; }
+.doc-slip-row > span:first-child { min-width: 0; }
+.doc-slip-row > .mono { flex-shrink: 0; white-space: nowrap; }

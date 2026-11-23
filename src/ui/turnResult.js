@@ -75,7 +75,7 @@ export function buildTurnResult(S, before, kind, stepsRun = 1) {
   const moves = new Map();
   for (const e of newEntriesSince(S.ledger, before.ledgerTopId)) {
     if (e.account !== 'cash' && e.account !== 'savings') continue;
-    const key = e.label || 'Payment';
+    const key = (e.label || 'Payment').replace(e.category === 'monthly_settlement' ? / \(\d{1,2}\/\d{4}\)$/ : /$^/, '');
     moves.set(key, Math.round(((moves.get(key) || 0) + num(e.delta)) * 100) / 100);
   }
   const moneyLines = [...moves.entries()]
@@ -105,6 +105,7 @@ export function buildTurnResult(S, before, kind, stepsRun = 1) {
     title,
     kind,
     cashDelta,
+    cashBalance: after.cash,
     savingsDelta,
     moneyLines,
     vitalDeltas,
@@ -132,6 +133,7 @@ export function renderTurnResultCardHtml(S, uiState) {
     const more = r.moneyLines.length - shown.length;
     moneyBits.push(`
       <div class="trc-money">
+        <div class="muted">Cash change</div>
         <div class="trc-net mono ${netCls}">${esc(netTxt)}</div>
         ${shown.length ? `<ul class="trc-lines">
           ${shown.map(l => `<li><span>${esc(l.label)}</span><span class="mono ${l.delta >= 0 ? 'text-good' : 'text-bad'}">${esc(signedMoney(l.delta, S.country))}</span></li>`).join('')}
@@ -152,6 +154,14 @@ export function renderTurnResultCardHtml(S, uiState) {
   const quiet = r.cashDelta === 0 && !r.vitalDeltas.length && !r.storyLines.length && !r.sceneWaiting && !r.gameOver;
 
   const noteBits = [];
+  if (S.player.age >= 18 && num(r.cashBalance) <= 0) {
+    noteBits.push(`<div class="trc-note text-bad">${r.cashBalance < 0
+      ? `Cash shortfall: ${esc(formatMoney(Math.abs(r.cashBalance), S.country))}. Being overdrawn lowers your credit score and raises stress each month. Cut costs, earn money or sell assets.`
+      : 'No cash left. Paid activities need cash; free activities are still available.'}</div>`);
+  }
+  if (r.moneyLines.some(l => /Monthly (housing|living costs|debt payments|family support)/.test(l.label))) {
+    noteBits.push('<div class="trc-note muted">Housing, living costs and other bills above are already paid from your cash. They are not extra charges.</div>');
+  }
   if (r.sceneWaiting) noteBits.push(`<div class="trc-note">A decision is waiting for you below.</div>`);
   if (r.gameOver) noteBits.push(`<div class="trc-note">This life has ended.</div>`);
   if (quiet) noteBits.push(`<div class="trc-note muted">A quiet one. Nothing changed.</div>`);
@@ -163,6 +173,7 @@ export function renderTurnResultCardHtml(S, uiState) {
         <button type="button" class="trc-close" data-action="dismiss-turn-result" aria-label="Dismiss">×</button>
       </div>
       ${moneyBits.join('')}
+      ${S.player.age >= 18 ? `<div class="trc-note">Cash left: <strong class="mono ${r.cashBalance < 0 ? 'text-bad' : ''}">${esc(formatMoney(num(r.cashBalance), S.country))}</strong></div>` : ''}
       ${vitalsBit}
       ${storyBit}
       ${noteBits.join('')}

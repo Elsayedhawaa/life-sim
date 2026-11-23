@@ -2170,7 +2170,9 @@ export function tickCareerMonthly(S) {
         }
       } else {
         const merit = job.performance >= 65 ? 0.055 : 0.02;
-        job.monthlyGross = Math.round(job.monthlyGross * (1 + merit));
+        const previousGross = job.monthlyGross;
+        job.monthlyGross = Math.round(previousGross * (1 + merit));
+        recordJournal(S, `Annual pay review at ${job.employer}: ${merit === 0.055 ? '5.5' : '2'}% raise, from ${formatMoney(previousGross, S.country)} to ${formatMoney(job.monthlyGross, S.country)}/month gross.`, 'career');
       }
       if (wouldPromote && rivalBlocks) {
         const rivalPerson = S.people[rivalRec.personId];
