@@ -4,6 +4,7 @@
    conscription rules, CV-verified job offers, boss politics, and enterprises.
    ========================================================================== */
 
+import { familyCoversUniversity } from './educationFunding.js';
 import { rand, randInt, pick, chance, clamp } from '../core/rng.js';
 import { nextId, recordJournal, walletMove, moveBalance, queueScene, ensureExtendedState } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
@@ -322,6 +323,8 @@ export function presentUniversityMajorPicker(S, uni) {
 
   const choices = majors.map(m => ({
     label: `${m.label} (${m.years} yrs, needs ${tansikCutoffFor(S.country, uni, m.id, S.year).cutoff}% at ${uni.name} — you scored ${score}%)`,
+    available: st => universityAffordability(st, uni).status !== 'cannot',
+    lockReason: 'You need funding first. Check scholarships, a cheaper university, or work and save.',
     effect: (st) => {
       applyToUniversity(st, uni.id, m.id);
     }
@@ -536,7 +539,7 @@ export function universityAffordability(S, uni) {
       paths: []
     };
   }
-  if (familyCanAffordSchool(S, annualTuition)) {
+  if (familyCoversUniversity(S, annualTuition, uni.country || S.country)) {
     return {
       annualTuition, status: 'covered', short: 'your family covers it',
       line: `Your family covers the ${formatMoney(annualTuition, S.country)} a year — you can afford this.`,
@@ -549,7 +552,7 @@ export function universityAffordability(S, uni) {
     paths.push(`A cheaper university: ${cheap.name} (public, ${formatMoney(eraLocalCost(cheap.annualTuition2026, S.country, S.year), S.country)}/yr).`);
   }
   paths.push('A full scholarship — see Named Scholarships below; winning one pays tuition in full.');
-  paths.push('A bank loan — see Finance, Banks; borrow the first year and repay after you graduate.');
+  paths.push('A bank loan may help, but monthly repayments start under the loan terms. Check Finance before borrowing.');
   paths.push('Work for a year first, save, then reapply.');
   if (cash >= annualTuition) {
     return {
@@ -867,24 +870,22 @@ export function applyToUniversity(S, uniId, majorId) {
   const annualTuition = eraLocalCost(uni.annualTuition2026 || 0, S.country, S.year);
   const aff = universityAffordability(S, uni);
   const hasFullScholarship = !!playerHasFullScholarship(S, uni);
-  /* Who actually pays the yearly bill (economyEngine charges tuition net of
-     this): a full scholarship, or a wealthy/upper-middle family at a private
-     university. A public university's small fee is still charged to the
-     player (unchanged billing — v2.5 note). */
-  const familyPaysTuition = uni.sector === 'private' && ['upper_middle', 'wealthy'].includes(S.familyTier);
-  const familyCovers = aff.status === 'covered' && !hasFullScholarship && annualTuition > 0;
-  if (!familyCovers && !hasFullScholarship && annualTuition > 0 && S.money.cash < Math.round(annualTuition * 0.25)) {
+  /* Use the same family rule as the admission screen and monthly billing. */
+  const familyPaysTuition = familyCoversUniversity(S, annualTuition, uni.country || S.country);
+  const familyCovers = familyPaysTuition;
+  if (!familyCovers && !hasFullScholarship && annualTuition > 0 && S.money.cash < annualTuition) {
     /* v2.7 — the refusal names the total and the parts, and offers the real
        paths, like the wedding refusal: never a dead "you need money". */
     const total = annualTuition * major.years;
     return {
       ok: false,
-      msg: `${uni.name} costs ${formatMoney(annualTuition, S.country)} a year — ${formatMoney(total, S.country)} over the ${major.years}-year ${major.label} degree. You hold ${formatMoney(S.money.cash, S.country)} in cash and need at least ${formatMoney(Math.round(annualTuition * 0.25), S.country)} in hand to start. ${aff.paths.join(' ')}`
+      msg: `${uni.name} costs ${formatMoney(annualTuition, S.country)} a year — ${formatMoney(total, S.country)} over the ${major.years}-year ${major.label} degree. You hold ${formatMoney(S.money.cash, S.country)} in cash and need at least ${formatMoney(annualTuition, S.country)} in hand to start. ${aff.paths.join(' ')}`
     };
   }
   const pct = (hasFullScholarship || familyPaysTuition) ? 1.0 : 0;
   if (hasFullScholarship) edu.awardedScholarship = null;
   enrollInUniversity(S, uni, majorId, pct);
+  edu.university.fundingSource = hasFullScholarship ? 'scholarship' : familyPaysTuition ? 'family' : 'self';
   return { ok: true, msg: `Enrolled at ${uni.name} — ${major.label}${pct === 1.0 ? ' (fully funded)' : ''}!` };
 }
 

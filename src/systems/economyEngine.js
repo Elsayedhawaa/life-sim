@@ -1,3 +1,4 @@
+import { monthlyUniversityTuition } from './educationFunding.js';
 /* ============================================================================
    World Life 2.0 — Household Economy, Banking, Gold, Real Estate & Cars Engine
    Exact monthly accounting, progressive taxes, inflation-linked CDs, physical
@@ -1014,15 +1015,8 @@ export function settleHouseholdMonth(S) {
     monthlyLiving += Math.round(car.monthlyUpkeep || 0);
   }
 
-  /* University monthly tuition installment if self-funded */
-  if (S.education.university && S.education.university.country === S.country) {
-    const netAnnualTuition = S.education.university.annualTuition * (1 - (S.education.university.scholarshipPct || 0));
-    /* If age <= 22 in home country and affluent family, parents cover tuition; otherwise player pays */
-    const parentsCover = S.country === S.homeCountry && S.player.age <= 22 && ['middle', 'upper_middle', 'wealthy'].includes(S.familyTier);
-    if (!parentsCover && netAnnualTuition > 0) {
-      monthlyLiving += Math.round(netAnnualTuition / 12);
-    }
-  }
+  // The funding shown before enrollment is the funding used for billing.
+  monthlyLiving += monthlyUniversityTuition(S);
 
   netDelta -= monthlyLiving;
   summary.living += monthlyLiving;
