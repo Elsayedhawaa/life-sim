@@ -64,3 +64,8 @@ Berlin residential courtyard street, modest flat interior and age/appearance-gat
 ## Canada first regional batch
 
 Fictional Toronto brick residential street, modest home interior and appearance-gated elder woman portrait. Toronto art is city/year gated, not a generic image for all Canadian cities. Apartment and semi-detached templates have a first geometry pass; other types still inherit shared families. Two no-spend choices cover wet boots and asking before helping a neighbour. No wage, rental, legal or climate simulation claims were added. Bedroom illustration proportions are now capped to avoid stretching a single bed across a wide bedroom. This is not completion of every Canadian home or era.
+
+
+## Country-only presentation correction
+
+User changed the direction: country-level living, no city claim or city labels. The HUD, timeline captions, family/education/work/property location labels and ordinary narrative text now use countries. Internal location keys remain for simulation links, not a player-facing claim. Existing streets without identifying landmarks are fictional country-appropriate illustrations; the Gulf timeline uses home scenery rather than a named-city skyline. Existing property names remain names, not player-location labels. The earlier city-specific rollout is superseded. The next work is multiple local property styles per country, each with separate art and type-fitting plans, rather than adding more city scenes.

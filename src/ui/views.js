@@ -232,15 +232,26 @@ function renderEditorialBannerHtml(imgFile, caption) {
   `;
 }
 
-// Add a city's static scene here without changing banner-selection logic.
-export const REGIONAL_CITY_SCENES = {
-  can: {since:1990,fallback:'north_america_skyline_ink.jpg',cities:{toronto:'canada_toronto_neighborhood_ink.jpg'}},
-  deu: {since:1995,fallback:'city_europe_west.jpg',cities:{berlin:'germany_berlin_neighborhood_ink.jpg'}},
-  usa: {since:1990,fallback:'north_america_skyline_ink.jpg',cities:{chicago:'usa_chicago_neighborhood_ink.jpg'}},
-  gbr: {since:1990,fallback:'city_europe_west.jpg',cities:{manchester:'uk_terraced_neighborhood_ink.jpg'}},
-  uae: {since:2010,fallback:'city_gulf_skyline.jpg',cities:{dubai:'uae_city_neighborhood_ink.jpg'}},
-  sau: {since:2005,fallback:'city_gulf_skyline.jpg',cities:{riyadh:'riyadh_neighborhood_ink.jpg'}}
+// Country-level scenery, fictional illustrations rather than a claimed city/address.
+export const COUNTRY_SCENES = {
+  can:{since:1990,scene:'canada_toronto_neighborhood_ink.jpg'},
+  deu:{since:1995,scene:'germany_berlin_neighborhood_ink.jpg'},
+  usa:{since:1990,scene:'usa_chicago_neighborhood_ink.jpg'},
+  gbr:{since:1990,scene:'uk_terraced_neighborhood_ink.jpg'},
+  uae:{since:2010,scene:'uae_apartment_home_ink.jpg'},
+  sau:{since:2005,scene:'saudi_family_home_ink.jpg'},
+  egy:{since:1980,scene:'egypt_apartment_evening_ink.jpg'},
+  jpn:{since:1990,scene:'japan_neighborhood_ink.jpg'}
 };
+
+export function countryLevelNarrative(text,S){
+  let out=String(text??'');
+  const entries=Object.values(COUNTRIES).flatMap(c=>(c.cities||[]).map(city=>[city,c.name]));
+  if(S.city&&!entries.some(([city])=>city===S.city))entries.push([S.city,getCountry(S.country).name]);
+  entries.sort((a,b)=>b[0].length-a[0].length);
+  for(const [city,country] of entries)out=out.split(city).join(country);
+  return out;
+}
 
 export function pickDynamicBanner(S, section = 'life', sub = '') {
   const c = String(S?.country || 'egy').toLowerCase();
@@ -264,10 +275,9 @@ export function pickDynamicBanner(S, section = 'life', sub = '') {
     ? 'east_asia_skyline_ink.jpg'
     : (month >= 9 && month <= 11 ? 'autumn_park_boulevard_ink.jpg' : 'city_europe_west.jpg');
 
-  const cityScenes=REGIONAL_CITY_SCENES[c];
-  if(cityScenes && ['life','people'].includes(section)) {
-    if(Number(S.year||2000)<cityScenes.since)return 'era_vintage_street_ink.jpg';
-    return cityScenes.cities[String(S.city||'').trim().toLowerCase()] || cityScenes.fallback;
+  const scenery=COUNTRY_SCENES[c];
+  if(scenery && ['life','people'].includes(section)) {
+    return Number(S.year||2000)<scenery.since?'era_vintage_street_ink.jpg':scenery.scene;
   }
   if(section==='realestate') {
     const interiors={can:'canada_home_evening_ink.jpg',deu:'germany_flat_evening_ink.jpg',usa:'usa_apartment_evening_ink.jpg',uae:'uae_apartment_home_ink.jpg',sau:'saudi_family_home_ink.jpg'};
@@ -284,13 +294,7 @@ export function pickDynamicBanner(S, section = 'life', sub = '') {
     if (['villa','mansion','twin_house','townhouse'].includes(shape)) return 'home_villa_compound.jpg';
     return 'egypt_apartment_evening_ink.jpg';
   }
-  if (c === 'egy' && ['life', 'people'].includes(section)) {
-    if (Number(S.year || 2000) < 1980) return 'era_vintage_street_ink.jpg';
-    if (String(S.city || '').toLowerCase().includes('alexandria')) return 'alexandria_neighborhood_ink.jpg';
-    return rot % 2 === 0 ? 'city_mena_cairo.jpg' : 'cairo_nile_felucca_ink.jpg';
-  }
   if (c === 'jpn' && section === 'realestate') return 'tokyo_apartment_evening_ink.jpg';
-  if (c === 'jpn' && ['life', 'people'].includes(section)) return 'japan_neighborhood_ink.jpg';
 
   if (section === 'life') {
     if (S?.education?.degrees?.length && rot % 2 === 0) return 'graduation_ceremony_ink.jpg';
@@ -458,7 +462,7 @@ export function renderHudHtml(S, flashKeys) {
           <div class="hud-identity-text">
             <h1>${esc(p.fullName)} ${S.generation > 1 ? `<span class="hud-pill">Gen ${S.generation}</span>` : ''} ${S.credentials?.hajjCompleted ? `<span class="hud-pill" style="background:#EAF6F0;color:#186A47">Hajj</span>` : ''}</h1>
             <div class="hud-subline">
-              <span class="hud-pill">${esc(cObj.flagCode)} ${esc(S.city)}, ${esc(cObj.name)}</span>
+              <span class="hud-pill">${esc(cObj.flagCode)} ${esc(cObj.name)}</span>
               <span class="mono">Age ${p.age} · ${esc(dateStr)}</span>
               <span>${esc(statusPill)}</span>
             </div>
@@ -705,7 +709,7 @@ export function renderLifeTabHtml(S, uiState = {}) {
           ${g.items.map(it => `
             <div class="journal-entry cat-${esc(it.category || 'life')}">
               ${it.month ? `<span class="muted mono" style="font-size:0.75rem">${MONTH_NAMES[(it.month - 1) % 12].slice(0, 3)} · </span>` : ''}
-              ${esc(it.text)}
+              ${esc(countryLevelNarrative(it.text,S))}
               <span style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;align-items:center">
                 ${JOURNAL_REACTIONS.map(r => `
                   <button type="button" class="btn btn-sm ${it.reaction === r ? 'btn-navy' : ''}" data-action="journal-react" data-id="${esc(it.id || '')}" data-reaction="${r}">${r}</button>
@@ -761,7 +765,7 @@ export function renderLifeTabHtml(S, uiState = {}) {
   noteChapterChange(S, chapter);
   const seasonLabel = chapter.name;
   const bannerHtml = !S.gameOver
-    ? renderEditorialBannerHtml(timelineBanner, `${S.city}, ${cObj.name} · ${S.year} · ${eraNameForYear(S.year)} (${seasonLabel})`)
+    ? renderEditorialBannerHtml(timelineBanner, `${cObj.name} · ${S.year} · ${eraNameForYear(S.year)} (${seasonLabel})`)
     : '';
   const chapterHtml = !S.gameOver ? `
     <div class="card card-elevated">
@@ -772,7 +776,7 @@ export function renderLifeTabHtml(S, uiState = {}) {
       <div style="font-size:0.9rem">${esc(chapter.meaning)}</div>
       <div style="margin-top:8px">
         ${chapter.beats.map(b => `
-          <div style="font-size:0.85rem;padding:2px 0">${b.state === 'done' ? '✓' : '○'} ${esc(b.text)}</div>
+          <div style="font-size:0.85rem;padding:2px 0">${b.state === 'done' ? '✓' : '○'} ${esc(countryLevelNarrative(b.text,S))}</div>
         `).join('')}
       </div>
     </div>
@@ -1086,7 +1090,7 @@ function renderActiveSceneHtml(S) {
         </div>
         ${renderEditorialSketchSvg(sc.category || 'life', 124, 80, `${S.turn || 0}_${sc.id || sc.title || ''}_${S.seed || 1}`)}
       </div>
-      <p class="scene-body">${esc(sc.text)}</p>
+      <p class="scene-body">${esc(countryLevelNarrative(sc.text,S))}</p>
       <div class="scene-choices">
         ${(() => {
           const choiceHtml = (ch, idx) => {
@@ -1176,7 +1180,7 @@ export function renderPeopleTabHtml(S, uiState = {}) {
   }
 
   return `
-    ${renderEditorialBannerHtml(pickDynamicBanner(S, 'people', 'circle'), `${S.city} Family Courtyard, Kinship Bonds & Social Circle`)}
+    ${renderEditorialBannerHtml(pickDynamicBanner(S, 'people', 'circle'), `${getCountry(S.country).name} Family Courtyard, Kinship Bonds & Social Circle`)}
     ${nav}
     <div class="card card-elevated">
       <div class="section-head">
@@ -1385,7 +1389,7 @@ function renderNpcCardHtml(S, p) {
         <div class="npc-info">
           <div class="npc-title-row">
             <span class="npc-name">${esc(p.fullName)} · Age ${p.age}</span>
-            <span class="npc-role-badge">${esc(p.relationLabel)} · ${esc(p.city)}, ${esc(pCountry.flagCode)}</span>
+            <span class="npc-role-badge">${esc(p.relationLabel)} · ${esc(pCountry.name)}</span>
           </div>
           <div class="muted" style="font-size:0.8rem">
             ${esc(p.career.title)}${p.career.monthlyIncomeLocal > 0 ? ` (${esc(formatMoney(p.career.monthlyIncomeLocal, p.residenceCountry, true))}/mo)` : ''} · Traits: <strong>${esc(p.traitTags.join(', '))}</strong>
@@ -1499,7 +1503,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
   const mySystem = schoolSystemFor(mySchool, S.country);
   const mySystemLabel = (TRACK_SYSTEM_INFO[mySystem] || TRACK_SYSTEM_INFO.national).label;
   const tansikFootnote = 'Admission scores, course availability, durations and tuition are simplified game rules. They are not official university requirements or a guide to applying in real life.';
-  const banner = renderEditorialBannerHtml(pickDynamicBanner(S, 'education'), `${S.city} Schools, Universities & Scholarships`);
+  const banner = renderEditorialBannerHtml(pickDynamicBanner(S, 'education'), `${getCountry(S.country).name} Schools, Universities & Scholarships`);
 
   const tierLabel = t => t === 'state' ? 'State (free)' : t === 'private' ? 'Private' : 'International';
   const schoolRows = ['state', 'private', 'international'].map(tier => {
@@ -1521,7 +1525,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
             <div class="item-row">
               <div class="item-row-main">
                 <strong>${esc(sc.name)}</strong>
-                <span>${esc(sc.city || '')} · ${fee > 0 ? `${esc(formatMoney(fee, S.country))}/yr` : 'Free'} · Teaches: ${esc(sysLabel)} · Founded ${sc.founded || '—'}</span>
+                <span>${fee > 0 ? `${esc(formatMoney(fee, S.country))}/yr` : 'Free'} · Teaches: ${esc(sysLabel)} · Founded ${sc.founded || '—'}</span>
                 <span class="muted">${esc(payerLine)}</span>
               </div>
               ${isCurrent
@@ -1620,7 +1624,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
       <div class="item-row" style="display:block">
         <div class="item-row-main" style="margin-bottom:6px">
           <strong>${esc(u.name)}</strong>
-          <span>${u.sector === 'public' ? 'Public' : 'Private'} · ${tuit > 0 ? `${esc(formatMoney(tuit, S.country))}/yr` : 'Free'} · ${esc(u.city || cObj.name)}</span>
+          <span>${u.sector === 'public' ? 'Public' : 'Private'} · ${tuit > 0 ? `${esc(formatMoney(tuit, S.country))}/yr` : 'Free'} · ${esc(cObj.name)}</span>
           <span><strong>Who pays:</strong> ${esc(aff.line)}</span>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">${majorsHtml}</div>
@@ -2062,7 +2066,7 @@ export function renderWorkTabHtml(S, uiState = {}) {
     { id: 'gigs', label: 'Part-Time & Cash Gigs' }
   ], sub);
 
-  const careerBanner = renderEditorialBannerHtml(pickDynamicBanner(S, 'work', sub), `${S.city} Vocations & Private Enterprise`);
+  const careerBanner = renderEditorialBannerHtml(pickDynamicBanner(S, 'work', sub), `${getCountry(S.country).name} Vocations & Private Enterprise`);
   if (sub === 'ventures') {
     return careerBanner + nav + renderVenturesSubtabHtml(S, uiState, allVentures);
   }
@@ -2175,7 +2179,7 @@ export function renderWorkTabHtml(S, uiState = {}) {
     ${currentJobHtml}
     <div class="card">
       <div class="section-head">
-        <h3>Local Job Market — ${esc(S.city)}, ${esc(cObj.name)} (${filteredJobs.length}/${allJobs.length})</h3>
+        <h3>Local Job Market — ${esc(cObj.name)} (${filteredJobs.length}/${allJobs.length})</h3>
         <span class="muted">Real companies, CV & board-license verified</span>
       </div>
       ${S.career.lastApplication ? `<p class="muted">Last application: <strong>${esc(S.career.lastApplication.title)}</strong> at ${esc(S.career.lastApplication.employer)} — ${S.career.lastApplication.hired ? '✓ Hired. ' : ''}${esc(S.career.lastApplication.reason)}</p>` : ''}
@@ -2455,7 +2459,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
         <span class="hud-pill">${Number.isFinite(levelCap) ? `Level ${biz.level}/${levelCap}` : `Level ${biz.level} · no cap`} · ${esc(modeLabel)} · Repeat customers ${Math.round((Number(biz.repeatRate ?? 0.5)) * 100)}%</span>
         <span class="hud-pill">${esc(managedBadge)}</span>
       </div>
-      <div class="muted">Founded ${MONTH_NAMES[(biz.foundedMonth || 1) - 1]} ${biz.foundedYear} in ${esc(biz.city || S.city)}, ${esc(getCountry(biz.country || S.country).name)} · Capital invested ${esc(formatMoney(biz.capitalInvested, S.country))} · ${staffCount} staff · ${esc(biz.premises?.label || 'Run from home')}${biz.remote ? ' · Managed remotely' : ''}</div>
+      <div class="muted">Founded ${MONTH_NAMES[(biz.foundedMonth || 1) - 1]} ${biz.foundedYear} in ${esc(getCountry(biz.country || S.country).name)} · Capital invested ${esc(formatMoney(biz.capitalInvested, S.country))} · ${staffCount} staff · ${esc(biz.premises?.label || 'Run from home')}${biz.remote ? ' · Managed remotely' : ''}</div>
       ${losingHtml}
       ${debtHtml}
       ${plHtml}
@@ -2788,7 +2792,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
   const fatherP = (S.people && S.relations) ? (S.people[S.relations.fatherId] || null) : null;
   const motherP = (S.people && S.relations) ? (S.people[S.relations.motherId] || null) : null;
   const whereHomeName = esc(S.housing.currentHomeName || 'Family Home');
-  const wherePlace = `${esc(S.city || '')}, ${esc(getCountry(S.country).name)}`;
+  const wherePlace = `${esc(getCountry(S.country).name)}`;
   let wherePill = 'Family home';
   let whereLiveLine = `You live with your parents in the ${whereHomeName} in ${wherePlace}.`;
   let whereOwnerLine = '';
@@ -2995,7 +2999,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
           }).join('')}
         </div>
         <div style="border-top:1px solid var(--line-soft);padding-top:8px">
-          <strong style="font-size:0.82rem">Quick Rental Apartments in ${esc(S.city)}:</strong>
+          <strong style="font-size:0.82rem">Quick Rental Apartments in ${esc(getCountry(S.country).name)}:</strong>
           ${rentalUnits.map(h => {
             const quote = rentalMoveInQuote(S, h);
             const rCost = quote.monthlyRent;
@@ -3110,7 +3114,7 @@ function renderCompareTableHtml(S, uiState, keys) {
   const rows = [
     { label: 'Price', val: it => formatMoney(it.price, S.country) },
     { label: 'Size', val: it => `${it.areaM2} m²` },
-    { label: 'Location', val: it => `${it.city ? `${it.city}, ` : ''}${it.country}` },
+    { label: 'Location', val: it => `${it.country}` },
     { label: 'Down payment', val: it => formatMoney(it.down, S.country) },
     { label: 'Running cost', val: it => it.monthlyLabel },
     {
@@ -3217,7 +3221,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
           ${renderHomeTypeArt(selUnit.shape, propMarket, 68)}
           <div class="muted" style="font-size:0.8rem">
-            Selected Unit Complete Architectural Sheet Set: <strong>${esc(selUnit.name)} (${selUnit.area} m²)</strong> · <strong>${esc(selFinish.label)}</strong> · Plan: <strong>${esc(selPlan.label)}</strong>
+            Selected unit illustration: <strong>${esc(selUnit.name)} (${selUnit.area} m²)</strong> · <strong>${esc(selFinish.label)}</strong> · Plan: <strong>${esc(selPlan.label)}</strong>
             ${propMarket === 'sau' && S.year >= 2019 ? ' · <em>4M+ SAR cash deed unlocks Saudi Property Premium Residency!</em>' : ''}
             ${propMarket === 'uae' && S.year >= 2019 ? ' · <em>2M+ AED deed unlocks 10-Yr UAE Golden Visa!</em>' : ''}
           </div>
@@ -3244,7 +3248,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
             <div style="display:flex;align-items:center;gap:10px">
               ${renderHomeTypeArt(dev.Coastal ? 'chalet' : selUnit.shape, propMarket, 60)}
               <div class="item-row-main">
-                <strong>${esc(dev.name)} ${dev.developer ? `· ${esc(dev.developer)}` : ''} (${esc(dev.city || mktCountryObj.cities[0])})</strong>
+                <strong>${esc(dev.name)} ${dev.developer ? `· ${esc(dev.developer)}` : ''} (${esc(mktCountryObj.name)})</strong>
                 <span>Total: <strong class="mono">${esc(formatMoney(fullPlayer, S.country, true))}</strong> · ${selPlan.years > 0 ? `Down: <strong>${esc(formatMoney(downPlayer, S.country, true))}</strong> + ${esc(formatMoney(monthlyPlayer, S.country, true))}/mo (${selPlan.years}y)` : 'Full Cash'} ${dev.program ? `· [${esc(dev.program.toUpperCase())}]` : ''}</span>
                 ${saving ? `<span class="text-good">Saving for this — see Life Goals on the Timeline tab.</span>` : ''}
               </div>
@@ -3298,7 +3302,7 @@ function renderLandAndBuildSubtabHtml(S, uiState) {
           <div style="padding:10px 0;border-bottom:1px solid var(--line-soft)">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
               <div>
-                <strong>${esc(lnd.name)} — ${esc(lnd.city)}</strong>
+                <strong>${esc(lnd.name)}</strong>
                 <div class="muted">Land Value: <strong class="mono">${esc(formatMoney(lnd.valueLocal, S.country))}</strong></div>
               </div>
               ${lnd.buildProject ? `
@@ -3353,7 +3357,7 @@ function renderLandAndBuildSubtabHtml(S, uiState) {
             <div style="display:flex;align-items:center;gap:10px">
               ${renderBitlifePropertyShapeSvg('land', 38, '#C84B31', pl.id || pl.name)}
               <div class="item-row-main">
-                <strong>${esc(pl.name)} · ${esc(pl.city || '')} (${area} m²)</strong>
+                <strong>${esc(pl.name)} (${area} m²)</strong>
                 <span>Zoning: ${esc(pl.zoning || 'residential')} · Deed Price: <strong class="mono">${esc(formatMoney(costPlayer, S.country, true))}</strong></span>
                 ${saving ? `<span class="text-good">Saving for this — see Life Goals on the Timeline tab.</span>` : ''}
               </div>

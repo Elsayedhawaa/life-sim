@@ -84,7 +84,7 @@ function renderOfferHtml(S) {
       <strong>A recruiter called — a real offer is open</strong>
       <span class="muted"> — it stays open for 3 months, then they hire someone else.</span>
       <div style="margin-top:6px;font-size:0.86rem">
-        <div><strong>${esc(offer.recruiterName)}</strong>, a recruiter, wants you for <strong>${esc(offer.title)}</strong> at <strong>${esc(offer.employer)}</strong> in ${esc(offer.city)}.</div>
+        <div><strong>${esc(offer.recruiterName)}</strong>, a recruiter, wants you for <strong>${esc(offer.title)}</strong> at <strong>${esc(offer.employer)}</strong>.</div>
         ${offer.achievementLabel ? `<div style="margin-top:4px">They called because of your <strong>${esc(offer.achievementLabel)}</strong> — visible work brings the calls.</div>` : ''}
         <div style="margin-top:4px">Pay: gross <strong class="mono">${esc(formatMoney(offer.monthlyGross, S.country))}</strong>/mo (${raise > 0 ? `+${esc(formatMoney(raise, S.country))}/mo over your ${esc(formatMoney(job.monthlyGross, S.country))}` : 'no raise'}) — net <strong class="mono text-good">${esc(formatMoney(slip.net, S.country))}</strong>/mo after tax and social insurance${currentSlip ? ` (you take home ${esc(formatMoney(currentSlip.net, S.country))} now)` : ''}.</div>
         <div style="margin-top:4px">The trade-offs, stated plainly:</div>
@@ -95,7 +95,7 @@ function renderOfferHtml(S) {
         <button class="btn btn-sm" data-action="cm-offer-negotiate">Use it to negotiate where you are</button>
         <button class="btn btn-sm" data-action="cm-offer-decline">Decline</button>
       </div>
-      <div class="muted" style="margin-top:4px">• <strong>Accept:</strong> you resign from ${esc(job ? job.employer : 'your job')} (gratuity and notice as usual) and start at ${esc(offer.employer)} at the offered pay, exactly. ${offer.city !== S.city ? `You move to ${esc(offer.city)}. ` : ''}${offer.hasNonCompete ? `You sign the 2-year non-compete with ${esc(job ? job.employer : 'your old employer')}.` : ''}<br>• <strong>Negotiate:</strong> you show the offer to your manager. A strong record gets most of it matched; a weak one gets refused — and the offer is spent either way.<br>• <strong>Decline:</strong> the offer goes away, nothing else changes.</div>
+      <div class="muted" style="margin-top:4px">• <strong>Accept:</strong> you resign from ${esc(job ? job.employer : 'your job')} (gratuity and notice as usual) and start at ${esc(offer.employer)} at the offered pay, exactly. ${offer.city !== S.city ? 'You move for the role. ' : ''}${offer.hasNonCompete ? `You sign the 2-year non-compete with ${esc(job ? job.employer : 'your old employer')}.` : ''}<br>• <strong>Negotiate:</strong> you show the offer to your manager. A strong record gets most of it matched; a weak one gets refused — and the offer is spent either way.<br>• <strong>Decline:</strong> the offer goes away, nothing else changes.</div>
     </div>
   `;
 }
