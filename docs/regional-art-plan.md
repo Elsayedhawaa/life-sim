@@ -118,3 +118,8 @@ Fictional Queenslander-inspired raised timber, Federation-inspired brick, iron-l
 
 ## Netherlands, first six forms
 Gabled townhouse, row house, paired brick home, detached house, bungalow and balcony flat. Pitched-roof row/paired homes include a smaller attic hobby floor; gabled townhouse has three main levels plus attic. Six additional variant illustrations remain unadded after generation failures. Partial catalog, not complete national coverage. Reference: https://access-nl.org/housing-netherlands/finding-place-to-live/what-are-the-types-of-housing-in-the-netherlands-2/
+
+## Sweden and Brazil
+Fictional forms, shared schematic plans and game pricing. Swedish apartment purchases do not claim to model cooperative tenure rights. Brazilian sobrado is a multi-level house; studio art represents its shared block, not ownership of it. References:
+- https://www.skatteverket.se/privat/fastigheterochbostad/fastighetstaxering/deklarerasmahus/olikatyperavsmahus.4.3aa8c78a1466c584587385c.html
+- https://exame.com/mercado-imobiliario/quais-sao-os-principais-tipos-de-moradia-que-existem/
