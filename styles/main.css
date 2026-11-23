@@ -1,0 +1,1453 @@
+/* ============================================================================
+   World Life — Anthropic-Caliber Editorial & Architectural Precision UI
+   Warm archival parchment, hairline drafting geometry, soft multi-layer depth,
+   tabular numerals, 4D Manifold HUD, and Sheet A-101 Architectural Workstation.
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Bebas Neue';
+  src: url('../fonts/BebasNeue-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'DM Sans';
+  src: url('../fonts/DMSans-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('../fonts/JetBrainsMono-Variable.woff2') format('woff2');
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+:root {
+  --bg-canvas: #F3EFE6;
+  --bg-card: #FFFEFA;
+  --bg-subtle: #ECE5D7;
+  --bg-accent-warm: #FAF4EA;
+
+  --ink-main: #141413;
+  --ink-secondary: #524C43;
+  /* v2.16 W3 — --ink-muted darkened #7D7569 -> #6B6257: the old value
+     measured 3.96-4.17:1 as muted text on canvas / era card / the
+     lock-reason chip (needs 4.5:1); #6B6257 measures >= 4.59:1 on
+     every light background it sits on, worst the 1970s era canvas. */
+  --ink-muted: #6B6257;
+
+  --line-soft: rgba(20, 20, 19, 0.09);
+  --line-strong: rgba(20, 20, 19, 0.17);
+  --line-ink: #1C1917;
+
+  /* v2.16 W3 — --brand-terracotta darkened #C84B31 -> #BC4630: as
+     TEXT (the scene kicker, the only terracotta text in light mode)
+     the old value measured 4.22:1 on the scene card (needs 4.5:1);
+     #BC4630 measures 4.69:1 there, and white button text on it
+     improves 4.66:1 -> 5.18:1. The dark theme redefines this var
+     separately (W1) and is untouched. */
+  --brand-terracotta: #BC4630;
+  --brand-terracotta-dark: #A63820;
+  --brand-navy: #1D3557;
+  --brand-emerald: #186A47;
+  /* v2.16 W3 — --brand-gold darkened #A97115 -> #8A5C0E: the old value
+     measured 3.31-4.11:1 as gold notice/stamp/pill text on card, era
+     card, subtle and stamp backgrounds (needs 4.5:1); #8A5C0E measures
+     >= 4.63:1 on every light background it sits on. */
+  --brand-gold: #8A5C0E;
+  --brand-crimson: #B42318;
+
+  --shadow-card: 0 1px 2px rgba(20, 20, 19, 0.04), 0 8px 24px -8px rgba(20, 20, 19, 0.06);
+  --shadow-elevated: 0 2px 4px rgba(20, 20, 19, 0.05), 0 14px 34px -10px rgba(20, 20, 19, 0.10);
+  --shadow-btn: 0 1px 2px rgba(20, 20, 19, 0.06);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --font-editorial: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Charter, Georgia, serif;
+
+  /* v2.16 W1 — chart colours. The SVG charts (Finance, property market,
+     life trajectory) read these vars through inline style="stroke:var(...)"
+     so they redraw in the active theme's colours on re-render. Dark
+     values live in the dark-theme block at the end of this file. */
+  --bg-chart: #FAF7F0;
+  --chart-green: #186A47;
+  --chart-navy: #1D3557;
+  /* v2.16 W1 — chart series colours darkened from the brand values so
+     their labels pass 4.5:1 on the chart background: terracotta #C84B31
+     (4.36) -> #A63820 (6.12); gold uses W3's darkened --brand-gold
+     #8A5C0E (5.43 on the chart background, was 3.88 at #A97115). */
+  --chart-terracotta: #A63820;
+  --chart-gold: #8A5C0E;
+  --chart-grid: rgba(20, 20, 19, 0.25);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--bg-canvas);
+  background-image:
+    radial-gradient(rgba(20, 20, 19, 0.035) 1px, transparent 0);
+  background-size: 22px 22px;
+  color: var(--ink-main);
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 15px;
+  line-height: 1.52;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  padding-bottom: 148px;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-good { color: var(--brand-emerald) !important; }
+.text-bad  { color: var(--brand-crimson) !important; }
+.text-gold { color: var(--brand-gold) !important; }
+.muted     { color: var(--ink-secondary); font-size: 0.86rem; }
+
+.wl-icon {
+  vertical-align: -3px;
+  flex-shrink: 0;
+}
+
+/* ---------- STUDIO WORKSPACE SHELL ---------- */
+.app-shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 16px 18px 28px;
+}
+
+/* ---------- PINNED CHARACTER & 4D MANIFOLD HUD ---------- */
+.hud-card {
+  background: var(--bg-card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-elevated);
+  margin-bottom: 14px;
+}
+
+.hud-top {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.hud-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.hud-identity-text h1 {
+  font-family: var(--font-editorial);
+  font-size: 1.42rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
+}
+
+.hud-subline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 0.83rem;
+  color: var(--ink-secondary);
+  margin-top: 4px;
+}
+
+.hud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--line-strong);
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-main);
+}
+
+.hud-4d-box {
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  background: #FAF6EE;
+}
+
+.hud-wealth-box {
+  text-align: right;
+  flex-shrink: 0;
+  padding-left: 12px;
+  border-left: 1px solid var(--line-soft);
+}
+
+.hud-wealth-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+}
+
+.hud-wealth-val {
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.hud-vitals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.vital-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vital-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--ink-secondary);
+}
+
+.vital-track {
+  height: 6px;
+  background: var(--bg-subtle);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.vital-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------- NAVIGATION TABS (7 STUDIO PILLARS) ---------- */
+.nav-tabs {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.nav-tab-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  color: var(--ink-secondary);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  transition: all 0.14s ease;
+  position: relative;
+}
+
+.nav-tab-btn:hover {
+  background: var(--bg-subtle);
+  color: var(--ink-main);
+  border-color: rgba(20, 20, 19, 0.3);
+}
+
+.nav-tab-btn.active {
+  background: var(--ink-main);
+  border-color: var(--ink-main);
+  color: #FFFEFA;
+  box-shadow: 0 4px 12px rgba(20, 20, 19, 0.16);
+}
+
+.tab-badge {
+  position: absolute;
+  top: 5px;
+  right: 7px;
+  background: var(--brand-terracotta);
+  color: #FFF;
+  font-size: 0.64rem;
+  font-weight: 800;
+  padding: 0 5px;
+  border-radius: 99px;
+}
+
+/* ---------- CARDS & SECTIONS ---------- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.card-elevated {
+  border: 1px solid rgba(20, 20, 19, 0.24);
+  box-shadow: var(--shadow-elevated);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 11px;
+}
+
+.section-head h2, .section-head h3 {
+  font-family: var(--font-editorial);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- ACTIVE DECISION / SCENE CARD ---------- */
+.scene-card {
+  background: linear-gradient(180deg, #FFFDF9 0%, #FAF3E6 100%);
+  border: 1.5px solid var(--brand-terracotta);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 12px 32px -10px rgba(200, 75, 49, 0.18);
+}
+
+.scene-kicker {
+  font-size: 0.71rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--brand-terracotta);
+  margin-bottom: 6px;
+}
+
+.scene-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.scene-header h2 {
+  font-family: var(--font-editorial);
+  font-size: 1.32rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.24;
+}
+
+.scene-body {
+  font-family: var(--font-editorial);
+  font-size: 1.01rem;
+  color: var(--ink-main);
+  line-height: 1.66;
+  margin-bottom: 15px;
+}
+
+.scene-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.choice-btn {
+  width: 100%;
+  text-align: left;
+  padding: 12px 15px;
+  background: var(--bg-card);
+  border: 1px solid rgba(20, 20, 19, 0.24);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink-main);
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  transition: all 0.14s ease;
+}
+
+.choice-btn:hover:not(:disabled) {
+  background: #FDF6EE;
+  border-color: var(--brand-terracotta);
+  transform: translateX(2px);
+}
+
+.choice-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* v2.12 Worker 3 — visible inline reason next to a disabled button.
+   Plain words, always on screen (never a tooltip): why the button cannot
+   be pressed and what would make it pressable. */
+.lock-reason {
+  display: inline-block;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--ink-muted, #6b6259);
+  background: #FDF3F2;
+  border: 1px solid #E8CFCB;
+  border-radius: 6px;
+  padding: 3px 8px;
+  margin-left: 6px;
+  vertical-align: middle;
+  max-width: 340px;
+}
+
+/* ---------- STUDIO BUTTONS ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(20, 20, 19, 0.22);
+  background: var(--bg-card);
+  color: var(--ink-main);
+  font-family: inherit;
+  font-size: 0.83rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  transition: all 0.12s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  border-color: rgba(20, 20, 19, 0.36);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-primary {
+  background: var(--brand-terracotta);
+  border-color: var(--brand-terracotta-dark);
+  color: #FFFFFF;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--brand-terracotta-dark);
+  color: #FFFFFF;
+}
+
+.btn-navy {
+  background: var(--brand-navy);
+  border-color: #142640;
+  color: #FFFFFF;
+}
+.btn-navy:hover:not(:disabled) {
+  background: #152842;
+  color: #FFFFFF;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 0.77rem;
+}
+
+/* ---------- ARCHITECTURAL WORKSTATION TOOLBAR ---------- */
+.arch-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 11px;
+  background: #F6F2E9;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+
+.arch-toolbar-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.arch-toolbar-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: var(--ink-muted);
+  margin-right: 4px;
+}
+
+/* ---------- TIMELINE JOURNAL ---------- */
+.journal-year-group {
+  margin-top: 12px;
+}
+.journal-year-group:first-child {
+  margin-top: 0;
+}
+
+.journal-year-head {
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--brand-navy);
+  background: var(--bg-subtle);
+  padding: 3px 10px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  display: inline-block;
+}
+
+.journal-entry {
+  padding: 8px 11px;
+  border-left: 2.5px solid var(--line-strong);
+  margin-left: 6px;
+  margin-bottom: 6px;
+  font-size: 0.91rem;
+}
+
+.journal-entry.cat-milestone {
+  border-left-color: var(--brand-gold);
+  background: #FCF8EE;
+  border-radius: 0 8px 8px 0;
+  font-weight: 600;
+}
+.journal-entry.cat-relationship { border-left-color: var(--brand-terracotta); }
+.journal-entry.cat-visa         { border-left-color: var(--brand-navy); }
+.journal-entry.cat-money        { border-left-color: var(--brand-emerald); }
+.journal-entry.cat-world {
+  border-left-color: #6B7280;
+  font-style: italic;
+  color: var(--ink-secondary);
+}
+
+/* ---------- PEOPLE / NPC CARDS ---------- */
+.npc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  gap: 12px;
+}
+
+.npc-card {
+  background: var(--bg-card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  padding: 14px 15px;
+  box-shadow: var(--shadow-card);
+}
+
+.npc-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.npc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.npc-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.npc-name {
+  font-weight: 800;
+  font-size: 0.96rem;
+}
+
+.npc-role-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: var(--bg-subtle);
+  color: var(--ink-secondary);
+}
+
+.npc-quote {
+  margin-top: 6px;
+  font-size: 0.84rem;
+  font-style: italic;
+  color: var(--ink-secondary);
+  background: #F8F4EC;
+  border-left: 2px solid var(--brand-terracotta);
+  padding: 6px 10px;
+  border-radius: 0 6px 6px 0;
+}
+
+.npc-meters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.npc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px dashed var(--line-strong);
+}
+
+/* ---------- TACTILE DOCUMENTS ---------- */
+.doc-passport {
+  display: flex;
+  background: #FCF9F0;
+  border: 1.5px solid rgba(20, 20, 19, 0.28);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 12px;
+}
+
+.doc-passport-spine {
+  width: 44px;
+  color: #F4D58D;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 4px;
+  font-weight: 800;
+}
+
+.doc-passport-crest { font-size: 1.2rem; }
+.doc-passport-code { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 0.08em; }
+
+.doc-passport-body {
+  flex: 1;
+  padding: 12px 14px;
+}
+
+.doc-passport-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.doc-kicker {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: var(--ink-muted);
+}
+
+.doc-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.doc-stamp {
+  padding: 3px 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+  transform: rotate(-2deg);
+}
+.doc-stamp-good { color: var(--brand-emerald); background: #EAF6F0; }
+.doc-stamp-warn { color: var(--brand-gold); background: #FEF7E6; }
+.doc-stamp-bad  { color: var(--brand-crimson); background: #FDECEB; }
+
+.doc-passport-grid {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.doc-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 12px;
+  flex: 1;
+}
+
+.doc-fields span {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+.doc-fields strong { font-size: 0.8rem; }
+
+.doc-dual-bar {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--brand-navy);
+}
+
+.doc-contract {
+  background: #FFFDF7;
+  border: 2px double var(--brand-gold);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.doc-contract-header {
+  text-align: center;
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.doc-contract-parties {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.98rem;
+  margin-bottom: 10px;
+}
+
+.doc-contract-terms {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 12px;
+  font-size: 0.82rem;
+}
+.doc-contract-terms span {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+}
+
+.doc-slip {
+  background: #FAF8F3;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.doc-slip-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: var(--ink-muted);
+  border-bottom: 1px dashed var(--line-strong);
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+}
+
+.doc-slip-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 0.85rem;
+}
+.doc-slip-row.muted-row {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+.doc-slip-total {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1.5px solid var(--line-ink);
+  margin-top: 6px;
+  padding-top: 6px;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+/* ---------- DATA LIST ROWS ---------- */
+.item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.item-row:last-child { border-bottom: none; }
+
+.item-row-main strong {
+  display: block;
+  font-size: 0.91rem;
+}
+.item-row-main span {
+  font-size: 0.8rem;
+  color: var(--ink-secondary);
+}
+
+/* ---------- TOAST FEEDBACK ---------- */
+.toast-banner {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink-main);
+  color: #FFFDF9;
+  padding: 9px 18px;
+  border-radius: 99px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  z-index: 900;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
+/* ---------- PINNED BOTTOM ACTION DOCK ---------- */
+.bottom-dock {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(243, 239, 230, 0.92);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line-strong);
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  z-index: 500;
+}
+
+.bottom-dock-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.advance-main-btn {
+  flex: 1;
+  padding: 13px 18px;
+  font-size: 0.98rem;
+  font-weight: 800;
+  background: var(--brand-terracotta);
+  color: #FFF;
+  border: 1px solid var(--brand-terracotta-dark);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 14px rgba(200, 75, 49, 0.26);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.14s ease;
+}
+.advance-main-btn:hover:not(:disabled) {
+  background: var(--brand-terracotta-dark);
+}
+.advance-main-btn:disabled {
+  background: #A8A096;
+  border-color: #A8A096;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ---------- NEW LIFE WIZARD MODAL ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 19, 0.56);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 800;
+}
+
+.modal-sheet {
+  background: var(--bg-card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22);
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 22px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.form-field.full { grid-column: 1 / -1; }
+.form-field label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-secondary);
+}
+.form-field input, .form-field select {
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: #FFF;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--ink-main);
+}
+
+/* ---------- SUB-TAB BAR & CATALOG FILTERS ---------- */
+.subtab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 14px;
+  padding: 5px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+}
+
+.subtab-pill {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-secondary);
+  font-family: inherit;
+  font-size: 0.79rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.subtab-pill:hover {
+  background: rgba(255, 254, 250, 0.65);
+  color: var(--ink-main);
+}
+
+.subtab-pill.active {
+  background: var(--bg-card);
+  border-color: var(--line-strong);
+  color: var(--ink-main);
+  box-shadow: var(--shadow-btn);
+}
+
+.catalog-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 9px 11px;
+  background: #F8F4EC;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+
+.filter-input, .filter-select {
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: #FFFFFF;
+  font-family: inherit;
+  font-size: 0.84rem;
+  color: var(--ink-main);
+}
+
+.filter-input {
+  flex: 1;
+  min-width: 160px;
+}
+
+/* ---------- 3D ARCHITECTURAL STAGE & PROPERTY ARCHETYPES ---------- */
+.vis3d-home-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  min-width: 0;
+}
+
+/* Multi-floor sheet grid: its inline style asks for 430px minimum tracks,
+   which is wider than a phone screen, so the right-hand plan was cut off
+   and the page gained a sideways scroll. On narrow screens the track may
+   shrink to the full container width instead. */
+.vis3d-home-wrap > div[style*="minmax(430px"] {
+  grid-template-columns: repeat(auto-fit, minmax(min(430px, 100%), 1fr)) !important;
+}
+
+.shape-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.shape-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 8px 5px;
+  background: #FAF7F0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ink-main);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.shape-card:hover {
+  border-color: var(--brand-navy);
+  background: #FFF;
+}
+
+.shape-card.active {
+  background: #FDF4EC;
+  border-color: var(--brand-terracotta);
+  box-shadow: 0 0 0 1px var(--brand-terracotta);
+}
+
+/* ---------- EDITORIAL WATERCOLOR & INK BANNERS ---------- */
+.editorial-banner {
+  position: relative;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-card);
+  background: var(--bg-subtle);
+}
+
+.editorial-banner img {
+  display: block;
+  width: 100%;
+  height: 148px;
+  object-fit: cover;
+  object-position: center 45%;
+}
+
+.editorial-banner-caption {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  background: rgba(255, 254, 250, 0.92);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--line-strong);
+  border-radius: 99px;
+  padding: 3px 11px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--ink-main);
+}
+
+.color-swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.color-swatch-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 99px;
+  border: 1.5px solid rgba(20, 20, 19, 0.4);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.color-swatch-btn.active {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 2px #FFF, 0 0 0 3.5px var(--brand-terracotta);
+}
+
+@media (max-width: 780px) {
+  .passport-spread {
+    grid-template-columns: 1fr !important;
+  }
+  .hud-top {
+    grid-template-columns: 1fr;
+  }
+  .hud-wealth-box {
+    text-align: left;
+    padding-left: 0;
+    border-left: none;
+  }
+  .npc-grid {
+    grid-template-columns: 1fr;
+  }
+  .nav-tabs {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .hud-vitals, .npc-meters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .doc-fields, .doc-contract-terms, .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Furnishing style choices (v2.4) ------------------------------------
+   Each choice shows its furniture drawing FULLY visible: the box is a
+   fixed 4:3 frame (the drawings are 1792x1344) and the image sits inside
+   it with object-fit: contain — never cropped, never stretched, never
+   cut off, at desktop width and at phone width. */
+.furnish-room {
+  margin-bottom: 12px;
+  padding: 10px;
+  background: var(--bg-canvas);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+}
+.furnish-room-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-bottom: 8px;
+}
+.furnish-styles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+.furnish-card {
+  background: var(--bg-card);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.furnish-art {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  background: var(--bg-subtle);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.furnish-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.furnish-body {
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.furnish-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.furnish-desc {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  margin: 0;
+}
+.furnish-line {
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--ink-secondary);
+}
+.furnish-era {
+  font-style: italic;
+}
+.furnish-btn {
+  margin-top: auto;
+  width: 100%;
+}
+@media (max-width: 640px) {
+  .furnish-styles {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================================
+   v2.13 Worker 4 — ERA SKIN. One class on #app, set from S.year in main.js
+   (renderApp). No theme toggle exists in this copy — the game is a single
+   warm-parchment light theme — so these rules only retint that base and are
+   written as variable overrides + descendant tints, so they compose with
+   any future dark/light theme instead of hard-coding one. Each decade gets
+   its own accent, canvas/card tints and banner treatment: pre-1980 banners
+   are sepia/muted, the 2020s are crisp and clean. The difference is meant
+   to be visible at a glance: a 1960 life looks faded and brown, a 2026
+   life looks sharp and blue.
+   ========================================================================== */
+#app.era-1960s { --era-accent: #7A5C2E; --era-canvas: #EDE3CC; --era-card: #F7EFDC; --era-ink: #4A3B22; }
+#app.era-1970s { --era-accent: #A44A1F; --era-canvas: #F0DFC8; --era-card: #FBF3E4; --era-ink: #5A3220; }
+#app.era-1980s { --era-accent: #0F766E; --era-canvas: #E3E7E4; --era-card: #F4F7F5; --era-ink: #173F3A; }
+#app.era-1990s { --era-accent: #1D3557; --era-canvas: #E6E9EC; --era-card: #F6F8F9; --era-ink: #1F2A38; }
+#app.era-2000s { --era-accent: #2563EB; --era-canvas: #E8ECF1; --era-card: #F7F9FC; --era-ink: #1E293B; }
+#app.era-2010s { --era-accent: #4F46E5; --era-canvas: #ECEEF2; --era-card: #FAFAFC; --era-ink: #232336; }
+#app.era-2020s { --era-accent: #0F172A; --era-canvas: #EEF1F5; --era-card: #FFFFFF; --era-ink: #0F172A; }
+
+/* Canvas + cards take the era tint; the HUD keeps the era accent on its edge. */
+#app.era-1960s .app-shell, #app.era-1970s .app-shell, #app.era-1980s .app-shell,
+#app.era-1990s .app-shell, #app.era-2000s .app-shell, #app.era-2010s .app-shell,
+#app.era-2020s .app-shell { background: var(--era-canvas); border-radius: 18px; }
+#app.era-1960s .card, #app.era-1970s .card, #app.era-1980s .card,
+#app.era-1990s .card, #app.era-2000s .card, #app.era-2010s .card,
+#app.era-2020s .card { background: var(--era-card); }
+#app.era-1960s .hud-card, #app.era-1970s .hud-card, #app.era-1980s .hud-card,
+#app.era-1990s .hud-card, #app.era-2000s .hud-card, #app.era-2010s .hud-card,
+#app.era-2020s .hud-card { background: var(--era-card); border-top: 3px solid var(--era-accent); }
+
+/* Era accent on section headings and the active sub-tab pill. */
+#app.era-1960s .section-head h2, #app.era-1960s .section-head h3,
+#app.era-1970s .section-head h2, #app.era-1970s .section-head h3,
+#app.era-1980s .section-head h2, #app.era-1980s .section-head h3,
+#app.era-1990s .section-head h2, #app.era-1990s .section-head h3,
+#app.era-2000s .section-head h2, #app.era-2000s .section-head h3,
+#app.era-2010s .section-head h2, #app.era-2010s .section-head h3,
+#app.era-2020s .section-head h2, #app.era-2020s .section-head h3 { color: var(--era-ink); }
+#app.era-1960s .subtab-pill.active, #app.era-1970s .subtab-pill.active,
+#app.era-1980s .subtab-pill.active, #app.era-1990s .subtab-pill.active,
+#app.era-2000s .subtab-pill.active, #app.era-2010s .subtab-pill.active,
+#app.era-2020s .subtab-pill.active { background: var(--era-accent); border-color: var(--era-accent); color: #FFFFFF; }
+
+/* Banner treatment: pre-1980 is sepia and muted, the 80s/90s are warm,
+   the 2020s are crisp with no filter at all. */
+#app.era-1960s .editorial-banner img { filter: sepia(0.55) saturate(0.65) contrast(0.92) brightness(0.97); }
+#app.era-1970s .editorial-banner img { filter: sepia(0.38) saturate(0.8) contrast(0.95); }
+#app.era-1980s .editorial-banner img { filter: saturate(1.12) contrast(1.03); }
+#app.era-1990s .editorial-banner img { filter: saturate(1.05); }
+#app.era-2000s .editorial-banner img { filter: saturate(1.02) contrast(1.01); }
+#app.era-2010s .editorial-banner img { filter: none; }
+#app.era-2020s .editorial-banner img { filter: none; }
+#app.era-1960s .editorial-banner-caption, #app.era-1970s .editorial-banner-caption { background: rgba(247, 239, 220, 0.94); }
+#app.era-2020s .editorial-banner-caption { background: rgba(255, 255, 255, 0.95); }
+
+/* Type: the old decades read in serif, the modern decades stay sans. */
+#app.era-1960s .section-head h2, #app.era-1960s .section-head h3,
+#app.era-1970s .section-head h2, #app.era-1970s .section-head h3 { font-family: var(--font-editorial); letter-spacing: 0.01em; }
+#app.era-2020s .section-head h2, #app.era-2020s .section-head h3 { letter-spacing: -0.01em; }
+
+/* ============================================================================
+   v2.16 Worker 1 — LIGHT/DARK THEME. The toggle is the theme, the era skin
+   is the tint: the two compose, neither replaces the other. The theme
+   attribute is data-theme="light"|"dark" on #app (and on <html> so the
+   page background follows); the era classes era-1960s..era-2020s stay on
+   #app and compose with it. A new player starts in light mode; the choice
+   is saved in localStorage key world_life_2_theme.
+
+   This block contains NO filter and NO invert anywhere, and NO rule here
+   touches an img: the ink/watercolor illustrations are art, not UI, and
+   stay exactly as they are in both themes (the v2.2 distinction). The
+   era banner sepia filters above are the era skin's own treatment and
+   are untouched — they apply the same in both themes.
+
+   Contrast, measured (WCAG ratio, text on its background): body text
+   #F2EDE3 on card #26221D = 13.5; secondary #C7BEAC = 8.6; muted
+   #9C9280 = 5.1; white on primary #A63820 = 6.6; white on navy
+   #33507E = 8.1; terracotta text #DE6B4F on card = 4.8; era inks on
+   their dark era cards = 9.9–13.6; dark text #171512 on every dark era
+   accent = 5.8–12.0. All pass 4.5 for body text.
+   ========================================================================== */
+
+/* --- Dark base vars: the same warm parchment palette, darkened. --- */
+html[data-theme="dark"],
+#app[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-canvas: #1B1815;
+  --bg-card: #26221D;
+  --bg-subtle: #322C24;
+  --bg-accent-warm: #2D2720;
+
+  --ink-main: #F2EDE3;
+  --ink-secondary: #C7BEAC;
+  --ink-muted: #9C9280;
+
+  --line-soft: rgba(242, 237, 227, 0.10);
+  --line-strong: rgba(242, 237, 227, 0.22);
+  --line-ink: #E6DDCB;
+
+  /* Terracotta is lightened for TEXT on dark cards (4.8:1); buttons keep
+     the deeper --brand-terracotta-dark as their background so white
+     button text stays 6.6:1 (see the .btn-primary override below). Navy
+     is lightened for text; .btn-navy gets its own dark background. */
+  --brand-terracotta: #DE6B4F;
+  --brand-terracotta-dark: #A63820;
+  --brand-navy: #8FB6E8;
+  --brand-emerald: #57B98A;
+  --brand-gold: #D9A441;
+  --brand-crimson: #E8675A;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px -8px rgba(0, 0, 0, 0.45);
+  --shadow-elevated: 0 2px 4px rgba(0, 0, 0, 0.35), 0 14px 34px -10px rgba(0, 0, 0, 0.50);
+  --shadow-btn: 0 1px 2px rgba(0, 0, 0, 0.40);
+
+  --bg-chart: #211D18;
+  --chart-green: #57B98A;
+  --chart-navy: #8FB6E8;
+  --chart-terracotta: #E87A5C;
+  --chart-gold: #D9A441;
+  --chart-grid: rgba(242, 237, 227, 0.22);
+}
+
+/* --- Dark era variants: the SAME tints as the light era bands, darkened.
+   Warm sepia stays warm, cool stays cool — a 1962 life is warm and dark,
+   a 2026 life is cool and dark. Only the --era-* vars change; the era
+   band definitions above are untouched. --- */
+#app[data-theme="dark"].era-1960s { --era-accent: #C9A25E; --era-canvas: #241D14; --era-card: #2E2618; --era-ink: #E8D9B0; }
+#app[data-theme="dark"].era-1970s { --era-accent: #D97B4A; --era-canvas: #261A12; --era-card: #302216; --era-ink: #EBC9A8; }
+#app[data-theme="dark"].era-1980s { --era-accent: #3FA99E; --era-canvas: #141F1D; --era-card: #1B2A27; --era-ink: #BFE3D8; }
+#app[data-theme="dark"].era-1990s { --era-accent: #7FA8D9; --era-canvas: #161B22; --era-card: #1E242E; --era-ink: #C9D6E8; }
+#app[data-theme="dark"].era-2000s { --era-accent: #7AA5F0; --era-canvas: #151A23; --era-card: #1D2431; --era-ink: #C4D2EC; }
+#app[data-theme="dark"].era-2010s { --era-accent: #8B85F0; --era-canvas: #17171F; --era-card: #1F1F2A; --era-ink: #C9C7F2; }
+#app[data-theme="dark"].era-2020s { --era-accent: #C7D2E4; --era-canvas: #12151A; --era-card: #1A1E25; --era-ink: #E2E8F0; }
+
+/* Era banner captions in dark mode (the light ones are pale paper). */
+#app[data-theme="dark"].era-1960s .editorial-banner-caption,
+#app[data-theme="dark"].era-1970s .editorial-banner-caption { background: rgba(46, 38, 24, 0.94); }
+#app[data-theme="dark"].era-2020s .editorial-banner-caption { background: rgba(26, 30, 37, 0.95); }
+
+/* The active sub-tab pill sits on the era accent: in dark mode the pill
+   text is dark ink, which reads 5.8–12.0:1 on every dark era accent. */
+#app[data-theme="dark"] .subtab-pill.active { color: #171512; }
+
+/* --- Theme toggle: segmented Light / Dark control in the header. --- */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-subtle);
+  flex-shrink: 0;
+}
+.theme-toggle-btn {
+  padding: 3px 11px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.5;
+  background: transparent;
+  border: 0;
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+.theme-toggle-btn.active {
+  background: var(--ink-main);
+  color: var(--bg-card);
+}
+.theme-toggle-btn:focus-visible {
+  outline: 2px solid var(--brand-terracotta);
+  outline-offset: 2px;
+}
+
+/* --- Dark overrides for surfaces the light theme hard-codes. --- */
+/* Active nav tab: light mode is dark-ink bg + pale text; in dark mode
+   the ink IS pale, so the active tab uses deep terracotta instead. */
+#app[data-theme="dark"] .nav-tab-btn.active {
+  background: var(--brand-terracotta-dark);
+  border-color: var(--brand-terracotta-dark);
+  color: #FFF;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.40);
+}
+/* Primary buttons / badges keep the deep terracotta background so white
+   text stays 6.6:1; the lightened --brand-terracotta is for text only. */
+#app[data-theme="dark"] .btn-primary { background: var(--brand-terracotta-dark); border-color: #7E2A18; }
+#app[data-theme="dark"] .btn-primary:hover:not(:disabled) { background: #8E2F1B; }
+#app[data-theme="dark"] .advance-main-btn { background: var(--brand-terracotta-dark); border-color: #7E2A18; }
+#app[data-theme="dark"] .advance-main-btn:hover:not(:disabled) { background: #8E2F1B; }
+#app[data-theme="dark"] .tab-badge { background: var(--brand-terracotta-dark); }
+#app[data-theme="dark"] .advance-main-btn:disabled { background: #4A4438; border-color: #4A4438; }
+/* Navy buttons need a dark navy background in dark mode (the lightened
+   --brand-navy is for text); white on #33507E is 8.1:1. */
+#app[data-theme="dark"] .btn-navy { background: #33507E; border-color: #243D61; }
+#app[data-theme="dark"] .btn-navy:hover:not(:disabled) { background: #243D61; }
+
+#app[data-theme="dark"] .hud-4d-box { background: var(--bg-accent-warm); }
+#app[data-theme="dark"] .scene-card { background: linear-gradient(180deg, #2E2820 0%, #26221D 100%); }
+#app[data-theme="dark"] .choice-btn { border-color: rgba(242, 237, 227, 0.28); }
+#app[data-theme="dark"] .choice-btn:hover:not(:disabled) { background: var(--bg-subtle); }
+#app[data-theme="dark"] .lock-reason { background: rgba(232, 103, 90, 0.14); border-color: rgba(232, 103, 90, 0.45); color: var(--ink-secondary); }
+#app[data-theme="dark"] .arch-toolbar { background: var(--bg-subtle); }
+#app[data-theme="dark"] .journal-entry.cat-milestone { background: var(--bg-accent-warm); }
+#app[data-theme="dark"] .npc-quote { background: var(--bg-subtle); }
+#app[data-theme="dark"] .doc-passport { background: var(--bg-subtle); }
+#app[data-theme="dark"] .doc-stamp-good { background: rgba(87, 185, 138, 0.14); color: #6FCB9A; }
+#app[data-theme="dark"] .doc-stamp-warn { background: rgba(217, 164, 65, 0.14); }
+#app[data-theme="dark"] .doc-stamp-bad { background: rgba(232, 103, 90, 0.14); color: #F08A7D; }
+#app[data-theme="dark"] .doc-contract { background: var(--bg-card); }
+#app[data-theme="dark"] .doc-slip { background: var(--bg-subtle); }
+#app[data-theme="dark"] .bottom-dock { background: rgba(27, 24, 21, 0.92); }
+#app[data-theme="dark"] .form-field input,
+#app[data-theme="dark"] .form-field select { background: var(--bg-canvas); }
+#app[data-theme="dark"] .catalog-filter-bar { background: var(--bg-subtle); }
+#app[data-theme="dark"] .filter-input,
+#app[data-theme="dark"] .filter-select { background: var(--bg-canvas); }
+#app[data-theme="dark"] .shape-card { background: var(--bg-subtle); }
+#app[data-theme="dark"] .shape-card:hover { background: var(--bg-card); }
+#app[data-theme="dark"] .shape-card.active { background: var(--bg-accent-warm); }
+#app[data-theme="dark"] .editorial-banner-caption { background: rgba(38, 34, 29, 0.92); }
+#app[data-theme="dark"] .color-swatch-btn.active { box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 3.5px var(--brand-terracotta); }
+#app[data-theme="dark"] .subtab-pill:hover { background: rgba(242, 237, 227, 0.08); }
+#app[data-theme="dark"] .card-elevated { border-color: rgba(242, 237, 227, 0.28); }
+#app[data-theme="dark"] .btn { border-color: rgba(242, 237, 227, 0.26); }
+#app[data-theme="dark"] .btn:hover:not(:disabled) { border-color: rgba(242, 237, 227, 0.40); }
+#app[data-theme="dark"] .nav-tab-btn:hover { border-color: rgba(242, 237, 227, 0.40); }
+
+/* The toast lives outside #app (index.html #toast-mount), so its dark
+   rule hangs off <html> instead. Light text on near-black: 16.6:1. */
+html[data-theme="dark"] .toast-banner { background: #0F0D0B; color: var(--ink-main); }
