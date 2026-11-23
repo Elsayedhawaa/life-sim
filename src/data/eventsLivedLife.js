@@ -46,6 +46,17 @@ const localPlace = S => ({
 }[S.country] || 'a small neighbourhood cafe');
 
 export const EVENTS_LIVED_LIFE = [
+  story('ev_uae_offer_allowances', 'What the Package Actually Includes', {minAge:18,countries:['uae'],hasJob:false},
+    S => `A recruiter in ${S.city} describes an attractive package. The message combines basic pay and allowances, but it does not explain when each amount is paid or what happens if the role ends.`, [
+      ['Ask for the written breakdown and start date', 'You asked for the basic salary, allowances, pay dates and start date in writing. You did not accept a contract or count uncertain pay as cash.', {'skills.charisma':2,'vitals.smarts':1}],
+      ['Compare the package with your actual housing and travel costs', 'You compared the proposed package with your own housing and travel needs instead of relying on the headline amount. The offer was still unconfirmed.', {'vitals.stress':-2}],
+    ], {category:'career'}),
+  story('ev_uae_rental_terms', 'The Rent Is Not the Whole Move', {minAge:18,countries:['uae'],housingModes:['rent']},
+    S => `Looking around your rented home in ${S.city}, you start a list for the next move: transport, utility setup, the payment schedule and the money that must remain available afterward. The monthly figure alone is not the whole plan.`, [
+      ['Write down the full cash timing before house-hunting', 'You wrote down when money would be due and what needed to stay in reserve. This planning step did not sign a lease or charge a fee.', {'vitals.smarts':2,'vitals.stress':-2}],
+      ['Ask for written terms before comparing listings', 'You asked for written terms rather than assuming all rental listings use the same payment schedule. No new lease was signed.', {'skills.charisma':2}],
+    ], {category:'money'}),
+
   story('ev_sau_offer_details', 'The Offer Has More Than One Number', {minAge:18,countries:['sau'],hasJob:false},
     S => `A possible role in ${S.city} comes with a headline salary, but the message says little about the working hours, transport or housing. You have not accepted anything.`, [
       ['Ask for the written breakdown before deciding', 'You asked for the basic pay, any allowances, hours and start date in writing. The role was still only a possibility, not income already in your account.', {'skills.charisma':2,'vitals.stress':-2}],

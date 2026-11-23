@@ -34,6 +34,7 @@ export function homeStyleNote(country = '', shape = '') {
   if (shape === 'chalet') return 'Holiday chalet: shared living space and a compact sleeping area.';
   if (shape === 'penthouse') return 'Top-floor home with living and sleeping rooms on one level.';
   if (country === 'jpn') return 'Japan-inspired layout with a genkan entrance and separate washroom spaces.';
+  if (country === 'uae') return 'UAE-inspired home layout. Apartment living and villa guest spaces use different plans.';
   if (country === 'sau') return 'Saudi-inspired family layout with a guest reception area and separate family spaces.';
   if (GULF.has(country)) return 'Gulf-inspired family layout with space for receiving guests.';
   if (country === 'egy') return 'Egypt-inspired family layout with a separate reception area.';

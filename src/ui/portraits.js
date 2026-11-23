@@ -190,6 +190,7 @@ export function resolveInkPortraitFile(person, opts = {}) {
   if (age <= 4) return 'p_toddler.jpg';
   if (age < 14) return gender === 'f' ? 'p_child_girl.jpg' : 'p_child_boy.jpg';
   if (age < 19) return gender === 'f' ? 'p_teen_girl.jpg' : 'p_teen_boy.jpg';
+  if (age >= 66 && gender === 'm' && nat === 'uae' && (hwPref === 'ghutra' || (hwPref === 'auto' && app.wearsGulfAttire))) return 'p_uae_elder_man.jpg';
   if (age >= 66 && gender === 'm' && nat === 'sau' && (hwPref === 'shemagh' || (hwPref === 'auto' && app.wearsGulfAttire))) return 'p_saudi_elder_man.jpg';
   if (age >= 66 && gender === 'm' && EAST_ASIAN_NATS.has(nat)) return 'p_east_asian_elder.jpg';
   if (age >= 66 && gender === 'f' && nat === 'egy' && app.headwearMode !== 'hijab' && !app.wearsHijab) return 'p_egypt_elder_woman.jpg';

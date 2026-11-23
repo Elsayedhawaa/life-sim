@@ -39,3 +39,11 @@ Owned properties now persist garden/pool flags and unit ID on purchase. Old save
 Reviewed the nine residential plan families visually on a phone: studio, apartment, duplex, penthouse, townhouse, twin house, villa, chalet and mansion. Each has a distinct arrangement and floor count. Egypt-specific kitchen/service/entry proportions are now explicit for studio, duplex, penthouse, townhouse, twin house, chalet and mansion as well as apartment/villa. Room numbers and furnishing keys are preserved. The house banner now follows the current property's type instead of showing an apartment interior for every villa.
 
 This is a schematic game-layout pass. It does not yet include architectural doors/circulation validation or individual room-count variants for every non-apartment catalog unit. Type-specific is not the same as a bespoke measured floor plan for each property. Commercial units and land retain their separate non-residential plans.
+
+## Illustrated plan redesign, approved prototype
+
+The default now draws furniture, ink outlines, muted room fills and wood/tile textures on the existing room geometry. Furnishing shown in the drawing is clearly a preview, not a purchase. Garden and pool use the same ground-floor plot, never a separate outdoor card, and only appear for recorded property features. Villa-style grounds currently sit behind the house; attached-house grounds use the front. An explicit outdoorPlacement field can override that choice. Individual catalog plot placement and side-ground variants still need deeper treatment. Painted static badges cover Egypt apartment/villa; other types have distinct muted ink-style silhouettes. The technical plan remains optional. Nine type layouts were rendered and checked on a phone, with room-detail actions and feature-only grounds tested.
+
+## UAE first regional batch
+
+Dubai neighborhood, apartment interior and elder male portrait with appearance-appropriate white ghutra, all fictional static illustrations. The modern Dubai scene is city/year gated; other cities do not receive that named scene. Apartment/villa geometry has a separate first pass. Two no-spend local stories cover offer-package details and rental move-in timing. No unsupported wage or rent recalibration. This remains a first country batch, not completion of every UAE household/type/era.

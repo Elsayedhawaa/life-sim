@@ -568,6 +568,16 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
     }
     floors[0].core = null;
   }
+  if (country === 'uae' && shape === 'apartment') {
+    const layout = {'101':[416,292,110,136],'102':[526,356,74,72],'103':[84,238,470,54],'104':[84,292,332,136],'105':[344,292,210,64],'106':[84,92,196,146],'107':[554,238,130,118],'108':[280,92,138,146],'109':[418,92,266,146]};
+    for (const room of floors[0].rooms) { [room.x,room.y,room.w,room.h] = layout[room.no]; delete room.door; }
+    // Open kitchen edge next to living/dining, not a universal formal salon.
+    const kitchen=floors[0].rooms.find(r=>r.no==='105');kitchen.x=526;kitchen.y=292;kitchen.w=158;kitchen.h=64;
+  }
+  if (country === 'uae' && shape === 'villa') {
+    const layout = {'101':[246,290,110,128],'102':[76,290,170,128],'103':[76,88,110,148],'104':[76,236,280,54],'105':[356,236,336,182],'106':[356,88,220,148],'107':[576,88,116,148]};
+    for(const room of floors[0].rooms){[room.x,room.y,room.w,room.h]=layout[room.no];delete room.door;}
+  }
   if (country === 'egy' && shape === 'studio') {
     // Compact wet core beside entry, living/dining and sleeping zone opposite.
     const layout = {'101':[430,330,140,90],'102':[430,110,140,105],'103':[430,215,140,115],'104':[150,255,280,165],'105':[150,110,280,145]};
