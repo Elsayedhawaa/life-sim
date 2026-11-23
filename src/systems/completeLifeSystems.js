@@ -1538,19 +1538,60 @@ export function doDailyActivity(S, actId) {
     if (S.money.cash < cost) return { ok: false, msg: `Need ${formatMoney(cost, S.country)}.` };
     walletMove(S, -cost, `Activity: ${act.label || act.name}`, 'lifestyle');
   }
-  S.player.vitals.health = clamp(S.player.vitals.health + 3);
-  S.player.vitals.happiness = clamp(S.player.vitals.happiness + 4);
-  S.player.vitals.stress = clamp(S.player.vitals.stress - 5);
-  S.player.vitals.looks = clamp(S.player.vitals.looks + 1);
+
+  /* Apply the activity's OWN effects, so each habit honestly does what its
+     label says: reading and courses raise Smarts, gym/run/swim raise Health
+     and Looks, meditation cuts stress, and so on. Before this fix every
+     button applied the same hardcoded +Health/+Happiness, which is why
+     Read a book gave Smarts +0. `deltas` records what actually moved
+     (after clamping) so the UI can show exact numbers and flash the bars. */
+  const fx = act.effects || { health: act.health ?? 3, happiness: act.hap ?? 4, stress: -5, looks: 1 };
+  const deltas = [];
+  const applyVital = (key, label, amount) => {
+    const v = Math.round(Number(amount) || 0);
+    if (!v) return;
+    const before = Number(S.player.vitals[key]) || 0;
+    S.player.vitals[key] = clamp(before + v);
+    const real = S.player.vitals[key] - before;
+    if (real !== 0) deltas.push({ key, label, delta: real });
+  };
+  applyVital('health', 'Health', fx.health);
+  applyVital('happiness', 'Happiness', fx.happiness);
+  applyVital('smarts', 'Smarts', fx.smarts);
+  applyVital('looks', 'Looks', (fx.looks || 0) + (act.effects ? (act.looks || 0) : 0));
+  if (fx.stress) {
+    const before = Number(S.player.vitals.stress) || 0;
+    S.player.vitals.stress = clamp(before + Math.round(fx.stress));
+    const real = S.player.vitals.stress - before;
+    if (real !== 0) deltas.push({ key: 'stress', label: 'Peace of Mind', delta: -real });
+  }
+  if (fx.social) {
+    if (!S.skills) S.skills = {};
+    const before = Number(S.skills.charisma) || 45;
+    S.skills.charisma = clamp(before + Math.round(fx.social));
+    const real = S.skills.charisma - before;
+    if (real !== 0) deltas.push({ key: 'charisma', label: 'Charisma', delta: real });
+  }
+
   /* v2.6: gym / run / swim genuinely raise fitness — the aging model slows
      the yearly health decline for fit players, so this is the "hit the gym"
      path. (The wellness weekly focus already adds fitness monthly.) */
   if (['gym', 'jog', 'swim'].includes(actId)) {
-    S.skills.fitness = clamp((S.skills.fitness || 50) + (actId === 'gym' ? 4 : 3));
+    const gain = actId === 'gym' ? 4 : 3;
+    const beforeFit = Number(S.skills.fitness) || 50;
+    S.skills.fitness = clamp(beforeFit + gain);
+    const realFit = S.skills.fitness - beforeFit;
+    if (realFit !== 0) deltas.push({ key: 'fitness', label: 'Fitness', delta: realFit });
     if (!S.medical) S.medical = {};
     S.medical.lastExerciseYear = S.year;
   }
-  return { ok: true, msg: `${act.label || act.name}: +Health, +Happiness!` };
+
+  if (act.line) recordJournal(S, act.line, 'lifestyle');
+
+  const deltaTxt = deltas.length
+    ? deltas.map(d => `${d.label} ${d.delta > 0 ? '+' : '−'}${Math.abs(d.delta)}`).join(', ')
+    : 'no stat change (already maxed)';
+  return { ok: true, msg: `${act.label || act.name}: ${deltaTxt}`, deltas, actLabel: act.label || act.name };
 }
 
 export function launchCivilLawsuit(S, suitId) {

@@ -381,9 +381,12 @@ function renderSubtabs(tabId, subtabs, currentSub) {
   `;
 }
 
-export function renderHudHtml(S) {
+export function renderHudHtml(S, flashKeys) {
   ensureExtendedState(S);
   const p = S.player;
+  /* Habit feedback: keys of stats that just changed (health, happiness,
+     smarts, stress) — those bars render with a flash animation. */
+  const flashSet = Array.isArray(flashKeys) && flashKeys.length ? new Set(flashKeys) : null;
   const cObj = getCountry(S.country);
   const netWorth = computeNetWorthLocal(S);
   const dateStr = S.pacing === 'monthly'
@@ -436,19 +439,19 @@ export function renderHudHtml(S) {
       </div>
 
       <div class="hud-vitals">
-        ${vitalBarHtml('Health', p.vitals.health, '#186A47')}
-        ${vitalBarHtml('Happiness', p.vitals.happiness, '#C84B31')}
-        ${vitalBarHtml('Smarts', p.vitals.smarts, '#1D3557')}
-        ${vitalBarHtml('Peace of Mind', calmScore, '#A97115')}
+        ${vitalBarHtml('Health', p.vitals.health, '#186A47', flashSet && flashSet.has('health'))}
+        ${vitalBarHtml('Happiness', p.vitals.happiness, '#C84B31', flashSet && flashSet.has('happiness'))}
+        ${vitalBarHtml('Smarts', p.vitals.smarts, '#1D3557', flashSet && flashSet.has('smarts'))}
+        ${vitalBarHtml('Peace of Mind', calmScore, '#A97115', flashSet && flashSet.has('stress'))}
       </div>
     </header>
   `;
 }
 
-function vitalBarHtml(label, val, color) {
+function vitalBarHtml(label, val, color, flash) {
   const v = Math.max(0, Math.min(100, Math.round(Number(val) || 0)));
   return `
-    <div class="vital-item">
+    <div class="vital-item${flash ? ' vital-flash' : ''}">
       <div class="vital-head"><span>${esc(label)}</span><span class="mono">${v}%</span></div>
       <div class="vital-track"><div class="vital-fill" style="width:${v}%;background:${color}"></div></div>
     </div>

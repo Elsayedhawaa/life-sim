@@ -396,7 +396,7 @@ export function renderApp(preserveFilterKey = null, caretPos = null) {
 
   root.innerHTML = `
     <div class="app-shell">
-      ${renderHudHtml(S)}
+      ${renderHudHtml(S, uiState.statFlash)}
       ${renderNavTabsHtml(S, uiState.activeTab)}
       <main id="main-content">${renderTurnResultCardHtml(S, uiState)}${tabContent}</main>
     </div>
@@ -1137,7 +1137,22 @@ if (typeof document !== 'undefined') {
     }
 
     if (action === 'do-activity') {
-      handleActionResult(doDailyActivity(S, btn.dataset.id));
+      /* Snapshot before, build a turn-result-style card after, so a habit
+         shows exactly what it did (numbers per stat) instead of a bare
+         toast. The changed HUD bars also flash via uiState.statFlash. */
+      const beforeAct = snapshotTurn(S);
+      const res = doDailyActivity(S, btn.dataset.id);
+      if (res && res.ok) {
+        const r = buildTurnResult(S, beforeAct, 'choice');
+        r.title = res.actLabel ? `${res.actLabel} — what it did` : 'Habit — what it did';
+        if (Array.isArray(res.deltas) && res.deltas.length) {
+          r.vitalDeltas = res.deltas.map(d => ({ label: d.label, delta: d.delta }));
+        }
+        uiState.turnResult = r;
+        uiState.statFlash = [...new Set((res.deltas || []).map(d => d.key))];
+      }
+      handleActionResult(res);
+      uiState.statFlash = null;
       return;
     }
 
