@@ -21,3 +21,9 @@ New Alexandria neighborhood illustration, Egyptian apartment interior and older 
 Three gated local stories: planning an interview commute, recording a rental home's condition before repair disputes, and a family job introduction that does not magically become employment. No invented cash awards, repair bills, guaranteed job or unsupported salary/rent benchmark changes. Existing prices remain simplified game estimates. Costs/wages/rents need a separate source-grounded calibration pass before any claim of current market accuracy.
 
 All art is prebuilt static files. No in-game AI calls or paid services were added. Next country is Saudi Arabia, followed by UAE and the remaining profiles in the country's data order, excluding already-started Japan until the others have their first batch.
+
+## Saudi Arabia first batch
+
+New Riyadh neighborhood, guest-room interior and older male portrait (only when the character's shemagh/attire setting permits). Riyadh art is not used for Jeddah, and its modern skyline is era-gated. Country templates preserve guest/family separation and property bedroom counts, with mirrored arrangements for apartment, villa, duplex and attached-house types. This is a fictional template pass, not a measured or exhaustive claim of local authenticity.
+
+Two local decisions add written-offer scrutiny and household consent before inviting guests. Neither invents a job or spends money. Initial school selection now prefers the chosen city when the catalog has local schools, rather than assigning a Riyadh child to Dhahran. The newborn HUD says "Before school" instead of presenting a future school as current attendance. No wage/rent numbers were silently changed without source checking.

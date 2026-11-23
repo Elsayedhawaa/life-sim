@@ -27,6 +27,7 @@ export function regionalRoomName(room, country = '', shape = '') {
 }
 export function homeStyleNote(country = '') {
   if (country === 'jpn') return 'Japan-inspired layout with a genkan entrance and separate washroom spaces.';
+  if (country === 'sau') return 'Saudi-inspired family layout with a guest reception area and separate family spaces.';
   if (GULF.has(country)) return 'Gulf-inspired family layout with space for receiving guests.';
   if (country === 'egy') return 'Egypt-inspired family layout with a separate reception area.';
   return 'Contemporary home layout. Local architectural detail is still being expanded.';

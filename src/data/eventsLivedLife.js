@@ -46,6 +46,17 @@ const localPlace = S => ({
 }[S.country] || 'a small neighbourhood cafe');
 
 export const EVENTS_LIVED_LIFE = [
+  story('ev_sau_offer_details', 'The Offer Has More Than One Number', {minAge:18,countries:['sau'],hasJob:false},
+    S => `A possible role in ${S.city} comes with a headline salary, but the message says little about the working hours, transport or housing. You have not accepted anything.`, [
+      ['Ask for the written breakdown before deciding', 'You asked for the basic pay, any allowances, hours and start date in writing. The role was still only a possibility, not income already in your account.', {'skills.charisma':2,'vitals.stress':-2}],
+      ['Compare the commute and rent against the offered amount', 'You compared likely living costs with the offer rather than treating the largest number as take-home pay. No contract was accepted and no money changed hands.', {'vitals.smarts':2}],
+    ], {category:'career'}),
+  story('ev_sau_guest_space', 'Making Room for Everyone', {minAge:18,countries:['sau'],requiredPeople:['friend']},
+    (S,name) => `${name} suggests bringing a few friends over. Before saying yes, you think about the people sharing your home and which space is actually free.`, [
+      ['Check with the household before agreeing', "You checked with the household and suggested a time that did not take over someone else's space.", {'skills.charisma':2}, {trust:3}],
+      ['Suggest a short outdoor meeting at a cooler time', 'You suggested a short walk at a more comfortable time instead of promising a room that was not yours to offer.', {'vitals.stress':-2}, {affection:2}],
+    ], {category:'friends',person:'friend'}),
+
   story('ev_egy_commute_tradeoff', 'The Route Before the Interview', {minAge:18,countries:['egy'],hasJob:false},
     S => `An interview in ${S.city} is far enough away that the journey needs planning. A cheap route has two changes; the direct ride would leave less money for the rest of the week. The invitation gives you a contact number.`, [
       ['Confirm the address and plan the cheaper route with extra time', 'You confirmed the interview address and wrote down the changes before setting out. Planning did not guarantee the job, but the route was no longer a guess.', {'vitals.stress':-3,'vitals.smarts':1}],

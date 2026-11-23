@@ -588,6 +588,19 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
     beds.forEach((room, i) => { room.x = 84 + bedroomWidth * i / beds.length; room.y = 92; room.w = bedroomWidth / beds.length; room.h = 146; delete room.door; });
     if (!jp) { const bath = plan.rooms.find(r => r.no === '107'); bath.x = 554; bath.y = 92; bath.w = 130; bath.h = 146; delete bath.door; }
   }
+  if (country === 'sau' && ['apartment','villa','duplex','townhouse','twin_house'].includes(shape)) {
+    // Keep guest reception near the entrance, with the family rooms behind.
+    // Mirroring the base shell yields a separate saved regional template while
+    // retaining room identities and all furnishing purchases.
+    for (const floor of floors) {
+      const mirrorX = x => floor.shell.x * 2 + floor.shell.w - x;
+      for (const room of floor.rooms) {
+        room.x = mirrorX(room.x + room.w);
+        if (room.door) { room.door[0] = mirrorX(room.door[0]); room.door[2] = ({left:'right',right:'left'})[room.door[2]] || room.door[2]; }
+      }
+      if (floor.core) floor.core.x = mirrorX(floor.core.x + floor.core.w);
+    }
+  }
   for (const floor of floors) {
     floor.title = `${String(shape).replace(/_/g, ' ').toUpperCase()} — FICTIONAL HOME LAYOUT`;
     if (floor.core) floor.core.label = 'STAIRS / SHARED ACCESS';

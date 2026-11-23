@@ -255,8 +255,15 @@ export function pickDynamicBanner(S, section = 'life', sub = '') {
 
   // First regional set: no Mediterranean or Red Sea scenery in Japan's
   // everyday life/home contexts. Other countries retain their own routes.
+  if (c === 'sau' && section === 'realestate') return 'saudi_family_home_ink.jpg';
+  if (c === 'sau' && ['life', 'people'].includes(section)) {
+    if (Number(S.year || 2000) < 2005) return 'era_vintage_street_ink.jpg';
+    if (String(S.city || '').toLowerCase().includes('riyadh')) return 'riyadh_neighborhood_ink.jpg';
+    return 'city_gulf_skyline.jpg';
+  }
   if (c === 'egy' && section === 'realestate') return 'egypt_apartment_evening_ink.jpg';
   if (c === 'egy' && ['life', 'people'].includes(section)) {
+    if (Number(S.year || 2000) < 1980) return 'era_vintage_street_ink.jpg';
     if (String(S.city || '').toLowerCase().includes('alexandria')) return 'alexandria_neighborhood_ink.jpg';
     return rot % 2 === 0 ? 'city_mena_cairo.jpg' : 'cairo_nile_felucca_ink.jpg';
   }
@@ -413,7 +420,7 @@ export function renderHudHtml(S, flashKeys) {
     : S.education.university
     ? `Student · ${S.education.university.name}`
     : S.player.age < 18
-    ? `${S.education.schoolName || 'School Student'}`
+    ? (S.player.age < 6 ? 'Before school' : `${S.education.schoolName || 'School Student'}`)
     : S.career.retired
     ? 'Retired'
     : 'Seeking Next Step';
@@ -493,7 +500,7 @@ export function renderNavTabsHtml(S, activeTab) {
   const navArt = {
     life: pickDynamicBanner(S, 'life'),
     education: 'uni_campus_courtyard_ink.jpg',
-    people: ['jpn','egy'].includes(S.country) ? pickDynamicBanner(S, 'people') : 'family_kinship_ink.jpg',
+    people: ['jpn','egy','sau'].includes(S.country) ? pickDynamicBanner(S, 'people') : 'family_kinship_ink.jpg',
     work: 'career_enterprise_ink.jpg',
     realestate: pickDynamicBanner(S, 'realestate'),
     finance: 'finance_vault_ink.jpg',

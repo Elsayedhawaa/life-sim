@@ -495,7 +495,9 @@ export function createNewLifeState(opts = {}) {
 
   /* Assign initial school preference */
   const schools = getSchoolsFor(countryId, birthYear + 6);
-  const chosenSchool = schools.find(s => s.tier === tier.schoolPref) || schools[0];
+  const localSchools = schools.filter(s => String(s.city || '').toLowerCase() === String(S.city || '').toLowerCase());
+  const schoolPool = localSchools.length ? localSchools : schools;
+  const chosenSchool = schoolPool.find(s => s.tier === tier.schoolPref) || schoolPool[0];
   if (chosenSchool) {
     S.education.schoolId = chosenSchool.id;
     S.education.schoolName = chosenSchool.name;
