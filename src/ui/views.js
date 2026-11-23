@@ -5032,7 +5032,7 @@ export function renderNewLifeModalHtml(defaults = {}) {
           <h2>Begin a New Life</h2>
           <button class="btn btn-sm" data-action="close-new-life">Close</button>
         </div>
-        <p class="muted">Every era, country, currency float, exam cutoff, visa law, 3D property blueprint, and family personality is simulated with real historical &amp; legal logic.</p>
+        <p class="muted">Choose where your life begins. Study, work, build relationships and live with the results. Laws, prices and institutions are simplified for play.</p>
         <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
           <span style="font-size:0.85rem"><strong>Theme:</strong></span>
           ${renderThemeToggleHtml()}

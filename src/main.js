@@ -295,7 +295,19 @@ import {
   migrateFurnishedRoomsToNumbers
 } from './ui/planRoomLookup.js';
 
+// Supplied source may not include the optional art pack. Hide failed art
+// instead of exposing broken icons or repeating the caption as alt text.
+document.addEventListener('error', event => {
+  const img = event.target;
+  if (!(img instanceof HTMLImageElement) && !(img instanceof SVGImageElement)) return;
+  img.hidden = true;
+  img.style.display = 'none';
+  const banner = img.closest('.editorial-banner');
+  if (banner) banner.classList.add('art-unavailable');
+}, true);
+
 let S = loadGameFromStorage();
+const firstSession = !S;
 if (!S) {
   S = createNewLifeState({
     seed: 20261118,
@@ -317,7 +329,7 @@ const uiState = {
   finSub: 'cashflow',
   lifeSub: 'cars',
   worldSub: 'passports',
-  showNewLifeModal: false,
+  showNewLifeModal: firstSession,
   propMarket: 'local',
   gulfTarget: 'uae',
   vis3dTilt: 0,

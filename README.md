@@ -2,6 +2,14 @@
 
 Life simulation game source, starting from the supplied v2.20 source archive.
 
+## Play on your phone
+
+Open [World Life](https://elsayedhawaa.github.io/life-sim/) in your browser. No download, account or payment is needed. Updates to this repository deploy automatically through GitHub Pages.
+
+Your life is saved in this browser on this device. Use the same browser and URL to continue. Private browsing, clearing site data, or changing devices can lose access to the save. There is no cloud-save account yet.
+
+The optional original art pack is not in this repository. The hosted game uses a plain fallback wherever that art is missing.
+
 ## Run
 
 Open `index.html` in your browser. `dist/world-life.bundle.js` is prebuilt, so Node.js and a build step are not needed to play.

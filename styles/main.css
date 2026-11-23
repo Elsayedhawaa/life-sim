@@ -1523,3 +1523,9 @@ html[data-theme="dark"] .turn-result-card { background: #1b1814; }
 .scene-more-choices { margin-top: 6px; }
 .scene-more-choices summary { cursor: pointer; font-weight: 700; padding: 14px 4px; }
 .scene-more-choices[open] .choice-btn { margin-bottom: 8px; }
+
+.editorial-banner.art-unavailable { min-height: 58px; background: linear-gradient(120deg, var(--bg-subtle), var(--bg-card)); }
+.editorial-banner.art-unavailable .editorial-banner-caption { position: static; display: inline-block; margin: 16px 12px; border: 0; border-radius: 4px; }
+
+.form-field { min-width: 0; }
+.form-field input, .form-field select { min-width: 0; max-width: 100%; box-sizing: border-box; }

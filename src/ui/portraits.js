@@ -321,6 +321,7 @@ export function renderPortraitSvg(person, size = 64, opts = {}) {
       </defs>
       <rect x="3" y="3" width="94" height="94" rx="20" fill="${paperFill}"/>
       <g clip-path="url(#inkClip_${uid})">
+        ${renderPortraitSvg({ ...person, appearance: { ...app, portraitMode: 'vector' } }, 100, opts)}
         <image href="assets/portraits/${imgFile}" x="${off}" y="${off}" width="${zoom}" height="${zoom}" preserveAspectRatio="xMidYMid slice"/>
       </g>
       <rect x="3" y="3" width="94" height="94" rx="20" fill="none" stroke="${borderCol}" stroke-width="1.6"/>
