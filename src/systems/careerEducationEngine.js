@@ -49,8 +49,8 @@ function buildHighSchoolStrategyScene(S) {
     return {
       key: 'high_school_strategy',
       category: 'career',
-      title: `Entering Secondary School (${examName})`,
-      text: `The next three years culminate in the ${examName}, which decides university admission (${cObj.examSystem.placementName}). Every household around you is debating study schedules and ${tutorLabel}.`,
+      title: 'Secondary school: choose your study routine',
+      text: `In this simulation, your school years lead to an admission score at 18. A harder routine improves your prospects but adds stress. You can change your routine in Education.`,
       choices: [
         {
           label: canFamilyAffordTutor
@@ -70,7 +70,7 @@ function buildHighSchoolStrategyScene(S) {
           }
         },
         {
-          label: 'Keep a steady, balanced study routine (moderate score, healthy social life)',
+          label: 'Keep a balanced study routine (steady academic growth)',
           effect: (st) => {
             st.education.studyEffort = 'normal';
             recordJournal(st, `You balanced ${examName} coursework with friendships and sleep.`, 'career');
@@ -162,7 +162,7 @@ export function tickEducationYearly(S) {
 
     recordJournal(
       S,
-      `Results day! You scored ${finalScore}% in ${cObj.examSystem.name}. University admissions (${cObj.examSystem.placementName}) and career paths are now open.`,
+      `Results day: your admission score is ${finalScore}/100. University and career paths are now open.`,
       'milestone'
     );
 
@@ -308,8 +308,8 @@ export function presentPostHighSchoolCrossroads(S) {
   queueScene(S, {
     key: 'post_highschool_choice',
     category: 'career',
-    title: `${cObj.examSystem.placementName} — Choose Your University`,
-    text: `With ${score}% on your ${cObj.examSystem.name}, every university below is open to look at. Pick one to see the majors your score actually qualifies for — you choose the major, not the game.${unis.length ? '' : ' No universities are listed for this country and year.'}`,
+    title: 'After school: university or work?',
+    text: `Your admission score is ${score}/100. Browse a university to see eligible majors and funding, or start working. Scores, tuition and courses use simplified game rules, not official admission requirements.${unis.length ? '' : ' No universities are listed for this country and year.'}`,
     choices
   }, true);
 }
@@ -349,7 +349,7 @@ export function presentUniversityMajorPicker(S, uni) {
     key: `pick_major_${uni.id}_${S.year}`,
     category: 'career',
     title: `${uni.name} — Pick Your Major`,
-    text: `Tuition is ${formatMoney(tuit, S.country)} a year. ${aff.line}${aff.paths.length ? ` ${aff.paths.join(' ')}` : ''} Your ${cObj.examSystem.name} score of ${score}% qualifies you for the majors below. Choose the one YOU want to study.`,
+    text: `In-game tuition is ${formatMoney(tuit, S.country)} a year. ${aff.line} Your admission score is ${score}/100. Course availability, duration and entry scores are simplified for the game.`,
     choices
   }, true);
 }

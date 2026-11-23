@@ -3554,7 +3554,7 @@ export const UNIVERSITIES = {
       "id": "x-uni-osaka",
       "name": "Osaka University",
       "country": "jpn",
-      "sector": "private",
+      "sector": "public",
       "annualTuition2026": 750000,
       "cutoff": 78,
       "prestige": 9,

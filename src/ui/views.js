@@ -556,7 +556,7 @@ export function renderLifeTabHtml(S, uiState = {}) {
   }
 
   /* Quick Daily Routine & Spiritual / Zakat Strip */
-  const zakat = S.player.age >= 18 ? computeZakatDueLocal(S) : { eligible: false, due: 0 };
+  const zakat = S.player.age >= 18 && ['muslim', 'islam'].includes(String(S.player.religion || '').toLowerCase()) ? computeZakatDueLocal(S) : { eligible: false, due: 0 };
   const quickActs = (V1_ACTIVITIES || []).slice(0, 5);
   const routineHtml = !S.gameOver ? `
     <div class="card">
@@ -582,7 +582,7 @@ export function renderLifeTabHtml(S, uiState = {}) {
         <span class="hud-pill">Financial IQ <strong>${Math.round(S.skills?.financialIq || 25)}</strong></span>
         <span class="hud-pill">Fitness <strong>${Math.round(S.skills?.fitness || 45)}</strong></span>
         <span class="hud-pill">Creativity <strong>${Math.round(S.skills?.creativity || 30)}</strong></span>
-        <span class="hud-pill">Wasta / Network <strong>${Math.round(S.skills?.wasta || 15)}</strong></span>
+        <span class="hud-pill">Network <strong>${Math.round(S.skills?.wasta || 15)}</strong></span>
         <span class="muted" style="font-size:0.75rem;margin-left:auto">Values — Integrity: <strong>${Math.round(S.values?.integrity || 60)}</strong> · Family: <strong>${Math.round(S.values?.familyDevotion || 65)}</strong> · Ambition: <strong>${Math.round(S.values?.ambitionDrive || 55)}</strong></span>
       </div>
 
@@ -1449,9 +1449,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
   const mySchool = schools.find(x => x.id === edu.schoolId);
   const mySystem = schoolSystemFor(mySchool, S.country);
   const mySystemLabel = (TRACK_SYSTEM_INFO[mySystem] || TRACK_SYSTEM_INFO.national).label;
-  const tansikFootnote = S.country === 'egy'
-    ? 'Egypt Tansik: the national minimums are the real 2024 figures (Ministry of Higher Education — Medicine 93.2%, Dentistry 92.8%, Pharmacy 91.7%, Physiotherapy 92.2%, Engineering 88.65%). The difference between universities, and the movement from year to year, are modelled estimates — in real life Cairo, Alexandria and Mansoura sit highest and regional universities lowest.'
-    : 'Admission cutoffs here are modelled estimates — they differ by university and move every year, as in real life.';
+  const tansikFootnote = 'Admission scores, course availability, durations and tuition are simplified game rules. They are not official university requirements or a guide to applying in real life.';
   const banner = renderEditorialBannerHtml(pickDynamicBanner(S, 'education'), `${S.city} Schools, Universities & Scholarships`);
 
   const tierLabel = t => t === 'state' ? 'State (free)' : t === 'private' ? 'Private' : 'International';
@@ -1679,7 +1677,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
         <h3>${esc(cObj.examSystem.placementName)} — Universities in ${esc(cObj.name)} (${unis.length})</h3>
         <span class="muted">Your score: ${score}%</span>
       </div>
-      <p class="muted">The full list — not just the first few. Pick a university, then pick YOUR major: each button shows the score that major needs at THAT university. Every university also says who pays and whether you can afford it, before you choose. ${canApplyNote(age, edu)}</p>
+      <p class="muted">Compare universities, course entry scores and who pays before enrolling. ${canApplyNote(age, edu)}</p>
       <p class="muted">${esc(tansikFootnote)}</p>
       ${affordPaths.length ? `<p class="muted">If you cannot afford a university: ${esc(affordPaths.join(' '))}</p>` : ''}
       ${edu.university ? `<p class="muted">You are currently enrolled at ${esc(edu.university.name)} — ${esc(edu.university.majorLabel)}.</p>` : ''}
@@ -1691,7 +1689,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
         <span class="muted">Exam at 18</span>
       </div>
       <p>If you took the exam today, you would score about ${projection}% — keep studying to raise it.</p>
-      <p class="muted">This is a projection, not a result: you sit ${esc(cObj.examSystem.name)} at 18 and the real score comes on results day. Studying hard raises the projection, coasting lowers it. Academic skill ${Math.round(edu.academicSkill || 0)}/100 · Effort: ${edu.studyEffort}${edu.privateTutoring ? ' · Private tutor' : ''}. The university list and cutoffs open after the exam.</p>
+      <p class="muted">The game gives an admission score at 18. This projection is not an official exam result. Studying hard raises the projection, coasting lowers it. Academic skill ${Math.round(edu.academicSkill || 0)}/100 · Effort: ${edu.studyEffort}${edu.privateTutoring ? ' · Private tutor' : ''}. The university list and cutoffs open after the exam.</p>
     </div>`}
 
     <div class="card">
@@ -1699,7 +1697,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
         <h3>Named Scholarships (${SCHOLARSHIPS.length})</h3>
         <span class="muted">Locked ones say why</span>
       </div>
-      <p class="muted">Real scholarships with real bars. Each opens only when you meet its gates — age, stage, degree, score and language. Winning one pays your tuition in full.</p>
+      <p class="muted">Scholarships use game eligibility rules for age, education, score and language. An award covers tuition as described here, not a real-world application.</p>
       ${scholarshipRows}
     </div>
 
@@ -3753,13 +3751,13 @@ export function renderFinanceTabHtml(S, uiState = {}) {
     ${S.player.age >= 18 ? `
       <div class="card">
         <div class="section-head">
-          <h3>Annual Zakat Al-Mal Calculator (2.5% Above 85g Gold Nisab)</h3>
+          <h3>Optional Zakat calculator (simplified game rule)</h3>
           <span class="hud-pill mono">Nisab: ${esc(formatMoney(zakat.nisabLocal, S.country, true))}</span>
         </div>
         <div class="item-row">
           <div class="item-row-main">
-            <strong>${S.credentials.zakatLastYearPaid === S.year ? `✓ Zakat Fulfilled for ${S.year}` : zakat.eligible ? `Zakat Due: ${formatMoney(zakat.due, S.country)}` : 'Below 85g 24K Gold Nisab Threshold'}</strong>
-            <span>Calculated across liquid cash, bank savings, 21K gold bullion, and investment holdings.</span>
+            <strong>${S.credentials.zakatLastYearPaid === S.year ? `✓ Zakat Fulfilled for ${S.year}` : zakat.eligible ? `Suggested contribution: ${formatMoney(zakat.due, S.country)}` : 'Below 85g 24K Gold Nisab Threshold'}</strong>
+            <span>Optional giving. This game estimate uses cash, savings, gold and investments; it is not religious or financial advice.</span>
           </div>
           <button class="btn btn-primary btn-sm" data-action="pay-zakat" ${(zakat.eligible && S.credentials.zakatLastYearPaid !== S.year && S.money.cash >= zakat.due) ? '' : 'disabled'}>
             ${S.credentials.zakatLastYearPaid === S.year ? 'Paid' : 'Fulfill Zakat'}
