@@ -34,7 +34,8 @@
  * serve.py), but double-clicking index.html is now the primary way.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, existsSync, statSync } from 'node:fs';
+import { mkdirSync, existsSync, statSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -68,6 +69,14 @@ execFileSync(
   { cwd: ROOT, stdio: 'inherit' }
 );
 
+// Change asset URLs with their content so phones do not keep an old game
+// bundle after a Pages update. This does not alter the browser save key.
+const hash = path => createHash('sha256').update(readFileSync(path)).digest('hex').slice(0, 12);
+const indexPath = join(ROOT, 'index.html');
+const index = readFileSync(indexPath, 'utf8')
+  .replace(/styles\/main\.css(?:\?v=[a-f0-9]+)?/g, `styles/main.css?v=${hash(join(ROOT, 'styles', 'main.css'))}`)
+  .replace(/dist\/world-life\.bundle\.js(?:\?v=[a-f0-9]+)?/g, `dist/world-life.bundle.js?v=${hash(OUT_FILE)}`);
+writeFileSync(indexPath, index);
 const size = statSync(OUT_FILE).size;
 console.log(`Wrote ${OUT_FILE} (${(size / 1024).toFixed(1)} KB)`);
 console.log('Done. Open index.html (double-click) to play — no server needed.');
