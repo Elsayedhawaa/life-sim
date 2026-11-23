@@ -398,15 +398,58 @@ export function pickRandomLifeEvent(S) {
       const ev = pick(S, remaining);
       remaining.splice(remaining.indexOf(ev), 1);
       let scene = null;
+      const buildRngState = S.rngState;
       try {
         scene = ev.build(S, ctx);
       } catch (_) {
         scene = null;
       }
       if (!scene || !scene.title || !Array.isArray(scene.choices) || !scene.choices.length) continue;
+      return prepareRandomLifeScene(S, ev, scene, ctx, buildRngState);
+    }
+  }
+  return null;
+}
+
+/* Call after queueScene accepts a scene this engine picked: records the
+   firing (so chains can follow it) and starts a repeatable event's
+   cooldown. Turns are months on the adult clock and years in childhood,
+   so cooldownYears converts by pacing. */
+export function noteRandomLifeEventFired(S, scene) {
+  if (!S || !scene || !scene.eventId) return;
+  ensureExtendedState(S);
+  S.eventFiredTurns[scene.eventId] = { turn: S.turn, year: S.year, month: S.month };
+  const ev = EVENT_BY_ID.get(scene.eventId);
+  if (ev && ev.repeatable) {
+    const years = Number(ev.cooldownYears) || 3;
+    const turnsPerYear = S.pacing === 'monthly' ? 12 : 1;
+    S.cooldowns[scene.eventId] = S.turn + years * turnsPerYear;
+  }
+  /* v2.15 W5 — a firing can strand an older thread (its follow-up's
+     gates may now never pass), so sweep for threads that have faded. */
+  try {
+    closeStaleThreads(S, CHAIN_INDEX, (id) => {
+      const e2 = EVENT_BY_ID.get(id);
+      return e2 ? eventGatePasses(e2, S) : false;
+    });
+  } catch (_) {}
+}
+
+// Queued scenes can outlive their cast while the world keeps ticking.
+export function isRandomLifeSceneCurrent(scene, S) {
+  const event = scene?.eventId ? EVENT_BY_ID.get(scene.eventId) : null;
+  if (!event) return true;
+  const current = resolveEventCtx(S);
+  if (Object.entries(scene.eventParticipantIds || {}).some(([role, id]) =>
+    !S.people[id]?.alive || current[role]?.id !== id)) return false;
+  return eventGatePasses(event, S, { ignoreHistory: true });
+}
+
+function prepareRandomLifeScene(S, ev, scene, ctx, buildRngState) {
       scene.key = ev.id;
       scene.baseId = ev.id;
       scene.eventId = ev.id;
+      scene.eventBuildRngState = buildRngState;
       scene.eventParticipantIds = Object.fromEntries(
         (ev.gates?.requiredPeople || []).map(role => [role, ctx[role]?.id]).filter(([, id]) => id)
       );
@@ -445,41 +488,24 @@ export function pickRandomLifeEvent(S) {
          to come back after their cooldown, once-per-life events need 1. */
       scene.maxPerLife = ev.repeatable ? 99 : 1;
       return scene;
-    }
-  }
-  return null;
 }
 
-/* Call after queueScene accepts a scene this engine picked: records the
-   firing (so chains can follow it) and starts a repeatable event's
-   cooldown. Turns are months on the adult clock and years in childhood,
-   so cooldownYears converts by pacing. */
-export function noteRandomLifeEventFired(S, scene) {
-  if (!S || !scene || !scene.eventId) return;
-  ensureExtendedState(S);
-  S.eventFiredTurns[scene.eventId] = { turn: S.turn, year: S.year, month: S.month };
-  const ev = EVENT_BY_ID.get(scene.eventId);
-  if (ev && ev.repeatable) {
-    const years = Number(ev.cooldownYears) || 3;
-    const turnsPerYear = S.pacing === 'monthly' ? 12 : 1;
-    S.cooldowns[scene.eventId] = S.turn + years * turnsPerYear;
-  }
-  /* v2.15 W5 — a firing can strand an older thread (its follow-up's
-     gates may now never pass), so sweep for threads that have faded. */
+// JSON saves cannot store effect functions. Restore from trusted game code,
+// never evaluate text from a save, and do not consume a fresh random draw.
+export function restoreRandomLifeScene(S, saved) {
+  const ev = saved?.eventId ? EVENT_BY_ID.get(saved.eventId) : null;
+  if (!ev || !isRandomLifeSceneCurrent(saved, S)) return null;
+  const rngNow = S.rngState;
   try {
-    closeStaleThreads(S, CHAIN_INDEX, (id) => {
-      const e2 = EVENT_BY_ID.get(id);
-      return e2 ? eventGatePasses(e2, S) : false;
-    });
-  } catch (_) {}
-}
-
-// Queued scenes can outlive their cast while the world keeps ticking.
-export function isRandomLifeSceneCurrent(scene, S) {
-  const event = scene?.eventId ? EVENT_BY_ID.get(scene.eventId) : null;
-  if (!event) return true;
-  const current = resolveEventCtx(S);
-  if (Object.entries(scene.eventParticipantIds || {}).some(([role, id]) =>
-    !S.people[id]?.alive || current[role]?.id !== id)) return false;
-  return eventGatePasses(event, S, { ignoreHistory: true });
+    if (saved.eventBuildRngState !== undefined) S.rngState = saved.eventBuildRngState;
+    const ctx = resolveEventCtx(S);
+    const scene = ev.build(S, ctx);
+    if (!scene?.choices?.length) return null;
+    const restored = prepareRandomLifeScene(S, ev, scene, ctx, saved.eventBuildRngState);
+    for (const key of ['urgent', 'createdTurn', 'createdYear', 'eventParticipantIds']) {
+      if (saved[key] !== undefined) restored[key] = saved[key];
+    }
+    return restored;
+  } catch (_) { return null; }
+  finally { S.rngState = rngNow; }
 }

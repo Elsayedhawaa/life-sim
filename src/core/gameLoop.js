@@ -28,7 +28,7 @@ import { tickMegaSystemsMonthly } from '../systems/completeLifeSystems.js';
 import { checkBusinessFate } from '../systems/businessFate.js';
 /* v2.18 W2 §3 — job loss reaches the mortgage, spouse, children and visa; crisis years warn, freeze pay and risk redundancy. */
 import { checkCareerConsequences } from '../systems/careerConsequences.js';
-import { noteRandomLifeEventFired, isRandomLifeSceneCurrent } from '../systems/eventEngine.js';
+import { noteRandomLifeEventFired, isRandomLifeSceneCurrent, restoreRandomLifeScene } from '../systems/eventEngine.js';
 /* v2.15 W4 — era world events fire on the calendar tick. */
 import { tickWorldEvents } from '../systems/worldEvents.js';
 /* v2.15 W2 — career market monthly tick (headhunters, rivals, pension
@@ -67,6 +67,17 @@ export function loadGameFromStorage() {
     const parsed = JSON.parse(raw);
     if (parsed && parsed.version && parsed.player) {
       ensureExtendedState(parsed);
+      const restore = scene => {
+        if (!scene) return null;
+        if (!scene.eventId) return scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null;
+        return restoreRandomLifeScene(parsed, scene);
+      };
+      const pending = parsed.activeScene;
+      parsed.activeScene = restore(pending);
+      parsed.sceneQueue = (parsed.sceneQueue || []).map(restore).filter(Boolean);
+      if (pending && !parsed.activeScene) {
+        recordJournal(parsed, 'A saved decision no longer matched your current life and was set aside. No choice was made for you.', 'life');
+      }
       return parsed;
     }
   } catch (_) {}
@@ -363,9 +374,12 @@ export function resolveActiveSceneChoice(S, choiceIdx) {
   discardOutdatedRandomScenes(S);
   if (!S.activeScene) return { ok: false, reason: 'circumstances_changed' };
   const scene = S.activeScene;
-  const visibleChoices = scene.choices.filter(c => typeof c.available !== 'function' || c.available(S));
-  const chosen = visibleChoices[choiceIdx] || scene.choices[choiceIdx];
-  if (!chosen) return { ok: false };
+  // UI data-idx is the original array index, not the position after filtering.
+  if (!Number.isInteger(choiceIdx) || choiceIdx < 0) return { ok: false, reason: 'invalid_choice' };
+  const chosen = scene.choices[choiceIdx];
+  if (!chosen) return { ok: false, reason: 'invalid_choice' };
+  if (typeof chosen.available === 'function' && !chosen.available(S)) return { ok: false, reason: 'unavailable' };
+  if (typeof chosen.effect !== 'function') return { ok: false, reason: 'missing_effect' };
 
   S.activeScene = null;
   const journalBefore = S.journal.length;

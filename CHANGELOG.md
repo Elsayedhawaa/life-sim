@@ -559,3 +559,11 @@ port 8765), 15 countries, 1,111 cars, 83 career tracks.
 - New stories respect age, employment, study, era and country context. Follow-ups wait for their earlier story; relevant new stories have room in the existing event roll without adding more pop-ups.
 - Added an automated consistency test suite. Run: npx --yes esbuild@0.28.2 tests/events-consistency.test.js --bundle --platform=node --format=cjs --outfile=/tmp/events-test.cjs && node /tmp/events-test.cjs
 - Rebuilt the prebuilt browser bundle. Existing save format and art files are unchanged.
+
+## Decision integrity and save/reload
+
+- Fixed original decision-button indexes being remapped after disabled choices were filtered out. Disabled/invalid choices are rejected without applying another option.
+- Pending random events now rebuild their executable choices from game definitions after a JSON save/reload, preserving their original build random seed and not consuming a fresh random draw.
+- Older non-random saved cards whose effects cannot be recovered are set aside with a journal explanation instead of leaving an unplayable card or pretending a choice worked. No outcome is awarded.
+- Failed choices now give a clear notice instead of displaying a false success result.
+- Added decision and reload regression tests across all 13 countries.

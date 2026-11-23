@@ -1111,7 +1111,17 @@ if (typeof document !== 'undefined') {
     if (action === 'choose-scene') {
       const idx = Number(btn.dataset.idx || 0);
       const before = snapshotTurn(S);
-      resolveActiveSceneChoice(S, idx);
+      const choiceResult = resolveActiveSceneChoice(S, idx);
+      if (!choiceResult.ok) {
+        const reason = choiceResult.reason === 'circumstances_changed'
+          ? 'That situation has changed. No choice was made.'
+          : choiceResult.reason === 'missing_effect'
+            ? 'This older saved decision could not be restored. Load a backup or start a new life.'
+            : 'That choice is not available right now. Choose another option.';
+        showToast(reason);
+        renderApp();
+        return;
+      }
       try { evaluateProgress(S); } catch (_) {}
       uiState.turnResult = buildTurnResult(S, before, 'choice');
       renderApp();
