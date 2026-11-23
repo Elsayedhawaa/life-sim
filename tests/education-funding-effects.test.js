@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createNewLifeState,ensureExtendedState} from '../src/core/schema.js';
-import {applyToUniversity,applyScholarship,scholarshipLockReason,universityAffordability} from '../src/systems/careerEducationEngine.js';
+import {applyToUniversity,applyScholarship,scholarshipLockReason,universityAffordability,changeSchool,hireTutor,tickEducationYearly} from '../src/systems/careerEducationEngine.js';
 import {familyEducationFunds,settleFamilyUniversityMonth,monthlyUniversityTuition} from '../src/systems/educationFunding.js';
 import {getUniversitiesFor} from '../src/data/institutions.js';
 import {SCHOLARSHIPS} from '../src/data/educationExtras.js';
@@ -19,3 +19,6 @@ const mext=SCHOLARSHIPS.find(x=>x.id==='mext');let won=0,lost=0;for(let seed=1;s
 s=base();assert.equal(takePersonalLoan(s,1000).ok,false);s.player.age=23;s.money.creditScore=700;s.money.bankruptUntilYear=0;cash=s.money.cash;assert.ok(takePersonalLoan(s,1000).ok);assert.equal(s.money.cash-cash,1000);assert.equal(s.money.loans[0].balance,1000);assert.ok(s.money.loans[0].monthlyPayment>0);
 s=base();s.education.degrees=['cs'];s.education.stage='completed';s.money.cash=0;assert.equal(enrollPostgraduateProgram(s).ok,false);s.money.cash=1e7;assert.equal(enrollPostgraduateProgram(s,'fellowship_phd').ok,false);cash=s.money.cash;assert.ok(enrollPostgraduateProgram(s,'masters_mba').ok);assert.ok(s.money.cash<cash);s.postgrad.active.monthsLeft=1;tickMegaSystemsMonthly(s);assert.ok(s.postgrad.completed.some(p=>p.tier==='masters_mba'));assert.ok(enrollPostgraduateProgram(s,'fellowship_phd').ok);
 console.log(`Passed real funding effects: parent debits/renewal/death, self monthly ledger, scholarship country/results and both outcomes (${won}/${lost}), loan cash/debt/age, postgraduate fee/progression/prerequisites.`);
+
+s=base();s.player.age=15;s.education.stage='high';const privateSchool=getUniversitiesFor('gbr',2026);let school=(await import('../src/data/institutions.js')).getSchoolsFor('gbr',2026).find(sc=>sc.annualTuition2026>0&&sc.id!==s.education.schoolId);before=familyEducationFunds(s);assert.ok(changeSchool(s,school.id).ok);assert.ok(familyEducationFunds(s)<before);before=familyEducationFunds(s);assert.ok(hireTutor(s).ok);assert.ok(familyEducationFunds(s)<before);s.year++;for(const id of [s.relations.fatherId,s.relations.motherId])s.people[id].career.savingsLocal=0;s.money.cash=0;tickEducationYearly(s);assert.equal(s.education.schoolTier,'state');assert.equal(s.education.privateTutoring,false);
+console.log('Passed school renewal fallback and real parent school/tutor debits.');

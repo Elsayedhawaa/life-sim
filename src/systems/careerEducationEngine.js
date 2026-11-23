@@ -47,7 +47,8 @@ function buildHighSchoolStrategyScene(S) {
   const cObj = getCountry(S.country);
     const examName = cObj.examSystem.name;
     const tutorLabel = cObj.examSystem.tutoringLabel;
-    const canFamilyAffordTutor = ['middle', 'upper_middle', 'wealthy'].includes(S.familyTier);
+    const tutorBudget=eraLocalCost((cObj.examSystem.tutoringMonthly2026||0)*3,S.country,S.year);
+    const canFamilyAffordTutor=familyCanAffordSchool(S,tutorBudget);
 
     return {
       key: 'high_school_strategy',
@@ -61,7 +62,7 @@ function buildHighSchoolStrategyScene(S) {
             : `Study relentlessly on your own & library past-papers (+academic score, +stress)`,
           effect: (st) => {
             st.education.studyEffort = 'hard';
-            st.education.privateTutoring = canFamilyAffordTutor;
+            if(canFamilyAffordTutor)hireTutor(st);
             st.player.vitals.stress = clamp(st.player.vitals.stress + 14);
             recordJournal(
               st,
@@ -122,6 +123,18 @@ export function tickEducationYearly(S) {
     queueScene(S, buildHighSchoolStrategyScene(S));
   }
 
+  if(['primary','middle','high'].includes(edu.stage)&&edu.schoolPaidYear!==S.year){
+    const school=getSchoolsFor(S.country,S.year).find(sc=>sc.id===edu.schoolId);const fee=school?schoolAnnualFee(S,school):0;
+    if(fee>0){
+      if(familyCanAffordSchool(S,fee))chargeFamilyEducation(S,fee);
+      else if(S.money.cash>=fee)walletMove(S,-fee,`Annual school fees: ${school.name}`,'education');
+      else{const free=getSchoolsFor(S.country,S.year).find(sc=>!(sc.annualTuition2026>0));if(free){edu.schoolId=free.id;edu.schoolName=free.name;edu.schoolTier=free.tier;edu.trackId=null;recordJournal(S,`Fees at ${school.name} could not be renewed. You moved to ${free.name}.`,'career');}}
+    }
+    edu.schoolPaidYear=S.year;
+  }
+  // Tutoring is purchased for the current school year, not a lifetime free boost.
+  if(edu.privateTutoring&&edu.tutorPaidYear!==S.year){edu.privateTutoring=false;recordJournal(S,'Your paid tutoring period ended. Renew it in Education if needed.','career');}
+
   /* Annual Academic Skill growth during K-12 */
   if (['primary', 'middle', 'high'].includes(edu.stage)) {
     const schoolBoost = edu.schoolTier === 'international' ? 2.4 : edu.schoolTier === 'private' ? 1.5 : 0.8;
@@ -156,7 +169,8 @@ export function tickEducationYearly(S) {
     const giftMult = gradGiftFactors[S.familyTier] || 0;
     if (giftMult > 0) {
       const midMo = eraSalary(cObj.annualSalaryTiers2026.mid / 12, S.country, S.year);
-      const gradSeed = Math.round(midMo * giftMult);
+      const wantedGift=Math.round(midMo*giftMult);
+      const gradSeed=chargeFamilyEducation(S,wantedGift)?wantedGift:0;
       // One gift, split 65% savings / 35% cash (was: 100% to savings PLUS
       // 35% to cash — the family was accidentally gifting 135%).
       moveBalance(S, 'savings', Math.round(gradSeed * 0.65), 'Family coming-of-age graduation gift (savings share)', 'family');
@@ -448,16 +462,7 @@ function schoolAnnualFee(S, school) {
    Wealthy and upper-middle families cover any school; middle families
    cover fees up to about six months of a mid-tier salary; working and
    struggling families can only cover a free or near-free state school. */
-function familyCanAffordSchool(S, fee) {
-  if (fee <= 500) return true;
-  if (['wealthy', 'upper_middle'].includes(S.familyTier)) return true;
-  if (S.familyTier === 'middle') {
-    const cObj = getCountry(S.country);
-    const midMonthly = eraSalary(cObj.annualSalaryTiers2026.mid / 12, S.country, S.year);
-    return fee <= midMonthly * 6;
-  }
-  return false;
-}
+function familyCanAffordSchool(S,fee){return fee<=0||familyCoversUniversity(S,fee,S.country);}
 
 /* ============================================================================
    v2.7 — LOCK REASONS, AFFORDABILITY, SCHOOL SYSTEMS. The tab shows a
@@ -691,9 +696,9 @@ export function changeSchool(S, schoolId) {
   if (!familyPays && S.money.cash < fee) {
     return { ok: false, msg: `${school.name} costs ${formatMoney(fee, S.country)} a year and neither your family nor you can cover it right now.` };
   }
-  if (!familyPays && fee > 0) {
-    walletMove(S, -fee, `First-year fees at ${school.name}`, 'education');
-  }
+  if(familyPays&&fee>0)chargeFamilyEducation(S,fee);
+  if (!familyPays && fee > 0) {walletMove(S, -fee, `First-year fees at ${school.name}`, 'education');}
+  edu.schoolPaidYear=S.year;
   const oldName = edu.schoolName;
   const oldSchool = getSchoolsFor(S.country, S.year).find(x => x.id === edu.schoolId);
   const oldSys = schoolSystemFor(oldSchool, S.country);
@@ -778,13 +783,13 @@ export function hireTutor(S) {
   if (edu.privateTutoring) return { ok: false, msg: 'You already have a private tutor.' };
   const cObj = getCountry(S.country);
   const fee = eraLocalCost((cObj.examSystem.tutoringMonthly2026 || 0) * 3, S.country, S.year);
-  const familyPays = ['middle', 'upper_middle', 'wealthy'].includes(S.familyTier);
+  const familyPays = familyCanAffordSchool(S,fee);
   if (!familyPays && S.money.cash < fee) {
     return { ok: false, msg: `A term of ${cObj.examSystem.tutoringLabel} costs ${formatMoney(fee, S.country)} and you cannot cover it.` };
   }
-  if (!familyPays && fee > 0) {
-    walletMove(S, -fee, `Private tutoring (${cObj.examSystem.tutoringLabel})`, 'education');
-  }
+  if(familyPays&&fee>0)chargeFamilyEducation(S,fee);
+  if (!familyPays && fee > 0) {walletMove(S, -fee, `Private tutoring (${cObj.examSystem.tutoringLabel})`, 'education');}
+  edu.tutorPaidYear=S.year;
   edu.privateTutoring = true;
   edu.academicSkill = clamp(edu.academicSkill + 4);
   recordJournal(S, `You started ${cObj.examSystem.tutoringLabel}${familyPays ? ' (family covers the fees)' : ` (you paid ${formatMoney(fee, S.country)} for the term)`}.`, 'career');

@@ -2076,7 +2076,7 @@ export function enrollPostgraduateProgram(S, tier = 'masters_mba') {
   if (S.money.cash < feeLocal) return { ok: false, msg: `Need ${formatMoney(feeLocal, S.country)} upfront game tuition for ${label}.` };
 
   walletMove(S, -feeLocal, `Postgraduate enrollment: ${label}`, 'career');
-  S.postgrad.active = { tier, label, monthsLeft: totalMonths, totalMonths };
+  S.postgrad.active = { tier, label, monthsLeft: totalMonths, totalMonths, feePaid:feeLocal, country:S.country };
   recordJournal(S, `Enrolled in ${label} (${totalMonths / 12}-year evening/research track).`, 'career');
   return { ok: true, msg: `Enrolled in ${label}!` };
 }

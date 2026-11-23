@@ -1706,7 +1706,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
       </div>
     </div>
 
-    ${S.postgrad?.active?`<div class="card"><h3>Current postgraduate study</h3><p>${esc(S.postgrad.active.label)} · ${S.postgrad.active.monthsLeft} months remaining</p></div>`:''}
+    ${S.postgrad?.active?`<div class="card"><h3>Current postgraduate study</h3><p>${esc(S.postgrad.active.label)}</p><div class="edu-programme-top"><strong>${Math.max(0,S.postgrad.active.totalMonths-S.postgrad.active.monthsLeft)} / ${S.postgrad.active.totalMonths} months</strong><span>${Math.round(100*(1-S.postgrad.active.monthsLeft/S.postgrad.active.totalMonths))}%</span></div><progress max="${S.postgrad.active.totalMonths}" value="${S.postgrad.active.totalMonths-S.postgrad.active.monthsLeft}" style="width:100%;accent-color:#285b50;height:12px;margin:12px 0"></progress><p class="muted">Tuition paid upfront${S.postgrad.active.feePaid!=null?`: ${esc(formatMoney(S.postgrad.active.feePaid,S.country))}`:''}. No stipend. Each month adds study stress and moves you toward completion.</p><p class="muted">Outcome: ${S.postgrad.active.tier==='fellowship_phd'?'research credential, +9 smarts and42%game pay bonus':'master’s credential, +6 smarts and26%game pay bonus'}. Advance time to study.</p></div>`:''}
     ${edu.university?`<div class="card"><h3>Current degree</h3><p>${esc(edu.university.majorLabel)} at ${esc(edu.university.name)}</p><p>Year ${edu.university.yearInProgram} of ${edu.university.totalYears}</p><details><summary>Leave this degree</summary><p>All progress is lost. Paid tuition is not refunded. Applying again starts from year one.</p><button class="btn" data-action="education-withdraw-confirm">Confirm withdrawal</button></details></div>`:''}
     ${edu.university||edu.degrees.length>0?`<details class="card edu-section"><summary>Education history</summary><p>${esc(edu.schoolName||'Secondary school')} · Secondary complete${edu.highSchoolScore!=null?` · Game score ${edu.highSchoolScore}/100`:``}</p>${edu.degrees.map(id=>`<p>${esc(degreeProgramFor(S.country,id)?.label||id)} · Completed</p>`).join('')}${(edu.history||[]).map(h=>`<p>${esc(h.majorLabel)} at ${esc(h.name)} · Left in ${h.year}</p>`).join('')}${(S.postgrad?.completed||[]).map(p=>`<p>${esc(p.label)} · ${p.year}</p>`).join('')}</details>`:hasResult ? `
     <div class="card">
@@ -1736,13 +1736,13 @@ export function renderEducationTabHtml(S, uiState = {}) {
 
     ${inSchool?`    <details class="card edu-section" ${inSchool?'open':''}><summary>Study routine &amp; exam track</summary>
       <p class="muted">${esc(mySystemLabel)} · Switch tracks at 12-17. A different exam system requires a different school.</p>
-      <div class="edu-tip">Hard study improves your score but adds stress. Tutor: ${esc(formatMoney(tutorFee,S.country))}/term${['middle', 'upper_middle', 'wealthy'].includes(S.familyTier)?' · family pays':''}.</div>
+      <div class="edu-tip">Hard study improves your score but adds stress. Tutor: ${esc(formatMoney(tutorFee,S.country))}/term${familyCoversUniversity(S,tutorFee)?' · parents can pay from savings':''}.</div>
       ${trackCards}
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
         <button type="button" class="btn btn-sm ${edu.studyEffort === 'hard' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="hard">Study Hard</button>
         <button type="button" class="btn btn-sm ${edu.studyEffort === 'normal' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="normal">Steady Routine</button>
         <button type="button" class="btn btn-sm ${edu.studyEffort === 'coasting' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="coasting">Coast</button>
-        <button type="button" class="btn btn-sm ${edu.privateTutoring ? '' : 'btn-primary'}" data-action="hire-tutor" ${edu.privateTutoring ? 'disabled' : ''}>${edu.privateTutoring ? '✓ Tutor Hired' : `Hire a Tutor — ${esc(cObj.examSystem.tutoringLabel)} (${esc(formatMoney(tutorFee, S.country))}/term)`}</button>
+        <button type="button" class="btn btn-sm ${edu.privateTutoring ? '' : 'btn-primary'}" data-action="hire-tutor" ${edu.privateTutoring || age<12 || age>17 || (!familyCoversUniversity(S,tutorFee)&&S.money.cash<tutorFee) ? 'disabled' : ''}>${edu.privateTutoring ? '✓ Tutor Hired' : `Hire a Tutor — ${esc(cObj.examSystem.tutoringLabel)} (${esc(formatMoney(tutorFee, S.country))} this school year)`}</button>
       </div>
     </details>`:''}
 
@@ -2213,7 +2213,7 @@ function renderEduAndLicensingHtml(S) {
   return `
     <div class="card card-elevated">
       <div class="section-head">
-        <h3>${icon('graduation', 18)} Academic Degrees & Conscription</h3>
+        <h3>${icon('graduation', 18)} Qualifications${mil.applicable?' &amp; service':''}</h3>
         <span class="hud-pill">${esc(({graduated_high:'Secondary complete',high:'Secondary school',middle:'Middle school',primary:'Primary school',infancy:'Early years',completed:'Studies completed',university:'At university'})[edu.stage]||edu.stage)}</span>
       </div>
       ${/* v2.7 — the Academic Record line lived here AND in the Education
@@ -2248,7 +2248,7 @@ function renderEduAndLicensingHtml(S) {
       ${edu.degrees.length > 0 ? `
         <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line-soft);display:flex;flex-wrap:wrap;gap:6px;align-items:center">
           <button class="btn btn-sm ${S.syndicate?.registered ? '' : 'btn-primary'}" data-action="register-syndicate" ${S.syndicate?.registered || S.money.cash<Math.round(convertCurrency(185,'usa',S.country,S.year)) ? 'disabled' : ''}>
-            ${S.syndicate?.registered ? `✓ ${esc(S.syndicate.name)}` : `Game association · ${esc(formatMoney(Math.round(convertCurrency(185,'usa',S.country,S.year)),S.country))}`}
+            ${S.syndicate?.registered ? `✓ ${esc(S.syndicate.name)}` : `Join professional association · ${esc(formatMoney(Math.round(convertCurrency(185,'usa',S.country,S.year)),S.country))}`}
           </button>
           ${S.postgrad?.active ? `<span class="hud-pill">Studying ${esc(S.postgrad.active.label)} (${S.postgrad.active.monthsLeft}m left)</span>` : `
             <button class="btn btn-sm" data-action="enroll-postgrad" data-tier="masters_mba" ${S.postgrad?.completed?.some(p => p.tier === 'masters_mba') || S.education.university || S.money.cash<Math.round(convertCurrency(6200,'usa',S.country,S.year)) ? 'disabled' : ''}>
@@ -2258,7 +2258,7 @@ function renderEduAndLicensingHtml(S) {
               ${S.postgrad?.completed?.some(p => p.tier === 'fellowship_phd') ? '✓ Holds Fellowship/PhD' : `3-year doctorate · ${esc(formatMoney(Math.round(convertCurrency(8500,'usa',S.country,S.year)),S.country))} upfront`}
             </button>
           `}
-          <p class="muted">If a study button is unavailable, finish the current degree, meet its prerequisite or save the upfront fee shown. Postgraduate costs are one-off game fees. A doctorate requires the master’s game credential. Pay effects are simplified bonuses, not guaranteed real salaries.</p>
+          <p class="muted">One-off tuition. Doctorate requires a master’s. Save the fee shown to enrol. Completion gives a game pay bonus.</p>
         </div>
       ` : ''}
     </div>
