@@ -59,3 +59,8 @@ Chicago residential two-flat street, modest apartment interior and an elder male
 ## Germany first regional batch
 
 Berlin residential courtyard street, modest flat interior and age/appearance-gated elder male portrait. Modern Berlin art is city/year gated and not applied to Munich or Hamburg. Apartment geometry keeps a separate kitchen beside the hall, with bedroom-count redistribution preserving that wet-room placement. Other residential types retain their common type plans pending deeper country layouts. Two no-spend choices concern shared stairwell space and preparing questions for a work meeting. No legal, salary or rental-price claims were introduced.
+
+
+## Canada first regional batch
+
+Fictional Toronto brick residential street, modest home interior and appearance-gated elder woman portrait. Toronto art is city/year gated, not a generic image for all Canadian cities. Apartment and semi-detached templates have a first geometry pass; other types still inherit shared families. Two no-spend choices cover wet boots and asking before helping a neighbour. No wage, rental, legal or climate simulation claims were added. Bedroom illustration proportions are now capped to avoid stretching a single bed across a wide bedroom. This is not completion of every Canadian home or era.

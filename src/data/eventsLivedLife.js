@@ -46,6 +46,17 @@ const localPlace = S => ({
 }[S.country] || 'a small neighbourhood cafe');
 
 export const EVENTS_LIVED_LIFE = [
+  story('ev_can_winter_entry', 'A Place for Wet Boots', {minAge:18,countries:['can']},
+    S => `A cold wet evening in ${S.city} leaves boots and coats crowded around your entrance. Tomorrow will be easier if the things you need have somewhere to dry.`, [
+      ['Clear a drying spot with what you already own', 'You cleared a place for damp boots and coats using what you already had. No new furniture or equipment was bought.', {'vitals.stress':-2}],
+      ['Prepare tomorrows clothes before resting', 'You set out dry clothes for tomorrow, then left the rest of the sorting for another day.', {'vitals.stress':-1}],
+    ], {category:'home'}),
+  story('ev_can_neighbour_help', 'The Heavy Bag', {minAge:16,countries:['can']},
+    S => `A neighbour outside your building in ${S.city} pauses beside a heavy grocery bag. You are heading the same way, but do not know whether they want help.`, [
+      ['Ask if they would like a hand', 'You asked before helping with the bag. A brief neighbourly conversation did not require becoming instant best friends.', {'skills.charisma':2,'vitals.happiness':2}],
+      ['Hold the door and leave them room to pass', 'You held the door and made space without taking over. It was a small useful gesture.', {'vitals.happiness':2}],
+    ], {category:'life'}),
+
   story('ev_deu_stairwell', 'The Note in the Stairwell', {minAge:18,countries:['deu'],housingModes:['rent']},
     S => `A handwritten notice in your building in ${S.city} asks residents to keep the shared stairwell clear. You had left a box there while sorting your home.`, [
       ['Bring the box inside and make room for it properly', 'You brought your box inside so the shared route stayed clear. A small household task was finally finished.', {'vitals.stress':-2}],

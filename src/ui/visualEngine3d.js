@@ -623,6 +623,16 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
     floors[0].terrace.hasPool = false;
     floors[0].terrace.label = 'GARDEN ACCESS TERRACE';
   }
+  if (country === 'can' && shape === 'twin_house') {
+    // Semi-detached template: shared party wall, entry/stairs and rear kitchen.
+    const layout={'101':[484,252,200,172],'102':[94,252,390,172],'103':[94,92,260,160],'104':[354,92,150,160],'105':[504,172,180,80]};
+    for(const r of floors[0].rooms){[r.x,r.y,r.w,r.h]=layout[r.no];delete r.door;}
+  }
+  if (country === 'can' && shape === 'apartment') {
+    const layout={'101':[454,292,100,136],'102':[554,362,130,66],'103':[84,238,470,54],'104':[84,292,290,136],'105':[374,292,80,136],'106':[84,92,196,146],'107':[554,238,130,124],'108':[280,92,138,146],'109':[418,92,136,146]};
+    for(const r of floors[0].rooms){[r.x,r.y,r.w,r.h]=layout[r.no];delete r.door;}
+    floors[0].core=null;
+  }
   if (country === 'deu' && shape === 'apartment') {
     const layout={'101':[474,292,80,136],'102':[554,366,130,62],'103':[84,238,470,54],'104':[84,292,300,136],'105':[384,292,90,136],'106':[84,92,196,146],'107':[554,92,130,146],'108':[280,92,138,146],'109':[418,92,136,146]};
     for(const r of floors[0].rooms){[r.x,r.y,r.w,r.h]=layout[r.no];delete r.door;}
@@ -669,9 +679,9 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
     plan.rooms = plan.rooms.filter(r => roomBelongsToHome(r, shape, totalRooms, furnishedRooms));
     const beds = plan.rooms.filter(r => ['106','108','109'].includes(r.no));
     const jp = country === 'jpn';
-    const bedroomWidth = (jp || country === 'deu') ? 600 : 470;
+    const bedroomWidth = (jp || ['deu','can'].includes(country)) ? 600 : 470;
     beds.forEach((room, i) => { room.x = 84 + bedroomWidth * i / beds.length; room.y = 92; room.w = bedroomWidth / beds.length; room.h = 146; delete room.door; });
-    if (!jp && country !== 'deu') { const bath = plan.rooms.find(r => r.no === '107'); bath.x = 554; bath.y = 92; bath.w = 130; bath.h = 146; delete bath.door; }
+    if (!jp && !['deu','can'].includes(country)) { const bath = plan.rooms.find(r => r.no === '107'); bath.x = 554; bath.y = 92; bath.w = 130; bath.h = 146; delete bath.door; }
   }
   if (country === 'sau' && ['apartment','villa','duplex','townhouse','twin_house'].includes(shape)) {
     // Keep guest reception near the entrance, with the family rooms behind.

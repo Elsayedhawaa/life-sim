@@ -232,6 +232,16 @@ function renderEditorialBannerHtml(imgFile, caption) {
   `;
 }
 
+// Add a city's static scene here without changing banner-selection logic.
+export const REGIONAL_CITY_SCENES = {
+  can: {since:1990,fallback:'north_america_skyline_ink.jpg',cities:{toronto:'canada_toronto_neighborhood_ink.jpg'}},
+  deu: {since:1995,fallback:'city_europe_west.jpg',cities:{berlin:'germany_berlin_neighborhood_ink.jpg'}},
+  usa: {since:1990,fallback:'north_america_skyline_ink.jpg',cities:{chicago:'usa_chicago_neighborhood_ink.jpg'}},
+  gbr: {since:1990,fallback:'city_europe_west.jpg',cities:{manchester:'uk_terraced_neighborhood_ink.jpg'}},
+  uae: {since:2010,fallback:'city_gulf_skyline.jpg',cities:{dubai:'uae_city_neighborhood_ink.jpg'}},
+  sau: {since:2005,fallback:'city_gulf_skyline.jpg',cities:{riyadh:'riyadh_neighborhood_ink.jpg'}}
+};
+
 export function pickDynamicBanner(S, section = 'life', sub = '') {
   const c = String(S?.country || 'egy').toLowerCase();
   const month = Number(S?.month || 1);
@@ -254,37 +264,18 @@ export function pickDynamicBanner(S, section = 'life', sub = '') {
     ? 'east_asia_skyline_ink.jpg'
     : (month >= 9 && month <= 11 ? 'autumn_park_boulevard_ink.jpg' : 'city_europe_west.jpg');
 
-  // First regional set: no Mediterranean or Red Sea scenery in Japan's
-  // everyday life/home contexts. Other countries retain their own routes.
-  if (c === 'deu' && section === 'realestate') return 'germany_flat_evening_ink.jpg';
-  if (c === 'deu' && ['life','people'].includes(section)) {
-    if(Number(S.year||2000)<1995)return 'era_vintage_street_ink.jpg';
-    return String(S.city||'').toLowerCase()==='berlin'?'germany_berlin_neighborhood_ink.jpg':'city_europe_west.jpg';
+  const cityScenes=REGIONAL_CITY_SCENES[c];
+  if(cityScenes && ['life','people'].includes(section)) {
+    if(Number(S.year||2000)<cityScenes.since)return 'era_vintage_street_ink.jpg';
+    return cityScenes.cities[String(S.city||'').trim().toLowerCase()] || cityScenes.fallback;
   }
-  if (c === 'usa' && section === 'realestate') return 'usa_apartment_evening_ink.jpg';
-  if (c === 'usa' && ['life','people'].includes(section)) {
-    if(Number(S.year||2000)<1990)return 'era_vintage_street_ink.jpg';
-    return String(S.city||'').toLowerCase()==='chicago'?'usa_chicago_neighborhood_ink.jpg':'north_america_skyline_ink.jpg';
-  }
-  if (c === 'gbr' && section === 'realestate') {
-    const shape=resolveCurrentHome(S)?.shape || S.housing?.currentShape || 'apartment';
-    return ['studio','apartment','duplex','penthouse'].includes(shape)?'uk_flat_evening_ink.jpg':'uk_terraced_neighborhood_ink.jpg';
-  }
-  if (c === 'gbr' && ['life','people'].includes(section)) {
-    if(Number(S.year||2000)<1990)return 'era_vintage_street_ink.jpg';
-    return String(S.city||'').toLowerCase()==='manchester'?'uk_terraced_neighborhood_ink.jpg':'city_europe_west.jpg';
-  }
-  if (c === 'uae' && section === 'realestate') return 'uae_apartment_home_ink.jpg';
-  if (c === 'uae' && ['life', 'people'].includes(section)) {
-    if (Number(S.year || 2000) < 2010) return 'era_vintage_street_ink.jpg';
-    if (String(S.city || '').toLowerCase().includes('dubai')) return 'uae_city_neighborhood_ink.jpg';
-    return 'city_gulf_skyline.jpg';
-  }
-  if (c === 'sau' && section === 'realestate') return 'saudi_family_home_ink.jpg';
-  if (c === 'sau' && ['life', 'people'].includes(section)) {
-    if (Number(S.year || 2000) < 2005) return 'era_vintage_street_ink.jpg';
-    if (String(S.city || '').toLowerCase().includes('riyadh')) return 'riyadh_neighborhood_ink.jpg';
-    return 'city_gulf_skyline.jpg';
+  if(section==='realestate') {
+    const interiors={can:'canada_home_evening_ink.jpg',deu:'germany_flat_evening_ink.jpg',usa:'usa_apartment_evening_ink.jpg',uae:'uae_apartment_home_ink.jpg',sau:'saudi_family_home_ink.jpg'};
+    if(interiors[c])return interiors[c];
+    if(c==='gbr') {
+      const shape=resolveCurrentHome(S)?.shape || S.housing?.currentShape || 'apartment';
+      return ['studio','apartment','duplex','penthouse'].includes(shape)?'uk_flat_evening_ink.jpg':'uk_terraced_neighborhood_ink.jpg';
+    }
   }
   if (c === 'egy' && section === 'realestate') {
     const selectedHome = resolveCurrentHome(S);
@@ -531,7 +522,7 @@ export function renderNavTabsHtml(S, activeTab) {
   const navArt = {
     life: pickDynamicBanner(S, 'life'),
     education: 'uni_campus_courtyard_ink.jpg',
-    people: ['jpn','egy','sau','uae','gbr','usa','deu'].includes(S.country) ? pickDynamicBanner(S, 'people') : 'family_kinship_ink.jpg',
+    people: ['jpn','egy','sau','uae','gbr','usa','deu','can'].includes(S.country) ? pickDynamicBanner(S, 'people') : 'family_kinship_ink.jpg',
     work: 'career_enterprise_ink.jpg',
     realestate: pickDynamicBanner(S, 'realestate'),
     finance: 'finance_vault_ink.jpg',
