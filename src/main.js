@@ -1545,11 +1545,17 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='choose-property-style'){
+      uiState.reUnitId=btn.dataset.unit;
+      renderApp();
+      return;
+    }
+
     if (action === 'buy-compound-unit') {
       handleActionResult(buyCompoundOrDistrictUnit(S, {
         country: btn.dataset.country || S.country,
         devId: btn.dataset.dev,
-        unitId: uiState.reUnitId || 'apt_m',
+        unitId: btn.dataset.unit || uiState.reUnitId || 'apt_m',
         finishId: uiState.reFinishId || 'standard',
         planId: uiState.rePlanId || 'cash'
       }));

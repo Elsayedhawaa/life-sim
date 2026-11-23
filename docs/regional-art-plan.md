@@ -69,3 +69,10 @@ Fictional Toronto brick residential street, modest home interior and appearance-
 ## Country-only presentation correction
 
 User changed the direction: country-level living, no city claim or city labels. The HUD, timeline captions, family/education/work/property location labels and ordinary narrative text now use countries. Internal location keys remain for simulation links, not a player-facing claim. Existing streets without identifying landmarks are fictional country-appropriate illustrations; the Gulf timeline uses home scenery rather than a named-city skyline. Existing property names remain names, not player-location labels. The earlier city-specific rollout is superseded. The next work is multiple local property styles per country, each with separate art and type-fitting plans, rather than adding more city scenes.
+
+
+## Egypt named-property-style batch
+
+Six fictional style choices now have separate static exterior artwork: balcony apartment, heritage apartment, modern garden villa, whitewashed coastal chalet, Nubian-inspired courtyard home and mashrabiya courtyard house. Style cards select a purchasable unit and persist its style/art on the owned property. A shared plan source keeps drawing and furnishing room IDs consistent for the new one-storey courtyard, two-storey courtyard and two-storey modern villa. Apartments and chalet use their corresponding existing country/type plans. Courtyard voids are inside the same plan and excluded from indoor deed area, not misread as an extra rear garden. No automatic pools.
+
+Sources used for the courtyard/vault/screened-entry design direction: https://mathaf.org.qa/en/encyclopedia/artists-biographies/hassan-fathy/ and https://dialnet.unirioja.es/servlet/oaiart?codigo=10525885 . These are fictional schematic game homes, not measured architectural reproductions. Prices continue the simulation catalog formula, not market quotations. Six styles are a starter set, not all Egyptian housing.

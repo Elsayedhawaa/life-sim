@@ -218,6 +218,7 @@ export function finalizePropertyPurchase(S, spec, plan, opts = {}) {
     rooms: spec.rooms,
     areaM2: spec.areaM2,
     unitId: spec.unitId || null,
+    styleId: spec.styleId || null,
     hasGarden: spec.hasGarden === true,
     hasPool: spec.hasPool === true,
     nativeValue: spec.nativeValue,

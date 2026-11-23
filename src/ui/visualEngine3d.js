@@ -1,3 +1,5 @@
+import {STYLE_FLOOR_PLANS} from '../data/styleFloorPlans.js';
+import {propertyStyle} from '../data/localPropertyStyles.js';
 import {illustratedPlanSvg} from './illustratedPlan.js';
 import {renderHomeTypeArt} from './homeTypeArt.js';
 import {propertyOutdoorFeatures} from './propertyOutdoor.js';
@@ -551,7 +553,7 @@ const A101_SCHEMATICS = {
 };
 
 export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = null, totalRooms = null, furnishedRooms = {}) {
-  const floors = JSON.parse(JSON.stringify(A101_SCHEMATICS[shape] || A101_SCHEMATICS.apartment));
+  const floors = JSON.parse(JSON.stringify(STYLE_FLOOR_PLANS[shape] || A101_SCHEMATICS[shape] || A101_SCHEMATICS.apartment));
   // Japanese apartment: wet rooms by the entrance, LDK at the rear, bedrooms
   // off a central hall. Numbers and furnishing keys survive save upgrades.
   if (country === 'jpn' && shape === 'apartment') {
@@ -1363,7 +1365,7 @@ export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms 
   const sh = plan.shell;
   const attrs = rm => `data-action="room-info" data-room="${escAttr(rm.key)}" data-no="${escAttr(rm.no)}" data-name="${escAttr(planRoomName(rm))}" data-m2="${rm.m2 || 0}" data-floor="${escAttr(plainFloorLabel(idx))}"`;
   return `<section class="readable-floor" style="border:1px solid #c9c2b5;border-radius:12px;padding:12px;background:#faf5e9;color:#3c3228;min-width:0">
-    <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx))}</h4>${idx === 0 ? `<p style="font-size:0.78rem;line-height:1.5;margin:4px 0 8px">${escAttr(homeStyleNote(country, shape))}</p>` : ''}
+    <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx))}</h4>${idx === 0 ? `<p style="font-size:0.78rem;line-height:1.5;margin:4px 0 8px">${escAttr(outdoorFeatures.styleNote || homeStyleNote(country, shape))}</p>` : ''}
     <p style="font-size:0.78rem;margin:0 0 12px;color:#625b50">Room numbers match the list below. Fictional layout, not to scale.</p>
     ${illustratedPlanSvg(plan, idx, outdoorFeatures, attrs)}
     <p style="font-size:0.74rem;line-height:1.5;color:#89765c">Illustrative furnished layout. Furniture is a preview, not an installed purchase.${idx===0&&(outdoorFeatures.hasPool||outdoorFeatures.hasGarden)?' Outdoor features are on the same plot; outdoor area is not included in the indoor room total.':''}</p>
@@ -1457,7 +1459,8 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
   const allHomeRooms = floors.flatMap(f => f.rooms).filter(r => furnishableKeys.includes(r.key));
   const furnishedCount = allHomeRooms.filter(r => isRoomFurnished(furnishedRooms, r)).length;
   const totalFurnishable = allHomeRooms.length;
-  const shapeName = shape.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const style = propertyStyle(home?.styleId || home?.unitId);
+  const shapeName = (style?.name || shape).split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
   return `
     <div class="vis3d-home-wrap">
@@ -1507,7 +1510,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
         </div>
       </details>
 
-      <div class="vis3d-stage">
+      ${style ? `<div style="padding:8px;background:#f6efdf;border-radius:12px;margin-bottom:12px"><img src="assets/homes/${style.art}" alt="${escAttr(style.name)} fictional exterior illustration" style="width:100%;max-height:330px;object-fit:contain"><p class="muted" style="font-size:.8rem;margin:4px">${escAttr(style.name)} · Illustrative exterior, not a photograph or exact address.</p></div>` : `<div class="vis3d-stage">
         <canvas
           data-canvas3d="home"
           data-spec="${specJson}"
@@ -1516,13 +1519,13 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
           style="width:100%;height:284px;border-radius:10px;border:1.5px solid rgba(28,25,23,0.22);display:block"
           aria-label="A picture of your home"
         ></canvas>
-      </div>
+      </div>`}
 
       <!-- Floor plan heading: what it is, in plain words. The view, light,
            floor and style choices live in the single control above. -->
       <div class="arch-toolbar" style="margin-top:4px">
         <div style="display:flex;align-items:center;gap:10px">
-          ${renderHomeTypeArt(shape, country, 92)}
+          ${renderHomeTypeArt(shape, country, 92, home?.styleId || home?.unitId)}
           <div>
             <strong style="font-size:0.86rem;letter-spacing:0.01em">${shape === 'land' ? 'Your Land — Plot Plan' : `Your ${shapeName} — Floor Plan`}</strong>
             <div class="muted" style="font-size:0.75rem">
@@ -1533,7 +1536,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px">
-        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2, home?.rooms, {hasPool,hasGarden,placement:home?.outdoorPlacement || (['townhouse','twin_house'].includes(shape)?'front':'rear')})).join('')}
+        ${(isMultiFloor && cadFloor === -1 ? floors.map((_, i) => i) : [Math.max(0, cadFloor)]).map(i => renderReadableFloorplanHtml(shape, furnishedRooms, i, home?.id, country, home?.areaM2, home?.rooms, {hasPool,hasGarden,styleNote:style?.note,placement:home?.outdoorPlacement || (['townhouse','twin_house'].includes(shape)?'front':'rear')})).join('')}
       </div>
 
       <details style="margin-top:12px"><summary style="cursor:pointer;font-size:0.82rem">Detailed architectural sheets</summary>

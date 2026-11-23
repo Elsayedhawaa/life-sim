@@ -1,6 +1,7 @@
 // Fictional regional templates, not a survey of any real address.
 const GULF = new Set(['sau', 'uae', 'qat', 'kwt']);
 export function regionalRoomName(room, country = '', shape = '') {
+  if (['courtyard_single','courtyard_double','modern_villa'].includes(shape)) return room.name;
   if (shape === 'commercial' || shape === 'land') return room.name;
   const countryCode = String(country || '').toLowerCase();
   const jp = countryCode === 'jpn';

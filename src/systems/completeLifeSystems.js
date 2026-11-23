@@ -92,6 +92,7 @@ export function buyCompoundOrDistrictUnit(S, opts = {}) {
   }
 
   const unit = PROPERTY_UNITS.find(u => u.id === opts.unitId) || PROPERTY_UNITS[4];
+  if(unit.countries&&!unit.countries.includes(targetCountry))return {ok:false,msg:'That property style is not offered in this country.'};
   const finish = FINISHING_TIERS.find(f => f.id === opts.finishId) || FINISHING_TIERS[2];
   const plan = PAYMENT_PLANS.find(p => p.id === opts.planId) || PAYMENT_PLANS[0];
 
@@ -126,7 +127,8 @@ export function buyCompoundOrDistrictUnit(S, opts = {}) {
   const res = finalizePropertyPurchase(S, {
     catalogId: dev.id,
     unitId: unit.id,
-    hasGarden: /garden/i.test(unit.name),
+    styleId: unit.styleId || null,
+    hasGarden: unit.hasGarden === true || /garden/i.test(unit.name),
     hasPool: /private pool/i.test(unit.name),
     name: `${dev.name} — ${unit.name}`,
     country: targetCountry,

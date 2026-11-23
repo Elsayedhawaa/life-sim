@@ -1,0 +1,10 @@
+// Fictional homes, inspired by housing forms rather than specific addresses.
+export const LOCAL_PROPERTY_STYLES = [
+ {id:'egy_balcony_flat',country:'egy',name:'Balcony Apartment',shape:'apartment',area:115,rooms:3,priceMult:1.04,maintenanceMult:1,art:'egy-balcony-flat.jpg',note:'Apartment in a modest flat-roof block with a private reception room and separate kitchen.'},
+ {id:'egy_heritage_flat',country:'egy',name:'Heritage Apartment',shape:'apartment',area:165,rooms:4,priceMult:1.12,maintenanceMult:1.15,art:'egy-heritage-flat.jpg',note:'An older apartment with tall windows and a formal reception room. Exterior style does not imply a restored interior.'},
+ {id:'egy_modern_villa',country:'egy',name:'Modern Garden Villa',shape:'modern_villa',area:280,rooms:4,priceMult:1.3,maintenanceMult:1.4,art:'egy-modern-villa.jpg',hasGarden:true,note:'Two floors: reception, kitchen and service rooms below, bedrooms above. Private rear garden, no automatic pool.'},
+ {id:'egy_coastal_chalet',country:'egy',name:'Whitewashed Coastal Chalet',shape:'chalet',area:95,rooms:3,priceMult:1.12,maintenanceMult:1.05,art:'egy-coastal-chalet.jpg',note:'Single-storey holiday home with compact bedrooms, shared living space and a shaded patio.'},
+ {id:'egy_nubian_courtyard',country:'egy',name:'Nubian-Inspired Courtyard Home',shape:'courtyard_single',area:145,rooms:3,priceMult:1.05,maintenanceMult:1.1,art:'egy-nubian-courtyard.jpg',note:'One-storey vaulted-room home arranged around an open courtyard, with a screened entrance and guest room. Courtyard is not indoor deed area.'},
+ {id:'egy_mashrabiya_house',country:'egy',name:'Mashrabiya Courtyard House',shape:'courtyard_double',area:255,rooms:4,priceMult:1.2,maintenanceMult:1.3,art:'egy-mashrabiya-house.jpg',note:'Two-storey inward-facing home with screened upper rooms, separate guest reception and an open courtyard. A fictional layout, not a measured historic house.'}
+];
+export function propertyStyle(id){return LOCAL_PROPERTY_STYLES.find(s=>s.id===id)||null;}

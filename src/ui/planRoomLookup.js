@@ -1,3 +1,4 @@
+import {STYLE_FLOOR_PLANS} from '../data/styleFloorPlans.js';
 import {regionalRoomName, roomBelongsToHome} from './homeRegionalStyle.js';
 /* ============================================================================
    Plan-room lookup — which room number is which room, for every home shape.
@@ -126,7 +127,7 @@ export const PLAN_ROOMS = {
 
 /* All rooms of a shape's plan (every floor), in plan order. Unknown shape -> []. */
 export function planRoomsForShape(shape) {
-  return PLAN_ROOMS[shape] || [];
+  return STYLE_FLOOR_PLANS[shape]?.flatMap(f=>f.rooms) || PLAN_ROOMS[shape] || [];
 }
 
 /* Only the rooms that can be furnished on a shape's plan. */

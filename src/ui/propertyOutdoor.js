@@ -4,7 +4,7 @@ export function propertyOutdoorFeatures(home = {}) {
   const upgrades = home.upgrades || [];
   return {
     hasPool: home.hasPool === true || upgrades.includes('pool') || /private pool|with pool|w\/.*pool|twin_villa_pool/.test(description),
-    hasGarden: home.hasGarden === true || /garden|courtyard/.test(description)
+    hasGarden: home.hasGarden === true || /garden/.test(description)
   };
 }
 export function renderOutdoorPlanHtml(home = {}, country = '') {

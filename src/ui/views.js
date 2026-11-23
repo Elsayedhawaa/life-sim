@@ -1,3 +1,4 @@
+import {LOCAL_PROPERTY_STYLES} from '../data/localPropertyStyles.js';
 import {renderHomeTypeArt} from './homeTypeArt.js';
 /* ============================================================================
    World Life Complete Edition — 7-Pillar Sub-Tabbed UI & 3D Scene Renderer
@@ -37,6 +38,7 @@ import {
 } from '../data/visasAndMarriage.js';
 import {
   PROPERTY_UNITS,
+  getPropertyUnits,
   FINISHING_TIERS,
   COMPOUNDS_BY_COUNTRY,
   NEIGHBORHOODS_BY_COUNTRY,
@@ -2965,7 +2967,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
         ${S.housing.properties.map(pr => `
           <div class="item-row">
             <div style="display:flex;align-items:center;gap:10px">
-              ${renderHomeTypeArt(pr.shape || 'apartment', pr.country || S.country, 64)}
+              ${renderHomeTypeArt(pr.shape || 'apartment', pr.country || S.country, 64, pr.styleId || pr.unitId)}
               <div class="item-row-main">
                 <strong>${esc(pr.name)} (${esc(getCountry(pr.country).name)})</strong>
                 <span>Value: <strong class="mono">${esc(formatMoney(pr.valueLocal, S.country))}</strong> · Finish: ${esc((pr.finishing || 'standard').replace(/_/g, ' '))} · Condition: <strong class="${(pr.conditionPct ?? 100) < 70 ? 'text-bad' : 'text-good'}">${Math.round(pr.conditionPct ?? 100)}%</strong> ${pr.monthsLeft > 0 ? `· ${pr.monthsLeft}m Aqsat left` : '· Deed Clear'} ${pr.rentedOut ? `· [${pr.tenantMode === 'short_term' ? 'Short-Term Holiday +36%' : 'Long-Term Tenant'}]` : ''}${/* v2.11 W3: premises link on the property card */ (() => { const _b = businessUsingProperty(S, pr.id); return _b ? ` · <strong>Used by ${esc(_b.name)}</strong>` : ''; })()}</span>
@@ -3082,7 +3084,7 @@ function compareListingData(S, uiState, key) {
     const dev = (COMPOUNDS_BY_COUNTRY[propMarket] || []).find(c => c.id === ref)
       || (NEIGHBORHOODS_BY_COUNTRY[propMarket] || []).find(d => d.id === ref);
     if (!dev) return null;
-    const selUnit = PROPERTY_UNITS.find(u => u.id === uiState.reUnitId) || PROPERTY_UNITS[4];
+    const selUnit = getPropertyUnits(propMarket).find(u => u.id === uiState.reUnitId) || getPropertyUnits(propMarket)[4];
     const selFinish = FINISHING_TIERS.find(f => f.id === uiState.reFinishId) || FINISHING_TIERS[2];
     const selPlan = PAYMENT_PLANS.find(p => p.id === uiState.rePlanId) || PAYMENT_PLANS[0];
     const price = compoundListingPrice(S, propMarket, dev, selUnit, selFinish, selPlan);
@@ -3168,7 +3170,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
   const districts = NEIGHBORHOODS_BY_COUNTRY[propMarket] || [];
   const allDevs = [...compounds, ...districts];
 
-  const selUnit = PROPERTY_UNITS.find(u => u.id === uiState.reUnitId) || PROPERTY_UNITS[4];
+  const selUnit = getPropertyUnits(propMarket).find(u => u.id === uiState.reUnitId) || getPropertyUnits(propMarket)[4];
   const selFinish = FINISHING_TIERS.find(f => f.id === uiState.reFinishId) || FINISHING_TIERS[2];
   const selPlan = PAYMENT_PLANS.find(p => p.id === uiState.rePlanId) || PAYMENT_PLANS[0];
   const q = String(uiState.reQuery || '').trim().toLowerCase();
@@ -3204,9 +3206,10 @@ function renderCompoundsSubtabHtml(S, uiState) {
         ` : `<span class="hud-pill">${allDevs.length} Developments</span>`}
       </div>
 
+      ${LOCAL_PROPERTY_STYLES.some(p=>p.country===propMarket)?`<div class="local-property-styles" style="margin:12px 0"><h3>Homes by local style</h3><p class="muted" style="font-size:.83rem">Fictional examples, not a real address or a promise of exact construction. Choose a style to see its rooms and purchase options below.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px">${LOCAL_PROPERTY_STYLES.filter(p=>p.country===propMarket).map(p=>`<button type="button" class="btn" data-action="choose-property-style" data-unit="${p.id}" style="display:flex;flex-direction:column;align-items:stretch;text-align:left;white-space:normal;padding:8px;background:#faf5e9;border:${selUnit.id===p.id?'2px solid #9a523c':'1px solid #d4c7ae'}"><img src="assets/homes/${p.art}" alt="${esc(p.name)}" style="width:100%;height:145px;object-fit:contain"><strong style="font-size:.85rem">${esc(p.name)}</strong><span class="muted" style="font-size:.76rem">${p.area} m² · ${p.rooms-1} bedroom${p.rooms>2?'s':''}</span></button>`).join('')}</div></div>`:''}
       <div class="catalog-filter-bar">
         <select class="filter-select" data-filter="reUnitId" aria-label="Unit Type">
-          ${PROPERTY_UNITS.map(u => `<option value="${u.id}" ${u.id === selUnit.id ? 'selected' : ''}>${esc(u.name)} (${u.area}m² · ${u.shape})</option>`).join('')}
+          ${getPropertyUnits(propMarket).map(u => `<option value="${u.id}" ${u.id === selUnit.id ? 'selected' : ''}>${esc(u.name)} (${u.area}m² · ${u.shape})</option>`).join('')}
         </select>
         <select class="filter-select" data-filter="reFinishId" aria-label="Finishing Tier">
           ${FINISHING_TIERS.map(f => `<option value="${f.id}" ${f.id === selFinish.id ? 'selected' : ''}>${esc(f.label)}</option>`).join('')}
@@ -3219,14 +3222,14 @@ function renderCompoundsSubtabHtml(S, uiState) {
 
       <div style="padding:10px;background:var(--bg-accent-warm);border-radius:8px;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          ${renderHomeTypeArt(selUnit.shape, propMarket, 68)}
+          ${renderHomeTypeArt(selUnit.shape, propMarket, 110, selUnit.styleId)}
           <div class="muted" style="font-size:0.8rem">
             Selected unit illustration: <strong>${esc(selUnit.name)} (${selUnit.area} m²)</strong> · <strong>${esc(selFinish.label)}</strong> · Plan: <strong>${esc(selPlan.label)}</strong>
             ${propMarket === 'sau' && S.year >= 2019 ? ' · <em>4M+ SAR cash deed unlocks Saudi Property Premium Residency!</em>' : ''}
             ${propMarket === 'uae' && S.year >= 2019 ? ' · <em>2M+ AED deed unlocks 10-Yr UAE Golden Visa!</em>' : ''}
           </div>
         </div>
-        ${renderAllPropertyFloorsHtml(selUnit.shape, selFinish.id, {}, selUnit.area)}
+        ${renderHome3dAndFloorplanHtml({...selUnit,styleId:selUnit.styleId,areaM2:selUnit.area,country:propMarket,finishing:selFinish.id},{country:propMarket})}
       </div>
       ${renderRoomDetailCardHtml(uiState)}
 
@@ -3246,7 +3249,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
         return `
           <div class="item-row">
             <div style="display:flex;align-items:center;gap:10px">
-              ${renderHomeTypeArt(dev.Coastal ? 'chalet' : selUnit.shape, propMarket, 60)}
+              ${renderHomeTypeArt(selUnit.shape, propMarket, 88, selUnit.styleId)}
               <div class="item-row-main">
                 <strong>${esc(dev.name)} ${dev.developer ? `· ${esc(dev.developer)}` : ''} (${esc(mktCountryObj.name)})</strong>
                 <span>Total: <strong class="mono">${esc(formatMoney(fullPlayer, S.country, true))}</strong> · ${selPlan.years > 0 ? `Down: <strong>${esc(formatMoney(downPlayer, S.country, true))}</strong> + ${esc(formatMoney(monthlyPlayer, S.country, true))}/mo (${selPlan.years}y)` : 'Full Cash'} ${dev.program ? `· [${esc(dev.program.toUpperCase())}]` : ''}</span>
@@ -3254,7 +3257,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
               </div>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:5px">
-              <button class="btn btn-sm ${S.money.cash >= downPlayer ? 'btn-primary' : ''}" data-action="buy-compound-unit" data-dev="${dev.id}" data-country="${propMarket}" ${(S.player.age >= 18 && S.money.cash >= downPlayer) ? '' : 'disabled'}>
+              <button class="btn btn-sm ${S.money.cash >= downPlayer ? 'btn-primary' : ''}" data-action="buy-compound-unit" data-unit="${selUnit.id}" data-dev="${dev.id}" data-country="${propMarket}" ${(S.player.age >= 18 && S.money.cash >= downPlayer) ? '' : 'disabled'}>
                 ${selPlan.years > 0 ? 'Sign Aqsat' : 'Buy Cash'}
               </button>
               ${(S.player.age >= 18 && S.money.cash >= downPlayer) ? '' : lockReason(S.player.age < 18 ? `You must be 18 to buy (you are ${S.player.age})` : 'Not enough cash for the down payment', S.player.age < 18 ? '' : `Need ${formatMoney(downPlayer - S.money.cash, S.country)} more — down payment ${formatMoney(downPlayer, S.country)}`)}

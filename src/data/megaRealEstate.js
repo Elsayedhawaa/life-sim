@@ -1,3 +1,4 @@
+import {LOCAL_PROPERTY_STYLES} from './localPropertyStyles.js';
 /* ============================================================================
    World Life Complete Edition — 100% v1 Real Estate + 50% Web Expansion
    Includes 230+ Compounds, 40 Unit Types, 111 Land Plots, 38 Payment Plans,
@@ -429,6 +430,9 @@ export const FINISHING_TIERS = [
     "wallTone": "#FFFFFF"
   }
 ];
+PROPERTY_UNITS.push(...LOCAL_PROPERTY_STYLES.map(s=>({...s,countries:[s.country],styleId:s.id})));
+export function getPropertyUnits(country){return PROPERTY_UNITS.filter(u=>!u.countries||u.countries.includes(country));}
+
 export const COMPOUNDS_BY_COUNTRY = {
   "egy": [
     {
