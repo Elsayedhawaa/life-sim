@@ -22,6 +22,7 @@ import {
 } from '../data/institutions.js';
 import { SCHOLARSHIPS, INTERNSHIPS, CLUBS, SCHOOL_TRACKS, EGY_TANSIK_REAL, EGY_TANSIK_UNI_DELTA, TRACK_SYSTEM_INFO } from '../data/educationExtras.js';
 import {
+  PROFESSIONAL_LICENSES,
   V1_CAREER_TRACKS,
   EXTRA_MODERN_TRACKS,
   V1_COMPANIES_BY_COUNTRY,
@@ -1357,6 +1358,10 @@ export function getRequiredForeignBoardForJob(S, trackId, reqDegrees = []) {
   return null;
 }
 
+export function matchingLicensePayBoost(S,reqDegrees=[]){
+  return PROFESSIONAL_LICENSES.some(l=>reqDegrees.includes(l.reqDegree)&&(S.credentials?.licenses||[]).includes(l.id))?1.14:1;
+}
+
 export function listAvailableJobs(S) {
   const cObj = getCountry(S.country);
   const degrees = S.education.degrees;
@@ -1374,7 +1379,7 @@ export function listAvailableJobs(S) {
 
     const employer = pickRealCompanyForTrack(S.country, S.year, trackId, track.industry);
     const baseAnnual = eraSalary(cObj.annualSalaryTiers2026.entry, S.country, S.year);
-    const licBoost = (S.credentials?.licenses?.length || 0) > 0 && track.reqDegrees.length > 0 ? 1.14 : 1.0;
+    const licBoost = matchingLicensePayBoost(S,track.reqDegrees);
     const pgList = S.postgrad?.completed || [];
     const pgBoost = pgList.some(p => p.tier === 'fellowship_phd') ? 1.42 : pgList.length > 0 ? 1.26 : 1.0;
     const monthlyGross = Math.round((baseAnnual / 12) * track.payMult * bestRung.mult * licBoost * pgBoost);
@@ -1595,7 +1600,7 @@ export function getLadderForJob(S) {
   const degrees = S.education.degrees || [];
   const trackExp = S.career.trackExperience[job.track] || 0;
   const baseAnnual = eraSalary(cObj.annualSalaryTiers2026.entry, S.country, S.year);
-  const licBoost = (S.credentials?.licenses?.length || 0) > 0 && (track.reqDegrees || []).length > 0 ? 1.14 : 1.0;
+  const licBoost = matchingLicensePayBoost(S,track.reqDegrees||[]);
   const pgList = S.postgrad?.completed || [];
   const pgBoost = pgList.some(p => p.tier === 'fellowship_phd') ? 1.42 : pgList.length > 0 ? 1.26 : 1.0;
   const board = getRequiredForeignBoardForJob(S, job.track, track.reqDegrees || []);
@@ -2004,7 +2009,7 @@ export function describeJobOffer(S, job) {
   const nextRung = rungs.find(r => r.minExp > trackExp) || null;
   const cObj = getCountry(S.country);
   const baseAnnual = eraSalary(cObj.annualSalaryTiers2026.entry, S.country, S.year);
-  const licBoost = (S.credentials?.licenses?.length || 0) > 0 && (track.reqDegrees || []).length > 0 ? 1.14 : 1.0;
+  const licBoost = matchingLicensePayBoost(S,track.reqDegrees||[]);
   const pgList = S.postgrad?.completed || [];
   const pgBoost = pgList.some(p => p.tier === 'fellowship_phd') ? 1.42 : pgList.length > 0 ? 1.26 : 1.0;
   const nextGross = nextRung ? Math.round((baseAnnual / 12) * (track.payMult || 1) * nextRung.mult * licBoost * pgBoost) : null;

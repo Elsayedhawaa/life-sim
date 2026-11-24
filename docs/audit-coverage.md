@@ -65,3 +65,5 @@ Family continuity: dynasty now reuses the recorded people directory, deceased pa
 Adulthood calendar: annual childhood tick finishes in September and now stays there when switching to monthly turns, rather than rewinding to July after world/education/health ticks.55focused files pass; actual390pxannual advance reaches18inSeptember2018and reload retains it.
 
 Language renewal: UI uses dated certificate validity rather than durable spoken-language list, so expired IELTS can actually renew. Board language display uses same validity check as action. Invalid exam kind refuses; one attempt per exam per game month, age17gate. Actual390pxexpiredIELTSrenewal charged once, expiry2028/reload retained. Navigation: all8tiles fixed distinct file/content across countries/ages; People family illustration no longer duplicates Timeline country street.57focused files pass.
+
+Career license pay: the14%game job-offer/ladder bonus now requires a board matching the track degree. A medical license no longer boosts unrelated engineering/other degree jobs.58focused files pass; direct offer comparison covered, no new full career application UIflow for this change.
