@@ -124,7 +124,7 @@ import { renderBusinessLoanSection } from '../systems/businessLoans.js';
 import { renderBusinessWillSection, renderWillHeirSection } from '../systems/businessLegacy.js';
 import { isSeriousCondition, treatmentOptions, oddsInWords } from '../systems/mortalityModel.js';
 import {
-  tripCostLocal, tripLeaveImpact,
+  fertilityCostLocal, tripCostLocal, tripLeaveImpact,
   activityCostLocal,
   computeZakatDueLocal,
   computeChancenkartePoints,
@@ -4761,15 +4761,11 @@ function renderMedicalAndSurgeriesSubtabHtml(S) {
         <h3>Surgical Procedures (${ALL_SURGERIES.length} incl. LASIK) & IVF Fertility</h3>
         <span class="muted">Corrective, Vision & Reproductive Medicine</span>
       </div>
-      ${S.relations.spouseIds.length > 0 ? `
-        <div class="item-row" style="background:var(--bg-accent-warm);padding:8px;border-radius:8px;margin-bottom:8px">
-          <div class="item-row-main">
-            <strong>IVF / ICSI Assisted Reproduction Cycle (${V1_FERTILITY_TREATMENTS.length} Protocols)</strong>
-            <span>High conception probability for married couples · +28 Fertility</span>
-          </div>
-          <button class="btn btn-primary btn-sm" data-action="surgery-ivf" data-kind="ivf" data-id="ivf">Start IVF Cycle</button>
-        </div>
-      ` : ''}
+      <div class="card" style="padding:10px">
+        <strong>Fertility clinic</strong>
+        <p class="muted">Game estimates, not medical advice. One consultation/cycle per month. Requires adult, living co-resident opposite-sex spouse, no current pregnancy and maternal age below46. Donor and surrogate routes are not modeled.</p>
+        ${V1_FERTILITY_TREATMENTS.map(ft=>`<div style="margin:8px 0"><button class="btn btn-sm" data-action="surgery-ivf" data-kind="ivf" data-id="${ft.id}" ${S.money.cash>=fertilityCostLocal(S,ft)?'':'disabled'}>${esc(ft.label)} · ${esc(formatMoney(fertilityCostLocal(S,ft),S.country))}</button><div class="muted">${ft.successPct>0?`${Math.round(ft.successPct*100)}% game conception chance per cycle; no guarantee.`:'Assessment only, no conception attempt.'}</div></div>`).join('')}
+      </div>
       ${ALL_SURGERIES.slice(0, 14).map(sg => {
         const cost = eraLocalCost(Math.round(convertCurrency((sg.baseCostEGP || 35000) / 55.83, 'usa', S.country, 2026)), S.country, S.year);
         return `

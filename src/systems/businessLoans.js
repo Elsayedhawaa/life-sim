@@ -111,7 +111,7 @@ export function takeBusinessLoan(S, biz, amountLocal, opts = {}) {
     return { ok: false, msg: 'Maximum active loans reached (2) — clear one first.' };
   }
   const amt = Math.round(Number(amountLocal) || 0);
-  if (amt <= 0) return { ok: false, msg: 'Invalid loan amount.' };
+  if (!Number.isFinite(amt) || amt <= 0) return { ok: false, msg: 'Invalid loan amount.' };
   const terms = businessLoanTerms(S, amt, { typeId, years: opts.years });
   if (S.money.creditScore < terms.reqScore) {
     return { ok: false, msg: `Credit score (${S.money.creditScore}) is below the ${terms.reqScore} this business loan requires.` };
@@ -174,7 +174,7 @@ export function payExtraOnBusinessLoan(S, biz, amountLocal) {
   if (!loan) return { ok: false, msg: 'This business has no loan to pay down.' };
   if (loan.inCollections) return { ok: false, msg: 'This loan is in collections — pay it through the normal monthly payments.' };
   const amt = Math.min(Math.round(Number(amountLocal) || 0), loan.balance);
-  if (amt <= 0) return { ok: false, msg: 'Invalid amount.' };
+  if (!Number.isFinite(amt) || amt <= 0) return { ok: false, msg: 'Invalid amount.' };
   if ((Number(S.money.cash) || 0) < amt) {
     return { ok: false, msg: `Need ${formatMoney(amt, S.country)} in cash for that extra payment.` };
   }
@@ -183,7 +183,7 @@ export function payExtraOnBusinessLoan(S, biz, amountLocal) {
   loan.remainingMonths = loan.monthlyPayment > 0
     ? Math.max(0, Math.ceil(loan.balance / loan.monthlyPayment))
     : 0;
-  if (loan.balance <= 10) {
+  if (loan.balance <= 0) {
     loan.balance = 0;
     S.money.loans = (S.money.loans || []).filter(l => l.id !== loan.id);
     biz.loanId = null;
@@ -203,8 +203,8 @@ export function renderBusinessLoanSection(S, biz) {
   const countryId = S.country;
   const loan = biz ? getBusinessLoan(S, biz) : null;
   if (loan) {
-    const extraOne = Math.round(loan.monthlyPayment);
-    const extraTen = Math.max(extraOne, Math.round(loan.balance * 0.1));
+    const extraOne = Math.min(loan.balance,Math.round(loan.monthlyPayment));
+    const extraTen = Math.min(loan.balance,Math.max(extraOne, Math.round(loan.balance * 0.1)));
     return `
   <div class="biz-loan-section" style="margin-top:10px;">
     <h4>Business loan</h4>

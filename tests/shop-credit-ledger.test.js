@@ -21,3 +21,7 @@ x=structuredClone(s);x.player.age=30;x.bnplPlans=[{id:'fx',label:'fx',monthlyPay
 x=structuredClone(s);x.player.age=30;x.money.loans=[{id:'residue',label:'residue',balance:25,monthlyPayment:10,remainingMonths:1,annualRate:0,flatMarkup:true}];settleHouseholdMonth(x);assert.equal(x.money.loans[0].balance,15);settleHouseholdMonth(x);assert.equal(x.money.loans[0].balance,5);settleHouseholdMonth(x);assert.equal(x.money.loans.length,0);console.log('Loan maturity does not erase unpaid residual debt; final payment clears the actual balance.');
 
 x=structuredClone(s);x.bnplPlans=[];const worth=computeNetWorthLocal(x);x.bnplPlans=[{balanceRemaining:300,monthlyPay:100,monthsLeft:3}];assert.equal(computeNetWorthLocal(x),worth-300);console.log('Net worth subtracts the actual outstanding BNPL debt.');
+
+const {payExtraOnBusinessLoan}=await import('../src/systems/businessLoans.js');
+x=structuredClone(s);x.player.age=30;const biz={id:'b',name:'Test',loanId:'bloan'};x.money.loans=[{id:'bloan',balance:25,monthlyPayment:10}];cash=x.money.cash;assert.ok(payExtraOnBusinessLoan(x,biz,20).ok);assert.equal(cash-x.money.cash,20);assert.equal(x.money.loans[0].balance,5);assert.ok(payExtraOnBusinessLoan(x,biz,5).cleared);assert.equal(x.money.loans.length,0);
+console.log('Extra business-loan payments preserve a5unit residual until paid.');

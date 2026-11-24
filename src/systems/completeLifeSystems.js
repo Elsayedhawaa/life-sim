@@ -1310,6 +1310,8 @@ export function applyGermanChancenkarte(S) {
    5. SURGERIES (LASIK!), IVF/ICSI, 102 VACATIONS + NUSUK HAJJ/UMRAH, LAWSUITS & CRIME
    ========================================================================== */
 
+export function fertilityCostLocal(S,ft){return Math.round(convertCurrency((ft.costEGP||0)/55.83,'usa',S.country,S.year));}
+
 export function undergoSurgeryOrFertility(S, kind, id) {
   ensureExtendedState(S);
   if (kind === 'surgery') {
@@ -1328,22 +1330,32 @@ export function undergoSurgeryOrFertility(S, kind, id) {
     return { ok: true, msg: `Completed ${surg.label}!` };
   }
 
+  if(kind!=='ivf')return {ok:false,msg:'Unknown medical treatment.'};
+  if(S.player.age<18)return {ok:false,msg:'Fertility treatment is available to adults.'};
+  if(S.marriage.pregnancy)return {ok:false,msg:'Already expecting. No further fertility cycle is needed.'};
+  const partner=(S.relations.spouseIds||[]).map(pid=>S.people[pid]).find(p=>p?.alive&&p.residenceCountry===S.country&&p.gender!==S.player.gender);
+  if(!partner)return {ok:false,msg:'This fertility route requires a living co-resident spouse of the opposite sex. Donor and surrogate routes are not modeled.'};
+  const maternalAge=S.player.gender==='f'?S.player.age:partner.age;
+  if(maternalAge>=46)return {ok:false,msg:'This game models own-egg fertility cycles only below age46. Donor-egg routes are not modeled.'};
+  if(S.medical.lastFertilityCycleYear===S.year&&S.medical.lastFertilityCycleMonth===S.month)return {ok:false,msg:'Wait until next month before another fertility cycle.'};
+  if(id!=='ivf'&&!V1_FERTILITY_TREATMENTS.some(f=>f.id===id))return {ok:false,msg:'Unknown fertility treatment.'};
   /* IVF / ICSI Fertility Treatment */
-  const ft = V1_FERTILITY_TREATMENTS.find(f => f.id === id) || V1_FERTILITY_TREATMENTS[V1_FERTILITY_TREATMENTS.length - 1];
+  const ft = V1_FERTILITY_TREATMENTS.find(f => f.id === (id==='ivf'?'ivf_cycle':id));
   if (S.relations.spouseIds.length === 0) return { ok: false, msg: 'Requires a married spouse.' };
-  const cost = Math.round(convertCurrency(3800, 'usa', S.country, S.year));
+  const cost = fertilityCostLocal(S,ft);
   if (S.money.cash < cost) return { ok: false, msg: `Need ${formatMoney(cost, S.country)} for IVF/ICSI cycle.` };
 
+  S.medical.lastFertilityCycleYear=S.year;S.medical.lastFertilityCycleMonth=S.month;
   walletMove(S, -cost, `Fertility clinic cycle: ${ft?.label || 'IVF / ICSI'}`, 'medical');
-  S.medical.fertilityScore = clamp(S.medical.fertilityScore + 28, 10, 98);
-  if (!S.marriage.pregnancy && chance(S, 0.58)) {
-    const spId = S.relations.spouseIds[0];
+  S.medical.fertilityScore = clamp(S.medical.fertilityScore + (ft.successPct>0?28:0), 10, 98);
+  if (!S.marriage.pregnancy && ft.successPct>0 && chance(S, ft.successPct)) {
+    const spId = partner.id;
     startPregnancy(S, S.player.gender === 'f' ? 'player' : spId, { dueMonths: 9 });
     recordJournal(S, `Joyful news from the fertility clinic — the IVF/ICSI embryo transfer succeeded! Baby due in 9 months!`, 'milestone');
     return { ok: true, msg: 'IVF Succeeded — Expecting in 9 months!' };
   }
-  recordJournal(S, `Completed ${ft?.label || 'fertility'} cycle; reproductive health improved, trying again soon.`, 'health');
-  return { ok: true, msg: 'Fertility treatment completed (+fertility).' };
+  recordJournal(S, ft.successPct>0?`Completed ${ft.label}; no pregnancy this cycle.`:`Completed ${ft.label}; assessment only, no procedure performed.`, 'health');
+  return { ok: true, msg: ft.successPct>0?'Fertility cycle completed. No pregnancy this cycle.':'Fertility consultation completed. No procedure was performed.' };
 }
 
 /* Consular tourist visas live in visaMigrationEngine.js (D7 — one visa
