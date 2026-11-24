@@ -53,4 +53,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Other-tab audit
 
-- [ ] W1 Consistent normal/part-time employment hours across work pace, overtime and owner-business time budget. Found after business queue closure: part-time jobs consumed full-time hours, overtime did not consume its added hours.
+- [x] W1 Consistent normal/part-time employment hours across work pace, overtime and owner-business time budget. Found after business queue closure: part-time jobs consumed full-time hours, overtime did not consume its added hours.
+
+- [ ] W2 Aggregate existing employment and gig hours for the modeled student cap and overwork penalties. Previously each formal gig checked its own hours only.

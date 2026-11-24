@@ -2706,7 +2706,7 @@ function renderSideGigsSubtabHtml(S) {
       ? `<span>Worked ${ev.monthsWorked} month${ev.monthsWorked > 1 ? 's' : ''} · reputation ${ev.reputation}/100${ev.complaints ? ` · ${ev.complaints} complaint${ev.complaints > 1 ? 's' : ''}` : ''}</span>`
       : '';
     const btn = !ev.available
-      ? `<span class="hud-pill">${esc(ev.lockReason)}</span>`
+      ? `<span class="hud-pill" style="white-space:normal;overflow-wrap:anywhere;max-width:100%">${esc(ev.lockReason)}</span>`
       : workedThisMonth
         ? `<span class="hud-pill">Worked this month</span>`
         : `<button class="btn btn-sm ${kind === 'parttime' ? 'btn-primary' : ''}" data-action="side-gig" data-kind="${kind}" data-idx="${ev.idx}">${kind === 'parttime' ? 'Work this gig for the month' : 'Hustle for cash'}</button>`;

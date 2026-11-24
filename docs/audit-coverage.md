@@ -393,3 +393,6 @@ Traced customer deliveries link to the month's invoice share. Recall cancels the
 
 ### W1 employment and owner time-budget consistency
 Shared country normal/extra-hours schedule for career pace previews and business owner capacity. Part-time contracts use20h balanced/16h coast, reject hard/overtime modes, and old saved part-time overtime no longer pays an unauthorized premium. Full-time hard/overtime actually occupy10/20extra weekly hours.133focused files pass,390px seeded-part-time action/reload and inspected pixels. This is a game schedule cap, not a live claim about any country's work-permit law.
+
+### W2 aggregate gig/employment hours
+Formal student gigs now add the actual existing job schedule before checking the modeled20hcap. Overwork risks and effects use actual part/full-time hours rather than assuming40for everyone. Long blocked-gig explanations wrap on phones.134focused files pass;390px seeded student with20hjob sees formal gigs blocked with aggregate warning and reload preserved. The20hcap is existing game policy, not a claim of current law across countries.

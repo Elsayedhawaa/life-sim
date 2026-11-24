@@ -1,3 +1,4 @@
+import{careerHours}from'./careerSchedule.js';
 import{recordCivilLoss,fileCivilClaim,tickCivilClaims}from './civilClaims.js';
 import{personMind}from './personMind.js';
 import {chargeFamilyEducation as chargeLivingParents} from './educationFunding.js';
@@ -1849,7 +1850,7 @@ function gigRiskLines(S, gig, kind, hoursPerWeek) {
   if (gig.requiresBike) risks.push('Delivery on a bicycle in traffic — a fall is on you.');
   if (employed) risks.push('Your manager may hear you are working a second job — it can count against you at review time.');
   if (inSchool && gig.affectsGrades !== false && hoursPerWeek >= 20) risks.push('These hours eat into study time — your grades will slip if you keep this up.');
-  if (employed && hoursPerWeek + GIG_FULL_TIME_HOURS_PER_WEEK > 60) risks.push('60+ hour weeks will hurt your health and your job performance.');
+  if (employed && hoursPerWeek + careerHours(S) > 60) risks.push('60+ hour weeks will hurt your health and your job performance.');
   if (kind === 'cash') {
     const rl = Number(gig.riskLevel) || 0;
     if (rl === 0) risks.push('Low risk — honest cash work, but no contract and no protection if you are hurt.');
@@ -1930,10 +1931,10 @@ export function evaluateGig(S, kind = 'parttime', idx = 0) {
     if (!auth.allowed) {
       addReq('Work permit', false, `${auth.reason} Formal part-time work needs a permit — cash gigs are the only option without one.`);
     } else if (auth.partTimeOnly) {
-      const ok = hoursPerWeek <= STUDENT_VISA_MAX_HOURS_PER_WEEK;
+      const otherHours=careerHours(S),ok = hoursPerWeek+otherHours <= STUDENT_VISA_MAX_HOURS_PER_WEEK;
       addReq(`Student visa: ${STUDENT_VISA_MAX_HOURS_PER_WEEK}h/week max`, ok, ok
-        ? `This gig is ${hoursPerWeek}h/week — inside your student-visa limit`
-        : `Your student visa allows at most ${STUDENT_VISA_MAX_HOURS_PER_WEEK} hours of work a week — this gig needs ${hoursPerWeek}.`);
+        ? `This gig plus existing employment is ${hoursPerWeek+otherHours}h/week, inside the modeled student cap`
+        : `Modeled student cap ${STUDENT_VISA_MAX_HOURS_PER_WEEK}h/week: existing employment ${otherHours}h plus this gig ${hoursPerWeek}h exceeds it.`);
     } else {
       addReq('Work permit', true, 'You may work here');
     }
@@ -1986,7 +1987,7 @@ export function takeSideOrStudentGig(S, kind = 'parttime', idx = 0) {
   }
   if (employed) {
     S.career.job.performance = clamp((S.career.job.performance ?? 70) - (ev.hoursPerWeek >= 20 ? 4 : 2));
-    if (ev.hoursPerWeek + GIG_FULL_TIME_HOURS_PER_WEEK > 60) {
+    if (ev.hoursPerWeek + careerHours(S) > 60) {
       S.career.job.performance = clamp(S.career.job.performance - 2);
       stressAdd += 3;
     }
