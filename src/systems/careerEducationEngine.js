@@ -1,3 +1,4 @@
+import {hasCurrentLanguage} from '../data/languageQualifications.js';
 import {annualUniversityBudget,universityBudgetRange} from '../data/universityCosts.js';
 import {degreeProgramFor,programsForCountry} from '../data/degreePrograms.js';
 import {canonicalUniversityId,universitySectorLabel} from '../data/institutions.js';
@@ -471,7 +472,7 @@ function familyCanAffordSchool(S,fee){return fee<=0||familyCoversUniversity(S,fe
    ========================================================================== */
 
 function hasCertifiedLanguage(S, re) {
-  return (S.education.languages || []).some(l => re.test(String(l)));
+  return hasCurrentLanguage(S,re);
 }
 /* IELTS 7 means certified English, not school "English (Basic)". A pass at
    IELTS/TOEFL stores 'English (C1)'; an international school stores

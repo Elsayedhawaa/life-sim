@@ -1,3 +1,4 @@
+import {hasCurrentLanguage} from '../data/languageQualifications.js';
 import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget} from '../data/propertyAreas.js';
 /* ============================================================================
    World Life Complete Edition — Deep Systems & Causal Chain Wiring
@@ -621,7 +622,7 @@ export function installPropertyUpgrade(S, propId, upgKey) {
   if (prop.upgrades.includes(upgKey)) return { ok: false, msg: 'Upgrade already installed.' };
 
   const UPGRADE_COSTS_USD = {
-    solar: { label: 'Rooftop Solar & Battery Array (−35% utility bill)', usd: 5800, hap: 4 },
+    solar: { label: 'Rooftop Solar & Battery Array (−40% utility bill)', usd: 5800, hap: 4 },
     pool: { label: 'Private Heated Swimming Pool', usd: 14500, hap: 8 },
     smart_security: { label: 'Smart Automation & CCTV Perimeter', usd: 2600, hap: 3 },
     home_gym: { label: 'Private Home Fitness Studio (+health)', usd: 3400, hap: 4 },
@@ -1214,7 +1215,7 @@ export function sitExamOrLicensingBoard(S, kind, examId) {
   if (lic.reqDegree && !S.education.degrees.includes(lic.reqDegree)) {
     return { ok: false, msg: `Requires a completed ${lic.reqDegree.toUpperCase()} degree.` };
   }
-  if (lic.reqLang && !S.education.languages.includes(lic.reqLang)) {
+  if (lic.reqLang && !hasCurrentLanguage(S,new RegExp(lic.reqLang.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')))) {
     return { ok: false, msg: `Requires ${lic.reqLang} language certification first!` };
   }
 
@@ -2720,6 +2721,12 @@ export function tickMegaSystemsMonthly(S) {
           city: land.city,
           rooms: bp.shape === 'apartment' ? 8 : 5,
           areaM2: bp.builtArea,
+          indoorM2:bp.builtArea,
+          plotM2:land.areaM2,
+          footprintM2:Math.round(land.areaM2*.65),
+          gardenM2:Math.max(0,land.areaM2-Math.round(land.areaM2*.65)),
+          hasGarden:true,poolM2:0,terraceM2:0,courtyardM2:0,parkingM2:0,
+          outdoorAnnualNative:Math.round(finishedNativeVal/Math.max(1,bp.builtArea)*Math.max(0,land.areaM2-Math.round(land.areaM2*.65))*.001),
           nativeValue: finishedNativeVal,
           valueLocal: Math.round(convertCurrency(finishedNativeVal, land.country, S.country, S.year)),
           nativeMonthlyRent: Math.round((finishedNativeVal * 0.075) / 12),

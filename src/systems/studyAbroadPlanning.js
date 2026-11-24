@@ -1,4 +1,5 @@
-import {annualUniversityBudget} from '../data/universityCosts.js';
+import {hasCurrentLanguage} from '../data/languageQualifications.js';
+import {annualUniversityBudget,annualInternationalBudget} from '../data/universityCosts.js';
 /* Static full-time overseas game routes, not admission or immigration advice. */
 import {getUniversitiesFor,MAJORS} from '../data/institutions.js';
 import {degreeProgramFor} from '../data/degreePrograms.js';
@@ -12,7 +13,7 @@ export const ABROAD_SUBJECTS=['cs','engineering','business','psychology','law','
 const annualUsd={egy:7000,sau:12000,uae:22000,gbr:32000,usa:42000,deu:6000,can:26000,aus:30000,nld:17000,fra:12000,jpn:12000,ita:9000,sgp:28000,bra:9000,ind:6000,che:12000,swe:16000,tur:8000};
 const livingUsd={egy:5000,sau:9000,uae:15000,gbr:17000,usa:19000,deu:13000,can:16000,aus:18000,nld:15000,fra:13000,jpn:12000,ita:11000,sgp:18000,bra:7000,ind:5000,che:24000,swe:14000,tur:7000};
 export function abroadUniversities(S,dest){return getUniversitiesFor(dest,S.year);}
-export function abroadLanguageReady(S){return ['gbr','usa','can','aus'].includes(S.homeCountry)||(S.education.languages||[]).some(l=>/English.*(Fluent|IELTS|TOEFL|C1|C2|B2)/i.test(l));}
+export function abroadLanguageReady(S){return ['gbr','usa','can','aus'].includes(S.homeCountry)||hasCurrentLanguage(S,/English.*(Fluent|IELTS|TOEFL|C1|C2|B2)/i);}
 export function studyAwardKey(S,dest,level){return `${S.year}:${dest}:${level}`;}
 export function studyAbroadQuote(S,dest,opts={}){
  const level=opts.level||'bachelor',majorId=opts.majorId||'cs',funding=opts.funding||'self';
@@ -33,11 +34,8 @@ export function studyAbroadQuote(S,dest,opts={}){
  else if(!abroadLanguageReady(S))reason='These modelled routes use English. Obtain a recorded English qualification or fluent English first.';
  else if(level==='bachelor'&&(S.education.highSchoolScore??0)<tansikCutoffFor(dest,uni,majorId,S.year).cutoff)reason='Your secondary score is below this game admission index.';
  const years=level==='bachelor'?(degreeProgramFor(dest,majorId,uni,S.year)?.years||3):level==='masters'?2:3;
- const subjectFactor={engineering:1.15,architecture:1.15,cs:1.1,media:.9,education:.85}[majorId]||1;
- const domesticUsd=uni?convertCurrency(uni.annualTuition2026||0,dest,'usa',2026):0;
- const annual=Math.round(Math.max(annualUsd[dest]||10000,domesticUsd)*subjectFactor);
  const citizen=!!S.legal?.citizenships?.includes(dest);
- const annualDest=citizen&&uni?annualUniversityBudget({...S,country:dest},uni,majorId):Math.round(convertCurrency(eraLocalCost(annual,'usa',S.year),'usa',dest,S.year));
+ const annualDest=citizen&&uni?annualUniversityBudget({...S,country:dest},uni,majorId):uni?annualInternationalBudget(S,uni,majorId):0;
  const livingDest=Math.round(convertCurrency(eraLocalCost(livingUsd[dest]||12000,'usa',S.year),'usa',dest,S.year));
  const award=S.education.studyAwards?.[studyAwardKey(S,dest,level)];
  const scholarshipPct=funding==='scholarship'&&award?.awarded?1:0;

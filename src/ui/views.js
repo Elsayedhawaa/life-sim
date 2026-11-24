@@ -4849,7 +4849,7 @@ export function renderWorldTabHtml(S, uiState = {}) {
     <div class="card card-elevated">
       <div class="section-head">
         <h2>${icon('passport', 18)} ICAO Doc 9303 Biometric Passports &amp; Border Stamps</h2>
-        ${S.legal.travelBanInCountry ? `<span class="hud-pill text-bad">TRAVEL BAN (${esc(getCountry(S.legal.travelBanInCountry).name)})</span>` : `<span class="hud-pill">${S.legal.passports.length} Active Booklet(s)</span>`}
+        ${S.legal.travelBanInCountry ? `<span class="hud-pill text-bad">TRAVEL BAN (${esc(getCountry(S.legal.travelBanInCountry).name)})</span>` : `<span class="hud-pill">${S.legal.passports.filter(p=>p.expiresYear>S.year&&S.legal.citizenships.includes(p.country)).length} Valid Booklet(s)</span>`}
       </div>
       <div style="padding:12px;margin-bottom:12px;background:#edf3ec;border-radius:10px;font-size:.86rem;line-height:1.8"><strong>Living in ${esc(getCountry(S.country).name)}</strong><br>Citizenship: ${esc(S.legal.citizenships.map(c=>getCountry(c).name).join(', '))}<br>Status: ${esc(S.legal.residency.kind.replace(/_/g,' '))}<br>${esc(S.legal.residency.permitName||'')}${S.legal.residency.expiresYear?` · expires ${S.legal.residency.expiresMonth||12}/${S.legal.residency.expiresYear}`:''}<br>Moving does not grant a new nationality or passport.</div>
       ${renderPassportDocumentHtml(S)}
