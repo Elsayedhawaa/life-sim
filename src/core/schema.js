@@ -779,7 +779,7 @@ export function computeNetWorthLocal(S) {
     const a=S.legal.blockedAccount;total+=convertCurrency(Number(a.balanceLocal)||0,a.country||S.country,S.country,S.year);
   }
   for (const prop of S.housing.properties) {
-    const equity = Math.max(0, (Number(prop.valueLocal) || 0) - (Number(prop.installmentRemaining) || 0));
+    const equity = (Number(prop.valueLocal) || 0) - Math.max(0,Number(prop.installmentRemaining)||0);
     total += equity;
   }
   for (const land of (S.housing.lands || [])) {

@@ -3852,11 +3852,11 @@ export function renderFinanceTabHtml(S, uiState = {}) {
         </div>
         <div style="border-top:1px dashed var(--line-soft);padding-top:8px">
           <div class="muted" style="margin-bottom:6px">
-            <strong>Estate Succession &amp; Wasiyyah Bequest:</strong> ${['egy', 'sau', 'uae', 'tur', 'mys'].includes(S.country) && S.player.religion === 'muslim'
+            <strong>Game estate rules, not legal advice:</strong> ${['egy', 'sau', 'uae', 'tur', 'mys'].includes(S.country) && S.player.religion === 'muslim'
               ? 'Sharia Al-Fara\'id (2:1 male/female statutory shares + 1/8th spouse) with up to 1/3 (33%) charitable Wasiyyah / Sadaqah Jariyah.'
               : S.country === 'gbr'
-              ? 'UK Probate (40% Inheritance Tax above £325k nil-rate band) + charitable bequest.'
-              : 'Equal statutory heir shares after notarized charitable bequest.'}
+              ? 'Simplified UK estate: 40% game tax above an era-scaled 325,000 GBP band, surviving spouse reserves 1/8, remaining child shares equal. No exemptions or detailed probate model.'
+              : 'Simplified estate: surviving spouse reserves 1/8, remaining child shares equal, after the chosen charity share. No detailed local succession model.'}
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:6px">
             ${[0, 10, 25, 33].map(pct => `

@@ -25,3 +25,5 @@ x=structuredClone(s);x.bnplPlans=[];const worth=computeNetWorthLocal(x);x.bnplPl
 const {payExtraOnBusinessLoan}=await import('../src/systems/businessLoans.js');
 x=structuredClone(s);x.player.age=30;const biz={id:'b',name:'Test',loanId:'bloan'};x.money.loans=[{id:'bloan',balance:25,monthlyPayment:10}];cash=x.money.cash;assert.ok(payExtraOnBusinessLoan(x,biz,20).ok);assert.equal(cash-x.money.cash,20);assert.equal(x.money.loans[0].balance,5);assert.ok(payExtraOnBusinessLoan(x,biz,5).cleared);assert.equal(x.money.loans.length,0);
 console.log('Extra business-loan payments preserve a5unit residual until paid.');
+
+x=structuredClone(s);x.housing.properties=[];const baseWorth=computeNetWorthLocal(x);x.housing.properties=[{valueLocal:100,installmentRemaining:150}];assert.equal(computeNetWorthLocal(x),baseWorth-50);console.log('Underwater property equity remains negative in net worth instead of hiding the debt.');

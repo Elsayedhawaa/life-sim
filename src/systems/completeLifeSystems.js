@@ -2323,7 +2323,10 @@ export function setEstateWillPlan(S, charityPct = 0) {
   const pct = clamp(Number(charityPct) || 0, 0, 33); // Sharia Wasiyyah cap 1/3 (33%)!
   S.willPlan.charityPct = pct;
   S.willPlan.draftedYear = S.year;
-  S.reputation = clamp(S.reputation + (pct >= 10 ? 6 : 2));
+  if(!S.willPlan.reputationAwarded){
+    S.reputation = clamp(S.reputation + (pct >= 10 ? 6 : 2));
+    S.willPlan.reputationAwarded=true;
+  }
   recordJournal(
     S,
     pct > 0
