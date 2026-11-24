@@ -230,9 +230,9 @@ export function openBranchOfType(S, bizRef, cityId, branchTypeRaw = 'shop', opts
   /* v2.20 I4 — units are resolved in the BRANCH's city, so the first
      month's rent is a rent for that city and rentBusinessPremises
      (which checks unit city vs branch city) accepts it. */
-  const unit = (listCommercialPremises(S, cityId) || []).find(u => u.unitId === type.premisesUnitId)
-    || (listCommercialPremises(S, cityId) || []).find(u => u.unitId === 'comm_shop')
-    || (listCommercialPremises(S, cityId) || [])[0];
+  const unit = (listCommercialPremises(S, cityId, countryId, S.country) || []).find(u => u.unitId === type.premisesUnitId)
+    || (listCommercialPremises(S, cityId, countryId, S.country) || []).find(u => u.unitId === 'comm_shop')
+    || (listCommercialPremises(S, cityId, countryId, S.country) || [])[0];
   const firstRent = unit ? Number(unit.monthlyRentLocal) || 0 : 0;
   /* A franchise outlet is funded by the franchisee: you pay only the
      first month's rent. Every other type is paid from your cash. */

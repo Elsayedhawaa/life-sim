@@ -248,8 +248,7 @@ function localiseUsd(S, usd2026, countryId) {
    Every unit carries the city it is in (cityId, or the player's city
    when none is given): a branch only ever offers units in its own
    city, and rentBusinessPremises refuses a unit from another city. */
-export function listCommercialPremises(S, cityId) {
-  const countryId = S.country;
+export function listCommercialPremises(S, cityId, countryId=S.country, figuresCurrency=S.country) {
   const city = cityId || S.city;
   const units = COMMERCIAL_PREMISES_TYPES.map((t) => ({
     unitId: t.id,
@@ -258,8 +257,8 @@ export function listCommercialPremises(S, cityId) {
     city,
     label: t.label,
     areaM2: t.areaM2,
-    monthlyRentLocal: localiseUsd(S, t.rentUsd2026, countryId),
-    valueLocal: localiseUsd(S, t.valueUsd2026, countryId),
+    monthlyRentLocal: Math.round(convertCurrency(localiseUsd(S, t.rentUsd2026, countryId),countryId,figuresCurrency,S.year)),
+    valueLocal: Math.round(convertCurrency(localiseUsd(S, t.valueUsd2026, countryId),countryId,figuresCurrency,S.year)),
     conditionPct: 90,
     desc: t.desc,
   }));
@@ -275,7 +274,7 @@ export function listCommercialPremises(S, cityId) {
       label: `${pr.name} (owned)`,
       areaM2: pr.areaM2 || null,
       monthlyRentLocal: 0,
-      valueLocal: Number(pr.valueLocal || 0),
+      valueLocal: Math.round(convertCurrency(Number(pr.valueLocal||0),S.country,figuresCurrency,S.year)),
       conditionPct: Number(pr.conditionPct ?? 100),
       desc: 'A property you already own — no rent, and its condition is the shop’s condition.',
       propId: pr.id,
@@ -300,7 +299,7 @@ export function rentBusinessPremises(S, biz, unitId) {
   /* Units are resolved in the BUSINESS's city, never the player's:
      a branch in Alexandria rents Alexandrian units, and a unit from
      another city is refused in plain words. */
-  const unit = listCommercialPremises(S, biz.city).find((u) => u.unitId === unitId);
+  const unit = listCommercialPremises(S, biz.city, biz.country||S.country, biz.figuresCurrency||biz.country||S.country).find((u) => u.unitId === unitId);
   if (!unit) return { ok: false, msg: 'That unit is not available here.' };
   if (unit.city && biz.city && unit.city !== biz.city) {
     return { ok: false, msg: `That unit is in ${unit.city} — ${biz.name} trades in ${biz.city}. A business rents premises in its own city.` };
@@ -312,12 +311,13 @@ export function rentBusinessPremises(S, biz, unitId) {
       return { ok: false, msg: `${biz.name} trades in ${getCountry(biz.country).name} — this property is in ${getCountry(prop.country).name}.` };
     }
   }
-  if (unit.kind === 'rented' && S.money.cash < unit.monthlyRentLocal) {
-    return { ok: false, msg: `The first month's rent is ${formatMoney(unit.monthlyRentLocal, S.country)} — you have ${formatMoney(S.money.cash, S.country)}.` };
+  const rentCharge=Math.round(convertCurrency(unit.monthlyRentLocal,biz.figuresCurrency||biz.country||S.country,S.country,S.year));
+  if (unit.kind === 'rented' && S.money.cash < rentCharge) {
+    return { ok: false, msg: `The first month's rent is ${formatMoney(unit.monthlyRentLocal, biz.figuresCurrency||biz.country||S.country)} — you have ${formatMoney(S.money.cash, S.country)}.` };
   }
   const oldLabel = biz.premises ? biz.premises.label : null;
   if (unit.kind === 'rented') {
-    walletMove(S, -unit.monthlyRentLocal, `First month's rent — ${unit.label} for ${biz.name}`, 'business');
+    walletMove(S, -rentCharge, `First month's rent — ${unit.label} for ${biz.name}`, 'business');
   }
   biz.premises = {
     kind: unit.kind,
@@ -335,12 +335,12 @@ export function rentBusinessPremises(S, biz, unitId) {
     pendingReview: null,
   };
   recordJournal(S, oldLabel
-    ? `${biz.name} moved out of ${oldLabel} and into ${unit.label}${unit.kind === 'rented' ? ` at ${formatMoney(unit.monthlyRentLocal, S.country)} a month` : ' (a property you own, so no rent)'}.`
-    : `${biz.name} set up in ${unit.label}${unit.kind === 'rented' ? ` at ${formatMoney(unit.monthlyRentLocal, S.country)} a month` : ' (a property you own, so no rent)'}.`, 'business');
+    ? `${biz.name} moved out of ${oldLabel} and into ${unit.label}${unit.kind === 'rented' ? ` at ${formatMoney(unit.monthlyRentLocal, biz.figuresCurrency||biz.country||S.country)} a month` : ' (a property you own, so no rent)'}.`
+    : `${biz.name} set up in ${unit.label}${unit.kind === 'rented' ? ` at ${formatMoney(unit.monthlyRentLocal, biz.figuresCurrency||biz.country||S.country)} a month` : ' (a property you own, so no rent)'}.`, 'business');
   return {
     ok: true,
     msg: unit.kind === 'rented'
-      ? `${biz.name} is now in ${unit.label} — ${formatMoney(unit.monthlyRentLocal, S.country)} a month, charged every month from the P&L.`
+      ? `${biz.name} is now in ${unit.label} — ${formatMoney(unit.monthlyRentLocal, biz.figuresCurrency||biz.country||S.country)} a month, charged every month from the P&L.`
       : `${biz.name} now trades from ${unit.label} — no rent, you own it.`,
   };
 }
@@ -518,7 +518,7 @@ export function renderBusinessPremisesSection(S, biz) {
      pill (views.js, from businessLevelCap). This section never
      restates it: no "Level cap" pill here, and the run-from-home line
      no longer repeats "Level capped at 2". */
-  const units = listCommercialPremises(S, biz.city);
+  const units = listCommercialPremises(S, biz.city, biz.country||S.country, biz.figuresCurrency||biz.country||S.country);
   const repairCost = p ? repairCostLocal(S, biz) : 0;
   const due = p ? rentReviewDue(S, biz) : false;
   const pending = p && p.pendingReview ? p.pendingReview : null;
@@ -548,7 +548,7 @@ export function renderBusinessPremisesSection(S, biz) {
           <div class="item-row">
             <div class="item-row-main">
               <strong>${esc(u.label)}</strong>
-              <span>${u.areaM2 ? `${u.areaM2} m² · ` : ''}${u.kind === 'rented' ? `Rent: <strong class="mono">${esc(formatMoney(u.monthlyRentLocal, S.country))}/mo</strong>` : 'No rent — you own it'} · Condition ${Math.round(u.conditionPct)}%${u.desc ? ` · ${esc(u.desc)}` : ''}</span>
+              <span>${u.areaM2 ? `${u.areaM2} m² · ` : ''}${u.kind === 'rented' ? `Rent: <strong class="mono">${esc(formatMoney(u.monthlyRentLocal, biz.figuresCurrency||biz.country||S.country))}/mo</strong>` : 'No rent — you own it'} · Condition ${Math.round(u.conditionPct)}%${u.desc ? ` · ${esc(u.desc)}` : ''}</span>
             </div>
             <button class="btn btn-sm ${(p && p.unitId === u.unitId) ? 'btn-navy' : ''}" data-action="biz-premises-rent" data-biz="${esc(biz.id)}" data-unit="${esc(u.unitId)}" ${(p && p.unitId === u.unitId) ? 'disabled' : ''}>${(p && p.unitId === u.unitId) ? '✓ In use' : (u.kind === 'rented' ? 'Rent this unit' : 'Use this property')}</button>
           </div>`).join('')}
