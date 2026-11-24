@@ -73,7 +73,7 @@ import {
   RECURRING_CHAINS,
 } from '../systems/threadResolution.js';
 import { EVENTS_MAJOR_FOLLOWUPS } from '../data/eventsMajorFollowups.js';
-import { EVENTS_CONSEQUENCES } from '../data/eventsConsequences.js';
+import { EVENTS_CONSEQUENCES, illRelative, illMonths } from '../data/eventsConsequences.js';
 import { loanOutstanding } from '../systems/familyLoans.js';
 import { findPeopleWithMemory } from '../systems/npcMemory.js';
 
@@ -182,6 +182,8 @@ export function resolveEventCtx(S, event=null) {
   };
   const roleIds={spouse:[...(S.relations.spouseIds||[]),S.relations.partnerId],mom:[S.relations.motherId],dad:[S.relations.fatherId],sib:S.relations.siblingIds,friend:S.relations.friendIds,child:S.relations.childIds,youngChild:S.relations.childIds,teen:S.relations.childIds,adultChild:S.relations.childIds,boss:[S.career.job?.bossId]};
   for(const [role,rules]of Object.entries(event?.gates?.people||{}))ctx[role]=(roleIds[role]||[]).map(byId).find(p=>personFitsEvent(S,p,rules))||null;
+  const ri=event?.gates?.relativeIll;
+  if(ri){const key={mother:'mom',father:'dad',spouse:'spouse',sibling:'sib',child:'child'}[ri.role];if(key)ctx[key]=illRelative(S,ri.role,{});}
   const major=event?.gates?.afterMajor;
   if(major?.castRole){const now=S.year*12+S.month;const rec=[...(S.majorEvents||[])].reverse().find(e=>asList(major.kind).includes(e.kind)&&e.personId&&(!major.role||e.facts?.role===major.role)&&now-(e.year*12+e.month)<=(major.maxMonths??999));if(rec)ctx[major.castRole]=byId(rec.personId)?.alive?byId(rec.personId):null;}
   // A continuation belongs to the people in the resolved earlier event,
@@ -215,6 +217,14 @@ export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
       : g.deceasedParent === 'mom' ? [S.relations.motherId]
       : [S.relations.fatherId, S.relations.motherId];
     if (!ids.some(id => S.people[id]?.alive === false)) return false;
+  }
+
+  if (g.relativeIll) {
+    const key = { mother: 'mom', father: 'dad', spouse: 'spouse', sibling: 'sib', child: 'child' }[g.relativeIll.role];
+    const p = key ? cast[key] : null;
+    if (!p || !p.alive || !p.illness || !p.illness.kind) return false;
+    if (g.relativeIll.kind && p.illness.kind !== g.relativeIll.kind) return false;
+    if (g.relativeIll.minMonths !== undefined && illMonths(S, p.illness) < g.relativeIll.minMonths) return false;
   }
 
   const age = S.player.age;

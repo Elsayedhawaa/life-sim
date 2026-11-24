@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { createNewLifeState, ensureExtendedState, createPerson } from '../src/core/schema.js';
-import '../src/systems/eventEngine.js';
+import { eventGatePasses, resolveEventCtx, ALL_RANDOM_LIFE_EVENTS } from '../src/systems/eventEngine.js';
 import { EVENTS_RELATIVE_ILL, EVENTS_CONSEQUENCES, illRelative } from '../src/data/eventsConsequences.js';
 function setup() { const s = createNewLifeState({ country: 'gbr', seed: 612 }); ensureExtendedState(s); s.year = 2040; s.month = 3; s.player.age = 40; return s; }
 const add = (s, role, age, list) => { const p = createPerson(s, { role, age, nationality: 'gbr', residenceCountry: 'gbr' }); s.people[p.id] = p; list.push(p.id); return p; };
 assert.equal(EVENTS_RELATIVE_ILL.length, 5);
-for (const ev of EVENTS_RELATIVE_ILL) { assert(ev.gates.relativeIll && ev.gates.relativeIll.role && ev.gates.relativeIll.minMonths === 1, ev.id + ' declares the agreed gate'); assert(!EVENTS_CONSEQUENCES.includes(ev), 'not registered until the gate exists'); }
+for (const ev of EVENTS_RELATIVE_ILL) { assert(ev.gates.relativeIll && ev.gates.relativeIll.role && ev.gates.relativeIll.minMonths === 1, ev.id + ' declares the agreed gate'); assert(EVENTS_CONSEQUENCES.includes(ev), 'registered now that the gate exists'); }
 const by = Object.fromEntries(EVENTS_RELATIVE_ILL.map((e) => [e.gates.relativeIll.role, e]));
 // Recorded illness, earlier year: "has been living with ... since", never "diagnosed this year".
 { const s = setup(); const sib = add(s, 'sibling', 33, s.relations.siblingIds); sib.illness = { kind: 'cancer', sinceYear: 2038, src: 'young' };
@@ -22,4 +22,19 @@ const by = Object.fromEntries(EVENTS_RELATIVE_ILL.map((e) => [e.gates.relativeIl
 { const s = setup(); assert.equal(by.father.build(s, {}), null); const f = s.people[s.relations.fatherId]; f.illness = { kind: 'cancer', sinceYear: 2039 }; f.alive = false; assert.equal(by.father.build(s, {}), null); assert.equal(by.spouse.build(s, {}), null); }
 // Choice on a person who has since died does nothing and does not throw.
 { const s = setup(); const c = add(s, 'child', 25, s.relations.childIds); c.illness = { kind: 'cancer', sinceYear: 2039 }; const sc = by.child.build(s, {}); c.alive = false; assert.doesNotThrow(() => sc.choices[0].effect(s)); }
-console.log('relative illness scenes read the recorded illness and participant, and are not registered until the gate exists');
+{
+  for (const ev of EVENTS_RELATIVE_ILL) assert(ALL_RANDOM_LIFE_EVENTS.includes(ev), ev.id + ' is in the pool');
+  const s = setup(); const evS = by.sibling;
+  assert.equal(eventGatePasses(evS, s, { ignoreHistory: true }), false, 'no siblings, no scene');
+  const a = add(s, 'sibling', 30, s.relations.siblingIds), b = add(s, 'sibling', 31, s.relations.siblingIds);
+  assert.equal(eventGatePasses(evS, s, { ignoreHistory: true }), false, 'healthy siblings do not pass');
+  b.illness = { kind: 'a stroke', sinceYear: 2039 };
+  assert.equal(eventGatePasses(evS, s, { ignoreHistory: true }), true);
+  const cast = resolveEventCtx(s, evS); assert.equal(cast.sib.id, b.id, 'cast is the ill sibling, not the first listed');
+  assert.equal(evS.build(s, cast).eventParticipantIds.sib, b.id);
+  b.alive = false; assert.equal(eventGatePasses(evS, s, { ignoreHistory: true }), false, 'dead relative does not pass');
+  b.alive = true; b.illness = { kind: 'cancer', sinceYear: 2040 }; assert.equal(eventGatePasses(evS, s, { ignoreHistory: true }), true, 'diagnosed this year passes');
+  const m = s.people[s.relations.motherId]; m.illness = { kind: 'cancer', sinceYear: 2039 };
+  assert.equal(eventGatePasses(by.mother, s, { ignoreHistory: true }), true); assert.equal(eventGatePasses(by.father, s, { ignoreHistory: true }), false, 'father is well');
+}
+console.log('relative illness scenes read the recorded illness and participant, and are gated on a living, ill relative');

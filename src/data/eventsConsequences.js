@@ -172,16 +172,25 @@ const crashInjury = {
   },
 };
 
-/* Relative illness scenes. NOT registered in EVENTS_CONSEQUENCES: they rely on
-   gates.relativeIll = { role, kind?, minMonths? }, which must exist in
-   eventGatePasses before registration, because an unknown gate key is
-   ignored and the scene would then fire with nobody ill. The text reads the
+/* Relative illness scenes, registered now that gates.relativeIll = { role,
+   kind?, minMonths? } exists in eventGatePasses (an unknown gate key would be
+   ignored and the scene would fire with nobody ill). The gate and the cast use
+   illRelative below, so the person that passes the gate is the person shown. The text reads the
    recorded illness only: the kind and its start year. It says "diagnosed
    this year" only when sinceYear is the current year, otherwise it says the
    person has been living with it since that year. No medical cost is
    charged or assumed. */
 const ILL_ROLES = { mother: ['mom', 'your mother'], father: ['dad', 'your father'], spouse: ['spouse', 'your spouse'],
   sibling: ['sib', 'your sibling'], child: ['child', 'your child'] };
+
+/* Months since the illness was recorded. Only the start year is saved, so a
+   diagnosis in the current year counts as 1 month (it can already be news),
+   and an earlier year counts from January of that year. */
+export function illMonths(S, ill) {
+  const y = Number(ill?.sinceYear);
+  if (!Number.isFinite(y)) return 1;
+  return Math.max(1, (S.year - y) * 12 + (y === S.year ? 1 : S.month));
+}
 
 export function illRelative(S, role, ctx = {}) {
   const [key] = ILL_ROLES[role];
@@ -195,7 +204,7 @@ function relativeIllScene(role, minMonths) {
   const [, word] = ILL_ROLES[role];
   const id = `ev_conseq_${role}_ill`;
   return {
-    id, category: 'family',
+    id, category: 'family', repeatable: true, cooldownYears: 3, /* design: a long illness can prompt again after 3 years */
     gates: { relativeIll: { role, minMonths } },
     build: (S, ctx) => {
       const p = illRelative(S, role, ctx);
@@ -218,6 +227,6 @@ function relativeIllScene(role, minMonths) {
 const cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
 export const EVENTS_RELATIVE_ILL = Object.keys(ILL_ROLES).map((r) => relativeIllScene(r, 1));
 
-export const EVENTS_CONSEQUENCES = [crashInjury, evictionAbroad, promotionSpouse, promotionWorkload, childAfterDivorce, childAfterSeparation,
+export const EVENTS_CONSEQUENCES = [...EVENTS_RELATIVE_ILL, crashInjury, evictionAbroad, promotionSpouse, promotionWorkload, childAfterDivorce, childAfterSeparation,
   siblingAfterParentDeath('mother', 'your mother'), siblingAfterParentDeath('father', 'your father'),
   parentAfterSiblingDeath('mom'), parentAfterSiblingDeath('dad'), friendAfterJobLoss];
