@@ -571,7 +571,7 @@ export function embezzlementClues(S, biz) {
 export function investigationCost(S, biz) {
   normalizeManagerState(S, biz);
   const cost = Math.max(500, Math.round((Number(biz?.monthlyRev) || 0) * 0.1));
-  return { cost, timeMonths: 1, text: `A forensic audit of ${biz?.name || 'the business'} costs ${formatMoney(cost, biz?.country || S.country)} and takes a month. It finds the truth — or clears ${biz?.manager ? biz.manager.name : 'your manager'}. A false accusation costs loyalty.` };
+  return { cost, timeMonths: 0, text: `A forensic audit of ${biz?.name || 'the business'} costs ${formatMoney(cost, biz?.country || S.country)} and finishes now. It finds the truth — or clears ${biz?.manager ? biz.manager.name : 'your manager'}. A false accusation costs loyalty.` };
 }
 
 export function investigateEmbezzlement(S, biz) {
@@ -889,6 +889,13 @@ export function renderManagerSectionHtml(S, biz) {
   const clues = biz.embezzlement?.clues || [];
   const caught = biz.embezzlement?.caught;
   const head = `<h4>Manager</h4>`;
+  const sueRow = caught && !caught.sued
+    ? (() => { const q = sueManagerCost(S, biz); return q.ok ? `
+      <div style="margin-top:8px;"><strong>${esc(caught.name)} was caught stealing ${formatMoney(caught.stolenTotal, countryId)} — ${formatMoney(caught.recovered, countryId)} recovered.</strong>
+      <div class="muted" style="font-size:12px;">${esc(q.text)}</div>
+      <button class="btn btn-sm" data-action="biz-sue-manager" data-biz="${esc(biz.id)}">Take them to court (${formatMoney(q.cost, countryId)})</button></div>` : ''; })()
+    : caught ? `<div class="muted" style="font-size:12px;margin-top:8px;">Court case against ${esc(caught.name)}: ${esc(caught.sued)}.</div>` : '';
+
   if (!mgr) {
     const shortlist = managerShortlist(S, biz);
     /* v2.20 I3 — one wage source: the range the shortlist really asks
@@ -930,7 +937,7 @@ export function renderManagerSectionHtml(S, biz) {
       ${unmanagedNote}
       <div style="margin-top:6px;"><strong>Candidates for ${esc(biz.name)}</strong> (${esc(businessSizeTier(S, biz))} business — better managers want bigger businesses)</div>
       ${rangeLine}
-      ${cands}${promo}</div>`;
+      ${cands}${promo}${sueRow}</div>`;
   }
   const fx = applyManagerEffects(S, biz);
   const inv = investigationCost(S, biz);
@@ -948,14 +955,8 @@ export function renderManagerSectionHtml(S, biz) {
     <div style="margin-top:8px;"><strong>Something is wrong with the books:</strong>
       ${clues.map(c => `<div class="muted" style="font-size:12px;">• ${esc(c)}</div>`).join('')}
       <div class="muted" style="font-size:12px;margin-top:4px;">${esc(inv.text)}</div>
-      <button class="btn btn-sm" data-action="biz-investigate" data-biz="${esc(biz.id)}">Investigate (${formatMoney(inv.cost, countryId)}, ${inv.timeMonths} month)</button>
+      <button class="btn btn-sm" data-action="biz-investigate" data-biz="${esc(biz.id)}">Investigate (${formatMoney(inv.cost, countryId)})</button>
     </div>`;
-  const sueRow = caught && !caught.sued
-    ? (() => { const q = sueManagerCost(S, biz); return q.ok ? `
-      <div style="margin-top:8px;"><strong>${esc(caught.name)} was caught stealing ${formatMoney(caught.stolenTotal, countryId)} — ${formatMoney(caught.recovered, countryId)} recovered.</strong>
-      <div class="muted" style="font-size:12px;">${esc(q.text)}</div>
-      <button class="btn btn-sm" data-action="biz-sue-manager" data-biz="${esc(biz.id)}">Take them to court (${formatMoney(q.cost, countryId)})</button></div>` : ''; })()
-    : caught ? `<div class="muted" style="font-size:12px;margin-top:8px;">Court case against ${esc(caught.name)}: ${esc(caught.sued)}.</div>` : '';
   return `<div class="biz-manager-section" style="margin-top:10px;">${head}
     <div><strong>${esc(mgr.name)}</strong> <span class="muted">— skill ${mgr.skill} · wage ${formatMoney(mgr.wage, countryId)}/mo · loyalty ${mgr.loyalty} · since ${mgr.hiredMonth}/${mgr.hiredYear}</span></div>
     <div class="muted" style="font-size:12px;">${fx.notes.map(n => esc(n)).join('<br>')}</div>

@@ -241,7 +241,7 @@ function rawBankCallScene(S, biz) {
           const f = ensureFateState(biz);
           f.bankCatchUpUntil = monthIndex(st) + 3;
           shiftVitals(st, { stress: 3 });
-          recordJournal(st, `Asked the bank for three months to catch up on ${biz.name}'s arrears. They agreed — but nothing is paid yet, and the debt is still there.`, 'money');
+          recordJournal(st, `Agreed a three-month catch-up window for ${biz.name}. Missed-bill closure is paused through month ${st.month + 3 > 12 ? st.month - 9 : st.month + 3}/${st.month + 3 > 12 ? st.year + 1 : st.year}. Bills and late fees still accrue; other failure risks remain. Nothing is paid.`, 'money');
         },
       },
     ],

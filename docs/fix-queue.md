@@ -199,3 +199,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W89 Business fate decisions(bank/family/job/rival) use closures without durable reload; snapshot exact enterprise/offer/people and guard eligibility before effects.
 - [x] W90 Landlord tenant-job/lease-end/damage/deposit decisions lose choices on reload; restore exact property/tenant/incident/settlement without replaying rent/damage.
 - [x] W91 Staff/manager quit notifications lose acknowledgment on reload; informational recovery only, no repeat departure.
+
+- [x] W92 Manager court controls were hidden when the guilty manager was fired; show case in no-manager card and after replacement. Audit resolves immediately, so remove false one-month promise. Fixed partial recovery fractions kept as explicit game rules, not a confirmed defect.
+
+- [x] W93 Business-bank catch-up agreement: stored three-month flag had no settlement reader, so promised grace could still close business. Settlement now defers missed-bill closure through stated window while debt/fees continue.

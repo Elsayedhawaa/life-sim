@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {createNewLifeState,ensureExtendedState} from '../src/core/schema.js';
+import {createBusiness} from '../src/systems/businessEngine.js';
+import {forceEmbezzlementSkim,investigateEmbezzlement,investigationCost,renderManagerSectionHtml,sueManager,sueManagerCost} from '../src/systems/businessManager.js';
+const s=createNewLifeState({country:'usa',seed:177});ensureExtendedState(s);s.year=2026;s.player.age=40;s.money.cash=100000;
+const b=createBusiness(s,'enterprise_food','Court Cafe',{mode:'full_time'}).biz;
+b.manager={name:'Test Manager',skill:60,wage:1000,loyalty:10,policy:'safe',hiredYear:2026,hiredMonth:1};
+forceEmbezzlementSkim(s,b,10000);assert.equal(investigationCost(s,b).timeMonths,0);const result=investigateEmbezzlement(s,b);assert(result.found);assert.equal(b.manager,null);
+let html=renderManagerSectionHtml(s,b);assert(html.includes('biz-sue-manager'));assert(html.includes('Test Manager'));assert(!html.includes('1 month)'));
+const quote=sueManagerCost(s,b),before=s.money.cash;const r=sueManager(s,b);assert(r.ok);assert.equal(s.money.cash,before-quote.cost+r.recovered);assert(r.recovered<=quote.unrecovered);assert(!renderManagerSectionHtml(s,b).includes('biz-sue-manager'));const after=s.money.cash;assert.equal(sueManager(s,b).ok,false);assert.equal(s.money.cash,after);const saved=JSON.parse(JSON.stringify(s));assert(!renderManagerSectionHtml(saved,saved.career.businesses[0]).includes('biz-sue-manager'));
+console.log('Manager court access after dismissal, immediate audit wording, actual fees/recovery, once and reload pass');
