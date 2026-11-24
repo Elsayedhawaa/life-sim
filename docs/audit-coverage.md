@@ -408,3 +408,6 @@ Shared eligibility disables a third personal loan before click and exposes the a
 
 ### W6 payment terms
 Reject non-finite/unsafe purchase totals, a card object not actually in the wallet, invalid BNPL splits/markup and invalid certificate duration without cash/debt mutation.138focused files pass.390px real card shopping799charge/8cashback/701remaining limit, disabled second purchase, bank route no loan/reload pass; inspected pixels. Invalid-input guards are system-tested. Legacy v212-w4 broad text-check script has39passes/1failure because it bans all not-wired text, including an honest unrelated disclosure, not because staff-loan mechanics failed.
+
+### W7 lease integrity
+Live tenants, held deposits and pending deposit settlements block lease-type conversion before any rent/occupancy mutation. End the tenancy and settle its actual deposit first; empty settled homes may switch.139focused files pass;390px occupied-rental fixture attempts holiday conversion, receives clear refusal, tenant/deposit/cash retained and reload passed. Refusal pixels inspected.

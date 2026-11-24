@@ -2431,6 +2431,7 @@ export function togglePropertyTenantMode(S, propId) {
   const prop = S.housing.properties.find(p => p.id === propId);
   if (!prop) return { ok: false, msg: 'Property not found.' };
   if(prop.ruralCabin)return{ok:false,msg:'Personal-use cabin.'};
+  if(prop.landlord?.tenant||prop.landlord?.deposit?.held||prop.landlord?.depositSettlement?.status==='pending')return{ok:false,msg:'End the existing tenancy and settle its deposit before changing lease type.'};
   prop.tenantMode = prop.tenantMode === 'short_term' ? 'long_term' : 'short_term';
   prop.rentedOut = S.housing.currentHomeId !== prop.id;
   const baseNative = Math.round(((prop.nativeValue || prop.valueLocal) * 0.068) / 12);

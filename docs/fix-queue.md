@@ -63,4 +63,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W5 Personal loan finite amount/term guards, shared two-loan eligibility with UI, and final interest-inclusive payoff without endless rounded residual.
 
-- [ ] W6 Payment/term integrity: reject non-finite purchases, outside-wallet cards, invalid installment and certificate terms without changing balances.
+- [x] W6 Payment/term integrity: reject non-finite purchases, outside-wallet cards, invalid installment and certificate terms without changing balances.
+
+- [ ] W7 Prevent live long-term tenants/deposits from silently turning into holiday lets; lease changes require tenancy/deposit settlement first.
