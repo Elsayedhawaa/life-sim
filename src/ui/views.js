@@ -1905,7 +1905,7 @@ function renderJobActionsHtml(S, job) {
       <button class="btn btn-sm" data-action="job-walkout">Walk Out Now (No Notice, Poor Reference)</button>
       ${S.player.age >= 58 ? `<button class="btn btn-sm" data-action="retire" ${S.career.retired?'disabled':''}>${S.career.retired?'Already retired':'Retire with Pension'}</button>` : ''}
     </div>
-    ${['sau', 'uae', 'egy'].includes(S.country) && job.monthsInRole >= 24 ? `<div class="muted" style="margin-top:4px">Your end-of-service gratuity is collected when your notice ends (the same gratuity the old Resign button paid).</div>` : ''}
+    ${['sau', 'uae', 'egy'].includes(S.country) && job.monthsInRole >= 24 ? `<div class="muted" style="margin-top:4px">Game end-service accrual settles when notice ends. A strict sponsor can withhold payment; any withheld amount is recorded as a dispute.</div>` : ''}
   `;
 }
 
@@ -1982,11 +1982,12 @@ function renderJobContractHtml(S, job, cObj) {
   const ct = getJobContract(S);
   if (!ct) return '';
   const eos = computeEndOfService(S);
-  const eosLine = ['sau', 'uae', 'egy'].includes(S.country)
+  const eosLine = ['sau','uae','egy'].includes(S.country)
     ? (eos.eligible
-      ? `End-of-service gratuity accrued so far: <strong>${esc(formatMoney(eos.amount, S.country))}</strong> (${eos.yrsServed} yrs — 21 days' basic pay per year for the first 5 years, 30 days after; paid when you leave).`
-      : `End-of-service gratuity: none accrued yet — it starts after 2 years here (21 days' basic pay per year for the first 5 years, 30 days after).`)
-    : `End of service: no gratuity lump sum in ${esc(cObj.name)} — if the employer ends the job, notice is ${ct.notice.noticeMonths} month(s) and severance is about ${ct.notice.severanceMonths} month(s)' pay (${ct.notice.source === 'law' ? 'by law' : 'modelled practice'}).`;
+      ? `Game end-service estimate: <strong>${esc(formatMoney(eos.amount,S.country))}</strong> · ${eos.yrsServed} completed years. May be withheld on exit.`
+      : `Game end-service estimate: no accrual before 2 completed years.`)+` <details><summary>Game rule</summary>Shared simplified rule, not local law:65% of gross as basic pay;21 days/year for years1-5,30 thereafter. Withheld amounts become recorded disputes, not guaranteed court recovery.</details>`
+    : `Game model: no end-service lump sum. Notice ${ct.notice.noticeMonths} month(s); severance estimate ${ct.notice.severanceMonths} month(s).`;
+
   return `
     <div style="margin-top:12px">
       <strong>Your contract</strong>

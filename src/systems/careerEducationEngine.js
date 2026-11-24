@@ -1,3 +1,4 @@
+import{recordCivilLoss}from'./civilClaims.js';
 import{careerHours}from'./careerSchedule.js';
 import{usStatePension}from './usRetirement.js';
 import {hasCurrentLanguage} from '../data/languageQualifications.js';
@@ -1634,9 +1635,7 @@ export function projectedPension(S) {
   return { monthly: statePension+potTopUp, citizen, expFactor };
 }
 
-/* End-of-service gratuity accrued so far — the same formula resignCurrentJob
-   pays out (Egypt / Saudi / UAE: basic pay is 65% of gross; 21 days per year
-   for the first 5 years, 30 days per year after; needs 2 years of service). */
+/* Simplified shared game accrual, not a country-specific legal entitlement. */
 export function computeEndOfService(S) {
   const job = S.career?.job;
   if (!job) return { eligible: false, amount: 0, yrsServed: 0 };
@@ -1647,7 +1646,7 @@ export function computeEndOfService(S) {
   const basicPay = job.monthlyGross * 0.65;
   const yrsFirst5 = Math.min(5, yrsServed);
   const yrsAfter5 = Math.max(0, yrsServed - 5);
-  return { eligible: true, amount: Math.round(basicPay * (yrsFirst5 * (21 / 30) + yrsAfter5 * 1.0)), yrsServed };
+  return { eligible: true, amount: Math.round(basicPay * (yrsFirst5 * (21 / 30) + yrsAfter5 * 1.0)), yrsServed, model: 'shared game rule, not statutory entitlement', basicPayShare: .65 };
 }
 
 /* ============================================================================
@@ -2280,20 +2279,19 @@ export function resignCurrentJob(S) {
   if (!S.career.employed || !S.career.job) return { ok: false, msg: 'No active job.' };
   const oldEmp = S.career.job.employer;
 
-  /* Authentic Gulf / MENA End-of-Service Gratuity (Mukaafa'at Nihayat Al-Khidma):
-     21 days basic pay per year (years 1-5) + 30 days per year beyond 5 years!
-     computeEndOfService is the one formula — the contract card shows the
-     same accrued number. */
+  // Settle this actual role's modeled accrual once; no imported statutory promise.
   let gratuityNote = '';
   const eos = computeEndOfService(S);
   if (eos.eligible) {
     const rawGratuity = eos.amount;
     const yrsServed = eos.yrsServed;
     if (S.legal.residency.sponsorArchetype === 'strict' && chance(S, 0.5)) {
-      gratuityNote = ` However, ${oldEmp} withheld your ${formatMoney(rawGratuity, S.country)} End-of-Service Gratuity — file a Labor Court claim under Lifestyle -> Courts!`;
+      const loss=recordCivilLoss(S,'unpaid_wages',rawGratuity,oldEmp);
+      if(loss)loss.evidence={kind:'modeled end-service statement',jobId:S.career.job.id,monthsInRole:S.career.job.monthsInRole,monthlyGross:S.career.job.monthlyGross,model:eos.model};
+      gratuityNote = ` Withheld ${formatMoney(rawGratuity,S.country)} under the game accrual rule. Dispute recorded under Lifestyle > Courts; no employer assets are identified, so paid review cannot recover cash yet.`;
     } else {
       walletMove(S, rawGratuity, `End-of-Service Gratuity (${yrsServed} yrs at ${oldEmp})`, 'money');
-      gratuityNote = ` Collected ${formatMoney(rawGratuity, S.country)} in statutory End-of-Service Gratuity.`;
+      gratuityNote = ` Collected ${formatMoney(rawGratuity, S.country)} under the game end-of-service rule.`;
     }
   }
 
