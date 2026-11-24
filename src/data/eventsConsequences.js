@@ -2,7 +2,8 @@
    involve the people it actually touched. Each is gated on a recorded major
    event plus the current saved state; none invents a person, job or sum. */
 import { clamp } from '../core/rng.js';
-import { recordJournal } from '../core/schema.js';
+import { recordJournal, walletMove } from '../core/schema.js';
+import { formatMoney } from './countries.js';
 import { rememberDeed } from '../systems/soulEngine.js';
 import { noteSocialContact } from '../systems/socialEnergy.js';
 
@@ -119,6 +120,34 @@ const friendAfterJobLoss = {
   },
 };
 
-export const EVENTS_CONSEQUENCES = [promotionSpouse, promotionWorkload, childAfterDivorce, childAfterSeparation,
+const rentalLiability = (S) => (S.money?.loans || []).find((l) => String(l.id || '').startsWith('rentarrears_') && l.balance > 0);
+
+const evictionAbroad = {
+  id: 'ev_conseq_eviction_abroad', category: 'money',
+  gates: { abroad: true, housingMode: 'rent', afterMajor: { kind: 'eviction', minMonths: 1, maxMonths: 8 } },
+  build: (S) => {
+    const e = S.housing?.lastEviction || {}, rent = Number(S.housing?.monthlyRent) || 0, loan = rentalLiability(S);
+    const part = loan ? Math.min(Math.floor(loan.balance), Math.floor(Math.max(0, Number(S.money?.cash) || 0) / 2)) : 0;
+    const choices = [];
+    if (loan && part > 0) {
+      choices.push({ label: `Put ${formatMoney(part, S.country)} toward what you still owe the landlord`, effect: (st) => {
+        const l = rentalLiability(st); if (!l) return;
+        const pay = Math.min(Math.floor(l.balance), part);
+        if (pay <= 0 || !walletMove(st, -pay, 'Payment toward rental liability', 'money')) return;
+        l.balance = Math.max(0, l.balance - pay); if (l.balance <= 0) st.money.loans = st.money.loans.filter((x) => x !== l);
+        stress(st, -2); recordJournal(st, `You paid ${formatMoney(pay, st.country)} toward the rental liability left after the eviction.`, 'money');
+      } });
+    }
+    choices.push({ label: 'Stay in the shared room for now', effect: (st) => { recordJournal(st, 'You stayed in the shared room after the eviction.', 'money'); } });
+    return {
+      key: 'ev_conseq_eviction_abroad', category: 'money',
+      title: 'After the Eviction',
+      text: `Since the eviction${e.from ? ` from ${e.from}` : ''}, you have been renting a shared room${rent > 0 ? ` at ${formatMoney(rent, S.country)} a month` : ''}.${loan ? ` You still owe ${formatMoney(Math.floor(loan.balance), S.country)} on the rental liability.` : ''}`,
+      choices,
+    };
+  },
+};
+
+export const EVENTS_CONSEQUENCES = [evictionAbroad, promotionSpouse, promotionWorkload, childAfterDivorce, childAfterSeparation,
   siblingAfterParentDeath('mother', 'your mother'), siblingAfterParentDeath('father', 'your father'),
   parentAfterSiblingDeath('mom'), parentAfterSiblingDeath('dad'), friendAfterJobLoss];
