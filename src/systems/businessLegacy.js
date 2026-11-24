@@ -321,6 +321,8 @@ export function convertBusinessFiguresCurrency(S, biz, toCountry) {
   biz.capitalInvested = conv(biz.capitalInvested);
   for(const key of ['totalCapitalIn','retainedCash','retainedEarnings','debtLocal','brandValue'])if(Number.isFinite(biz[key]))biz[key]=conv(biz[key]);
   if(biz.manager&&Number.isFinite(biz.manager.wage))biz.manager.wage=conv(biz.manager.wage);
+  for(const ask of biz.managerAsks||[])if(Number.isFinite(ask.cost))ask.cost=conv(ask.cost);
+  if(biz.embezzlement){if(Number.isFinite(biz.embezzlement.stolenTotal))biz.embezzlement.stolenTotal=conv(biz.embezzlement.stolenTotal);const caught=biz.embezzlement.caught;if(caught)for(const key of ['stolenTotal','recovered','unrecovered','courtRecovered'])if(Number.isFinite(caught[key]))caught[key]=conv(caught[key]);}
   if(biz.premises&&Number.isFinite(biz.premises.monthlyRentLocal))biz.premises.monthlyRentLocal=conv(biz.premises.monthlyRentLocal);
   const lineSeen=new Set();const convertPL=pl=>{if(!pl)return;if(pl.lines)for(const r of pl.lines){if(lineSeen.has(r))continue;lineSeen.add(r);for(const k of ['price','revenue','direct','contribution','invoice'])if(Number.isFinite(r[k]))r[k]=conv(r[k]);}for(const key of ['revenue','rent','wages','other','remote','manager','costs','profit','tax','net','headOffice','regionalManager','reinvest','harvestOut','safetyCost','cloud','fixed','price','investorDistribution','fundingUsed','unitCost','inventoryCost','variableCost'])if(Number.isFinite(pl[key]))pl[key]=conv(pl[key]);};
   const seen=new Set();for(const pl of [...(biz.history||[]),biz.lastPL])if(pl&&!seen.has(pl)){seen.add(pl);convertPL(pl);}

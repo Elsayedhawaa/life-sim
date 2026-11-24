@@ -207,3 +207,5 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W94 Bank-call extra payment advertised three monthly payments even when remaining balance was smaller, over-gated cash and implied prepaid months despite principal-only payment. Quote exact balance-capped principal, apply current collections gate, propagate failure and retain normal-payment wording.
 
 - [x] W95 Bank restructuring now quotes a fully priced extended-term payment at unchanged APR (flat-markup stays flat), not independent75%payment/150%term numbers. Declining a plan does not invent another missed month during the same call or promise a repeated once-only call. Snapshot includes interest type/rate/missed count.
+
+- [x] W96 Mixed-currency manager actions: onboarding/severance convert business book units to household cash, but theft/audit/court/bonus/helper salary use raw book amounts. Verify and unify wallet charging/affordability; preserve native recovery/accounting amounts and correct displayed units. Also migrate outstanding manager asks/embezzlement records when book currency changes.

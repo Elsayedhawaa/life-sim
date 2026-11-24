@@ -59,6 +59,9 @@ import { monthlyMidSalary } from './businessStaff.js';
    cycle-free: businessCapacity imports only core/data, never this file. */
 import { managementCapacityInfo, hoursNeededForMode, businessIsManaged, ownerHoursForBusiness, OWNER_FULL_TIME_HOURS, OWNER_PART_TIME_HOURS } from './businessCapacity.js';
 
+function managerWalletAmount(S,biz,amount){return Math.round(convertCurrency(amount,biz.figuresCurrency||biz.country||S.country,S.country,S.year));}
+function managerWalletMove(S,biz,amount,note){walletMove(S,managerWalletAmount(S,biz,amount),note,'business');}
+
 export const MANAGER_POLICIES = ['growth', 'safe', 'harvest'];
 export const MANAGER_POLICY_TEXT = {
   growth: 'Growth — reinvest, higher risk, higher return',
@@ -295,7 +298,7 @@ export function hireManager(S, biz, candidate) {
   const wage = Math.max(1, Math.round(Number(candidate.wage) || 0));
   const charge=Math.round(convertCurrency(wage,biz.figuresCurrency||biz.country||S.country,S.country,S.year));
   if ((Number(S.money?.cash) || 0) < charge) {
-    return { ok: false, msg: `Hiring ${candidate.name} costs one month's wage (${formatMoney(wage, biz.country || S.country)}) to onboard — not enough cash.` };
+    return { ok: false, msg: `Hiring ${candidate.name} costs one month's wage (${formatMoney(wage, biz.figuresCurrency || biz.country || S.country)}) to onboard — not enough cash.` };
   }
   /* v2.20 I3 — never hire silently into a loss: when the wage is more
      than the business netted last month, say so in plain words with
@@ -304,7 +307,7 @@ export function hireManager(S, biz, candidate) {
      but nobody hires one by accident any more. */
   const wageWarning = managerWageVsLastNet(S, biz, wage);
   const wageWarningText = wageWarning
-    ? ` Warning: ${candidate.name} asks ${formatMoney(wageWarning.wage, biz.country || S.country)}/month but ${biz.name} netted ${formatMoney(wageWarning.lastNet, biz.country || S.country)} last month — you will pay about ${formatMoney(wageWarning.topUp, biz.country || S.country)}/month from your salary until it earns more.`
+    ? ` Warning: ${candidate.name} asks ${formatMoney(wageWarning.wage, biz.figuresCurrency || biz.country || S.country)}/month but ${biz.name} netted ${formatMoney(wageWarning.lastNet, biz.figuresCurrency || biz.country || S.country)} last month — you will pay about ${formatMoney(wageWarning.topUp, biz.figuresCurrency || biz.country || S.country)}/month from your salary until it earns more.`
     : '';
   walletMove(S, -charge, `Onboarding — ${candidate.name} (manager, ${biz.name})`, 'business');
   biz.manager = {
@@ -321,8 +324,8 @@ export function hireManager(S, biz, candidate) {
   biz.ownerHoursPerWeek = 0;
   biz.unmanagedMonths = 0;
   biz.unmanagedSince = null;
-  recordJournal(S, `Hired ${candidate.name} to manage ${biz.name} (${formatMoney(wage, biz.country || S.country)}/month, skill ${biz.manager.skill}, loyalty ${biz.manager.loyalty}). ${candidate.line || ''} You no longer spend your own hours running it.${wageWarning ? ` ${candidate.name} asks ${formatMoney(wageWarning.wage, biz.country || S.country)}/month but ${biz.name} netted ${formatMoney(wageWarning.lastNet, biz.country || S.country)} last month — about ${formatMoney(wageWarning.topUp, biz.country || S.country)}/month comes from your salary until it earns more.` : ''}`, 'career');
-  return { ok: true, msg: `${candidate.name} now manages ${biz.name} for ${formatMoney(wage, biz.country || S.country)}/month.${wageWarningText}`, manager: biz.manager, hiringFee: wage, wageWarning };
+  recordJournal(S, `Hired ${candidate.name} to manage ${biz.name} (${formatMoney(wage, biz.figuresCurrency || biz.country || S.country)}/month, skill ${biz.manager.skill}, loyalty ${biz.manager.loyalty}). ${candidate.line || ''} You no longer spend your own hours running it.${wageWarning ? ` ${candidate.name} asks ${formatMoney(wageWarning.wage, biz.figuresCurrency || biz.country || S.country)}/month but ${biz.name} netted ${formatMoney(wageWarning.lastNet, biz.figuresCurrency || biz.country || S.country)} last month — about ${formatMoney(wageWarning.topUp, biz.figuresCurrency || biz.country || S.country)}/month comes from your salary until it earns more.` : ''}`, 'career');
+  return { ok: true, msg: `${candidate.name} now manages ${biz.name} for ${formatMoney(wage, biz.figuresCurrency || biz.country || S.country)}/month.${wageWarningText}`, manager: biz.manager, hiringFee: wage, wageWarning };
 }
 
 /* ------------------------------------------------------------------ *
@@ -368,7 +371,7 @@ export function applyManagerEffects(S, biz) {
     rev -= 0.10;
     revenueVariance = 0.03;
     harvestCashOut = Math.round((Number(biz.monthlyRev) || 0) * 0.10);
-    notes.push(`Policy: harvest — taking ${formatMoney(harvestCashOut, biz.country || S.country)} a month out in cash, and the business slowly declines.`);
+    notes.push(`Policy: harvest — taking ${formatMoney(harvestCashOut, biz.figuresCurrency || biz.country || S.country)} a month out in cash, and the business slowly declines.`);
   }
   let moraleDelta = clamp(Math.round((skill - 50) * 0.12), -6, 6);
   if (loyalty < 30) {
@@ -390,7 +393,7 @@ export function applyManagerEffects(S, biz) {
     notes.push('The extra budget you approved is working — revenue ×1.05 this month.');
   }
   const costDelta = Math.max(0, Math.round(Number(mgr.wage) || 0) + reinvestAmount);
-  notes.push(`Manager salary ${formatMoney(mgr.wage, biz.country || S.country)}/month is charged in the monthly P&L${reinvestAmount > 0 ? `, plus ${formatMoney(reinvestAmount, biz.country || S.country)} reinvested under the growth policy` : ''}.`);
+  notes.push(`Manager salary ${formatMoney(mgr.wage, biz.figuresCurrency || biz.country || S.country)}/month is charged in the monthly P&L${reinvestAmount > 0 ? `, plus ${formatMoney(reinvestAmount, biz.figuresCurrency || biz.country || S.country)} reinvested under the growth policy` : ''}.`);
   return {
     revenueMult: Math.max(0.5, Number(rev.toFixed(3))),
     moraleDelta,
@@ -411,8 +414,8 @@ export function postManagerSalary(S, biz) {
   normalizeManagerState(S, biz);
   if (!biz || !biz.manager) return { ok: false, msg: 'No manager to pay.' };
   const wage = Math.round(Number(biz.manager.wage) || 0);
-  walletMove(S, -wage, `Manager salary — ${biz.manager.name} (${biz.name})`, 'business');
-  return { ok: true, amount: wage, msg: `Paid ${biz.manager.name} ${formatMoney(wage, biz.country || S.country)} for managing ${biz.name}.` };
+  managerWalletMove(S, biz, -wage, `Manager salary — ${biz.manager.name} (${biz.name})`);
+  return { ok: true, amount: wage, msg: `Paid ${biz.manager.name} ${formatMoney(wage, biz.figuresCurrency || biz.country || S.country)} for managing ${biz.name}.` };
 }
 
 /* ------------------------------------------------------------------ *
@@ -466,7 +469,7 @@ export function generateManagerAsk(S, biz, kind = null) {
     createdMonthIndex: monthIndex(S)
   };
   biz.managerAsks.push(ask);
-  recordJournal(S, `${biz.manager.name} (${biz.name}) asks for ${def.text}${cost > 0 ? ` — ${formatMoney(cost, biz.country || S.country)}` : ''}. Saying yes costs loyalty if you refuse.`, 'career');
+  recordJournal(S, `${biz.manager.name} (${biz.name}) asks for ${def.text}${cost > 0 ? ` — ${formatMoney(cost, biz.figuresCurrency || biz.country || S.country)}` : ''}. Saying yes costs loyalty if you refuse.`, 'career');
   return ask;
 }
 
@@ -493,29 +496,29 @@ export function answerManagerAsk(S, biz, askId, accept) {
     mgr.wage = Math.round(mgr.wage * 1.1);
     mgr.loyalty = clamp(mgr.loyalty + 12, 0, 100);
     bumpStaffMorale(3);
-    recordJournal(S, `You gave ${mgr.name} a 10% rise (${formatMoney(oldWage, biz.country || S.country)} → ${formatMoney(mgr.wage, biz.country || S.country)}/month). Loyalty rose to ${mgr.loyalty}.`, 'career');
-    return { ok: true, accepted: true, loyalty: mgr.loyalty, newWage: mgr.wage, msg: `Raise given — wage is now ${formatMoney(mgr.wage, biz.country || S.country)}/month, loyalty ${mgr.loyalty}.` };
+    recordJournal(S, `You gave ${mgr.name} a 10% rise (${formatMoney(oldWage, biz.figuresCurrency || biz.country || S.country)} → ${formatMoney(mgr.wage, biz.figuresCurrency || biz.country || S.country)}/month). Loyalty rose to ${mgr.loyalty}.`, 'career');
+    return { ok: true, accepted: true, loyalty: mgr.loyalty, newWage: mgr.wage, msg: `Raise given — wage is now ${formatMoney(mgr.wage, biz.figuresCurrency || biz.country || S.country)}/month, loyalty ${mgr.loyalty}.` };
   }
   if (ask.kind === 'bonus') {
-    if ((Number(S.money?.cash) || 0) < ask.cost) {
+    if ((Number(S.money?.cash) || 0) < managerWalletAmount(S,biz,ask.cost)) {
       biz.managerAsks.splice(idx, 0, ask); /* put it back — not answered */
-      return { ok: false, msg: `The bonus is ${formatMoney(ask.cost, biz.country || S.country)} and you do not have it in cash.` };
+      return { ok: false, msg: `The bonus is ${formatMoney(ask.cost, biz.figuresCurrency || biz.country || S.country)} and you do not have it in cash.` };
     }
-    walletMove(S, -ask.cost, `Bonus — ${mgr.name} (${biz.name})`, 'business');
+    managerWalletMove(S, biz, -ask.cost, `Bonus — ${mgr.name} (${biz.name})`);
     mgr.loyalty = clamp(mgr.loyalty + 8, 0, 100);
     bumpStaffMorale(5);
-    recordJournal(S, `You paid ${mgr.name} a ${formatMoney(ask.cost, biz.country || S.country)} bonus. Loyalty rose to ${mgr.loyalty} and the team is buzzing.`, 'career');
+    recordJournal(S, `You paid ${mgr.name} a ${formatMoney(ask.cost, biz.figuresCurrency || biz.country || S.country)} bonus. Loyalty rose to ${mgr.loyalty} and the team is buzzing.`, 'career');
     return { ok: true, accepted: true, loyalty: mgr.loyalty, paid: ask.cost, msg: `Bonus paid — loyalty ${mgr.loyalty}.` };
   }
   if (ask.kind === 'budget') {
-    if ((Number(S.money?.cash) || 0) < ask.cost) {
+    if ((Number(S.money?.cash) || 0) < managerWalletAmount(S,biz,ask.cost)) {
       biz.managerAsks.splice(idx, 0, ask);
-      return { ok: false, msg: `The extra budget is ${formatMoney(ask.cost, biz.country || S.country)} and you do not have it in cash.` };
+      return { ok: false, msg: `The extra budget is ${formatMoney(ask.cost, biz.figuresCurrency || biz.country || S.country)} and you do not have it in cash.` };
     }
-    walletMove(S, -ask.cost, `Extra budget — ${biz.name} (manager's plan)`, 'business');
+    managerWalletMove(S, biz, -ask.cost, `Extra budget — ${biz.name} (manager's plan)`);
     biz.managerBudgetBoostUntil = monthIndex(S) + 1;
     mgr.loyalty = clamp(mgr.loyalty + 6, 0, 100);
-    recordJournal(S, `You approved ${formatMoney(ask.cost, biz.country || S.country)} of extra budget for ${mgr.name}'s plan at ${biz.name} — revenue gets a lift next month.`, 'career');
+    recordJournal(S, `You approved ${formatMoney(ask.cost, biz.figuresCurrency || biz.country || S.country)} of extra budget for ${mgr.name}'s plan at ${biz.name} — revenue gets a lift next month.`, 'career');
     return { ok: true, accepted: true, loyalty: mgr.loyalty, paid: ask.cost, msg: `Budget approved — revenue ×1.05 next month, loyalty ${mgr.loyalty}.` };
   }
   /* time off */
@@ -535,11 +538,11 @@ function doSkim(S, biz, amount) {
   const amt = Math.max(1, Math.round(amount));
   biz.embezzlement.stolenTotal = Math.round((biz.embezzlement.stolenTotal || 0) + amt);
   biz.embezzlement.lastSkimMonth = monthIndex(S);
-  walletMove(S, -amt, `Money missing at ${biz.name} — the books do not add up`, 'business');
+  managerWalletMove(S, biz, -amt, `Money missing at ${biz.name} — the books do not add up`);
   const clues = biz.embezzlement.clues;
   if (clues.length === 0) {
-    clues.push(`The books at ${biz.name} do not add up — ${formatMoney(amt, biz.country || S.country)} is missing this month and nobody can explain it.`);
-    recordJournal(S, `The books at ${biz.name} do not add up — ${formatMoney(amt, biz.country || S.country)} is missing and nobody can explain it.`, 'money');
+    clues.push(`The books at ${biz.name} do not add up — ${formatMoney(amt, biz.figuresCurrency || biz.country || S.country)} is missing this month and nobody can explain it.`);
+    recordJournal(S, `The books at ${biz.name} do not add up — ${formatMoney(amt, biz.figuresCurrency || biz.country || S.country)} is missing and nobody can explain it.`, 'money');
   } else if (clues.length === 1) {
     clues.push(`A supplier of ${biz.name} complains they were paid late — twice — even though the money left the account.`);
     recordJournal(S, `A supplier of ${biz.name} complains they were paid late even though the money left the account. Something is wrong with the books.`, 'money');
@@ -579,10 +582,10 @@ export function investigateEmbezzlement(S, biz) {
   normalizeManagerState(S, biz);
   if (!biz || !biz.manager) return { ok: false, msg: 'No manager to investigate.' };
   const { cost, timeMonths } = investigationCost(S, biz);
-  if ((Number(S.money?.cash) || 0) < cost) {
-    return { ok: false, msg: `The audit costs ${formatMoney(cost, biz.country || S.country)} — not enough cash.` };
+  if ((Number(S.money?.cash) || 0) < managerWalletAmount(S,biz,cost)) {
+    return { ok: false, msg: `The audit costs ${formatMoney(cost, biz.figuresCurrency || biz.country || S.country)} — not enough cash.` };
   }
-  walletMove(S, -cost, `Audit of ${biz.name} books (embezzlement investigation)`, 'business');
+  managerWalletMove(S, biz, -cost, `Audit of ${biz.name} books (embezzlement investigation)`);
   biz.embezzlement.investigated = true;
   const mgr = biz.manager;
   const stolen = Math.round(biz.embezzlement.stolenTotal || 0);
@@ -596,7 +599,7 @@ export function investigateEmbezzlement(S, biz) {
   /* Caught: half the money comes back, the manager is fired on the
      spot with NO severance (caught stealing), and the law is an option. */
   const recovered = Math.round(stolen * EMBEZZLEMENT_RECOVERY_FRACTION);
-  walletMove(S, recovered, `Recovered from ${mgr.name} — embezzlement at ${biz.name}`, 'business');
+  managerWalletMove(S, biz, recovered, `Recovered from ${mgr.name} — embezzlement at ${biz.name}`);
   biz.embezzlement.caught = {
     name: mgr.name, personId: mgr.personId, stolenTotal: stolen,
     recovered, unrecovered: stolen - recovered,
@@ -605,7 +608,7 @@ export function investigateEmbezzlement(S, biz) {
   biz.embezzlement.stolenTotal = 0;
   const staff = Array.isArray(biz.staff) ? biz.staff : [];
   for (const e of staff) e.morale = clamp((Number(e.morale) || 0) - 8, 5, 100);
-  recordJournal(S, `The audit proved it: ${mgr.name} skimmed ${formatMoney(stolen, biz.country || S.country)} from ${biz.name}. ${formatMoney(recovered, biz.country || S.country)} was recovered (half); the rest is gone. ${mgr.name} was fired on the spot with no severance, and the team is shaken (morale −8). You can still take them to court.`, 'money');
+  recordJournal(S, `The audit proved it: ${mgr.name} skimmed ${formatMoney(stolen, biz.figuresCurrency || biz.country || S.country)} from ${biz.name}. ${formatMoney(recovered, biz.figuresCurrency || biz.country || S.country)} was recovered (half); the rest is gone. ${mgr.name} was fired on the spot with no severance, and the team is shaken (morale −8). You can still take them to court.`, 'money');
   if(biz.manager?.personId&&S.people[biz.manager.personId]){S.people[biz.manager.personId].career.employed=false;S.people[biz.manager.personId].career.employer=null;S.people[biz.manager.personId].career.monthlyIncomeLocal=0;S.people[biz.manager.personId].career.businessEmployeeId=null;}
   biz.manager = null;
   biz.ownerManaged = false;
@@ -616,7 +619,7 @@ export function investigateEmbezzlement(S, biz) {
     ok: true, found: true, cost, timeMonths, stolenTotal: stolen,
     recovered, recoveryFraction: EMBEZZLEMENT_RECOVERY_FRACTION,
     unrecovered: stolen - recovered,
-    msg: `Caught: ${mgr.name} stole ${formatMoney(stolen, biz.country || S.country)}. ${formatMoney(recovered, biz.country || S.country)} recovered (half). They were fired with no severance.`
+    msg: `Caught: ${mgr.name} stole ${formatMoney(stolen, biz.figuresCurrency || biz.country || S.country)}. ${formatMoney(recovered, biz.figuresCurrency || biz.country || S.country)} recovered (half). They were fired with no severance.`
   };
 }
 
@@ -631,7 +634,7 @@ export function sueManagerCost(S, biz) {
   const cost = Math.max(1000, Math.round(unrecovered * 0.1));
   return {
     ok: true, cost, unrecovered, winChance: 0.7,
-    text: `Suing ${caught.name} in ${getCountry(biz.country || S.country).name} costs ${formatMoney(cost, biz.country || S.country)} in legal fees. With the audit as evidence you are likely to win (about 7 in 10) — a win recovers 60% of the ${formatMoney(unrecovered, biz.country || S.country)} still missing. A loss costs the fees and recovers nothing.`
+    text: `Suing ${caught.name} in ${getCountry(biz.country || S.country).name} costs ${formatMoney(cost, biz.figuresCurrency || biz.country || S.country)} in legal fees. With the audit as evidence you are likely to win (about 7 in 10) — a win recovers 60% of the ${formatMoney(unrecovered, biz.figuresCurrency || biz.country || S.country)} still missing. A loss costs the fees and recovers nothing.`
   };
 }
 
@@ -643,22 +646,22 @@ export function sueManager(S, biz) {
   if (caught.sued) return { ok: false, msg: `You already took ${caught.name} to court — the case was ${caught.sued}.` };
   const quote = sueManagerCost(S, biz);
   if (!quote.ok) return quote;
-  if ((Number(S.money?.cash) || 0) < quote.cost) {
-    return { ok: false, msg: `The lawsuit costs ${formatMoney(quote.cost, biz.country || S.country)} in legal fees — not enough cash.` };
+  if ((Number(S.money?.cash) || 0) < managerWalletAmount(S,biz,quote.cost)) {
+    return { ok: false, msg: `The lawsuit costs ${formatMoney(quote.cost, biz.figuresCurrency || biz.country || S.country)} in legal fees — not enough cash.` };
   }
-  walletMove(S, -quote.cost, `Legal fees — suing ${caught.name} (embezzlement, ${biz.name})`, 'business');
+  managerWalletMove(S, biz, -quote.cost, `Legal fees — suing ${caught.name} (embezzlement, ${biz.name})`);
   const won = rand(S) < quote.winChance;
   if (won) {
     const extra = Math.round(quote.unrecovered * 0.6);
-    walletMove(S, extra, `Court award — ${caught.name} ordered to repay (${biz.name})`, 'business');
+    managerWalletMove(S, biz, extra, `Court award — ${caught.name} ordered to repay (${biz.name})`);
     caught.sued = 'won';
     caught.courtRecovered = extra;
-    recordJournal(S, `You won in court against ${caught.name}: the judge ordered them to repay ${formatMoney(extra, biz.country || S.country)} of the ${formatMoney(quote.unrecovered, biz.country || S.country)} still missing from ${biz.name} (legal fees were ${formatMoney(quote.cost, biz.country || S.country)}).`, 'money');
-    return { ok: true, won: true, cost: quote.cost, recovered: extra, msg: `Won in court — ${formatMoney(extra, biz.country || S.country)} recovered (fees ${formatMoney(quote.cost, biz.country || S.country)}).` };
+    recordJournal(S, `You won in court against ${caught.name}: the judge ordered them to repay ${formatMoney(extra, biz.figuresCurrency || biz.country || S.country)} of the ${formatMoney(quote.unrecovered, biz.figuresCurrency || biz.country || S.country)} still missing from ${biz.name} (legal fees were ${formatMoney(quote.cost, biz.figuresCurrency || biz.country || S.country)}).`, 'money');
+    return { ok: true, won: true, cost: quote.cost, recovered: extra, msg: `Won in court — ${formatMoney(extra, biz.figuresCurrency || biz.country || S.country)} recovered (fees ${formatMoney(quote.cost, biz.figuresCurrency || biz.country || S.country)}).` };
   }
   caught.sued = 'lost';
-  recordJournal(S, `You lost the case against ${caught.name} — the court did not order repayment, and the ${formatMoney(quote.cost, biz.country || S.country)} in legal fees is gone too.`, 'money');
-  return { ok: true, won: false, cost: quote.cost, recovered: 0, msg: `Lost in court — nothing recovered, ${formatMoney(quote.cost, biz.country || S.country)} in fees gone.` };
+  recordJournal(S, `You lost the case against ${caught.name} — the court did not order repayment, and the ${formatMoney(quote.cost, biz.figuresCurrency || biz.country || S.country)} in legal fees is gone too.`, 'money');
+  return { ok: true, won: false, cost: quote.cost, recovered: 0, msg: `Lost in court — nothing recovered, ${formatMoney(quote.cost, biz.figuresCurrency || biz.country || S.country)} in fees gone.` };
 }
 
 /* ------------------------------------------------------------------ *
@@ -712,12 +715,12 @@ export function fireManager(S, biz) {
   const sev = managerSeveranceFor(S, biz);
   const charge=Math.round(convertCurrency(sev.amount,biz.figuresCurrency||biz.country||S.country,S.country,S.year));
   if ((Number(S.money?.cash) || 0) < charge) {
-    return { ok: false, msg: `Severance for ${mgr.name} is ${formatMoney(sev.amount, biz.country || S.country)} (${sev.months} month${sev.months === 1 ? '' : 's'} under ${getCountry(biz.country || S.country).name} law) — not enough cash to let them go properly.` };
+    return { ok: false, msg: `Severance for ${mgr.name} is ${formatMoney(sev.amount, biz.figuresCurrency || biz.country || S.country)} (${sev.months} month${sev.months === 1 ? '' : 's'} under ${getCountry(biz.country || S.country).name} law) — not enough cash to let them go properly.` };
   }
   walletMove(S, -charge, `Severance — ${mgr.name} (manager, ${biz.name})`, 'business');
   const staff = Array.isArray(biz.staff) ? biz.staff : [];
   for (const e of staff) e.morale = clamp((Number(e.morale) || 0) - 8, 5, 100);
-  recordJournal(S, `You fired ${mgr.name} as manager of ${biz.name}. Severance ${formatMoney(sev.amount, biz.country || S.country)} came out of your own pocket; the remaining team is shaken (morale −8). ${biz.name} is unmanaged until you hire a replacement or run it yourself.`, 'career');
+  recordJournal(S, `You fired ${mgr.name} as manager of ${biz.name}. Severance ${formatMoney(sev.amount, biz.figuresCurrency || biz.country || S.country)} came out of your own pocket; the remaining team is shaken (morale −8). ${biz.name} is unmanaged until you hire a replacement or run it yourself.`, 'career');
   if(biz.manager?.personId&&S.people[biz.manager.personId]){S.people[biz.manager.personId].career.employed=false;S.people[biz.manager.personId].career.employer=null;S.people[biz.manager.personId].career.monthlyIncomeLocal=0;S.people[biz.manager.personId].career.businessEmployeeId=null;}
   if(mgr.familyHire&&S.people[mgr.personId]?.rel){const rel=S.people[mgr.personId].rel;rel.trust=Math.max(0,(rel.trust||50)-15);rel.affection=Math.max(0,(rel.affection||50)-10);}
   biz.manager = null;
@@ -725,7 +728,7 @@ export function fireManager(S, biz) {
   biz.ownerHoursPerWeek = 0;
   biz.unmanagedSince = { year: S.year, month: S.month };
   biz.unmanagedMonths = 0;
-  return { ok: true, msg: `Fired ${mgr.name}. Severance ${formatMoney(sev.amount, biz.country || S.country)} paid from your cash.`, severance: sev.amount, severanceMonths: sev.months, source: sev.source, note: sev.note };
+  return { ok: true, msg: `Fired ${mgr.name}. Severance ${formatMoney(sev.amount, biz.figuresCurrency || biz.country || S.country)} paid from your cash.`, severance: sev.amount, severanceMonths: sev.months, source: sev.source, note: sev.note };
 }
 
 /* ------------------------------------------------------------------ *
@@ -779,10 +782,10 @@ export function promoteStaffToManager(S, biz, staffId) {
   biz.unmanagedMonths = 0;
   biz.unmanagedSince = null;
   normalizeManagerState(S,biz);
-  recordJournal(S, `Promoted ${emp.name} from ${emp.role} to manager of ${biz.name} — no hiring fee, ${formatMoney(wage, biz.country || S.country)}/month (cheaper than hiring outside, about ${formatMoney(outsideWage, biz.country || S.country)}/month for this skill). They start loyal (75) but less skilled as a manager than on the tools (skill ${mgrSkill}, was ${skill}).`, 'career');
+  recordJournal(S, `Promoted ${emp.name} from ${emp.role} to manager of ${biz.name} — no hiring fee, ${formatMoney(wage, biz.figuresCurrency || biz.country || S.country)}/month (cheaper than hiring outside, about ${formatMoney(outsideWage, biz.figuresCurrency || biz.country || S.country)}/month for this skill). They start loyal (75) but less skilled as a manager than on the tools (skill ${mgrSkill}, was ${skill}).`, 'career');
   return {
     ok: true,
-    msg: `${emp.name} is now manager of ${biz.name} — ${formatMoney(wage, biz.country || S.country)}/month, loyalty 75, skill ${mgrSkill}.`,
+    msg: `${emp.name} is now manager of ${biz.name} — ${formatMoney(wage, biz.figuresCurrency || biz.country || S.country)}/month, loyalty 75, skill ${mgrSkill}.`,
     manager: biz.manager,
     hiringFeeSaved: outsideWage,
     outsideWage,
@@ -820,7 +823,7 @@ export function tickManagerMonth(S, biz) {
   const going = goingRateForSkill(S, biz, mgr.skill);
   if (mgr.wage < going * 0.9) {
     drift -= 2;
-    notes.push(`underpaid (wage ${formatMoney(mgr.wage, biz.country || S.country)} vs going rate ${formatMoney(going, biz.country || S.country)})`);
+    notes.push(`underpaid (wage ${formatMoney(mgr.wage, biz.figuresCurrency || biz.country || S.country)} vs going rate ${formatMoney(going, biz.figuresCurrency || biz.country || S.country)})`);
   } else if (mgr.wage >= going) {
     drift += 1;
     notes.push('paid at the going rate');
@@ -860,7 +863,7 @@ export function tickManagerMonth(S, biz) {
   let skimmed = 0;
   if (mgr.loyalty < 35 && rand(S) < (35 - mgr.loyalty) * 0.02) {
     skimmed = doSkim(S, biz, Math.max(100, Math.round((Number(biz.monthlyRev) || 0) * (0.03 + rand(S) * 0.05))));
-    notes.push(`skimmed ${formatMoney(skimmed, biz.country || S.country)} — see the clues on the business card`);
+    notes.push(`skimmed ${formatMoney(skimmed, biz.figuresCurrency || biz.country || S.country)} — see the clues on the business card`);
   }
   /* Quitting: loyalty at the floor, or a better offer elsewhere. */
   if (mgr.loyalty <= MANAGER_QUIT_LOYALTY) {
@@ -871,7 +874,7 @@ export function tickManagerMonth(S, biz) {
     const rivalWage = Math.round(mgr.wage * 1.3);
     const rival = `${pickFirstName(biz.country || S.country, rand(S) < 0.5 ? 'm' : 'f', () => rand(S))} ${pickFamilyName(biz.country || S.country, () => rand(S))}`;
     biz.lastManagerOffer = { name: mgr.name, wage: rivalWage, from: rival, year: S.year, month: S.month };
-    const q = managerQuits(S, biz, `a better offer — ${rival} offered ${formatMoney(rivalWage, biz.country || S.country)}/month`);
+    const q = managerQuits(S, biz, `a better offer — ${rival} offered ${formatMoney(rivalWage, biz.figuresCurrency || biz.country || S.country)}/month`);
     return { ok: true, managed: false, quit: true, reason: 'better offer', offer: biz.lastManagerOffer, loyalty: mgr.loyalty, notes, quitResult: q };
   }
   return { ok: true, managed: true, loyalty: mgr.loyalty, drift, notes, ask, skimmed };
