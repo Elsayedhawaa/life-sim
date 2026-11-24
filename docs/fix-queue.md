@@ -23,7 +23,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] L9 Separate physical/software site books, people, stock, audience, prices/recipes, reserve, requests and grouped settlement. G3 closes with it.
 - [x] L10 Individual operational records, host-specific loss, revision snapshots, delayed recovery and paid reconstruction.
 - [x] L11 Lot failures remove output; paid repairs and prepaid replacement delivery, with provider lease repair.
-- [ ] L12 Equipment lease terms and return/early termination cost.
+- [x] L12 New equipment leases have12-month minimums, quoted declining return charges, legacy terms and closure bill preservation.
 - [ ] L13 Broader server plans/resource configuration beyond finite abstract tiers.
 - [ ] L14 Divorce partial buyback, negotiation and funded installment notes.
 - [ ] L15 Consistent founder/co-owner debt liability, profit and exit settlement.
@@ -46,4 +46,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-18 distinct open packages after L11. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+17 distinct open packages after L12. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
