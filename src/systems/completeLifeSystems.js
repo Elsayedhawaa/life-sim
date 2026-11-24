@@ -777,24 +777,19 @@ export function obtainOrRenewDrivingLicence(S) {
   return { ok: true, msg: `Driving licence valid through ${S.year + 10}!` };
 }
 
-export function buyShowroomCar(S, carId, trimId = 'base', colorIdx = 0, useAutoLoan = false) {
-  ensureExtendedState(S);
-  if (S.player.age < 18) return { ok: false, msg: 'Must be 18+ to register a vehicle.' };
-  const hasChauffeur = S.housing.staff.some(s => s.roleKey === 'driver');
-  if ((!S.drivingLicence.valid || S.drivingLicence.expiresYear <= S.year) && !hasChauffeur) {
-    return { ok: false, msg: 'Pass/renew your Driving Licence first (or hire a Private Chauffeur)!' };
-  }
-
-  const car = CARS_MEGA_CATALOG.find(c => c.id === carId);
-  if (!car) return { ok: false, msg: 'Vehicle model not found.' };
-  const trim = CAR_TRIMS.find(t => t.id === trimId) || CAR_TRIMS[0];
-  const colorObj = CAR_COLORS[colorIdx % CAR_COLORS.length] || { name: 'Midnight Blue', hex: '#1D3557' };
-
-  /* Egyptian customs tariff realism on imported large/luxury non-EV cars */
-  const dutyMult = (S.country === 'egy' && !car.ev && ['lux', 'exec', 'sport', 'hyper'].includes(car.class)) ? 1.75 : 1.0;
-  const fullPrice = Math.round(convertCurrency(car.priceUsd2026 * trim.mult * dutyMult, 'usa', S.country, S.year));
-  const monthlyUpkeep = Math.max(15, Math.round(convertCurrency(75 + car.priceUsd2026 * 0.003, 'usa', S.country, S.year)));
-
+export function showroomCarQuote(S,carId,trimId='base'){
+ const car=CARS_MEGA_CATALOG.find(c=>c.id===carId),trim=CAR_TRIMS.find(t=>t.id===trimId);
+ if(!car||!trim||S.year<car.yearFrom||S.year>car.yearTo)return{ok:false,msg:'Vehicle/trim unavailable in this year.'};
+ const dutyMult=S.country==='egy'&&!car.ev&&['lux','exec','sport','hyper'].includes(car.class)?1.75:1;
+ const fullPrice=Math.round(convertCurrency(car.priceUsd2026*trim.mult*dutyMult,'usa',S.country,S.year)),down=Math.round(fullPrice*.25),principal=fullPrice-down,balance=Math.round(principal*1.24);
+ const monthlyUpkeep=Math.max(15,Math.round(convertCurrency(75+car.priceUsd2026*.003,'usa',S.country,S.year)));
+ return{ok:true,car,trim,fullPrice,down,balance,monthlyPayment:Math.round(principal*1.24/48),monthlyUpkeep};
+}
+export function buyShowroomCar(S,carId,trimId='base',colorIdx=0,useAutoLoan=false){
+ ensureExtendedState(S);if(S.player.age<18)return{ok:false,msg:'Must be18+ to register a vehicle.'};
+ const q=showroomCarQuote(S,carId,trimId);if(!q.ok)return q;
+ const{car,trim,fullPrice,monthlyUpkeep}=q;
+ const colorObj=CAR_COLORS[colorIdx%CAR_COLORS.length]||{name:'Midnight Blue',hex:'#1D3557'};
   // Trim, colour and duty stay here; payment, loan and the car record go
   // through the ONE car-buy core (D2) — the loan is now the honest
   // flat-markup record (1.24x, effective APR 12.9%) with the repossession

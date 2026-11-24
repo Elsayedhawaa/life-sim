@@ -109,7 +109,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W38 Gulf remittance/end-service scenes require real transfer/job/entitlement evidence, not fixed arbitrary promised payments; review concrete path.
 
 - [x] W39 End-of-service core uses one generic formula across Egypt/Saudi/UAE and strict-sponsor withholding lacks a recorded recoverable claim. Separate jurisdiction/game-rule labeling and actual withheld liability before promising statutory awards.
-- [ ] W40 Gulf driver/maid scene needs real household roles, combined wage and monthly settlement, not one-off cash debit with no staff.
+- [x] W40 Gulf driver/maid scene needs real household roles, combined wage and monthly settlement, not one-off cash debit with no staff.
 
 - [ ] W41 Gulf car scene needs real vehicle/finance or honest catalog route; current cash/downpayment buys no asset or debt.
 - [ ] W42 Gulf visa/golden/job-loss scenes need actual legal-state eligibility/renewal/relocation rather than narrative-only promises.

@@ -1,3 +1,4 @@
+import{CARS_MEGA_CATALOG}from'./megaCarsAndShop.js';
 import{computeEndOfService,resignCurrentJob}from'../systems/careerEducationEngine.js';
 import{payRecordedDebt}from'../systems/recordedDebtPayments.js';
 import{lendPersonalMoney,settlePersonalReceivable,givePersonalMoney}from'../systems/personalReceivables.js';
@@ -5,7 +6,7 @@ import{eraDepositRates}from'./economy.js';
 import{worldEventEffects}from'../systems/worldEvents.js';
 import{bookNarrativeLoan,narrativeLoanQuote,payNarrativeLoan}from'../systems/narrativeLoans.js';
 import {topUpPrivatePension} from '../systems/careerMarket.js';
-import {computeZakatDueLocal,payAnnualZakat,investInMarketAsset,sendInternationalRemittance,remittanceQuote,householdStaffQuote,hireHouseholdStaff} from '../systems/completeLifeSystems.js';
+import {computeZakatDueLocal,payAnnualZakat,investInMarketAsset,sendInternationalRemittance,remittanceQuote,householdStaffQuote,hireHouseholdStaff,showroomCarQuote,buyShowroomCar} from '../systems/completeLifeSystems.js';
 import {GLOBAL_MARKET_ASSETS} from './megaFinanceAndMarkets.js';
 import {depositToSavings,withdrawFromSavings,personalLoanGates,takePersonalLoan,sellGold21k,buyBankCertificate} from '../systems/economyEngine.js';
 import {recordCivilLoss} from '../systems/civilClaims.js';
@@ -11560,49 +11561,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'money',
     repeatable: false,
     gates: {"minAge": 26, "hasJob": true, "abroad": true, "countries": ["sau", "uae"]},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(30000, S.country, S.year);
-      const B = eraLocalCost(8000, S.country, S.year);
-      return {
-        key: 'ev_gulf_car_abroad',
-        category: 'money',
-        title: "Buying a Car Abroad",
-        text: `In the Gulf, a car is not a luxury — it is a necessity, and the prices are half what they are back home. A good used car costs ${formatMoney(A, S.country)}, and the dealer will finance it.`,
-        choices: [
-          {
-            label: "Buy the car with cash",
-            effect: (st) => {
-              walletMove(st, -A, 'Buy the car with cash', 'money');
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+5));
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-2));
-              recordJournal(st, `You bought a car in the Gulf for ${formatMoney(A, S.country)}, cash, and drove it home the same day.`, 'money');
-            },
-          },
-          {
-            label: "Buy it on finance",
-            effect: (st) => {
-              walletMove(st, -B, 'Buy it on finance', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              recordJournal(st, `You bought the car on finance in the Gulf, ${formatMoney(B, S.country)} down, and monthly payments after.`, 'money');
-            },
-          },
-          {
-            label: "Keep taking taxis",
-            effect: (st) => {
-              walletMove(st, -B, 'Keep taking taxis', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+2));
-              recordJournal(st, `You kept taking taxis in the Gulf, ${formatMoney(B, S.country)} a month, and put off buying a car.`, 'money');
-            },
-          },
-        ],
-      };
+    build:(S,ctx)=>{
+      const cars=CARS_MEGA_CATALOG.filter(c=>S.year>=c.yearFrom&&S.year<=c.yearTo).sort((a,b)=>a.priceUsd2026-b.priceUsd2026);if(!cars.length)return null;
+      const q=showroomCarQuote(S,cars[0].id),car=q.car;
+      return{key:'ev_gulf_car_abroad',category:'money',title:'A Real Car Quote',text:`${car.brandName} ${car.model} · Base. Cash ${formatMoney(q.fullPrice,S.country)}. Finance: ${formatMoney(q.down,S.country)} down; ${formatMoney(q.balance,S.country)} debt after 24% flat markup, 48 payments around ${formatMoney(q.monthlyPayment,S.country)}. Upkeep ${formatMoney(q.monthlyUpkeep,S.country)}/month. Needs valid driving licence or hired driver; normal purchase gates apply.`,choices:[{label:`Buy for ${formatMoney(q.fullPrice,S.country)} cash`,effect:st=>buyShowroomCar(st,car.id)},{label:`Finance · ${formatMoney(q.down,S.country)} down`,effect:st=>buyShowroomCar(st,car.id,'base',0,true)},{label:'Keep current transport',effect:st=>{}}]};
     },
   },
   {
