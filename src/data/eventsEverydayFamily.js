@@ -2009,19 +2009,20 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_mom_call_more',
     category: 'family',
-    gates: { requiredPeople: ['mom'], minAge: 18, maxAge: 70 },
+    gates: { requiredPeople: ['mom'],people:{mom:{minMonthsApart:3}}, minAge: 18, maxAge: 70 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
       return {
         key: 'ev_family_mom_call_more', category: 'family',
         title: `${momName} Misses Your Voice`,
-        text: `${momName} calls you on a quiet evening. She does not ask for anything — she just wants to talk. After a while she says, softly, "You don't call as much as you used to. I worry when I don't hear from you."`,
+        text: `${momName} calls you on a quiet evening. "It has been a while. Have you got a few minutes?"`,
         choices: [
-          { label: 'Promise to call every week — and mean it', effect: (st) => {
-              if (p.mom) rememberDeed(st, p.mom, 'kept_promise', 'Promised to call every week.', { affection: 10, trust: 8 });
+          { label: 'Stay on the phone and catch up', effect: (st) => {
+              if(p.mom)noteSocialContact(st,p.mom);
+              if (p.mom) rememberDeed(st, p.mom, 'contact', 'Caught up on the phone.', { affection: 10, trust: 8 });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 4);
-              recordJournal(st, `Your mother said she misses your voice; you promised to call every week.`, 'family');
+              recordJournal(st, `Your mother said she misses your voice; you stayed on the phone and caught up.`, 'family');
           } },
           { label: 'Say you have just been busy — it is nothing personal', effect: (st) => {
               if (p.mom) rememberDeed(st, p.mom, 'neglected', 'Brushed off her wish for more calls.', { affection: -6, trust: -4, resentment: 5 });

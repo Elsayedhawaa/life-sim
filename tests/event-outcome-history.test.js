@@ -9,3 +9,9 @@ console.log('Event resolved choice/cash/participants history, queued-not-complet
 s=setup();root=scene(s,'ev_family_dad_loan_request');noteRandomLifeEventFired(s,root);root.choices[0].effect(s);s.year++;assert(eventRelevance(s,follow).score>eventRelevance(s,getRandomLifeEventById('ev_life_stray_cat')).score);assert.equal(eventRelevance(s,follow).evidence[0].choiceIndex,0);
 
 import fs from'node:fs';s=setup();s.activeScene=scene(s,'ev_family_dad_loan_request');noteRandomLifeEventFired(s,s.activeScene);s.sceneQueue=[];fs.writeFileSync('/downloads/event-history-fixture.json',JSON.stringify(s));
+
+{const s=setup(),ev=getRandomLifeEventById('ev_family_mom_call_more'),mom=s.people[s.relations.motherId];mom.rel.lastContactYear=s.year;mom.rel.lastContactMonth=s.month;assert(!eventGatePasses(ev,s));mom.rel.lastContactYear=s.year-1;assert(eventGatePasses(ev,s));mom.rel.lastContactUnknown=true;assert(!eventGatePasses(ev,s));mom.rel.lastContactUnknown=false;const call=scene(s,ev.id);assert(call);call.choices[0].effect(s);assert(!eventGatePasses(ev,s,{ignoreHistory:true}));assert.equal(mom.rel.memories[0].kind,'contact');}
+
+{const s=setup(),ev={gates:{requiredPeople:['child'],people:{child:{minAge:6,maxAge:17,sameCountry:true}}}},baby=createPerson(s,{role:'child',age:2,nationality:'gbr',residenceCountry:'gbr'}),teen=createPerson(s,{role:'child',age:14,nationality:'gbr',residenceCountry:'gbr'});s.people[baby.id]=baby;s.people[teen.id]=teen;s.relations.childIds=[baby.id,teen.id];assert.equal(resolveEventCtx(s,ev).child.id,teen.id);assert(eventGatePasses(ev,s));teen.residenceCountry='usa';assert(!eventGatePasses(ev,s));}
+
+{const s=setup(),mom=s.people[s.relations.motherId];mom.rel.lastContactYear=s.year-1;mom.rel.lastContactMonth=s.month;mom.rel.lastContactUnknown=false;s.activeScene=scene(s,'ev_family_mom_call_more');s.sceneQueue=[];noteRandomLifeEventFired(s,s.activeScene);fs.writeFileSync('/downloads/event-person-facts-fixture.json',JSON.stringify(s));}

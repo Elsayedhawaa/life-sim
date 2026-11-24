@@ -1,3 +1,4 @@
+import {monthsSinceContact} from './socialEnergy.js';
 import {EVENTS_EMPLOYMENT_DISPUTE} from '../data/eventsEmploymentDispute.js';
 /* ============================================================================
    World Life 2.0 — v2.5 Random Events Engine (eventEngine.js)
@@ -145,6 +146,18 @@ function asList(value) {
   return Array.isArray(value) ? value : [value];
 }
 
+// Declarative cast constraints are shared by selection, stale checks and reload.
+// They describe saved facts, not labels guessed from prose.
+function personFitsEvent(S,p,rules={}){
+ if(!p?.alive)return false;
+ if(rules.minAge!==undefined&&p.age<rules.minAge)return false;
+ if(rules.maxAge!==undefined&&p.age>rules.maxAge)return false;
+ if(rules.sameCountry!==undefined&&(p.residenceCountry===S.country)!==rules.sameCountry)return false;
+ if(rules.minMonthsApart!==undefined&&(p.rel?.lastContactUnknown||!Number.isFinite(p.rel?.lastContactYear)||!Number.isFinite(p.rel?.lastContactMonth)||monthsSinceContact(S,p)<rules.minMonthsApart))return false;
+ if(rules.maxHealth!==undefined&&(p.vitals?.health??100)>rules.maxHealth)return false;
+ return true;
+}
+
 /* People for the event text, resolved from live relations exactly the way
    storyLibrary.js does it, so a missing person never crashes the text. */
 export function resolveEventCtx(S, event=null) {
@@ -163,6 +176,8 @@ export function resolveEventCtx(S, event=null) {
     adultChild: kids.find((p) => p.age >= 20) || null,
     boss: (S.career.job && S.career.job.bossId ? byId(S.career.job.bossId) : null),
   };
+  const roleIds={spouse:[...(S.relations.spouseIds||[]),S.relations.partnerId],mom:[S.relations.motherId],dad:[S.relations.fatherId],sib:S.relations.siblingIds,friend:S.relations.friendIds,child:S.relations.childIds,youngChild:S.relations.childIds,teen:S.relations.childIds,adultChild:S.relations.childIds,boss:[S.career.job?.bossId]};
+  for(const [role,rules]of Object.entries(event?.gates?.people||{}))ctx[role]=(roleIds[role]||[]).map(byId).find(p=>personFitsEvent(S,p,rules))||null;
   // A continuation belongs to the people in the resolved earlier event,
   // never to whichever sibling/child happens to be first in today's list.
   const parent=event?.gates?.afterEvent;
@@ -183,6 +198,7 @@ export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
 
   // Explicit cast requirements apply to roots and follow-ups alike.
   const cast = resolveEventCtx(S,ev);
+  if(Object.entries(g.people||{}).some(([role,rules])=>!personFitsEvent(S,cast[role],rules)))return false;
   if ((g.requiredPeople || []).some(role => !cast[role] || !cast[role].alive)) return false;
   if(g.adultChildHome){const child=cast.adultChild;const away=!!child?.leftHome;if(!child||(g.adultChildHome==='away'?!away:away))return false;}
   if (g.hasLivingParent !== undefined) {
@@ -390,7 +406,7 @@ export function eventRelevance(S,ev){
  const outcome=g.afterEvent&&S.eventOutcomes?.[g.afterEvent];
  if(outcome){score+=16;evidence.push({kind:'resolved_event',eventId:g.afterEvent,choiceIndex:outcome.choiceIndex,year:outcome.year,month:outcome.month,participants:outcome.participants});}
  if(g.memoryKind){score+=6;evidence.push({kind:'memory',kinds:asList(g.memoryKind)});}
- const facts=['civilLossKind','adultChildHome','housingMode','deceasedParent','hasDebt','hasBusiness','hasCar','abroad','employment','education'].filter(k=>g[k]!==undefined);
+ const facts=['civilLossKind','adultChildHome','housingMode','deceasedParent','hasDebt','hasBusiness','hasCar','abroad','employment','education','people'].filter(k=>g[k]!==undefined);
  if(facts.length){score+=Math.min(6,facts.length*2);evidence.push({kind:'current_state',gates:Object.fromEntries(facts.map(k=>[k,g[k]]))});}
  const recent=(S.eventHistory||[]).slice(-4);const same=recent.filter(r=>EVENT_BY_ID.get(r.eventId)?.category===ev.category).length;
  score/=1+same*1.5;
