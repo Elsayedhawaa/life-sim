@@ -630,6 +630,7 @@ function deliverNewbornChild(S, otherParent) {
     walletMove(S, -privDeliveryCost, `Maternity & hospital delivery for ${baby.firstName}`, 'medical');
   }
 
+  baby.parentIds=['player',otherParent?.id].filter(Boolean);
   S.people[baby.id] = baby;
   S.relations.childIds.push(baby.id);
   S.player.vitals.happiness = clamp(S.player.vitals.happiness + 18);

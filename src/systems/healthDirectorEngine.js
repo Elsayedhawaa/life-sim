@@ -5,7 +5,7 @@
    ========================================================================== */
 
 import { rand, randInt, pick, chance, clamp } from '../core/rng.js';
-import { createNewLifeState, recordJournal, walletMove, queueScene, computeNetWorthLocal } from '../core/schema.js';
+import { createNewLifeState, recordJournal, walletMove, queueScene, computeNetWorthLocal, newCoupleRecord, syncCoupleToLegacy } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { eraLocalCost, convertCurrency, goldPricePerGram } from '../data/economy.js';
 import { MEDICAL_CONDITIONS, getHospitalsFor } from '../data/institutions.js';
@@ -549,6 +549,41 @@ export function continueAsChild(S, childId) {
     inheritedCash: childCashInDest
   });
 
+  nextS.year=S.year;nextS.month=S.month;
+  // Continue the recorded household, not the constructor's random family.
+  const ancestorId=`ancestor_${S.generation||1}_${S.player.birthYear}`;
+  const remap=id=>id===childId?'player':id==='player'?ancestorId:id;
+  const people={};
+  for(const old of Object.values(S.people)){
+    if(!old||old.id===childId)continue;
+    const person=structuredClone(old);person.id=remap(old.id);
+    person.role='acquaintance';person.relationLabel='Family acquaintance';
+    if(person.rel){person.rel.promises=[];person.rel.currentWant=null;person.rel.driftState='none';}
+
+    for(const key of ['parentIds','spouseIds'])if(Array.isArray(person[key]))person[key]=person[key].map(remap);
+    if(person.spouseId)person.spouseId=remap(person.spouseId);
+    people[person.id]=person;
+  }
+  nextS.seq=(Number(S.seq)||0)+(Number(nextS.seq)||0)+100;
+  nextS.player.parentIds=(child.parentIds?.length?child.parentIds:['player',...((S.relations.spouseIds||[]).length===1?S.relations.spouseIds:[])]).map(remap);
+  people.player=nextS.player;nextS.people=people;
+  nextS.relations={fatherId:null,motherId:null,siblingIds:[],partnerId:null,spouseIds:[],exSpouseIds:[],widowedSpouseIds:[],childIds:[],friendIds:[],colleagueIds:[],bossId:null,inLawIds:[]};
+  function kin(id,role,label){const p=people[id];if(p){p.role=role;p.relationLabel=label;}}
+  for(const id of nextS.player.parentIds){const p=people[id];if(!p)continue;const key=p.gender==='f'?'motherId':'fatherId';nextS.relations[key]=id;kin(id,p.gender==='f'?'mother':'father',p.gender==='f'?'Mother':'Father');}
+  for(const id of S.relations.childIds||[]){if(id===childId)continue;const key=remap(id),p=people[key];if(!p)continue;nextS.relations.siblingIds.push(key);kin(key,'sibling',p.gender==='f'?'Sister':'Brother');}
+  for(const p of Object.values(people)){
+    if(p.id==='player'||!(p.parentIds||[]).includes('player'))continue;
+    nextS.relations.childIds.push(p.id);kin(p.id,'child',p.gender==='f'?'Daughter':'Son');
+  }
+  nextS.marriage.couples=[];nextS.marriage.contracts=[];
+  for(const id of child.spouseIds||[]){const key=remap(id),p=people[key];if(!p)continue;kin(key,'spouse',p.gender==='f'?'Wife':'Husband');
+    if(p.alive){const couple=newCoupleRecord(nextS,'player',key,{stage:'married',country:nextS.country});nextS.marriage.couples.push(couple);syncCoupleToLegacy(nextS,couple);}
+    else nextS.relations.widowedSpouseIds.push(key);
+  }
+  nextS.player.spouseIds=[...nextS.relations.spouseIds];
+  nextS.marriage.status=nextS.relations.spouseIds.length?'married':nextS.relations.widowedSpouseIds.length?'widowed':'single';
+  nextS.journal=[];
+
   /* Fast-set child's current real age, citizenships & status */
   nextS.year = S.year;nextS.month=S.month;
   nextS.player.age = child.age;
@@ -558,6 +593,7 @@ export function continueAsChild(S, childId) {
   nextS.homeCountry = nextS.player.nationality;
   nextS.money.savings = Math.max(0,Number(child.career?.savingsLocal)||0);
   nextS.player.vitals={...nextS.player.vitals,...child.vitals};
+  nextS.player.traits={...child.traits};nextS.player.traitTags=[...(child.traitTags||[])];
   nextS.player.religion=child.religion||nextS.player.religion;
   if(child.appearance)nextS.player.appearance={...child.appearance};
   nextS.education.stage=child.age<6?'infancy':child.age<12?'primary':child.age<15?'middle':child.age<18?'high':'completed';
@@ -586,6 +622,7 @@ export function continueAsChild(S, childId) {
      heir actually runs it; any other heir is journalled so the child is
      told what happened; estate-sale businesses are journalled too. */
   deliverInheritedBusinesses(nextS, bizDeath, childId, S.player.gender);
+  for(const biz of nextS.career.businesses||[])if(biz.heirId===childId)biz.heirId=null;
 
   recordJournal(
     nextS,
