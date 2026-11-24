@@ -1055,61 +1055,7 @@ export function handleNpcDeath(S, person) {
     const flightCost = abroad ? Math.round(convertCurrency(650, 'usa', S.country, S.year)) : 0;
     const funeralShare = Math.round(eraLocalCost(getCountry(S.country).monthlyBasket2026.rentStandard * 1.2, S.country, S.year));
 
-    queueScene(S, {
-      key: `bereavement_${person.id}`,
-      category: 'family',
-      speakerId: livingSibs[0]?.id || otherParent?.id || null,
-      title: `The Loss of Your ${person.relationLabel}, ${person.firstName}`,
-      text: abroad
-        ? `Your phone rings at dawn with news from ${getCountry(person.residenceCountry).name}: your ${person.relationLabel.toLowerCase()} ${person.fullName} has passed away at age ${person.age}.${inheritedAmount > 0 ? ` Under ${lawLabel}, your statutory share is ${formatMoney(inheritedAmount, S.country)}.` : ''}`
-        : `Your ${person.relationLabel.toLowerCase()} ${person.fullName} passed away peacefully at age ${person.age}. Family and neighbors gather to offer condolences.${inheritedAmount > 0 ? ` Under ${lawLabel}, your statutory share is ${formatMoney(inheritedAmount, S.country)}.` : ''}`,
-      choices: [
-        {
-          label: abroad
-            ? `Fly home immediately & cover funeral arrangements (${formatMoney(flightCost + funeralShare, S.country)})`
-            : `Lead the funeral arrangements & honor their memory (${formatMoney(funeralShare, S.country)})`,
-          available: () => S.money.cash >= (abroad ? flightCost : Math.round(funeralShare * 0.4)),
-          effect: (st) => {
-            const cost = Math.min(st.money.cash, (abroad ? flightCost : 0) + funeralShare);
-            if (cost > 0) walletMove(st, -cost, `Funeral & travel for ${person.fullName}`, 'family');
-            if (inheritedAmount > 0) {
-              walletMove(st, inheritedAmount, `Estate inheritance share from ${person.fullName}`, 'inheritance');
-            }
-            for (const sb of livingSibs) {
-              rememberDeed(st, sb, 'supported_crisis', `Stood by the family at ${person.firstName}'s funeral.`, { affection: 12, respect: 14, trust: 10 });
-            }
-            if (otherParent && otherParent.alive) {
-              rememberDeed(st, otherParent, 'supported_crisis', `Carried the family through ${person.firstName}'s funeral.`, { affection: 15, trust: 12 });
-            }
-            recordJournal(
-              st,
-              `You stood with the family to lay ${person.fullName} (age ${person.age}) to rest.${inheritedAmount > 0 ? ` Estate settlement transferred your statutory share of ${formatMoney(inheritedAmount, st.country)}.` : ''}`,
-              'milestone'
-            );
-          }
-        },
-        {
-          label: abroad ? 'Mourn from abroad & wire funeral support' : 'Attend quietly with the family',
-          effect: (st) => {
-            const wire = Math.min(st.money.cash, Math.round(funeralShare * 0.4));
-            if (wire > 0) walletMove(st, -wire, `Funeral contribution for ${person.fullName}`, 'family');
-            if (inheritedAmount > 0) {
-              walletMove(st, inheritedAmount, `Estate inheritance share from ${person.fullName}`, 'inheritance');
-            }
-            if (abroad) {
-              for (const sb of livingSibs) {
-                rememberDeed(st, sb, 'neglected', `Could not make it back in person for ${person.firstName}'s funeral.`, { respect: -8, resentment: 10 });
-              }
-            }
-            recordJournal(
-              st,
-              `${person.fullName} was laid to rest at age ${person.age}.${abroad ? ' Missing the funeral in person weighed heavily on you.' : ''}${inheritedAmount > 0 ? ` Your estate share was ${formatMoney(inheritedAmount, st.country)}.` : ''}`,
-              'milestone'
-            );
-          }
-        }
-      ]
-    }, true);
+    queueScene(S,buildBereavementScene(S,{personId:person.id,year:S.year,funeralShare,country:S.country,inheritedAmount,estateCountry:person.residenceCountry,speakerId:livingSibs[0]?.id||otherParent?.id||null}),true);
   } else {
     recordJournal(S, `${person.fullName} (${person.relationLabel}) passed away at age ${person.age}.`, 'milestone');
   }
@@ -1171,50 +1117,7 @@ export function maybePickDominoSoulScene(S) {
       const clinicLocal = Math.round(convertCurrency(clinicUsd, 'usa', S.country, S.year));
       const tripLocal = Math.round(convertCurrency(1450, 'usa', S.country, S.year));
 
-      return {
-        key,
-        category: 'family',
-        speakerId: parent.id,
-        title: `What ${parent.firstName} Didn’t Mention on the Call`,
-        text: `On your video call to ${getCountry(parent.residenceCountry).name}, your ${parent.relationLabel.toLowerCase()} ${parent.firstName} (age ${parent.age}) insists everything is fine — until you notice medicine boxes on the side table. Private specialist care back home runs ~${formatMoney(clinicLocal, S.country)}.`,
-        choices: [
-          {
-            label: `Fly back for a week & fund full specialist care (${formatMoney(tripLocal, S.country)})`,
-            available: () => S.money.cash >= tripLocal && S.legal.military.travelPermitted,
-            effect: (st) => {
-              walletMove(st, -tripLocal, `Home visit & specialist care for ${parent.fullName}`, 'family');
-              parent.vitals.health = clamp(parent.vitals.health + 14);
-              parent.rel.lastContactTurn = st.turn;
-              rememberDeed(st, parent, 'supported_crisis', `Flew home and arranged private doctors.`, {
-                affection: 18, respect: 15, trust: 14, resentment: -15, weight: 3
-              });
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + 7);
-              recordJournal(st, `You flew back to ${getCountry(parent.residenceCountry).name} and took ${parent.firstName} to a top specialist yourself. Their health stabilized noticeably.`, 'relationship');
-            }
-          },
-          {
-            label: `Wire ${formatMoney(clinicLocal, S.country)} immediately for private doctors`,
-            available: () => S.money.cash >= clinicLocal,
-            effect: (st) => {
-              walletMove(st, -clinicLocal, `Wired medical funds for ${parent.fullName}`, 'family');
-              parent.vitals.health = clamp(parent.vitals.health + 10);
-              parent.rel.lastContactTurn = st.turn;
-              rememberDeed(st, parent, 'helped_money', `Wired funds for private medical care.`, {
-                affection: 11, respect: 10, trust: 10
-              });
-              recordJournal(st, `You wired ${formatMoney(clinicLocal, st.country)} to cover ${parent.firstName}'s private medical care in ${getCountry(parent.residenceCountry).name}.`, 'relationship');
-            }
-          },
-          {
-            label: 'Check in by phone — money and leave are tight right now',
-            effect: (st) => {
-              parent.vitals.health = clamp(parent.vitals.health - 4);
-              st.player.vitals.stress = clamp(st.player.vitals.stress + 8);
-              recordJournal(st, `You stayed on the phone longer with ${parent.firstName}, wishing distance and work weren't always in the way.`, 'relationship');
-            }
-          }
-        ]
-      };
+      return buildParentCareSupportScene(S,{key,personId:parent.id,amount:clinicLocal,country:S.country,year:S.year});
     }
   }
 
@@ -1229,34 +1132,7 @@ export function maybePickDominoSoulScene(S) {
       S.cooldowns[key] = S.turn + (S.pacing === 'monthly' ? 36 : 3);
       if (kid.rel.affection >= 65 && S.player.age >= 55) {
         const giftLocal = Math.round(eraLocalCost(cObj.monthlyBasket2026.foodAdult * 0.9, S.country, S.year));
-        return {
-          key,
-          category: 'family',
-          speakerId: kid.id,
-          title: `${kid.firstName} Drops By Unannounced`,
-          text: `Your ${kid.gender === 'f' ? 'daughter' : 'son'} ${kid.firstName} (age ${kid.age}, ${kid.career.title}) stops by carrying groceries and insisting on settling one of your household bills this month.`,
-          choices: [
-            {
-              label: 'Accept warmly and stay up talking for hours',
-              effect: (st) => {
-                walletMove(st, giftLocal, `Household gift from ${kid.firstName}`, 'family');
-                kid.rel.affection = clamp(kid.rel.affection + 8);
-                st.player.vitals.happiness = clamp(st.player.vitals.happiness + 9);
-                st.player.vitals.stress = clamp(st.player.vitals.stress - 8);
-                recordJournal(st, `${kid.firstName} spent the evening with you and quietly covered ${formatMoney(giftLocal, st.country)} of household bills.`, 'relationship');
-              }
-            },
-            {
-              label: 'Refuse the money out of pride, but keep them for dinner',
-              effect: (st) => {
-                kid.rel.affection = clamp(kid.rel.affection + 6);
-                kid.rel.respect = clamp(kid.rel.respect + 6);
-                st.player.vitals.happiness = clamp(st.player.vitals.happiness + 7);
-                recordJournal(st, `You waved away ${kid.firstName}'s money ("Put it in your savings!") and shared a long family dinner instead.`, 'relationship');
-              }
-            }
-          ]
-        };
+        return buildGrownChildGiftScene(S,{key,personId:kid.id,amount:giftLocal,country:S.country,year:S.year});
       }
     }
   }
@@ -1863,3 +1739,33 @@ export function buildFamilyBackingScene(S,request){
  return{key,category:'relationship',speakerId:p.id,familyBackingSnapshot:request,title:p.firstName+' Asks for Financial Backing',text:p.firstName+' needs '+formatMoney(amount,S.country)+' for '+request.purpose+'. Gifts move actual cash to their savings. A promise records a one-year commitment, without sending money now.',choices:[{label:'Give '+formatMoney(amount,S.country),available:()=>S.money.cash>=amount&&!resolved(S),effect:st=>gift(st,amount)},{label:'Give half · '+formatMoney(Math.round(amount/2),S.country),available:()=>S.money.cash>=Math.round(amount/2)&&!resolved(S),effect:st=>gift(st,Math.round(amount/2))},{label:'Promise support within one year',effect:st=>{if(resolved(st)||!st.people[p.id]?.alive)return;createPromise(st,st.people[p.id],'money_help','Support for '+request.purpose,amount,12);mark(st,'promise');recordJournal(st,'Recorded a one-year support promise to '+p.firstName+'. No money sent.','family');}},{label:'Decline',effect:st=>{if(resolved(st))return;mark(st,'declined');rememberDeed(st,st.people[p.id],'refused_help','Declined financial support.',{affection:-4,resentment:7});}}]};
 }
 export function restoreFamilyBackingScene(S,saved){return saved?.familyBackingSnapshot?buildFamilyBackingScene(S,saved.familyBackingSnapshot):null;}
+
+export function buildBereavementScene(S,notice){
+ const p=S.people[notice?.personId];if(!p||p.alive)return null;
+ const country=notice.country,fee=notice.funeralShare;
+ const estateNative=Math.max(0,Number(p.career?.savingsLocal)||0),estateCountry=notice.estateCountry||p.residenceCountry||country;
+ const available=Math.max(0,Math.floor(convertCurrency(estateNative,estateCountry,country,S.year))),share=Math.min(notice.inheritedAmount,available);
+ const key='bereavement_'+p.id;
+ const settle=st=>{st.money.parentEstateReceipts??=[];if(st.money.parentEstateReceipts.some(r=>r.personId===p.id))return;const parent=st.people[p.id],native=Math.max(0,Number(parent.career?.savingsLocal)||0);const amount=Math.min(share,Math.max(0,Math.floor(convertCurrency(native,estateCountry,country,st.year))));if(amount>0){parent.career.savingsLocal=Math.max(0,native-convertCurrency(amount,country,estateCountry,st.year));walletMove(st,Math.round(convertCurrency(amount,country,st.country,st.year)),'Game estate cash share from '+p.firstName,'inheritance');}st.money.parentEstateReceipts.push({personId:p.id,amount,country,year:st.year});};
+ const answered=st=>!!st.legal.bereavementReplies?.[key];
+ const reply=(st,paid)=>{if(answered(st))return;if(paid&&(st.country!==country||st.money.cash<fee))return;if(paid)walletMove(st,-fee,'Recorded funeral contribution for '+p.firstName,'family');settle(st);st.legal.bereavementReplies??={};st.legal.bereavementReplies[key]={year:st.year,contribution:paid?fee:0,country};recordJournal(st,'Remembered '+p.fullName+'. '+(paid?'Paid a recorded funeral contribution. ':'No funeral payment made. ')+'Any game estate cash share was funded from remaining recorded savings. No travel was booked.','family');};
+ return{key,category:'family',speakerId:notice.speakerId,bereavementSnapshot:notice,title:'Remembering '+p.firstName,text:p.fullName+' died at age '+p.age+'. Funeral contribution: '+formatMoney(fee,country)+'. Game estate cash share: '+formatMoney(share,country)+', capped by recorded savings. This is a simplified game split, not inheritance law. No travel or attendance is assumed.',choices:[{label:'Contribute '+formatMoney(fee,country),available:()=>S.country===country&&S.money.cash>=fee&&!answered(S),effect:st=>reply(st,true)},{label:'Remember them · no payment',effect:st=>reply(st,false)}]};
+}
+export function restoreBereavementScene(S,saved){return saved?.bereavementSnapshot?buildBereavementScene(S,saved.bereavementSnapshot):null;}
+
+export function buildParentCareSupportScene(S,q){
+ const p=S.people[q?.personId];if(!p?.alive)return null;
+ const amount=Math.round(convertCurrency(q.amount,q.country,S.country,S.year));
+ const answered=st=>!!st.legal.parentCareReplies?.[q.key];
+ const reply=(st,send)=>{if(answered(st)||!st.people[p.id]?.alive)return;if(send&&!givePersonalMoney(st,p.id,amount).ok)return;st.legal.parentCareReplies??={};st.legal.parentCareReplies[q.key]={year:st.year,amount:send?amount:0,country:st.country,personId:p.id};st.people[p.id].rel.lastContactTurn=st.turn;rememberDeed(st,st.people[p.id],send?'helped_money':'called','Checked in about care support.',{affection:send?10:4,trust:send?8:2});recordJournal(st,send?'Sent funded care support to '+p.firstName+' savings. No flight, treatment or health outcome is assumed.':'Called '+p.firstName+' about care. No money sent or health outcome assumed.','family');};
+ return{key:q.key,category:'family',speakerId:p.id,parentCareSnapshot:q,title:'Care Support for '+p.firstName,text:p.firstName+' could use '+formatMoney(amount,S.country)+' for care. Send actual cash to their savings or call. No flight, treatment purchase or health improvement is assumed.',choices:[{label:'Send '+formatMoney(amount,S.country),available:()=>S.money.cash>=amount&&!answered(S),effect:st=>reply(st,true)},{label:'Call · no payment',effect:st=>reply(st,false)}]};
+}
+export function restoreParentCareSupportScene(S,saved){return saved?.parentCareSnapshot?buildParentCareSupportScene(S,saved.parentCareSnapshot):null;}
+export function buildGrownChildGiftScene(S,q){
+ const p=S.people[q?.personId];if(!p?.alive)return null;
+ const country=p.residenceCountry||S.country,amount=Math.round(convertCurrency(q.amount,q.country,S.country,S.year)),native=Math.round(convertCurrency(amount,S.country,country,S.year));
+ const answered=st=>!!st.legal.childGiftReplies?.[q.key];
+ const reply=(st,accept)=>{const child=st.people[p.id];if(answered(st)||!child?.alive)return;const needed=Math.round(convertCurrency(amount,st.country,child.residenceCountry||st.country,st.year));if(accept&&(child.career?.savingsLocal||0)<needed)return;if(accept){child.career.savingsLocal-=needed;walletMove(st,amount,'Funded gift from '+child.firstName,'family');}st.legal.childGiftReplies??={};st.legal.childGiftReplies[q.key]={personId:p.id,amount:accept?amount:0,country:st.country,year:st.year};rememberDeed(st,child,'contact','Shared a family call.',{affection:6,respect:4});recordJournal(st,accept?'Accepted a funded gift from '+child.firstName+' recorded savings.':'Declined '+child.firstName+' gift and stayed in touch.','family');};
+ return{key:q.key,category:'family',speakerId:p.id,childGiftSnapshot:q,title:p.firstName+' Offers a Gift',text:p.firstName+' offers '+formatMoney(amount,S.country)+'. Accepting transfers their actual savings into your cash. No travel, visit or bill payment is claimed.',choices:[{label:'Accept '+formatMoney(amount,S.country),available:()=>!answered(S)&&(p.career?.savingsLocal||0)>=native,effect:st=>reply(st,true)},{label:'Decline and stay in touch',effect:st=>reply(st,false)}]};
+}
+export function restoreGrownChildGiftScene(S,saved){return saved?.childGiftSnapshot?buildGrownChildGiftScene(S,saved.childGiftSnapshot):null;}

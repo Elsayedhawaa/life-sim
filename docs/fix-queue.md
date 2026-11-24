@@ -145,10 +145,15 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W59 Critical admission scene has no reload builder and charges only remaining cash for full care; audit supported game-aid/fee/receipt and restore choices.
 
-- [ ] W60 Family financial-backing request disappears after reload; preserve named asker/amount/purpose and funded choices/promise record.
+- [x] W60 Family financial-backing request disappears after reload; preserve named asker/amount/purpose and funded choices/promise record.
 
-- [ ] W61 Broad all-scene reload audit found annual review disappears; preserve exact supervisor/rating/employer evidence and current job gates.
+- [x] W61 Broad all-scene reload audit found annual review disappears; preserve exact supervisor/rating/employer evidence and current job gates.
 
-- [ ] W62 Formal warning scene uses runtime closures without restore snapshot; preserve original employer/supervisor/warning and current employment gates.
+- [x] W62 Formal warning scene uses runtime closures without restore snapshot; preserve original employer/supervisor/warning and current employment gates.
 
 - [ ] W63 Bereavement funeral decision disappears after reload; preserve deceased/person/fee/inheritance evidence and avoid replaying estate transfers.
+
+- [ ] W64 Parent illness support invents flights/treatment and has no reload builder; use actual funded support or supported catalog trip/treatment.
+- [ ] W65 Grown-child bill gift mints cash without debiting child savings and disappears on reload; preserve funded offer.
+
+- [ ] W66 NPC birth gift scene disappears on reload; preserve named parent/baby/amount, fund recipient and avoid claiming travel.

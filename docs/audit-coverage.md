@@ -556,3 +556,8 @@ Recruitment stores exact offered job data/country and rebuilds acceptance with c
 - Family backing saves exact named recipient/amount/purpose/year/currency. Gifts use funded actual recipient transfers, one-year promises are real People records, and duplicate reply effects are blocked.
 - Annual review and formal warning save employer/job/supervisor/year/evidence, restore code-backed choices and reject changed employer/job. Replies affect actual performance/relationships/promotion gates, once per review or warning.
 - 187 focused files pass; targeted 390px family gift/review/warning fixtures reload twice, act, reload and check recipient balances and performance. Review text shortened. Broad all-scene audit remains open at W63 bereavement.
+
+## W63-W65 family estate/care/gifts
+- Bereavement preserves deceased/quoted funeral/estate share and restores choices without replaying death/company inheritance. Optional contribution needs full funds. Game estate cash share is capped by actual remaining savings and debits deceased savings, with once-only receipt. No fake travel/attendance or local-law claim.
+- Parent care support is a funded recipient gift or call, without fictional flight/specialist treatment/health change. Grown-child gift debits actual child savings before crediting player. Named amount/country/year snapshots and reply receipts survive reload.
+- 189 focused files pass, 390px targeted fixtures each reload twice/act/reload and inspect both sides of cash or estate receipts. Broad fresh scene audit found W66 newborn gift restoration gap, queued.
