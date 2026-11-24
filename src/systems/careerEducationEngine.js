@@ -2057,61 +2057,29 @@ export function presentGraduateOrJobSearchOffers(S, customTitle = null) {
 
   const topOffer = eligible[0];
   const altOffer = eligible[Math.min(2, eligible.length - 1)];
-  const choices = [
-    {
-      label: `Accept ${topOffer.title} at ${topOffer.employer} (${formatMoney(topOffer.monthlyGross, S.country)}/mo gross)`,
+  const quotedOffer = (st, offer, auth) => ({
+    gross: auth.partTimeOnly ? Math.round(offer.monthlyGross * 0.45) : offer.monthlyGross,
+    title: auth.partTimeOnly ? `Part-Time ${offer.title}` : offer.title
+  });
+  const makeChoice = (offer, steady = false) => {
+    const quote = quotedOffer(S, offer, checkJobApplication(S, offer).workAuth);
+    return {
+      label: `${steady ? 'Take steady role:' : 'Accept'} ${quote.title} at ${offer.employer} (${formatMoney(quote.gross, S.country)}/mo gross${steady ? ', lower pressure' : ''})`,
       effect: (st) => {
-        const gate=checkJobApplication(st,topOffer);if(!gate.ok){recordJournal(st,`Job offer no longer available: ${gate.msg}`,'career');return;}
-        st.career.employed = true;
-        st.career.unemployedMonths = 0;
-        st.career.job = {
-          employer: topOffer.employer,
-          title: topOffer.title,
-          track: topOffer.track,
-          level: topOffer.level,
-          monthlyGross: gate.workAuth.partTimeOnly?Math.round(topOffer.monthlyGross*.45):topOffer.monthlyGross,
-          startYear: st.year,
-          monthsInRole: 0,
-          performance: 72,
-          workMode: 'normal',
-          bossId: null
-        };
-        const { boss } = spawnWorkplaceCast(st, topOffer.employer, topOffer.track, topOffer.monthlyGross);
-        st.career.job.bossId = boss.id;
-        getJobContract(st);
-        syncEmployerBenefits(st);
-        recordJournal(st, `Signed employment contract as ${topOffer.title} at ${topOffer.employer} (${formatMoney(topOffer.monthlyGross, st.country)}/mo), reporting to ${boss.fullName}.`, 'career');
+        const gate = checkJobApplication(st, offer);
+        if (!gate.ok) {
+          recordJournal(st, `Job offer no longer available: ${gate.msg}`, 'career');
+          return;
+        }
+        const currentQuote = quotedOffer(st, offer, gate.workAuth);
+        hireIntoJob(st, offer, gate.workAuth, { exactGross: currentQuote.gross });
+        st.career.job.performance = steady ? 74 : 72;
+        st.career.job.workMode = steady ? 'coast' : 'normal';
       }
-    }
-  ];
-
-  if (altOffer && altOffer.id !== topOffer.id) {
-    choices.push({
-      label: `Take steady role: ${altOffer.title} at ${altOffer.employer} (${formatMoney(altOffer.monthlyGross, S.country)}/mo, lower pressure)`,
-      effect: (st) => {
-        const gate=checkJobApplication(st,altOffer);if(!gate.ok){recordJournal(st,`Job offer no longer available: ${gate.msg}`,'career');return;}
-        st.career.employed = true;
-        st.career.unemployedMonths = 0;
-        st.career.job = {
-          employer: altOffer.employer,
-          title: altOffer.title,
-          track: altOffer.track,
-          level: altOffer.level,
-          monthlyGross: gate.workAuth.partTimeOnly?Math.round(altOffer.monthlyGross*.45):altOffer.monthlyGross,
-          startYear: st.year,
-          monthsInRole: 0,
-          performance: 74,
-          workMode: 'coast',
-          bossId: null
-        };
-        const { boss } = spawnWorkplaceCast(st, altOffer.employer, altOffer.track, altOffer.monthlyGross);
-        st.career.job.bossId = boss.id;
-        getJobContract(st);
-        syncEmployerBenefits(st);
-        recordJournal(st, `Joined ${altOffer.employer} as ${altOffer.title} (${formatMoney(altOffer.monthlyGross, st.country)}/mo).`, 'career');
-      }
-    });
-  }
+    };
+  };
+  const choices = [makeChoice(topOffer)];
+  if (altOffer && altOffer.id !== topOffer.id) choices.push(makeChoice(altOffer, true));
 
   choices.push({
     label: 'Hold out and browse other tracks, visas, or enterprises manually',
@@ -2241,7 +2209,7 @@ export function tickCareerMonthly(S) {
         const requested=Math.round(previousGross*(job.performance>=65?1.055:1.02));
         // No retrospective pay cut, but no endless above-market compounding.
         job.monthlyGross=Math.max(previousGross,Math.min(requested,Math.round(market*headroom)));
-        recordJournal(S,`Annual pay review at ${job.employer}: ${formatMoney(previousGross,S.country)} to ${formatMoney(job.monthlyGross,S.country)}/month gross. Game market reference ${formatMoney(market,S.country)}/month for this rung, merit ceiling ${Math.round(headroom*100)}%of market. Above-ceiling pay is held, not cut.`,'career');
+        recordJournal(S,`Annual pay review at ${job.employer}: ${formatMoney(previousGross,S.country)} to ${formatMoney(job.monthlyGross,S.country)}/month gross. Game market reference ${formatMoney(market,S.country)}/month for this rung, merit ceiling ${Math.round(headroom*100)}% of market. Above-ceiling pay is held, not cut.`,'career');
       }
       if (wouldPromote && rivalBlocks) {
         const rivalPerson = S.people[rivalRec.personId];

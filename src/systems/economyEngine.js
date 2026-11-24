@@ -266,19 +266,7 @@ export function tickAssetsAnnually(S) {
     prop.valueLocal = Math.round(convertCurrency(prop.nativeValue, pCountry, S.country, S.year));
   }
 
-  /* Rent adjustments on renewals */
-  if (S.housing.mode === 'rent' && S.housing.monthlyRent > 0) {
-    if(S.month===1&&S.housing.rentIndexedYear!==S.year){
-      const oldRent=S.housing.monthlyRent;
-      const ratio=eraLocalCost(10000,S.country,S.year)/eraLocalCost(10000,S.country,S.year-1);
-      S.housing.monthlyRent=Math.round(oldRent*ratio);S.housing.rentIndexedYear=S.year;
-      recordJournal(S,`Annual game rent index: ${formatMoney(oldRent,S.country)} to ${formatMoney(S.housing.monthlyRent,S.country)}/month, following the game price basket. Not a local tenancy-law model.`,'housing');
-    }
-    const inf = Math.max(0, inflationRate(S.country, S.year) / 100);
-    if (inf > 0.02) {
-      S.housing.monthlyRent = Math.round(S.housing.monthlyRent * (1 + inf * 0.75));
-    }
-  }
+  /* Residential rent is indexed once in January by household settlement. */
 
   for (const car of S.cars) {
     car.condition = clamp((car.condition ?? 95) - 5, 20, 100);
@@ -1603,6 +1591,7 @@ export function rentHousingUnit(S, catalogId) {
   S.housing.currentHomeId = item.id;
   S.housing.currentHomeName = item.name;
   S.housing.monthlyRent = monthlyRent;
+  S.housing.rentIndexedYear = S.year;
   S.player.vitals.happiness = clamp(S.player.vitals.happiness + item.happinessBoost);
   recordJournal(S, `Signed a lease on ${item.name} for ${formatMoney(monthlyRent, S.country)}/month.`, 'milestone');
   return { ok: true, msg: `Moved into ${item.name}!` };
