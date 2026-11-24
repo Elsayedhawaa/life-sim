@@ -493,15 +493,17 @@ function settleRecurringHouseholdItems(S, summary, netDeltaAtEntry) {
   /* BNPL splits — same missed-payment chain as every other debt (D14) */
   const activeBnpl = [];
   for (const plan of S.bnplPlans) {
-    if (plan.balanceRemaining == null) plan.balanceRemaining = Math.round(plan.monthlyPay * (plan.monthsLeft + 1));
+    if (plan.balanceRemaining == null) plan.balanceRemaining = Math.round(plan.monthlyPay * plan.monthsLeft);
     if (plan.missedMonths == null) plan.missedMonths = 0;
-    if (avail() >= plan.monthlyPay) {
-      summary.debt += plan.monthlyPay;
-      d -= plan.monthlyPay;
-      plan.balanceRemaining = Math.max(0, plan.balanceRemaining - plan.monthlyPay);
+    if(plan.balanceRemaining<=0)continue;
+    const splitDue=Math.min(plan.balanceRemaining,plan.monthlyPay);
+    if (avail() >= splitDue) {
+      summary.debt += splitDue;
+      d -= splitDue;
+      plan.balanceRemaining = Math.max(0, plan.balanceRemaining - splitDue);
       plan.monthsLeft -= 1;
       plan.missedMonths = 0;
-      if (plan.monthsLeft > 0) activeBnpl.push(plan);
+      if(plan.balanceRemaining>0){plan.monthsLeft=Math.max(1,plan.monthsLeft);activeBnpl.push(plan);}
     } else {
       plan.missedMonths += 1;
       const fee = Math.max(10, Math.round(plan.monthlyPay * 0.10));
@@ -1077,7 +1079,7 @@ export function settleHouseholdMonth(S) {
         summary.debt += payAmt;
         loan.balance = Math.max(0, Math.round(loan.balance - payAmt));
         loan.missedMonths = 0;
-        if (loan.balance <= 10) {
+        if (loan.balance <= 0) {
           recordJournal(S, `Cleared collections debt in full: ${loan.label}.`, 'money');
           S.money.creditScore = clamp(S.money.creditScore + 10, 300, 850);
           continue;
@@ -1119,7 +1121,8 @@ export function settleHouseholdMonth(S) {
     if (interest > 0) recordLedgerEntry(S, interest, `Interest on ${loan.label}`, 'debt', 'loan', loan.balance);
     loan.balance = Math.max(0, Math.round(loan.balance - payAmt + interest));
     loan.remainingMonths -= 1;
-    if (loan.balance > 10 && loan.remainingMonths > 0) {
+    if (loan.balance > 0) {
+      loan.remainingMonths=Math.max(1,loan.remainingMonths);
       remainingLoans.push(loan);
     } else {
       recordJournal(S, `Cleared loan in full: ${loan.label}.`, 'money');
@@ -1786,6 +1789,7 @@ export function convertFinancesOnCountryMove(S, fromCountry, toCountry) {
     cc.balance = Math.max(0, Math.round(convertCurrency(cc.balance, fromCountry, toCountry, S.year)));
   }
   for (const bp of (S.bnplPlans || [])) {
+    bp.balanceRemaining=Math.max(0,Math.round(convertCurrency(bp.balanceRemaining??bp.monthlyPay*bp.monthsLeft,fromCountry,toCountry,S.year)));
     bp.monthlyPay = Math.max(1, Math.round(convertCurrency(bp.monthlyPay, fromCountry, toCountry, S.year)));
   }
   for (const lnd of (S.housing.lands || [])) {

@@ -4009,7 +4009,7 @@ function renderCardsAndBnplSubtabHtml(S, cObj) {
       ${S.bnplPlans.length > 0 ? `
         <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line-soft)">
           <strong style="font-size:0.84rem">Active ${esc(bnpl.name)} Split Plans (${S.bnplPlans.length}):</strong>
-          ${S.bnplPlans.map(bp => `<div class="muted">• ${esc(bp.label)} — <strong class="mono">${esc(formatMoney(bp.monthlyPay, S.country))}/mo</strong> (${bp.monthsLeft} splits left)</div>`).join('')}
+          ${S.bnplPlans.map(bp => `<div class="muted">• ${esc(bp.label)} — <strong class="mono">${esc(formatMoney(bp.monthlyPay, S.country))}/mo</strong> (${bp.monthsLeft} splits left) · ${esc(formatMoney(bp.balanceRemaining??bp.monthlyPay*bp.monthsLeft,S.country))} remaining</div>`).join('')}
         </div>
       ` : ''}
     </div>
