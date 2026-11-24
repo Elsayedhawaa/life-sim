@@ -2482,7 +2482,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_aunt_visits', category: 'family',
         title: 'Your Aunt Arrives From Abroad',
-        text: `Your aunt — ${momName}'s sister, who lives abroad — has arrived for a two-week visit, suitcases full of gifts and opinions. Within an hour she has commented on your weight, your job, your hair, and whether you are married yet.`,
+        text: `Your aunt — ${momName}'s sister, who lives abroad — has arrived for a two-week visit, suitcases full of gifts and opinions. Within an hour she has commented on your weight, your hair, your career, and your plans for a family.`,
         choices: [
           { label: 'Take it in good humour and enjoy her visit', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);

@@ -1644,7 +1644,7 @@ export function checkJobApplication(S, jobOffer) {
     return { ok: false, msg: `You signed a non-compete with ${nc.employer} until ${nc.untilYear} — you cannot work for them until then.` };
   }
   if (!jobOffer.qualifiedByDegree) {
-    return { ok: false, msg: `Requires a degree in ${jobOffer.reqDegrees.join(' or ').toUpperCase()}.` };
+    return { ok: false, msg: `Requires a degree in ${(jobOffer.reqDegrees||[]).join(' or ').toUpperCase()}.` };
   }
   const missingBoard = getRequiredForeignBoardForJob(S, jobOffer.track, jobOffer.reqDegrees || []);
   if (missingBoard) {
