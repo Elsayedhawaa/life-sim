@@ -2995,8 +2995,8 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
               ${(pr.conditionPct ?? 100) < 98 ? `<button class="btn btn-sm" data-action="renovate-prop" data-id="${pr.id}">Renovate (+5.5%)</button>` : ''}
               ${(pr.country === S.country && S.housing.currentHomeId !== pr.id) ? `<button class="btn btn-primary btn-sm" data-action="move-into-prop" data-id="${pr.id}">Move In</button>` : ''}
               ${S.housing.currentHomeId !== pr.id && !pr.ruralCabin ? `<button class="btn btn-sm" data-action="toggle-rent-prop" data-id="${pr.id}">${pr.rentedOut ? 'Stop Lease' : 'Lease Out'}</button>` : ''}
-              ${S.housing.currentHomeId !== pr.id ? `<button class="btn btn-sm" data-action="toggle-tenant-mode" data-id="${pr.id}">${pr.tenantMode === 'short_term' ? 'Switch Long-Term' : 'Holiday Let (+36%)'}</button>` : ''}
-              <button class="btn btn-sm" data-action="sell-prop" data-id="${pr.id}">Sell / Flip</button>
+              ${S.housing.currentHomeId !== pr.id && !pr.ruralCabin ? `<button class="btn btn-sm" data-action="toggle-tenant-mode" data-id="${pr.id}">${pr.tenantMode === 'short_term' ? 'Switch Long-Term' : 'Holiday Let (+36%)'}</button>` : ''}
+              <button class="btn btn-sm" data-action="sell-prop" data-id="${pr.id}" ${pr.salePending?'disabled':''}>${pr.salePending?'Sale pending':'List for sale · ~3 mo'}</button> <span title="2.5% closing fee; condition affects price." aria-label="Information">ⓘ</span>
             </div>
           </div>
         `).join('')}

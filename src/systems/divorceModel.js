@@ -25,7 +25,7 @@ export function settleGameDivorce(S,spouse,couple,{custody='shared',contested=fa
       const value=Math.max(0,Number(p.valueLocal)||convertCurrency(p.nativeValue||0,p.country||S.country,S.country,S.year));
       const debt=p.nativeInstallmentRemaining!=null?convertCurrency(p.nativeInstallmentRemaining,p.country||S.country,S.country,S.year):Number(p.installmentRemaining)||0;
       if(assetMode==='buyout'){buyoutEquity+=Math.max(0,value-debt);kept.push({id:p.id,name:p.name,country:p.country,value,debt,kind:'property'});return true;}
-      assetProceeds+=value-debt;sold.push({id:p.id,name:p.name,country:p.country,value,debt,kind:'property'});
+      const closingFee=Math.round(value*.025);assetProceeds+=value-closingFee-debt;sold.push({id:p.id,name:p.name,country:p.country,value,debt,closingFee,kind:'property'});
       if(S.housing.currentHomeId===p.id){S.housing.mode='rent';S.housing.currentHomeId=null;S.housing.currentHomeName='Post-divorce modest rental';S.housing.monthlyRent=eraLocalCost(getCountry(S.country).monthlyBasket2026.rentModest,S.country,S.year);S.housing.rentIndexedYear=S.year;}
       return false;
     });

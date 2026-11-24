@@ -2389,11 +2389,12 @@ export function renovateProperty(S, propId) {
   return { ok: true, msg: `Restored ${prop.name} to 100% (+5.5% equity)!` };
 }
 
-export function sellOwnedProperty(S, propId) {
+export function sellOwnedProperty(S, propId, {complete=false}={}) {
   ensureExtendedState(S);
   const idx = S.housing.properties.findIndex(p => p.id === propId);
   if (idx < 0) return { ok: false, msg: 'Property not found.' };
   const prop = S.housing.properties[idx];
+  if(!complete){if(prop.salePending)return{ok:false,msg:'Sale already listed.'};prop.salePending={listedAt:S.year*12+S.month,dueAt:S.year*12+S.month+3};return{ok:true,msg:'Listed for sale. Estimated completion:3months. Costs and loan payments continue until closing.'};}
 
   const condFactor = 0.72 + ((prop.conditionPct ?? 100) / 100) * 0.28;
   const grossSale = Math.round(prop.valueLocal * condFactor);
@@ -2444,6 +2445,7 @@ export function togglePropertyTenantMode(S, propId) {
   ensureExtendedState(S);
   const prop = S.housing.properties.find(p => p.id === propId);
   if (!prop) return { ok: false, msg: 'Property not found.' };
+  if(prop.ruralCabin)return{ok:false,msg:'Personal-use cabin.'};
   prop.tenantMode = prop.tenantMode === 'short_term' ? 'long_term' : 'short_term';
   prop.rentedOut = S.housing.currentHomeId !== prop.id;
   const baseNative = Math.round(((prop.nativeValue || prop.valueLocal) * 0.068) / 12);
@@ -2680,6 +2682,8 @@ export function buyOutfit(S, styleId) {
    6. MONTHLY & ANNUAL MEGA-SYSTEMS TICK (Called from gameLoop.js!)
    ========================================================================== */
 export function tickMegaSystemsMonthly(S) {
+  for(const prop of [...(S.housing.properties||[])])if(prop.salePending&&S.year*12+S.month>=prop.salePending.dueAt){const res=sellOwnedProperty(S,prop.id,{complete:true});if(!res.ok){prop.salePending.dueAt++;recordJournal(S,'Property sale delayed: available cash cannot clear the outstanding debt.','housing');}}
+
   ensureExtendedState(S);
   S.money._lastGoldUnitPrice = goldPricePerGram(S.country, S.year, 21);
   if (S.player.age < 18) return;
