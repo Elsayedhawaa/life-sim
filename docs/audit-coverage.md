@@ -45,3 +45,5 @@ Remote staff: new hires use the current date, not business founding. Origin-coun
 Specialist treatment: one paid course per condition per game month; controlled conditions do not accept redundant courses. Invalid care type refuses. Actual390px treatment/repeat-lock/reload check passes.50focused files pass,2070subtab renders included. Treatment probabilities and recovery descriptions remain a game model, not clinical advice.
 
 Auto repossession:70%game auction recovery offsets the debt; shortfall remains in collections, surplus returned. It no longer erases a large outstanding loan with a cheap car. Added calendar-date friendship drift regression: actual contact dates warn, notice, retain3choices and reconnect correctly. Older turn-only drift tests are stale, not proof of broken current calendar behavior.50focused files pass.
+
+Property installment follow-up: final payment caps at actual native balance, unpaid residual/late fees survive the stated term, missing native balance recovers from player-currency debt.51focused files pass; actual390px month advancement and reload retained50remaining debt after the last originally scheduled month.

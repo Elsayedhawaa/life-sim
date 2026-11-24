@@ -897,7 +897,13 @@ export function settleHouseholdMonth(S) {
       }
     }
     if (prop.monthsLeft > 0 && prop.nativeMonthlyInstallment > 0) {
-      const instLocal = Math.round(convertCurrency(prop.nativeMonthlyInstallment, prop.country, S.country, S.year));
+      if (!Number.isFinite(prop.nativeInstallmentRemaining)) {
+        prop.nativeInstallmentRemaining = Number.isFinite(prop.installmentRemaining)
+          ? Math.round(convertCurrency(prop.installmentRemaining,S.country,prop.country,S.year))
+          : prop.nativeMonthlyInstallment*prop.monthsLeft;
+      }
+      const nativeDue = Math.min(prop.nativeMonthlyInstallment, Math.max(0,prop.nativeInstallmentRemaining));
+      const instLocal = Math.round(convertCurrency(nativeDue, prop.country, S.country, S.year));
       /* v2.18 W2 — a payment holiday granted by the bank after a job
          loss (careerConsequences: prop.paymentHolidayUntil, a month
          index): no instalment is due while it lasts, and no missed
@@ -912,12 +918,15 @@ export function settleHouseholdMonth(S) {
         summary.housing += instLocal;
         prop.monthsLeft -= 1;
         prop.missedMonths = 0;
-        prop.nativeInstallmentRemaining = Math.max(0, prop.nativeInstallmentRemaining - prop.nativeMonthlyInstallment);
+        prop.nativeInstallmentRemaining = Math.max(0, prop.nativeInstallmentRemaining - nativeDue);
         prop.installmentRemaining = Math.round(convertCurrency(prop.nativeInstallmentRemaining, prop.country, S.country, S.year));
-        if (prop.monthsLeft === 0) {
+        if (prop.nativeInstallmentRemaining <= 0) {
+          prop.monthsLeft = 0;
           prop.nativeInstallmentRemaining = 0;
           prop.installmentRemaining = 0;
           recordJournal(S, `Paid off the final installment on ${prop.name}! You now hold clear 100% title.`, 'milestone');
+        } else {
+          prop.monthsLeft = Math.max(1,prop.monthsLeft);
         }
       } else {
         // Missed instalment: late fee capitalised, score hit, warning, then
