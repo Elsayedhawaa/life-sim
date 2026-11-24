@@ -5084,7 +5084,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'career',
     repeatable: true,
     cooldownYears: 2,
-    gates: { requiredPeople: ['boss'],"minAge": 20, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 20, "hasJob": true,minJobPerformance:72},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -7200,7 +7200,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_promotion_celebration',
     category: 'career',
     repeatable: false,
-    gates: { requiredPeople: ['boss'],"minAge": 26, "hasJob": true},
+    gates: { requiredPeople: ['boss'],"minAge": 26, "hasJob": true,recentPromotionMonths:3},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -7209,26 +7209,24 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(3000, S.country, S.year);
+      const promotion=S.career.lastPromotion;
       return {
         key: 'ev_career_promotion_celebration',
         category: 'career',
         title: "Your Promotion Is Announced",
-        text: `Your name is read out in the meeting: you are promoted, with a new title and a raise of ${formatMoney(A, S.country)} a month. Your colleagues applaud, and ${bossName} shakes your hand like it was always going to be you.`,
+        text: `${bossName} congratulates you on becoming ${promotion.title}. Your gross monthly pay changed from ${formatMoney(promotion.previousGross,S.country)} to ${formatMoney(promotion.monthlyGross,S.country)}. The change is already in your pay record.`,
         choices: [
           {
             label: "Celebrate with the team",
             effect: (st) => {
-              if (st.career.job) st.career.job.monthlyGross = Math.round(st.career.job.monthlyGross * (1 + (+8) / 100));
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+7));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+4));
-              recordJournal(st, `Your promotion was announced, with a raise of ${formatMoney(A, S.country)} a month, and you celebrated with the team.`, 'career');
+              recordJournal(st, `Your promotion was announced, and you celebrated with the team.`, 'career');
             },
           },
           {
             label: `Thank ${bossName} privately`,
             effect: (st) => {
-              if (st.career.job) st.career.job.monthlyGross = Math.round(st.career.job.monthlyGross * (1 + (+8) / 100));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+3));
               recordJournal(st, `You thanked ${bossName} privately for the promotion. ${bossName} said you had earned it.`, 'career');
             },
@@ -7236,7 +7234,6 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
           {
             label: "Start planning your first moves",
             effect: (st) => {
-              if (st.career.job) st.career.job.monthlyGross = Math.round(st.career.job.monthlyGross * (1 + (+8) / 100));
               if (st.career.job) st.career.job.performance = clamp((st.career.job.performance || 50) + (+4));
               recordJournal(st, `You started planning your first moves in the new role before the applause had faded.`, 'career');
             },

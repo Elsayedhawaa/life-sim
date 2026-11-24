@@ -241,6 +241,8 @@ export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
     const has = !!(S.career.employed && S.career.job);
     if (has !== !!g.hasJob) return false;
   }
+  if(g.recentPromotionMonths!==undefined){const q=S.career.lastPromotion,j=S.career.job,elapsed=q?S.year*12+S.month-q.at:Infinity;if(!q||elapsed<0||elapsed>g.recentPromotionMonths||!j||q.employer!==j.employer||q.track!==j.track||q.level!==j.level)return false;}
+  if(g.minJobPerformance!==undefined&&(!S.career.job||(S.career.job.performance||0)<g.minJobPerformance))return false;
   if (g.hasCar !== undefined) {
     const has = (S.cars || []).length > 0;
     if (has !== !!g.hasCar) return false;
@@ -406,7 +408,7 @@ export function eventRelevance(S,ev){
  const outcome=g.afterEvent&&S.eventOutcomes?.[g.afterEvent];
  if(outcome){score+=16;evidence.push({kind:'resolved_event',eventId:g.afterEvent,choiceIndex:outcome.choiceIndex,year:outcome.year,month:outcome.month,participants:outcome.participants});}
  if(g.memoryKind){score+=6;evidence.push({kind:'memory',kinds:asList(g.memoryKind)});}
- const facts=['civilLossKind','adultChildHome','housingMode','deceasedParent','hasDebt','hasBusiness','hasCar','abroad','employment','education','people'].filter(k=>g[k]!==undefined);
+ const facts=['civilLossKind','adultChildHome','housingMode','deceasedParent','hasDebt','hasBusiness','hasCar','abroad','employment','education','people','recentPromotionMonths','minJobPerformance'].filter(k=>g[k]!==undefined);
  if(facts.length){score+=Math.min(6,facts.length*2);evidence.push({kind:'current_state',gates:Object.fromEntries(facts.map(k=>[k,g[k]]))});}
  const recent=(S.eventHistory||[]).slice(-4);const same=recent.filter(r=>EVENT_BY_ID.get(r.eventId)?.category===ev.category).length;
  score/=1+same*1.5;

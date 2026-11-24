@@ -2144,9 +2144,11 @@ export function tickCareerMonthly(S) {
     if(overdue&&nextRung&&trackExp>=nextRung.minExp)recordJournal(S,'Automatic promotion paused: renew the overdue career medical, simulator or board check under Train & Licences.','career');
     if (wouldPromote && !rivalBlocks) {
       const ratio = nextRung.mult / (track.rungs[job.level]?.mult || 1);
+      const promotionFrom={title:job.title,monthlyGross:job.monthlyGross};
       job.level = nextRung.level;
       job.title = jobEmploymentFraction(job) < 1 ? `Part-Time ${nextRung.title}` : nextRung.title;
       job.monthlyGross = Math.round(job.monthlyGross * ratio);
+      S.career.lastPromotion={at:S.year*12+S.month,year:S.year,month:S.month,employer:job.employer,track:job.track,level:job.level,title:job.title,previousTitle:promotionFrom.title,previousGross:promotionFrom.monthlyGross,monthlyGross:job.monthlyGross};
       S.player.vitals.happiness = clamp(S.player.vitals.happiness + 8);
       emitFact(S, 'INCOME_SURGE', { employer: job.employer, monthlyGross: job.monthlyGross });
       recordJournal(
