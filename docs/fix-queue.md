@@ -21,7 +21,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] L7 More sector incidents with stock/morale/WIP/demand consequences.
 - [x] L8 Distinct sector activity effects on staff, stock, gear, WIP, spoilage, resources and churn.
 - [x] L9 Separate physical/software site books, people, stock, audience, prices/recipes, reserve, requests and grouped settlement. G3 closes with it.
-- [ ] L10 Per-record server data loss, backup coverage and recovery.
+- [x] L10 Individual operational records, host-specific loss, revision snapshots, delayed recovery and paid reconstruction.
 - [ ] L11 General equipment failure/repair/replacement queue beyond wear.
 - [ ] L12 Equipment lease terms and return/early termination cost.
 - [ ] L13 Broader server plans/resource configuration beyond finite abstract tiers.
@@ -46,4 +46,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-20 distinct open packages after L9. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+19 distinct open packages after L10. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
