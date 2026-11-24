@@ -4748,15 +4748,19 @@ function renderMedicalAndSurgeriesSubtabHtml(S) {
         <button class="btn btn-sm" data-action="do-activity" data-id="jog">Go for a Run (+fitness)</button>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">
-        <button class="btn btn-sm" data-action="visit-hospital" data-sector="public">Public Hospital (${esc(hospitals.find(h => h.sector === 'public')?.name || 'General')})</button>
-        <button class="btn btn-primary btn-sm" data-action="visit-hospital" data-sector="private">Private Specialist (${esc(hospitals.find(h => h.sector === 'private')?.name || 'Specialist')})</button>
+        <button class="btn btn-sm" data-action="visit-hospital" data-sector="public" ${S.medical.lastCheckupPeriod===S.year*12+S.month?'disabled':''}>Public Hospital (${esc(hospitals.find(h => h.sector === 'public')?.name || 'General')})</button>
+        <button class="btn btn-primary btn-sm" data-action="visit-hospital" data-sector="private" ${S.medical.lastCheckupPeriod===S.year*12+S.month?'disabled':''}>Private Specialist (${esc(hospitals.find(h => h.sector === 'private')?.name || 'Specialist')})</button>
       </div>
 
-      <strong style="font-size:0.83rem;display:block;margin-bottom:6px">Diagnostic Lab Screenings (${V1_MED_TESTS.length} Tests) & Pharmacy (${V1_MED_MEDICATIONS.length} Meds):</strong>
+      <p class="muted">${S.medical.lastCheckupPeriod===S.year*12+S.month?'Checkup completed this game month. ':''}Game care, not medical advice: one checkup and one of each screening/prescription per month. Screenings do not treat disease. Prescriptions below match recorded conditions and are single game courses. Benefits are simplified, not ongoing adherence or clinical risk.</p><details><summary>Diagnostic Lab Screenings (${V1_MED_TESTS.length} Tests) & Pharmacy (${V1_MED_MEDICATIONS.length} Meds):</summary>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${(V1_MED_TESTS || []).slice(0, 6).map(t => `<button class="btn btn-sm" data-action="med-diag" data-kind="test" data-id="${t.id}">${esc(t.label)}</button>`).join('')}
-        ${(V1_MED_MEDICATIONS || []).slice(0, 5).map(m => `<button class="btn btn-sm" data-action="med-diag" data-kind="med" data-id="${m.id}">Rx: ${esc(m.label)}</button>`).join('')}
-      </div>
+        ${[...(V1_MED_TESTS||[]).map(x=>({...x,kind:'test'})),...(V1_MED_MEDICATIONS||[]).filter(m=>(S.medical.conditions||[]).some(c=>(m.treats||[]).includes(c.id))).map(x=>({...x,kind:'med'}))].map(x=>{
+          const fee=S.player.age<18?0:Math.max(x.kind==='test'?8:5,Math.round(convertCurrency(((x.kind==='test'?x.costEGP:x.monthlyEGP)||450)/50,'usa',S.country,S.year)));
+          const used=S.medical.servicePeriods?.[`${x.kind}_${x.id}`]===S.year*12+S.month;
+          const reason=used?'Completed this game month':S.money.cash<fee?'Not enough cash':'';
+          return `<div><button class="btn btn-sm" data-action="med-diag" data-kind="${x.kind}" data-id="${x.id}" ${reason?'disabled':''}>${x.kind==='med'?'Rx: ':''}${esc(x.label)} · ${fee?esc(formatMoney(fee,S.country)):'Covered'}</button>${reason?`<small class="muted" style="display:block">${esc(reason)}</small>`:''}</div>`;
+        }).join('')}
+      </div></details>
     </div>
 
     <div class="card">

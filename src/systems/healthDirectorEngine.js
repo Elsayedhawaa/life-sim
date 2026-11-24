@@ -30,6 +30,9 @@ import {
    ========================================================================== */
 
 export function visitHospitalCheckup(S, sector = 'public') {
+  if(!['public','private'].includes(sector))return {ok:false,msg:'Care type unavailable.'};
+  const period=S.year*12+S.month;
+  if(S.medical.lastCheckupPeriod===period)return {ok:false,msg:'You already had a checkup this game month.'};
   const cObj = getCountry(S.country);
   const hospitals = getHospitalsFor(S.country, S.year);
   const hosp = hospitals.find(h => h.sector === sector) || hospitals[0];
@@ -57,6 +60,7 @@ export function visitHospitalCheckup(S, sector = 'public') {
      serious disease at an earlier stage (mortalityModel.assignStage). */
   if (!S.medical) S.medical = {};
   S.medical.lastCheckupYear = S.year;
+  S.medical.lastCheckupPeriod=period;
   S.medical.lastCheckupSector = sector;
 
   /* Manage or cure one active condition. Serious diseases are NEVER cured
@@ -68,9 +72,6 @@ export function visitHospitalCheckup(S, sector = 'public') {
     if (cond && !cond.chronic && chance(S, sector === 'private' ? 0.85 : 0.62)) {
       curedLabel = cond.label;
       S.medical.conditions = S.medical.conditions.filter(c => c !== cond);
-    } else {
-      const first = S.medical.conditions[0];
-      if (first) first.managed = true;
     }
   }
 
@@ -85,27 +86,28 @@ export function visitHospitalCheckup(S, sector = 'public') {
 }
 
 export function runDiagnosticTestOrMed(S, kind, id) {
-  if (kind === 'test') {
-    const test = (V1_MED_TESTS || []).find(t => t.id === id) || V1_MED_TESTS[0];
-    if (!test) return { ok: false, msg: 'Test unavailable.' };
-    const cost = S.player.age < 18 ? 0 : Math.max(8, Math.round(convertCurrency((test.costEGP || 800) / 50, 'usa', S.country, S.year)));
-    if (S.money.cash < cost) return { ok: false, msg: `Need ${formatMoney(cost, S.country)} for ${test.label}.` };
-    if (cost > 0) walletMove(S, -cost, `Diagnostic lab: ${test.label}`, 'medical');
-    S.player.vitals.health = clamp(S.player.vitals.health + 2);
-    for (const c of S.medical.conditions) c.managed = true;
-    recordJournal(S, `Completed ${test.label} screening (${cost > 0 ? formatMoney(cost, S.country) : 'covered'}) — results reviewed with specialist.`, 'health');
-    return { ok: true, msg: `Completed ${test.label}!` };
+  if(!['test','med'].includes(kind))return {ok:false,msg:'Medical action unavailable.'};
+  const item=(kind==='test'?V1_MED_TESTS:V1_MED_MEDICATIONS).find(x=>x.id===id);
+  if(!item)return {ok:false,msg:'Medical option unavailable.'};
+  const period=S.year*12+S.month;
+  const history=S.medical.servicePeriods||{};
+  const key=`${kind}_${id}`;
+  if(history[key]===period)return {ok:false,msg:'Already completed this game month.'};
+  const matches=S.medical.conditions.filter(c=>(kind==='test'?item.detects:item.treats||[]).includes(c.id));
+  if(kind==='med'&&!matches.length)return {ok:false,msg:'No matching active condition for this game prescription.'};
+  const cost=S.player.age<18?0:Math.max(kind==='test'?8:5,Math.round(convertCurrency(((kind==='test'?item.costEGP:item.monthlyEGP)||450)/50,'usa',S.country,S.year)));
+  if(S.money.cash<cost)return {ok:false,msg:`Need ${formatMoney(cost,S.country)} for ${item.label}.`};
+  if(cost>0)walletMove(S,-cost,`${kind==='test'?'Diagnostic screening':'Prescription course'}: ${item.label}`,'medical');
+  S.medical.servicePeriods={...history,[key]:period};
+  if(kind==='test'){
+    for(const c of matches)c.lastScreenedPeriod=period;
+    recordJournal(S,`Completed ${item.label} screening. ${matches.length?'Matching recorded conditions reviewed.':'No matching recorded condition.'} Screening alone does not treat disease.`,'health');
+  }else{
+    for(const c of matches){c.managed=true;c.lastPrescriptionPeriod=period;}
+    S.player.vitals.health=clamp(S.player.vitals.health+5);
+    recordJournal(S,`Filled one game course of ${item.label} prescription for ${matches.map(c=>c.label||c.id).join(', ')}. No automatic refill.`,'health');
   }
-
-  const med = (V1_MED_MEDICATIONS || []).find(m => m.id === id) || V1_MED_MEDICATIONS[0];
-  if (!med) return { ok: false, msg: 'Medication unavailable.' };
-  const cost = S.player.age < 18 ? 0 : Math.max(5, Math.round(convertCurrency((med.monthlyEGP || 450) / 50, 'usa', S.country, S.year)));
-  if (S.money.cash < cost) return { ok: false, msg: `Need ${formatMoney(cost, S.country)} for ${med.label}.` };
-  if (cost > 0) walletMove(S, -cost, `Pharmacy prescription: ${med.label}`, 'medical');
-  S.player.vitals.health = clamp(S.player.vitals.health + 5);
-  for (const c of S.medical.conditions) c.managed = true;
-  recordJournal(S, `Filled prescription for ${med.label}, stabilizing active symptoms.`, 'health');
-  return { ok: true, msg: `Filled ${med.label} (+5 health)!` };
+  return {ok:true,msg:kind==='test'?'Screening recorded, no treatment effect.':'Prescription course filled for matching conditions.'};
 }
 
 export function tickHealthAndMortalityYearly(S) {
