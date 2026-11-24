@@ -20,7 +20,7 @@ Checkpoint: November24,2026. Prior shipped baseline: 85ea930. This checkpoint al
 - Long-horizon balancing, entertainment quality and every old-save combination.
 - The old coherence_suite.mjs remains unpassed: obsolete assumptions and runtime stalls. It is not included in passing totals.
 
-48 focused*.test.js files pass at this checkpoint. A render pass does not prove action outcomes; a local pass does not prove hosted delivery. No full-audit completion claim.
+50 focused*.test.js files pass at this checkpoint. A render pass does not prove action outcomes; a local pass does not prove hosted delivery. No full-audit completion claim.
 
 Travel follow-up: trips now deduct newly unpaid days using the existing leave-action net/30 game formula. Quoted travel cost and lost pay are shown separately. Plan papers use the actual negotiated leave allowance. Aviation staff quotes share the charged price. This is a game pay simplification, not local employment law.
 
@@ -34,12 +34,14 @@ Legacy-suite sweep: many historical*.mjs assertions are stale or still fail; the
 
 Surgery: matching active diagnosis required for corrective surgery; partial-treatment conditions remain managed instead of erased, including game diabetes metabolic surgery. Recovery blocks another procedure; elective appearance surgery adult-only and once per year. Fertility uses its own route. All distinct operations, including LASIK, appear instead of silently slicing after14.42focused suites pass, plus actual phone appendectomy/recovery/reload check. Risks/complications and detailed clinical eligibility are not a medical simulation.
 
-Expanded render matrix:2070country/stage/subtab renders, including banks/markets, land, global/gulf and medical routes. This still is not full action coverage. Closed-business replay refuses an already-removed object before salvage; custom-construction draws track and cap the exact remaining total, including relocation currency conversion.48focused test files pass.
+Expanded render matrix:2070country/stage/subtab renders, including banks/markets, land, global/gulf and medical routes. This still is not full action coverage. Closed-business replay refuses an already-removed object before salvage; custom-construction draws track and cap the exact remaining total, including relocation currency conversion.50focused test files pass.
 
 Dynasty handoff: requires dead player and an actual living child, settles once, preserves month/vitals/recorded degree/appearance and minor school stage. No invented business degree for high intelligence. Phone adult engineering-child handoff and reload checked. Existing generated social-circle reconstruction and simplified inheritance tax/shares remain unverified model limitations, not a claim of family-tree/legal fidelity. Latest Netherlands/USA32-step hosted playthroughs reached18with choices retained, no page errors/overflow.
 
-Pregnancy consistency: maternal death clears the recorded pregnancy rather than substituting another spouse at delivery. Natural-conception game route requires co-resident adult opposite-sex partners. Donor/surrogate routes are not modeled.48focused files pass; legal-policy certification and complete family-tree continuity remain open.
+Pregnancy consistency: maternal death clears the recorded pregnancy rather than substituting another spouse at delivery. Natural-conception game route requires co-resident adult opposite-sex partners. Donor/surrogate routes are not modeled.50focused files pass; legal-policy certification and complete family-tree continuity remain open.
 
 Remote staff: new hires use the current date, not business founding. Origin-country wage quotes convert to the business book currency; onboarding, training and severance debit player currency; promotion/payroll displays use the book currency. Phone remote cafe hire/reload verified. Unpaid severance is preserved as a zero-interest twelve-month debt in the ordinary monthly debt ledger, rather than only saying owed in text. Repeated staff closure cannot duplicate it.
 
-Specialist treatment: one paid course per condition per game month; controlled conditions do not accept redundant courses. Invalid care type refuses. Actual390px treatment/repeat-lock/reload check passes.48focused files pass,2070subtab renders included. Treatment probabilities and recovery descriptions remain a game model, not clinical advice.
+Specialist treatment: one paid course per condition per game month; controlled conditions do not accept redundant courses. Invalid care type refuses. Actual390px treatment/repeat-lock/reload check passes.50focused files pass,2070subtab renders included. Treatment probabilities and recovery descriptions remain a game model, not clinical advice.
+
+Auto repossession:70%game auction recovery offsets the debt; shortfall remains in collections, surplus returned. It no longer erases a large outstanding loan with a cheap car. Added calendar-date friendship drift regression: actual contact dates warn, notice, retain3choices and reconnect correctly. Older turn-only drift tests are stale, not proof of broken current calendar behavior.50focused files pass.

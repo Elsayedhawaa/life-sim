@@ -1,0 +1,4 @@
+import assert from 'node:assert/strict';
+import {createNewLifeState,ensureExtendedState} from '../src/core/schema.js';
+import {settleHouseholdMonth} from '../src/systems/economyEngine.js';
+const s=createNewLifeState({country:'gbr',seed:77});ensureExtendedState(s);s.player.age=30;s.year=2026;s.money.cash=0;s.money.savings=0;s.money.parentalAllowanceActive=false;s.cars=[{id:'car',name:'Test car',valueLocal:1000}];s.money.loans=[{id:'auto',label:'Test auto',assetKind:'car',carId:'car',balance:10000,monthlyPayment:1000,remainingMonths:12,flatMarkup:true,missedMonths:2}];settleHouseholdMonth(s);assert.equal(s.cars.length,0);const debt=s.money.loans.find(l=>l.id==='auto');assert.ok(debt);assert.equal(debt.balance,9350);assert.equal(debt.inCollections,true);assert.equal(debt.carId,null);console.log('Auto repossession applies70%game auction value and keeps the remaining debt, rather than forgiving it.');

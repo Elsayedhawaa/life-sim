@@ -1102,8 +1102,14 @@ export function settleHouseholdMonth(S) {
           const car = S.cars.find(c => c.id === loan.carId);
           if (car) {
             S.cars = S.cars.filter(c => c.id !== loan.carId);
-            recordJournal(S, `The bank repossessed your ${car.name} after 3 missed auto-loan payments — the loan is settled by the seizure.`, 'money');
-            continue; // loan dies with the repossessed car
+            const auction=Math.max(0,Math.round((car.valueLocal||0)*.70));
+            const owed=loan.balance;
+            loan.balance=Math.max(0,owed-auction);
+            const surplus=Math.max(0,auction-owed);
+            if(surplus>0)walletMove(S,surplus,`Repossession auction surplus: ${car.name}`,'car');
+            recordJournal(S, `The bank repossessed your ${car.name} after 3 missed payments. Game auction recovered ${formatMoney(auction,S.country)}.${loan.balance>0?` ${formatMoney(loan.balance,S.country)} remains owed in collections.`:` The loan is cleared.${surplus>0?' Surplus returned to you.':''}`}`, 'money');
+            if(loan.balance<=0)continue;
+            loan.assetKind=null;loan.carId=null;
           }
         }
         loan.inCollections = true;
