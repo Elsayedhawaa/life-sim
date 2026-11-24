@@ -3,7 +3,7 @@ import {recordJournal,walletMove} from '../core/schema.js';
 import {eraSalary,eraLocalCost} from '../data/economy.js';
 import {getCountry} from '../data/countries.js';
 import {personMind,rememberChoice} from './personMind.js';
-import {checkSocialEnergy,spendSocialEnergy,noteSocialContact} from './socialEnergy.js';
+import {checkSocialEnergy,spendSocialEnergy,noteSocialContact,monthsSinceContact} from './socialEnergy.js';
 import {moveIntoOwnedProperty} from './economyEngine.js';
 export const spouseMind=personMind;
 export const SPOUSE_DECISIONS={career:'I accepted a job. Can we share the bills?',kids:'I would like a child. Are you ready?',no_kids:'I do not want a child.',budget:'Can we cut our household spending?',move:'Can we move into our other home?',spending:'Can we buy something for the house?',boundary:'I need us to spend time together.',reconcile:'I would like to try again.'};
@@ -25,7 +25,8 @@ export function tickSpouseAutonomy(S){
  if(sp.rel.trust<45||sp.rel.respect<35)kind='boundary';
  else if(!m.wantsChildren&&S.marriage.tryingForBaby){S.marriage.tryingForBaby=false;kind='no_kids';}
  else {
-  const options=['boundary'];
+  const options=[];
+  if(monthsSinceContact(S,sp)>=3)options.push('boundary');
   if(m.ambition>65&&!m.careerActed&&sp.age>=22&&sp.age<63&&!(sp.career.monthlyIncomeLocal>0))options.push('career');
   const femaleAge=sp.gender==='f'?sp.age:S.player.age;
   if(m.wantsChildren&&m.family>60&&S.relations.childIds.length<2&&femaleAge<43&&sp.gender!==S.player.gender&&!S.marriage.pregnancy&&!S.marriage.tryingForBaby)options.push('kids');
@@ -33,6 +34,7 @@ export function tickSpouseAutonomy(S){
   const target=(S.housing.properties||[]).find(p=>p.id!==S.housing.currentHomeId&&p.country===S.country&&!p.pendingSale&&!p.rentedOut);
   if(m.adventure>65&&target)options.push('move');
   if(m.thrift<45&&S.money.cash>spouseRequestCost(S,'spending')*4)options.push('spending');
+  if(!options.length)continue;
   kind=options[Math.floor(hash/6)%options.length];
   if(kind==='career'){m.careerActed=true;sp.career.monthlyIncomeLocal=eraSalary(getCountry(sp.residenceCountry||S.country).annualSalaryTiers2026.entry/12,sp.residenceCountry||S.country,S.year);sp.career.title='Operations Coordinator';rememberChoice(S,sp,'career','accepted work');recordJournal(S,`${sp.firstName} accepted a job. Shared income starts next month.`,'family');}
   if(kind==='move')m.moveTargetId=target.id;
