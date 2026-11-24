@@ -1138,6 +1138,7 @@ function renderActiveSceneHtml(S) {
         ${renderEditorialSketchSvg(sc.category || 'life', 124, 80, `${S.turn || 0}_${sc.id || sc.title || ''}_${S.seed || 1}`)}
       </div>
       <p class="scene-body">${esc(countryLevelNarrative(sc.text,S))}</p>
+      ${sc.details?.text?`<details class="scene-details"><summary>${esc(sc.details.label||'Details')}</summary><p class="muted">${esc(sc.details.text)}</p></details>`:''}
       <div class="scene-choices">
         ${(() => {
           const choiceHtml = (ch, idx) => {

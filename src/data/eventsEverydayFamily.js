@@ -5915,7 +5915,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_child_adult_moves_out', category: 'children',
         title: `${chName} Moves Out`,
-        text: `The boxes are by the door, the room is suddenly empty, and ${chName} is standing in the hallway with their keys, ready to go. They are moving to a separate household. This does not transfer or buy a property.`,
+        text: `The boxes are by the door, the room is suddenly empty, and ${chName} is standing in the hallway with their keys, ready to go. They ask where you keep the spare bags. There is still one cupboard to empty.`,
         choices: [
           { label: 'Help them carry the boxes and hug them at the door', effect: (st) => {
               if(child){child.leftHome=true;child.householdWith=child.id;}
@@ -5945,7 +5945,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_child_adult_moves_back', category: 'children',
         title: `${chName} Asks to Move Back Home`,
-        text: `${chName} is at the door with a suitcase: they ask whether they can stay with you for a while. They would join your household; no property title changes.`,
+        text: `${chName} is at the door with a suitcase: "Could I stay for a while?" They have brought a suitcase.`,
         choices: [
           { label: 'Welcome them back — home is always home', effect: (st) => {
               if(child){child.leftHome=false;child.householdWith='player';child.residenceCountry=st.country;child.city=st.city;}

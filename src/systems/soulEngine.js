@@ -1722,9 +1722,9 @@ export function buildFamilyBufferScene(S,id){
   }else recordJournal(st,`After ${person.firstName} moved out, you kept the remaining money aside. No gift or recurring payment was set up.`,'family');
   person.familyBufferAnswered={year:st.year,month:st.month,choice:kind};person.familyBufferPending=false;
  };
- return{key:`family_buffer_${id}`,familyBufferId:id,category:'family',title:`After ${p.firstName} Moved Out`,text:`${p.firstName} has a separate household now. Recorded school and course payments: ${formatMoney(s.tuition,S.country)}. Your cash and savings: ${formatMoney(s.buffer,S.country)}; last month's housing, living costs, debt and support: ${formatMoney(s.costs,S.country)}.${s.net<0?` Last month's budget was short by ${formatMoney(-s.net,S.country)}.`:''} No further gift is due.`,choices:[
+ return{key:`family_buffer_${id}`,familyBufferId:id,category:'family',title:`After ${p.firstName} Moved Out`,text:`${p.firstName} calls from the new place. "How are things at home?" You have helped pay for their education. Looking at your own balance, ${s.buffer<s.costs?'there is not enough put aside for another month like the last one':'there is less than two months of bills put aside'}.`,details:{label:'Your budget',text:`Recorded school and course payments: ${formatMoney(s.tuition,S.country)}. Cash and savings: ${formatMoney(s.buffer,S.country)}. Last month's housing, living costs, debt and support: ${formatMoney(s.costs,S.country)}.${s.net<0?` Last month's shortfall: ${formatMoney(-s.net,S.country)}.`:''} This is a current budget snapshot, not a forecast or a full lifetime spending total.`},choices:[
   {label:`Ask ${p.firstName} for help · 4 energy`,available:()=>canContactPerson(S,p)&&checkSocialEnergy(S,4).ok,effect:st=>reply(st,'ask')},
-  {label:'Call, without asking for money · 1 energy',available:()=>canContactPerson(S,p)&&checkSocialEnergy(S,1).ok,effect:st=>reply(st,'call')},
+  {label:'Catch up, without asking for money · 1 energy',available:()=>canContactPerson(S,p)&&checkSocialEnergy(S,1).ok,effect:st=>reply(st,'call')},
   {label:'Keep the remaining money aside',effect:st=>reply(st,'keep')}
  ]};
 }

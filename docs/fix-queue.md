@@ -236,3 +236,5 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W110 Family buffer after children leave: link recorded school/course payments, actual cash/savings and latest household costs to a named child moving out. Ask for help must reuse their real savings/relationship decision, not guarantee repayment or invent a lifetime sacrifice total. Keep recurring Empty Room promises and broader retirement/housing choices under W108 until implemented honestly.
 
 - [x] W111 Random child move-out/move-back stories do not change leftHome/household state and can name adultChild but change generic child. Reconcile event outcomes with the actual named adult and NPC household transitions; follow-ups must not claim a move that never happened. Found while grounding W110, not counted fixed.
+
+- [x] W112 Drama-scene tone: move-out scene no longer interrupts ordinary action with property disclaimers. Parent-budget scene uses a short call and a concrete low-buffer circumstance; exact costs and snapshot caveats sit under collapsed budget details. Existing household/cash consequences unchanged.
