@@ -90,4 +90,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W21 Finite private drawdown must apply worldwide, and re-retirement must preserve unspent prior balance rather than replace it.
 
-- [ ] W23 Savings liquidity counts before classifying rent unpaid, with actual three-month eviction/deposit/debt regression coverage.
+- [x] W23 Savings liquidity counts before classifying rent unpaid, with actual three-month eviction/deposit/debt regression coverage.

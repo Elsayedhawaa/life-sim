@@ -1,3 +1,4 @@
+import {repairPlayerRentalDamage} from './systems/playerTenancy.js';
 import{hiringAction}from'./systems/companyHiring.js';
 import{customerAction}from'./systems/companyCustomers.js';
 import{complianceAction}from'./systems/companyCompliance.js';
@@ -1769,6 +1770,7 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='repair-player-rental'){handleActionResult(repairPlayerRentalDamage(S,btn.dataset.id));return;}
     if (action === 'rent-home') {
       handleActionResult(rentHousingUnit(S, btn.dataset.id));
       return;

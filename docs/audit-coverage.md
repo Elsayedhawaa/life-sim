@@ -453,3 +453,6 @@ Explicit paid leases record monthly due/paid/unpaid rent. Unpaid portion stays a
 
 ### W23 liquid savings rent priority
 Rent paid/unpaid allocation includes liquid savings available for the existing auto-overdraft buffer, avoiding false rental arrears while savings can cover it. Focused regression runs three actual settlements through eviction:4400unpaid rent,1000deposit deduction,3400remaining debt and no refundable full-deposit claim. Savings-funded month has zero rent arrears. Existing152focused suite passed before one-line liquidity refinement; expanded rent regression passes after it. Hosted UI follow-up pending.
+
+### W22 player-rental damage evidence
+Explicit lease monthly simulation can record a real player-caused accident once per month; no generic pre-existing damage charge. Visible cash repair action marks repaired damage, preventing double deduction. Departure stores inspection items, gives recorded rent priority then caps damage at remaining deposit; excess becomes real rental liability.153focused files pass, including accident generation/repair/deduction/debt cases.390px damage fixture actual200cash repair/reload passed; inspected final damage controls, deposit text includes inspection priority. Not a local tenancy-law engine.
