@@ -1,3 +1,4 @@
+import{computeCompanyMonth}from './companyLifecycle.js';
 import{computeTechMonth}from './techStartup.js';
 import{tickBusinessSafety}from './businessSafety.js';
 /* ============================================================================
@@ -123,6 +124,7 @@ export function computeBusinessMonthFull(S, biz, opts = {}) {
     biz.lastPL = deadPl;
     return deadPl;
   }
+  if(biz.enterprise)return computeCompanyMonth(S,biz,computeBusinessTax,businessIsManaged(S,biz),opts.worldRevenueMult||1);
   if(biz.tech)return computeTechMonth(S,biz,computeBusinessTax,businessIsManaged(S,biz),opts.worldRevenueMult||1);
   /* v2.17 merge — W4's settlement-resolved operations effects (stock
      deliveries, prices, stock on hand) merge into biz.monthEffects

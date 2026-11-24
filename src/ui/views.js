@@ -1,3 +1,4 @@
+import{renderCompany}from '../systems/companyLifecycle.js';
 import{renderTech}from '../systems/techStartup.js';
 import{businessSector,businessIllustration,businessHistoryChart}from './businessVisuals.js';
 import{shopCategoryIcon}from './shopVisuals.js';
@@ -2388,7 +2389,9 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
   const selectedBusiness=portfolioBusinesses.find(b=>b.id===uiState.bizCompany)||portfolioBusinesses[0];
   const businessTab=uiState.bizTab||'overview';
   const q = String(uiState.bizQuery || '').trim().toLowerCase();
-  const filtered=allVentures.filter(b=>(!uiState.bizSector||uiState.bizSector==='all'||businessSector(b)===uiState.bizSector)&&(!q||b.label.toLowerCase().includes(q)||String(b.desc||'').toLowerCase().includes(q)));
+  const replacedStartTypes=new Set(['cafe','restaurant','retail_shop','pharmacy','clinic','logistics','academy','software_startup','saas_ai_agency','factory','construction','farm']);
+  const startVentures=allVentures.filter(b=>!replacedStartTypes.has(b.id));
+  const filtered=startVentures.filter(b=>(!uiState.bizSector||uiState.bizSector==='all'||businessSector(b)===uiState.bizSector)&&(!q||b.label.toLowerCase().includes(q)||String(b.desc||'').toLowerCase().includes(q)));
   const workload = computeWorkload(S);
   const jobHours = workload.jobHours;
 
@@ -2474,22 +2477,22 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
     <div class="biz-workspace" style="margin-bottom:10px">
       <div class="section-head">
         <div class="biz-card-title">${businessIllustration(biz)}<h3>${esc(biz.name)}</h3></div>
-        <span class="hud-pill">${biz.tech?`${biz.tech.stage==='live'?'Trading':'Pre-launch'} · ${biz.mode==='full_time'?'Full-time founder':'Part-time founder'}`:`${Number.isFinite(levelCap)?`Level ${biz.level}/${levelCap}`:`Level ${biz.level}`} · ${esc(modeLabel)}`}</span>
+        <span class="hud-pill">${biz.enterprise?`${biz.enterprise.stage} · ${biz.mode==='full_time'?'Full-time owner':'Part-time owner'}`:biz.tech?`${biz.tech.stage==='live'?'Trading':'Pre-launch'} · ${biz.mode==='full_time'?'Full-time founder':'Part-time founder'}`:`${Number.isFinite(levelCap)?`Level ${biz.level}/${levelCap}`:`Level ${biz.level}`} · ${esc(modeLabel)}`}</span>
         ${!businessIsManaged(S,biz)?'<span class="biz-alert">Management hours uncovered</span>':''}
       </div>
       <div class="biz-subtitle">${esc(getCountry(biz.country||S.country).name)} · ${esc(biz.premises?.label||'Home based')} · ${staffCount} ${staffCount===1?'employee':'employees'}</div>
       <nav class="biz-work-tabs" aria-label="Company area">${[['overview','Overview'],['products','Products'],['team','Team'],['operations','Operations'],['growth','Growth'],['money','Money']].map(([id,label])=>`<button class="${businessTab===id?'active':''}" aria-pressed="${businessTab===id}" data-action="biz-tab" data-area="${id}">${label}</button>`).join('')}</nav>
-      ${biz.tech?renderTech(S,biz,businessTab):''}
+      ${biz.enterprise?renderCompany(S,biz,businessTab):biz.tech?renderTech(S,biz,businessTab):''}
       ${businessTab==='overview'?`
       <div class="biz-period">LAST SETTLED MONTH ${pl?`· ${MONTH_NAMES[(biz.history?.at(-1)?.month||S.month)-1]} ${biz.history?.at(-1)?.year||S.year}`:''}</div>
-      <div class="biz-kpis"><div>Sales<strong>${netR.hasPL?esc(formatMoney(netR.revenue,S.country)):'Pending'}</strong></div><div>Net profit<strong class="${(netR.net||0)<0?'text-bad':'text-good'}">${netR.hasPL?esc(formatMoney(netR.net,S.country)):'Pending'}</strong></div><div>Costs &amp; tax<strong>${netR.hasPL?esc(formatMoney(netR.costs+netR.tax,S.country)):'Pending'}</strong></div><div>${biz.tech?'Investor payout':'Repeat customers'}<strong>${biz.tech?esc(formatMoney(pl?.investorDistribution||0,S.country)):Math.round((biz.repeatRate??.5)*100)+'%'}</strong></div></div>
+      <div class="biz-kpis"><div>Sales<strong>${netR.hasPL?esc(formatMoney(netR.revenue,S.country)):'Pending'}</strong></div><div>Net profit<strong class="${(netR.net||0)<0?'text-bad':'text-good'}">${netR.hasPL?esc(formatMoney(netR.net,S.country)):'Pending'}</strong></div><div>Costs &amp; tax<strong>${netR.hasPL?esc(formatMoney(netR.costs+netR.tax,S.country)):'Pending'}</strong></div><div>${biz.tech||biz.enterprise?'Investor payout':'Repeat customers'}<strong>${biz.tech||biz.enterprise?esc(formatMoney(pl?.investorDistribution||0,S.country)):Math.round((biz.repeatRate??.5)*100)+'%'}</strong></div></div>
       <section class="biz-chart-panel"><h4>Monthly net profit</h4>${businessHistoryChart(biz)||'<p class="muted">Your chart starts after two trading months.</p>'}</section>
       ${losingHtml}${debtHtml}
-      <section class="biz-next"><div><small>NEXT REVIEW</small><h4>${biz.tech&&!biz.tech.niche?'Choose your first product':biz.tech&&biz.tech.stage!=='live'?'Build, test, then release':!businessIsManaged(S,biz)?'Appoint a manager':!pl?'Prepare for opening month':(biz.monthsLosing||0)>0?'Review your costs':'Review your product prices'}</h4><p>${!businessIsManaged(S,biz)?'Nobody is covering all the required hours.':!pl?'Check the team and prices, then advance one month.':'Decisions now affect the next trading month.'}</p></div><button class="btn btn-primary" data-action="biz-tab" data-area="${biz.tech?'products':!businessIsManaged(S,biz)||!pl?'team':(biz.monthsLosing||0)>0?'money':'products'}">${biz.tech?'Open product':!businessIsManaged(S,biz)?'Find manager':!pl?'Review team':(biz.monthsLosing||0)>0?'See costs':'Set prices'}</button></section>
+      <section class="biz-next"><div><small>NEXT REVIEW</small><h4>${biz.enterprise&&biz.enterprise.niche===null?'Choose your market':biz.enterprise&&biz.enterprise.stage!=='trading'?'Prepare for opening':biz.tech&&!biz.tech.niche?'Choose your first product':biz.tech&&biz.tech.stage!=='live'?'Build, test, then release':!businessIsManaged(S,biz)?'Appoint a manager':!pl?'Prepare for opening month':(biz.monthsLosing||0)>0?'Review your costs':'Review your product prices'}</h4><p>${!businessIsManaged(S,biz)?'Nobody is covering all the required hours.':!pl?'Check the team and prices, then advance one month.':'Decisions now affect the next trading month.'}</p></div><button class="btn btn-primary" data-action="biz-tab" data-area="${biz.tech||biz.enterprise?'products':!businessIsManaged(S,biz)||!pl?'team':(biz.monthsLosing||0)>0?'money':'products'}">${biz.tech||biz.enterprise?'Open product':!businessIsManaged(S,biz)?'Find manager':!pl?'Review team':(biz.monthsLosing||0)>0?'See costs':'Set prices'}</button></section>
       ${biz.lastPL?.safetyNotes?.length?`<div class="biz-alert">${biz.lastPL.safetyNotes.map(esc).join(' · ')}</div>`:''}
       <details class="biz-company-info"><summary>Company facts</summary>Founded ${MONTH_NAMES[(biz.foundedMonth||1)-1]} ${biz.foundedYear} · Capital ${esc(formatMoney(biz.capitalInvested,S.country))}<div class="biz-mode-control"><button class="btn" data-action="biz-mode" data-biz="${biz.id}" data-mode="${biz.mode==='full_time'?'part_time':'full_time'}">Switch to ${biz.mode==='full_time'?'part-time':'full-time'}</button></div></details>
       `:''}
-      ${businessTab==='money'?`<section class="biz-statement"><h4>Last monthly statement</h4>${plHtml}${historyHtml}${debtHtml}</section>`:''}
+      ${businessTab==='money'?`<section class="biz-statement"><h4>Last monthly statement</h4>${biz.enterprise?'<p class="muted">Cash-basis game statement: stock purchases and project inputs count when paid, not when sold. Net here is operating cash after game tax, not accrual accounting profit.</p>':''}${plHtml}${historyHtml}${debtHtml}</section>`:''}
       ${renderOperationsMenuHtml(S, biz, {
         area:businessTab,
         staffHtml: renderStaffListHtml(S, biz, uiState.bizEmployee),
@@ -2503,7 +2506,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
         groupSupplyHtml: renderGroupSupplyLineHtml(S, biz)
       })}
       ${businessTab==='money'?`<details class="biz-ownership"><summary>Ownership &amp; succession</summary>${renderBusinessWillSection(S,biz)}</details>`:''}
-      ${businessTab==='overview'&&!biz.tech&&renderDecisionsHtml(S,biz)?`<details class="biz-decisions"><summary>Company decisions</summary>${renderDecisionsHtml(S,biz)}</details>`:''}
+      ${businessTab==='overview'&&!biz.tech&&!biz.enterprise&&renderDecisionsHtml(S,biz)?`<details class="biz-decisions"><summary>Company decisions</summary>${renderDecisionsHtml(S,biz)}</details>`:''}
     </div>`;
   };
 
@@ -2576,7 +2579,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       : liveSameType && allowDup
         ? `<div class="muted" style="margin-top:4px">Opening a second ${esc(bp.label)} — it will be named ${esc(liveSameType.name)} 2.</div>`
         : '';
-    return `<article class="biz-start-card"><div class="biz-start-head">${businessIllustration(bp)}<div><small>${esc(businessSector(bp))}</small><h3>${esc(bp.label)}</h3><strong>${esc(formatMoney(cap,S.country))}</strong><div class="muted">Startup capital</div></div></div><div class="biz-start-costs">Operating estimate ${esc(formatMoney(costFromHome,S.country))}/mo<br>${bp.id==='tech_founder'?'Home studio included':`Premises rent +${esc(formatMoney(ev.rentEstimateLocal,S.country))}/mo`}</div>${bp.id==='tech_founder'?'<p class="muted">Solo founder · no sales until release · optional hires cost extra.</p>':ventureViabilityWarningHtml(S,bp,ev)}<details><summary>Review startup</summary><div class="muted">Wages ${esc(formatMoney(ev.wageEstimateLocal,S.country))}/mo · Other ${esc(formatMoney(otherEstimateLocal,S.country))}/mo</div>${locksHtml}${dupHtml}${runByHtml}${managerHtml}${ev.ok?(runBy==='manager'&&!pickedMgr?'<p>Choose a manager.</p>':launchBtns):'<p class="muted">Requirements not met.</p>'}</details></article>`;
+    return `<article class="biz-start-card"><div class="biz-start-head">${businessIllustration(bp)}<div><small>${esc(businessSector(bp))} · ${bp.id.startsWith('enterprise_')||bp.id==='tech_founder'?'Staged company':'Classic model'}</small><h3>${esc(bp.label)}</h3><strong>${esc(formatMoney(cap,S.country))}</strong><div class="muted">Startup capital</div></div></div><div class="biz-start-costs">Operating estimate ${esc(formatMoney(costFromHome,S.country))}/mo<br>${bp.id==='tech_founder'||bp.id.startsWith('enterprise_')?'Starter workspace included':`Premises rent +${esc(formatMoney(ev.rentEstimateLocal,S.country))}/mo`}</div>${bp.id==='tech_founder'||bp.id.startsWith('enterprise_')?'<p class="muted">Solo founder · no sales until opening/release · optional hires cost extra.</p>':ventureViabilityWarningHtml(S,bp,ev)}<details><summary>Review startup</summary><div class="muted">Wages ${esc(formatMoney(ev.wageEstimateLocal,S.country))}/mo · Other ${esc(formatMoney(otherEstimateLocal,S.country))}/mo</div>${locksHtml}${dupHtml}${runByHtml}${managerHtml}${ev.ok?(runBy==='manager'&&!pickedMgr?'<p>Choose a manager.</p>':launchBtns):'<p class="muted">Requirements not met.</p>'}</details></article>`;
   };
 
   /* v2.14 §1 — no cap any more: the limit is your hours and your
@@ -2616,7 +2619,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       <div class="biz-sector-tabs">${[['all','All'],['food','Food'],['retail','Retail'],['tech','Tech'],['health','Health'],['services','Services']].map(([id,label])=>`<button class="btn btn-sm ${(uiState.bizSector||'all')===id?'btn-navy':''}" data-action="biz-sector" data-sector="${id}">${label}</button>`).join('')}</div>
       <p class="muted">Full-time ${BUSINESS_FULL_TIME_HOURS} h/wk · Part-time ${BUSINESS_PART_TIME_HOURS} h/wk <span title="Profit varies. Running full-time yourself requires leaving your job. Managers use no player hours." aria-label="Information">ⓘ</span></p>
       <div class="catalog-filter-bar">
-        <input type="search" class="filter-input" data-filter="bizQuery" placeholder="Search ${allVentures.length} ventures (e.g. Café, Pharmacy, SaaS, Clinic, Factory)..." value="${esc(uiState.bizQuery || '')}">
+        <input type="search" class="filter-input" data-filter="bizQuery" placeholder="Search ${startVentures.length} ventures (e.g. Café, Pharmacy, SaaS, Clinic, Factory)..." value="${esc(uiState.bizQuery || '')}">
       </div>
       ${filtered.map(launchRow).join('') || '<p class="muted">No ventures match that search.</p>'}
     </div>`:''}

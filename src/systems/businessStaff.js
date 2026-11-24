@@ -1,3 +1,4 @@
+import{COMPANY_SECTORS}from './companyLifecycle.js';
 import{businessProfile}from './businessProfiles.js';
 import{benefitsCost}from './businessBenefits.js';
 import{employeePerson,tickEmployeeChoice}from './businessPeople.js';
@@ -167,7 +168,7 @@ export function getBusinessTypeRow(typeId) {
    exist, otherwise the sensible default list for the industry — plus
    the v2.17 completions, so no type hires only one or two roles. */
 export function staffRolesForType(typeId) {
-  const profile=businessProfile(typeId);
+  const profile=typeId?.startsWith('enterprise_')?{roles:COMPANY_SECTORS[typeId.slice(11)]?.roles||[]}:businessProfile(typeId);
   let roles = null;
   const row = getBusinessTypeRow(typeId);
   if (row && Array.isArray(row.staffRoles) && row.staffRoles.length > 0) {

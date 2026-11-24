@@ -76,7 +76,7 @@ function yearsInBusiness(S, biz) {
   const now = S.year * 12 + S.month;
   return Math.max(0, (now - start) / 12);
 }
-function annualRevenue(biz) { if(biz.tech)return Math.round((biz.history||[]).slice(-12).reduce((sum,p)=>sum+(p.revenue||0),0));return Math.round((Number(biz.monthlyRev) || 0) * 12); }
+function annualRevenue(biz) { if(biz.tech||biz.enterprise)return Math.round((biz.history||[]).slice(-12).reduce((sum,p)=>sum+(p.revenue||0),0));return Math.round((Number(biz.monthlyRev) || 0) * 12); }
 
 /* Defensive migration for old-save businesses: retainedCash starts at 0,
    never crashes, never invents money. */

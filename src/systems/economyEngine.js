@@ -697,13 +697,12 @@ export function settleHouseholdMonth(S) {
          zero P&L anyway; this only avoids noise in the settlement). */
       if (biz.dead) continue;
       const pl = computeBusinessMonthFull(S, biz, { worldRevenueMult: wEff.businessRevenue });
-      if(pl.fundingUsed>0){netDelta+=pl.fundingUsed;addIncome(pl.fundingUsed,`Startup reserve used — ${biz.name}`);}
       if (pl.net >= 0) {
         biz.monthsLosing = 0;
         netDelta += pl.net;
         const formerShares=(biz.divorceCoOwners||[]).reduce((n,c)=>n+(c.equityPercent||0),0);
         if(formerShares>0){const distribution=Math.round(pl.net*formerShares/Math.max(1,(biz.equityOwned??100)+formerShares));netDelta-=distribution;summary.living+=distribution;bizSettleCosts+=distribution;for(const co of biz.divorceCoOwners){const person=S.people[co.personId];if(person){person.career??={};person.career.savingsLocal=(person.career.savingsLocal||0)+convertCurrency(distribution*(co.equityPercent/formerShares),S.country,person.residenceCountry||S.country,S.year);}}recordLedgerEntry(S,-distribution,'Divorce business co-owner profit distribution','family','business',0);}
-        if(pl.investorDistribution>0){netDelta-=pl.investorDistribution;summary.living+=pl.investorDistribution;bizSettleCosts+=pl.investorDistribution;recordLedgerEntry(S,-pl.investorDistribution,`Startup investor profit share — ${biz.name}`,'business','business',0);}
+        if(pl.investorDistribution>0){netDelta-=pl.investorDistribution;summary.living+=pl.investorDistribution;recordLedgerEntry(S,-pl.investorDistribution,`Startup investor profit share — ${biz.name}`,'business','business',0);}
         addIncome(pl.revenue, `Business revenue — ${biz.name}`);
         summary.living += pl.costs;
         summary.tax += pl.tax;
@@ -724,10 +723,11 @@ export function settleHouseholdMonth(S) {
       } else {
         biz.monthsLosing = (biz.monthsLosing || 0) + 1;
         const shortfall = Math.abs(pl.net);
-        const avail = (Number(S.money.cash) || 0) + (Number(S.money.savings) || 0) + netDelta;
+        const avail = (Number(S.money.cash) || 0) + (Number(S.money.savings) || 0) + netDelta + (pl.fundingUsed||0);
         if (avail >= shortfall) {
           /* Household covers the loss this month — the money really moves. */
-          netDelta += pl.net;
+          netDelta += pl.net+(pl.fundingUsed||0);
+          if(pl.fundingUsed>0)addIncome(pl.fundingUsed,`Company reserve used — ${biz.name}`);
           addIncome(pl.revenue, `Business revenue — ${biz.name}`);
           summary.living += pl.costs;
           summary.tax += pl.tax;
@@ -761,7 +761,7 @@ export function settleHouseholdMonth(S) {
             biz.debtSinceYear = S.year;
             biz.debtSinceMonth = S.month;
           }
-          biz.debtLocal = Math.round((biz.debtLocal || 0) + pl.costs + fee);
+          biz.debtLocal = Math.round((biz.debtLocal || 0) + Math.max(0,pl.costs-(pl.fundingUsed||0)) + fee);
           netDelta += pl.revenue;
           addIncome(pl.revenue, `Business revenue — ${biz.name}`);
           applyUnpaidWagesMorale(biz); /* W2: unpaid wages sink team morale −10 */

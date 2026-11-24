@@ -1,3 +1,4 @@
+import{companyVentures,initCompany,COMPANY_SECTORS}from './companyLifecycle.js';
 import{initTech}from './techStartup.js';
 import{benefitsCost}from './businessBenefits.js';
 import { businessValuation, businessSalvage } from '../data/businessValuation.js';
@@ -224,6 +225,7 @@ export function listAllBusinessVentures(S) {
   for (const b of (BUSINESS_TYPES || [])) pushRow(normalizeVentureRow(b, 'modern'));
   for (const eb of (EXTRA_BUSINESSES || [])) pushRow(normalizeVentureRow(eb, 'modern'));
   for (const vb of (V1_BUSINESS_TYPES || [])) pushRow(normalizeVentureRow(vb, 'v1'));
+  list.unshift(...companyVentures(S));
   if(S.year>=1985)list.unshift({id:'tech_founder',label:'Tech startup',desc:'Start solo at home. Pick a niche, build and release a product, then earn paying users.',capitalUsd2026:2500,monthlyRevUsd2026:5000,monthlyCostUsd2026:150,reqMajor:null,volatility:0,maxLevel:Infinity,from:1985,industry:'tech'});
   return list;
 }
@@ -353,7 +355,7 @@ export function evaluateBusinessLaunch(S, bp, mode = null) {
   const pricing = ventureLocalPricing(S, bp);
   const capitalLocal = pricing.capitalLocal;
   const revLocal = pricing.revLocal;
-  const costLocal = bp.id==='tech_founder'?Math.max(1,Math.round(eraSalary(getCountry(S.country).annualSalaryTiers2026.mid/12,S.country,S.year)*.08)):pricing.costLocal;
+  const costLocal = bp.id.startsWith('enterprise_')?Math.round(eraSalary(getCountry(S.country).annualSalaryTiers2026.mid/12,S.country,S.year)*(COMPANY_SECTORS[bp.id.slice(11)]?.fixed||.1)):bp.id==='tech_founder'?Math.max(1,Math.round(eraSalary(getCountry(S.country).annualSalaryTiers2026.mid/12,S.country,S.year)*.08)):pricing.costLocal;
   if ((S.money?.cash || 0) < capitalLocal) {
     locks.push(`Needs ${formatMoney(capitalLocal, S.country)} startup capital (you have ${formatMoney(S.money?.cash || 0, S.country)} in cash).`);
   }
@@ -403,7 +405,7 @@ export function evaluateBusinessLaunch(S, bp, mode = null) {
      launch screen test the same numbers. */
   const midMonthly = eraSalary(getCountry(S.country).annualSalaryTiers2026.mid / 12, S.country, S.year);
   const starterRoles = staffRolesForType(bp.id);
-  const wageEstimateLocal = bp.id==='tech_founder'?0:starterRoles.length > 0
+  const wageEstimateLocal = bp.id==='tech_founder'||bp.id.startsWith('enterprise_')?0:starterRoles.length > 0
     ? starterRoles.slice(0, 3).reduce((sum, role) => sum + roleWageLocal(S, role, S.country), 0)
     : Math.round(midMonthly * 0.6) * 3;
   const rentEstimateLocal = Math.round(eraSalary(getCountry(S.country).monthlyBasket2026.rentStandard, S.country, S.year) * 0.8);
@@ -819,7 +821,7 @@ export function createBusiness(S, typeId, customName = '', opts = {}) {
      business had no staff at all — no wages, no morale, nothing to
      quit — because ensureStaffArray only seeds from a legacy
      `employees` number a fresh launch never set. */
-  if(bp.id==='tech_founder'){initTech(S,biz);biz.staff=[];biz.employees=0;}else seedStartingStaff(S, biz, 3);
+  if(bp.id.startsWith('enterprise_'))initCompany(S,biz,bp.id.slice(11));else if(bp.id==='tech_founder'){initTech(S,biz);biz.staff=[];biz.employees=0;}else seedStartingStaff(S, biz, 3);
   S.career.businesses.push(biz);
   syncBusinessMirror(S);
   const hoursNote = managerOpt
@@ -928,6 +930,7 @@ export function settleBusinessExitDebt(S, biz, grossProceeds) {
   biz.debtLocal = 0;
   biz.retainedCash = 0;
   if(biz.tech)biz.tech.reserve=0;
+  if(biz.enterprise)biz.enterprise.reserve=0;
   if (shortfall > 0) {
     S.money.loans.push({ id: nextId(S, 'loan'), label: `Business exit shortfall: ${biz.name}`, balance: shortfall,
       monthlyPayment: Math.max(1, Math.ceil(shortfall / 24)), annualRate: 0, remainingMonths: 24,

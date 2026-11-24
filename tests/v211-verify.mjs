@@ -343,7 +343,7 @@ console.log('--- §6 business events ---');
     const bizs = getBusinesses(S);
     check('choice creates a real business in S.career.businesses', bizs.length === 1, `got ${bizs.length}`);
     if (bizs.length) {
-      check('created business has staff', bizs[0].tech?bizs[0].staff.length===0:(bizs[0].staff || []).length >= 1, `staff=${(bizs[0].staff || []).length}`);
+      check('created business has staff', bizs[0].tech||bizs[0].enterprise?bizs[0].staff.length===0:(bizs[0].staff || []).length >= 1, `staff=${(bizs[0].staff || []).length}`);
       check('created business has a P&L (lastPL + history)', !!bizs[0].lastPL && (bizs[0].history || []).length >= 1);
       check('created business charged startup capital', S.money.cash < cashBefore, `${cashBefore} -> ${S.money.cash}`);
     }
