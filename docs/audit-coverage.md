@@ -221,3 +221,11 @@ Each input has two fictional suppliers, precise unit quotes, reliability, saved 
 Validation: 94 focused tests, actual household cash with/without reserve, fractional currency rates, niche recipe integrity, prepaid WIP, selective API outage, delivery-delay/receipt guard. Ten local phone flows include supplier selection, material orders, production/sales and reload. Full hosted checks follow deployment.
 
 Limits: explicit opt-in, no silent conversion of old stock/WIP; fixed recipe quantities and simplified crop/material resource allowances, not real procurement or clinical guidance. Purchase invoices are cash expenses on receipt; spoilage is inventory value lost, not a second cash payment. Base-capacity order plans do not forecast demand, subtract existing stock or guarantee sell-through. Shared materials use rotated line priority, not an editable production scheduler. No custom supplier contracts or credit terms. Ten lifecycle sectors only, not classic specialties/acquisitions.
+
+## Explicit software server capacity
+
+Optional cloud rentals (1k/5k/25k/125k abstract workload units) and owned 10k-unit racks are connected to real monthly service. Racks cost cash now, install after two months, then incur power and upkeep. Workload is higher for AI/social/games. Overload creates unserved users, lowers billable service, reduces quality and loses some users. Extra hardware does not invent customers. Explicit capacity replaces per-user base hosting; per-feature metered usage remains separate. Existing saves retain legacy hosting until choosing a server action. Rejected actions do not turn it off.
+
+Validation: 95 focused files, 81 navigation checks; all seven software workload models, rental/installation charges, same-month guards, no-capacity revenue, overload/churn, currency conversion, actual household cash/reserve reconciliation and mobile buy/install/reload pass. Hosted verification follows deployment.
+
+Limits: abstract workload rather than separate CPU/RAM/storage/bandwidth constraints; rack purchase is a sunk expense, no resale/depreciation asset ledger yet; overload is degraded service, not a timed random hardware-failure calendar. No backup/region redundancy, hardware replacement or power outage contracts yet. Explicit capacity is opt-in, with the switch warning visible. Those limits remain backlog, not completion claims.
