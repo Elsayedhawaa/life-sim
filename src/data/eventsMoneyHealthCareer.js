@@ -7877,49 +7877,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 55, "hasJob": true},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(60000, S.country, S.year);
-      const B = eraLocalCost(75000, S.country, S.year);
-      return {
-        key: 'ev_career_early_retirement',
-        category: 'career',
-        title: "An Early Retirement Offer",
-        text: `The company offers early retirement: leave now, with a lump sum of ${formatMoney(A, S.country)} and a pension starting early. It is generous — and it is also the company saying goodbye, politely, on paper.`,
-        choices: [
-          {
-            label: "Take the early retirement",
-            effect: (st) => {
-              walletMove(st, +A, 'Take the early retirement', 'career');
-              st.career.job = null; st.career.employed = false; st.career.unemployedMonths = 0;
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-5));
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+3));
-              recordJournal(st, `You took the early retirement offer of ${formatMoney(A, S.country)} and left work on your own terms.`, 'career');
-            },
-          },
-          {
-            label: "Stay and work five more years",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              if (st.career.job) st.career.job.performance = clamp((st.career.job.performance || 50) + (+2));
-              recordJournal(st, `You stayed and worked five more years instead of taking the early retirement.`, 'career');
-            },
-          },
-          {
-            label: "Negotiate a better package",
-            effect: (st) => {
-              walletMove(st, +B, 'Negotiate a better package', 'career');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You negotiated the early retirement package up to ${formatMoney(B, S.country)} before deciding.`, 'career');
-            },
-          },
-        ],
-      };
+      const job=S.career.job;if(!S.career.employed||!job)return null;
+      const amount=Math.max(0,Math.round(job.monthlyGross||0))*6,negotiated=Math.round(amount*1.25),id=job.id;
+      const leave=(st,pay)=>{if(!st.career.employed||st.career.job?.id!==id)return;walletMove(st,pay,'Employer exit package','career');st.career.job=null;st.career.employed=false;st.career.unemployedMonths=0;recordJournal(st,'Accepted employer exit package and left the job. No automatic pension was created; existing private savings remain yours.','career');};
+      return{key:'ev_career_early_retirement',category:'career',title:'An Employer Exit Package',text:`Your employer offers six months of current gross pay, ${formatMoney(amount,S.country)}, to leave this job. A negotiated offer is ${formatMoney(negotiated,S.country)}. Either payment ends the role. This is not a pension: normal retirement eligibility and your recorded private savings remain separate.`,choices:[{label:'Accept package and leave',effect:st=>leave(st,amount)},{label:'Keep working in this job',effect:st=>{}},{label:'Accept negotiated package and leave',effect:st=>leave(st,negotiated)}]};
     },
   },
   {

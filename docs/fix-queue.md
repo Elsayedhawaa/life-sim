@@ -100,5 +100,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W29 Gold-price scene sells fixed5g/2g for invented fiat amounts even without those holdings; use actual holdings/current market sale route and half quantity.
 - [x] W30 Narrative loan offers need real terms/liabilities and shared bank gates: payday/student loans currently grant cash without debt, repayment follow-ups can invent charges, bank offer bypasses eligibility.
 - [x] W31 Family loan repayments need actual outstanding paid principal, not merely an after-event flag; gift/saving/spending labels must match real transfers rather than credit full gift after giving half.
-- [ ] W32 Zakat narrative invents flat due amount/half promise independently of Finance, can charge twice without annual record. Use same modeled threshold/amount/payment record, no invented half-payment obligation.
-- [ ] W33 Personal receivable on borrower death has no estate outcome, leaves uncollectible asset. Mark bad debt with honest write-off if estate recovery is not modeled, preserve history.
+- [x] W32 Zakat narrative invents flat due amount/half promise independently of Finance, can charge twice without annual record. Use same modeled threshold/amount/payment record, no invented half-payment obligation.
+- [x] W33 Personal receivable on borrower death has no estate outcome, leaves uncollectible asset. Mark bad debt with honest write-off if estate recovery is not modeled, preserve history.
+- [ ] W34 Early-retirement event promises pension but leaves player merely unemployed; negotiated package pays while retaining job. Make explicit employer-exit package with actual salary multiple, both payout choices end job, no unsupported pension promise or five-year instant narrative.

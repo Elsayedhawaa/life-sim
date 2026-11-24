@@ -483,3 +483,6 @@ Friend/sibling narrative lending now transfers funded cash to actual named perso
 
 ### W32 annual-giving record / W33 receivable death
 Giving scene uses same actual Finance threshold/estimate/payment-year flag, no flat invented bill or duplicate half-promise. Explicit simplified-model/religious-ruling caveat. Borrower death removes receivable from net worth immediately; monthly review preserves principal written off and states estate recovery is not modeled.162focused files pass.390px actual2500USDgiving/shared annual flag/reload and actual monthly800USDwrite-off/history/reload checked; inspected pixels. Fixture salary employer missing in writeoff setup explains its unrelated undefined label, not organic job creation.
+
+### W34 employer exit promise integrity
+Fresh hosted German/Swedish starting-life action/reload passes returned clean but only reached early adulthood, not full-life certification. Source audit found early-retirement scene promised unsupported pension, and negotiation paid while keeping job. Reframed as explicit employer-exit package of6actual gross months/negotiated7.5months: both payment choices end job, keep-working does not skip5years or pay. Normal pension eligibility/private assets remain separate.163focused files pass,390px actual22500USDnegotiated departure/job loss/reload checked and pixels inspected.
