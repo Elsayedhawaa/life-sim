@@ -1,3 +1,4 @@
+import{propertyMarketYear}from './propertyMarketRisk.js';
 import{flyingDutyStatus}from './dutyEligibility.js';
 import{settleUSRetirement}from './usRetirement.js';
 import {RURAL_CABIN} from '../data/ruralCabin.js';
@@ -264,8 +265,10 @@ export function tickAssetsAnnually(S) {
   for (const prop of S.housing.properties) {
     const pCountry = prop.country || S.country;
     const inf = inflationRate(pCountry, S.year) / 100;
-    const realGain = 0.018; // ~1.8% real long-term land/housing appreciation above CPI
-    prop.nativeValue = Math.round(prop.nativeValue * (1 + Math.max(-0.04, inf + realGain)));
+    const market=propertyMarketYear(S,pCountry);
+    const realGain=market.realChange;
+    prop.lastMarketChange={year:S.year,realChange:realGain,label:market.label};
+    prop.nativeValue = Math.round(prop.nativeValue * (1 + Math.max(-.30, inf + realGain)));
     if(prop.ruralCabin){const ratio=eraLocalCost(10000,pCountry,S.year)/eraLocalCost(10000,pCountry,S.year-1);prop.annualTaxNative=Math.round((prop.annualTaxNative||0)*ratio);prop.annualInsuranceNative=Math.round((prop.annualInsuranceNative||0)*ratio);}
     prop.nativeMonthlyRent = Math.round(prop.nativeMonthlyRent * (1 + Math.max(0, inf)));
     prop.valueLocal = Math.round(convertCurrency(prop.nativeValue, pCountry, S.country, S.year));

@@ -110,3 +110,5 @@ Realism item4, partial legal coverage: choose sale or funded cash buyout keeping
 https://selfhelp.courts.ca.gov/divorce/property-debts
 https://www.gov.uk/money-property-when-relationship-ends
 72focusedtests pass;390pxlocalbuyout/reloadkept3homesandcarwithactual644083USDawarddebited.
+
+Realism item5: property appreciation is no longer guaranteed. Seeded country-year scenarios include14%realdownturn,5%realsoftmarket,1.5%realsteadygrowthand7%realboom. Shared country-year result prevents property-purchase rerolling; CPI still affects nominal value. Card discloses fictional game scenario, not forecast.73focusedtests pass, mobile local actual downturn verified. These probabilities are design settings, not empirically fitted market forecasts.
