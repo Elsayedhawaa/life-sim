@@ -33,7 +33,7 @@
 import { rand, clamp } from '../core/rng.js';
 import { nextId, recordJournal, walletMove, recordLedgerEntry, ensureExtendedState } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
-import { businessValuation, computeBusinessTax, normalizeBusiness, resolveBusiness, syncBusinessMirror, monthsInBusiness, consecutiveProfitableMonths } from './businessEngine.js';
+import { settleBusinessExitDebt, businessValuation, computeBusinessTax, normalizeBusiness, resolveBusiness, syncBusinessMirror, monthsInBusiness, consecutiveProfitableMonths } from './businessEngine.js';
 
 /* ------------------------------------------------------------------ *
    Thresholds — stated on screen (renderExitsHtml) and in every refusal.
@@ -81,7 +81,7 @@ function annualRevenue(biz) { return Math.round((Number(biz.monthlyRev) || 0) * 
 /* Defensive migration for old-save businesses: retainedCash starts at 0,
    never crashes, never invents money. */
 export function ensureExitState(S, biz) {
-  if (!biz || typeof biz !== 'object') return null;
+  if (!biz || typeof biz !== 'object' || biz.dead || !(S.career.businesses || []).includes(biz)) return null;
   normalizeBusiness(S, biz);
   if (typeof biz.retainedCash !== 'number' || Number.isNaN(biz.retainedCash)) biz.retainedCash = 0;
   if (typeof biz.reinvestBoost !== 'number' || biz.reinvestBoost < 1) biz.reinvestBoost = 1;
@@ -195,13 +195,14 @@ export function acceptTradeSale(S, bizRef, offerArg) {
   const staffCount = (biz.staff || []).length;
   for (const m of (biz.staff || [])) m.morale = clamp((Number(m.morale) || 0) + 5, 0, 100);
   const valuation = businessValuation(biz);
+  const exit = settleBusinessExitDebt(S, biz, amount);
   removeFromPortfolio(S, biz);
-  walletMove(S, amount, `Trade sale — ${biz.name} sold to ${buyer}`, 'business');
+  walletMove(S, exit.proceeds, `Trade sale — ${biz.name} sold to ${buyer}`, 'business');
   recordExit(S, biz, 'trade_sale', { buyer, amount, valuation, boughtBy: { type: 'trade', name: buyer } });
-  recordJournal(S, `Sold ${biz.name} to ${buyer} for ${money(S, amount)} (valuation ${money(S, valuation)}). All ${staffCount} employee${staffCount === 1 ? '' : 's'} kept their jobs under the new owner — morale up 5, they were relieved not to be let go.`, 'milestone');
+  recordJournal(S, `Sold ${biz.name} to ${buyer} for ${money(S, amount)} (valuation ${money(S, valuation)}). ${money(S, exit.debtPaid)} paid unpaid bills and ${money(S, exit.proceeds)} reached you. All ${staffCount} employee${staffCount === 1 ? '' : 's'} kept their jobs under the new owner — morale up 5, they were relieved not to be let go.`, 'milestone');
   return {
-    ok: true, amount, buyer, valuation, staffTransferred: staffCount,
-    msg: `Sold ${biz.name} to ${buyer} for ${money(S, amount)}. Your ${staffCount} employee${staffCount === 1 ? '' : 's'} keep their jobs under the new owner.`
+    ok: true, amount: exit.proceeds, grossAmount: amount, debtPaid: exit.debtPaid, shortfall: exit.shortfall, buyer, valuation, staffTransferred: staffCount,
+    msg: `Sold ${biz.name} to ${buyer}: ${money(S, exit.proceeds)} after unpaid bills, ${money(S, exit.shortfall)} still owed. Your ${staffCount} employee${staffCount === 1 ? '' : 's'} keep their jobs under the new owner.`
   };
 }
 
@@ -258,8 +259,9 @@ export function managementBuyout(S, bizRef, opts = {}) {
   }
   const staffCount = (biz.staff || []).length;
   for (const m of (biz.staff || [])) m.morale = clamp((Number(m.morale) || 0) + 3, 0, 100);
+  const exit = settleBusinessExitDebt(S, biz, price);
   removeFromPortfolio(S, biz);
-  walletMove(S, price, `Management buyout — ${mgr.name} bought ${biz.name}`, 'business');
+  walletMove(S, exit.proceeds, `Management buyout — ${mgr.name} bought ${biz.name}`, 'business');
   const boughtBy = { type: 'mbo', name: mgr.name, personId: mgr.personId || null, price, method, loan };
   recordExit(S, biz, 'management_buyout', { buyer: mgr.name, amount: price, valuation, boughtBy });
   /* The manager stays in the game as an owner: their Person record, if
@@ -273,11 +275,11 @@ export function managementBuyout(S, bizRef, opts = {}) {
   const termsText = method === 'outright'
     ? `${mgr.name} paid ${money(S, price)} outright from ${money(S, aff.savings)} of savings`
     : `${mgr.name} paid ${money(S, price)} with ${money(S, aff.savings)} of savings plus a ${money(S, loan.amount)} bank loan at ${(MBO_LOAN_ANNUAL_RATE * 100).toFixed(0)}% over ${MBO_LOAN_MONTHS} months (${money(S, loan.monthlyPayment)}/month)`;
-  recordJournal(S, `${mgr.name} bought ${biz.name} from you for ${money(S, price)} — 85% of the ${money(S, valuation)} valuation, cheaper than a trade sale. ${termsText}. ${mgr.name} now owns the business outright and stays in your world as its owner; the ${staffCount} employee${staffCount === 1 ? '' : 's'} keep their jobs under them.`, 'milestone');
+  recordJournal(S, `${mgr.name} bought ${biz.name} from you for ${money(S, price)} — 85% of the ${money(S, valuation)} valuation. ${money(S, exit.proceeds)} reached you after unpaid bills. ${termsText}. ${mgr.name} now owns the business outright and stays in your world as its owner; the ${staffCount} employee${staffCount === 1 ? '' : 's'} keep their jobs under them.`, 'milestone');
   return {
-    ok: true, price, valuation, method, loan, savingsUsed: Math.min(aff.savings, price),
+    ok: true, price, proceeds: exit.proceeds, debtPaid: exit.debtPaid, shortfall: exit.shortfall, valuation, method, loan, savingsUsed: Math.min(aff.savings, price),
     manager: mgr.name, personId: mgr.personId || null, staffTransferred: staffCount,
-    msg: `${mgr.name} bought ${biz.name} for ${money(S, price)} (85% of valuation, cheaper than a trade sale). ${termsText}. ${mgr.name} stays in the game as the new owner.`
+    msg: `${mgr.name} bought ${biz.name} for ${money(S, price)}; you receive ${money(S, exit.proceeds)} after bills, ${money(S, exit.shortfall)} still owed. ${termsText}. ${mgr.name} stays in the game as the new owner.`
   };
 }
 
@@ -316,6 +318,8 @@ export function ipoBusiness(S, bizRef, opts = {}) {
   ensureExtendedState(S);
   const biz = ensureExitState(S, resolveBusiness(S, bizRef));
   if (!biz) return { ok: false, msg: 'No business found.' };
+  if (biz.publicFloat > 0 || biz.ipo?.stage === 'listed') return { ok: false, msg: 'This business is already listed. You cannot repeat its initial public offering.' };
+  if ((biz.equityOwned ?? 100) < IPO_FLOAT_PCT) return { ok: false, msg: 'You do not own enough shares for this IPO.' };
   const th = ipoThreshold(S, biz);
   if (!th.ok) {
     const missing = [];
@@ -349,8 +353,9 @@ export function ipoBusiness(S, bizRef, opts = {}) {
     };
   }
   walletMove(S, -stage2, `IPO underwriting — ${biz.name} (stage 2 of 2)`, 'business');
-  const payout = Math.round(valuation * (IPO_FLOAT_PCT / 100));
+  const payout = Math.round(valuation * IPO_FLOAT_PCT / (biz.equityOwned ?? 100));
   walletMove(S, payout, `IPO — sold ${IPO_FLOAT_PCT}% of ${biz.name} to the public`, 'business');
+  biz.equityOwned = Math.max(0, (biz.equityOwned ?? 100) - IPO_FLOAT_PCT);
   biz.publicFloat = IPO_FLOAT_PCT;
   biz.ipo = { stage: 'listed', year: S.year, month: S.month, costsPaid: totalCost, totalCost, payout, chance: Number(chance.toFixed(2)) };
   recordJournal(S, `${biz.name} listed on the stock market — ${IPO_FLOAT_PCT}% sold to the public for ${money(S, payout)} (costs ${money(S, totalCost)} in underwriting and legal fees). You still run the business, now with ${IPO_FLOAT_PCT}% of it owned by public shareholders.`, 'milestone');

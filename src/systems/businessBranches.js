@@ -37,7 +37,7 @@ import { getCountry, formatMoney } from '../data/countries.js';
 import { pickFirstName, pickFamilyName } from '../data/names.js';
 import {
   businessValuation, normalizeBusiness, migrateBusinesses, syncBusinessMirror,
-  resolveBusiness, computeBusinessMonth, closeBusiness
+  resolveBusiness, computeBusinessMonth, closeBusiness, sellBusiness
 } from './businessEngine.js';
 import { seedStartingStaff } from './businessStaff.js';
 import { listCommercialPremises, rentBusinessPremises } from './businessPremises.js';
@@ -393,12 +393,8 @@ export function sellBranch(S, branchId) {
   if (!branch) return { ok: false, msg: 'No such branch.' };
   const parent = (S.career.businesses || []).find(b => b && b.id === branch.parentBusinessId);
   const valuation = businessValuation(branch);
-  const bName = branch.name;
-  S.career.businesses = (S.career.businesses || []).filter(b => b.id !== branch.id);
-  syncBusinessMirror(S);
-  walletMove(S, valuation, `Sold branch — ${bName}`, 'business');
-  recordJournal(S, `Sold the ${branch.city} branch of ${parent ? parent.name : 'your business'} (${bName}) for ${formatMoney(valuation, S.country)} — the parent business is untouched.`, 'milestone');
-  return { ok: true, msg: `Sold the ${branch.city} branch for ${formatMoney(valuation, S.country)} — the parent business keeps trading.`, valuation, branchName: bName };
+  const result = sellBusiness(S, branch.id);
+  return { ...result, valuation, branchName: branch.name };
 }
 
 export function closeBranch(S, branchId, reason = 'closed') {
