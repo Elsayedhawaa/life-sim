@@ -496,49 +496,11 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: { requiredPeople: ['mom', 'dad'],"minAge": 20, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(450, S.country, S.year);
-      const B = eraLocalCost(225, S.country, S.year);
-      return {
-        key: 'ev_money_parent_medicine',
-        category: 'money',
-        title: `${momName} Needs Medicine Money`,
-        text: `${momName} calls from the pharmacy. Her blood pressure medicine costs ${formatMoney(A, S.country)} this month and her pension does not stretch. She says not to worry, she will manage — which is exactly how you know she will not.`,
-        choices: [
-          {
-            label: "Send the money right away",
-            effect: (st) => {
-              walletMove(st, -A, 'Send the money right away', 'money');
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Send the money right away', { affection: (+7) });
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-2));
-              recordJournal(st, `You sent ${momName} ${formatMoney(A, S.country)} for her medicine without a second thought.`, 'money');
-            },
-          },
-          {
-            label: "Send half and promise the rest next week",
-            effect: (st) => {
-              walletMove(st, -B, 'Send half and promise the rest next week', 'money');
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Send half and promise the rest next week', { affection: (+3) });
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You sent ${momName} half the medicine money and promised the rest next week.`, 'money');
-            },
-          },
-          {
-            label: `Tell her to ask ${dadName} first`,
-            effect: (st) => {
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Tell her to ask ${dadName} first`, { affection: (-6) });
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
-              recordJournal(st, `You told ${momName} to ask ${dadName} for the medicine money. She did not call back that evening.`, 'money');
-            },
-          },
-        ],
-      };
+      const mom=ctx.mom;if(!mom?.alive)return null;
+      const full=Math.round(eraLocalCost(450,S.country,S.year)),half=Math.max(1,Math.floor(full/2));
+      const receiptKey='medicine_'+mom.id+'_'+S.year;
+      const send=(st,amount)=>{st.money.familySupportReceipts??=[];if(st.money.familySupportReceipts.some(r=>r.key===receiptKey))return{ok:false};const result=givePersonalMoney(st,mom.id,amount);if(!result.ok)return result;st.money.familySupportReceipts.push({key:receiptKey,personId:mom.id,amount,country:st.country,year:st.year,month:st.month,purpose:'medicine_support'});rememberDeed(st,st.people[mom.id],'gift','Sent medicine support.',{affection:amount===full?7:3});recordJournal(st,`Sent ${formatMoney(amount,st.country)} to ${mom.firstName} for medicine support. No automatic follow-up payment or medical outcome is assumed.`,'family');return result;};
+      return{key:'ev_money_parent_medicine',category:'money',title:mom.firstName+' Needs Medicine Support',text:`Help ${mom.firstName} with ${formatMoney(full,S.country)} for medicine. Cash goes to her recorded savings, not an automatic purchase. Half is a one-off gift, without a promise of another payment.`,choices:[{label:`Send ${formatMoney(full,S.country)}`,available:()=>S.money.cash>=full,effect:st=>send(st,full)},{label:`Send half · ${formatMoney(half,S.country)}`,available:()=>S.money.cash>=half,effect:st=>send(st,half)},{label:'Keep your cash',effect:st=>{}}]};
     },
   },
   {

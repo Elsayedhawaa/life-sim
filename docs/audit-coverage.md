@@ -540,3 +540,8 @@ Recruitment stores exact offered job data/country and rebuilds acceptance with c
 - Removed imaginary attendance: remote gift debits actual cash and credits recipient savings once, congratulations remains free. No travel booking is claimed.
 - 180 focused test files pass. 390px targeted save fixture reloads twice, sends gift, checks player/recipient balances and reload persistence. Fresh 130-action mobile pass remains separate from fixture evidence.
 - Broader all-baseId reload audit found W55 crisis warning restoration gap, queued rather than hidden.
+
+## W49/W55 funded medicine support and crisis warning reload
+- Medicine support sends real cash to named living mother's savings and stores a once-per-event receipt. Half is explicitly a one-off gift, with no fictional week promise, purchase or medical outcome. Low cash cannot transfer.
+- Crisis warning stores original employer/crisis/freeze-year metadata and rebuilds both code-backed choices without reapplying crisis freeze/warning side effects.
+- 182 focused test files pass. 390px fixtures reload/act/reload and check actual recipient/receipt and early job-search flag. All-scene fresh reload audit remains open at W56 bankruptcy.

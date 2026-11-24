@@ -205,30 +205,7 @@ export function warnCrisisYear(S, info) {
   const untilYear = Math.max(...info.events.map((e) => e.endYear || S.year));
   setPayFreeze(S, untilYear, `pay is frozen while ${names} lasts — no rises until ${untilYear}`);
   for (const e of unwarned) c.crisisWarnings[e.id] = { year: S.year, month: S.month };
-  const scene = {
-    key: `crisis_warn_${unwarned.map((e) => e.id).join('_')}_${S.year}`,
-    baseId: 'crisis_career_warning',
-    maxPerLife: 3,
-    category: 'career',
-    title: `${names} — Your Job Is About to Feel It`,
-    text: `${names} is hitting ${getCountry(S.country).name} now, and it reaches your job at ${job.employer} before it reaches anywhere else. Three things, plainly: headhunters stop calling — nobody is hiring while this lasts; your pay is frozen until ${untilYear}, no rise this year however well you do; and redundancies are coming — firms cut people in a crisis, and yours may be one of them. This is the warning, before any of it happens.`,
-    choices: [
-      {
-        label: 'Tighten the belt and keep your head down',
-        effect: (st) => {
-          shiftVitals(st, { stress: 2 });
-          recordJournal(st, `With ${names} in the news, you decided to keep your head down at ${job.employer} — pay frozen, hiring frozen, and redundancies coming.`, 'career');
-        }
-      },
-      {
-        label: 'Start looking now, before the cuts come',
-        effect: (st) => {
-          st.career.jobLoss.lookingEarly = true;
-          recordJournal(st, `With ${names} in the news, you started looking for work before the cuts came — pay is frozen at ${job.employer} until ${untilYear}.`, 'career');
-        }
-      }
-    ]
-  };
+  const scene = buildCrisisWarningScene(S,{names,untilYear,employer:job.employer,key:`crisis_warn_${unwarned.map(e=>e.id).join('_')}_${S.year}`});
   const queued = queueScene(S, scene, true);
   if (queued) {
     recordJournal(S, `${names}: headhunters are calling less, your pay at ${job.employer} is frozen until ${untilYear}, and redundancies are a real risk while the crisis lasts.`, 'career');
@@ -290,7 +267,7 @@ export function makeRedundant(S, opts = {}) {
       {
         label: 'Start looking for work today',
         effect: (st) => {
-          st.career.jobLoss.lookingEarly = true;
+          ensureCareerConsequenceState(st).jobLoss.lookingEarly = true;
           recordJournal(st, `Made redundant — you started looking for work the same day.`, 'career');
         }
       },
@@ -623,3 +600,33 @@ export function checkCareerConsequences(S) {
    before the scene-queue drain at the end of advanceSingleTurn (so
    its scenes can become the active scene this turn).
    ========================================================================== */
+
+export function buildCrisisWarningScene(S,{names,untilYear,employer,key}){
+ const job={employer};
+  return {
+    key,
+    baseId: 'crisis_career_warning',
+    maxPerLife: 3,
+    category: 'career',
+    title: `${names} — Your Job Is About to Feel It`,
+    text: `${job.employer} · ${names}. Game effects: pay frozen until ${untilYear}, fewer job leads, higher layoff risk.`,
+    crisisWarningSnapshot:{names,untilYear,employer:job.employer,key},
+    choices: [
+      {
+        label: 'Tighten the belt and keep your head down',
+        effect: (st) => {
+          shiftVitals(st, { stress: 2 });
+          recordJournal(st, `With ${names} in the news, you decided to keep your head down at ${job.employer} — pay frozen, hiring frozen, and redundancies coming.`, 'career');
+        }
+      },
+      {
+        label: 'Start looking now, before the cuts come',
+        effect: (st) => {
+          ensureCareerConsequenceState(st).jobLoss.lookingEarly = true;
+          recordJournal(st, `With ${names} in the news, you started looking for work before the cuts came — pay is frozen at ${job.employer} until ${untilYear}.`, 'career');
+        }
+      }
+    ]
+  };
+}
+export function restoreCrisisWarningScene(S,saved){return saved?.crisisWarningSnapshot?buildCrisisWarningScene(S,saved.crisisWarningSnapshot):null;}

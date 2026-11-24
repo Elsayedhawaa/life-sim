@@ -1,3 +1,4 @@
+import{restoreCrisisWarningScene}from'../systems/careerConsequences.js';
 import{restoreNpcWeddingScene}from'../systems/soulEngine.js';
 import{restoreRecruitmentScene}from'../systems/careerEducationEngine.js';
 import{restoreWorldNewsScene}from'../systems/worldEvents.js';
@@ -76,7 +77,7 @@ export function loadGameFromStorage() {
       const restore = scene => {
         if (!scene) return null;
         if (!scene.eventId&&scene.key==='st_upstairs_pipe_leak')return buildWaterDamageScene(parsed);
-        if (!scene.eventId) return restoreNpcWeddingScene(parsed,scene) || restoreRecruitmentScene(parsed,scene) || restoreWorldNewsScene(parsed,scene) || restoreCuratedLifeScene(parsed,scene) || restoreDivorceDecision(parsed,scene) || restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
+        if (!scene.eventId) return restoreCrisisWarningScene(parsed,scene) || restoreNpcWeddingScene(parsed,scene) || restoreRecruitmentScene(parsed,scene) || restoreWorldNewsScene(parsed,scene) || restoreCuratedLifeScene(parsed,scene) || restoreDivorceDecision(parsed,scene) || restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
         return restoreRandomLifeScene(parsed, scene);
       };
       const pending = parsed.activeScene;
