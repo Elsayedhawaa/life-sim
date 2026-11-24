@@ -304,6 +304,7 @@ export function convertBusinessFiguresCurrency(S, biz, toCountry) {
   biz.monthlyRev = conv(biz.monthlyRev);
   biz.monthlyCost = conv(biz.monthlyCost);
   if(biz.enterprise)for(const key of ['price','unitCost','fixed','burn','reserve','pendingStockCost','wipUnitCost','wipPrice','pendingStockUnit'])if(Number.isFinite(biz.enterprise[key]))biz.enterprise[key]=conv(biz.enterprise[key]);
+  if(biz.growth){for(const entry of biz.growth.history||[])entry.cost=conv(entry.cost);for(const location of biz.growth.locations||[])location.monthly=conv(location.monthly);if(biz.growth.project)biz.growth.project.monthly=conv(biz.growth.project.monthly);}
   if(biz.operating?.history)for(const entry of biz.operating.history)entry.cost=conv(entry.cost);
   if(biz.tech)for(const key of ['price','cloud','fixed','burn','bookings','capitalRaised','reserve'])if(Number.isFinite(biz.tech[key]))biz.tech[key]=conv(biz.tech[key]);
   biz.capitalInvested = conv(biz.capitalInvested);

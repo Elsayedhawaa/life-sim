@@ -192,3 +192,12 @@ Changes affect invoice costs, effective sale prices, service capacity, demand, r
 Checks: all ten sectors have unit tests for all four incident responses, every choice category affecting settlement, repeated-month guards, order quote preservation, cycle price preservation and save/reload. Nine-sector phone launch-to-trading tests exercise supplier/specification/customer/routine buttons. Tech phone test covers launch-to-release and actual billable-price revenue.
 
 Still deliberately thin: one active range rather than simultaneous SKU lots; customer segments rather than named contract accounts or a customer ledger; monthly rather than daily simulation; two incidents per sector rather than a long event library; supplier choice rather than negotiated contracts. Classic-model specialty businesses do not get this operating layer. Medical/legal requirements remain simplified, not real professional guidance. This is a content/mechanics tranche, not a claim that the whole business game is deep or finished.
+
+
+## Growth and management-work tranche
+
+All ten lifecycle sectors have three named monthly management activities. Full-time founders can do two, part-time or manager-run companies one; no repeated activity in the same month. Their limited shared effects are explicit: two-month demand leads, quality work, or a two-month reduction in newly quoted input costs. Activity costs debit cash immediately.
+
+Equipment projects take two months and add 20% base capacity per stage, with running costs. Additional locations take three months, need three revenue months before funding, charge rent after opening even if understaffed, and add 50% base capacity only with staffing. The main site reserves three employees and every extra location needs three more, plus another core professional in pharmacy/clinic/logistics/education. Locations share the company range, inventory and accounts; they do not create demand. Cancellation/closure gives no setup refund and removes future project/location costs. Equipment is sunk capacity, not a separately saleable asset in this model.
+
+Still unfinished from the user's larger request: independent branches and their ledgers, multiple simultaneous product lines, named clients and contracts, distinct hiring tiers, competitor firms, and activity-specific interactive subgames. This tranche adds a playable activity and expansion loop, not full completion of Business.
