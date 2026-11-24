@@ -1029,27 +1029,7 @@ export function tickVisaAndLegalMonthly(S) {
     if (res.graceMonthsLeft <= 0) {
       transitionResidency(S, 'undocumented', { permitName: 'Expired Status (Overstay)', silent: true });
       S.player.vitals.stress = clamp(S.player.vitals.stress + 15);
-      queueScene(S, {
-        key: `grace_expired_${S.year}_${S.month}`,
-        category: 'visa',
-        title: `Visa Grace Period Expired (${S.year})`,
-        text: `Your 60-day grace window in ${getCountry(S.country).name} has expired without a new sponsor. Remaining undocumented risks fines, detention, and deportation.`,
-        choices: [
-          {
-            label: `Book immediate departure back to ${getCountry(S.homeCountry).name}`,
-            available: () => !S.legal.travelBanInCountry,
-            effect: (st) => {
-              returnToHomeCountry(st);
-            }
-          },
-          {
-            label: 'Stay undocumented and hustle cash gigs (High raid & deportation risk)',
-            effect: (st) => {
-              recordJournal(st, `You let your visa lapse in ${getCountry(st.country).name} and slipped into undocumented cash work.`, 'visa');
-            }
-          }
-        ]
-      }, true);
+      queueScene(S,buildMonthlyResidencyScene(S,{type:'grace',country:S.country,homeCountry:S.homeCountry,year:S.year,month:S.month}),true);
     }
     return;
   }
@@ -1083,30 +1063,7 @@ export function tickVisaAndLegalMonthly(S) {
         res.renewalDue = true;
         const renewFee = Math.round(convertCurrency(250, 'usa', S.country, S.year));
         const renewalKey = `renewal_${kindNow}_${res.expiresYear}_${res.expiresMonth}`;
-        queueScene(S, {
-          key: renewalKey,
-          category: 'visa',
-          // Title carries the year: a renewal every two years is a recurring
-          // real event, and each one is a distinct dated event — the
-          // per-title repeat cap must not swallow the 4th renewal of a life.
-          title: `${permitNow} Renewal (${S.year})`,
-          text: `Your ${permitNow} in ${getCountry(S.country).name} has reached its expiry date. Renew it now for ${formatMoney(renewFee, S.country)} (two more years), or let it lapse into the 60-day grace period.${kindNow === 'gulf_iqama' ? ' Renewal depends on your sponsor agreeing to renew the Iqama.' : ''}`,
-          choices: [
-            {
-              label: `Renew for ${formatMoney(renewFee, S.country)}`,
-              available: () => S.money.cash >= renewFee,
-              effect: (st) => {
-                renewCurrentPermit(st);
-              }
-            },
-            {
-              label: 'Let it lapse — take the 60-day grace period',
-              effect: (st) => {
-                transitionResidency(st, 'grace_period', { permitName: `${permitNow} Expired (60-Day Grace)`, graceMonthsLeft: 2 });
-              }
-            }
-          ]
-        }, true);
+        queueScene(S,buildMonthlyResidencyScene(S,{type:'renewal',country:S.country,kind:kindNow,permitName:permitNow,fee:renewFee,expiresYear:res.expiresYear,expiresMonth:res.expiresMonth,key:renewalKey,year:S.year}),true);
       } else {
         // Lapse only once the player has actually had the chance to answer
         // the renewal scene: the scene is queued during this tick and only
@@ -1149,46 +1106,7 @@ export function tickVisaAndLegalMonthly(S) {
          citizenships; children gain the new citizenship with the player. */
       const cObj = getCountry(S.country);
       const citFee = Math.round(convertCurrency(1000, 'usa', S.country, S.year));
-      queueScene(S, {
-        key: `citizenship_offer_${S.year}`,
-        category: 'visa',
-        title: `Apply for ${cObj.adjective} Citizenship? (${S.year})`,
-        text: `After ${res.yearsInCountryLegally} years of legal residence you are eligible to apply for ${cObj.adjective} citizenship. The application fee is ${formatMoney(citFee, S.country)}.${S.country === 'deu' ? (S.year>2024||(S.year===2024&&S.month>=7)?' Germany permits multiple citizenship under its post-June2024law; other nationalities’ laws are not fully modelled.':' This pre-July2024game route requires renunciation of previous citizenships, with legal exceptions not modelled.') : ''} Your minor children would gain ${cObj.adjective} citizenship with you.`,
-        choices: [
-          {
-            label: `Apply now (${formatMoney(citFee, S.country)})`,
-            available: () => S.money.cash >= citFee,
-            effect: (st) => {
-              walletMove(st, -citFee, `Naturalisation application (${cObj.name})`, 'visa');
-              if (st.country === 'deu' && (st.year<2024||(st.year===2024&&st.month<7))) {
-                const renounced = st.legal.citizenships.filter(c => c !== 'deu');
-                st.legal.citizenships = ['deu'];
-                st.legal.passports = st.legal.passports.filter(p => p.country === 'deu');
-                if (renounced.length) recordJournal(st, `Renounced ${renounced.map(c => getCountry(c).adjective).join(', ')} citizenship as required for German naturalisation.`, 'visa');
-              } else if (!st.legal.citizenships.includes(st.country)) {
-                st.legal.citizenships.push(st.country);
-              }
-              const passport=st.legal.passports.find(p=>p.country===st.country);if(passport)Object.assign(passport,{issuedYear:st.year,expiresYear:st.year+10});else st.legal.passports.push({ country: st.country, issuedYear: st.year, expiresYear: st.year + 10 });
-              transitionResidency(st, 'citizen', { permitName: `${cObj.adjective} Citizenship`, force: true });
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + 16);
-              for (const cid of st.relations.childIds) {
-                const ch = st.people[cid];
-                if (ch && ch.alive && ch.age < 18 && ch.residenceCountry===st.country && !(ch.citizenships||[]).includes(st.country)) {
-                  ch.citizenships??=[];
-                  ch.citizenships.push(st.country);
-                }
-              }
-              recordJournal(st, `Sworn in as a naturalized ${cObj.adjective} citizen and received your ${cObj.adjective} passport!`, 'milestone');
-            }
-          },
-          {
-            label: 'Defer — stay a permanent resident for now',
-            effect: (st) => {
-              recordJournal(st, 'Deferred the citizenship application — it will be offered again next year.', 'visa');
-            }
-          }
-        ]
-      }, true);
+      queueScene(S,buildMonthlyResidencyScene(S,{type:'citizenship',country:S.country,year:S.year,fee:citFee,legalYears:res.yearsInCountryLegally}),true);
     }
   }
 }
@@ -1271,4 +1189,109 @@ export function applyConsularTouristVisa(S, visaId) {
     'visa'
   );
   return { ok: true, msg: `Approved! ${spec.regionLabel} foil stamped in passport (→ ${S.year + spec.validYears}).` };
+}
+
+function buildMonthlyGrace(S,q){const res=S.legal.residency;return {
+        key: `grace_expired_${q.year}_${q.month}`,
+        category: 'visa',
+        title: `Visa Grace Period Expired (${q.year})`,
+        text: `Your recorded game grace period in ${getCountry(S.country).name} has ended. Passport now records expired status. Game inspection and return risks apply, not a statement of current local law.`,
+        choices: [
+          {
+            label: `Use return-home route to ${getCountry(S.homeCountry).name}`,
+            available: st => st.legal.travelBanInCountry!==st.country,
+            effect: (st) => {
+              returnToHomeCountry(st);
+            }
+          },
+          {
+            label: 'Remain for now · status unchanged',
+            effect: (st) => {
+              recordJournal(st, `Kept the current expired game status in ${getCountry(st.country).name}. No job or permit was granted.`, 'visa');
+            }
+          }
+        ]
+      };}
+function buildMonthlyRenewal(S,q){const res=S.legal.residency,kindNow=q.kind,permitNow=q.permitName,renewFee=q.fee,renewalKey=q.key;return {
+          key: renewalKey,
+          category: 'visa',
+          // Title carries the year: a renewal every two years is a recurring
+          // real event, and each one is a distinct dated event — the
+          // per-title repeat cap must not swallow the 4th renewal of a life.
+          title: `${permitNow} Renewal (${q.year})`,
+          text: `Your ${permitNow} in ${getCountry(S.country).name} has reached its expiry date. Renew it now for ${formatMoney(renewFee, S.country)} (two more years), or let it lapse into the game two-month grace period.${kindNow === 'gulf_iqama' ? ' Renewal depends on your sponsor agreeing to renew the Iqama.' : ''}`,
+          choices: [
+            {
+              label: `Renew for ${formatMoney(renewFee, S.country)}`,
+              available: st => st.money.cash >= renewFee,
+              effect: (st) => {
+                renewCurrentPermit(st);
+              }
+            },
+            {
+              label: 'Let it lapse · game two-month grace',
+              effect: (st) => {
+                transitionResidency(st, 'grace_period', { permitName: `${permitNow} Expired (60-Day Grace)`, graceMonthsLeft: 2 });
+              }
+            }
+          ]
+        };}
+function buildMonthlyCitizenship(S,q){const res=S.legal.residency,cObj=getCountry(q.country),citFee=q.fee;return {
+        key: `citizenship_offer_${q.year}`,
+        category: 'visa',
+        title: `Apply for ${cObj.adjective} Citizenship? (${q.year})`,
+        text: `After ${res.yearsInCountryLegally} years of legal residence you qualify for this game citizenship route. The application fee is ${formatMoney(citFee, S.country)}.${S.country === 'deu' ? (S.year>2024||(S.year===2024&&S.month>=7)?' This post-June2024game route retains held citizenships; other nationality rules are not fully modelled.':' This pre-July2024game route requires renunciation of previous citizenships, with legal exceptions not modelled.') : ''} Co-resident minor children would gain ${cObj.adjective} citizenship with you.`,
+        choices: [
+          {
+            label: `Apply now (${formatMoney(citFee, S.country)})`,
+            available: st => st.money.cash >= citFee,
+            effect: (st) => {
+              walletMove(st, -citFee, `Naturalisation application (${cObj.name})`, 'visa');
+              if (st.country === 'deu' && (st.year<2024||(st.year===2024&&st.month<7))) {
+                const renounced = st.legal.citizenships.filter(c => c !== 'deu');
+                st.legal.citizenships = ['deu'];
+                st.legal.passports = st.legal.passports.filter(p => p.country === 'deu');
+                if (renounced.length) recordJournal(st, `Renounced ${renounced.map(c => getCountry(c).adjective).join(', ')} citizenship under this historical game route.`, 'visa');
+              } else if (!st.legal.citizenships.includes(st.country)) {
+                st.legal.citizenships.push(st.country);
+              }
+              const passport=st.legal.passports.find(p=>p.country===st.country);if(passport)Object.assign(passport,{issuedYear:st.year,expiresYear:st.year+10});else st.legal.passports.push({ country: st.country, issuedYear: st.year, expiresYear: st.year + 10 });
+              transitionResidency(st, 'citizen', { permitName: `${cObj.adjective} Citizenship`, force: true });
+              st.player.vitals.happiness = clamp(st.player.vitals.happiness + 16);
+              for (const cid of st.relations.childIds) {
+                const ch = st.people[cid];
+                if (ch && ch.alive && ch.age < 18 && ch.residenceCountry===st.country && !(ch.citizenships||[]).includes(st.country)) {
+                  ch.citizenships??=[];
+                  ch.citizenships.push(st.country);
+                }
+              }
+              recordJournal(st, `Sworn in as a naturalized ${cObj.adjective} citizen and received your ${cObj.adjective} passport!`, 'milestone');
+            }
+          },
+          {
+            label: 'Defer — stay a permanent resident for now',
+            effect: (st) => {
+              recordJournal(st, 'Deferred the citizenship application — it will be offered again next year.', 'visa');
+            }
+          }
+        ]
+      };}
+export function buildMonthlyResidencyScene(S,q){
+ const valid=st=>{const r=st.legal.residency;if(st.country!==q.country)return false;
+ if(q.type==='grace')return r.kind==='undocumented'&&st.homeCountry===q.homeCountry;
+ if(q.type==='renewal')return r.kind===q.kind&&r.expiresYear===q.expiresYear&&r.expiresMonth===q.expiresMonth&&permitRenewalQuote(st).ok&&permitRenewalQuote(st).fee===q.fee;
+ const rules=SKILLED_MIGRATION_RULES[q.country];return r.kind==='permanent_resident'&&rules?.citizenshipNaturalization&&r.yearsInCountryLegally>=(rules.citizenshipYears||6)&&st.year===q.year&&!st.legal.citizenships.includes(q.country);};
+ if(!valid(S))return null;
+ const scene=q.type==='grace'?buildMonthlyGrace(S,q):q.type==='renewal'?buildMonthlyRenewal(S,q):buildMonthlyCitizenship(S,q);
+ scene.monthlyResidencySnapshot=q;
+ scene.choices=scene.choices.map(c=>({...c,available:st=>valid(st)&&(!c.available||c.available(st)),effect:st=>{if(!valid(st)||c.available&&!c.available(st))return;st.legal.residencyReplies??={};if(st.legal.residencyReplies[scene.key])return;const result=c.effect?.(st);if(result?.ok===false&&!result.refused)return result;st.legal.residencyReplies[scene.key]=true;return result;}}));
+ return scene;
+}
+export function restoreMonthlyResidencyScene(S,saved){
+ if(saved?.monthlyResidencySnapshot)return buildMonthlyResidencyScene(S,saved.monthlyResidencySnapshot);
+ const r=S.legal.residency,key=saved?.key||'';let q;
+ if(key===`renewal_${r.kind}_${r.expiresYear}_${r.expiresMonth}`){const price=permitRenewalQuote(S);if(price.ok)q={type:'renewal',country:S.country,kind:r.kind,permitName:r.permitName,fee:price.fee,expiresYear:r.expiresYear,expiresMonth:r.expiresMonth,key,year:S.year};}
+ if(key===`citizenship_offer_${S.year}`)q={type:'citizenship',country:S.country,year:S.year,fee:Math.round(convertCurrency(1000,'usa',S.country,S.year)),legalYears:r.yearsInCountryLegally};
+ if(key===`grace_expired_${S.year}_${S.month}`)q={type:'grace',country:S.country,homeCountry:S.homeCountry,year:S.year,month:S.month};
+ return q?buildMonthlyResidencyScene(S,q):null;
 }
