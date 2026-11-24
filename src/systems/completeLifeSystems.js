@@ -932,7 +932,7 @@ function shopCompareLine(S, entry) {
   if (entry.kind === 'owned') {
     return `${entry.name} (yours) — resale ${formatMoney(entry.priceLocal, S.country)}${entry.appreciates ? ' · ★ appreciating asset' : ''}`;
   }
-  return `${entry.name} — ${formatMoney(entry.priceLocal, S.country)} · quality +${entry.quality} (mood + looks) · lasts ~${entry.durabilityMonths} months`;
+  return `${entry.name} — ${formatMoney(entry.priceLocal, S.country)} · quality +${entry.quality} (mood + looks)`;
 }
 
 export function compareShopItems(S, itemId, otherRef) {
@@ -980,11 +980,7 @@ export function askShopkeeperAboutItem(S, itemId) {
     .map(i => i.priceUsd2026).sort((x, y) => x - y);
   const medianUsd = sameCat.length ? sameCat[Math.floor(sameCat.length / 2)] : item.priceUsd2026;
   const medianLocal = Math.max(5, Math.round(convertCurrency(medianUsd, 'usa', S.country, S.year)));
-  const verdict = item.priceUsd2026 <= medianUsd * 0.8
-    ? 'a genuinely good deal for the price — it sits well below what most things in this category cost'
-    : item.priceUsd2026 >= medianUsd * 1.5
-      ? 'pricey for its category — you are paying for the name as much as the thing itself'
-      : 'fairly priced for its category — neither a bargain nor a rip-off';
+  const verdict=item.priceUsd2026<medianUsd?'below the catalog category median':item.priceUsd2026>medianUsd?'above the catalog category median':'at the catalog category median';
   const quality = (item.hap || 0) + (item.looks || 0);
   queueScene(S, {
     key: `shop_ask_${item.id}_${S.year}_${S.month}_${S.turn}`,
@@ -992,7 +988,8 @@ export function askShopkeeperAboutItem(S, itemId) {
     maxPerLife: 99,
     category: 'lifestyle',
     title: `Ask about the ${item.brand} ${item.name}`,
-    text: `The shopkeeper turns it over in his hands. "${item.desc || item.name} — ${item.brand}, ${item.category}. It lifts your mood by ${item.hap || 0}${item.looks ? ` and your looks by ${item.looks}` : ''}, and it should last you about ${item.durabilityMonths || 6} months of regular use. At ${formatMoney(priceLocal, S.country)} it is ${verdict} (the typical ${item.category} piece goes for about ${formatMoney(medianLocal, S.country)}).${item.appreciates ? ' And this one holds its value — it is a collectible, not just a purchase.' : ''}"`,
+    text: `${formatMoney(priceLocal,S.country)} · +${item.hap||0} Mood${item.looks?` · +${item.looks} Looks`:''}\nCategory median: ${formatMoney(medianLocal,S.country)} · ${verdict}.${item.appreciates?' Collectible value can change.':''}`,
+
     choices: [{ label: 'Thanks — I will think about it', effect: () => {} }]
   });
   recordJournal(S, `Asked the shopkeeper about the ${item.brand} ${item.name} — ${verdict}.`, 'lifestyle');

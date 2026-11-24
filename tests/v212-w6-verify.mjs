@@ -69,7 +69,7 @@ const OLD = {
   console.log('appearance old:', OLD.appearance.join(','), '-> new:', app.join(','));
   console.log('travel old:', OLD.travel.join(','), '-> new:', trav.join(','));
   console.log('cards old:', OLD.cards.join(','), '-> new:', cards.join(','));
-  check('shop verbs 2 -> 6', shop.length === 6 && ['compare-shop-item', 'save-shop-item', 'ask-shop-item', 'remove-shop-wishlist'].every(v => shop.includes(v)), shop.join(','));
+  check('shop verbs 2 -> 6', shop.length === 8 && ['compare-shop-item', 'save-shop-item', 'ask-shop-item', 'remove-shop-wishlist'].every(v => shop.includes(v)), shop.join(','));
   check('appearance verbs 1 -> 3', app.length === 3 && app.includes('get-haircut') && app.includes('buy-outfit'), app.join(','));
   check('travel verbs 1 -> 3', trav.length === 3 && trav.includes('plan-trip') && trav.includes('compare-trip'), trav.join(','));
   check('cards verbs 2 -> 5', cards.length === 5 && ['card-limit', 'card-pay', 'card-use-perk'].every(v => cards.includes(v)), cards.join(','));
@@ -109,7 +109,7 @@ console.log('--- §1 shop ---');
   const S = adultLife();
   S.money.cash = 100;
   const html = renderLifestyleTabHtml(S, { lifeSub: 'shop', shopCat: 'all', shopQuery: '' });
-  check('disabled shop Cash button states money needed inline', /disabled>Cash<\/button>/.test(html) && /Need [^<]+ more/.test(html), `need-reason present: ${/Need [^<]+ more/.test(html)}`);
+  check('disabled shop Cash button states money needed inline', /disabled>Buy · [^<]+<\/button>/.test(html) && /Need [^<]+ more/.test(html), `need-reason present: ${/Need [^<]+ more/.test(html)}`);
 }
 
 /* ================= §2 Appearance verbs ================= */

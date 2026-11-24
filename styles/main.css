@@ -1608,3 +1608,5 @@ html[data-theme="dark"] .turn-result-card { background: #1b1814; }
 .shop-collectible{font-size:.65rem;color:#84682e}
 .shop-effects{font-size:.74rem;color:#6b655c;margin:12px 0}
 .shop-primary-actions{display:flex;gap:8px}.shop-primary-actions>.btn:first-child{flex:1}.shop-save{flex-shrink:0}.shop-options{margin-top:12px;font-size:.73rem;color:#6b655c}.shop-more-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+
+.shop-more-actions>span,.shop-more-actions>div{width:100%}.shop-credit-option{display:grid;gap:6px;padding:8px 0;border-block:1px solid var(--line-soft)}

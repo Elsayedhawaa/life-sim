@@ -1898,9 +1898,10 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='shop-finance'){uiState.activeTab='finance';uiState.finSub=btn.dataset.sub||'banks';renderApp();return;}
     if(action==='shop-category'){uiState.shopCat=btn.dataset.cat;renderApp();return;}
     if (action === 'buy-shop-item') {
-      handleActionResult(purchaseShopCatalogItem(S, btn.dataset.id, btn.dataset.pay || 'cash'));
+      handleActionResult(purchaseShopCatalogItem(S, btn.dataset.id, btn.dataset.pay || 'cash', {cardId:btn.dataset.cardId||null}));
       return;
     }
 
