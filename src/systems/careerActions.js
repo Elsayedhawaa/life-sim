@@ -28,6 +28,7 @@ import {
   getMergedCareerTracks,
   getRequiredForeignBoardForJob,
   getJobContract,
+  jobEmploymentFraction,
   requestRaiseOrPromotion,
   resignCurrentJob
 } from './careerEducationEngine.js';
@@ -795,7 +796,7 @@ function decidePromotion(S, approach) {
     const track = getMergedCareerTracks(S.year)[job.track];
     const ratio = rung.mult / (track.rungs[job.level]?.mult || 1);
     job.level = rung.level;
-    job.title = rung.title;
+    job.title = jobEmploymentFraction(job) < 1 ? `Part-Time ${rung.title}` : rung.title;
     job.monthlyGross = Math.round(job.monthlyGross * ratio);
     job.monthsInRole = 0;
     job.performance = clamp(job.performance + 3, 0, 100);

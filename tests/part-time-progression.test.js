@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {createNewLifeState,ensureExtendedState} from '../src/core/schema.js';
+import {hireIntoJob,listAvailableJobs,tickCareerMonthly,getJobContract,getLadderForJob} from '../src/systems/careerEducationEngine.js';
+const s=createNewLifeState({country:'gbr',seed:77});ensureExtendedState(s);s.player.age=30;s.year=2026;s.month=1;
+const offer=listAvailableJobs(s).find(j=>j.reqDegrees.length===0);hireIntoJob(s,offer,{allowed:true,partTimeOnly:true},{exactGross:Math.round(offer.monthlyGross*.45)});
+assert.equal(s.career.job.employmentFraction,.45);assert.match(getJobContract(s).shift,/20 hours/);
+s.career.trackExperience[offer.track]=30;s.career.job.performance=95;s.career.job.monthsInRole=11;
+tickCareerMonthly(s);assert.match(s.career.job.title,/^Part-Time/);assert.equal(s.career.job.employmentFraction,.45);
+const part=getLadderForJob(s).rungs[0].pay;const full=structuredClone(s);full.career.job.employmentFraction=1;full.career.job.title='Full-time';assert.ok(Math.abs(part/getLadderForJob(full).rungs[0].pay-.45)<.001);
+console.log('Part-time title, fraction, schedule and ladder pay survive annual promotion.');

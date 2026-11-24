@@ -1512,6 +1512,10 @@ export function syncEmployerBenefits(S) {
    current job. Backfills old saves (jobs hired before v2.8 have none of
    this) and resets the leave year when the year turns. Called by the
    monthly tick and by the Career tab render — both read the same object. */
+export function jobEmploymentFraction(job) {
+  return job?.employmentFraction === 0.45 || /^part-time/i.test(job?.title || '') ? 0.45 : 1;
+}
+
 export function getJobContract(S) {
   ensureExtendedState(S);
   const job = S.career?.job;
@@ -1533,11 +1537,11 @@ export function getJobContract(S) {
   const probationMonths = rules.probationMonths;
   const onProbation = (job.monthsInRole || 0) < probationMonths;
   const notice = noticeAndSeveranceFor(S.country, yearsService);
-  const isPartTime = /^part-time/i.test(job.title || '');
+  const isPartTime = jobEmploymentFraction(job) < 1;
   const contractType = isPartTime ? 'Part-time contract' : onProbation ? 'Permanent contract — on probation' : 'Permanent contract';
   const merged = getMergedCareerTracks(S.year);
   const industry = merged[job.track]?.industry || 'general';
-  const shift = industry === 'aviation'
+  const shift = isPartTime ? 'Part-time roster, about 20 hours a week (game model)' : industry === 'aviation'
     ? 'Rostered flying duties — variable days, nights and layovers (about 75–90 flying hours a month, modelled)'
     : (industry === 'medicine' || industry === 'nursing' || job.track === 'medicine' || job.track === 'nursing')
     ? 'Rotating shifts — days, nights and on-call weekends'
@@ -1605,7 +1609,7 @@ export function getLadderForJob(S) {
   const pgBoost = pgList.some(p => p.tier === 'fellowship_phd') ? 1.42 : pgList.length > 0 ? 1.26 : 1.0;
   const board = getRequiredForeignBoardForJob(S, job.track, track.reqDegrees || []);
   const rungs = track.rungs.map(r => {
-    const pay = Math.round((baseAnnual / 12) * track.payMult * r.mult * licBoost * pgBoost);
+    const pay = Math.round((baseAnnual / 12) * track.payMult * r.mult * licBoost * pgBoost * jobEmploymentFraction(job));
     const reqs = [
       { label: `${r.minExp} year${r.minExp === 1 ? '' : 's'} in this track`, met: trackExp >= r.minExp, detail: `you have ${trackExp}` }
     ];
@@ -1745,6 +1749,7 @@ export function hireIntoJob(S, jobOffer, workAuth, extra = {}) {
   S.career.job = {
     employer: jobOffer.employer,
     title: workAuth.partTimeOnly ? `Part-Time ${jobOffer.title}` : jobOffer.title,
+    employmentFraction: workAuth.partTimeOnly ? 0.45 : 1,
     track: jobOffer.track,
     level: jobOffer.level,
     monthlyGross: gross,
@@ -2178,7 +2183,7 @@ export function tickCareerMonthly(S) {
     if (wouldPromote && !rivalBlocks) {
       const ratio = nextRung.mult / (track.rungs[job.level]?.mult || 1);
       job.level = nextRung.level;
-      job.title = nextRung.title;
+      job.title = jobEmploymentFraction(job) < 1 ? `Part-Time ${nextRung.title}` : nextRung.title;
       job.monthlyGross = Math.round(job.monthlyGross * ratio);
       S.player.vitals.happiness = clamp(S.player.vitals.happiness + 8);
       emitFact(S, 'INCOME_SURGE', { employer: job.employer, monthlyGross: job.monthlyGross });
@@ -2204,7 +2209,7 @@ export function tickCareerMonthly(S) {
         const listed=listAvailableJobs(S).find(j=>j.track===job.track);
         const rung=(track?.rungs||[]).find(r=>r.level===job.level);
         const baseRung=(track?.rungs||[]).find(r=>r.level===listed?.level);
-        const market=listed&&rung?Math.round(listed.monthlyGross*rung.mult/(baseRung?.mult||1)):previousGross;
+        const market=listed&&rung?Math.round(listed.monthlyGross*rung.mult/(baseRung?.mult||1)*jobEmploymentFraction(job)):previousGross;
         const headroom=job.performance>=65?1.25:1.10;
         const requested=Math.round(previousGross*(job.performance>=65?1.055:1.02));
         // No retrospective pay cut, but no endless above-market compounding.
