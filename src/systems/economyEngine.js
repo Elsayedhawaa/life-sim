@@ -989,7 +989,7 @@ export function settleHouseholdMonth(S) {
      by saveRate x 12 x (income - contrib) — exactly what they kept. */
   const coResidentSpouses = S.relations.spouseIds
     .map(id => S.people[id])
-    .filter(sp => sp && sp.alive && sp.residenceCountry === S.country);
+    .filter(sp => sp && sp.alive && sp.relationshipProgress?.stage!=='separated' && sp.residenceCountry === S.country);
 
   for (const sp of coResidentSpouses) {
     const spIncome = Number(sp.career?.monthlyIncomeLocal) || 0;

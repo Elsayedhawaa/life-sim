@@ -1,3 +1,4 @@
+import{fileFamilyCase,tickRelationshipProgression}from './relationshipProgression.js';
 import {recordMarriageAssets,settleGameDivorce,divorceChildren,divorceBuyoutRequired} from './divorceModel.js';
 /* ============================================================================
    World Life 2.0 — Cultural Courtship, Marriage Contracts, Children & Divorce
@@ -504,6 +505,8 @@ export function celebrateWedding(S, venueId = null, opts = {}) {
 
 /* Monthly Pregnancy, Birth (with Jus Soli vs Jus Sanguinis Citizenship Logic!) & Marital Health */
 export function tickMarriageAndFamilyMonthly(S) {
+  for(const c of tickRelationshipProgression(S)){if(S.people[c.spouseId]?.relationshipProgress?.courtCase)delete S.people[c.spouseId].relationshipProgress.courtCase;const result=initiateDivorce(S,c.spouseId,c.mode,c.options);if(!result.ok)recordJournal(S,'Court settlement postponed: '+result.msg,'family');}
+
   const livingSpouses = S.relations.spouseIds.map(id => S.people[id]).filter(p => p && p.alive);
 
   /* 1. Active 9-Month Pregnancy Countdown */
@@ -520,7 +523,7 @@ export function tickMarriageAndFamilyMonthly(S) {
       deliverNewbornChild(S, motherSpouse);
     }
   } else if (S.marriage.tryingForBaby && livingSpouses.length > 0) {
-    const coResSpouse = livingSpouses.find(sp => sp.residenceCountry === S.country && sp.gender!==S.player.gender && sp.age>=18);
+    const coResSpouse = livingSpouses.find(sp => sp.residenceCountry === S.country && sp.relationshipProgress?.stage!=='separated' && sp.gender!==S.player.gender && sp.age>=18);
     if (coResSpouse && S.player.age>=18) {
       const femAge = S.player.gender === 'f' ? S.player.age : coResSpouse.age;
       if (femAge < 46) {
@@ -658,10 +661,11 @@ export function initiateDivorce(S, spouseId = null, mode = 'standard', options =
   if(options.assetMode==='buyout'&&S.money.cash+S.money.savings<divorceBuyoutRequired(S,targetId))return{ok:false,msg:'Not enough liquid cash for the game asset buyout and settlement. Save more or choose sale.'};
   if(!options.confirmed){
     const children=divorceChildren(S,targetId);
-    queueScene(S,{key:`divorce_plan_${targetId}_${S.year}_${S.month}`,divorcePlan:{spouseId:targetId,mode,assetMode:options.assetMode},category:'family',title:'Divorce settlement and children',text:'Simplified game model, not local family law. Without a prenup, post-wedding properties (including foreign homes), cars and liquid gains are split 50/50 after debts; Choose sale, or negotiate keeping home/car titles through a funded buyout. 50/50 is a game agreement, not the law everywhere. Recorded premarital assets remain separate. Old marriages without an inventory treat existing property/cars as shared. Legal fees apply. Investment gains, new business equity and funded private-pension growth are split in kind. Pre-existing business equity and public pension rights are not divided; mixed funds and detailed tax/court orders remain unmodelled. Existing mahr obligations are settled separately. Child support lasts to 18, while unpaid arrears remain owed, custody does not delete a parent or child. Infidelity is not a financial penalty.',choices:[...((children.length?['shared','player','spouse','contest']:['shared']).map(c=>({label:c==='contest'?'Contest custody (higher legal fees; game best-interest review)':`Proceed: ${children.length?c+' custody':'asset settlement, no minor children'}`,effect:st=>initiateDivorce(st,targetId,mode,{confirmed:true,assetMode:options.assetMode||'sell',custody:c==='contest'?'shared':c,contested:c==='contest'})}))),{label:'Pause, do not file',effect:()=>{}}]},true);
+    queueScene(S,{key:`divorce_plan_${targetId}_${S.year}_${S.month}`,divorcePlan:{spouseId:targetId,mode,assetMode:options.assetMode},category:'family',title:'Divorce settlement and children',text:'Simplified game model, not local family law. Without a prenup, post-wedding properties (including foreign homes), cars and liquid gains are split 50/50 after debts; Choose sale, or negotiate keeping home/car titles through a funded buyout. 50/50 is a game agreement, not the law everywhere. Recorded premarital assets remain separate. Old marriages without an inventory treat existing property/cars as shared. Legal fees apply. Investment gains, new business equity and funded private-pension growth are split in kind. Pre-existing business equity and public pension rights are not divided; mixed funds and detailed tax/court orders remain unmodelled. Existing mahr obligations are settled separately. Child support lasts to 18, while unpaid arrears remain owed, custody does not delete a parent or child. Infidelity is not a financial penalty.',choices:[...((children.length?['shared','player','spouse','contest']:['shared']).map(c=>({label:c==='contest'?'Contest custody (higher legal fees; game best-interest review)':`Proceed: ${children.length?c+' custody':'asset settlement, no minor children'}`,effect:st=>initiateDivorce(st,targetId,mode,{confirmed:true,staged:true,assetMode:options.assetMode||'sell',custody:c==='contest'?'shared':c,contested:c==='contest'})}))),{label:'Pause, do not file',effect:()=>{}}]},true);
     return {ok:true,msg:'Review the game settlement and custody choice.'};
   }
 
+  if(options.staged&&!options.courtApproved)return fileFamilyCase(S,targetId,mode,options);
   const couple = getCoupleForSpouse(S, spouse.id);
   const contract = S.marriage.contracts.find(c => c.spouseId === spouse.id && c.active) || {};
   const prof = getMarriageProfile((couple && couple.country) || contract.country || S.country, S.year);

@@ -1259,14 +1259,15 @@ function renderMarriageSubtabHtml(S) {
           ✓ <strong>3D Home Gehaz Furnishing Credit:</strong> ${esc(formatMoney(gehazCredit, S.country))} already furnished on your home blueprint (reduces wedding home-setup cost & backs Qa'ima valuation!).
         </div>
       ` : `
-        <div class="muted" style="margin-bottom:10px">Tip: Furnishing rooms on <strong>Real Estate → My Home 3D</strong> builds your <em>Gehaz</em> ahead of the wedding!</div>
+        <div class="muted" style="margin-bottom:10px"></div>
       `}
 
       ${activeContracts.map(c => renderMarriageContractHtml(S, c)).join('')}
 
       ${(!partner && (spouses.length === 0 || canPolygamy)) ? `
         <p class="muted" style="margin-bottom:10px">
-          ${spouses.length > 0 ? `You are already married to ${esc(spousePath.firstSpouse?.fullName || 'your spouse')}. These meetings are for a second wife: personal status law here permits a second marriage if financially capable — but your first wife will learn of it, and she can ask for a divorce.` : 'Meet someone through your work/social circle or ask family for a traditional Salonat match.'}
+          ${spouses.map(sp=>{const r=sp.relationshipProgress;return `<div class="card"><strong>${esc(sp.firstName)} · ${r?.stage==='separated'?'Separated':'Together'}</strong>${r?.affair&&r.affair.status!=='hidden'?'<p>Affair confirmed</p>':''}${r?.courtCase?`<p>${esc(r.courtCase.stage)} · ${Math.max(0,r.courtCase.dueAt-S.year*12-S.month)} mo</p>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="counsel">Counselling</button>${r?.stage==='separated'?`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="reconcile" ${r?.courtCase?'disabled':''}>Reconcile</button>`:`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="separate">Separate</button>`}${r?.affair?.status==='discovered'?`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="discuss">Discuss affair</button>`:''}</div></div>`;}).join('')}
+      ${spouses.length > 0 ? `You are already married to ${esc(spousePath.firstSpouse?.fullName || 'your spouse')}. These meetings are for a second wife: personal status law here permits a second marriage if financially capable — but your first wife will learn of it, and she can ask for a divorce.` : 'Meet someone through your work/social circle or ask family for a traditional Salonat match.'}
         </p>
         <div style="display:flex;flex-wrap:wrap;gap:8px">
           <button class="btn btn-primary" data-action="meet-partner" data-channel="social">${spouses.length > 0 ? 'Meet a second wife — through work / social circle' : 'Meet Through Work / Social Circle'}</button>
@@ -1306,11 +1307,12 @@ function renderMarriageSubtabHtml(S) {
         </div>
       ` : ''}
 
+      ${spouses.map(sp=>{const r=sp.relationshipProgress;return `<div class="card"><strong>${esc(sp.firstName)} · ${r?.stage==='separated'?'Separated':'Together'}</strong>${r?.affair&&r.affair.status!=='hidden'?'<p>Affair confirmed</p>':''}${r?.courtCase?`<p>${esc(r.courtCase.stage)} · ${Math.max(0,r.courtCase.dueAt-S.year*12-S.month)} mo</p>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="counsel">Counselling</button>${r?.stage==='separated'?`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="reconcile" ${r?.courtCase?'disabled':''}>Reconcile</button>`:`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="separate">Separate</button>`}${r?.affair?.status==='discovered'?`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="discuss">Discuss affair</button>`:''}</div></div>`;}).join('')}
       ${spouses.length > 0 ? `
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft)">
           ${S.marriage.pregnancy
             ? `<span class="hud-pill" style="background:#EAF6F0;color:#1B734E">Expecting Baby in ${S.marriage.pregnancy.dueMonths} month(s)!</span>`
-            : `<button class="btn btn-primary btn-sm" data-action="toggle-baby">${S.marriage.tryingForBaby ? '✓ Trying for Baby (Pause)' : 'Try for a Baby'}</button>`
+            : `<button class="btn btn-primary btn-sm" data-action="toggle-baby" ${spouses.every(sp=>sp.relationshipProgress?.stage==='separated')?'disabled':''}>${S.marriage.tryingForBaby ? '✓ Trying for Baby (Pause)' : 'Try for a Baby'}</button>`
           }
           <button class="btn btn-sm" data-action="cycle-split">Finances: ${S.marriage.householdSplit === 'traditional_provider' ? 'Provider (Nafaqa)' : S.marriage.householdSplit === 'shared_50_50' ? 'Shared 50/50' : 'Proportional'}</button>
           ${spouses.some(sp => sp.residenceCountry !== S.country) ? `<button class="btn btn-navy btn-sm" data-action="reunify-family">Sponsor Family Reunification to ${esc(getCountry(S.country).name)}</button>` : ''}
