@@ -1713,7 +1713,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_street_works', category: 'life',
         title: 'The Street Is Torn Up',
-        text: `Roadworks have torn up your whole street in ${S.city} — jackhammers from 7 a.m., dust on every windowsill, and your car parked three streets away. The sign says three weeks. It has already been two.`,
+        text: `Roadworks have torn up your whole street in ${S.city} — jackhammers from 7 a.m., dust on every windowsill, and the pavement closed off. The sign says three weeks. It has already been two.`,
         choices: [
           { label: 'Complain to the council office', effect: (st) => {
               st.player.vitals.stress = clamp(st.player.vitals.stress + 2);
