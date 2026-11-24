@@ -519,3 +519,6 @@ Newcomer/friend scenes now use actual named living friend and shared funded pers
 
 ### W45 recorded child school year
 School-fee scene selects actual eligible6-17child with no unexpired prepaid year; quotes fictional local/international school, actual cash debit buys12month enrollment/history, no invented employer subsidy. People > Children shows remaining prepaid months and actual renewal prices, controls use same action. No double-charge mid-year, no automatic renewal.174focused files passed; final view import/spacing corrected and390pxscene purchase/reload/Children record inspected. This is a game school record, not an accredited school placement or long-term educational attainment model.
+
+### W46 real Umrah travel
+Scene uses catalog Umrah quote and existing travel action, not wallet/vitals-only pilgrimage. Exact package plus unpaid leave cash, calendar days, planned departure, leave, border/travel-ban gates, actual credential/journal completion. Quote honestly covers player only, no invented family tickets or universal short drive.175focused files pass.390px actual1400SARtrip/calendar/leave/credential/reload and pixels inspected. Targeted Saudi fixture, not broad visa-policy validation.

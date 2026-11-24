@@ -1,3 +1,4 @@
+import{ALL_VACATIONS}from'./megaCareerEduMedical.js';
 import{childSchoolQuote,enrollChildSchoolYear}from'../systems/educationFunding.js';
 import{permitRenewalQuote,renewCurrentPermit,returnToHomeCountry,premiumResidencyQuote,applyPremiumOrGoldenResidency}from'../systems/visaMigrationEngine.js';
 import{CARS_MEGA_CATALOG}from'./megaCarsAndShop.js';
@@ -8,7 +9,7 @@ import{eraDepositRates}from'./economy.js';
 import{worldEventEffects}from'../systems/worldEvents.js';
 import{bookNarrativeLoan,narrativeLoanQuote,payNarrativeLoan}from'../systems/narrativeLoans.js';
 import {topUpPrivatePension} from '../systems/careerMarket.js';
-import {computeZakatDueLocal,payAnnualZakat,investInMarketAsset,sendInternationalRemittance,remittanceQuote,householdStaffQuote,hireHouseholdStaff,showroomCarQuote,buyShowroomCar} from '../systems/completeLifeSystems.js';
+import {computeZakatDueLocal,payAnnualZakat,investInMarketAsset,sendInternationalRemittance,remittanceQuote,householdStaffQuote,hireHouseholdStaff,showroomCarQuote,buyShowroomCar,tripCostLocal,tripExecutionQuote,takeVacationOrPilgrimage} from '../systems/completeLifeSystems.js';
 import {GLOBAL_MARKET_ASSETS} from './megaFinanceAndMarkets.js';
 import {depositToSavings,withdrawFromSavings,personalLoanGates,takePersonalLoan,sellGold21k,buyBankCertificate} from '../systems/economyEngine.js';
 import {recordCivilLoss} from '../systems/civilClaims.js';
@@ -11211,50 +11212,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'life',
     repeatable: false,
     gates: { requiredPeople: ['spouse'],"minAge": 25, "abroad": true, "countries": ["sau", "uae"]},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(4000, S.country, S.year);
-      const B = eraLocalCost(9000, S.country, S.year);
-      return {
-        key: 'ev_gulf_umrah_trip',
-        category: 'life',
-        title: "Umrah from the Gulf",
-        text: `From the Gulf, Umrah is a short drive — a weekend, a hotel, and the Haram. The trip costs ${formatMoney(A, S.country)}, and the spiritual pull of it has been growing for months.`,
-        choices: [
-          {
-            label: "Go for Umrah",
-            effect: (st) => {
-              walletMove(st, -A, 'Go for Umrah', 'life');
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+8));
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-6));
-              recordJournal(st, `You went for Umrah from the Gulf, ${formatMoney(A, S.country)}, and came back changed.`, 'life');
-            },
-          },
-          {
-            label: "Go with your family",
-            effect: (st) => {
-              walletMove(st, -B, 'Go with your family', 'life');
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+7));
-              if (ctx.spouse) rememberDeed(st, ctx.spouse, 'event', 'Go with your family', { affection: (+4) });
-              recordJournal(st, `You went for Umrah with your family, ${formatMoney(B, S.country)}, and shared the whole journey.`, 'life');
-            },
-          },
-          {
-            label: "Put it off until next year",
-            effect: (st) => {
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-2));
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+2));
-              recordJournal(st, `You put Umrah off until next year. The pull stayed.`, 'life');
-            },
-          },
-        ],
-      };
+    build:(S,ctx)=>{
+      const dest=ALL_VACATIONS.find(v=>v.pilgrimage==='umrah');if(!dest)return null;
+      const quote=tripExecutionQuote(S,dest),cost=tripCostLocal(S,dest);
+      return{key:'ev_gulf_umrah_trip',category:'life',title:'Plan Your Umrah Trip',text:`${dest.name}: ${dest.days_typical||5} calendar days. Package ${formatMoney(cost,S.country)}; total including modeled unpaid leave ${formatMoney(quote.total,S.country)}. ${quote.ok?'Calendar and cash available.':quote.reason} Passport, travel-ban and other trip checks still apply. This quote covers the player only, not unrecorded family tickets.`,choices:[{label:`Take recorded trip · ${formatMoney(quote.total,S.country)}`,effect:st=>takeVacationOrPilgrimage(st,dest.id)},{label:'Keep the trip for later',effect:st=>{}}]};
     },
   },
   {

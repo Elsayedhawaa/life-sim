@@ -117,5 +117,5 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W44 Gulf golden-visa/sponsor scenes need real eligibility/evidence rather than invented salary qualification/signatures.
 
-- [ ] W45 Gulf school-fee scene needs actual child enrollment/term record and no invented employer subsidy.
+- [x] W45 Gulf school-fee scene needs actual child enrollment/term record and no invented employer subsidy.
 - [ ] W46 Gulf Umrah scene needs real travel/calendar/leave route rather than one-off wallet/vitals story.
