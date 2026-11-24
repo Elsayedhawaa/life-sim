@@ -1062,7 +1062,7 @@ export function handleNpcDeath(S, person) {
       playerSharePct = pool * (playerUnits / Math.max(1, totalUnits));
       lawLabel = profCountry === 'sau' ? 'Sharia Sakk Hasr Erth (Al-Fara\'id 2:1)' : 'Sharia I\'lam Waratha (Al-Fara\'id 2:1)';
     } else {
-      if (profCountry === 'gbr' && !(otherParent && otherParent.alive)) {
+      if (profCountry === 'gbr' && !person.companyEstateCashAfterCharges && !(otherParent && otherParent.alive)) {
         const nilBand = Math.round(convertCurrency(eraLocalCost(325000, 'gbr', S.year), 'gbr', S.country, S.year));
         if (netEstatePlayerLocal > nilBand) {
           netEstatePlayerLocal -= Math.round((netEstatePlayerLocal - nilBand) * 0.40);
