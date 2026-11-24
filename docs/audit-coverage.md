@@ -323,3 +323,6 @@ Physical catalog locations can split without copied people, money, stock, income
 
 ## Site range follow-through
 Independent site price/active lines/quantities/substitutions/yields and manager pay review. Parent unchanged; original bounds and WIP protection apply. Independent-range merge stock regression covered.109 focused files,12,152renders and phone price/trade/reload pass. Software audience allocation and richer site-manager requests remainL9.
+
+## Software site audience ledger
+Starts at zero users, explicit25% main-to-site transfer. Separate team/manager/payroll/cloud/catalog and results; no duplicated server racks. Market saturation includes sibling audiences. Missing manager pauses sales/acquisition but existing hosting continues. Merge returns users once. Group tax/cash/reserve and replay tests pass.110 focused files,12,152renders and phone transfer/hiring/manager/funding/real revenue/reload pass. Richer site-manager request workflow remainsL9.
