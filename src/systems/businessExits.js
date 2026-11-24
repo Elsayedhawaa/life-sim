@@ -192,6 +192,7 @@ export function acceptTradeSale(S, bizRef, offerArg) {
   if (!amount || amount <= 0) {
     return { ok: false, msg: `No offer on the table for ${biz.name} — get a trade-sale offer first, then accept it.` };
   }
+  if((biz.familyCoOwners||[]).some(c=>c.equityPercent>0))return{ok:false,msg:'Resolve family stakes before this exit. Buy back their shares in Money.'};
   const staffCount = (biz.staff || []).length;
   for (const m of (biz.staff || [])) m.morale = clamp((Number(m.morale) || 0) + 5, 0, 100);
   const valuation = businessValuation(biz);
@@ -236,6 +237,7 @@ export function managementBuyout(S, bizRef, opts = {}) {
   if (!mgr || !mgr.name) {
     return { ok: false, msg: `${biz.name} has no manager — a management buyout needs a manager to buy it. Hire a manager first.` };
   }
+  if((biz.familyCoOwners||[]).some(c=>c.equityPercent>0))return{ok:false,msg:'Resolve family stakes before this exit. Buy back their shares in Money.'};
   const valuation = businessValuation(biz);
   const price = Math.round(valuation * MBO_DISCOUNT);
   const aff = managerAffordability(S, biz, price);
@@ -318,6 +320,7 @@ export function ipoBusiness(S, bizRef, opts = {}) {
   ensureExtendedState(S);
   const biz = ensureExitState(S, resolveBusiness(S, bizRef));
   if (!biz) return { ok: false, msg: 'No business found.' };
+  if((biz.familyCoOwners||[]).some(c=>c.equityPercent>0))return{ok:false,msg:'Resolve family stakes before this exit. Buy back their shares in Money.'};
   if (biz.publicFloat > 0 || biz.ipo?.stage === 'listed') return { ok: false, msg: 'This business is already listed. You cannot repeat its initial public offering.' };
   if ((biz.equityOwned ?? 100) < IPO_FLOAT_PCT) return { ok: false, msg: 'You do not own enough shares for this IPO.' };
   const th = ipoThreshold(S, biz);
@@ -494,6 +497,7 @@ export function withdrawBusinessCash(S, bizRef, amount) {
   if (amt > retained) {
     return { ok: false, msg: `Cannot withdraw ${money(S, amt)} — ${biz.name} holds only ${money(S, retained)} in retained cash. This is retained cash, NOT the monthly P&L (which already landed in your household).` };
   }
+  if((biz.familyCoOwners||[]).length)return{ok:false,msg:'Retained cash belongs to all shareholders. Use a council distribution, not a personal withdrawal.'};
   const taxInfo = computeBusinessTax(S, amt);
   const tax = Math.round(taxInfo.tax || 0);
   const net = amt - tax;

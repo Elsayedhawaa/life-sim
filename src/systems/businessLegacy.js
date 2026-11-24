@@ -491,7 +491,8 @@ export function transferBusinessesOnDeath(S, continuingChildId = null) {
   const outcome = { inherited: [], soldToEstate: [] };
   const businesses = [...getBusinesses(S)];
   for (const biz of businesses) {
-    const { heir } = resolveBusinessHeir(S, biz);
+    let { heir } = resolveBusinessHeir(S, biz);
+    if(!heir&&(biz.familyCoOwners||[]).length&&continuingChildId)heir=S.people[continuingChildId];
     if (heir) {
       biz.heirId = heir.id;
       removeBusinessFromList(S, biz);

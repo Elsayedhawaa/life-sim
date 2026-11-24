@@ -632,7 +632,7 @@ export function continueAsChild(S, childId) {
   for(const b of nextS.career.businesses||[])if(child.age<18)b.estateTrust={untilAge:18,paused:true};
   // Existing NPC companies belong to the continuing child too, not to a discarded person record.
   for(const old of child.ownedBusinesses||[]){if(!(nextS.career.businesses||[]).some(b=>b.id===old.id)){const b=structuredClone(old);convertBusinessFiguresCurrency(nextS,b,nextS.country);b.heirId=null;remapInheritedCompany(b,remap);nextS.career.businesses.push(b);}}
-  for(const b of nextS.career.businesses){b.staff=(b.staff||[]).filter(e=>e.personId!=='player');if(b.manager?.personId==='player')b.manager=null;if(child.age<18)b.estateTrust={untilAge:18,paused:true};}
+  for(const b of nextS.career.businesses){const held=(b.familyCoOwners||[]).filter(c=>c.personId==='player').reduce((n,c)=>n+c.equityPercent,0);b.equityOwned=(b.equityOwned??100)+held;b.familyCoOwners=(b.familyCoOwners||[]).filter(c=>c.personId!=='player');b.staff=(b.staff||[]).filter(e=>e.personId!=='player');if(b.manager?.personId==='player')b.manager=null;if(child.age<18)b.estateTrust={untilAge:18,paused:true};}
   if(nextS.career.businesses.length)nextS.career.business=nextS.career.businesses[0];
   if(child.career?.businessEmployeeId&&nextS.career.businesses.some(b=>b.id===child.career.businessEmployeeId)){nextS.career.employed=false;nextS.career.job=null;}
 

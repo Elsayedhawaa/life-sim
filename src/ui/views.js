@@ -1,3 +1,4 @@
+import{renderFamilyOwnership}from '../systems/companyOwnership.js';
 import{renderEstateRecord}from '../systems/companyEstate.js';
 import{renderDivorceShares}from'../systems/companyDivorceShares.js';
 import{renderFamily}from'../systems/companyFamily.js';
@@ -2493,7 +2494,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       <nav class="biz-work-tabs" aria-label="Company area">${[['overview','Overview'],['products','Products'],['team','Team'],['operations','Operations'],['growth','Growth'],['money','Money']].map(([id,label])=>`<button class="${businessTab===id?'active':''}" aria-pressed="${businessTab===id}" data-action="biz-tab" data-area="${id}">${label}</button>`).join('')}</nav>
       ${biz.enterprise?renderCompany(S,biz,businessTab):biz.tech?renderTech(S,biz,businessTab):''}
       ${renderDivorceShares(S,biz,businessTab)}
-      ${renderFamily(S,biz,businessTab)}
+      ${renderFamily(S,biz,businessTab)}${renderFamilyOwnership(S,biz,businessTab)}
       ${renderSpace(S,biz,businessTab)}
       ${renderOperating(S,biz,businessTab)}
       ${renderCatalog(S,biz,businessTab)}

@@ -280,3 +280,15 @@ Fixed promotion identity: promoting a real employee preserves their person ID an
 Validation: 101 focused files, 12,152 renders, dedicated real spouse manager payroll versus household contribution, normal onboarding/severance, promotion identity, duplicate/student/job-switch/underage/poor-cash gates, foreign wallet and wage mirror. Local phone appointment/pay/identity/workspace/reload passed. Hosted checks follow publication.
 
 Remaining family ownership/governance and part-time rota are already queued as L2/L3, not silently closed by management employment. No new distinct limit added in this tranche. L1 remains open until hosted verification; current queue 27 packages.
+
+## Family shares and payout council
+
+Money supports adult-relative gifts, paid 5/10/25% founder-stake sales and partial buybacks at the current debt-adjusted model quote. The founder keeps at least 25%. A paid sale consumes that relative's savings and credits the player's wallet; a buyback does the reverse. No automatic credit. Family stake records retain person identity and receive positive-profit distributions as actual household debits. Wages are separate.
+
+A share-weighted majority council chooses full payout or 50% positive-net retention. Retention moves real household cash into company retained cash, not funding reserve. A distribution vote pays retained cash proportionally and clears the pool once. Investors/former spouses retain their share of the distributable portion. Outside holders conservatively oppose these simple proposals. Named estate transfers remap family share identities; continuing as an already-owning child combines their own stake with the inherited founder stake.
+
+Joint-owner safeguards: voluntary sale, management buyout, IPO and closure require resolving family stakes first. Personal retained-cash withdrawal cannot drain a jointly held pool. Automatic company failure records/pays family salvage. Full negotiated joint exit and founder/co-owner debt allocation remain L15, not complete here. Family-owned companies without a named heir stay with the continuing child instead of vanishing through an automatic founder-only sale.
+
+Validation: 102 focused files, 12,152 renders, real household dividend/retention identities, relative cash/FX/affordability, buyback, founder minimum, stale quote, minor gate, joint cash/exit protections and succession identity checks. Phone gifts 10%, votes retention, buys it back with real cash and reloads. Hosted checks follow publication.
+
+Remaining L2 limits: fixed quote sizes rather than negotiated shareholder agreements; simple retain/distribute voting rather than board elections/veto/quorum; full joint exit and debt allocation are L15. Record these as refinements to the ownership package, not a claim of real company law. No local legal or tax treatment is promised.
