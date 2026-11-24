@@ -172,6 +172,52 @@ const crashInjury = {
   },
 };
 
+/* Relative illness scenes. NOT registered in EVENTS_CONSEQUENCES: they rely on
+   gates.relativeIll = { role, kind?, minMonths? }, which must exist in
+   eventGatePasses before registration, because an unknown gate key is
+   ignored and the scene would then fire with nobody ill. The text reads the
+   recorded illness only: the kind and its start year. It says "diagnosed
+   this year" only when sinceYear is the current year, otherwise it says the
+   person has been living with it since that year. No medical cost is
+   charged or assumed. */
+const ILL_ROLES = { mother: ['mom', 'your mother'], father: ['dad', 'your father'], spouse: ['spouse', 'your spouse'],
+  sibling: ['sib', 'your sibling'], child: ['child', 'your child'] };
+
+export function illRelative(S, role, ctx = {}) {
+  const [key] = ILL_ROLES[role];
+  const r = S.relations || {};
+  const ids = role === 'mother' ? [r.motherId] : role === 'father' ? [r.fatherId] : role === 'spouse' ? r.spouseIds || [] : role === 'sibling' ? r.siblingIds || [] : r.childIds || [];
+  const cands = [ctx[key], ...ids.map((id) => S.people?.[id])].filter((p) => p && p.alive && p.illness && p.illness.kind);
+  return cands[0] || null;
+}
+
+function relativeIllScene(role, minMonths) {
+  const [, word] = ILL_ROLES[role];
+  const id = `ev_conseq_${role}_ill`;
+  return {
+    id, category: 'family',
+    gates: { relativeIll: { role, minMonths } },
+    build: (S, ctx) => {
+      const p = illRelative(S, role, ctx);
+      if (!p) return null;
+      const n = nameOf(p, word), ill = p.illness, since = ill.sinceYear;
+      const lead = since === S.year ? `${cap(word)}, ${n}, was diagnosed with ${ill.kind} this year.`
+        : `${cap(word)}, ${n}, has been living with ${ill.kind}${since ? ` since ${since}` : ''}.`;
+      return {
+        key: id, category: 'family', title: `${n} Is Unwell`, text: lead,
+        eventParticipantIds: { [ILL_ROLES[role][0]]: p.id },
+        choices: [
+          { label: 'Go and spend time with them', effect: (st) => { const q = st.people[p.id]; if (!q?.alive) return; noteSocialContact(st, q); rememberDeed(st, q, 'supported_crisis', `Visited during illness.`, { affection: 8, trust: 6 }); stress(st, 2); recordJournal(st, `You spent time with ${word}, ${n}, who is living with ${ill.kind}.`, 'family'); } },
+          { label: 'Call and check in regularly', effect: (st) => { const q = st.people[p.id]; if (!q?.alive) return; noteSocialContact(st, q); rememberDeed(st, q, 'contact', `Called during illness.`, { affection: 3, trust: 2 }); recordJournal(st, `You called ${word}, ${n}, to check in.`, 'family'); } },
+          { label: 'Not now, you cannot deal with it', effect: (st) => { const q = st.people[p.id]; if (!q?.alive) return; rememberDeed(st, q, 'neglected', `Kept away during illness.`, { trust: -3, resentment: 2 }); recordJournal(st, `You kept your distance from ${word}, ${n}, during their illness.`, 'family'); } },
+        ],
+      };
+    },
+  };
+}
+const cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+export const EVENTS_RELATIVE_ILL = Object.keys(ILL_ROLES).map((r) => relativeIllScene(r, 1));
+
 export const EVENTS_CONSEQUENCES = [crashInjury, evictionAbroad, promotionSpouse, promotionWorkload, childAfterDivorce, childAfterSeparation,
   siblingAfterParentDeath('mother', 'your mother'), siblingAfterParentDeath('father', 'your father'),
   parentAfterSiblingDeath('mom'), parentAfterSiblingDeath('dad'), friendAfterJobLoss];
