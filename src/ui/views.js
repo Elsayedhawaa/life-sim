@@ -1,3 +1,4 @@
+import{flyingDutyStatus}from '../systems/dutyEligibility.js';
 import {RURAL_CABIN} from '../data/ruralCabin.js';
 import {hasCurrentLanguage} from '../data/languageQualifications.js';
 import {ABROAD_LEVELS,ABROAD_SUBJECTS,abroadUniversities,studyAbroadQuote} from '../systems/studyAbroadPlanning.js';
@@ -2190,6 +2191,7 @@ export function renderWorkTabHtml(S, uiState = {}) {
     ${withheldHtml}
     ${renderSecondLossNoteHtml(S)}
     ${currentJobHtml}
+    ${flyingDutyStatus(S).grounded?'<div class="card"><strong>Flying duties suspended</strong><p>Renew overdue medical and simulator checks under Train & Licences. Temporary ground duty pays 50% of base salary, no flying overtime. This is a game employer policy, not a real airline contract.</p></div>':''}
     ${!S.career.job&&S.player.age>=58?`<div class="card"><strong>${S.career.retired?'Retired':'Retirement'}</strong><p>${S.career.retired?'Current pension: '+esc(formatMoney(S.career.monthlyPension||0,S.country))+'/month.':'You can stop working. US state benefits require age 62 and 40 recorded credits; missing legacy earnings are not invented. Private savings draw down from a finite balance. Other countries remain simplified estimates.'}</p>${!S.career.retired?'<button class="btn" data-action="retire">Retire</button>':''}</div>`:''}
     <div class="card">
       <div class="section-head">

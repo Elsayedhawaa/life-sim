@@ -101,3 +101,5 @@ Sources: https://www.ssa.gov/faqs/en/questions/KA-01897.html
 https://www.ssa.gov/benefits/retirement/planner/credits.html
 https://www.ssa.gov/news/en/cola/factsheets/2026.html
 https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-401k-and-profit-sharing-plan-contribution-limits
+
+Realism item2: overdue pilot medical/simulator checks now suspend flying duty and flying overtime, not merely promotions. Employer game policy assigns temporary50%base-pay ground duty; it is explicitly not an airline contract claim. Renewal restores normal duty. Mobile local warning and actual reduced-pay ledger tested;70focusedtests pass. Source for medical requirement: https://www.faa.gov/faq/who-must-hold-medical-certificate-1 . Non-pilot regulated-job disciplinary procedures still need review.

@@ -1097,7 +1097,7 @@ export function tickCareerActionsMonthly(S) {
   if (ls.lapsed && !st.licence.lapsedNoted) {
     st.licence.lapsed = true;
     st.licence.lapsedNoted = true;
-    recordJournal(S, `Your licence check is overdue (${ls.medicalOverdue ? 'fitness medical' : ''}${ls.medicalOverdue && ls.simOverdue ? ' and ' : ''}${ls.simOverdue ? 'simulator' : ''}${ls.renewalLapsed ? 'board renewal' : ''}) — renew it under Train & Licences. Promotion and overtime are blocked until you do.`, 'career');
+    recordJournal(S, `Your licence check is overdue (${ls.medicalOverdue ? 'fitness medical' : ''}${ls.medicalOverdue && ls.simOverdue ? ' and ' : ''}${ls.simOverdue ? 'simulator' : ''}${ls.renewalLapsed ? 'board renewal' : ''}) — renew it under Train & Licences. Flying duty is suspended for pilots with overdue medical/simulator checks; the game assigns 50% base-pay ground duty. Promotion and overtime are blocked until renewed.`, 'career');
   } else if (!ls.lapsed) {
     st.licence.lapsed = false;
     st.licence.lapsedNoted = false;

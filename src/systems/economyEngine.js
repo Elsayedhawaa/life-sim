@@ -1,3 +1,4 @@
+import{flyingDutyStatus}from './dutyEligibility.js';
 import{settleUSRetirement}from './usRetirement.js';
 import {RURAL_CABIN} from '../data/ruralCabin.js';
 import {settleChildSupportMonth} from './divorceModel.js';
@@ -610,12 +611,15 @@ export function settleHouseholdMonth(S) {
     /* v2.8: overtime pays the REAL per-country overtime rate (20 extra hours
        at that country's multiplier on the hourly rate) — not a flat +15%
        for every job in every country. computeOvertimePay is the one source. */
-    const overtimeGross = job.workMode === 'overtime' ? computeOvertimePay(job, S.country) : 0;
+    const duty=flyingDutyStatus(S);
+    if(duty.grounded&&!job.groundedNoted){job.groundedNoted=true;recordJournal(S,'Flying duties suspended: renew the overdue medical and simulator checks under Train & Licences. Employer assigns temporary ground duty at 50% base pay in this simplified game policy; no flying overtime. This pay policy is not a real airline contract.','career');}
+    if(!duty.grounded)job.groundedNoted=false;
+    const overtimeGross = !duty.grounded&&job.workMode === 'overtime' ? computeOvertimePay(job, S.country) : 0;
     /* v2.15 W4 — a world event moves pay while it lasts: a crisis cuts it,
        an oil boom lifts it. The payslip still runs on the adjusted gross,
        so tax and social insurance follow the real pay. */
     const salaryMult = wEff.salary;
-    const gross = Math.round((job.monthlyGross + overtimeGross) * salaryMult);
+    const gross = Math.round((job.monthlyGross*duty.payFraction + overtimeGross) * salaryMult);
     const isCit = isCitizenOrPermanentInCurrentCountry(S);
     const pay = computeMonthlyNetPay(gross, S.country, S.year, isCit);
 
@@ -636,7 +640,7 @@ export function settleHouseholdMonth(S) {
       const salaryNote = salaryMult !== 1
         ? ` — pay at ${Math.round(salaryMult * 100)}% while ${wEff.activeNames.join(', ')} lasts`
         : '';
-      netDelta += addIncome(pay.net, `Salary — ${job.employer} (${job.title})${salaryNote}`);
+      netDelta += addIncome(pay.net, `Salary — ${job.employer} (${job.title})${duty.grounded?' [ground duty, 50% base pay]':''}${salaryNote}`);
       summary.tax += (pay.incomeTax + pay.socialSecurity);
       summary.payrollDeductions += (pay.incomeTax + pay.socialSecurity);
       /* v2.15 W2 — pension: this month's contribution is taken from the
