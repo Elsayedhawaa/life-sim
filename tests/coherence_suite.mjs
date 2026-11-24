@@ -51,6 +51,14 @@ import { renderPassportDocumentHtml } from '../src/ui/documents.js';
 import { renderSocialConstellationSvg } from '../src/ui/editorialSketches.js';
 import { renderPortraitSvg } from '../src/ui/portraits.js';
 
+/* The player can only press an available choice, so the harness does the same.
+   (Index 0 can be unavailable, for example when cash is short.) */
+function firstAvailableChoice(S) {
+  const ch = S.activeScene?.choices || [];
+  const i = ch.findIndex((c) => typeof c.available !== 'function' || c.available(S));
+  return i < 0 ? 0 : i;
+}
+
 // print was never defined: the checks ran, then the report line crashed. Define it (console.log), checks untouched.
 const print = (...a) => console.log(...a);
 
@@ -93,7 +101,11 @@ for (const mf of ['duplex', 'townhouse', 'twin_house', 'villa', 'mansion']) {
   const t0 = gf.match(/aria-label="([^"]+)"/)?.[1];
   const t1 = f1.match(/aria-label="([^"]+)"/)?.[1];
   if (!t0 || !t1 || t0 === t1) throw new Error('Multi-floor CAD GF vs 1F identical for ' + mf);
-  if (!gf.includes('data-action="furnish-room"')) throw new Error('Click-room-to-furnish missing on CAD ' + mf);
+  /* Since 7e64eed the plan is an informational drawing: tapping a room opens its
+     info (room-info), and furnishing is bought from the room cards with their
+     real prices, never from a blind tap on the drawing. */
+  if (gf.includes('data-action="furnish-room"')) throw new Error('CAD plan must not buy furnishing by a blind tap on ' + mf);
+  if (!/data-action="room-info"[^>]*data-room="[^"]+"[^>]*data-m2=/.test(gf)) throw new Error('Room-info tap missing on CAD ' + mf);
 }
 const villaAllFloors = renderAllPropertyFloorsHtml('villa', 'super_lux', { living: 'Lux', bedroom: 'Lux' }, 420, 'prop_test');
 if (!villaAllFloors.includes('A-101') || !villaAllFloors.includes('A-102') || !villaAllFloors.includes('A-103')) {
@@ -127,25 +139,26 @@ if (uniSupportsMajor('American University in Cairo', 'medicine')) throw new Erro
   const S = createNewLifeState({ seed: 909, country: 'egy', birthYear: 1998, familyTier: 'wealthy', gender: 'm' });
   while (S.player.age < 26) {
     advanceSingleTurn(S);
-    if (S.activeScene) resolveActiveSceneChoice(S, 0);
+    if (S.activeScene) resolveActiveSceneChoice(S, firstAvailableChoice(S));
   }
   S.money.cash += 120000000;
   S.player.vitals.smarts = 92;
 
   /* Buy Compound Unit + Furnish Rooms -> Verify Gehaz -> Qa'ima & Wedding chain! */
-  const buyRes = buyCompoundOrDistrictUnit(S, { country: 'egy', devId: 'egy_madinaty', unitId: 'villa_s', finishId: 'super_lux', planId: 'cash' });
+  const buyRes = buyCompoundOrDistrictUnit(S, { country: 'egy', devId: 'egy_madinaty', unitId: 'egy_standalone', finishId: 'super_lux', planId: 'cash' });
   if (!buyRes.ok) throw new Error('Compound purchase failed: ' + buyRes.msg);
   const propId = S.housing.properties[0].id;
   furnishPropertyRoom(S, propId, 'living', 'luxury');
   furnishPropertyRoom(S, propId, 'bedroom', 'luxury');
   furnishPropertyRoom(S, propId, 'kitchen', 'luxury');
+  /* Since 37b0631 a pool and a wing share the plot's garden, so the wing is built first. */
+  const expRes = expandPropertyFootprint(S, propId);
+  if (!expRes.ok || !S.housing.properties[0].hasExtension) throw new Error('Wing extension failed: ' + expRes.msg);
   installPropertyUpgrade(S, propId, 'solar');
   installPropertyUpgrade(S, propId, 'pool');
   setPropertyFacadePalette(S, propId, 'najdi_sandstone');
   remodelPropertyRoomPurpose(S, propId, 'creator_studio');
   remodelPropertyRoomPurpose(S, propId, 'private_clinic');
-  const expRes = expandPropertyFootprint(S, propId);
-  if (!expRes.ok || !S.housing.properties[0].hasExtension) throw new Error('Wing extension failed: ' + expRes.msg);
   customizePlayerAppearance(S, 'faceShapeIdx', 1);
   customizePlayerAppearance(S, 'irisIdx', 2);
   customizePlayerAppearance(S, 'beardStyleIdx', 3);
@@ -188,7 +201,7 @@ if (uniSupportsMajor('American University in Cairo', 'medicine')) throw new Erro
   const propsBefore = S.housing.properties.length;
   for (let m = 0; m < 14; m++) {
     advanceSingleTurn(S);
-    if (S.activeScene) resolveActiveSceneChoice(S, 0);
+    if (S.activeScene) resolveActiveSceneChoice(S, firstAvailableChoice(S));
   }
   if (S.housing.properties.length <= propsBefore) {
     throw new Error('Land construction did not complete into a finished property!');
@@ -214,7 +227,7 @@ if (uniSupportsMajor('American University in Cairo', 'medicine')) throw new Erro
   const gamRes = joinGamiyaCircle(S, 'wedding', 'early');
   if (!gamRes.ok) throw new Error('Gam\'iya join failed: ' + gamRes.msg);
   advanceSingleTurn(S); // Month 2 -> Early slot collects full 10x pot!
-  if (S.activeScene) resolveActiveSceneChoice(S, 0);
+  if (S.activeScene) resolveActiveSceneChoice(S, firstAvailableChoice(S));
   if (!S.gamiya?.receivedPot) throw new Error('Early Gam\'iya pot did not pay out in Month 2!');
 
   const pgRes = enrollPostgraduateProgram(S, 'masters_mba');
@@ -318,7 +331,7 @@ for (let i = 0; i < 30; i++) {
         defects.D5_repeatBankruptcyDuringWindow++;
       }
 
-      resolveActiveSceneChoice(S, 0);
+      resolveActiveSceneChoice(S, firstAvailableChoice(S));
     }
 
     if (S.player.age !== lastCheckedAge) {
@@ -409,7 +422,7 @@ for (const ctry of ['egy', 'sau', 'usa', 'gbr']) {
     advanceSingleTurn(S68);
     if (S68.activeScene) {
       titles.push(S68.activeScene.title);
-      resolveActiveSceneChoice(S68, 0);
+      resolveActiveSceneChoice(S68, firstAvailableChoice(S68));
     }
   }
   const distinct = new Set(titles).size;
