@@ -111,4 +111,22 @@ const afterAffair = {
   },
 };
 
-export const EVENTS_MAJOR_FOLLOWUPS = [survivingParent('mom', 'your father', 'father'), survivingParent('dad', 'your mother', 'mother'), afterCrashCover, afterLossSpouse, afterEvictionParent, afterAffair];
+
+const afterSpouseDeathChild = {
+  id: 'ev_major_child_after_spouse_death', category: 'family',
+  gates: { requiredPeople: ['child'], people: { child: { minAge: 4, maxAge: 17, sameCountry: true } }, afterMajor: { kind: 'death', role: 'spouse', minMonths: 1, maxMonths: 8 } },
+  build: (S, ctx) => {
+    const p = ctx.child, n = nameOf(p, 'your child');
+    return {
+      key: 'ev_major_child_after_spouse_death', category: 'family',
+      title: `${n} Asks About Their Other Parent`,
+      text: `${n} has been quieter since the funeral. At bedtime ${n} asks whether things will ever feel normal again.`,
+      choices: [
+        { label: 'Sit with them and talk honestly', effect: (st) => { if (p) { noteSocialContact(st, p); rememberDeed(st, p, 'supported_crisis', 'Talked honestly after the loss of a parent.', { affection: 10, trust: 9 }); } recordJournal(st, `You sat with ${n} and talked about the loss.`, 'family'); } },
+        { label: 'Say they are too young to worry about it', effect: (st) => { if (p) rememberDeed(st, p, 'neglected', 'Was brushed off after the loss of a parent.', { trust: -5, resentment: 4 }); recordJournal(st, `You told ${n} not to worry about it. The silence at home got longer.`, 'family'); } },
+      ],
+    };
+  },
+};
+
+export const EVENTS_MAJOR_FOLLOWUPS = [afterSpouseDeathChild, survivingParent('mom', 'your father', 'father'), survivingParent('dad', 'your mother', 'mother'), afterCrashCover, afterLossSpouse, afterEvictionParent, afterAffair];

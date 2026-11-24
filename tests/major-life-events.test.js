@@ -48,3 +48,7 @@ console.log('Major life announcements derive from actual state changes, persist,
  const f=setup();const sp2=createPerson(f,{role:'spouse',age:38,nationality:'gbr',residenceCountry:'gbr'});f.people[sp2.id]=sp2;f.relations.spouseIds.push(sp2.id);sp2.relationshipProgress={stage:'together',affair:{status:'hidden'}};const fb=snapshotMajor(f);sp2.relationshipProgress.affair.status='discovered';announceMajorChanges(f,fb);
  const aev=G('ev_major_after_affair');assert(P(aev,f));const t0=sp2.rel.trust;f.activeScene=null;const sc=R(f,{eventId:'ev_major_after_affair',eventBuildRngState:f.rngState});assert(sc);sc.choices[0].effect(f);assert(sp2.relationshipProgress.affair.status==='discussed');assert(sp2.rel.trust<t0);assert(!P(aev,f),'handled affair does not repeat');
  console.log('crash audit and linked consumers pass');}
+{const {getRandomLifeEventById:G,eventGatePasses:P}=await import('../src/systems/eventEngine.js');
+ const s=setup();const sp=createPerson(s,{role:'spouse',age:38,nationality:'gbr',residenceCountry:'gbr'});s.people[sp.id]=sp;s.relations.spouseIds.push(sp.id);
+ const ch=createPerson(s,{role:'child',age:9,nationality:'gbr',residenceCountry:'gbr'});s.people[ch.id]=ch;s.relations.childIds.push(ch.id);
+ const ev=G('ev_major_child_after_spouse_death');assert(!P(ev,s));const b=snapshotMajor(s);sp.alive=false;announceMajorChanges(s,b);s.month+=2;assert(P(ev,s));ch.age=25;assert(!P(ev,s),'adult child excluded');console.log('child-after-spouse-death gated');}
