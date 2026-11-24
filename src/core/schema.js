@@ -803,6 +803,7 @@ export function computeNetWorthLocal(S) {
     seenBusinesses.add(biz.id);
     total += convertCurrency(ownedCompanyNetValue(biz,businessValuation({...biz,equityOwned:100})),biz.figuresCurrency||biz.country||S.country,S.country,S.year);
   }
+  for(const t of S.companyTrusts||[]){if(t.status!=='active')continue;const fraction=t.beneficiaries.filter(x=>x.personId==='player').reduce((n,x)=>n+x.fraction,0);total+=convertCurrency((ownedCompanyNetValue(t.company,businessValuation({...t.company,equityOwned:100}))+t.cash-(t.estateDebt||0))*fraction,t.currency,S.country,S.year);}
   for(const order of S.marriage?.divorceOrders||[])if(order.payer==='player')total-=convertCurrency(Math.max(0,order.arrears||0),order.country,S.country,S.year);
   for (const cc of (S.creditCards || [])) {
     total -= Math.max(0, Number(cc.balance) || 0);

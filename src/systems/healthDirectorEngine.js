@@ -620,10 +620,13 @@ export function continueAsChild(S, childId) {
   for(const b of nextS.career.businesses||[])remapInheritedCompany(b,remap);
   for(const p of Object.values(nextS.people))for(const b of p.ownedBusinesses||[])remapInheritedCompany(b,remap);
   nextS.estateSettlement=structuredClone(S.estateSettlement);
+  nextS.companyTrusts=structuredClone(S.companyTrusts||[]);for(const entry of estate.named)if(entry.trust){const t=structuredClone(entry.trust);t.estateDebt=Math.round(convertCurrency(entry.charge,S.country,t.currency,S.year));nextS.companyTrusts.push(t);}for(const t of nextS.companyTrusts){t.trusteeId=remap(t.trusteeId);for(const x of t.beneficiaries)x.personId=remap(x.personId);remapInheritedCompany(t.company,remap);}
+
   for(const kid of livingKids){if(kid.id===childId)continue;const owner=nextS.people[kid.id];if(!owner)continue;const units=useFaraid?(kid.gender==='m'?2:1):1,total=useFaraid?livingKids.reduce((n,k)=>n+(k.gender==='m'?2:1),0):livingKids.length,share=Math.round(kidsPool*units/Math.max(1,total));owner.career??={};owner.career.savingsLocal=(owner.career.savingsLocal||0)+convertCurrency(share,S.country,owner.residenceCountry||S.country,S.year);}
   const spouses=(S.relations.spouseIds||[]).map(id=>nextS.people[id]).filter(p=>p?.alive);for(const sp of spouses){sp.career??={};sp.career.savingsLocal=(sp.career.savingsLocal||0)+convertCurrency(Math.round((distributable-kidsPool)/spouses.length),S.country,sp.residenceCountry||S.country,S.year);}
 
   for(const entry of estate.named){
+    if(entry.trust)continue;
     const charge=Math.round(convertCurrency(entry.charge,S.country,entry.heir.id===childId?nextS.country:entry.heir.residenceCountry||S.country,S.year));
     if(entry.heir.id===childId){const paid=Math.min(nextS.money.cash,charge);if(paid)walletMove(nextS,-paid,'Inherited company estate charge','inheritance');const left=charge-paid;if(left>0)nextS.money.loans.push({id:`estate_${entry.biz.id}_${S.year}`,label:`Estate charge: ${entry.biz.name}`,balance:left,monthlyPayment:Math.max(1,Math.ceil(left/24)),annualRate:0,remainingMonths:24,country:nextS.country,purpose:'estate_charge'});}
     else{const owner=nextS.people[entry.heir.id];if(owner){owner.career??={};const paid=Math.min(Math.max(0,owner.career.savingsLocal||0),charge);owner.career.savingsLocal=(owner.career.savingsLocal||0)-paid;owner.estateDebtLocal=(owner.estateDebtLocal||0)+charge-paid;}}

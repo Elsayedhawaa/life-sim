@@ -28,7 +28,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] L14 Partial divorce-share fair/discount/premium negotiation, upfront cash or25%down/12month personal notes with real creditor payments.
 - [x] L15 Creditor-first operating/exit waterfall, residual ownership payouts, founder-only uncovered guarantee, consistent estate/net worth and cash statements.
 - [x] L16 Per-marriage/company mutual baseline/separate/shared/growth agreements, recorded net wedding value and actual divorce share allocation.
-- [ ] L17 Estate company trust with appointed paid trustee and multi-beneficiary holdings, replacing paused minor operations.
+- [x] L17 One-company paid trustee trust, equal child beneficiaries, real funded fees/trading/estate charges, adult release and stake/cash allocation once.
 - [ ] L18 NPC onward inheritance with the same charge/allocation workflow as player inheritance.
 - [ ] L19 Estate disputes/exemptions/appeal and sale-to-fund choices, without claiming verified local probate law.
 - [ ] L20 NPC-owned company management/account controls beyond stored records and monthly model operation.
@@ -46,4 +46,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-13 distinct open packages after L16. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+12 distinct open packages after L17. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.

@@ -1,3 +1,4 @@
+import{settleCompanyTrusts}from'./companyTrust.js';
 import{settleNpcCompanyHoldings}from './companyEstate.js';
 import{childFoodEquivalent}from './custodyCosts.js';
 import{propertyMarketYear}from './propertyMarketRisk.js';
@@ -1234,6 +1235,7 @@ export function settleHouseholdMonth(S) {
   if (summary.debt - bizSettleSeverancePaid) walletMove(S, -(summary.debt - bizSettleSeverancePaid), `Monthly debt payments (${S.month}/${S.year})`, 'monthly_settlement');
   if (summary.support) walletMove(S, -summary.support, `Monthly family support (${S.month}/${S.year})`, 'monthly_settlement');
 
+  settleCompanyTrusts(S);
   settleNpcCompanyHoldings(S);
 
   /* v2.14 §2 — manager monthly tick (loyalty, asks, skimming, quitting).

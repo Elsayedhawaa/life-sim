@@ -1,3 +1,4 @@
+import{activateCompanyTrust,renderTrustPlan}from'./companyTrust.js';
 import { businessSalvage } from '../data/businessValuation.js';
 /* ============================================================================
    World Life 2.11 (W4) — Business Legacy: relocation keep/sell/close,
@@ -308,6 +309,7 @@ export function convertBusinessFiguresCurrency(S, biz, toCountry) {
   if(biz.catalog){biz.catalog=JSON.parse(JSON.stringify(biz.catalog));const row=r=>{for(const k of ['price','revenue','direct','contribution','invoice'])if(Number.isFinite(r[k]))r[k]=conv(r[k]);};for(const item of biz.catalog.items){for(const k of ['price','basePrice','input','stockValue'])item[k]=conv(item[k]);if(item.pending)for(const k of ['unit','cost'])item.pending[k]=conv(item.pending[k]);if(item.wip)for(const k of ['price','input','totalCost','paid'])item.wip[k]=conv(item.wip[k]);for(const h of item.history||[])row(h);if(item.last)row(item.last);}if(biz.catalog.lastResult){for(const k of ['revenue','inventoryCost','variableCost','directConsumed'])biz.catalog.lastResult[k]=conv(biz.catalog.lastResult[k]);for(const r of biz.catalog.lastResult.rows||[])row(r);}}
   if(biz.growth){for(const entry of biz.growth.history||[])entry.cost=conv(entry.cost);for(const location of biz.growth.locations||[]){location.monthly=conv(location.monthly);if(location.site){convertBusinessFiguresCurrency(S,location.site,toCountry);if(location.site.manager?.employee)location.site.manager.employee.wageLocal=conv(location.site.manager.employee.wageLocal);}}if(biz.growth.project)biz.growth.project.monthly=conv(biz.growth.project.monthly);}
   if(biz.operating?.history)for(const entry of biz.operating.history)entry.cost=conv(entry.cost);
+  if(biz.trustPlan){biz.trustPlan.monthlyFee=conv(biz.trustPlan.monthlyFee);biz.trustPlan.currency=toCountry;}
   if(biz.equipment){for(const l of biz.equipment.lots)for(const key of ['cost','bookValue','monthly','repairPaid','terminationFee'])if(l[key]!=null)l[key]=conv(l[key]);for(const l of biz.equipment.lots)if(l.replacement)for(const key of ['cost','monthly'])l.replacement[key]=conv(l.replacement[key]);if(biz.equipment.terminationFees)biz.equipment.terminationFees=conv(biz.equipment.terminationFees);if(biz.equipment.distributions)biz.equipment.distributions=conv(biz.equipment.distributions);}
   if(biz.tech?.servers){const s=biz.tech.servers;if(s.cloud)s.cloud.monthly=conv(s.cloud.monthly);for(const r of [...s.racks,...(s.pending?[s.pending]:[])])for(const k of ['cost','bookValue','power','maintenance'])if(Number.isFinite(r[k]))r[k]=conv(r[k]);if(s.backup)s.backup.monthly=conv(s.backup.monthly);if(s.assetDistributions)s.assetDistributions=conv(s.assetDistributions);if(s.last)for(const k of ['rental','power','maintenance','backup','cost'])s.last[k]=conv(s.last[k]);}
   if(biz.tech)for(const key of ['price','cloud','fixed','burn','bookings','capitalRaised','reserve'])if(Number.isFinite(biz.tech[key]))biz.tech[key]=conv(biz.tech[key]);
@@ -493,6 +495,7 @@ export function transferBusinessesOnDeath(S, continuingChildId = null) {
   const outcome = { inherited: [], soldToEstate: [] };
   const businesses = [...getBusinesses(S)];
   for (const biz of businesses) {
+    const trust=activateCompanyTrust(S,biz);if(trust){const heir=S.people[trust.beneficiaries[0].personId];removeBusinessFromList(S,biz);outcome.inherited.push({biz,heir,trust});continue;}
     let { heir } = resolveBusinessHeir(S, biz);
     if(!heir&&(biz.familyCoOwners||[]).length&&continuingChildId)heir=S.people[continuingChildId];
     if (heir) {
@@ -530,7 +533,8 @@ export function deliverInheritedBusinesses(nextS, outcome, continuingChildId, de
   const delivered = [];
   const toldAbout = [];
   const parentWord = deadPlayerGender === 'f' ? 'mother' : 'father';
-  for (const { biz, heir } of (outcome.inherited || [])) {
+  for (const { biz, heir, trust } of (outcome.inherited || [])) {
+    if(trust)continue;
     if (heir && heir.id === continuingChildId) {
       if (!Array.isArray(nextS.career.businesses)) nextS.career.businesses = [];
       const copy = structuredClone(biz);copy.heirId=heir.id;convertBusinessFiguresCurrency(nextS,copy,nextS.country);
@@ -577,7 +581,7 @@ export function renderBusinessWillSection(S, biz) {
   if (!biz) return '';
   const { heir } = resolveBusinessHeir(S, biz);
   const eligible = listEligibleHeirs(S);
-  const heirLine = heir
+  const heirLine = biz.trustPlan?'Company trust plan overrides the individual heir for this company.':heir
     ? `Heir: <strong>${esc(heir.fullName || heir.firstName)}</strong> — ${esc(biz.name)} passes to them when you die.`
     : `<strong>No heir named</strong> — ${esc(biz.name)} will be sold and the money will go to your estate.`;
   const buttons = eligible.length > 0
@@ -589,9 +593,9 @@ export function renderBusinessWillSection(S, biz) {
   return `
     <div style="border-top:1px dashed var(--line-soft);padding-top:8px;margin-top:8px">
       <div class="muted" style="margin-bottom:6px"><strong>Will &amp; heir:</strong> ${heirLine}</div>${biz.estateTrust?'<p class="muted">Inherited trust: operations paused until age 18. No free trustee or child work.</p>':''}
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${renderTrustPlan(S,biz)}<div style="display:flex;flex-wrap:wrap;gap:6px">
         ${buttons}
-      </div><details><summary>Estate model rules</summary><p class="muted">Named company value joins the estate charge base. Its heir pays an allocated share from cash or a zero-interest 24-month note. Minority shares, unpaid business bills and company assets stay attached. Under-18 holdings pause until adulthood, no child labor or free trustee. Other heirs keep their company records. Game rules, not local law.</p></details>
+      </div><details><summary>Estate model rules</summary><p class="muted">Named company value joins the estate charge base. Its heir pays an allocated share from cash or a zero-interest 24-month note. Minority shares, unpaid business bills and company assets stay attached. Under-18 direct holdings pause unless a funded paid company trust plan was set. No child labor or free trustee. Other heirs keep their company records. Game rules, not local law.</p></details>
     </div>`;
 }
 
@@ -617,6 +621,6 @@ export function renderWillHeirSection(S) {
       <div class="muted" style="margin-bottom:6px"><strong>Primary heir:</strong> ${heirLine}</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${buttons}
-      </div><details><summary>Estate model rules</summary><p class="muted">Named company value joins the estate charge base. Its heir pays an allocated share from cash or a zero-interest 24-month note. Minority shares, unpaid business bills and company assets stay attached. Under-18 holdings pause until adulthood, no child labor or free trustee. Other heirs keep their company records. Game rules, not local law.</p></details>
+      </div><details><summary>Estate model rules</summary><p class="muted">Named company value joins the estate charge base. Its heir pays an allocated share from cash or a zero-interest 24-month note. Minority shares, unpaid business bills and company assets stay attached. Under-18 direct holdings pause unless a funded paid company trust plan was set. No child labor or free trustee. Other heirs keep their company records. Game rules, not local law.</p></details>
     </div>`;
 }

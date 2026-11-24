@@ -1,3 +1,4 @@
+import{trustPlanAction,trustTopup,replaceTrustee}from'./systems/companyTrust.js';
 import{companyAgreementAction}from'./systems/companyMarital.js';
 import{branchAction}from'./systems/companyBranches.js';
 import{migrateCompanyModel}from './systems/companyMigration.js';
@@ -1936,6 +1937,9 @@ if (typeof document !== 'undefined') {
     if(action==='branch-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(branchAction(S,biz,btn.dataset.kind,btn.dataset.index,btn.dataset.value));return;}if(action==='growth-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(growthAction(S,biz,btn.dataset.kind,btn.dataset.value,operatingBase(S,biz)));return;}
     if(action==='operating-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(operatingAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
     if(action==='company-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(companyAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
+    if(action==='company-trust-plan'){handleActionResult(trustPlanAction(S,(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz),btn.dataset.person));return;}
+    if(action==='company-trust-replace'){handleActionResult(replaceTrustee(S,btn.dataset.trust,btn.dataset.person));return;}
+    if(action==='company-trust-fund'){handleActionResult(trustTopup(S,btn.dataset.trust));return;}
     if(action==='company-marital-agreement'){const b=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(companyAgreementAction(S,b,btn.dataset.couple,btn.dataset.rule));return;}
     if(action==='divorce-share-negotiate'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(negotiateDivorceShares(S,biz,btn.dataset.person,Number(btn.dataset.pct),btn.dataset.offer,btn.dataset.mode,Number(btn.dataset.amount)));return;}
     if(action==='divorce-share-buyout'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(buyoutDivorceShares(S,biz,btn.dataset.person,Number(btn.dataset.amount)));return;}
