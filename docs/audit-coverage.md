@@ -155,3 +155,9 @@ Cash, each owned credit card with available limit/APR, regional installments wit
 - Growth stages reflect actual levels/sites/countries. Foreign subsidiaries have a country, local staff, paid director, office rent, startup costs and their own monthly P&L. Currency is kept in household book currency for the settlement. Market-entry quotes are game estimates; host-country licensing/tax treaties/foreign ownership restrictions are not modeled.
 - Persistent employees' salaries are owned by business controls, not generic NPC annual raises/job changes. Death removes a worker from active payroll; manager death leaves a vacancy. Former staff stop showing wages from this employer.
 - Explicit advanced fixture at 390px exercises new item, pricing, UK subsidiary, monthly settlement, paid diligence and purchase after waiting. This does not prove natural progression to a multinational.
+
+### Cross-border audit correction
+
+- Portfolio totals now include branch/subsidiary P&L, while owned cards remain parent-only to avoid duplicate cards.
+- Business currency conversion now also covers manager salary, office rent, total capital, retained cash/earnings, debt, brand value, staff retirement balances, financial history and cached monetary effects. Previously some old-country amounts survived a move beside converted wages/revenue.
+- Manager shortlist wage curves use the business book currency; onboarding and dismissal convert the cash debit to the player's currency.

@@ -224,7 +224,7 @@ export function roleWageLocal(S, role, countryId) {
 /* ------------------------------------------------------------------ */
 export function ensureStaffArray(S, biz) {
   if (!biz) return [];
-  if(Array.isArray(biz.staff)){for(const emp of [...biz.staff]){if(emp.personId&&S.people?.[emp.personId]?.alive===false){biz.staff.splice(biz.staff.indexOf(emp),1);recordJournal(S,`${emp.name} died. Their position at ${biz.name} is vacant.`,'career');}else employeePerson(S,biz,emp);}biz.employees=biz.staff.length;return biz.staff;}
+  if(Array.isArray(biz.staff)){for(const emp of [...biz.staff]){if(emp.personId&&S.people?.[emp.personId]?.alive===false){biz.staff.splice(biz.staff.indexOf(emp),1);recordJournal(S,`${emp.name} died. Their position at ${biz.name} is vacant.`,'career');}else employeePerson(S,biz,emp);}if(biz.employees!==biz.staff.length)stampMonthEffects(S,biz);biz.employees=biz.staff.length;return biz.staff;}
   const count = Math.max(0, Math.round(Number(biz.employees) || 0));
   const roles = staffRolesForType(biz.typeId);
   const staff = [];

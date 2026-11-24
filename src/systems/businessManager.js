@@ -1,4 +1,5 @@
 import{employeePerson}from './businessPeople.js';
+import{convertCurrency}from '../data/economy.js';
 /* ============================================================================
    World Life 2.0 — Business Manager (v2.14 §2, Worker 2)
    A manager is a person, not a toggle: named, skilled, paid, loyal (or
@@ -151,7 +152,7 @@ export function takeOverBusiness(S, biz) {
    local mid salary, with a bump for a big capital base.
    ------------------------------------------------------------------ */
 export function businessSizeScore(S, biz) {
-  const mid = Math.max(1, monthlyMidSalary(S, biz.country || S.country));
+  const mid=Math.max(1,Math.round(convertCurrency(monthlyMidSalary(S,biz.country||S.country),biz.country||S.country,biz.figuresCurrency||biz.country||S.country,S.year)));
   const revScore = (Number(biz.monthlyRev) || 0) / mid;
   const capScore = (Number(biz.capitalInvested) || 0) / mid;
   return revScore + Math.min(10, capScore * 0.2);
@@ -194,7 +195,7 @@ export function managerWageCurve(mid, tier, skill) {
 
 /* The going rate for a manager of this skill at THIS business. */
 export function managerWageForBusiness(S, biz, skill) {
-  const mid = Math.max(1, monthlyMidSalary(S, biz.country || S.country));
+  const mid=Math.max(1,Math.round(convertCurrency(monthlyMidSalary(S,biz.country||S.country),biz.country||S.country,biz.figuresCurrency||biz.country||S.country,S.year)));
   return managerWageCurve(mid, businessSizeTier(S, biz), skill);
 }
 
@@ -292,7 +293,8 @@ export function hireManager(S, biz, candidate) {
   if (biz.manager) return { ok: false, msg: `${biz.name} already has a manager (${biz.manager.name}). Fire them first if you want someone new.` };
   if (!candidate || !candidate.name) return { ok: false, msg: 'Choose a candidate from the shortlist first.' };
   const wage = Math.max(1, Math.round(Number(candidate.wage) || 0));
-  if ((Number(S.money?.cash) || 0) < wage) {
+  const charge=Math.round(convertCurrency(wage,biz.figuresCurrency||biz.country||S.country,S.country,S.year));
+  if ((Number(S.money?.cash) || 0) < charge) {
     return { ok: false, msg: `Hiring ${candidate.name} costs one month's wage (${formatMoney(wage, biz.country || S.country)}) to onboard — not enough cash.` };
   }
   /* v2.20 I3 — never hire silently into a loss: when the wage is more
@@ -304,7 +306,7 @@ export function hireManager(S, biz, candidate) {
   const wageWarningText = wageWarning
     ? ` Warning: ${candidate.name} asks ${formatMoney(wageWarning.wage, biz.country || S.country)}/month but ${biz.name} netted ${formatMoney(wageWarning.lastNet, biz.country || S.country)} last month — you will pay about ${formatMoney(wageWarning.topUp, biz.country || S.country)}/month from your salary until it earns more.`
     : '';
-  walletMove(S, -wage, `Onboarding — ${candidate.name} (manager, ${biz.name})`, 'business');
+  walletMove(S, -charge, `Onboarding — ${candidate.name} (manager, ${biz.name})`, 'business');
   biz.manager = {
     name: candidate.name,
     skill: clamp(Math.round(Number(candidate.skill) || 50), 0, 100),
@@ -707,10 +709,11 @@ export function fireManager(S, biz) {
   if (!biz || !biz.manager) return { ok: false, msg: 'No manager to fire.' };
   const mgr = biz.manager;
   const sev = managerSeveranceFor(S, biz);
-  if ((Number(S.money?.cash) || 0) < sev.amount) {
+  const charge=Math.round(convertCurrency(sev.amount,biz.figuresCurrency||biz.country||S.country,S.country,S.year));
+  if ((Number(S.money?.cash) || 0) < charge) {
     return { ok: false, msg: `Severance for ${mgr.name} is ${formatMoney(sev.amount, biz.country || S.country)} (${sev.months} month${sev.months === 1 ? '' : 's'} under ${getCountry(biz.country || S.country).name} law) — not enough cash to let them go properly.` };
   }
-  walletMove(S, -sev.amount, `Severance — ${mgr.name} (manager, ${biz.name})`, 'business');
+  walletMove(S, -charge, `Severance — ${mgr.name} (manager, ${biz.name})`, 'business');
   const staff = Array.isArray(biz.staff) ? biz.staff : [];
   for (const e of staff) e.morale = clamp((Number(e.morale) || 0) - 8, 5, 100);
   recordJournal(S, `You fired ${mgr.name} as manager of ${biz.name}. Severance ${formatMoney(sev.amount, biz.country || S.country)} came out of your own pocket; the remaining team is shaken (morale −8). ${biz.name} is unmanaged until you hire a replacement or run it yourself.`, 'career');

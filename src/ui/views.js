@@ -2392,7 +2392,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
   /* v2.18 W2 — portfolio totals read businessLastMonthNet, the one
      source of truth (the folded lastPL the settlement posted), never
      a local re-sum of lastPL fields. */
-  const totals = portfolioBusinesses.reduce((t, biz) => {
+  const totals = businesses.filter(b=>b&&!b.dead).reduce((t, biz) => {
     const r = businessLastMonthNet(S, biz);
     if (!r.hasPL) return t;
     t.settled++;t.revenue += r.revenue; t.costs += r.costs; t.tax += r.tax; t.net += r.net;
