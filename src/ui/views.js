@@ -3488,7 +3488,7 @@ export const ERA_CLASSES = ERA_BANDS.map(b => b.cls);
 export function eraForYear(year) {
   const y = Number(year) || 1960;
   if (y < 1960) return ERA_BANDS[0];
-  if (y > 2029) return ERA_BANDS[ERA_BANDS.length - 1];
+  if (y > 2029) return {...ERA_BANDS[ERA_BANDS.length - 1],from:Math.floor(y/10)*10,to:Math.floor(y/10)*10+9,name:'The '+Math.floor(y/10)*10+'s'};
   return ERA_BANDS.find(b => y >= b.from && y <= b.to) || ERA_BANDS[ERA_BANDS.length - 1];
 }
 export function eraClassForYear(year) { return eraForYear(year).cls; }

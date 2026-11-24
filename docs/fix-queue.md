@@ -181,3 +181,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W79 Investigated repeat-step-up hypothesis: disproved. Existing per-kind three-turn cooldown rejects repeats. No extra mechanic added; visible cooldown feedback remains a low-impact UI follow-up.
 
 - [x] W80 Debt warning scenes (loan/card/BNPL/property/business second miss) lose acknowledgment on reload. Durable warning snapshot/legacy key recovery, acknowledgment explicitly no payment or promise.
+
+- [x] W81 Canadian2034audit screenshot still labels era The2020s. Use current decade for future-year visual label rather than latest historical bucket. Low-impact presentation.
+
+- [x] W82 Chapter is live-derived, not stale, but unemployment reverts an experienced graduate to First Steps/find first job. Keep Building for recorded work history and show next-job wording, without altering progress/experience.

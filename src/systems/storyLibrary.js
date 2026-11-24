@@ -848,6 +848,7 @@ export const LIFE_CHAPTERS = [
   }
 ];
 
+function hasWorkHistory(S){return (Number(S.career?.yearsExperience)||0)>0||!!S.career?.jobLoss?.lastJob||!!S.career?.lastReference||(S.career?.history||[]).length>0;}
 function chapterBeats(S, id) {
   const age = S.player?.age || 0;
   const hasDegree = (S.education?.degrees || []).length > 0;
@@ -887,12 +888,13 @@ function chapterBeats(S, id) {
     else open('Finish your education');
     if (employed) done(`Working${S.career.job?.title ? ` as ${S.career.job.title}` : ''}`);
     else if (hasBusiness) done('Running your own business');
-    else open('Find your first job');
-    open('Build savings of your own');
+    else open(hasWorkHistory(S)?'Find your next job':'Find your first job');
+    if((Number(S.money?.savings)||0)>0)done('Savings of your own recorded');else open('Build savings of your own');
     if (openGoals.length) open(`Next goal: ${openGoals[0]}`);
     return beats;
   }
   if (id === 'building') {
+    if(!employed&&!hasBusiness&&hasWorkHistory(S))open('Find your next job');
     if (employed) done(`Working${S.career.job?.title ? ` as ${S.career.job.title}` : ''}`);
     if (hasBusiness) done(`Running ${S.career.business.name || 'your business'}${S.career.business.employees ? ` with ${S.career.business.employees} employees` : ''}`);
     if (homes > 0) done(`${homes} ${homes === 1 ? 'home' : 'homes'} owned`);
@@ -942,6 +944,7 @@ export function getCurrentChapter(S) {
   const livingKids = (S.relations?.childIds || []).map(k => S.people?.[k]).filter(c => c && c.alive).length;
   const youngKids = (S.relations?.childIds || []).map(k => S.people?.[k]).filter(c => c && c.alive && c.age < 18).length;
   const employed = !!(S.career?.employed || S.career?.job || S.career?.business);
+  const workedBefore=hasWorkHistory(S);
   const retired = !!S.career?.retired;
   const inUniversity = !!S.education?.university;
   const finishedSchool = S.education?.highSchoolScore != null || (S.education?.degrees || []).length > 0 || ['graduated_high', 'university', 'completed'].includes(S.education?.stage);
@@ -952,7 +955,7 @@ export function getCurrentChapter(S) {
   else if (age < 18 && !finishedSchool) id = 'school';
   else if (age >= 50 && youngKids === 0 && (married || kids > 0 || employed)) id = 'long_middle';
   else if (married || livingKids > 0) id = 'family';
-  else if (employed && finishedSchool && !inUniversity) id = 'building';
+  else if ((employed||workedBefore) && finishedSchool && !inUniversity) id = 'building';
   else id = 'first_steps';
 
   const def = LIFE_CHAPTERS.find(c => c.id === id);
