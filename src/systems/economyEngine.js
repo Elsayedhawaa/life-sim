@@ -1761,6 +1761,9 @@ export function convertFinancesOnCountryMove(S, fromCountry, toCountry) {
   }
 
 
+  for(const couple of S.marriage?.couples||[])for(const key of ['mahrPrompt','mahrPromptPaid','mahrDeferred','mahrDeferredPaid','qaimaValueLocal'])if(Number.isFinite(couple.money?.[key]))couple.money[key]=Math.round(convertCurrency(couple.money[key],fromCountry,toCountry,S.year));
+  for(const contract of S.marriage?.contracts||[])for(const key of ['mahrPrompt','mahrPromptPaid','mahrDeferred','mahrDeferredPaid','qaimaValueLocal'])if(Number.isFinite(contract[key]))contract[key]=Math.round(convertCurrency(contract[key],fromCountry,toCountry,S.year));
+
   /* Liquidate certificates cleanly on international bank move (without penalty) */
   for (const cd of S.money.certificates) {
     const valNew = Math.round(convertCurrency(cd.principal, cd.country || fromCountry, toCountry, S.year));

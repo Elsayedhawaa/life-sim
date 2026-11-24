@@ -740,7 +740,7 @@ export function initiateDivorce(S, spouseId = null, mode = 'standard', options =
 /* Child Nurseries (Ages 0–5) & After-School Enrichment Clubs (Ages 5–17) from V1 */
 export function enrollChildInProgram(S, childId, kind, progId) {
   const ch = S.people[childId];
-  if (!ch || !ch.alive) return { ok: false, msg: 'Child not found.' };
+  if (!ch || !ch.alive || !S.relations.childIds.includes(childId)) return { ok: false, msg: 'Child not found.' };
 
   if (kind === 'nursery') {
     if (ch.age > 5) return { ok: false, msg: `${ch.firstName} is past nursery age (${ch.age}). Choose an enrichment club instead!` };
@@ -787,7 +787,7 @@ export function childOutingCostLocal(S) {
 /* Play with a child: happiness up for the child and for you, stress down. */
 export function playWithChild(S, childId) {
   const ch = S.people[childId];
-  if (!ch || !ch.alive) return { ok: false, msg: 'Child not found.' };
+  if (!ch || !ch.alive || !S.relations.childIds.includes(childId)) return { ok: false, msg: 'Child not found.' };
   const used = childOncePerTurn(S, `child_play_${ch.id}`, ch);
   if (used) return { ok: false, msg: used };
   ch.vitals.happiness = clamp(ch.vitals.happiness + 6);
@@ -801,7 +801,7 @@ export function playWithChild(S, childId) {
 /* Teach a child: smarts up — but only if your own smarts are up to it. */
 export function teachChild(S, childId) {
   const ch = S.people[childId];
-  if (!ch || !ch.alive) return { ok: false, msg: 'Child not found.' };
+  if (!ch || !ch.alive || !S.relations.childIds.includes(childId)) return { ok: false, msg: 'Child not found.' };
   if (ch.age < 4) return { ok: false, msg: `${ch.firstName} is too young for lessons yet.` };
   if ((S.player.vitals.smarts || 0) < 50) {
     return { ok: false, msg: `Your own Smarts are ${Math.round(S.player.vitals.smarts || 0)}% — teach needs 50%+. Study or read first, then teach.` };
@@ -818,8 +818,10 @@ export function teachChild(S, childId) {
 /* Take a child out: costs real money, happiness up. Only from age 4. */
 export function takeChildOut(S, childId) {
   const ch = S.people[childId];
-  if (!ch || !ch.alive) return { ok: false, msg: 'Child not found.' };
+  if (!ch || !ch.alive || !S.relations.childIds.includes(childId)) return { ok: false, msg: 'Child not found.' };
   if (ch.age < 4) return { ok: false, msg: `${ch.firstName} is too young for outings — wait until age 4.` };
+  if(ch.residenceCountry!==S.country)return{ok:false,msg:'Your child lives abroad. An in-person outing requires being in the same country.'};
+  const used=childOncePerTurn(S,`child_outing_${ch.id}`,ch);if(used)return{ok:false,msg:used};
   const cost = childOutingCostLocal(S);
   if (S.money.cash < cost) return { ok: false, msg: `A day out with ${ch.firstName} costs ${formatMoney(cost, S.country)} — you hold ${formatMoney(S.money.cash, S.country)}.` };
   walletMove(S, -cost, `Day out with ${ch.firstName}`, 'family');
@@ -835,7 +837,7 @@ export function takeChildOut(S, childId) {
    child is in school (ages 6–17). */
 export function helpChildWithHomework(S, childId) {
   const ch = S.people[childId];
-  if (!ch || !ch.alive) return { ok: false, msg: 'Child not found.' };
+  if (!ch || !ch.alive || !S.relations.childIds.includes(childId)) return { ok: false, msg: 'Child not found.' };
   if (ch.age < 6) return { ok: false, msg: `${ch.firstName} is not in school yet — homework help starts at 6.` };
   if (ch.age >= 18) return { ok: false, msg: `${ch.firstName} has finished school — no homework left to help with.` };
   const used = childOncePerTurn(S, `child_hw_${ch.id}`, ch);

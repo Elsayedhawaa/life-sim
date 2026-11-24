@@ -72,7 +72,13 @@ export function settleChildSupportMonth(S,available){
       const due=amount+Math.round(convertCurrency(order.arrears||0,order.country,S.country,S.year));
       const paid=Math.min(due,Math.max(0,available-outgoing));outgoing+=paid;
       order.arrears=convertCurrency(due-paid,S.country,order.country,S.year);order.lastPaid=paid;
-    }else if(S.people[order.spouseId]?.alive){incoming+=amount;order.lastPaid=amount;}
+    }else if(S.people[order.spouseId]?.alive){
+      const ex=S.people[order.spouseId];ex.career??={};
+      const savings=Math.max(0,Number(ex.career.savingsLocal)||0);
+      const due=amount+Math.round(convertCurrency(order.arrears||0,order.country,S.country,S.year));
+      const paid=Math.min(due,savings);ex.career.savingsLocal=savings-paid;incoming+=paid;order.lastPaid=paid;
+      order.arrears=convertCurrency(due-paid,S.country,order.country,S.year);
+    }
   }
   return{outgoing,incoming};
 }
