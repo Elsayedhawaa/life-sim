@@ -33,7 +33,8 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] L19 Fictional named/fallback gift disputes, paid proof-based trading-tax relief appeal and sale-to-fund note choices, without claiming local probate law.
 - [x] L20 NPC company owner accounts, funded management, policy/retention requests, gifts and owner bill payments, with consent/age/job guards.
 
-- [ ] L23 Customer-level and multi-month WIP lot provenance beyond monthly proportional sales exposure.
+- [x] L23 Customer-level and multi-month WIP lot provenance beyond monthly proportional sales exposure. Hosted-verified3478090.
+- [ ] L24 Link traced customer returns to outstanding invoices so unpaid credit is canceled, not refunded as cash.
 
 ## Eight ranked business gaps
 
@@ -48,4 +49,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-1 distinct open package after G8: L23 added for customer/WIP provenance beyond proportional recall exposure. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+1 distinct open package after L23: L24 added during fresh audit. L23 added for customer/WIP provenance beyond proportional recall exposure. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
