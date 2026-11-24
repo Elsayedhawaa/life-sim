@@ -1,7 +1,10 @@
+import{eraDepositRates}from'./economy.js';
+import{worldEventEffects}from'../systems/worldEvents.js';
+import{bookNarrativeLoan,narrativeLoanQuote,payNarrativeLoan}from'../systems/narrativeLoans.js';
 import {topUpPrivatePension} from '../systems/careerMarket.js';
 import {investInMarketAsset} from '../systems/completeLifeSystems.js';
 import {GLOBAL_MARKET_ASSETS} from './megaFinanceAndMarkets.js';
-import {sellGold21k,buyBankCertificate} from '../systems/economyEngine.js';
+import {personalLoanGates,takePersonalLoan,sellGold21k,buyBankCertificate} from '../systems/economyEngine.js';
 import {recordCivilLoss} from '../systems/civilClaims.js';
 /* ============================================================================
    World Life 2.5 — Money / Health / Career / School / University / Gulf events
@@ -2878,50 +2881,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 24, "hasJob": true, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(20000, S.country, S.year);
-      const B = eraLocalCost(10000, S.country, S.year);
-      return {
-        key: 'ev_money_loan_offer',
-        category: 'money',
-        title: "The Bank Offers You a Personal Loan",
-        text: `Your bank calls: you are pre-approved for a personal loan of ${formatMoney(A, S.country)}, cash in your account tomorrow, repayable over a year. The interest is high, but the money would solve this month’s problems at once.`,
-        choices: [
-          {
-            label: "Take the loan",
-            effect: (st) => {
-              walletMove(st, +A, 'Take the loan', 'money');
-              st.money.loans.push({ id: 'loan_' + st.turn, label: 'Take the loan', balance: A, monthlyPayment: Math.round(A / 12), annualRate: 0.18, remainingMonths: 12, country: st.country });
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-3));
-              st.money.creditScore = clamp(st.money.creditScore + (-4), 300, 900);
-              recordJournal(st, `You took a personal loan of ${formatMoney(A, S.country)} from the bank. The money landed the next day.`, 'money');
-            },
-          },
-          {
-            label: "Take half the loan",
-            effect: (st) => {
-              walletMove(st, +B, 'Take half the loan', 'money');
-              st.money.loans.push({ id: 'loan_' + st.turn, label: 'Take half the loan', balance: B, monthlyPayment: Math.round(B / 12), annualRate: 0.18, remainingMonths: 12, country: st.country });
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-1));
-              recordJournal(st, `You took half the offered loan, ${formatMoney(B, S.country)}, and left the rest.`, 'money');
-            },
-          },
-          {
-            label: "Refuse \u2014 debt is not the answer",
-            effect: (st) => {
-              if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+4));
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+2));
-              recordJournal(st, `You refused the bank’s loan offer. The problems stayed, but so did your freedom from it.`, 'money');
-            },
-          },
-        ],
-      };
+      if(personalLoanGates(S))return null;
+      const amount=eraLocalCost(20000,S.country,S.year),rate=Number((eraDepositRates(S.country,S.year).cd1Yr+.055+worldEventEffects(S,S.country).rateShift).toFixed(4)),r=rate/12,pay=Math.ceil(amount*r/(1-Math.pow(1+r,-12)));
+      return{key:'ev_money_loan_offer',category:'money',title:'A Bank Loan Offer',text:`Consider ${formatMoney(amount,S.country)} over one year at ${(rate*100).toFixed(1)}% annual, approximately ${formatMoney(pay,S.country)}/month for the full amount. The bank uses the same current rate, credit checks and monthly repayment schedule as the Bank tab. This is not free income.`,choices:[{label:'Borrow the offered amount',effect:st=>takePersonalLoan(st,amount,1)},{label:'Borrow half',effect:st=>takePersonalLoan(st,Math.floor(amount/2),1)},{label:'Refuse the loan',effect:st=>{}}]};
     },
   },
   {
@@ -2930,48 +2892,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 24, "wealth": ["poor"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(5000, S.country, S.year);
-      const B = eraLocalCost(2000, S.country, S.year);
-      return {
-        key: 'ev_money_payday_loan_shop',
-        category: 'money',
-        title: "The Loan Shop on the Corner",
-        text: `The loan shop on the corner offers cash today: borrow ${formatMoney(A, S.country)}, pay back ${formatMoney(B, S.country)} in a month. The man behind the counter is friendly, the terms are printed small, and the interest is brutal.`,
-        choices: [
-          {
-            label: "Borrow the money",
-            effect: (st) => {
-              walletMove(st, +A, 'Borrow the money', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-2));
-              st.money.creditScore = clamp(st.money.creditScore + (-8), 300, 900);
-              recordJournal(st, `You borrowed ${formatMoney(A, S.country)} from the loan shop. The repayment of ${formatMoney(B, S.country)} is due in a month.`, 'money');
-            },
-          },
-          {
-            label: "Borrow only what you must",
-            effect: (st) => {
-              walletMove(st, +B, 'Borrow only what you must', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+2));
-              recordJournal(st, `You borrowed a smaller amount, ${formatMoney(B, S.country)}, from the loan shop — only what you truly needed.`, 'money');
-            },
-          },
-          {
-            label: "Walk away",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+3));
-              recordJournal(st, `You walked away from the loan shop. The month would be hard, but the debt would have been harder.`, 'money');
-            },
-          },
-        ],
-      };
+      if(S.money.loans.some(l=>l.narrativeKind==='payday'))return null;
+      const A=eraLocalCost(5000,S.country,S.year),B=eraLocalCost(2000,S.country,S.year);
+      return{key:'ev_money_payday_loan_shop',category:'money',title:'The Loan Shop on the Corner',text:`Fictional game terms: borrow ${formatMoney(A,S.country)}, owe ${formatMoney(narrativeLoanQuote(S,'payday',A).balance,S.country)} on the next monthly turn. 20% one-time markup. Missed-payment fees and collections apply.`,choices:[{label:`Borrow ${formatMoney(A,S.country)}`,effect:st=>bookNarrativeLoan(st,'payday',A)},{label:`Borrow ${formatMoney(B,S.country)}, owe ${formatMoney(narrativeLoanQuote(S,'payday',B).balance,S.country)}`,effect:st=>bookNarrativeLoan(st,'payday',B)},{label:'Walk away',effect:st=>{}}]};
     },
   },
   {
@@ -10225,48 +10148,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 18, "maxAge": 26, "education": ["inUni"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(15000, S.country, S.year);
-      const B = eraLocalCost(7000, S.country, S.year);
-      return {
-        key: 'ev_uni_student_loan',
-        category: 'school',
-        title: "The Student Loan Decision",
-        text: `Tuition is due, and the student loan would cover it: ${formatMoney(A, S.country)} a year, repayable after you graduate, with interest. It is the only way in — or the start of years of debt.`,
-        choices: [
-          {
-            label: "Take the loan",
-            effect: (st) => {
-              walletMove(st, +A, 'Take the loan', 'school');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              st.money.creditScore = clamp(st.money.creditScore + (-2), 300, 900);
-              recordJournal(st, `You took the student loan of ${formatMoney(A, S.country)} a year to pay for tuition.`, 'school');
-            },
-          },
-          {
-            label: "Take a smaller loan and work",
-            effect: (st) => {
-              walletMove(st, +B, 'Take a smaller loan and work', 'school');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You took a smaller student loan, ${formatMoney(B, S.country)}, and worked to cover the rest.`, 'school');
-            },
-          },
-          {
-            label: "Refuse the loan and find another way",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+6));
-              if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+2));
-              recordJournal(st, `You refused the student loan and found another way to pay — family, work, and worry.`, 'school');
-            },
-          },
-        ],
-      };
+      if(!S.education.university||S.money.loans.some(l=>l.narrativeKind==='student'))return null;
+      const A=eraLocalCost(15000,S.country,S.year),B=eraLocalCost(7000,S.country,S.year);
+      return{key:'ev_uni_student_loan',category:'school',title:'The Student Loan Decision',text:`One game tuition-support disbursement, not an annual grant: ${formatMoney(A,S.country)} or ${formatMoney(B,S.country)}. 6% annual interest over 60 monthly payments. Payments and interest wait while enrolled, then start the first monthly turn after leaving university. Tuition remains a separate bill.`,choices:[{label:'Take the larger student loan',effect:st=>bookNarrativeLoan(st,'student',A)},{label:'Take the smaller student loan',effect:st=>bookNarrativeLoan(st,'student',B)},{label:'Refuse the loan',effect:st=>{}}]};
     },
   },
   {
@@ -12719,49 +12603,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: { requiredPeople: ['friend'],"minAge": 24, "afterEvent": "ev_money_payday_loan_shop", "afterEventMinTurns": 3},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(2000, S.country, S.year);
-      const B = eraLocalCost(6000, S.country, S.year);
-      return {
-        key: 'ev_back_loan_shop_returns',
-        category: 'money',
-        title: "The Loan Shop Wants Its Money",
-        text: `A month after the loan shop, the repayment is due: ${formatMoney(B, S.country)}, and the man behind the counter is less friendly now. The interest has done its work, and the amount is bigger than you remembered.`,
-        choices: [
-          {
-            label: "Pay it in full",
-            effect: (st) => {
-              walletMove(st, -B, 'Pay it in full', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-4));
-              st.money.creditScore = clamp(st.money.creditScore + (+3), 300, 900);
-              recordJournal(st, `You paid the loan shop back in full, ${formatMoney(B, S.country)}, and never went back.`, 'money');
-            },
-          },
-          {
-            label: "Pay half and extend it",
-            effect: (st) => {
-              walletMove(st, -A, 'Pay half and extend it', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
-              st.money.creditScore = clamp(st.money.creditScore + (-4), 300, 900);
-              recordJournal(st, `You paid half the loan shop debt, ${formatMoney(A, S.country)}, and extended the rest — with more interest.`, 'money');
-            },
-          },
-          {
-            label: "Borrow from $fr to pay it",
-            effect: (st) => {
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Borrow from $fr to pay it', { affection: (-2) });
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You borrowed from ${frName} to pay the loan shop back. One debt replaced another.`, 'money');
-            },
-          },
-        ],
-      };
+      const l=S.money.loans.find(x=>x.narrativeKind==='payday');if(!l)return null;
+      return{key:'ev_back_loan_shop_returns',category:'money',title:'The Loan Shop Statement',text:`Actual remaining game debt: ${formatMoney(l.balance,S.country)}. Monthly collections already use this same balance. A payment here reduces it, never creates a second debt.`,choices:[{label:'Clear the recorded balance',effect:st=>payNarrativeLoan(st,l.id)},{label:'Pay half of the recorded balance',effect:st=>payNarrativeLoan(st,l.id,.5)},{label:'Keep the current repayment schedule',effect:st=>{}}]};
     },
   },
   {
@@ -13357,41 +13200,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 24, "afterEvent": "ev_back_loan_shop_returns", "afterEventMinTurns": 3},
     build: (S, ctx) => {
-      const A = eraLocalCost(3000, S.country, S.year);
-      const B = eraLocalCost(1000, S.country, S.year);
-      return {
-        key: 'ev_back_loan_shop_returns_l2',
-        category: 'money',
-        title: "The Loan Shop Offers You More",
-        text: `The man at the loan shop is smiling now: because you paid last time, he will lend you more — ${formatMoney(A, S.country)}, today, no questions. The interest is in the small print, and he is not reading it out loud.`,
-        choices: [
-          {
-            label: "Take the bigger loan",
-            effect: (st) => {
-              walletMove(st, +A, 'Take the bigger loan', 'money');
-              st.money.creditScore = clamp(st.money.creditScore + (-6), 300, 900);
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
-              recordJournal(st, `You took the bigger loan from the loan shop, ${formatMoney(A, S.country)}, no questions asked.`, 'money');
-            },
-          },
-          {
-            label: "Refuse and walk away",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-3));
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+2));
-              recordJournal(st, `You refused the bigger loan from the loan shop and walked away.`, 'money');
-            },
-          },
-          {
-            label: "Take a smaller one, just to get through the month",
-            effect: (st) => {
-              walletMove(st, +B, 'Take a smaller one, just to get through the month', 'money');
-              st.money.creditScore = clamp(st.money.creditScore + (-3), 300, 900);
-              recordJournal(st, `You took a smaller loan from the loan shop, ${formatMoney(B, S.country)}, just to get through the month.`, 'money');
-            },
-          },
-        ],
-      };
+      if(!(S.money.narrativeLoanHistory||[]).some(l=>l.narrativeKind==='payday'&&l.settled)||S.money.loans.some(l=>l.narrativeKind==='payday'))return null;
+      const A=eraLocalCost(3000,S.country,S.year),B=eraLocalCost(1000,S.country,S.year);
+      return{key:'ev_back_loan_shop_returns_l2',category:'money',title:'Another Loan Shop Offer',text:`Your recorded prior loan is settled. New fictional terms: 20% one-time markup, due next monthly turn. Borrow ${formatMoney(A,S.country)}, owe ${formatMoney(narrativeLoanQuote(S,'payday',A).balance,S.country)}.`,choices:[{label:'Borrow the larger amount',effect:st=>bookNarrativeLoan(st,'payday',A)},{label:'Refuse',effect:st=>{}},{label:'Borrow the smaller amount',effect:st=>bookNarrativeLoan(st,'payday',B)}]};
     },
   },
   {

@@ -474,3 +474,6 @@ New circles retain dated paid/unpaid shares. Missed shares survive10-month compl
 
 ### W29 event gold sale integrity
 Gold scene requires actual positive whole-gram holdings, quotes all/half quantities from that holding, and calls market sale with real dealer spread instead of fiat constants and fixed deductions.159focused files pass.390px actual1g sale from3g changes cash and holdings, reload passes; pixels inspected, spacing revised for final hosted check. W30narrative debt and W31family transfer provenance remain queued, not hidden by this fix.
+
+### W30 narrative loan ledger
+Payday offers now disburse cash with actual20%flat markup debt due next monthly turn; miss/collection routes use same debt. Student offer is one disbursement at6%/60monthlypayments, no payments/interest while enrolled, begins after leaving. Bank offer uses normal live-rate/gates, rechecked on choice. Followups require actual outstanding/settled loan, pay half/full reduces same balance without double charge or fabricated friend refinancing. Student debt visible from18and deferral labeled.160focused files pass;390px actual5000USDadvance creates6000USDdebt and reload persists it. Fictional game terms, not financial-product/legal claims.

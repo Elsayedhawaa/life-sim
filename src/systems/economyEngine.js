@@ -1135,6 +1135,7 @@ export function settleHouseholdMonth(S) {
      markup) accrues NO further interest; a rate loan accrues monthly. */
   const remainingLoans = [];
   for (const loan of S.money.loans) {
+    if(loan.deferredEducation&&S.education.university){remainingLoans.push(loan);continue;}
     const scheduledInterest=loan.flatMarkup||loan.inCollections?0:Math.round(loan.balance*((loan.annualRate||0)/12));
     const payAmt = Math.min(loan.balance+scheduledInterest,loan.amortizedTerm&&loan.remainingMonths===1?loan.balance+scheduledInterest:loan.monthlyPayment);
     if (loan.inCollections) {
@@ -1193,6 +1194,7 @@ export function settleHouseholdMonth(S) {
     const interest = loan.flatMarkup ? 0 : Math.round(loan.balance * ((loan.annualRate || 0) / 12));
     if (interest > 0) recordLedgerEntry(S, interest, `Interest on ${loan.label}`, 'debt', 'loan', loan.balance);
     loan.balance = Math.max(0, Math.round(loan.balance - payAmt + interest));
+    if(loan.balance<=0&&loan.narrativeKind){S.money.narrativeLoanHistory??=[];S.money.narrativeLoanHistory.push({...loan,settled:true});}
     loan.remainingMonths -= 1;
     if (loan.balance > 0) {
       loan.remainingMonths=Math.max(1,loan.remainingMonths);
