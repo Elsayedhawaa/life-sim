@@ -4921,7 +4921,7 @@ export function renderWorldTabHtml(S, uiState = {}) {
           const fee = Math.round(convertCurrency(vs.feeUsd, 'usa', S.country, S.year));
           const reqBank = Math.round(convertCurrency(vs.minBankUsd, 'usa', S.country, S.year));
           const activeFoil = (S.legal.touristVisas || []).find(tv => tv.id === vs.id && tv.expiresYear > S.year);
-          const exemptByPass = S.legal.citizenships.some(c => vs.covers.includes(c) || ['uae', 'deu', 'fra', 'ita', 'nld', 'gbr', 'usa', 'can', 'aus', 'jpn', 'sgp'].includes(c));
+          const exemptByPass = S.legal.citizenships.some(c => vs.covers.includes(c) || (S.legal.passports||[]).some(p=>p.country===c&&p.expiresYear>S.year&&['uae', 'deu', 'fra', 'ita', 'nld', 'gbr', 'usa', 'can', 'aus', 'jpn', 'sgp'].includes(c)));
           return `
             <div class="item-row">
               <div class="item-row-main">

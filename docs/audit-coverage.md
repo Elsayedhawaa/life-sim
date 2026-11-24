@@ -423,3 +423,6 @@ Every redundancy choice now ends the actual current job rather than preserving s
 
 ### W11 recorded deposit disputes only
 Removed invented past-deposit narrative/refund eligibility. Event requires an open deposit loss in the current country; partial settlement pays no more than half traced funds, closes claim and blocks duplicate collection. No new deposit record is fabricated.143focused files pass;390px recorded-loss fixture settles400from800traced against1000loss, reload persists and duplicate court button is disabled. Event pixels inspected. Player-as-tenant payment/move-out chain remains W13; this is a safety guard, not its implementation.
+
+### W14 consular model source consistency
+Current enterprise array counts as modeled home ties, ghost employed flags do not, property must be in current country and spouse living/resident. High-mobility exemption needs a valid held passport, not citizenship with only an expired booklet.144focused files pass;390px current-enterprise-only fixture paid actual consular fee, granted foil and persisted reload. Inspected mobile consular card. This remains a fictional simplified visa model, not current visa guidance.

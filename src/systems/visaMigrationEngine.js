@@ -1183,7 +1183,7 @@ const HIGH_MOBILITY_PASSPORTS = new Set(['uae', 'deu', 'fra', 'ita', 'nld', 'gbr
 export function needsTouristVisaFor(S, destCountry) {
   if (!destCountry || destCountry === S.country) return null;
   if (S.legal.citizenships.includes(destCountry)) return null;
-  if (S.legal.citizenships.some(c => HIGH_MOBILITY_PASSPORTS.has(c))) return null;
+  if (S.legal.passports.some(p=>S.legal.citizenships.includes(p.country)&&p.expiresYear>S.year&&HIGH_MOBILITY_PASSPORTS.has(p.country))) return null;
   // Permanent residents / EU / Gulf Golden Visa holders get streamlined regional access, except US/UK/Schengen still require consular foils for EGY/IND passports unless already holding visa
   const reqSpec = CONSULAR_TOURIST_VISAS.find(v => v.covers.includes(destCountry));
   if (!reqSpec) return null;
@@ -1216,7 +1216,7 @@ export function applyConsularTouristVisa(S, visaId) {
   // Consular Officer Adjudication: Financial Solvency + Home Ties (Job / Uni / Enterprise / Real Estate / Spouse)
   const liquidTotal = Math.max(0, S.money.cash) + Math.max(0, S.money.savings);
   const reqBankLocal = Math.round(convertCurrency(spec.minBankUsd, 'usa', S.country, S.year));
-  const hasHomeTies = S.career.employed || !!S.career.business || !!S.education.university || S.housing.properties.length > 0 || S.relations.spouseIds.length > 0;
+  const hasHomeTies = !!(S.career.employed&&S.career.job) || getBusinesses(S).some(b=>b&&b.status!=='closed'&&!b.closed&&b.country===S.country) || !!S.education.university || S.housing.properties.some(p=>p.country===S.country) || S.relations.spouseIds.some(id=>S.people[id]?.alive&&S.people[id]?.residenceCountry===S.country);
 
   if (liquidTotal < reqBankLocal || (!hasHomeTies && S.player.age >= 22)) {
     S.player.vitals.stress = clamp(S.player.vitals.stress + 6);
