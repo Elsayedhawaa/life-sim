@@ -985,21 +985,7 @@ function goalProgressDetail(S, g) {
     return { pct: Math.min(100, Math.round((closeCircle / 3) * 100)), text: spouse ? `Married · ${closeCircle}/3 close bonds` : `${closeCircle}/3 close bonds — marry or build deep friendships` };
   }
   if (g.id === 'g_ambition') {
-    if (S.ambition === 'global_passport') {
-      return { pct: (S.country !== S.homeCountry || S.legal.citizenships.length > 1) ? 100 : 0, text: S.legal.citizenships.length > 1 ? `${S.legal.citizenships.length} passports held` : 'Still living at home on one passport' };
-    }
-    if (S.ambition === 'entrepreneur') {
-      const emp = S.career.business?.employees || 0;
-      return { pct: Math.min(100, Math.round((emp / 6) * 100)), text: S.career.business ? `${emp}/6 employees` : 'No business yet' };
-    }
-    if (S.ambition === 'family_dynasty') {
-      const kids = S.relations.childIds.length;
-      const homes = S.housing.properties.length;
-      return { pct: (kids >= 1 ? 50 : 0) + (homes >= 1 ? 50 : 0), text: `${kids} ${kids === 1 ? 'child' : 'children'} · ${homes} ${homes === 1 ? 'home' : 'homes'} owned` };
-    }
-    const annualBenchmark = eraSalary(cObj.annualSalaryTiers2026.mid, S.country, S.year);
-    const target = annualBenchmark * 6;
-    return { pct: Math.min(100, Math.round((netWorth / Math.max(1, target)) * 100)), text: `Net worth ${formatMoney(netWorth, S.country)} of ${formatMoney(target, S.country)} needed` };
+    const a=ambitionStatus(S);return{pct:a.pct,text:a.reason};
   }
   return { pct: 0, text: 'In progress' };
 }
@@ -1018,6 +1004,9 @@ export function goalStageProgress(S, g) {
   const saveTarget = Math.max(1, g.target || 1);
   const check = (key) => {
     switch (key) {
+      case 'balanced_work': return ['g_grad','g_income'].every(id=>S.goals.some(g=>g.id===id&&g.done));
+      case 'balanced_home': return S.goals.some(g=>g.id==='g_home'&&g.done);
+      case 'balanced_circle': return S.goals.some(g=>g.id==='g_family'&&g.done);
       case 'save_quarter': return liquid >= saveTarget * 0.25;
       case 'save_half': return liquid >= saveTarget * 0.5;
       case 'save_full': return liquid >= saveTarget;

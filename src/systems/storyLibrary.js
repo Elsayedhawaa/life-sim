@@ -7,7 +7,7 @@ import{buildWaterDamageScene}from'./homeWaterDamage.js';
    ========================================================================== */
 
 import { chance, clamp, pick, randInt } from '../core/rng.js';
-import { recordJournal, walletMove, moveBalance, ensureExtendedState, computeNetWorthLocal, LIFE_AMBITIONS } from '../core/schema.js';
+import { recordJournal, ambitionProgress, walletMove, moveBalance, ensureExtendedState, computeNetWorthLocal, LIFE_AMBITIONS } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { eraLocalCost, eraSalary, convertCurrency } from '../data/economy.js';
 import { rememberDeed } from './soulEngine.js';
@@ -975,48 +975,11 @@ export function noteChapterChange(S, chapter) {
   return true;
 }
 
-/* ============================================================================
-   v2.10 — AMBITIONS. Picked once in the new-life modal, tracked for life.
-   state: 'achieved' | 'failed' | 'in_progress'. Only two ambitions can
-   fail, and both fail for a plain age reason the player is told:
-   - entrepreneur: retired without ever building a company with a team of 6.
-   - family_dynasty: past 55 with no children — starting a family is no
-     longer realistic. Every other ambition stays open as long as you live.
-   ========================================================================== */
-
+/* Chosen goals stay open at any age. Completed milestones remain recorded. */
 export function ambitionStatus(S) {
-  const cObj = getCountry(S.country);
-  const netWorth = computeNetWorthLocal(S);
-  const annualBenchmark = eraSalary(cObj.annualSalaryTiers2026.mid, S.country, S.year);
-  const target = Math.max(1, annualBenchmark * 6);
-  const age = S.player?.age || 0;
-  const label = (S.goals || []).find(g => g.id === 'g_ambition')?.label
-    || (LIFE_AMBITIONS[S.ambition] ? LIFE_AMBITIONS[S.ambition].label : 'A Full, Respected Life');
-  const goalDone = !!(S.goals || []).find(g => g.id === 'g_ambition')?.done;
-  const kids = (S.relations?.childIds || []).length;
-  const homes = (S.housing?.properties || []).length;
-  const emp = S.career?.business?.employees || 0;
-
-  if (S.ambition === 'global_passport') {
-    const abroad = S.country !== S.homeCountry;
-    const second = (S.legal?.citizenships || []).length > 1;
-    if (goalDone || second) return { label, pct: 100, state: 'achieved', reason: second ? `You hold ${S.legal.citizenships.length} passports.` : 'You are living abroad.', canFail: false, failNote: 'This ambition cannot fail — you can move abroad at any age.' };
-    return { label, pct: abroad ? 60 : 0, state: 'in_progress', reason: abroad ? 'You are living abroad — a second passport would finish it.' : 'Still living at home on one passport.', canFail: false, failNote: 'This ambition cannot fail — you can move abroad at any age.' };
-  }
-  if (S.ambition === 'entrepreneur') {
-    if (goalDone || emp >= 6) return { label, pct: 100, state: 'achieved', reason: `Your company employs ${emp} people.`, canFail: false, failNote: '' };
-    if (S.career?.retired || age >= 65) return { label, pct: Math.min(100, Math.round((emp / 6) * 100)), state: 'failed', reason: 'You reached retirement without building a company with a team of six.', canFail: true, failNote: 'This ambition fails at retirement if the team is not built.' };
-    return { label, pct: Math.min(100, Math.round((emp / 6) * 100)), state: 'in_progress', reason: S.career?.business ? `${emp}/6 employees.` : 'No business yet.', canFail: true, failNote: 'This ambition fails at retirement if the team is not built.' };
-  }
-  if (S.ambition === 'family_dynasty') {
-    if (goalDone || (kids >= 1 && homes >= 1)) return { label, pct: 100, state: 'achieved', reason: `${kids} ${kids === 1 ? 'child' : 'children'} and ${homes} ${homes === 1 ? 'home' : 'homes'} owned.`, canFail: false, failNote: '' };
-    if (age >= 55 && kids === 0) return { label, pct: 0, state: 'failed', reason: 'Past 55 with no children — starting a family is no longer realistic.', canFail: true, failNote: 'This ambition fails after 55 if you have no children.' };
-    return { label, pct: (kids >= 1 ? 50 : 0) + (homes >= 1 ? 50 : 0), state: 'in_progress', reason: `${kids} ${kids === 1 ? 'child' : 'children'} · ${homes} ${homes === 1 ? 'home' : 'homes'} owned.`, canFail: true, failNote: 'This ambition fails after 55 if you have no children.' };
-  }
-  /* balanced / career_wealth: net worth of 6x the national annual salary. */
-  const pct = Math.min(100, Math.round((netWorth / target) * 100));
-  if (goalDone || netWorth >= target) return { label, pct: 100, state: 'achieved', reason: `Net worth ${formatMoney(netWorth, S.country)} reached the target of ${formatMoney(target, S.country)}.`, canFail: false, failNote: 'This ambition cannot fail — it stays open as long as you live.' };
-  return { label, pct, state: 'in_progress', reason: `Net worth ${formatMoney(netWorth, S.country)} of ${formatMoney(target, S.country)} needed.`, canFail: false, failNote: 'This ambition cannot fail — it stays open as long as you live.' };
+ const progress=ambitionProgress(S),goal=(S.goals||[]).find(g=>g.id==='g_ambition');
+ const achieved=!!goal?.done||progress.complete;
+ return{label:goal?.label||LIFE_AMBITIONS[S.ambition]?.label||'Chosen goal',pct:achieved?100:progress.pct,state:achieved?'achieved':'in_progress',reason:goal?.done&&!progress.complete?'Reached earlier in this life. Current circumstances may have changed.':progress.reason,canFail:false,failNote:'No age deadline.'};
 }
 
 /* Write the ambition's ending to the journal once, naming why. */

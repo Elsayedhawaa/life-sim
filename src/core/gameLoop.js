@@ -20,7 +20,7 @@ import{tickPeopleAutonomy}from '../systems/peopleAutonomy.js';
    ========================================================================== */
 
 import { chance } from './rng.js';
-import { recordJournal, queueScene, computeNetWorthLocal, ensureExtendedState, syncPlayerCareerMirror, liquidFundsLocal } from './schema.js';
+import { recordJournal, queueScene, ambitionProgress, computeNetWorthLocal, ensureExtendedState, syncPlayerCareerMirror, liquidFundsLocal } from './schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { eraSalary, goldPricePerGram } from '../data/economy.js';
 import { restorePeopleDecision, ensureSocialCast, tickNpcAutonomyYearly, maybePickDominoSoulScene } from '../systems/soulEngine.js';
@@ -155,10 +155,7 @@ export function refreshGoalsProgress(S) {
       g.done = true;
     }
     if (g.id === 'g_ambition') {
-      if (S.ambition === 'global_passport' && (S.country !== S.homeCountry || S.legal.citizenships.length > 1)) g.done = true;
-      else if (S.ambition === 'entrepreneur' && S.career.business && S.career.business.employees >= 6) g.done = true;
-      else if (S.ambition === 'family_dynasty' && S.relations.childIds.length >= 1 && S.housing.properties.length >= 1) g.done = true;
-      else if (netWorth >= annualBenchmark * 6) g.done = true;
+      if(ambitionProgress(S).complete)g.done=true;
     }
     /* v2.12 item 1 — a save-for-this goal is done when the money is saved:
        liquid funds (cash + savings) reach the goal's target price. */

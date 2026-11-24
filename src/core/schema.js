@@ -537,6 +537,20 @@ export function createNewLifeState(opts = {}) {
    (goalStageProgress) — the same way goalProgressDetail already reads live
    state — so stages never go stale and refreshGoalsProgress's done-rules
    in gameLoop.js are untouched. */
+/* One concrete goal evaluator. Progress is not a judgement of a life. */
+export function ambitionProgress(S){
+ const kids=(S.relations?.childIds||[]).length,homes=(S.housing?.properties||[]).length;
+ if(S.ambition==='family_dynasty')return{pct:(kids?50:0)+(homes?50:0),complete:kids>0&&homes>0,reason:`${kids} children · ${homes} homes owned.`};
+ if(S.ambition==='entrepreneur'){const n=S.career?.business?.employees||0;return{pct:Math.min(100,Math.round(n/6*100)),complete:n>=6,reason:`Team: ${n}/6 employees.`};}
+ if(S.ambition==='global_passport'){const done=S.country!==S.homeCountry||(S.legal?.citizenships||[]).length>1||S.legal?.residency?.kind==='permanent_resident'&&S.country!==S.homeCountry;return{pct:done?100:0,complete:done,reason:done?'International-life goal reached.':'Live abroad or gain another citizenship.'};}
+ if(S.ambition==='balanced'){
+ const ids=['g_grad','g_income','g_home','g_family'],done=ids.filter(id=>(S.goals||[]).some(g=>g.id===id&&g.done)).length;
+ return{pct:done*25,complete:done===4,reason:`${done}/4 goals reached: education, work, home and a trusted circle. These milestones do not measure fulfilment.`};
+ }
+ const target=Math.max(1,eraSalary(getCountry(S.country).annualSalaryTiers2026.mid,S.country,S.year)*6),worth=computeNetWorthLocal(S);
+ return{pct:Math.max(0,Math.min(100,Math.round(worth/target*100))),complete:worth>=target,reason:`Net worth ${formatMoney(worth,S.country)} / ${formatMoney(target,S.country)}.`};
+}
+
 export function buildStarterGoals(S) {
   const ambitionStages = S.ambition === 'global_passport'
     ? [
@@ -556,7 +570,11 @@ export function buildStarterGoals(S) {
       { id: 's2', label: 'Have a child', check: 'has_child' },
       { id: 's3', label: 'Own a family home', check: 'owns_home' }
     ]
-    : [
+    : S.ambition==='balanced' ? [
+      {id:'s1',label:'Education and work goals',check:'balanced_work'},
+      {id:'s2',label:'Home goal',check:'balanced_home'},
+      {id:'s3',label:'Trusted circle goal',check:'balanced_circle'}
+    ] : [
       { id: 's1', label: 'Build savings of your own', check: 'has_savings' },
       { id: 's2', label: 'Reach 3× the national annual salary in net worth', check: 'worth_3x_salary' },
       { id: 's3', label: 'Reach 6× the national annual salary in net worth', check: 'worth_6x_salary' }
@@ -603,7 +621,7 @@ export function buildStarterGoals(S) {
         ? 'Launch a Profitable Company Employing a Team'
         : S.ambition === 'family_dynasty'
         ? 'Raise Thriving Children & Build Generational Estate Assets'
-        : 'Accumulate 6× Annual National Salary in Net Worth',
+        : S.ambition==='balanced'?'Reach Education, Work, Home & Trusted Circle Goals':'Accumulate 6× Annual National Salary in Net Worth',
       done: false,
       stages: ambitionStages
     }
@@ -1292,6 +1310,11 @@ export function ensureExtendedState(S) {
   if (S.player) {
     if (!S.people) S.people = {};
     S.people['player'] = S.player;
+  }
+  // Refresh only the selected balanced-goal definition, not earned history.
+  if(S.ambition==='balanced'&&Array.isArray(S.goals)){
+    const goal=S.goals.find(g=>g.id==='g_ambition');
+    if(goal&&!goal.balancedDefinition){const def=buildStarterGoals(S).find(g=>g.id==='g_ambition');goal.label=def.label;goal.stages=def.stages;goal.balancedDefinition=1;}
   }
   syncPlayerCareerMirror(S); // v2.9 B8(a): repair a stale birth-time copy on old saves.
   if (!S.relations) S.relations = {};
