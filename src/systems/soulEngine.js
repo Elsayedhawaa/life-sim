@@ -853,7 +853,8 @@ export function tickNpcAutonomyYearly(S) {
       }
       const baseMort = person.age < 68 ? 0.012 : person.age < 78 ? 0.042 : person.age < 86 ? 0.11 : 0.24;
       const lowHpBoost = person.vitals.health < 28 ? 0.14 : 0;
-      const illBoost = person.illness ? 0.05 : 0;
+      /* An illness recorded by npcHealthLife (src young) rolls its own death in that module; adding the boost here would count it twice. */
+      const illBoost = person.illness && person.illness.src !== 'young' ? 0.05 : 0;
       if (chance(S, baseMort + lowHpBoost + illBoost)) {
         handleNpcDeath(S, person);
       }
