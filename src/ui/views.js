@@ -3049,7 +3049,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
             return `
               <div class="item-row">
                 <div class="item-row-main">
-                  <strong>Lease: ${esc(h.name)} (${h.rooms}BR)</strong>
+                  <strong>Lease: ${esc(h.name)} (${h.rooms} rooms)</strong>
                   <span>Rent: <strong class="mono">${esc(formatMoney(rCost, S.country))}/mo</strong>, billed from the next monthly turn.</span>
                   <span>Move-in fee: ${esc(formatMoney(quote.moveInFee, S.country))}, non-refundable. Deposit: ${esc(formatMoney(quote.deposit,S.country))}, refundable on moving. Keep one month's rent in cash. Required: ${esc(formatMoney(quote.cashRequired, S.country))}.</span>
                 </div>
@@ -4101,7 +4101,7 @@ function renderMarketsAndGoldSubtabHtml(S, cObj) {
             ${S.money.cash < goldG * 20 ? lockReason('Not enough cash for 20g of gold', `Need ${esc(formatMoney(Math.round(goldG * 20 - S.money.cash), S.country))} more`) : ''}
             <button class="btn btn-sm" data-action="buy-gold" data-grams="100" ${S.money.cash >= goldG * 100 ? '' : 'disabled'}>Buy 100g Bar</button>
             ${S.money.cash < goldG * 100 ? lockReason('Not enough cash for a 100g bar', `Need ${esc(formatMoney(Math.round(goldG * 100 - S.money.cash), S.country))} more`) : ''}
-            <button class="btn btn-sm" data-action="sell-gold" data-grams="10" ${S.money.goldGrams21k >= 1 ? '' : 'disabled'}>Sell ${Math.min(10, S.money.goldGrams21k)}g</button>
+            <button class="btn btn-sm" data-action="sell-gold" data-grams="${Math.min(10,S.money.goldGrams21k)}" ${S.money.goldGrams21k >= 1 ? '' : 'disabled'}>Sell ${Math.min(10, S.money.goldGrams21k)}g</button>
             ${S.money.goldGrams21k < 1 ? lockReason('You hold no gold to sell', 'Buy gold first') : ''}
           </div>
         </div>

@@ -1487,7 +1487,8 @@ export function buyBankCertificate(S, amount, termYears = 1) {
 }
 
 export function buyGold21k(S, grams) {
-  const g = Math.max(1, Math.floor(Number(grams) || 0));
+  const g=Number(grams);
+  if(!Number.isSafeInteger(g)||g<=0)return{ok:false,msg:'Enter a positive whole number of grams.'};
   const pricePerG = goldPricePerGram(S.country, S.year, 21);
   const totalCost = Math.round(g * pricePerG);
   const paid = purchase(S, totalCost, `Purchased ${g}g of 21K gold (${formatMoney(pricePerG, S.country)}/g)`, 'cash', { category: 'investment' });
@@ -1498,7 +1499,9 @@ export function buyGold21k(S, grams) {
 }
 
 export function sellGold21k(S, grams) {
-  const g = Math.min(S.money.goldGrams21k, Math.max(1, Math.floor(Number(grams) || 0)));
+  const g=Number(grams);
+  if(!Number.isSafeInteger(g)||g<=0)return{ok:false,msg:'Enter a positive whole number of grams.'};
+  if(g>S.money.goldGrams21k)return{ok:false,msg:'Not enough gold for this order.'};
   if (g <= 0) return { ok: false, msg: 'No gold to sell.' };
   const pricePerG = goldPricePerGram(S.country, S.year, 21);
   const proceeds = Math.round(g * pricePerG * 0.985); // 1.5% dealer spread

@@ -92,5 +92,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W23 Savings liquidity counts before classifying rent unpaid, with actual three-month eviction/deposit/debt regression coverage.
 
-- [ ] W24 Explicit player leases: allow cash payment of recorded arrears before move-out; do not count unrelated negative cash as unpaid rent when this month's rent was fully paid.
+- [x] W24 Explicit player leases: allow cash payment of recorded arrears before move-out; do not count unrelated negative cash as unpaid rent when this month's rent was fully paid.
 - [ ] W25 Low-impact catalog wording: apartment label says1BR while computed room count prints2BR; unify bedroom/room units, do not silently alter housing capacity.
+- [ ] W26 Gold quantity controls silently replace negative/zero/non-number with1g and Infinity can liquidate all holdings; reject invalid whole-gram orders without cash/asset changes.

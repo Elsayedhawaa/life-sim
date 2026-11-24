@@ -462,3 +462,6 @@ New employed-adult scene supplies contradictory dated replacement advert and wri
 
 ### W24 recorded rent arrears and payment route
 Fresh hosted130-action US start reached age25, random scene/reload checks, save retained, no console errors or horizontal overflow;31tab/subtab states checked. Source audit found explicit leases could be marked unpaid for unrelated negative cash, with no arrears cure action. Pay-now button now deducts exact recorded arrears, stores dated cash payment, clears counter, preserves refundable deposit; repeat/insufficient/nonfinite cash rejected. Fully paid explicit rent no longer triggers eviction because food/debt leaves cash negative.155focused files pass; actual390px500USDpayment/reload checked. W25low-impact room-unit wording queued separately.
+
+### W25 room units / W26 exact gold orders
+Rental catalog room capacity is not a bedroom count. Display now says rooms, preserving catalog name/price/capacity. Gold buys/sells reject zero/negative/fraction/nonfinite/unsafe quantities, overselling refuses rather than silently downsizing. The3g holding button now submits its displayed3g, not hidden10g. USA/Egypt/Japan focused regressions;156focused files pass.390px actual3g sale/5g buy plus reload passed and pixels inspected.
