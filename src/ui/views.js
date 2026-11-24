@@ -124,6 +124,7 @@ import { renderBusinessLoanSection } from '../systems/businessLoans.js';
 import { renderBusinessWillSection, renderWillHeirSection } from '../systems/businessLegacy.js';
 import { isSeriousCondition, treatmentOptions, oddsInWords } from '../systems/mortalityModel.js';
 import {
+  tripCostLocal, tripLeaveImpact,
   activityCostLocal,
   computeZakatDueLocal,
   computeChancenkartePoints,
@@ -4650,13 +4651,14 @@ function renderTravelAndHajjSubtabHtml(S, uiState) {
         const hajjDone = v.pilgrimage === 'hajj' && S.credentials.hajjCompleted;
         const afford = S.money.cash >= cost;
         return `
-          <div class="item-row">
+          <div class="item-row" style="flex-wrap:wrap">
             ${destImgHtml(v)}
-            <div class="item-row-main">
+            <div class="item-row-main" style="flex:1;min-width:180px">
               <strong>${esc(v.name)}</strong>
               <span>Package: <strong class="mono">${esc(formatMoney(cost, S.country))}</strong> · Deep spiritual renewal & family honor</span>
+              ${tripLeaveImpact(S,v).unpaidDays?`<span style="display:block;margin-top:6px">${tripLeaveImpact(S,v).unpaidDays} unpaid leave days: ${esc(formatMoney(tripLeaveImpact(S,v).lostPay,S.country))} lost pay in addition to package cost.</span>`:""}
             </div>
-            <div style="display:flex;gap:5px;align-items:flex-start">
+            <div style="display:flex;gap:5px;align-items:flex-start;flex-wrap:wrap;width:100%;justify-content:flex-end">
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
                 <button class="btn btn-primary btn-sm" data-action="take-trip" data-id="${v.id}" ${(afford && !hajjDone) ? '' : 'disabled'}>
                   ${hajjDone ? '✓ Completed' : 'Book Nusuk'}
@@ -4679,19 +4681,19 @@ function renderTravelAndHajjSubtabHtml(S, uiState) {
         <input type="search" class="filter-input" data-filter="vacQuery" placeholder="Search North Coast, Dahab, Aswan, Maldives, Tokyo, Paris, Alps..." value="${esc(uiState.vacQuery || '')}">
       </div>
       ${leisure.slice(0, 28).map((v, idx) => {
-        const usdTrip = (v.baseFlightUSD || 350) + (v.days_typical || 5) * (v.tier === 'luxury' || v.tier === 'ultra' ? 320 : 140);
-        const cost = Math.round(convertCurrency(usdTrip, 'usa', S.country, S.year));
+        const cost = tripCostLocal(S,v);
         const afford = S.money.cash >= cost;
         const planned = (S.tripPlans || []).some(p => p.destId === v.id && p.status === 'planned');
         const nextDest = leisure[(idx + 1) % leisure.length];
         return `
-          <div class="item-row">
+          <div class="item-row" style="flex-wrap:wrap">
             ${destImgHtml(v)}
-            <div class="item-row-main">
+            <div class="item-row-main" style="flex:1;min-width:180px">
               <strong>${esc(v.name)} (${v.days_typical || 5} days)</strong>
               <span>All-in Est.: <strong class="mono">${esc(formatMoney(cost, S.country))}</strong> · +12 Happiness, −18 Stress</span>
+              ${tripLeaveImpact(S,v).unpaidDays?`<span style="display:block;margin-top:6px">${tripLeaveImpact(S,v).unpaidDays} unpaid leave days: ${esc(formatMoney(tripLeaveImpact(S,v).lostPay,S.country))} lost pay in addition to travel cost.</span>`:""}
             </div>
-            <div style="display:flex;gap:5px;align-items:flex-start">
+            <div style="display:flex;gap:5px;align-items:flex-start;flex-wrap:wrap;width:100%;justify-content:flex-end">
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
                 <button class="btn btn-sm ${afford ? 'btn-primary' : ''}" data-action="take-trip" data-id="${v.id}" ${afford ? '' : 'disabled'}>Travel</button>
                 ${afford ? '' : lockReason('Not enough cash for this trip', `Need ${formatMoney(cost - S.money.cash, S.country)} more`)}

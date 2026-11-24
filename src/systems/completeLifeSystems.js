@@ -18,7 +18,7 @@ import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget} from '../data/prop
 import { rand, randInt, chance, clamp, pick } from '../core/rng.js';
 import { nextId, recordJournal, walletMove, moveBalance, ensureExtendedState, computeNetWorthLocal, queueScene } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
-import { eraLocalCost, eraSalary, convertCurrency, goldPricePerGram, inflationRate, vacationEntitlementDays } from '../data/economy.js';
+import { eraLocalCost, eraSalary, convertCurrency, goldPricePerGram, inflationRate, vacationEntitlementDays,computeMonthlyNetPay } from '../data/economy.js';
 import {
   PROPERTY_UNITS,
   FINISHING_TIERS,
@@ -1377,6 +1377,15 @@ export function tripCostLocal(S, dest) {
   return Math.round(convertCurrency(usdTrip, 'usa', S.country, S.year));
 }
 
+export function tripLeaveImpact(S,dest) {
+  const job=S.career?.employed&&S.career.job;
+  if(!job)return {unpaidDays:0,lostPay:0};
+  const annual=job.leave?.year===S.year?job.leave.annualDays:vacationEntitlementDays(S.country,Math.floor((job.monthsInRole||0)/12));
+  const used=job.leave?.year===S.year?(job.leave.usedDays||0):0;
+  const unpaidDays=Math.max(0,(dest.days_typical||5)-Math.max(0,annual-used));
+  return {unpaidDays,lostPay:Math.round(computeMonthlyNetPay(job.monthlyGross,S.country,S.year,true).net/30*unpaidDays)};
+}
+
 export function planTrip(S, destId) {
   ensureExtendedState(S);
   const dest = ALL_VACATIONS.find(v => v.id === destId);
@@ -1406,10 +1415,10 @@ export function planTrip(S, destId) {
   if (S.career?.employed && S.career?.job) {
     const job = S.career.job;
     const yearsService = Math.floor((job.monthsInRole || 0) / 12);
-    const annualDays = vacationEntitlementDays(S.country, yearsService);
+    const annualDays = job.leave?.year===S.year?job.leave.annualDays:vacationEntitlementDays(S.country, yearsService);
     const used = (job.leave && job.leave.year === S.year) ? (job.leave.usedDays || 0) : 0;
     const left = Math.max(0, annualDays - used);
-    papers.push(`${days} days of leave — you have ${left} paid days left this year${left < days ? `, so ${days - left} day(s) would be unpaid` : ''}.`);
+    papers.push(`${days} days of leave — you have ${left} paid days left this year${left < days ? `, so ${days - left} day(s) would be unpaid (${formatMoney(tripLeaveImpact(S,dest).lostPay,S.country)} lost pay)` : ''}.`);
   } else {
     papers.push(`${days} days — no job leave to use, you travel on your own time.`);
   }
@@ -1466,6 +1475,7 @@ export function takeVacationOrPilgrimage(S, destId) {
   ensureExtendedState(S);
   const dest = ALL_VACATIONS.find(v => v.id === destId);
   if (!dest) return { ok: false, msg: 'Destination not found.' };
+  if(S.player.age<18)return {ok:false,msg:'Independent trips start at age 18. Minors travel with family.'};
 
   if (dest.country !== S.country) {
     const border = checkCanCrossBorder(S);
@@ -1522,10 +1532,12 @@ export function takeVacationOrPilgrimage(S, destId) {
     const yearsService = Math.floor((job.monthsInRole || 0) / 12);
     if (!job.leave || job.leave.year !== S.year) job.leave = { annualDays: vacationEntitlementDays(S.country, yearsService), usedDays: 0, year: S.year, extraDays: 0 };
     const tripDays = dest.days_typical || 5;
+    const {unpaidDays:newUnpaid,lostPay}=tripLeaveImpact(S,dest);
     job.leave.usedDays += tripDays;
+    if(lostPay>0)walletMove(S,-lostPay,`Unpaid vacation days (${newUnpaid})`,'career');
     const left = Math.max(0, job.leave.annualDays - job.leave.usedDays);
     leaveNote = job.leave.usedDays > job.leave.annualDays
-      ? ` This used ${tripDays} days of leave — ${job.leave.usedDays - job.leave.annualDays} day(s) beyond your paid allowance, taken as unpaid leave.`
+      ? ` This used ${tripDays} days of leave — ${newUnpaid} unpaid day(s), reducing pay by ${formatMoney(lostPay,S.country)}.`
       : ` This used ${tripDays} days of your paid leave (${left} left this year).`;
   }
   const staffNote = staffTravelApplied ? ' Staff travel covered 90% of the flight.' : '';

@@ -1,0 +1,25 @@
+# Action audit checkpoint
+
+Checkpoint: November24,2026. Prior shipped baseline: 85ea930. This checkpoint also covers unpaid trip leave and the minor independent-travel gate. The game remains free/static. Only this repository was changed.
+
+## Covered with focused outcome tests
+- Education:18-country programme/duration/fee consistency, stage gates, real parent/savings tuition, scholarship result/country, school/tutor renewals, withdrawal, postgraduate prerequisites/progression.
+- Overseas study:153foreign-country/level/funding transactions, first-year prepayment, real parent/cash/savings debits, escrow, saved business-deferred move, duplicate charge guard, completion/permit transitions.
+- Passport/citizenship: expiry/renewal departure gate, student relocation without nationality change, citizen domestic game tuition/no student visa, paid German dual-naturalization, foreign-board gate unaffected by nationality, leaving in-person study ends enrollment, remaining game escrow released.
+- Property:222style purchases and areas,340floor circulation graphs, indoor/outdoor arithmetic, weighted price/upkeep, pool/wing land conservation, custom-construction plot conservation, no duplicate pool/extension, rental quotes.
+- Finance/shop: manual/automatic card payment cap, unknown-payment refusal,65item ownership, one-time resale, minor credit gate, BNPL final split/fees/currency, loan residual debt, BNPL net worth.
+- Existing suites: event monetary consistency, deceased participants/reload, contact calendar, decision/reload, country presentation and720country/stage tab renders.
+
+## Actual phone browser checks
+390px hosted checks:12Dutch plans plus Egyptian courtyard/penthouse; enlarged plan opens/closes locally; education parents/self/scholarship/master buttons; overseas self/parents/scholarship/master/PhD plus dual-national route; relocation status screenshots;3GBPcredit-card minimum payment and reload; BNPL remaining-balance display. Fresh32step Netherlands hosted life reaches university with saved choices retained and no page error/overflow. Earlier country playthroughs are recorded separately and are not proof for every subsequent change.
+
+## Not yet certified
+- Every branch of every career/business/family/medical/late-life action.
+- Real government policy, current legal fees and thresholds, actual named course availability, professional licensing depth.
+- Local-language overseas study, stipends/supervisors and detailed dependent routes.
+- Long-horizon balancing, entertainment quality and every old-save combination.
+- The old coherence_suite.mjs remains unpassed: obsolete assumptions and runtime stalls. It is not included in passing totals.
+
+37 focused*.test.js files pass at this checkpoint. A render pass does not prove action outcomes; a local pass does not prove hosted delivery. No full-audit completion claim.
+
+Travel follow-up: trips now deduct newly unpaid days using the existing leave-action net/30 game formula. Quoted travel cost and lost pay are shown separately. Plan papers use the actual negotiated leave allowance. Aviation staff quotes share the charged price. This is a game pay simplification, not local employment law.
