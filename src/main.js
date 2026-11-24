@@ -37,7 +37,7 @@ import{answerEmployeeRequest,manageEmployee}from './systems/businessPeople.js';
 import{answerPeopleDecision}from './systems/peopleAutonomy.js';
 import{answerSpouseDecision}from './systems/spouseAutonomy.js';
 import{relationshipAction}from './systems/relationshipProgression.js';
-import{enrollChildCourse}from './systems/educationFunding.js';
+import{enrollChildCourse,enrollChildSchoolYear}from './systems/educationFunding.js';
 import{requestSupportReview}from './systems/divorceModel.js';
 import {buyRuralCabin} from './systems/economyEngine.js';
 import {supportChildAfterSeparation} from './systems/marriageFamilyEngine.js';
@@ -1608,6 +1608,7 @@ if (typeof document !== 'undefined') {
     if(action==='people-decision'){handleActionResult(answerPeopleDecision(S,btn.dataset.id,btn.dataset.accept==='yes'));return;}
     if(action==='spouse-decision'){handleActionResult(answerSpouseDecision(S,btn.dataset.spouse,btn.dataset.accept==='yes'));return;}
     if(action==='relationship-step'){handleActionResult(relationshipAction(S,btn.dataset.spouse,btn.dataset.step));return;}
+    if(action==='child-school-year'){handleActionResult(enrollChildSchoolYear(S,btn.dataset.cid,btn.dataset.tier));return;}
     if(action==='child-course'){handleActionResult(enrollChildCourse(S,btn.dataset.cid));return;}
     if(action==='support-review'){handleActionResult(requestSupportReview(S,btn.dataset.id));return;}
     if(action==='buy-rural-cabin'){handleActionResult(buyRuralCabin(S));return;}

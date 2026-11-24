@@ -37,7 +37,7 @@ import {RURAL_CABIN} from '../data/ruralCabin.js';
 import {hasCurrentLanguage} from '../data/languageQualifications.js';
 import {ABROAD_LEVELS,ABROAD_SUBJECTS,abroadUniversities,studyAbroadQuote} from '../systems/studyAbroadPlanning.js';
 import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget,outdoorAreaSummary} from '../data/propertyAreas.js';
-import {familyCoversUniversity,childCourseQuote} from '../systems/educationFunding.js';
+import {familyCoversUniversity,childSchoolQuote,childCourseQuote} from '../systems/educationFunding.js';
 import {annualUniversityBudget,universityBudgetRange} from '../data/universityCosts.js';
 import {degreeProgramFor,programsForCountry} from '../data/degreePrograms.js';
 import {universitySectorLabel} from '../data/institutions.js';
@@ -1388,6 +1388,8 @@ function renderChildrenSubtabHtml(S) {
               </div>
               <div class="muted">${ch.age<18&&ch.custody?`Custody: ${esc(ch.custody.arrangement)} · ${ch.custody.playerNightsPer14}/14 nights with you. `:''}Education fund: ${esc(formatMoney(convertCurrency(ch.educationFund?.balance||0,ch.educationFund?.country||S.country,S.country,S.year),S.country))}.</div>
               <div style="display:flex;flex-wrap:wrap;gap:6px"><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="visit">Visit / spend time</button><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="gift">Buy a gift</button><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="education">Add to education fund</button></div>
+              ${ch.schoolEnrollment?`<p>School: ${esc(ch.schoolEnrollment.label)} · ${ch.schoolEnrollment.until>S.year*12+S.month?'Prepaid '+(ch.schoolEnrollment.until-S.year*12-S.month)+' months left':'Paid year ended; no automatic renewal'}</p>`:''}
+              ${ch.age>=6&&ch.age<18?`<button class="btn btn-sm" data-action="child-school-year" data-cid="${ch.id}" data-tier="standard">Local year · ${esc(formatMoney(childSchoolQuote(S,ch.id).cost,S.country))}</button><button class="btn btn-sm" data-action="child-school-year" data-cid="${ch.id}" data-tier="international">International year · ${esc(formatMoney(childSchoolQuote(S,ch.id,"international").cost,S.country))}</button>`:''}
               ${childCourseQuote(S,ch.id)?`<p>Course tuition: ${esc(formatMoney(childCourseQuote(S,ch.id).monthly,childCourseQuote(S,ch.id).country))}/mo · 48 months</p><button class="btn btn-sm" data-action="child-course" data-cid="${ch.id}" ${ch.parentFundedCourse?'disabled':''}>${ch.parentFundedCourse?(ch.parentFundedCourse.completed?'Course completed':ch.parentFundedCourse.paused?'Course paused, insufficient funds':ch.parentFundedCourse.monthsRemaining+' months remaining'):'Enroll and fund child course'}</button>`:''}
               <div class="muted">Smarts: <strong>${Math.round(ch.vitals.smarts)}%</strong> · Health: <strong>${Math.round(ch.vitals.health)}%</strong> · Happiness: <strong>${Math.round(ch.vitals.happiness)}%</strong></div>
               <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">

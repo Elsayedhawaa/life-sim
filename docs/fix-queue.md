@@ -113,7 +113,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W41 Gulf car scene needs real vehicle/finance or honest catalog route; current cash/downpayment buys no asset or debt.
 - [x] W42 Gulf renewal/job-loss scenes need recorded expiry/grace and shared renewal/return-home effects.
-- [ ] W43 Gulf newcomer/friend scenes need real loan or gift recipient/evidence; no invented employment/deportation.
+- [x] W43 Gulf newcomer/friend scenes need real loan or gift recipient/evidence; no invented employment/deportation.
 
 - [x] W44 Gulf golden-visa/sponsor scenes need real eligibility/evidence rather than invented salary qualification/signatures.
 

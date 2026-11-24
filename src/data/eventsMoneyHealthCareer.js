@@ -1,3 +1,4 @@
+import{childSchoolQuote,enrollChildSchoolYear}from'../systems/educationFunding.js';
 import{permitRenewalQuote,renewCurrentPermit,returnToHomeCountry,premiumResidencyQuote,applyPremiumOrGoldenResidency}from'../systems/visaMigrationEngine.js';
 import{CARS_MEGA_CATALOG}from'./megaCarsAndShop.js';
 import{computeEndOfService,resignCurrentJob}from'../systems/careerEducationEngine.js';
@@ -11148,49 +11149,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'money',
     repeatable: false,
     gates: { requiredPeople: ['child'],"minAge": 30, "hasChildren": true, "abroad": true, "countries": ["sau", "uae"]},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(40000, S.country, S.year);
-      const B = eraLocalCost(20000, S.country, S.year);
-      return {
-        key: 'ev_gulf_school_abroad_kids',
-        category: 'money',
-        title: "International School Fees Abroad",
-        text: `The children’s international school abroad costs ${formatMoney(A, S.country)} a year — more than your first salary back home, for one child, for one year. The company pays half, if you ask properly.`,
-        choices: [
-          {
-            label: "Pay the fees in full",
-            effect: (st) => {
-              walletMove(st, -A, 'Pay the fees in full', 'money');
-              if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Pay the fees in full', { affection: (+4) });
-              recordJournal(st, `You paid the children’s international school fees abroad, ${formatMoney(A, S.country)} a year, in full.`, 'money');
-            },
-          },
-          {
-            label: "Ask the company to cover more",
-            effect: (st) => {
-              walletMove(st, -B, 'Ask the company to cover more', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+2));
-              recordJournal(st, `You asked the company to cover more of the school fees, and they agreed to ${formatMoney(B, S.country)}.`, 'money');
-            },
-          },
-          {
-            label: "Move the children to a cheaper school",
-            effect: (st) => {
-              if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Move the children to a cheaper school', { affection: (-4) });
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
-              recordJournal(st, `You moved the children to a cheaper school abroad. They hated the first month.`, 'money');
-            },
-          },
-        ],
-      };
+    build:(S,ctx)=>{
+      const child=(S.relations.childIds||[]).map(id=>S.people[id]).find(p=>p?.alive&&p.age>=6&&p.age<18&&!(p.schoolEnrollment?.until>S.year*12+S.month));if(!child)return null;
+      const local=childSchoolQuote(S,child.id),international=childSchoolQuote(S,child.id,'international');
+      return{key:'ev_gulf_school_abroad_kids',category:'money',title:'A School Year for '+child.firstName,text:`${child.firstName}, age ${child.age}: 12 prepaid months at a fictional game school in ${getCountry(local.country).name}. Local ${formatMoney(local.cost,S.country)}; international ${formatMoney(international.cost,S.country)}. No employer subsidy or automatic renewal. Enrollment and payment are recorded on your child's file.`,choices:[{label:`International school · ${formatMoney(international.cost,S.country)}`,effect:st=>enrollChildSchoolYear(st,child.id,'international')},{label:`Local school · ${formatMoney(local.cost,S.country)}`,effect:st=>enrollChildSchoolYear(st,child.id,'standard')},{label:'Keep current schooling for now',effect:st=>{}}]};
     },
   },
   {

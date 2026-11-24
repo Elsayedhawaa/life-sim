@@ -1,5 +1,5 @@
 import {convertCurrency} from '../data/economy.js';
-import {recordJournal} from '../core/schema.js';
+import {recordJournal,walletMove} from '../core/schema.js';
 
 export function educationFamilyPayers(S){
  return [S.relations?.fatherId,S.relations?.motherId].map(id=>S.people?.[id]).filter(p=>p?.alive&&p.career);
@@ -59,4 +59,20 @@ export function settleChildCourses(S){
  if(c.monthsRemaining===0){c.completed=true;ch.education??={};ch.education.degree='Game undergraduate course';recordJournal(S,`${ch.firstName} completed the funded four-year course. Tuition came from their education fund and your actual cash.`,'family');}
  }
  return Math.round(cashCost);
+}
+
+export function childSchoolQuote(S,childId,tier='standard'){
+ const ch=S.people[childId];if(!ch?.alive||!S.relations.childIds.includes(childId)||ch.age<6||ch.age>=18||!['standard','international'].includes(tier))return null;
+ const country=ch.residenceCountry||S.country,annual=Math.round(convertCurrency(tier==='international'?9000:2400,'usa',country,S.year));
+ return{childId,tier,country,annual,cost:Math.round(convertCurrency(annual,country,S.country,S.year)),from:S.year*12+S.month,until:S.year*12+S.month+12};
+}
+export function enrollChildSchoolYear(S,childId,tier='standard'){
+ const q=childSchoolQuote(S,childId,tier);if(!q)return{ok:false,msg:'School years cover living children aged6-17.'};const ch=S.people[childId];
+ if(ch.schoolEnrollment?.until>q.from)return{ok:false,msg:'This school year is already paid; no extra charge.'};
+ if(S.money.cash<q.cost)return{ok:false,msg:'Not enough cash for the prepaid school year.'};
+ walletMove(S,-q.cost,'Prepaid '+tier+' game school year for '+ch.firstName,'education');
+ ch.schoolEnrollment={...q,paidLocal:q.cost,paymentCountry:S.country,status:'prepaid',label:tier==='international'?'Game international school':'Game local school'};
+ ch.schoolHistory??=[];ch.schoolHistory.push({...ch.schoolEnrollment});
+ recordJournal(S,'Prepaid12months at '+ch.schoolEnrollment.label+' for '+ch.firstName+'. No employer subsidy or automatic renewal.','family');
+ return{ok:true,msg:'School year recorded and prepaid.'};
 }

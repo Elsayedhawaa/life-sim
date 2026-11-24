@@ -516,3 +516,6 @@ Golden-visa scene uses shared Passport game quote/action: fee, liquid capital re
 
 ### W43 funded friend help
 Newcomer/friend scenes now use actual named living friend and shared funded personal loan/gift route. Borrower receives converted savings, loan principal and next-month due date recorded, duplicate open-loan guard. No invented job placement/deportation/relocation.173focused files pass;390px actual2500AEDloan/principal/reload and inspected pixels pass. Fixture creates an explicit friend link to reach scene, not organic full playthrough. School/trip portions splitW45/W46.
+
+### W45 recorded child school year
+School-fee scene selects actual eligible6-17child with no unexpired prepaid year; quotes fictional local/international school, actual cash debit buys12month enrollment/history, no invented employer subsidy. People > Children shows remaining prepaid months and actual renewal prices, controls use same action. No double-charge mid-year, no automatic renewal.174focused files passed; final view import/spacing corrected and390pxscene purchase/reload/Children record inspected. This is a game school record, not an accredited school placement or long-term educational attainment model.
