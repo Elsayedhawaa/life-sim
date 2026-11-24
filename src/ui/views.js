@@ -2606,7 +2606,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       ${atRiskNames ? `<div class="card" style="border:2px solid var(--brand-crimson);background:rgba(180,35,24,0.10);margin:8px 0"><strong style="color:var(--brand-crimson)">⚠ At risk — nobody is running ${esc(atRiskNames)}.</strong> <span class="muted">Revenue and staff morale fall each month a business stays unmanaged. Hire a manager, take it over yourself, or sell it.</span></div>` : ''}
       ${portfolioBusinesses.length ? `
       ${totals.settled?`<div class="biz-portfolio-line">Portfolio net <strong class="${totals.net<0?'text-bad':'text-good'}">${esc(formatMoney(totals.net,S.country))}</strong><span>last month · all locations</span></div>`:''}
-      <div class="biz-company-picker" aria-label="Select company">${portfolioBusinesses.map(b=>`<button class="${b.id===selectedBusiness.id?'active':''}" data-action="biz-company" data-biz="${esc(b.id)}">${esc(b.name)}<small>${b.staff?.length||0} staff · Level ${b.level}</small></button>`).join('')}</div>${bizCard(selectedBusiness)}` : `
+      <div class="biz-company-picker ${portfolioBusinesses.length===1?'biz-single-company':''}" aria-label="Select company">${portfolioBusinesses.map(b=>`<button class="${b.id===selectedBusiness.id?'active':''}" data-action="biz-company" data-biz="${esc(b.id)}">${esc(b.name)}<small>${b.staff?.length||0} staff · Level ${b.level}</small></button>`).join('')}</div>${bizCard(selectedBusiness)}` : `
       <p class="muted">No businesses</p>`}
     </div>
     `:''}

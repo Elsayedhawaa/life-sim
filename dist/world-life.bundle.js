@@ -2811,7 +2811,7 @@ ${m.name} is the cheaper trip${n.days!==c.days?`, and ${n.days<c.days?n.name:c.n
       ${E?`<div class="card" style="border:2px solid var(--brand-crimson);background:rgba(180,35,24,0.10);margin:8px 0"><strong style="color:var(--brand-crimson)">\u26A0 At risk \u2014 nobody is running ${b(E)}.</strong> <span class="muted">Revenue and staff morale fall each month a business stays unmanaged. Hire a manager, take it over yourself, or sell it.</span></div>`:""}
       ${i.length?`
       ${g.settled?`<div class="biz-portfolio-line">Portfolio net <strong class="${g.net<0?"text-bad":"text-good"}">${b(h(g.net,e.country))}</strong><span>last month \xB7 all locations</span></div>`:""}
-      <div class="biz-company-picker" aria-label="Select company">${i.map($=>`<button class="${$.id===n.id?"active":""}" data-action="biz-company" data-biz="${b($.id)}">${b($.name)}<small>${$.staff?.length||0} staff \xB7 Level ${$.level}</small></button>`).join("")}</div>${k(n)}`:`
+      <div class="biz-company-picker ${i.length===1?"biz-single-company":""}" aria-label="Select company">${i.map($=>`<button class="${$.id===n.id?"active":""}" data-action="biz-company" data-biz="${b($.id)}">${b($.name)}<small>${$.staff?.length||0} staff \xB7 Level ${$.level}</small></button>`).join("")}</div>${k(n)}`:`
       <p class="muted">No businesses</p>`}
     </div>
     `:""}

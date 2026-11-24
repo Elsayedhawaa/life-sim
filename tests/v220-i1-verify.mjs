@@ -150,13 +150,13 @@ section('(d) a branch renders only as a branch row');
   console.log(`    branch: ${branch.name} (${branch.branchType}, ${branch.city})`);
   check('branch record is still stored in S.career.businesses (render-only change)', S.career.businesses.length === 2 && S.career.businesses.includes(branch), `${S.career.businesses.length} records`);
   check('listBranches finds the one branch', listBranches(S, parent).length === 1);
-  const html = renderWorkTabHtml(S, { workSub: 'ventures' });
+  const html = renderWorkTabHtml(S, { workSub: 'ventures',bizTab:'growth' });
   check('0 full branch cards (no <h3> card title for the branch)', countOcc(html, `<h3>${branch.name}`) === 0, `${countOcc(html, `<h3>${branch.name}`)} card titles`);
   check('0 full-card mode-switch buttons for the branch', countOcc(html, `data-biz="${branch.id}" data-mode`) === 0, `${countOcc(html, `data-biz="${branch.id}" data-mode`)} buttons`);
   check('0 full-card expand buttons for the branch', countOcc(html, `data-action="expand-business" data-biz="${branch.id}"`) === 0);
   check('exactly 1 branch row naming the branch', countOcc(html, `<strong>${branch.name}</strong>`) === 1, `${countOcc(html, `<strong>${branch.name}</strong>`)} rows`);
   check('parent card still renders once', countOcc(html, `<h3>${parent.name}`) === 1, `${countOcc(html, `<h3>${parent.name}`)} parent cards`);
-  check('header counts 1 business, not 2', html.includes('1 business ·') && !html.includes('2 businesses'), 'header count');
+  check('header counts 1 business, not 2', html.includes('1 owned ·') && !html.includes('2 businesses'), 'header count');
   check('Branches section names the parent', html.includes(`Branches — ${parent.name} (1)`));
 }
 
@@ -210,27 +210,27 @@ section('branch guards, branch-of-branch, event launch gate');
 section('launch-row wiring: run-by choice + shortlist inline');
 {
   const S = employedLife(785);
-  const htmlSelf = renderWorkTabHtml(S, { workSub: 'ventures', bizQuery: 'fruit' });
+  const htmlSelf = renderWorkTabHtml(S, { workSub: 'ventures', bizDesk:'start',bizQuery: 'fruit' });
   check('launch row offers "Run it myself"', htmlSelf.includes('Run it myself'));
   check('launch row offers "Hire a manager to run it"', htmlSelf.includes('Hire a manager to run it'));
   check('launch row shows the manager wage estimate', /Hire a manager to run it \(~[^)]+\/mo\)/.test(htmlSelf));
   check('self-run row shows FT + PT launch buttons with run-by', htmlSelf.includes('data-action="launch-business"') && htmlSelf.includes('data-runby="self"'));
-  const htmlMgr = renderWorkTabHtml(S, { workSub: 'ventures', bizQuery: 'fruit', bizRunBy_fruit_stall: 'manager' });
+  const htmlMgr = renderWorkTabHtml(S, { workSub: 'ventures', bizDesk:'start',bizQuery: 'fruit', bizRunBy_fruit_stall: 'manager' });
   check('manager run-by shows the shortlist inline', htmlMgr.includes('Pick who runs it') && htmlMgr.includes('data-action="biz-launch-pick-manager"'));
-  check('manager run-by holds the launch buttons until a manager is picked', htmlMgr.includes('Pick a manager first') && !htmlMgr.includes('data-action="launch-business" data-type="fruit_stall"'));
+  check('manager run-by holds the launch buttons until a manager is picked', htmlMgr.includes('Choose a manager.') && !htmlMgr.includes('data-action="launch-business" data-type="fruit_stall"'));
   const picked = { name: 'Test Manager', skill: 50, wage: 11000, loyalty: 60, personId: 'mgr_1' };
-  const htmlPicked = renderWorkTabHtml(S, { workSub: 'ventures', bizQuery: 'fruit', bizRunBy_fruit_stall: 'manager', bizLaunchMgr_fruit_stall: picked });
+  const htmlPicked = renderWorkTabHtml(S, { workSub: 'ventures', bizDesk:'start',bizQuery: 'fruit', bizRunBy_fruit_stall: 'manager', bizLaunchMgr_fruit_stall: picked });
   check('picked manager is named on the row', htmlPicked.includes('Manager: <strong>Test Manager</strong>'));
   check('launch buttons carry the picked manager record', htmlPicked.includes('data-runby="manager"') && htmlPicked.includes('data-mgr-name="Test Manager"') && htmlPicked.includes('data-mgr-wage="11000"'));
-  const htmlDup = renderWorkTabHtml(S, { workSub: 'ventures', bizQuery: 'fruit' });
+  const htmlDup = renderWorkTabHtml(S, { workSub: 'ventures', bizDesk:'start',bizQuery: 'fruit' });
   check('no duplicate note before any launch', !htmlDup.includes('Open a second one'));
   launchSmallBusiness(S, 'fruit_stall', '', { mode: 'part_time', runBy: 'self' });
-  const htmlDup2 = renderWorkTabHtml(S, { workSub: 'ventures', bizQuery: 'fruit' });
+  const htmlDup2 = renderWorkTabHtml(S, { workSub: 'ventures', bizDesk:'start',bizQuery: 'fruit' });
   const ownedName = S.career.businesses[0].name;
   check('row names the business already owned, with a confirm', htmlDup2.includes(`You already own a Fruit &amp; vegetable stall (${ownedName}`) && htmlDup2.includes('Open a second one'));
-  const htmlDup3 = renderWorkTabHtml(S, { workSub: 'ventures', bizQuery: 'fruit', bizAllowDup_fruit_stall: true });
+  const htmlDup3 = renderWorkTabHtml(S, { workSub: 'ventures', bizDesk:'start',bizQuery: 'fruit', bizAllowDup_fruit_stall: true });
   check('confirmed duplicate row carries data-allow-dup on the launch buttons', htmlDup3.includes('data-allow-dup="1"'));
-  check('time note no longer says full-time means resigning', !htmlSelf.includes('full-time means resigning from your job') && htmlSelf.includes('hire a manager to run it and keep your job'));
+  check('time note no longer says full-time means resigning', !htmlSelf.includes('full-time means resigning from your job') && htmlSelf.includes('Running full-time yourself requires leaving your job. Managers use no player hours.'));
 }
 
 /* ================= wiring source checks ================= */
