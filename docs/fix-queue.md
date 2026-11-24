@@ -42,10 +42,10 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] G3 Branch accounts/stock/staff. Shares implementation with L9; count once in totals.
 - [x] G4 Supplier input lots, quality sales effects, FIFO/expiry, quarantine/inspected release and paid recall refunds.
 - [x] G5 Contracts, backlog, restricted deposits and deadlines. Hosted-verified be7f234, bundle1aaa73086711.
-- [ ] G6 Compliance and insurance with modeled costs/risks, not legal assurances.
+- [x] G6 Compliance and insurance with modeled costs/risks, not legal assurances. Hosted-verified94fbd32.
 - [ ] G7 Marketing attribution, reviews and customer retention.
 - [ ] G8 Tier progression, hiring pipeline and shifts. Part-time family rota overlaps L3 but broader hiring progression remains separate.
 
 ## Current count
 
-4 distinct open packages after G5: L23 added for customer/WIP provenance beyond proportional recall exposure. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+3 distinct open packages after G6: L23 added for customer/WIP provenance beyond proportional recall exposure. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
