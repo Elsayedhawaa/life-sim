@@ -492,3 +492,6 @@ Salary-review scene now quotes actual current gross, exact4/7%raise amounts/new 
 
 ### W36 recorded card/collections event chain
 Card statement and collector root/followups now require actual card balance or in-collections loan, never invent old liabilities/fees. Full/half payment deducts cash and reduces that same actual balance, respects funds, creditor-person transfer and narrative settlement history.165focused files pass.390px actual1600USDhalf payment reduces3200card to1600, reload passed and pixels inspected. No duplicate payment after cleared debt.
+
+### W37 bank narrative evidence
+Unsupported historical overdraft fee/refund/account switch replaced by actual negative-cash review and real cash-from-savings transfer capped at deficit. Tax-refund scene now requires recorded last-month payroll tax but honestly reports no annual overpayment calculation/refund entitlement; statement review adds no cash or phantom card repayment.166focused files pass;390px actual500USDsavings transfer clears negative500cash, reload passed and pixels inspected. This removes unsupported claims rather than pretending a full tax-filing system exists.

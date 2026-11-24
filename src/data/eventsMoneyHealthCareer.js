@@ -6,7 +6,7 @@ import{bookNarrativeLoan,narrativeLoanQuote,payNarrativeLoan}from'../systems/nar
 import {topUpPrivatePension} from '../systems/careerMarket.js';
 import {computeZakatDueLocal,payAnnualZakat,investInMarketAsset} from '../systems/completeLifeSystems.js';
 import {GLOBAL_MARKET_ASSETS} from './megaFinanceAndMarkets.js';
-import {personalLoanGates,takePersonalLoan,sellGold21k,buyBankCertificate} from '../systems/economyEngine.js';
+import {withdrawFromSavings,personalLoanGates,takePersonalLoan,sellGold21k,buyBankCertificate} from '../systems/economyEngine.js';
 import {recordCivilLoss} from '../systems/civilClaims.js';
 /* ============================================================================
    World Life 2.5 — Money / Health / Career / School / University / Gulf events
@@ -566,47 +566,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     cooldownYears: 3,
     gates: {"minAge": 20, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(180, S.country, S.year);
-      const B = eraLocalCost(180, S.country, S.year);
-      return {
-        key: 'ev_money_overdraft_fee',
-        category: 'money',
-        title: "An Overdraft Fee Appears",
-        text: `You check the bank and find a fee of ${formatMoney(A, S.country)} taken without warning — the account dipped below zero for two days last week. The bank clerk says the fee is automatic and cannot be reversed.`,
-        choices: [
-          {
-            label: "Accept it and top the account up",
-            effect: (st) => {
-              walletMove(st, -A, 'Accept it and top the account up', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              recordJournal(st, `The bank took a ${formatMoney(A, S.country)} overdraft fee. You topped the account up and moved on.`, 'money');
-            },
-          },
-          {
-            label: "Argue with the bank",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+6));
-              if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+2));
-              recordJournal(st, `You argued with the bank over the ${formatMoney(A, S.country)} fee for an hour. They kept half of it as a "goodwill" refund.`, 'money');
-            },
-          },
-          {
-            label: "Close the account and move banks",
-            effect: (st) => {
-              walletMove(st, -A, 'Close the account and move banks', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
-              recordJournal(st, `You closed the account over the ${formatMoney(A, S.country)} fee and opened a new one at a different bank.`, 'money');
-            },
-          },
-        ],
-      };
+      if(!(S.money.cash<0))return null;
+      const deficit=Math.ceil(-S.money.cash),transfer=Math.min(deficit,Math.max(0,Math.floor(S.money.savings||0)));
+      return{key:'ev_money_overdraft_fee',category:'money',title:'Your Cash Balance Is Below Zero',text:`Actual cash shortfall: ${formatMoney(deficit,S.country)}. Available savings: ${formatMoney(S.money.savings||0,S.country)}. No historical bank fee or refund is invented. Transferring savings moves your own money; it does not create income.`,choices:[{label:`Transfer ${formatMoney(transfer,S.country)} from savings`,available:st=>transfer>0&&st.money.savings>=transfer,effect:st=>withdrawFromSavings(st,Math.min(transfer,Math.max(0,Math.ceil(-st.money.cash))))},{label:'Review expenses without moving money',effect:st=>{}}]};
     },
   },
   {
@@ -722,46 +684,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 22, "hasJob": true},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(2200, S.country, S.year);
-      return {
-        key: 'ev_money_tax_refund',
-        category: 'money',
-        title: "A Tax Refund Arrives",
-        text: `A letter from the tax office: you overpaid last year, and ${formatMoney(A, S.country)} is on its way back to you. It is the kind of letter you open twice to make sure you read it right.`,
-        choices: [
-          {
-            label: "Save it",
-            effect: (st) => {
-              moveBalance(st, 'savings', +A, 'Save it', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-3));
-              recordJournal(st, `A tax refund of ${formatMoney(A, S.country)} arrived. You saved all of it.`, 'money');
-            },
-          },
-          {
-            label: "Treat the family",
-            effect: (st) => {
-              walletMove(st, +A, 'Treat the family', 'money');
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+7));
-              recordJournal(st, `You spent the ${formatMoney(A, S.country)} tax refund on a proper family meal out — the first in a long while.`, 'money');
-            },
-          },
-          {
-            label: "Pay down the card",
-            effect: (st) => {
-              walletMove(st, +A, 'Pay down the card', 'money');
-              st.money.creditScore = clamp(st.money.creditScore + (+5), 300, 900);
-              recordJournal(st, `You put the ${formatMoney(A, S.country)} tax refund straight against the credit card balance.`, 'money');
-            },
-          },
-        ],
-      };
+      const tax=S.money.lastMonthSummary?.tax;if(!(tax>0))return null;
+      return{key:'ev_money_tax_refund',category:'money',title:'Review Your Recorded Payroll Tax',text:`Your last settled month's payroll tax was ${formatMoney(tax,S.country)}. The game has no recorded tax overpayment or annual filing adjustment for you. This is a statement review, not a refund. No money will be added or paid to a card.`,choices:[{label:'Keep the statement for your records',effect:st=>{st.money.taxStatementReviewed={year:st.year,month:st.month,tax};}},{label:'Review later in Finance',effect:st=>{}}]};
     },
   },
   {
