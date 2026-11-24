@@ -96,7 +96,7 @@ function renderTenantCardHtml(S, prop) {
   }
 
   const depositLine = sum.deposit.held ? `
-    <div style="margin:6px 0"><strong>Deposit held: ${esc(formatMoney(sum.deposit.amountLocal, S.country))}</strong> <span class="muted">(${sum.deposit.months} months' rent · ${esc(law.depositNote)})</span></div>`
+    <div style="margin:6px 0"><strong>Deposit held: ${esc(formatMoney(sum.deposit.amountLocal, S.country))}</strong> <span class="muted">(${sum.deposit.months} months' rent · Game deposit, not a local legal limit)</span></div>`
     : (st ? `<div style="margin:6px 0"><strong>Deposit dispute waiting:</strong> <span class="muted">${esc(st.tenantName)} left — damage ${esc(formatMoney(st.totalLocal, S.country))} against a ${esc(formatMoney(st.depositLocal, S.country))} deposit. Decide below.</span></div>`
     : `<div style="margin:6px 0"><span class="muted">No deposit held on this property.</span></div>`);
 
@@ -123,7 +123,7 @@ function renderTenantCardHtml(S, prop) {
   const maintainCost = Math.max(250, Math.round((Number(prop.valueLocal) || 0) * 0.008));
   const actions = [];
   if (!t) {
-    actions.push(`<button class="btn btn-sm" data-action="landlord-find-tenant" data-id="${esc(prop.id)}">Find a tenant now</button>`);
+    actions.push(`<button class="btn btn-sm" data-action="landlord-find-tenant" data-id="${esc(prop.id)}"${st?.status==='pending'?' disabled':''}>Find a tenant now</button>`);
   }
   if (t && t.jobLost && !t.eviction) {
     actions.push(`<button class="btn btn-sm" data-action="landlord-give-time" data-id="${esc(prop.id)}">Give them 3 months to find work</button>`);
@@ -143,7 +143,7 @@ function renderTenantCardHtml(S, prop) {
   if (st && st.status === 'pending') {
     actions.push(`<button class="btn btn-sm" data-action="landlord-deposit" data-id="${esc(prop.id)}" data-choice="keep">Keep ${esc(formatMoney(st.totalLocal, S.country))} for damage</button>`);
     actions.push(`<button class="btn btn-sm" data-action="landlord-deposit" data-id="${esc(prop.id)}" data-choice="return">Return full deposit (${esc(formatMoney(st.depositLocal, S.country))})</button>`);
-    actions.push(`<button class="btn btn-sm" data-action="landlord-deposit" data-id="${esc(prop.id)}" data-choice="court">Go to ${esc(law.court)} (filing ${esc(formatMoney(Math.max(500, Math.round(sum.rentLocal * 0.3)), S.country))})</button>`);
+    actions.push('<span class="muted" title="No evidence or collection process is modeled. No filing fee charged.">Court review unavailable ⓘ</span>');
   }
 
   return `
@@ -172,7 +172,7 @@ export function renderLandlordSectionHtml(S) {
     <div class="card">
       <div class="section-head">
         <h3>Being a Landlord (${props.length})</h3>
-        <span class="muted">Named tenants, deposits, leases, damage — the rent is paid by a person, not by the void</span>
+        <span class="muted">Rent · Deposits · Damage</span>
       </div>
       ${props.map(p => renderTenantCardHtml(S, p)).join('')}
     </div>

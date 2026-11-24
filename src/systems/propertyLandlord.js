@@ -211,6 +211,7 @@ export function findTenant(S, prop, opts = {}) {
   const L = normalizeLandlordState(S, prop);
   if (!prop) return { ok: false, msg: 'Property not found.' };
   if (L.tenant) return { ok: false, msg: `${prop.name} already has a tenant (${L.tenant.name}).` };
+  if(L.depositSettlement?.status==='pending')return{ok:false,msg:'Settle the previous deposit before finding a new tenant.'};
   if (prop.tenantMode === 'short_term') {
     return { ok: false, msg: 'Holiday lets take short stays, not a named long-term tenant — switch to a long-term lease first.' };
   }
@@ -580,8 +581,9 @@ export function endTenancy(S, prop, reason = 'left') {
     .map(d => ({ label: d.label, costLocal: d.costLocal }));
   const total = deductions.reduce((a, d) => a + d.costLocal, 0);
   const depositLocal = L.deposit.held ? L.deposit.amountLocal : 0;
-  const remainder = Math.max(0, depositLocal - total);
-  L.damage = (L.damage || []).filter(d => !(d.tenantCaused && (d.status === 'open' || d.status === 'ignored')));
+  const deductible = Math.min(total,depositLocal);
+  const remainder = Math.max(0,depositLocal-deductible);
+  for(const d of L.damage||[])if(d.tenantCaused&&(d.status==='open'||d.status==='ignored')){d.tenantCaused=false;d.previousTenantDamage=true;}
   L.tenant = null;
   L.voidMonths = 0;
   L.lease = { termMonths: 12, monthsLeft: 12, count: L.lease.count, renewalOffered: false };
@@ -600,22 +602,18 @@ export function endTenancy(S, prop, reason = 'left') {
     tenantName: name,
     reason,
     items: deductions,
-    totalLocal: total,
+    totalLocal: deductible,
+    damageTotalLocal: total,
+    unrecoveredLocal: Math.max(0,total-deductible),
     remainderLocal: remainder,
     depositLocal,
     status: 'pending'
   };
   recordJournal(S, `${name} left ${prop.name} (${reason}). Damage found: ${deductions.map(d => `${d.label.toLowerCase()} (${formatMoney(d.costLocal, S.country)})`).join(', ')} — ${formatMoney(total, S.country)} against a ${formatMoney(depositLocal, S.country)} deposit. Decide what to do with it.`, 'money');
   queueScene(S, {
-    key: `deposit_${prop.id}_${S.year}_${S.month}`,
-    category: 'money',
-    title: `Deposit dispute — ${prop.name}`,
-    text: `${name} left ${prop.name}. The damage list is: ${deductions.map(d => `${d.label} — ${formatMoney(d.costLocal, S.country)}`).join('; ')}. Total ${formatMoney(total, S.country)} against a ${formatMoney(depositLocal, S.country)} deposit. Keep the deposit for the damage (return ${formatMoney(remainder, S.country)}), return the whole deposit, or take it to ${evictionLawFor(prop.country || S.country).court} — the court decides on the evidence, and the filing costs ${formatMoney(Math.max(500, Math.round(effectiveMonthlyRentLocal(S, prop) * 0.3)), S.country)}.`,
-    choices: [
-      { label: `Keep ${formatMoney(total, S.country)} for the damage, return ${formatMoney(remainder, S.country)}`, effect: () => settleDeposit(S, prop.id, 'keep') },
-      { label: `Return the full ${formatMoney(depositLocal, S.country)} deposit`, effect: () => settleDeposit(S, prop.id, 'return') },
-      { label: `Take it to ${evictionLawFor(prop.country || S.country).court} (filing ${formatMoney(Math.max(500, Math.round(effectiveMonthlyRentLocal(S, prop) * 0.3)), S.country)})`, effect: () => settleDeposit(S, prop.id, 'court') }
-    ]
+    key:`deposit_${prop.id}_${S.year}_${S.month}`,category:'money',title:`Deposit · ${prop.name}`,
+    text:`Damage ${formatMoney(total,S.country)} · Deposit ${formatMoney(depositLocal,S.country)} · Uncovered ${formatMoney(Math.max(0,total-deductible),S.country)}.`,
+    choices:[{label:`Deduct ${formatMoney(deductible,S.country)} · Return ${formatMoney(remainder,S.country)}`,effect:()=>settleDeposit(S,prop.id,'keep')},{label:`Return full ${formatMoney(depositLocal,S.country)}`,effect:()=>settleDeposit(S,prop.id,'return')}]
   });
   return { ok: true, msg: `${name} left. Damage of ${formatMoney(total, S.country)} — decide what happens to the deposit.`, deductions, totalLocal: total, remainderLocal: remainder };
 }
@@ -629,6 +627,8 @@ export function settleDeposit(S, propId, choice) {
   if (!st || st.status !== 'pending') return { ok: false, msg: 'There is no deposit dispute waiting at this property.' };
   const law = evictionLawFor(prop.country || S.country);
   if (choice === 'keep') {
+    st.totalLocal=Math.min(Math.max(0,st.totalLocal||0),Math.max(0,st.depositLocal||0));
+    st.remainderLocal=Math.max(0,st.depositLocal-st.totalLocal);
     if (st.remainderLocal > 0) {
       walletMove(S, -st.remainderLocal, `Deposit returned to ${st.tenantName} after deductions — ${prop.name}`, 'housing');
     }
@@ -650,36 +650,7 @@ export function settleDeposit(S, propId, choice) {
     recordJournal(S, `You returned ${st.tenantName}'s full ${formatMoney(st.depositLocal, S.country)} deposit for ${prop.name}, damage and all.`, 'money');
     return { ok: true, msg: `Returned the full ${formatMoney(st.depositLocal, S.country)} deposit.` };
   }
-  if (choice === 'court') {
-    const fee = Math.max(500, Math.round(effectiveMonthlyRentLocal(S, prop) * 0.3));
-    if ((Number(S.money?.cash) || 0) < fee) {
-      return { ok: false, msg: `Taking this to ${law.court} costs ${formatMoney(fee, S.country)} to file — not enough cash.` };
-    }
-    walletMove(S, -fee, `Small-claims filing — deposit dispute over ${prop.name} (${law.court})`, 'housing');
-    /* Documented damage wins most of the time; an undocumented claim loses. */
-    const win = rand(S) < 0.8;
-    if (win) {
-      walletMove(S, fee, `Court awarded the deposit deductions and your filing fee back — ${prop.name} (${law.court})`, 'housing');
-      if (st.remainderLocal > 0) {
-        walletMove(S, -st.remainderLocal, `Deposit returned to ${st.tenantName} after the court award — ${prop.name}`, 'housing');
-      }
-      L.deposit.held = false;
-      L.deposit.keptLocal = st.totalLocal;
-      L.deposit.returnedLocal = st.remainderLocal;
-      st.status = 'court-win';
-      recordJournal(S, `${law.court} ruled for you: you kept ${formatMoney(st.totalLocal, S.country)} of ${st.tenantName}'s deposit for the damage at ${prop.name}, and the court gave your ${formatMoney(fee, S.country)} filing fee back.`, 'money');
-      return { ok: true, msg: `The court ruled for you — kept ${formatMoney(st.totalLocal, S.country)}, fee returned.` };
-    }
-    if (st.depositLocal > 0) {
-      walletMove(S, -st.depositLocal, `Court ordered the full deposit returned to ${st.tenantName} — ${prop.name}`, 'housing');
-    }
-    L.deposit.held = false;
-    L.deposit.returnedLocal = st.depositLocal;
-    L.deposit.keptLocal = 0;
-    st.status = 'court-lost';
-    recordJournal(S, `${law.court} ruled against you: the full ${formatMoney(st.depositLocal, S.country)} deposit went back to ${st.tenantName}, and the ${formatMoney(fee, S.country)} filing fee is lost.`, 'money');
-    return { ok: true, msg: `The court ruled against you — full deposit returned, fee lost.` };
-  }
+  if(choice==='court')return{ok:false,msg:'Court review unavailable: this case has no evidence or collection process. No fee charged.'};
   return { ok: false, msg: 'Choose what to do with the deposit: keep it, return it, or go to court.' };
 }
 
@@ -803,6 +774,12 @@ export function settleDepositOnSale(S, prop, saleNote) {
   const name = t ? t.name : null;
   let kept = 0;
   let returned = 0;
+  if (!t && L.depositSettlement?.status==='pending') {
+    const st=L.depositSettlement;
+    kept=Math.min(st.totalLocal,st.depositLocal);returned=Math.max(0,st.depositLocal-kept);
+    if(returned>0)walletMove(S,-returned,`Deposit returned on sale of ${prop.name}`,'housing');
+    L.deposit.held=false;L.deposit.keptLocal=kept;L.deposit.returnedLocal=returned;st.status='sale-settled';
+  }
   if (t && L.deposit.held) {
     const deductions = (L.damage || [])
       .filter(d => d.tenantCaused && (d.status === 'open' || d.status === 'ignored'))

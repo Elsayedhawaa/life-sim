@@ -184,9 +184,9 @@ console.log('--- §3 deposit vs real damage ---');
   endTenancy(C, cprop, 'test move-out');
   const cst = cprop.landlord.depositSettlement;
   const court = settleDeposit(C, cprop.id, 'court');
-  check('court settles the dispute one way or the other', court.ok && (cst.status === 'court-win' || cst.status === 'court-lost'), `${court.msg} | status ${cst.status}`);
-  check('court filing fee appears in the ledger', ledgerLines(C, /Small-claims filing/).length === 1, '');
-  check('deposit is no longer held after the court ruling', cprop.landlord.deposit.held === false, '');
+  check('unsupported court claim does not fabricate a verdict', !court.ok && cst.status === 'pending', `${court.msg} | status ${cst.status}`);
+  check('court filing fee appears in the ledger', ledgerLines(C, /Small-claims filing/).length === 0, '');
+  check('deposit remains held without a court ruling', cprop.landlord.deposit.held === true, '');
   console.log('court outcome:', cst.status, '|', court.msg);
 }
 
