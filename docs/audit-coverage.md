@@ -465,3 +465,6 @@ Fresh hosted130-action US start reached age25, random scene/reload checks, save 
 
 ### W25 room units / W26 exact gold orders
 Rental catalog room capacity is not a bedroom count. Display now says rooms, preserving catalog name/price/capacity. Gold buys/sells reject zero/negative/fraction/nonfinite/unsafe quantities, overselling refuses rather than silently downsizing. The3g holding button now submits its displayed3g, not hidden10g. USA/Egypt/Japan focused regressions;156focused files pass.390px actual3g sale/5g buy plus reload passed and pixels inspected.
+
+### W27 travel departure/calendar/cost integrity
+Plans now block early departures. Trips use actual days per current calendar month, stored/reload-safe, so repeated same-month stat farming stops when days run out. Full package plus newly unpaid leave cash must be available before any mutation. UI shows current total cash/travel days and planned departure lock.157focused files pass including affordability atomicity, calendar/month reset, future plan route.390px plan/reload/next-month actual departure/lost pay/calendar use checked; inspected pixels. Not real airline or leave-law guarantees.

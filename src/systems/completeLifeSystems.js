@@ -1425,6 +1425,17 @@ export function tripLeaveImpact(S,dest) {
   return {unpaidDays,lostPay:Math.round(computeMonthlyNetPay(job.monthlyGross,S.country,S.year,true).net/30*unpaidDays)};
 }
 
+export function tripExecutionQuote(S,dest){
+ const now=S.year*12+S.month,days=dest.days_typical||5;
+ const calendarDays=new Date(Date.UTC(S.year,S.month,0)).getUTCDate();
+ const used=S.travelCalendar?.at===now?S.travelCalendar.daysUsed:0;
+ const plan=(S.tripPlans||[]).find(p=>p.destId===dest.id&&p.status==='planned');
+ const early=plan&&now<plan.departYear*12+plan.departMonth;
+ const total=tripCostLocal(S,dest)+tripLeaveImpact(S,dest).lostPay;
+ const reason=early?'Planned departure is '+plan.departYear+'/'+plan.departMonth+'.':used+days>calendarDays?'Not enough travel days left this month.':S.money.cash<total?'Need '+formatMoney(total,S.country)+' cash including unpaid leave.':null;
+ return{ok:!reason,reason,total,days,daysLeft:Math.max(0,calendarDays-used),at:now};
+}
+
 export function planTrip(S, destId) {
   ensureExtendedState(S);
   const dest = ALL_VACATIONS.find(v => v.id === destId);
@@ -1450,7 +1461,7 @@ export function planTrip(S, destId) {
   }
   if (dest.pilgrimage === 'hajj') papers.push('Nusuk Hajj package — booked through the official Nusuk platform.');
   if (dest.pilgrimage === 'umrah') papers.push('Nusuk Umrah package — booked through the official Nusuk platform.');
-  papers.push(`Money: ${formatMoney(cost, S.country)} all-in${S.money.cash >= cost ? ' — you can afford it now.' : ` — you still need ${formatMoney(cost - S.money.cash, S.country)}.`}`);
+  papers.push(`Money: ${formatMoney(cost, S.country)} travel cost, unpaid leave extra${S.money.cash >= cost ? ' — you can afford it now.' : ` — you still need ${formatMoney(cost - S.money.cash, S.country)}.`}`);
   if (S.career?.employed && S.career?.job) {
     const job = S.career.job;
     const yearsService = Math.floor((job.monthsInRole || 0) / 12);
@@ -1556,11 +1567,13 @@ export function takeVacationOrPilgrimage(S, destId) {
   }
 
   if (S.money.cash < totalCostLocal) return { ok: false, msg: `Need ${formatMoney(totalCostLocal, S.country)} for ${dest.name}.` };
+  const execution=tripExecutionQuote(S,dest);if(!execution.ok)return{ok:false,msg:execution.reason};
+  S.travelCalendar={at:execution.at,daysUsed:(S.travelCalendar?.at===execution.at?S.travelCalendar.daysUsed:0)+execution.days};
   walletMove(S, -totalCostLocal, `Trip: ${dest.name}`, 'lifestyle');
 
   /* v2.12 W6: taking a planned trip executes the plan — one plan per journey. */
   const plan = (S.tripPlans || []).find(p => p.destId === dest.id && p.status === 'planned');
-  if (plan) { plan.status = 'taken'; plan.takenYear = S.year; }
+  if (plan) { plan.status = 'taken'; plan.takenYear = S.year; plan.takenMonth=S.month; }
 
   /* v2.8 — the trip spends the ONE leave balance (job.leave, owned by
      getJobContract in careerEducationEngine). The days come out of the same

@@ -161,7 +161,7 @@ import { renderBusinessLoanSection } from '../systems/businessLoans.js';
 import { renderBusinessWillSection, renderWillHeirSection } from '../systems/businessLegacy.js';
 import { isSeriousCondition, treatmentOptions, oddsInWords } from '../systems/mortalityModel.js';
 import {
-  surgeryEligibility, fertilityCostLocal, tripCostLocal, tripLeaveImpact,
+  surgeryEligibility, fertilityCostLocal, tripCostLocal, tripLeaveImpact, tripExecutionQuote,
   activityCostLocal,
   computeZakatDueLocal,
   computeChancenkartePoints,
@@ -4652,18 +4652,18 @@ function renderTravelAndHajjSubtabHtml(S, uiState) {
     <div class="card card-elevated">
       <div class="section-head">
         <h2>Your Trip Plans (${S.tripPlans.filter(p => p.status === 'planned').length} Planned)</h2>
-        <span class="muted">Planning creates the plan — taking the trip executes it</span>
+        <span class="muted">Departures follow plan dates · Travel days are limited each month</span>
       </div>
-      ${S.tripPlans.map(p => `
+      ${S.tripPlans.map(p => {const dest=ALL_VACATIONS.find(v=>v.id===p.destId);const q=dest?tripExecutionQuote(S,dest):null;return `
         <div class="item-row">
           <div class="item-row-main">
             <strong>${esc(p.name)} — ${p.departYear}/${String(p.departMonth).padStart(2, '0')} (${p.days} days)</strong>
-            <span>Cost: <strong class="mono">${esc(formatMoney(p.costLocal, S.country))}</strong> · ${p.status === 'taken' ? '✓ Trip taken' : 'Planned — papers & money below'}${p.visaNeeded ? ` · Visa needed: ${esc(p.visaLabel || '')}` : ' · No visa needed'}</span>
+            <span>Travel estimate: <strong class="mono">${esc(formatMoney(p.costLocal, S.country))}</strong>${q?' · Current total cash '+esc(formatMoney(q.total,S.country)):''} · ${p.status === 'taken' ? '✓ Trip taken' : 'Planned — papers & money below'}${p.visaNeeded ? ` · Visa needed: ${esc(p.visaLabel || '')}` : ' · No visa needed'}</span>
             ${(p.papers || []).map(pp => `<span>• ${esc(pp)}</span>`).join('')}
           </div>
-          ${p.status === 'planned' ? `<button class="btn btn-sm btn-primary" data-action="take-trip" data-id="${p.destId}">Take This Trip</button>` : `<span class="hud-pill">✓ Taken ${p.takenYear || ''}</span>`}
+          ${p.status === 'planned' ? `<button class="btn btn-sm btn-primary" data-action="take-trip" data-id="${p.destId}" ${q?.ok?'':'disabled'}>Take This Trip</button>${q&&!q.ok?'<span class="muted">'+esc(q.reason)+'</span>':''}` : `<span class="hud-pill">✓ Taken ${p.takenYear || ''}</span>`}
         </div>
-      `).join('')}
+      `;}).join('')}
     </div>
     ` : ''}
 
@@ -4687,13 +4687,15 @@ function renderTravelAndHajjSubtabHtml(S, uiState) {
           : (S.country === 'sau' ? eraLocalCost(1400, 'sau', S.year) : Math.round(convertCurrency(v.packageUsd || 1250, 'usa', S.country, S.year)));
         const planned = (S.tripPlans || []).some(p => p.destId === v.id && p.status === 'planned');
         const hajjDone = v.pilgrimage === 'hajj' && S.credentials.hajjCompleted;
-        const afford = S.money.cash >= cost;
+        const execution=tripExecutionQuote(S,v);
+        const afford = execution.ok;
         return `
           <div class="item-row" style="flex-wrap:wrap">
             ${destImgHtml(v)}
             <div class="item-row-main" style="flex:1;min-width:180px">
               <strong>${esc(v.name)}</strong>
               <span>Package: <strong class="mono">${esc(formatMoney(cost, S.country))}</strong> · Deep spiritual renewal & family honor</span>
+              <span style="display:block">${execution.days} travel days · ${execution.daysLeft} left this month · Total cash ${esc(formatMoney(execution.total,S.country))}</span>
               ${tripLeaveImpact(S,v).unpaidDays?`<span style="display:block;margin-top:6px">${tripLeaveImpact(S,v).unpaidDays} unpaid leave days: ${esc(formatMoney(tripLeaveImpact(S,v).lostPay,S.country))} lost pay in addition to package cost.</span>`:""}
             </div>
             <div style="display:flex;gap:5px;align-items:flex-start;flex-wrap:wrap;width:100%;justify-content:flex-end">
@@ -4701,7 +4703,7 @@ function renderTravelAndHajjSubtabHtml(S, uiState) {
                 <button class="btn btn-primary btn-sm" data-action="take-trip" data-id="${v.id}" ${(afford && !hajjDone) ? '' : 'disabled'}>
                   ${hajjDone ? '✓ Completed' : 'Book Nusuk'}
                 </button>
-                ${(!afford && !hajjDone) ? lockReason('Not enough cash for this pilgrimage', `Need ${formatMoney(cost - S.money.cash, S.country)} more`) : ''}
+                ${(!afford && !hajjDone) ? lockReason(execution.reason, 'Advance the month or fund the full cost') : ''}
               </div>
               <button class="btn btn-sm" data-action="plan-trip" data-id="${v.id}" ${(planned || hajjDone) ? 'disabled' : ''}>${planned ? '✓ Planned' : 'Plan It'}</button>
             </div>
@@ -4713,14 +4715,15 @@ function renderTravelAndHajjSubtabHtml(S, uiState) {
     <div class="card">
       <div class="section-head">
         <h3>Domestic & World Vacations (${leisure.length} Destinations)</h3>
-        <span class="muted">Requires valid passport for international flights</span>
+        <span class="muted">Calendar days spent traveling are limited each month</span>
       </div>
       <div class="catalog-filter-bar">
         <input type="search" class="filter-input" data-filter="vacQuery" placeholder="Search North Coast, Dahab, Aswan, Maldives, Tokyo, Paris, Alps..." value="${esc(uiState.vacQuery || '')}">
       </div>
       ${leisure.slice(0, 28).map((v, idx) => {
         const cost = tripCostLocal(S,v);
-        const afford = S.money.cash >= cost;
+        const execution=tripExecutionQuote(S,v);
+        const afford = execution.ok;
         const planned = (S.tripPlans || []).some(p => p.destId === v.id && p.status === 'planned');
         const nextDest = leisure[(idx + 1) % leisure.length];
         return `
@@ -4728,13 +4731,14 @@ function renderTravelAndHajjSubtabHtml(S, uiState) {
             ${destImgHtml(v)}
             <div class="item-row-main" style="flex:1;min-width:180px">
               <strong>${esc(v.name)} (${v.days_typical || 5} days)</strong>
-              <span>All-in Est.: <strong class="mono">${esc(formatMoney(cost, S.country))}</strong> · +12 Happiness, −18 Stress</span>
+              <span>Travel cost: <strong class="mono">${esc(formatMoney(cost, S.country))}</strong> · +12 Happiness, −18 Stress</span>
+              <span style="display:block">${execution.days} travel days · ${execution.daysLeft} left this month · Total cash ${esc(formatMoney(execution.total,S.country))}</span>
               ${tripLeaveImpact(S,v).unpaidDays?`<span style="display:block;margin-top:6px">${tripLeaveImpact(S,v).unpaidDays} unpaid leave days: ${esc(formatMoney(tripLeaveImpact(S,v).lostPay,S.country))} lost pay in addition to travel cost.</span>`:""}
             </div>
             <div style="display:flex;gap:5px;align-items:flex-start;flex-wrap:wrap;width:100%;justify-content:flex-end">
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
                 <button class="btn btn-sm ${afford ? 'btn-primary' : ''}" data-action="take-trip" data-id="${v.id}" ${afford ? '' : 'disabled'}>Travel</button>
-                ${afford ? '' : lockReason('Not enough cash for this trip', `Need ${formatMoney(cost - S.money.cash, S.country)} more`)}
+                ${afford ? '' : lockReason(execution.reason, 'Advance the month or fund the full cost')}
               </div>
               <button class="btn btn-sm" data-action="plan-trip" data-id="${v.id}" ${planned ? 'disabled' : ''}>${planned ? '✓ Planned' : 'Plan It'}</button>
               <button class="btn btn-sm" data-action="compare-trip" data-id="${v.id}" ${nextDest && nextDest.id !== v.id ? `data-with="${nextDest.id}"` : ''}>Compare</button>
