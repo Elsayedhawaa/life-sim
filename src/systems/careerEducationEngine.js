@@ -959,46 +959,7 @@ export function tickUniversityAndConscriptionMonthly(S) {
       if (S.country === 'egy' && ['medicine', 'dentistry', 'pharmacy', 'nursing'].includes(u.majorId)) {
         const cObjG = getCountry('egy');
         const takleefPay = eraSalary(cObjG.annualSalaryTiers2026.entry / 12 * 1.05, 'egy', S.year);
-        queueScene(S, {
-          key: `egy_takleef_${S.year}`,
-          category: 'career',
-          title: `Syndicate Registration & Ministry Takleef Assignment`,
-          text: `You completed academic study at ${gradUniName}. This simplified game route now offers a Ministry role; real clinical internship and licensing requirements are not simulated. Proposed pay: (${formatMoney(takleefPay, 'egy')}/mo) alongside Syndicate (Niqaba) registration.`,
-          choices: [
-            {
-              label: `Register at the Syndicate & accept Ministry Takleef (${formatMoney(takleefPay, 'egy')}/mo + clinical experience)`,
-              effect: (st) => {
-                ensureExtendedState(st);
-                st.syndicate = { registered: true, name: `Egyptian ${u.majorId === 'medicine' ? 'Medical' : u.majorId === 'dentistry' ? 'Dental' : 'Pharmacists'} Syndicate`, joinedYear: st.year };
-                st.career.employed = true;
-                st.career.job = {
-                  employer: 'Ministry of Health / Kasr Al-Ainy',
-                  title: u.majorId === 'medicine' ? 'Resident Physician (Takleef)' : 'Clinical Specialist (Takleef)',
-                  track: u.majorId === 'pharmacy' ? 'pharma' : u.majorId,
-                  level: 0,
-                  monthlyGross: takleefPay,
-                  startYear: st.year,
-                  monthsInRole: 0,
-                  performance: 74,
-                  workMode: 'normal',
-                  bossId: null
-                };
-                getJobContract(st);
-                syncEmployerBenefits(st);
-                recordJournal(st, `Registered at ${st.syndicate.name} and reported for Ministry of Health Takleef clinical duty.`, 'career');
-              }
-            },
-            {
-              label: 'Register at the Syndicate only & waive Takleef to prepare for PLAB / USMLE / Gulf boards',
-              effect: (st) => {
-                ensureExtendedState(st);
-                st.syndicate = { registered: true, name: `Egyptian ${u.majorId === 'medicine' ? 'Medical' : 'Healthcare'} Syndicate`, joinedYear: st.year };
-                st.player.vitals.smarts = clamp(st.player.vitals.smarts + 3);
-                recordJournal(st, `Obtained your Syndicate practicing license and waived public Takleef to focus on international licensing boards.`, 'career');
-              }
-            }
-          ]
-        });
+        queueScene(S,buildHealthcareGraduateScene(S,{majorId:u.majorId,uniName:gradUniName,pay:takleefPay,year:S.year,country:S.country}));
       }
 
       /* If studying abroad on a Student Visa, transition automatically to Post-Study Work Visa (PSW / OPT / PGWP / Job-Seeker)! */
@@ -2375,3 +2336,50 @@ export function sellSmallBusiness(S, bizId) {
 export function setBusinessMode(S, bizId, mode) {
   return setBusinessModeEngine(S, bizId, mode, {});
 }
+
+export function buildHealthcareGraduateScene(S,q){
+ const valid=st=>st.country===q.country&&q.country==='egy'&&(st.education.degrees||[]).includes(q.majorId)&&!st.career.employed&&!st.career.job&&st.legal.military.status!=='active_duty';
+ if(!valid(S))return null;const takleefPay=q.pay;const scene={
+          key: `egy_takleef_${q.year}`,
+          category: 'career',
+          title: `Syndicate Registration & Ministry Takleef Assignment`,
+          text: `You completed academic study at ${q.uniName}. This simplified game route now offers a Ministry role; real clinical internship and licensing requirements are not simulated. Proposed pay: (${formatMoney(takleefPay, 'egy')}/mo) alongside Syndicate (Niqaba) registration.`,
+          choices: [
+            {
+              label: `Register at the Syndicate & accept Ministry Takleef (${formatMoney(takleefPay, 'egy')}/mo + clinical experience)`,
+              effect: (st) => {
+                ensureExtendedState(st);
+                st.syndicate = { registered: true, name: `Egyptian ${q.majorId === 'medicine' ? 'Medical' : q.majorId === 'dentistry' ? 'Dental' : q.majorId === 'nursing'?'Nursing':'Pharmacists'} Syndicate`, joinedYear: st.year };
+                st.career.employed = true;
+                st.career.job = {
+                  employer: 'Ministry of Health / Kasr Al-Ainy',
+                  title: q.majorId === 'medicine' ? 'Resident Physician (Takleef)' : 'Clinical Specialist (Takleef)',
+                  track: q.majorId === 'pharmacy' ? 'pharma' : q.majorId,
+                  level: 0,
+                  monthlyGross: takleefPay,
+                  startYear: st.year,
+                  monthsInRole: 0,
+                  performance: 74,
+                  workMode: 'normal',
+                  bossId: null
+                };
+                getJobContract(st);
+                syncEmployerBenefits(st);
+                recordJournal(st, `Registered at ${st.syndicate.name} and reported for Ministry of Health Takleef clinical duty.`, 'career');
+              }
+            },
+            {
+              label: 'Register at the Syndicate only & waive Takleef to prepare for PLAB / USMLE / Gulf boards',
+              effect: (st) => {
+                ensureExtendedState(st);
+                st.syndicate = { registered: true, name: `Egyptian ${q.majorId === 'medicine' ? 'Medical' : 'Healthcare'} Syndicate`, joinedYear: st.year };
+                st.player.vitals.smarts = clamp(st.player.vitals.smarts + 3);
+                recordJournal(st, `Recorded game Syndicate registration and declined the Ministry job. No foreign board or real practising licence was granted.`, 'career');
+              }
+            }
+          ]
+        };
+ scene.healthcareGraduateSnapshot=q;
+ scene.choices=scene.choices.map(c=>({...c,available:valid,effect:st=>{if(!valid(st))return;st.education.healthcareGraduateReplies??={};const key=q.majorId+'_'+q.year;if(st.education.healthcareGraduateReplies[key])return;c.effect(st);st.education.healthcareGraduateReplies[key]=true;}}));return scene;
+}
+export function restoreHealthcareGraduateScene(S,saved){return saved?.healthcareGraduateSnapshot?buildHealthcareGraduateScene(S,saved.healthcareGraduateSnapshot):null;}

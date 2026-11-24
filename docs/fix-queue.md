@@ -192,3 +192,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W85 Business relocation decision loses scene on reload while pending move remains. Restore exact pending business/destination choice without restarting or recharging relocation.
 
 - [x] W86 Business relocation card is a long essay on390px despite outcome buttons showing same numbers. Shorten main text, keep costs/consequences in compact details. Low-impact UI.
+
+- [x] W87 Egypt healthcare-graduate Ministry job choice loses decision on reload and lacks current job/degree/military reply guards; preserve exact offer and honest game registration.
+- [x] W88 Shop compare/advice, card limit and trip comparison informational cards lose dismissal on reload. Preserve only known one-button information snapshots, no generic executable scene deserialization.
