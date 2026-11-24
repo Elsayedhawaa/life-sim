@@ -2152,6 +2152,17 @@ export function tickCareerMonthly(S) {
     const needsApplication = !!nextRung && nextRung.level >= SENIOR_RUNG_LEVEL;
     if (wouldPromote && !rivalBlocks && needsApplication) {
       recordJournal(S, `You now meet the bar for ${nextRung.title} at ${job.employer}. This rung is not automatic: apply for it under Career, or look for the title at another employer.`, 'career');
+      /* Shown once per rung, as a scene, so a player who never opens Career
+         still learns the rung now waits for them. */
+      if (job.seniorPromptLevel !== nextRung.level) {
+        job.seniorPromptLevel = nextRung.level;
+        queueScene(S, {
+          key: `senior_rung_ready_${job.track}_${nextRung.level}_${S.year}`, baseId: 'senior_rung_ready', category: 'career', urgent: true, maxPerLife: 99,
+          title: `You Are Eligible for ${nextRung.title}`,
+          text: `You meet the experience and performance bar for ${nextRung.title} at ${job.employer}. This step is not automatic: open the Career tab and choose Apply, which opens an interview with your manager. You can also look for the title at another employer.`,
+          choices: [{ label: 'Understood', effect: () => {} }],
+        }, true);
+      }
     }
     if (wouldPromote && !rivalBlocks && !needsApplication) {
       const ratio = nextRung.mult / (track.rungs[job.level]?.mult || 1);

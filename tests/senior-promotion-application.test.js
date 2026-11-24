@@ -11,4 +11,8 @@ function run(years) {
 const s = run(30);
 assert.equal(s.career.job.level, 2, 'lower rungs stay automatic; senior rungs wait for an application');
 assert(s.journal?.some?.((j) => /not automatic: apply for it/.test(JSON.stringify(j))), 'reason is shown');
+const prompts=[...(s.activeScene?[s.activeScene]:[]),...s.sceneQueue].filter((x)=>/^senior_rung_ready/.test(x.key||''));
+assert(prompts.length>=1,'eligibility is surfaced as a scene, not only a journal line');
+assert(/Career tab/.test(prompts[0].text));
+assert.equal(s.career.job.seniorPromptLevel,3,'prompt is once per rung');
 console.log('senior promotion needs an application; reason journalled');
