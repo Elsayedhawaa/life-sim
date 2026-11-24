@@ -944,18 +944,35 @@ export function businessValuation(biz) {
   return Math.round((biz.capitalInvested * 0.7 + annualProfit * 2.8) * equity);
 }
 
+/* Owner-funded game ventures retain unpaid bills after an exit. */
+export function settleBusinessExitDebt(S, biz, grossProceeds) {
+  const proceeds = Math.max(0, Math.round(grossProceeds || 0));
+  const debt = Math.max(0, Math.round(Number(biz.debtLocal) || 0));
+  const debtPaid = Math.min(debt, proceeds);
+  const shortfall = debt - debtPaid;
+  biz.debtLocal = 0;
+  if (shortfall > 0) {
+    S.money.loans.push({ id: nextId(S, 'loan'), label: `Business exit shortfall: ${biz.name}`, balance: shortfall,
+      monthlyPayment: Math.max(1, Math.ceil(shortfall / 24)), annualRate: 0, remainingMonths: 24,
+      country: S.country, missedMonths: 0, inCollections: true, purpose: 'business_exit' });
+    recordJournal(S, `${biz.name}: ${formatMoney(shortfall, S.country)} of unpaid bills remains in collections after the exit. No additional interest in this game model.`, 'money');
+  }
+  return { proceeds: proceeds - debtPaid, debtPaid, shortfall };
+}
+
 export function sellBusiness(S, bizRef) {
   ensureExtendedState(S);
   const biz = resolveBusiness(S, bizRef);
-  if (!biz) return { ok: false, msg: 'No active business.' };
+  if (!biz || biz.dead || !(S.career.businesses || []).includes(biz)) return { ok: false, msg: 'No active owned business.' };
   const valuation = businessValuation(biz);
+  const exit = settleBusinessExitDebt(S, biz, valuation);
   const bName = biz.name;
   const equityPct = Math.round(biz.equityOwned ?? 100);
   S.career.businesses = (S.career.businesses || []).filter(b => b.id !== biz.id);
   syncBusinessMirror(S);
-  walletMove(S, valuation, `Exited & sold ${bName}`, 'business');
-  recordJournal(S, `Sold ${bName} to an acquirer for ${formatMoney(valuation, S.country)}${equityPct < 100 ? ` — your ${equityPct}% share` : ''}.`, 'milestone');
-  return { ok: true, msg: `Sold ${bName} for ${formatMoney(valuation, S.country)}${equityPct < 100 ? ` (your ${equityPct}% share)` : ''}!` };
+  walletMove(S, exit.proceeds, `Exited & sold ${bName}, after unpaid bills`, 'business');
+  recordJournal(S, `Sold ${bName} to an acquirer: ${formatMoney(valuation, S.country)} gross for your ${equityPct}% share, ${formatMoney(exit.debtPaid, S.country)} paid unpaid bills, ${formatMoney(exit.proceeds, S.country)} paid to you.`, 'milestone');
+  return { ok: true, msg: `Sold ${bName}: ${formatMoney(exit.proceeds, S.country)} paid to you after ${formatMoney(exit.debtPaid, S.country)} of bills${exit.shortfall ? `; ${formatMoney(exit.shortfall, S.country)} still owed in collections` : ''}.`, ...exit };
 }
 
 /* Close a business (failure, or a forced closure). Salvage = half the
@@ -967,7 +984,7 @@ export function closeBusiness(S, biz, reason, opts = {}) {
   ensureExtendedState(S);
   migrateBusinesses(S);
   const target = typeof biz === 'object' ? biz : (S.career.businesses || []).find(b => b.id === biz);
-  if (!target || !(S.career.businesses||[]).some(b=>b.id===target.id)) return { ok: false, msg: 'No such owned business.', salvage: 0 };
+  if (!target || !(S.career.businesses||[]).includes(target)) return { ok: false, msg: 'No such owned business.', salvage: 0 };
   /* v2.17 W2 — the W5 contract: ANY closure marks the record dead
      with a plain-words cause (this is the miss-3 settlement path too
      — the record is removed from the portfolio below, but the flags
@@ -977,6 +994,7 @@ export function closeBusiness(S, biz, reason, opts = {}) {
   target.deadYear = S.year;
   target.deadMonth = S.month;
   const salvage = Math.round((target.capitalInvested || 0) * 0.5 * clamp((target.equityOwned ?? 100) / 100, 0, 1)); /* v2.20 I2 — equity is real: salvage pays out your share only. */
+  const exit = settleBusinessExitDebt(S, target, salvage);
   const staffCount = (target.staff || []).length;
   let severancePaid = 0;
   let severanceUnpaid = 0;
@@ -990,10 +1008,10 @@ export function closeBusiness(S, biz, reason, opts = {}) {
   target.staff = target.staff || [];
   S.career.businesses = (S.career.businesses || []).filter(b => b.id !== target.id);
   syncBusinessMirror(S);
-  if (!opts.viaSettlement && salvage > 0) {
-    walletMove(S, salvage, `Salvage sale — ${target.name} (${reason})`, 'business');
+  if (!opts.viaSettlement && exit.proceeds > 0) {
+    walletMove(S, exit.proceeds, `Salvage sale — ${target.name} (${reason})`, 'business');
   }
-  recordJournal(S, `${target.name} closed (${reason}). Sold off for ${formatMoney(salvage, S.country)} in salvage.${staffCount > 0 ? ` ${staffCount} employee${staffCount > 1 ? 's' : ''} lost their jobs.` : ''}`, 'money');
+  recordJournal(S, `${target.name} closed (${reason}). Sold off for ${formatMoney(salvage, S.country)} in salvage; ${formatMoney(exit.debtPaid, S.country)} paid unpaid bills, ${formatMoney(exit.proceeds, S.country)} returned to you.${staffCount > 0 ? ` ${staffCount} employee${staffCount > 1 ? 's' : ''} lost their jobs.` : ''}`, 'money');
   /* quietScene (v2.11 merge): the relocation decision scene already
      tells the player the business closed — queueing the engine's
      "Has Closed" scene too would say it twice. The journal above
@@ -1002,10 +1020,10 @@ export function closeBusiness(S, biz, reason, opts = {}) {
     key: `biz_closed_${target.id}_${S.year}_${S.month}`,
     category: 'money',
     title: `${target.name} Has Closed`,
-    text: `${target.name} could not keep paying its bills and has closed (${reason}). The salvage sale brought in ${formatMoney(salvage, S.country)}.${staffCount > 0 ? ` ${staffCount} employee${staffCount > 1 ? 's' : ''} lost their jobs.` : ''}`,
+    text: `${target.name} could not keep paying its bills and has closed (${reason}). The salvage sale returned ${formatMoney(exit.proceeds, S.country)} after unpaid bills; ${formatMoney(exit.shortfall, S.country)} remains owed in collections.${staffCount > 0 ? ` ${staffCount} employee${staffCount > 1 ? 's' : ''} lost their jobs.` : ''}`,
     choices: [{ label: 'Understood', effect: () => {} }]
   });
-  return { ok: true, msg: `${target.name} closed — salvage ${formatMoney(salvage, S.country)}.`, salvage, staffCount, severancePaid, severanceUnpaid };
+  return { ok: true, msg: `${target.name} closed — salvage ${formatMoney(salvage, S.country)}.`, salvage: exit.proceeds, grossSalvage: salvage, debtPaid: exit.debtPaid, shortfall: exit.shortfall, staffCount, severancePaid, severanceUnpaid };
 }
 
 /* Switch full-time <-> part-time. Going full-time while employed

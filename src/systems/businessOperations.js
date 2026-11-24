@@ -945,6 +945,6 @@ export function renderCashSectionHtml(S, biz, extras = {}) {
     ${extras.loanHtml || ''}
     ${extras.exitsHtml || ''}
     ${extras.groupCashHtml || ''}
-    <div style="margin-top:8px;"><button class="btn btn-sm" data-action="sell-business" data-biz="${escHtml(biz.id)}">Sell ${escHtml(biz.name)} now (valuation ${fmt(S, valuation)})</button></div>
+    <div style="margin-top:8px;"><button class="btn btn-sm" data-action="sell-business" data-biz="${escHtml(biz.id)}">Sell ${escHtml(biz.name)} now (${fmt(S, Math.max(0, valuation - (Number(biz.debtLocal) || 0)))} after unpaid bills)</button></div>
   </details>`;
 }

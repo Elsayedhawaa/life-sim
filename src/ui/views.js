@@ -3937,7 +3937,7 @@ function renderBanksSubtabHtml(S, cObj) {
           <span class="muted">${S.money.loans.length} active loan(s)</span>
         </div>
         ${S.money.loans.map(l => `
-          <div class="muted" style="margin-bottom:6px">• <strong>${esc(l.label)}</strong>: ${esc(formatMoney(l.balance, S.country))} remaining (${esc(formatMoney(l.monthlyPayment, S.country))}/mo · ${l.remainingMonths}m left)</div>
+          <div class="muted" style="margin-bottom:6px">• <strong>${esc(l.label)}</strong>: ${esc(formatMoney(l.balance, S.country))} remaining (${esc(formatMoney(l.monthlyPayment, S.country))}/mo · ${l.inCollections ? 'collections, no new interest' : `${l.remainingMonths}m left`})</div>
         `).join('')}
         ${[3, 8, 18].map((mult, idx) => {
           const amt = eraLocalCost(cObj.monthlyBasket2026.rentStandard * mult, S.country, S.year);

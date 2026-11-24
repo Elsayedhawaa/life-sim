@@ -76,7 +76,7 @@ import { rand, clamp, hashSeed } from '../core/rng.js';
 import { nextId, recordJournal, walletMove, recordLedgerEntry, ensureExtendedState } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { pickFirstName, pickFamilyName } from '../data/names.js';
-import { monthsInBusiness, consecutiveProfitableMonths, averageStaffSkill, businessMonthIndex } from './businessEngine.js';
+import { monthsInBusiness, consecutiveProfitableMonths, averageStaffSkill, businessMonthIndex, settleBusinessExitDebt } from './businessEngine.js';
 import { fireAllStaff, monthlyMidSalary } from './businessStaff.js';
 
 /* ------------------------------------------------------------------ *
@@ -444,19 +444,13 @@ export function killBusiness(S, biz, cause) {
       biz.employees = 0;
     }
   }
-  const salvage = Math.round((Number(biz.capitalInvested) || 0) * 0.5);
-  let debtPaid = 0;
-  if (salvage > 0 && (Number(biz.debtLocal) || 0) > 0) {
-    debtPaid = Math.min(salvage, Math.round(Number(biz.debtLocal)));
-    biz.debtLocal = Math.round(Number(biz.debtLocal) - debtPaid);
-    recordLedgerEntry(S, debtPaid, `Salvage from ${name} paid ${formatMoney(debtPaid, S.country)} of its business debt (${cause})`, 'debt', 'loan', biz.debtLocal);
-  }
-  const remainder = salvage - debtPaid;
-  if (remainder > 0) {
-    walletMove(S, remainder, `Salvage sale — ${name} (${cause})`, 'business');
-  }
+  const salvage = Math.round((Number(biz.capitalInvested) || 0) * 0.5 * clamp((biz.equityOwned ?? 100) / 100, 0, 1));
+  const exit = settleBusinessExitDebt(S, biz, salvage);
+  const debtPaid = exit.debtPaid;
+  const remainder = exit.proceeds;
+  if (remainder > 0) walletMove(S, remainder, `Salvage sale, after bills: ${name} (${cause})`, 'business');
   biz.capitalInvested = 0;
-  const debtLeft = Math.round(Number(biz.debtLocal) || 0);
+  const debtLeft = exit.shortfall;
   recordJournal(S, `${name} has closed — ${cause}. It was sold off for ${formatMoney(salvage, S.country)} in salvage${debtPaid > 0 ? `, of which ${formatMoney(debtPaid, S.country)} went to pay its debts` : ''}${debtLeft > 0 ? `; ${formatMoney(debtLeft, S.country)} of business debt is still owed` : ''}.${staffCount > 0 ? ` ${staffCount} employee${staffCount > 1 ? 's' : ''} lost their jobs (severance ${formatMoney(severancePaid, S.country)} paid${severanceUnpaid > 0 ? `, ${formatMoney(severanceUnpaid, S.country)} still owed` : ''}).` : ''}`, 'money');
   return { ok: true, salvage, debtPaid, debtLeft, staffCount, severancePaid, severanceUnpaid };
 }
