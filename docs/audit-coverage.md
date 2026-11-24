@@ -308,3 +308,6 @@ Explicit old/acquired company conversion covers55 blueprint types without a rese
 
 ## Reserve-funded input reorder
 Per input off/half/full plan targets,25% reorder point, monthly half/full plan cap. Auto decisions occur after sales, only from reserve minus operating-cost cushion/pending invoices. One immutable pending order per input, actual invoice on receipt, failed delivery waits. Later reserve losses can still affect affordability, disclosed.105 focused files,12,152renders and phone cafe auto-order/delivery/revenue/reload pass.
+
+## Production bill editing
+Per-line input amounts, compatible substitutions and1/2/4 batch yield. Original bounds prevent zero-input recipes. Alternative materials require actual purchased stock. Per-unit consumed cost and realized price use the edited bill; dilute output gets a lower price. No work-point discount; no batch/WIP rewrite.106 focused files,12,152renders and phone oat substitution/yield/delivery/sales/reload pass.

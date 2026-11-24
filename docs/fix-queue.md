@@ -17,7 +17,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] L4 Legacy specialty/acquired-company migration into the full lifecycle. 55 profiles, explicit opt-in, preserved records.
 - [ ] L22 Independent specialty service capacity/space/equipment/input profiles beyond the shared conversion template.
 - [x] L5 Input auto-restock with reorder policy, reserve budget and delivery limits.
-- [ ] L6 Editable/richer recipes with input substitution and real yields.
+- [x] L6 Editable quantities, compatible substitutions and batch yields with cost/price tradeoffs.
 - [ ] L7 More sector incidents with distinct causes and consequences.
 - [ ] L8 Distinct operational activity effects rather than shared generic bonuses.
 - [ ] L9 Branch-specific accounts, staff and stock instead of shared parent pools.
@@ -46,4 +46,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-24 distinct open packages after L5. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+23 distinct open packages after L6. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
