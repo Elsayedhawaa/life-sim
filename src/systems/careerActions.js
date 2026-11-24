@@ -298,7 +298,7 @@ export function licenceStatus(S) {
      when nothing is missing — so a non-null return means "not held". */
   const required = getRequiredForeignBoardForJob(S, job.track, track.reqDegrees || []);
   const heldCert = (PROFESSIONAL_LICENSES || []).find(l =>
-    (track.reqDegrees || []).includes(l.reqDegree) && (S.credentials.licenses || []).includes(l.id));
+    (l.country===S.country||l.country==='local') && (track.reqDegrees || []).includes(l.reqDegree) && (S.credentials.licenses || []).includes(l.id));
   const renewals = licenceRenewals(S);
   let renewalLapsed = false;
   if (heldCert) {
@@ -330,7 +330,7 @@ export function trainOptions(S) {
     preview: `Costs ${formatMoney(courseFee, S.country)} and a month of evenings. One course per game month. +3 performance, +2 manager respect. Counts toward your next rung.`
   });
   const track = (getMergedCareerTracks(S.year)[job.track] || {});
-  const cert = (PROFESSIONAL_LICENSES || []).find(l => (track.reqDegrees || []).includes(l.reqDegree));
+  const cert = (PROFESSIONAL_LICENSES || []).find(l => (l.country===S.country||l.country==='local') && (track.reqDegrees || []).includes(l.reqDegree));
   if (cert) {
     const held = (S.credentials.licenses || []).includes(cert.id);
     const renewals = licenceRenewals(S);
