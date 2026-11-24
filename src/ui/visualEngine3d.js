@@ -1376,12 +1376,12 @@ export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms 
   const sh = plan.shell;
   const attrs = rm => `data-action="room-info" data-room="${escAttr(rm.key)}" data-no="${escAttr(rm.no)}" data-name="${escAttr(planRoomName(rm))}" data-m2="${rm.m2 || 0}" data-floor="${escAttr(plainFloorLabel(idx, shape))}"`;
   return `<section class="readable-floor" style="border:1px solid #c9c2b5;border-radius:12px;padding:12px;background:#faf5e9;color:#3c3228;min-width:0">
-    <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx, shape))}</h4>${idx === 0 ? `<p style="font-size:0.78rem;line-height:1.5;margin:4px 0 8px">${escAttr(outdoorFeatures.styleNote || homeStyleNote(country, shape))}</p>` : ''}
+    <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx, shape))}</h4><span title="${escAttr(outdoorFeatures.styleNote || homeStyleNote(country, shape))}" aria-label="Home style">ⓘ</span>
     
     ${illustratedPlanSvg(plan, idx, outdoorFeatures, attrs)}
-    ${idx===0&&outdoorFeatures.areas?`<p style="font-size:.78rem;line-height:1.6"><strong>${outdoorFeatures.areas.indoorM2} m² indoor floor area</strong>${outdoorFeatures.areas.plotM2?` · ${outdoorFeatures.areas.plotM2} m² plot (building footprint ${outdoorFeatures.areas.footprintM2} m²)`:``}<br>${outdoorAreaSummary(outdoorFeatures.areas)}<br>Outdoor areas are separate, non-overlapping game deed allocations, not part of indoor room totals.</p>`:''}
+    ${idx===0&&outdoorFeatures.areas?`<p style="font-size:.78rem;line-height:1.6"><strong>${outdoorFeatures.areas.indoorM2} m² indoor floor area</strong>${outdoorFeatures.areas.plotM2?` · ${outdoorFeatures.areas.plotM2} m² plot (building footprint ${outdoorFeatures.areas.footprintM2} m²)`:``}<br>${outdoorAreaSummary(outdoorFeatures.areas)}</p>`:''}
     <button class="btn btn-sm" data-action="zoom-floorplan">Enlarge plan · pinch or scroll</button>
-    <p style="font-size:0.74rem;line-height:1.5;color:#89765c">Illustrative furnished layout. Furniture is a preview, not an installed purchase.${idx===0&&(outdoorFeatures.hasPool||outdoorFeatures.hasGarden)?' Outdoor features are on the same plot; outdoor area is not included in the indoor room total.':''}</p>
+    <span title="Illustrated furniture is a preview. Furnish rooms below to buy." aria-label="Furniture preview">ⓘ</span>
     <div style="margin-top:10px;display:grid;gap:6px">
       ${plan.rooms.map(rm => `<button type="button" ${attrs(rm)} style="display:flex;align-items:center;gap:10px;text-align:left;width:100%;min-height:48px;padding:10px;border:1px solid #d8d1c5;border-radius:8px;background:#fffdf8;color:#292524;white-space:normal">
         <span style="font-weight:800;color:#a6442f">${escAttr(rm.no)}</span>

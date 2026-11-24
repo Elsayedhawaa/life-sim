@@ -2042,7 +2042,7 @@ export function describeJobOffer(S, job) {
        standard annual-leave days are the same for every job in the
        country and print once above the market. */
     benefits: [
-      `Pension: ${formatMoney(slip.pensionContribution, S.country)}/mo of your social insurance goes to the pension${slip.employerPension > 0 ? `, and your employer adds ${formatMoney(slip.employerPension, S.country)}/mo on top` : ''}.`
+      S.country==='usa'?'401(k) optional · Social Security separate':`Pension contribution: ${formatMoney(slip.pensionContribution,S.country)}/mo${slip.employerPension>0?` · Employer ${formatMoney(slip.employerPension,S.country)}/mo`:''}`
     ],
     /* Only when this track's experience earns more leave than the
        country's standard — the standard itself is in the market

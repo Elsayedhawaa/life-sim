@@ -542,7 +542,7 @@ export function renderForSaleHtml(S) {
   return `
   <div class="biz-for-sale-section" style="margin-top:10px;">
     <h4>Businesses for sale — ${escHtml(getCountry(S.country).name || S.country)}</h4>
-    <div class="muted" style="font-size:12px;">Valuation uses the same rule as selling: 0.7× capital + 2.8× annual net profit. The ask may be above or below it. A business can look profitable and hide debts — pay for due diligence before you buy, or buy blind and take the risk.</div>
+    <div class="muted" style="font-size:12px;">Valuation: 0.7× capital + 2.8× annual profit <span title="Hidden debt is possible. Due diligence takes one month." aria-label="Information">ⓘ</span></div>
     ${cards}
   </div>`;
 }

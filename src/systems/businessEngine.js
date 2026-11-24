@@ -477,27 +477,11 @@ export function ventureViabilityWarningHtml(S, bp, ev = null) {
   const expectedFT = Number(e.expectedRevFullTimeHome) || 0;
   const selfPT = (Number(e.monthlyCostPartTimeHomeSelf) || 0);
   const mgrPT = (Number(e.monthlyCostPartTimeHomeManagerRun) || 0);
-  const warn = (title, text) =>
-    `<div class="card" style="border:2px solid var(--brand-crimson);background:rgba(180,35,24,0.10);margin:8px 0"><strong style="color:var(--brand-crimson)">⚠ ${title}</strong> <span>${text}</span></div>`;
-  /* Part-time from home, run yourself: the employed player's path. */
-  if (selfPT > expectedPT) {
-    const shortfall = Math.round(selfPT - expectedPT);
-    return warn('This business cannot pay its own staff part-time.',
-      `Your staff cost ${fmt(wages)} a month and other costs run about ${fmt(otherPT)} a month part-time, but part-time from home this takes in only about ${fmt(expectedPT)} a month — you will cover about ${fmt(shortfall)} a month from your salary. A manager would cost another ${fmt(managerWage)} a month on top. Pick a venture whose takings cover its staff pay, or be ready to cover the shortfall from your own pocket every month.`);
-  }
-  /* Part-time from home, manager-run: the wage bill plus the manager. */
-  if (mgrPT > expectedPT) {
-    const shortfall = Math.round(mgrPT - expectedPT);
-    return warn('This business cannot pay its staff and a manager part-time.',
-      `Your staff cost ${fmt(wages)} a month, other costs run about ${fmt(otherPT)} a month part-time and a manager asks about ${fmt(managerWage)} a month — ${fmt(mgrPT)} a month in all — but part-time from home this takes in only about ${fmt(expectedPT)} a month. You will cover about ${fmt(shortfall)} a month from your salary. Run it yourself, or pick a venture whose takings cover a manager too.`);
-  }
-  /* Full-time from home, run yourself. */
-  const selfFT = Number(e.monthlyCostFullTimeHomeSelf) || 0;
-  if (selfFT > expectedFT) {
-    const shortfall = Math.round(selfFT - expectedFT);
-    return warn('This business cannot pay its own staff full-time.',
-      `Your staff cost ${fmt(wages)} a month and other costs run about ${fmt(other)} a month, but full-time from home this takes in only about ${fmt(expectedFT)} a month — you will cover about ${fmt(shortfall)} a month from your salary. Pick a venture whose takings cover its staff pay, or be ready to cover the shortfall from your own pocket every month.`);
-  }
+  const warn=(mode,takings,cost,manager=false)=>`<div class="muted" style="margin:6px 0;color:var(--brand-crimson)">${mode}${manager?' + manager':''} · Est. loss ${fmt(cost-takings)}/mo <span title="Home-based estimate. Revenue varies; losses reduce cash." aria-label="Information">ⓘ</span><details><summary>Cost breakdown</summary>Revenue ${fmt(takings)}/mo<br>Wages ${fmt(wages)}/mo · Other ${fmt(mode==='Part-time'?otherPT:other)}/mo${manager?` · Manager ${fmt(managerWage)}/mo`:''}</details></div>`;
+  if(selfPT>expectedPT)return warn('Part-time',expectedPT,selfPT);
+  if(mgrPT>expectedPT)return warn('Part-time',expectedPT,mgrPT,true);
+  const selfFT=Number(e.monthlyCostFullTimeHomeSelf)||0;
+  if(selfFT>expectedFT)return warn('Full-time',expectedFT,selfFT);
   return '';
 }
 

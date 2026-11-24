@@ -1344,7 +1344,7 @@ function renderChildrenSubtabHtml(S) {
     ${divorceSummaryHtml(S)}
     <div class="card card-elevated">
       <div class="section-head">
-        <h2>${icon('people', 18)} Children, Nurseries & Enrichment Clubs</h2>
+        <h2>${icon('people', 18)} Children</h2>
         <span class="hud-pill">Fertility: ${Math.round(S.medical.fertilityScore)}%</span>
       </div>
       ${kids.length === 0 ? `<p class="muted">You have no children yet. Marry and enable "Try for a Baby" (or visit IVF Fertility under Lifestyle → Medical).</p>` : ''}
@@ -1357,7 +1357,7 @@ function renderChildrenSubtabHtml(S) {
                 <span class="npc-name">${esc(ch.fullName)} · Age ${ch.age}</span>
                 <span class="npc-role-badge">Passports: ${esc(ch.citizenships.map(c => getCountry(c).flagCode).join(' '))}</span>
               </div>
-              <div class="muted">${ch.custody?`Custody: ${esc(ch.custody.arrangement)} · ${ch.custody.playerNightsPer14}/14 nights with you. `:''}Education fund: ${esc(formatMoney(convertCurrency(ch.educationFund?.balance||0,ch.educationFund?.country||S.country,S.country,S.year),S.country))}.</div>
+              <div class="muted">${ch.age<18&&ch.custody?`Custody: ${esc(ch.custody.arrangement)} · ${ch.custody.playerNightsPer14}/14 nights with you. `:''}Education fund: ${esc(formatMoney(convertCurrency(ch.educationFund?.balance||0,ch.educationFund?.country||S.country,S.country,S.year),S.country))}.</div>
               <div style="display:flex;flex-wrap:wrap;gap:6px"><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="visit">Visit / spend time</button><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="gift">Buy a gift</button><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="education">Add to education fund</button></div>
               ${childCourseQuote(S,ch.id)?`<p>Course tuition: ${esc(formatMoney(childCourseQuote(S,ch.id).monthly,childCourseQuote(S,ch.id).country))}/mo · 48 months</p><button class="btn btn-sm" data-action="child-course" data-cid="${ch.id}" ${ch.parentFundedCourse?'disabled':''}>${ch.parentFundedCourse?(ch.parentFundedCourse.completed?'Course completed':ch.parentFundedCourse.paused?'Course paused, insufficient funds':ch.parentFundedCourse.monthsRemaining+' months remaining'):'Enroll and fund child course'}</button>`:''}
               <div class="muted">Smarts: <strong>${Math.round(ch.vitals.smarts)}%</strong> · Health: <strong>${Math.round(ch.vitals.health)}%</strong> · Happiness: <strong>${Math.round(ch.vitals.happiness)}%</strong></div>
@@ -1888,30 +1888,9 @@ function renderJobActionsHtml(S, job) {
    first blocking reason is shown instead of a button that refuses. The pay
    breakdown comes from describeJobOffer, which reads W1's computePayslip —
    the same function the job card reads. */
-function renderMarketListingHtml(S, j) {
-  const detail = describeJobOffer(S, j);
-  const elig = jobEligibility(S, j);
-  const pay = detail.pay;
-  const ladderLine = detail.nextRung
-    ? `Ladder: next rung ${detail.nextRung.title} — needs ${detail.nextRung.minExp} yrs on this track (you have ${detail.trackExp}), about ${formatMoney(detail.nextGross, S.country)}/mo gross`
-    : 'Ladder: top of this track — no higher rung.';
-  return `
-    <div class="item-row" style="align-items:flex-start">
-      <div class="item-row-main">
-        <strong>${esc(j.title)} · ${esc(j.employer)}</strong>
-        ${detail.involves ? `<span>${esc(j.trackLabel)} — ${esc(detail.involves)}</span>` : `<span>${esc(j.trackLabel)}</span>`}
-        <span>${esc(detail.contract)} · ${detail.hoursPerWeek}h/week · ${esc(detail.shift)} · ${esc(detail.location)}</span>
-        <span>${esc(ladderLine)}</span>
-        <span>Pay: Gross <strong class="mono">${esc(formatMoney(pay.gross, S.country))}</strong>/mo − Income tax ${esc(formatMoney(pay.incomeTax, S.country))} − Social insurance ${esc(formatMoney(pay.socialSecurity, S.country))} = Net <strong class="mono text-good">${esc(formatMoney(pay.net, S.country))}</strong>/mo</span>
-        ${detail.benefits.map(b => `<span>${esc(b)}</span>`).join('')}
-        ${detail.leaveAboveStandard ? `<span>${esc(detail.leaveAboveStandard)}</span>` : ''}
-        <div style="margin-top:4px">${elig.rows.map(r => `<div>${r.met ? '✓' : '✗'} <strong>${esc(r.label)}</strong> — ${esc(r.reason)}</div>`).join('')}</div>
-      </div>
-      ${elig.eligible
-        ? `<button class="btn btn-sm btn-primary" data-action="apply-job" data-idx="${j.origIdx}">Apply</button>`
-        : `<span class="hud-pill">${esc(elig.blockedBy[0] || 'Not eligible')}</span>`}
-    </div>
-  `;
+function renderMarketListingHtml(S,j){
+ const detail=describeJobOffer(S,j),elig=jobEligibility(S,j),pay=detail.pay;
+ return `<div class="item-row" style="align-items:flex-start"><div class="item-row-main"><strong>${esc(j.title)} · ${esc(j.employer)}</strong><span>${esc(formatMoney(pay.gross,S.country))} gross/mo · ${esc(formatMoney(pay.net,S.country))} net/mo · ${detail.hoursPerWeek} h/wk</span>${!elig.eligible?`<div class="muted">${esc(elig.blockedBy[0]||'Not eligible')}</div>`:''}<details style="margin-top:6px"><summary>Role &amp; requirements</summary><p>${esc(detail.involves)}<br>${esc(detail.contract)} · ${esc(detail.shift)}</p>${detail.nextRung?`<p>Next: ${esc(detail.nextRung.title)} · ${detail.nextRung.minExp} yrs experience</p>`:''}<p>Tax ${esc(formatMoney(pay.incomeTax,S.country))}/mo · Social insurance ${esc(formatMoney(pay.socialSecurity,S.country))}/mo<br>${detail.benefits.map(esc).join('<br>')}</p>${elig.rows.map(r=>`<div>${r.met?'✓':'✗'} ${esc(r.label)} · ${esc(r.reason)}</div>`).join('')}</details></div>${elig.eligible?`<button class="btn btn-sm btn-primary" data-action="apply-job" data-idx="${j.origIdx}">Apply</button>`:''}</div>`;
 }
 
 /* ============================================================================
@@ -2209,7 +2188,7 @@ export function renderWorkTabHtml(S, uiState = {}) {
     <div class="card">
       <div class="section-head">
         <h3>Local Job Market — ${esc(cObj.name)} (${filteredJobs.length}/${allJobs.length})</h3>
-        <span class="muted">Real companies, CV & board-license verified</span>
+        <span class="muted">Game job listings</span>
       </div>
       ${S.career.lastApplication ? `<p class="muted">Last application: <strong>${esc(S.career.lastApplication.title)}</strong> at ${esc(S.career.lastApplication.employer)} — ${S.career.lastApplication.hired ? '✓ Hired. ' : ''}${esc(S.career.lastApplication.reason)}</p>` : ''}
       <div class="catalog-filter-bar">
@@ -2638,7 +2617,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       <div class="section-head">
         <h3>Register a Company (${filtered.length} of ${allVentures.length} ventures)</h3>
       </div>
-      <p class="muted">Profit is unknown until the first month settles. ${esc(timeNote)} ${esc(headerConstraintNote)}</p>
+      <p class="muted">Full-time ${BUSINESS_FULL_TIME_HOURS} h/wk · Part-time ${BUSINESS_PART_TIME_HOURS} h/wk <span title="Profit varies. Running full-time yourself requires leaving your job. Managers use no player hours." aria-label="Information">ⓘ</span></p>
       <div class="catalog-filter-bar">
         <input type="search" class="filter-input" data-filter="bizQuery" placeholder="Search ${allVentures.length} ventures (e.g. Café, Pharmacy, SaaS, Clinic, Factory)..." value="${esc(uiState.bizQuery || '')}">
       </div>
@@ -2678,16 +2657,9 @@ function renderSideGigsSubtabHtml(S) {
     }
     return map;
   };
-  const groupedRisksHtml = (evs) => {
-    if (!evs.length) return '';
-    const map = riskGroups(evs);
-    const lines = [];
-    const all = [...map.entries()].filter(([, labels]) => labels.length === evs.length).map(([r]) => r);
-    if (all.length) lines.push(`Applies to every gig here: ${all.map((r) => `⚠ ${esc(r)}`).join(' · ')}`);
-    for (const [r, labels] of [...map.entries()].filter(([, labels]) => labels.length > 1 && labels.length < evs.length)) {
-      lines.push(`⚠ ${esc(r)} — on: ${labels.map((l) => esc(l)).join(', ')}`);
-    }
-    return lines.length ? `<p class="muted" style="margin:6px 0">${lines.join('<br>')}</p>` : '';
+  const groupedRisksHtml = evs => {
+    const risks=[...riskGroups(evs).keys()];
+    return risks.length?`<details class="muted" style="margin:6px 0"><summary>Time &amp; work risks</summary>${risks.map(r=>`<p>${esc(r)}</p>`).join('')}</details>`:'';
   };
   const sharedRiskSet = (evs) => new Set([...riskGroups(evs).entries()].filter(([, labels]) => labels.length > 1).map(([r]) => r));
   const gigRow = (ev, kind, shared) => {
@@ -2710,7 +2682,7 @@ function renderSideGigsSubtabHtml(S) {
           <strong>${esc(ev.label)}</strong>
           <span>${esc(ev.payer)} · ${esc(ev.when)} · ${ev.hoursPerWeek}h/week</span>
           <span>${payLine}</span>
-          <div style="margin-top:4px">${ev.requirements.map(r => `<div>${r.met ? '✓' : '✗'} <strong>${esc(r.label)}</strong> — ${esc(r.reason)}</div>`).join('')}</div>
+          <details style="margin-top:4px"><summary>Requirements</summary>${ev.requirements.map(r => `<div>${r.met ? '✓' : '✗'} ${esc(r.label)} · ${esc(r.reason)}</div>`).join('')}</details>
           ${ownRisks.length ? `<div style="margin-top:4px">${ownRisks.map(r => `<div>⚠ ${esc(r)}</div>`).join('')}</div>` : ''}
           ${repLine}
         </div>
@@ -2727,7 +2699,7 @@ function renderSideGigsSubtabHtml(S) {
     ${S.year >= 2006 ? `
       <div class="card card-elevated">
         <div class="section-head">
-          <h3>Creator &amp; Expert Thought-Leadership Channel</h3>
+          <h3>Creator channel</h3>
           <span class="hud-pill mono">${(S.creatorChannel?.followers || 0).toLocaleString()} Followers${S.creatorChannel?.monthlyIncomeLocal > 0 ? ` · ${formatMoney(S.creatorChannel.monthlyIncomeLocal, S.country, true)}/mo` : ''}</span>
         </div>
         <p class="muted" style="margin-bottom:8px">Publish monthly educational/lifestyle content — crosses into passive monthly sponsorship revenue as your audience scales!</p>

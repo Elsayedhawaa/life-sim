@@ -1576,3 +1576,18 @@ html[data-theme="dark"] .turn-result-card { background: #1b1814; }
 .education-screen .btn-primary:focus-visible{outline:3px solid #8bb7a7;outline-offset:3px}
 .edu-programme>.btn{margin-top:7px}.edu-funding-reason{display:block;font-size:11px;color:#74796d;line-height:1.5;margin:4px 0 8px}
 .education-screen .item-row-main>span{display:block;margin-top:4px}
+
+/* Phone catalog rows: readable names first, actions below, never narrow columns. */
+.item-row-main {min-width:0;flex:1;overflow-wrap:anywhere}
+@media(max-width:480px){
+ .item-row{flex-wrap:wrap;align-items:flex-start;gap:8px}
+ .item-row>.item-row-main{flex-basis:100%;width:100%}
+ .item-row>div:first-child:not(.item-row-main){width:100%;min-width:0}
+ .item-row>div{max-width:100%;flex-wrap:wrap}
+ .item-row>.btn,.item-row>.hud-pill{flex-shrink:0}
+ .item-row .item-row-main strong{line-height:1.4}
+ .item-row .item-row-main span{line-height:1.5}
+ .item-row>div[style*="gap:5px"]{flex-wrap:wrap}
+}
+
+.item-row-main span strong{display:inline}
