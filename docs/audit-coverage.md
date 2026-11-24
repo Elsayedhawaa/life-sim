@@ -57,3 +57,5 @@ Retirement: repeated retirement refuses before pension/stress changes; past conv
 Pension relocation: current monthly pension, unconverted pot, prior annuity, contribution totals and history re-express in destination currency.53focused files pass. Hosted retirement action/reload verified on fe9a9c6; FX extension has focused function coverage, not a separate phone relocation flow.
 
 Estate/finance: underwater property equity remains negative in net worth instead of hiding excess debt. Will edits award reputation once, not on every repeat.54focused files pass;390pxwill repeat/share/reload checked. Estate rules now explicitly labeled simplified game shares, not current succession law.
+
+Business relocation extension: converts stored price/standard lists, pending stock unit costs/invoices and already-committed revenueAdd/costAdd. Does not convert quantities or multipliers.54focused files pass. Existing remote-hire390pxaction/reload and prescription lock rendering rechecked locally; business FX extension itself has focused function coverage. Historical lock-reason probe9/9after standardizing diagnostic explanations.

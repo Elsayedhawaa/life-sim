@@ -309,6 +309,15 @@ export function convertBusinessFiguresCurrency(S, biz, toCountry) {
       if (m.wageLocal) m.wageLocal = conv(m.wageLocal);
     }
   }
+  for(const price of Object.values(biz.prices||{})){
+    if(Number.isFinite(price.price))price.price=conv(price.price);
+    if(Number.isFinite(price.standard))price.standard=conv(price.standard);
+  }
+  for(const delivery of biz.pendingDeliveries||[]){
+    if(Number.isFinite(delivery.unitCost))delivery.unitCost=conv(delivery.unitCost);
+    if(Number.isFinite(delivery.cost))delivery.cost=conv(delivery.cost);
+  }
+  if(biz.monthEffects)for(const key of ['revenueAdd','costAdd'])if(Number.isFinite(biz.monthEffects[key]))biz.monthEffects[key]=conv(biz.monthEffects[key]);
   biz.figuresCurrency = toCountry;
   return { ok: true, converted: true, from, to: toCountry };
 }

@@ -4758,7 +4758,7 @@ function renderMedicalAndSurgeriesSubtabHtml(S) {
           const fee=S.player.age<18?0:Math.max(x.kind==='test'?8:5,Math.round(convertCurrency(((x.kind==='test'?x.costEGP:x.monthlyEGP)||450)/50,'usa',S.country,S.year)));
           const used=S.medical.servicePeriods?.[`${x.kind}_${x.id}`]===S.year*12+S.month;
           const reason=used?'Completed this game month':S.money.cash<fee?'Not enough cash':'';
-          return `<div><button class="btn btn-sm" data-action="med-diag" data-kind="${x.kind}" data-id="${x.id}" ${reason?'disabled':''}>${x.kind==='med'?'Rx: ':''}${esc(x.label)} · ${fee?esc(formatMoney(fee,S.country)):'Covered'}</button>${reason?`<small class="muted" style="display:block">${esc(reason)}</small>`:''}</div>`;
+          return `<div><button class="btn btn-sm" data-action="med-diag" data-kind="${x.kind}" data-id="${x.id}" ${reason?'disabled':''}>${x.kind==='med'?'Rx: ':''}${esc(x.label)} · ${fee?esc(formatMoney(fee,S.country)):'Covered'}</button>${reason?lockReason(reason):''}</div>`;
         }).join('')}
       </div></details>
     </div>
