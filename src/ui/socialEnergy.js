@@ -20,11 +20,7 @@ export function socialEnergyCostLabel(S, p, verbKey) {
 /* The budget, stated on the screen in the People tab header. */
 export function renderSocialEnergyHtml(S) {
   const { energy, max } = socialEnergy(S);
-  const line = energy <= 0
-    ? 'You are out of social energy this month — it comes back at the start of next month.'
-    : energy <= 2
-    ? `Social energy: ${energy} of ${max} left this month — nearly spent. It comes back at the start of next month.`
-    : `Social energy: ${energy} of ${max} left this month.`;
+  const line = `Social energy: ${energy}/${max}`;
   return `<div class="muted" style="font-size:0.85rem;margin:6px 0 2px">${esc(line)} <span title="Call 1 · Talk 2 · Visit 3 · Gift 2 · Ask for help 4" aria-label="Energy costs">ⓘ</span></div>`;
 }
 

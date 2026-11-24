@@ -320,7 +320,7 @@ export function toggleEngagementPrenup(S) {
 
 /* Household settings the UI used to write directly — now engine functions. */
 export function setTryingForBaby(S, value) {
-  if(value){const sp=S.relations.spouseIds.map(id=>S.people[id]).find(p=>p?.alive&&p.relationshipProgress?.stage!=='separated');if(!sp)return{ok:false,msg:'No partner ready for family planning.'};if(!spouseMind(S,sp).wantsChildren)return{ok:false,msg:sp.firstName+' does not want children.'};}
+  if(value){const sp=S.relations.spouseIds.map(id=>S.people[id]).find(p=>p?.alive&&p.relationshipProgress?.stage!=='separated'&&p.residenceCountry===S.country&&p.gender!==S.player.gender&&p.age>=18);if(!sp)return{ok:false,msg:'No partner ready for family planning.'};if(!spouseMind(S,sp).wantsChildren)return{ok:false,msg:sp.firstName+' does not want children.'};}
   S.marriage.tryingForBaby = !!value;
   return { ok: true, msg: S.marriage.tryingForBaby ? 'Now trying for a baby!' : 'Paused family planning.' };
 }

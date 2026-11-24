@@ -1178,6 +1178,7 @@ export function renderPeopleTabHtml(S, uiState = {}) {
     S.relations.motherId,
     ...S.relations.siblingIds,
     ...S.relations.friendIds,
+    ...(S.relations.colleagueIds||[]),
     ...(S.relations.bossId ? [S.relations.bossId] : []),
     ...S.relations.inLawIds
   ].filter(Boolean);
