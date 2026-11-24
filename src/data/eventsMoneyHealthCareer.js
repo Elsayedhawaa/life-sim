@@ -932,39 +932,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(6000, S.country, S.year);
-      return {
-        key: 'ev_money_gamiya_payout',
-        category: 'money',
-        title: "Your Gamiya Turn Comes Up",
-        text: `It is your month in the gamiya — the savings circle you joined with neighbours and cousins. ${formatMoney(A, S.country)} is handed to you in cash, counted twice, and suddenly the month looks very different.`,
-        choices: [
-          {
-            label: "Put it in savings",
-            effect: (st) => {
-              moveBalance(st, 'savings', +A, 'Put it in savings', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-4));
-              recordJournal(st, `Your gamiya turn came up: ${formatMoney(A, S.country)}, saved the same day.`, 'money');
-            },
-          },
-          {
-            label: "Pay off the most urgent bill",
-            effect: (st) => {
-              walletMove(st, +A, 'Pay off the most urgent bill', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-5));
-              recordJournal(st, `Your gamiya payout of ${formatMoney(A, S.country)} went straight to the most urgent bill on the table.`, 'money');
-            },
-          },
-          {
-            label: "Buy something the house needs",
-            effect: (st) => {
-              walletMove(st, +A, 'Buy something the house needs', 'money');
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+5));
-              recordJournal(st, `You used the ${formatMoney(A, S.country)} gamiya payout to buy something the house has needed for a year.`, 'money');
-            },
-          },
-        ],
-      };
+      const paid=S.money.lastGamiyaPayout;
+      if(!paid||paid.narrated||paid.country!==S.country)return null;
+      const A=Math.min(paid.amount,Math.max(0,Math.floor(S.money.cash)));
+      return {key:'ev_money_gamiya_payout',category:'money',title:'Your Circle Payout Arrived',text:`Your recorded ${formatMoney(paid.amount,S.country)} savings-circle pot is already in cash. Remaining monthly shares are still due. No second payout.`,choices:[{label:'Keep the cash for upcoming bills',effect:st=>{st.money.lastGamiyaPayout.narrated=true;}},{label:`Move ${formatMoney(A,S.country)} of current cash to savings`,effect:st=>{const rec=st.money.lastGamiyaPayout;if(rec?.narrated)return;rec.narrated=true;const amt=Math.min(A,Math.max(0,Math.floor(st.money.cash)));if(amt>0){walletMove(st,-amt,'Saved already-paid circle pot','bank');moveBalance(st,'savings',amt,'Saved already-paid circle pot','bank');}}}]};
     },
   },
   {

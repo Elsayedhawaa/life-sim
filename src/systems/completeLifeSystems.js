@@ -2088,7 +2088,7 @@ export function joinGamiyaCircle(S, tier = 'standard', slotType = 'early') {
     slotMonth,
     currentMonth: 1,
     totalMonths: 10,
-    receivedPot: false
+    receivedPot: false,paidTotal:monthlyContrib,arrears:0,contributionHistory:[{year:S.year,month:S.month,due:monthlyContrib,paid:monthlyContrib}]
   };
   recordJournal(
     S,

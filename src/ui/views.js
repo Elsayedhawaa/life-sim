@@ -3861,7 +3861,7 @@ export function renderFinanceTabHtml(S, uiState = {}) {
         ${S.gamiya?.active ? `
           <div class="muted">
             Active: <strong>${esc(S.gamiya.name)}</strong> · Share: <strong class="mono">${esc(formatMoney(S.gamiya.monthlyContribution, S.country))}/mo</strong> ·
-            Total Pot: <strong class="mono text-good">${esc(formatMoney(S.gamiya.potTotal, S.country))}</strong> (${S.gamiya.receivedPot ? '✓ Pot Collected!' : `Collects in Month ${S.gamiya.slotMonth}`})
+            Total Pot: <strong class="mono text-good">${esc(formatMoney(S.gamiya.potTotal, S.country))}</strong> (${S.gamiya.receivedPot ? '✓ Pot Collected!' : `Collects in Month ${S.gamiya.slotMonth}`}) · Recorded paid ${esc(formatMoney(S.gamiya.paidTotal||0,S.country))} · Unpaid shares ${esc(formatMoney(S.gamiya.arrears||0,S.country))}. Unpaid shares remain a debt at cycle end.
           </div>
         ` : `
           <p class="muted" style="margin-bottom:8px">Pool monthly shares with 10 trusted members — pick <strong>Early Slot (Month 2)</strong> for an immediate interest-free lump sum for Shabka/down-payments, or <strong>Late Slot (Month 10)</strong> for disciplined savings!</p>

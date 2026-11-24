@@ -433,23 +433,31 @@ function settleRecurringHouseholdItems(S, summary, netDeltaAtEntry) {
       summary.income += gm.potTotal;
       if (Array.isArray(summary.incomeParts)) summary.incomeParts.push({ label: `Gam'iya payout — ${gm.name}`, amount: gm.potTotal });
       d += gm.potTotal;
+      S.money.lastGamiyaPayout={amount:gm.potTotal,country:S.country,at:S.year*12+S.month,name:gm.name,narrated:false};
       S.player.vitals.happiness = clamp(S.player.vitals.happiness + 8);
       recordJournal(S, `Payout day! Collected your full ${formatMoney(gm.potTotal, S.country)} lump sum from the ${gm.name}.`, 'milestone');
     }
-    if (avail() >= gm.monthlyContribution) {
-      summary.living += gm.monthlyContribution;
-      d -= gm.monthlyContribution;
+    gm.paidTotal??=gm.monthlyContribution;gm.arrears??=0;gm.contributionHistory??=[];
+    const sharePaid=avail()>=gm.monthlyContribution?gm.monthlyContribution:0;
+    gm.contributionHistory.push({year:S.year,month:S.month,due:gm.monthlyContribution,paid:sharePaid});
+    if (sharePaid>0) {
+      gm.paidTotal+=sharePaid;
+      summary.living += sharePaid;
+      d -= sharePaid;
     } else {
       S.money.creditScore = clamp(S.money.creditScore - 22, 300, 850);
       for (const fid of [...S.relations.friendIds, ...S.relations.siblingIds].slice(0, 3)) {
         const fp = S.people[fid];
         if (fp && fp.alive) rememberDeed(S, fp, 'broke_promise', `Missed monthly share in ${gm.name}.`, { trust: -15, respect: -14, resentment: 18 });
       }
+      gm.arrears+=gm.monthlyContribution;
       recordJournal(S, `Missed your monthly ${gm.name} share — word spread quickly through the circle, hurting your reputation!`, 'relationship');
     }
     if (gm.currentMonth >= gm.totalMonths) {
+      if(gm.arrears>0)S.money.loans.push({id:nextId(S,'circledebt'),label:'Unpaid savings circle shares',balance:gm.arrears,monthlyPayment:Math.ceil(gm.arrears/12),annualRate:0,remainingMonths:12,country:S.country,missedMonths:0});
+      S.money.gamiyaHistory??=[];S.money.gamiyaHistory.push({...gm,endedYear:S.year,endedMonth:S.month});
       S.gamiya = null;
-      S.money.creditScore = clamp(S.money.creditScore + 12, 300, 850);
+      if(!gm.arrears)S.money.creditScore = clamp(S.money.creditScore + 12, 300, 850);
     }
   }
 
@@ -1900,6 +1908,8 @@ export function convertFinancesOnCountryMove(S, fromCountry, toCountry) {
   }
   if (S.gamiya && S.gamiya.active) {
     S.gamiya.monthlyContribution = Math.max(5, Math.round(convertCurrency(S.gamiya.monthlyContribution, fromCountry, toCountry, S.year)));
+    for(const key of ['paidTotal','arrears'])if(Number.isFinite(S.gamiya[key]))S.gamiya[key]=Math.round(convertCurrency(S.gamiya[key],fromCountry,toCountry,S.year));
+    for(const row of S.gamiya.contributionHistory||[])for(const key of ['due','paid'])row[key]=Math.round(convertCurrency(row[key],fromCountry,toCountry,S.year));
     S.gamiya.potTotal = Math.max(50, Math.round(convertCurrency(S.gamiya.potTotal, fromCountry, toCountry, S.year)));
   }
   if (S.creatorChannel && S.creatorChannel.monthlyIncomeLocal > 0) {
