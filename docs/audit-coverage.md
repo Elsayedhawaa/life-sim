@@ -311,3 +311,6 @@ Per input off/half/full plan targets,25% reorder point, monthly half/full plan c
 
 ## Production bill editing
 Per-line input amounts, compatible substitutions and1/2/4 batch yield. Original bounds prevent zero-input recipes. Alternative materials require actual purchased stock. Per-unit consumed cost and realized price use the edited bill; dilute output gets a lower price. No work-point discount; no batch/WIP rewrite.106 focused files,12,152renders and phone oat substitution/yield/delivery/sales/reload pass.
+
+## Distinct operating incidents
+20 new sector events,40 total.80 event/response combinations. Actual response cash, stock/value write-offs, relief morale, original-price WIP delay, bounded demand/capacity effects and duplicate guards. Catalog and noncatalog delay paths checked.107 focused files,12,152renders and phone fatigue response/history/trading/reload pass. Custom specialties stayL22.
