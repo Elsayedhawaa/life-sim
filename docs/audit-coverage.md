@@ -305,3 +305,6 @@ Finer weekday shift coverage and general non-family hiring pipeline remain G8, a
 
 ## Existing-company conversion
 Explicit old/acquired company conversion covers55 blueprint types without a reset or cash/setup/stock grant. Source figures retained. Staff and person IDs, manager, premises, debts, shares, history/capital persist. Unresolved old commitments reject rather than disappear. Specialty service names/roles remain meaningful, but shared capacity/space/equipment profiles remainL22, not55 unique full industries. 104 focused files,12,152renders and phone conversion/reload checks passed.
+
+## Reserve-funded input reorder
+Per input off/half/full plan targets,25% reorder point, monthly half/full plan cap. Auto decisions occur after sales, only from reserve minus operating-cost cushion/pending invoices. One immutable pending order per input, actual invoice on receipt, failed delivery waits. Later reserve losses can still affect affordability, disclosed.105 focused files,12,152renders and phone cafe auto-order/delivery/revenue/reload pass.

@@ -16,7 +16,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] L3 Part-time family employment/apprenticeship and rota. Hosted-verified eb321e6.
 - [x] L4 Legacy specialty/acquired-company migration into the full lifecycle. 55 profiles, explicit opt-in, preserved records.
 - [ ] L22 Independent specialty service capacity/space/equipment/input profiles beyond the shared conversion template.
-- [ ] L5 Input auto-restock with reorder policy, funding and delivery limits.
+- [x] L5 Input auto-restock with reorder policy, reserve budget and delivery limits.
 - [ ] L6 Editable/richer recipes with input substitution and real yields.
 - [ ] L7 More sector incidents with distinct causes and consequences.
 - [ ] L8 Distinct operational activity effects rather than shared generic bonuses.
@@ -46,4 +46,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-25 distinct open packages after L4. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+24 distinct open packages after L5. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
