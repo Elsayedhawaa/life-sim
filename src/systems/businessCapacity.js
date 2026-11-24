@@ -1,3 +1,4 @@
+import{careerHours}from'./careerSchedule.js';
 /* ============================================================================
    World Life 2.0 — Business Capacity (v2.14 §1, Worker 1)
    The hard 3-business cap is gone. The real limit is TIME and MONEY:
@@ -104,7 +105,7 @@ export function hoursNeededForMode(mode) {
    job-hours rule in computeWorkload exactly. */
 export function jobHoursFor(S) {
   if (S?.career?.employed && S?.career?.job) {
-    return contractRuleFor(S.country).weeklyHours || 40;
+    return careerHours(S);
   }
   return 0;
 }

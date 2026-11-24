@@ -1,3 +1,4 @@
+import{careerHours,partTimeJob}from'./careerSchedule.js';
 /* ============================================================================
    World Life 2.0 — Career actions (v2.8 §3)
    Everything the player DOES inside a job: pace, stepping up, training,
@@ -166,21 +167,22 @@ export function workModePreview(S) {
     const boss = m === 'hard' ? 'Your manager notices the extra effort (+respect).'
       : m === 'coast' ? 'Your manager notices you easing off (−respect).'
       : m === 'overtime' ? 'Your manager sees the extra hours (+respect).' : 'Your manager sees steady work.';
-    return `${WORK_MODES[m].hoursPerWeek}h/week · ${pay} · ${stress} · ${health} · ${perf} · ${boss}`;
+    return `${careerHours(S,m)}h/week · ${pay} · ${stress} · ${health} · ${perf} · ${boss}`;
   };
-  return Object.keys(WORK_MODES).map(m => ({ mode: m, label: WORK_MODES[m].label, preview: fmt(m) }));
+  return Object.keys(WORK_MODES).filter(m=>!partTimeJob(job)||!['hard','overtime'].includes(m)).map(m => ({ mode: m, label: WORK_MODES[m].label, preview: fmt(m) }));
 }
 
 export function setWorkMode(S, mode) {
   if (!S.career.employed || !S.career.job) return { ok: false, msg: 'You are not currently employed.' };
   if (!WORK_MODES[mode]) return { ok: false, msg: 'Unknown work pace.' };
+  if(partTimeJob(S.career.job)&&['hard','overtime'].includes(mode))return{ok:false,msg:'This part-time contract is capped at20h/week. Change contract before adding full-time hours.'};
   const st = ensureJobActionState(S);
   if (mode === 'overtime' && st.licence.lapsed) {
     return { ok: false, msg: 'Your licence check is overdue — renew it before taking overtime shifts (see Train & Licences).' };
   }
   S.career.job.workMode = mode;
-  recordJournal(S, `Switched to ${WORK_MODES[mode].label.toLowerCase()} at ${S.career.job.employer} (${WORK_MODES[mode].hoursPerWeek}h/week).`, 'career');
-  return { ok: true, msg: `${WORK_MODES[mode].label}: ${WORK_MODES[mode].hoursPerWeek}h/week.` };
+  recordJournal(S, `Switched to ${WORK_MODES[mode].label.toLowerCase()} at ${S.career.job.employer} (${careerHours(S,mode)}h/week).`, 'career');
+  return { ok: true, msg: `${WORK_MODES[mode].label}: ${careerHours(S,mode)}h/week.` };
 }
 
 /* ------------------------------------------------------------------ */
@@ -1062,6 +1064,7 @@ export function tickCareerActionsMonthly(S) {
   if (!S.career.employed || !S.career.job) return;
   ensureExtendedState(S);
   const job = S.career.job;
+  if(partTimeJob(job)&&['hard','overtime'].includes(job.workMode))job.workMode='normal';
   const st = ensureJobActionState(S);
   if (!st) return;
 

@@ -678,6 +678,7 @@ export function overtimeRuleFor(countryId) {
    EXTRA hours, so they are paid in full at the overtime rate on top of the
    base salary (the base already covers the standard 160h month). */
 export function computeOvertimePay(jobOrGross, countryId) {
+  if(jobOrGross?.employmentFraction===.45||/^part-time/i.test(jobOrGross?.title||''))return 0;
   const gross = Math.max(0, Number(jobOrGross?.monthlyGross ?? jobOrGross) || 0);
   if (gross <= 0) return 0;
   const hourly = gross / 160;
