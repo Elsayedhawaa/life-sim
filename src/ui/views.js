@@ -1,3 +1,4 @@
+import {RURAL_CABIN} from '../data/ruralCabin.js';
 import {hasCurrentLanguage} from '../data/languageQualifications.js';
 import {ABROAD_LEVELS,ABROAD_SUBJECTS,abroadUniversities,studyAbroadQuote} from '../systems/studyAbroadPlanning.js';
 import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget,outdoorAreaSummary} from '../data/propertyAreas.js';
@@ -2984,13 +2985,13 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
               ${renderHomeTypeArt(pr.shape || 'apartment', pr.country || S.country, 64, pr.styleId || pr.unitId || pr.id)}
               <div class="item-row-main">
                 <strong>${esc(pr.name)} (${esc(getCountry(pr.country).name)})</strong>
-                <span>Value: <strong class="mono">${esc(formatMoney(pr.valueLocal, S.country))}</strong> · Finish: ${esc((pr.finishing || 'standard').replace(/_/g, ' '))} · Condition: <strong class="${(pr.conditionPct ?? 100) < 70 ? 'text-bad' : 'text-good'}">${Math.round(pr.conditionPct ?? 100)}%</strong> ${pr.monthsLeft > 0 ? `· ${pr.monthsLeft}m Aqsat left` : '· Deed Clear'} ${pr.rentedOut ? `· [${pr.tenantMode === 'short_term' ? 'Short-Term Holiday +36%' : 'Long-Term Tenant'}]` : ''}${/* v2.11 W3: premises link on the property card */ (() => { const _b = businessUsingProperty(S, pr.id); return _b ? ` · <strong>Used by ${esc(_b.name)}</strong>` : ''; })()}</span>
+                <span>Value: <strong class="mono">${esc(formatMoney(pr.valueLocal, S.country))}</strong> · Finish: ${esc((pr.finishing || 'standard').replace(/_/g, ' '))} · Condition: <strong class="${(pr.conditionPct ?? 100) < 70 ? 'text-bad' : 'text-good'}">${Math.round(pr.conditionPct ?? 100)}%</strong> ${pr.monthsLeft > 0 ? `· ${pr.monthsLeft}m Aqsat left` : '· Deed Clear'} ${pr.ruralCabin?`· Rural getaway · annual tax ${esc(formatMoney(pr.annualTaxNative||0,pr.country))}, insurance ${esc(formatMoney(pr.annualInsuranceNative||0,pr.country))}, maintenance 3% of value`:""} ${pr.rentedOut ? `· [${pr.tenantMode === 'short_term' ? 'Short-Term Holiday +36%' : 'Long-Term Tenant'}]` : ''}${/* v2.11 W3: premises link on the property card */ (() => { const _b = businessUsingProperty(S, pr.id); return _b ? ` · <strong>Used by ${esc(_b.name)}</strong>` : ''; })()}</span>
               </div>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:5px">
               ${(pr.conditionPct ?? 100) < 98 ? `<button class="btn btn-sm" data-action="renovate-prop" data-id="${pr.id}">Renovate (+5.5%)</button>` : ''}
               ${(pr.country === S.country && S.housing.currentHomeId !== pr.id) ? `<button class="btn btn-primary btn-sm" data-action="move-into-prop" data-id="${pr.id}">Move In</button>` : ''}
-              ${S.housing.currentHomeId !== pr.id ? `<button class="btn btn-sm" data-action="toggle-rent-prop" data-id="${pr.id}">${pr.rentedOut ? 'Stop Lease' : 'Lease Out'}</button>` : ''}
+              ${S.housing.currentHomeId !== pr.id && !pr.ruralCabin ? `<button class="btn btn-sm" data-action="toggle-rent-prop" data-id="${pr.id}">${pr.rentedOut ? 'Stop Lease' : 'Lease Out'}</button>` : ''}
               ${S.housing.currentHomeId !== pr.id ? `<button class="btn btn-sm" data-action="toggle-tenant-mode" data-id="${pr.id}">${pr.tenantMode === 'short_term' ? 'Switch Long-Term' : 'Holiday Let (+36%)'}</button>` : ''}
               <button class="btn btn-sm" data-action="sell-prop" data-id="${pr.id}">Sell / Flip</button>
             </div>
@@ -3209,6 +3210,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
 
   return `
     ${renderEditorialBannerHtml(selUnit.shape === 'chalet' ? 'coastal_summer_chalet_ink.jpg' : pickDynamicBanner(S, 'realestate', 'compounds'), `${mktCountryObj.name} Real Estate, Gated Compounds & National Housing`)}
+    ${propMarket==='usa'?`<div class="card"><h3>Woodland Cabin, rural getaway</h3><p>Fictional 109 m², 2-bedroom rural Pennsylvania example. Cash price: ${esc(formatMoney(eraLocalCost(RURAL_CABIN.price2026,'usa',S.year),S.country))}. 2026 anchors: 90,000 USD asking price, 576 USD/year property tax, 420 USD/year estimated insurance. Maintenance budget: 3% of current value/year. Costs charged monthly; no automatic rental income. Not a live listing or national average.</p><p><a href="${RURAL_CABIN.priceSource}" target="_blank" rel="noopener">Price and tax example</a> · <a href="${RURAL_CABIN.maintenanceSource}" target="_blank" rel="noopener">Maintenance budget guidance</a></p><button class="btn" data-action="buy-rural-cabin" ${S.country==='usa'&&S.money.cash>=eraLocalCost(RURAL_CABIN.price2026,'usa',S.year)?'':'disabled'}>Buy rural cabin</button></div>`:''}
     <div class="card card-elevated">
       <div class="section-head">
         <h2>${icon('realestate', 18)} Real Compounds, Districts & National Housing (${esc(mktCountryObj.name)})</h2>

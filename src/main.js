@@ -1,3 +1,4 @@
+import {buyRuralCabin} from './systems/economyEngine.js';
 import {supportChildAfterSeparation} from './systems/marriageFamilyEngine.js';
 /* ============================================================================
    World Life Complete Edition — Master UI & Action Controller (src/main.js)
@@ -1560,6 +1561,7 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='buy-rural-cabin'){handleActionResult(buyRuralCabin(S));return;}
     if (action === 'buy-compound-unit') {
       handleActionResult(buyCompoundOrDistrictUnit(S, {
         country: btn.dataset.country || S.country,

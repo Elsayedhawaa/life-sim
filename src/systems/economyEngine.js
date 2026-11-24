@@ -1,3 +1,4 @@
+import {RURAL_CABIN} from '../data/ruralCabin.js';
 import {settleChildSupportMonth} from './divorceModel.js';
 import { monthlyUniversityTuition,settleFamilyUniversityMonth } from './educationFunding.js';
 /* ============================================================================
@@ -263,6 +264,7 @@ export function tickAssetsAnnually(S) {
     const inf = inflationRate(pCountry, S.year) / 100;
     const realGain = 0.018; // ~1.8% real long-term land/housing appreciation above CPI
     prop.nativeValue = Math.round(prop.nativeValue * (1 + Math.max(-0.04, inf + realGain)));
+    if(prop.ruralCabin){const ratio=eraLocalCost(10000,pCountry,S.year)/eraLocalCost(10000,pCountry,S.year-1);prop.annualTaxNative=Math.round((prop.annualTaxNative||0)*ratio);prop.annualInsuranceNative=Math.round((prop.annualInsuranceNative||0)*ratio);}
     prop.nativeMonthlyRent = Math.round(prop.nativeMonthlyRent * (1 + Math.max(0, inf)));
     prop.valueLocal = Math.round(convertCurrency(prop.nativeValue, pCountry, S.country, S.year));
   }
@@ -1015,6 +1017,11 @@ export function settleHouseholdMonth(S) {
     S.housing.familyBoardMonthly=board;
   }
 
+  for(const p of S.housing.properties||[])if(p.ruralCabin){
+    const costs=(Number(p.annualTaxNative)||0)+(Number(p.annualInsuranceNative)||0)+(Number(p.nativeValue)||0)*(p.maintenanceRate||.03);
+    const monthly=Math.round(convertCurrency(costs/12,p.country,S.country,S.year));netDelta-=monthly;summary.housing+=monthly;
+  }
+
   /* 11. HOUSEHOLD LIVING BASKET (Food, Utilities, Transport/Car, Kids, Lifestyle) */
   const coResidentKids = S.relations.childIds
     .map(id => S.people[id])
@@ -1685,6 +1692,7 @@ export function togglePropertyRental(S, propId) {
   if (prop.id === S.housing.currentHomeId && S.housing.mode === 'owned') {
     return { ok: false, msg: 'Move out first before renting out the home you live in.' };
   }
+  if(prop.ruralCabin)return{ok:false,msg:'This rural getaway is personal-use only in the simplified model.'};
   prop.rentedOut = !prop.rentedOut;
   /* v2.15 W1 — listing it finds a named tenant at once (deposit
      posted now, at the player's own action); taking it off the
@@ -1849,4 +1857,13 @@ export function convertFinancesOnCountryMove(S, fromCountry, toCountry) {
     S.creatorChannel.monthlyIncomeLocal = Math.max(5, Math.round(convertCurrency(S.creatorChannel.monthlyIncomeLocal, fromCountry, toCountry, S.year)));
   }
   S.housing.staff = [];
+}
+
+export function buyRuralCabin(S){
+  if(S.player.age<18)return{ok:false,msg:'Property ownership opens at18.'};
+  if(S.country!=='usa')return{ok:false,msg:'The rural cabin listing is available while living in the USA.'};
+  const price=eraLocalCost(RURAL_CABIN.price2026,'usa',S.year);
+  const result=finalizePropertyPurchase(S,{catalogId:RURAL_CABIN.id,name:RURAL_CABIN.name,shape:'cabin',country:'usa',city:'Rural Pennsylvania',tier:'modest',rooms:3,areaM2:109,nativeValue:price,nativeMonthlyRent:0,downInPlayerLocal:price},null,{moveIn:false});
+  if(result.ok){result.prop.rentedOut=false;result.prop.ruralCabin=true;result.prop.annualTaxNative=eraLocalCost(RURAL_CABIN.tax2026,'usa',S.year);result.prop.annualInsuranceNative=eraLocalCost(RURAL_CABIN.insurance2026,'usa',S.year);result.prop.maintenanceRate=.03;recordJournal(S,'Purchased a rural getaway, not a rental-income machine. Cabin property tax, insurance and maintenance are charged monthly. Prices and costs are game estimates, not a current quote.','housing');}
+  return result;
 }
