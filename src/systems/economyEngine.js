@@ -1124,6 +1124,7 @@ export function settleHouseholdMonth(S) {
       if (debtCanPay(S, netDelta, payAmt)) {
         netDelta -= payAmt;
         summary.debt += payAmt;
+        if(loan.creditorPersonId&&S.people[loan.creditorPersonId]){const p=S.people[loan.creditorPersonId];p.career??={};p.career.savingsLocal=(p.career.savingsLocal||0)+convertCurrency(payAmt,S.country,p.residenceCountry||S.country,S.year);}
         loan.balance = Math.max(0, Math.round(loan.balance - payAmt));
         loan.missedMonths = 0;
         if (loan.balance <= 0) {
@@ -1169,6 +1170,7 @@ export function settleHouseholdMonth(S) {
     netDelta -= payAmt;
     summary.debt += payAmt;
     loan.missedMonths = 0;
+    if(loan.creditorPersonId&&S.people[loan.creditorPersonId]){const p=S.people[loan.creditorPersonId];p.career??={};p.career.savingsLocal=(p.career.savingsLocal||0)+convertCurrency(payAmt,S.country,p.residenceCountry||S.country,S.year);}
     // Interest accrues on the PRE-payment balance for rate loans only.
     const interest = loan.flatMarkup ? 0 : Math.round(loan.balance * ((loan.annualRate || 0) / 12));
     if (interest > 0) recordLedgerEntry(S, interest, `Interest on ${loan.label}`, 'debt', 'loan', loan.balance);

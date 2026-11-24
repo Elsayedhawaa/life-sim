@@ -25,7 +25,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] L11 Lot failures remove output; paid repairs and prepaid replacement delivery, with provider lease repair.
 - [x] L12 New equipment leases have12-month minimums, quoted declining return charges, legacy terms and closure bill preservation.
 - [x] L13 Independent CPU/storage/bandwidth cloud configuration with live quote, actual bottlenecks and monthly billing.
-- [ ] L14 Divorce partial buyback, negotiation and funded installment notes.
+- [x] L14 Partial divorce-share fair/discount/premium negotiation, upfront cash or25%down/12month personal notes with real creditor payments.
 - [ ] L15 Consistent founder/co-owner debt liability, profit and exit settlement.
 - [ ] L16 Richer marital-company baseline/growth choices, clearly game agreements.
 - [ ] L17 Estate company trust with appointed paid trustee and multi-beneficiary holdings, replacing paused minor operations.
@@ -46,4 +46,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-16 distinct open packages after L13. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+15 distinct open packages after L14. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
