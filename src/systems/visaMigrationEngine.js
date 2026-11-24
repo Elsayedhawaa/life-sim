@@ -23,7 +23,7 @@ import { getBusinesses, buildRelocationBusinessChoices, applyRelocationBusinessD
 import { emitFact, spawnWorkplaceCast, rememberDeed } from './soulEngine.js';
 
 export function hasValidPassport(S) {
-  return S.legal.passports.some(p => p.expiresYear > S.year);
+  return S.legal.passports.some(p => S.legal.citizenships.includes(p.country)&&p.expiresYear > S.year);
 }
 
 export function renewPassport(S, countryId = null) {
@@ -511,7 +511,7 @@ function finishStudyAbroad(S,q){
     S.postgrad??={active:null,completed:[]};
     S.postgrad.active={tier:q.level==='phd'?'fellowship_phd':'masters_mba',label:`${q.level==='phd'?'PhD':"Master's"} in ${q.majorLabel} · ${q.uniName}`,monthsLeft:q.years*12,totalMonths:q.years*12,feePaid:q.tuitionDest,country:q.dest,international:true,uniId:q.uniId,majorId:q.majorId};
   }
-  recordJournal(S,`Started overseas ${q.level} study at ${q.uniName}. International game tuition funded via ${q.funding}; no living stipend. Student residence is temporary, not permanent residency.`,'education');
+  recordJournal(S,`Started overseas ${q.level} study at ${q.uniName}. International game tuition funded via ${q.funding}; no living stipend. ${q.citizen?'Destination citizenship retained; no student visa required.':'Student residence is temporary, not permanent residency.'}`,'education');
 }
 export function applyStudyAbroad(S,destCountry,majorId='cs',opts={}){
   const q=studyAbroadQuote(S,destCountry,{...opts,majorId});
@@ -526,7 +526,7 @@ export function applyStudyAbroad(S,destCountry,majorId='cs',opts={}){
   }
   const after={kind:'study',...q,uniId:q.uni.id,uniName:q.uni.name};delete after.uni;
   const months=q.years*12+3,expiry=S.year*12+S.month-1+months;
-  const moved=executeCountryRelocation(S,destCountry,{kind:'student_visa',permitName:q.visaName,sponsorName:q.uni.name,expiresYear:Math.floor(expiry/12),expiresMonth:expiry%12+1,familySponsored:false},householdMovePolicy('study'),{after});
+  const moved=executeCountryRelocation(S,destCountry,{kind:q.citizen?'citizen':'student_visa',permitName:q.citizen?'Citizenship · no student visa':q.visaName,sponsorName:q.uni.name,expiresYear:Math.floor(expiry/12),expiresMonth:expiry%12+1,familySponsored:false},householdMovePolicy('study'),{after});
   if(moved?.deferred)return {ok:true,deferred:true,msg:'Student route accepted in the game. Resolve your business move before departure; tuition and relocation funds are reserved.'};
   finishStudyAbroad(S,after);
   return {ok:true,msg:`Moved to ${getCountry(destCountry).name} for ${q.level} study. Tuition paid ${q.level==='bachelor'?'for12months':'for the full course'}; living costs continue monthly. This is a simplified game route, not a real visa decision.`};
@@ -1111,14 +1111,14 @@ export function tickVisaAndLegalMonthly(S) {
         key: `citizenship_offer_${S.year}`,
         category: 'visa',
         title: `Apply for ${cObj.adjective} Citizenship? (${S.year})`,
-        text: `After ${res.yearsInCountryLegally} years of legal residence you are eligible to apply for ${cObj.adjective} citizenship. The application fee is ${formatMoney(citFee, S.country)}.${S.country === 'deu' ? ' Germany requires you to renounce your previous citizenship(s) on naturalisation.' : ''} Your minor children would gain ${cObj.adjective} citizenship with you.`,
+        text: `After ${res.yearsInCountryLegally} years of legal residence you are eligible to apply for ${cObj.adjective} citizenship. The application fee is ${formatMoney(citFee, S.country)}.${S.country === 'deu' ? (S.year>2024||(S.year===2024&&S.month>=7)?' Germany permits multiple citizenship under its post-June2024law; other nationalities’ laws are not fully modelled.':' This pre-July2024game route requires renunciation of previous citizenships, with legal exceptions not modelled.') : ''} Your minor children would gain ${cObj.adjective} citizenship with you.`,
         choices: [
           {
             label: `Apply now (${formatMoney(citFee, S.country)})`,
             available: () => S.money.cash >= citFee,
             effect: (st) => {
               walletMove(st, -citFee, `Naturalisation application (${cObj.name})`, 'visa');
-              if (st.country === 'deu') {
+              if (st.country === 'deu' && (st.year<2024||(st.year===2024&&st.month<7))) {
                 const renounced = st.legal.citizenships.filter(c => c !== 'deu');
                 st.legal.citizenships = ['deu'];
                 st.legal.passports = st.legal.passports.filter(p => p.country === 'deu');
@@ -1126,12 +1126,13 @@ export function tickVisaAndLegalMonthly(S) {
               } else if (!st.legal.citizenships.includes(st.country)) {
                 st.legal.citizenships.push(st.country);
               }
-              st.legal.passports.push({ country: st.country, issuedYear: st.year, expiresYear: st.year + 10 });
+              const passport=st.legal.passports.find(p=>p.country===st.country);if(passport)Object.assign(passport,{issuedYear:st.year,expiresYear:st.year+10});else st.legal.passports.push({ country: st.country, issuedYear: st.year, expiresYear: st.year + 10 });
               transitionResidency(st, 'citizen', { permitName: `${cObj.adjective} Citizenship`, force: true });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 16);
               for (const cid of st.relations.childIds) {
                 const ch = st.people[cid];
-                if (ch && ch.alive && ch.age < 18 && !ch.citizenships.includes(st.country)) {
+                if (ch && ch.alive && ch.age < 18 && ch.residenceCountry===st.country && !(ch.citizenships||[]).includes(st.country)) {
+                  ch.citizenships??=[];
                   ch.citizenships.push(st.country);
                 }
               }

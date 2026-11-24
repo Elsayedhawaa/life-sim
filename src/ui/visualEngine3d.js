@@ -700,7 +700,7 @@ export function propertyFloorPlans(shape = 'apartment', country = '', areaM2 = n
     }
   }
   for (const floor of floors) {
-    floor.title = `${String(shape).replace(/_/g, ' ').toUpperCase()} — FICTIONAL HOME LAYOUT`;
+    floor.title = `${String(shape).replace(/_/g, ' ').toUpperCase()} — FICTIONAL HOME LAYOUT · LEVEL ${floors.indexOf(floor)+1}`;
     if (floor.core) {
       const hall=floor.rooms.find(r=>r.key==='corridor'&&/stair|landing/i.test(r.name))||floor.rooms.find(r=>r.key==='corridor');
       if(hall){floor.core={x:hall.x+hall.w*.25,y:hall.y+hall.h*.12,w:hall.w*.5,h:hall.h*.65,label:'STAIRS / SHARED ACCESS'};}

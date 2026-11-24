@@ -2905,7 +2905,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
               { k: 'home_gym', l: 'Private Home Gym' },
               { k: 'generator', l: '⚡ Silent Backup Generator' }
             ].map(u => {
-              const has = (curProp.upgrades || []).includes(u.k);
+              const has = (curProp.upgrades || []).includes(u.k)||(u.k==='pool'&&curProp.hasPool);
               return `<button class="btn btn-sm ${has ? 'btn-navy' : ''}" data-action="install-upgrade" data-pid="${curProp.id}" data-upg="${u.k}" ${has ? 'disabled' : ''}>${has ? '✓ ' : ''}${esc(u.l)}</button>`;
             }).join('')}
           </div>
@@ -4851,6 +4851,7 @@ export function renderWorldTabHtml(S, uiState = {}) {
         <h2>${icon('passport', 18)} ICAO Doc 9303 Biometric Passports &amp; Border Stamps</h2>
         ${S.legal.travelBanInCountry ? `<span class="hud-pill text-bad">TRAVEL BAN (${esc(getCountry(S.legal.travelBanInCountry).name)})</span>` : `<span class="hud-pill">${S.legal.passports.length} Active Booklet(s)</span>`}
       </div>
+      <div style="padding:12px;margin-bottom:12px;background:#edf3ec;border-radius:10px;font-size:.86rem;line-height:1.8"><strong>Living in ${esc(getCountry(S.country).name)}</strong><br>Citizenship: ${esc(S.legal.citizenships.map(c=>getCountry(c).name).join(', '))}<br>Status: ${esc(S.legal.residency.kind.replace(/_/g,' '))}<br>${esc(S.legal.residency.permitName||'')}${S.legal.residency.expiresYear?` · expires ${S.legal.residency.expiresMonth||12}/${S.legal.residency.expiresYear}`:''}<br>Moving does not grant a new nationality or passport.</div>
       ${renderPassportDocumentHtml(S)}
       <div style="display:flex;flex-wrap:wrap;gap:8px">
         <button class="btn btn-navy btn-sm" data-action="renew-passport">Renew Biometric Passport</button>
@@ -4969,7 +4970,7 @@ function renderStudyAbroadHtml(S,uiState){
  ${field('Level','studyLevel',level,ABROAD_LEVELS)}
  ${field('Subject','studyMajor',majorId,MAJORS.filter(m=>ABROAD_SUBJECTS.includes(m.id)).map(m=>({id:m.id,label:m.label})))}
  ${field('Funding','studyFunding',funding,[{id:'self',label:'My cash + savings'},{id:'parents',label:'Living parents’ actual savings'},{id:'scholarship',label:'Awarded game tuition scholarship'}])}</div>
- <p><strong>${q.years} years</strong> · ${esc(formatMoney(q.annualDest,dest))}/year international game tuition</p>
+ <p><strong>${q.years} years</strong> · ${esc(formatMoney(q.annualDest,dest))}/year · ${esc(q.feeStatus)}</p><p class="muted">${q.visaRequired?'Student permit required.':'You hold destination citizenship: no student visa or maintenance escrow.'} Citizenship affects the game fee category, not your academic score. Real fee eligibility can also depend on residence.</p>
  <p class="muted">${level==='bachelor'?'First year prepaid; later tuition billed monthly or renewed by parents.':'Full course tuition prepaid; no further monthly tuition.'} Living costs are separate and continue monthly. No stipend or free language fluency.</p>
  <div style="background:#f7f3e7;padding:12px;border-radius:10px;font-size:.84rem;line-height:1.8">Tuition due now: ${esc(formatMoney(q.tuitionDest,dest))}<br>Maintenance escrow: ${esc(formatMoney(q.blockedDest,dest))}${q.blockedDest?' (released over12months)':''}<br>Modelled travel/permit budget: ${esc(formatMoney(q.costsDest,dest))}<br><strong>Debit now: ${esc(formatMoney(q.totalPlayer,S.country))}</strong><br>Required liquid funds incl. first-year living buffer: ${esc(formatMoney(Math.max(q.totalPlayer,q.proofPlayer),S.country))}<br>Selected source holds: ${esc(formatMoney(q.available,S.country))}</div>
  <p class="muted">Admission uses the game’s score index for bachelor study. Master’s requires a first degree; PhD requires a master’s. English qualification/fluent English is required unless your home country is an English-language country model. Modelled permit processing is deterministic after these checks, not an embassy decision.</p>

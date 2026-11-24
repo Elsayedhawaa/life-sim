@@ -627,12 +627,26 @@ export function installPropertyUpgrade(S, propId, upgKey) {
     home_gym: { label: 'Private Home Fitness Studio (+health)', usd: 3400, hap: 4 },
     generator: { label: 'Silent Backup Power Inverter/Generator', usd: 2200, hap: 3 }
   };
-  const spec = UPGRADE_COSTS_USD[upgKey] || { label: upgKey, usd: 3000, hap: 3 };
+  const spec = UPGRADE_COSTS_USD[upgKey];
+  if(!spec)return {ok:false,msg:'Unknown property upgrade.'};
+  const areas=propertyAreas(prop);
+  if(upgKey==='pool'){
+    if(prop.hasPool||areas.poolM2>0)return {ok:false,msg:'This home already has a private pool.'};
+    if(['apartment','studio','penthouse','duplex','family_duplex'].includes(prop.shape))return {ok:false,msg:'Pool construction requires a ground-level private-house plot, not an apartment unit.'};
+    if(areas.gardenM2<30)return {ok:false,msg:'Pool construction needs30m²of private garden:24m²water plus6m²clearance.'};
+  }
   const cost = Math.round(convertCurrency(spec.usd, 'usa', S.country, S.year));
   if (S.money.cash < cost) return { ok: false, msg: `Need ${formatMoney(cost, S.country)}.` };
 
   { const paid = purchase(S, cost, `Installed ${spec.label} at ${prop.name}`, 'cash', { category: 'housing' }); if (!paid.ok) return paid; }
+  const poolPpm=(prop.nativeValue||1)/Math.max(1,pricedPropertyArea(prop));
+  const poolBudgetBefore=outdoorAnnualBudget(prop,poolPpm);
   prop.upgrades.push(upgKey);
+  if(upgKey==='pool'){
+    Object.assign(prop,areas,{hasPool:true,gardenM2:areas.gardenM2-24,poolM2:24});
+    prop.outdoorAnnualNative=Math.max(0,(prop.outdoorAnnualNative||0)+outdoorAnnualBudget(prop,poolPpm)-poolBudgetBefore);
+  }
+
   prop.nativeValue = Math.round(prop.nativeValue + convertCurrency(cost * 0.8, S.country, prop.country, S.year));
   prop.valueLocal = Math.round(convertCurrency(prop.nativeValue, prop.country, S.country, S.year));
   S.player.vitals.happiness = clamp(S.player.vitals.happiness + spec.hap);
@@ -2477,13 +2491,21 @@ export function expandPropertyFootprint(S, propId) {
   const prop = found.prop;
   if (prop.hasExtension) return { ok: false, msg: `${prop.name} already has its maximum municipal +45 m² wing extension.` };
 
+  const areas=propertyAreas(prop);
+  if(['apartment','studio','penthouse','duplex','family_duplex','commercial','land'].includes(prop.shape))return {ok:false,msg:'A ground wing extension needs a private-house plot, not this unit type.'};
+  if(areas.gardenM2<45)return {ok:false,msg:'A45m²wing needs at least45m²of private planted garden within the existing plot.'};
   const cost = Math.max(1500, Math.round(prop.valueLocal * 0.14));
   if (S.money.cash < cost) {
     return { ok: false, msg: `Need ${formatMoney(cost, S.country)} for municipal permit & +45 m² structural extension.` };
   }
   { const paid = purchase(S, cost, `+45 m² architectural wing extension (${prop.name})`, 'cash', { category: 'housing' }); if (!paid.ok) return paid; }
+  const ppm=(prop.nativeValue||1)/Math.max(1,pricedPropertyArea(prop));
+  const outdoorBefore=outdoorAnnualBudget(prop,ppm);
+  Object.assign(prop,areas,{gardenM2:areas.gardenM2-45,footprintM2:areas.footprintM2+45});
+  prop.outdoorAnnualNative=Math.max(0,(prop.outdoorAnnualNative||0)+outdoorAnnualBudget(prop,ppm)-outdoorBefore);
   prop.hasExtension = true;
   prop.areaM2 = (prop.areaM2 || 140) + 45;
+  prop.indoorM2=prop.areaM2;
   prop.rooms = (prop.rooms || 3) + 1;
   prop.nativeValue = Math.round((prop.nativeValue || prop.valueLocal) * 1.19);
   prop.valueLocal = Math.round(prop.valueLocal * 1.19);

@@ -1,3 +1,4 @@
+import {annualUniversityBudget} from '../data/universityCosts.js';
 /* Static full-time overseas game routes, not admission or immigration advice. */
 import {getUniversitiesFor,MAJORS} from '../data/institutions.js';
 import {degreeProgramFor} from '../data/degreePrograms.js';
@@ -35,19 +36,20 @@ export function studyAbroadQuote(S,dest,opts={}){
  const subjectFactor={engineering:1.15,architecture:1.15,cs:1.1,media:.9,education:.85}[majorId]||1;
  const domesticUsd=uni?convertCurrency(uni.annualTuition2026||0,dest,'usa',2026):0;
  const annual=Math.round(Math.max(annualUsd[dest]||10000,domesticUsd)*subjectFactor);
- const annualDest=Math.round(convertCurrency(eraLocalCost(annual,'usa',S.year),'usa',dest,S.year));
+ const citizen=!!S.legal?.citizenships?.includes(dest);
+ const annualDest=citizen&&uni?annualUniversityBudget({...S,country:dest},uni,majorId):Math.round(convertCurrency(eraLocalCost(annual,'usa',S.year),'usa',dest,S.year));
  const livingDest=Math.round(convertCurrency(eraLocalCost(livingUsd[dest]||12000,'usa',S.year),'usa',dest,S.year));
  const award=S.education.studyAwards?.[studyAwardKey(S,dest,level)];
  const scholarshipPct=funding==='scholarship'&&award?.awarded?1:0;
  if(!reason&&funding==='scholarship'&&!scholarshipPct)reason='Win the overseas game tuition award for this country and level first.';
  const tuitionDest=Math.round(annualDest*(1-scholarshipPct)*(level==='bachelor'?1:years));
  // Maintenance is escrow only where this game models a blocked account.
- const blockedDest=pipe?.blockedAccountKind?livingDest:0;
- const costsDest=Math.round(convertCurrency(eraLocalCost(1500,'usa',S.year),'usa',dest,S.year));
+ const blockedDest=!citizen&&pipe?.blockedAccountKind?livingDest:0;
+ const costsDest=Math.round(convertCurrency(eraLocalCost(citizen?850:1500,'usa',S.year),'usa',dest,S.year));
  const totalDest=tuitionDest+blockedDest+costsDest;
  const totalPlayer=Math.round(convertCurrency(totalDest,dest,S.country,S.year));
  const proofPlayer=Math.round(convertCurrency(tuitionDest+livingDest+costsDest,dest,S.country,S.year));
  const available=funding==='parents'?familyEducationFunds(S):Math.max(0,S.money.cash)+Math.max(0,S.money.savings);
  if(!reason&&available<Math.max(totalPlayer,proofPlayer))reason=funding==='parents'?'Living parents do not have enough savings for sponsorship and the first-year living buffer.':'Cash and savings do not cover the upfront cost plus first-year living buffer.';
- return {ok:!reason,reason,dest,uni,majorId,majorLabel:major?.label||majorId,level,funding,years,annualDest,livingDest,blockedDest,costsDest,tuitionDest,totalDest,totalPlayer,proofPlayer,available,scholarshipPct,visaName:pipe?.visaName||'Modelled student residence permit'};
+ return {ok:!reason,reason,dest,uni,majorId,majorLabel:major?.label||majorId,level,funding,years,annualDest,livingDest,blockedDest,costsDest,tuitionDest,totalDest,totalPlayer,proofPlayer,available,scholarshipPct,citizen,feeStatus:citizen?'Citizen domestic game fee':'International game fee',visaRequired:!citizen,visaName:pipe?.visaName||'Modelled student residence permit'};
 }
