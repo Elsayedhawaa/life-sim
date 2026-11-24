@@ -306,7 +306,7 @@ export function convertBusinessFiguresCurrency(S, biz, toCountry) {
   if(biz.enterprise)for(const key of ['price','unitCost','fixed','burn','reserve','pendingStockCost','wipUnitCost','wipPrice','pendingStockUnit'])if(Number.isFinite(biz.enterprise[key]))biz.enterprise[key]=conv(biz.enterprise[key]);
   if(biz.inputs){for(const input of Object.values(biz.inputs.inputs)){input.value=conv(input.value);for(const supplier of input.suppliers)supplier.unit=convertCurrency(supplier.unit,from,toCountry,S.year);for(const order of [input.pending,input.lastReceipt])if(order){order.unit=convertCurrency(order.unit,from,toCountry,S.year);order.cost=conv(order.cost);}}}
   if(biz.catalog){biz.catalog=JSON.parse(JSON.stringify(biz.catalog));const row=r=>{for(const k of ['price','revenue','direct','contribution','invoice'])if(Number.isFinite(r[k]))r[k]=conv(r[k]);};for(const item of biz.catalog.items){for(const k of ['price','basePrice','input','stockValue'])item[k]=conv(item[k]);if(item.pending)for(const k of ['unit','cost'])item.pending[k]=conv(item.pending[k]);if(item.wip)for(const k of ['price','input','totalCost','paid'])item.wip[k]=conv(item.wip[k]);for(const h of item.history||[])row(h);if(item.last)row(item.last);}if(biz.catalog.lastResult){for(const k of ['revenue','inventoryCost','variableCost','directConsumed'])biz.catalog.lastResult[k]=conv(biz.catalog.lastResult[k]);for(const r of biz.catalog.lastResult.rows||[])row(r);}}
-  if(biz.growth){for(const entry of biz.growth.history||[])entry.cost=conv(entry.cost);for(const location of biz.growth.locations||[])location.monthly=conv(location.monthly);if(biz.growth.project)biz.growth.project.monthly=conv(biz.growth.project.monthly);}
+  if(biz.growth){for(const entry of biz.growth.history||[])entry.cost=conv(entry.cost);for(const location of biz.growth.locations||[]){location.monthly=conv(location.monthly);if(location.site){convertBusinessFiguresCurrency(S,location.site,toCountry);if(location.site.manager?.employee)location.site.manager.employee.wageLocal=conv(location.site.manager.employee.wageLocal);}}if(biz.growth.project)biz.growth.project.monthly=conv(biz.growth.project.monthly);}
   if(biz.operating?.history)for(const entry of biz.operating.history)entry.cost=conv(entry.cost);
   if(biz.equipment){for(const l of biz.equipment.lots)for(const key of ['cost','bookValue','monthly'])l[key]=conv(l[key]);if(biz.equipment.distributions)biz.equipment.distributions=conv(biz.equipment.distributions);}
   if(biz.tech?.servers){const s=biz.tech.servers;if(s.cloud)s.cloud.monthly=conv(s.cloud.monthly);for(const r of [...s.racks,...(s.pending?[s.pending]:[])])for(const k of ['cost','bookValue','power','maintenance'])if(Number.isFinite(r[k]))r[k]=conv(r[k]);if(s.backup)s.backup.monthly=conv(s.backup.monthly);if(s.assetDistributions)s.assetDistributions=conv(s.assetDistributions);if(s.last)for(const k of ['rental','power','maintenance','backup','cost'])s.last[k]=conv(s.last[k]);}
@@ -383,6 +383,7 @@ export function restoreBusinessLocal(S, biz) {
    balance, never re-derived here. */
 export function sellBusinessAtValuation(S, biz) {
   if (!biz) return { ok: false, msg: 'No business found.' };
+  if((biz.growth?.locations||[]).some(l=>l.site))return{ok:false,msg:'Merge separate site records before this exit.'};
   const list = getBusinesses(S);
   if (!list.some(b => b.id === biz.id)) return { ok: false, msg: 'That business is no longer yours.' };
   const cashBefore = Number(S.money.cash) || 0;
@@ -402,6 +403,7 @@ export function sellBusinessAtValuation(S, biz) {
    with country-law severance, and the player told in a scene. */
 export function closeBusiness(S, biz) {
   if (!biz) return { ok: false, msg: 'No business found.' };
+  if((biz.growth?.locations||[]).some(l=>l.site))return{ok:false,msg:'Merge separate site records before this exit.'};
   const list = getBusinesses(S);
   if (!list.some(b => b.id === biz.id)) return { ok: false, msg: 'That business is no longer yours.' };
   /* quietScene (v2.11 merge): the relocation decision scene already

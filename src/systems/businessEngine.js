@@ -944,7 +944,7 @@ export function sellBusiness(S, bizRef) {
   ensureExtendedState(S);
   const biz = resolveBusiness(S, bizRef);
   if (!biz || biz.dead || !(S.career.businesses || []).includes(biz)) return { ok: false, msg: 'No active owned business.' };
-  if((biz.familyCoOwners||[]).some(c=>c.equityPercent>0))return{ok:false,msg:'Resolve family stakes before selling. Buy back their shares in Money.'};
+  if((biz.growth?.locations||[]).some(l=>l.site))return{ok:false,msg:'Merge separate site records before selling the company.'};if((biz.familyCoOwners||[]).some(c=>c.equityPercent>0))return{ok:false,msg:'Resolve family stakes before selling. Buy back their shares in Money.'};
   const valuation = businessValuation(biz);
   const exit = settleBusinessExitDebt(S, biz, valuation);
   const bName = biz.name;
@@ -970,7 +970,7 @@ export function closeBusiness(S, biz, reason, opts = {}) {
      with a plain-words cause (this is the miss-3 settlement path too
      — the record is removed from the portfolio below, but the flags
      and the journal line stay on the object, so fate can read them). */
-  if(!opts.viaSettlement&&(target.familyCoOwners||[]).length)return{ok:false,msg:'Resolve family stakes before voluntary closure. Buy back shares in Money.',salvage:0};
+  if(!opts.viaSettlement&&(target.growth?.locations||[]).some(l=>l.site))return{ok:false,msg:'Merge separate site records before voluntary closure.',salvage:0};if(opts.viaSettlement){for(const l of target.growth?.locations||[]){if(!l.site)continue;target.staff.push(...l.site.staff);if(l.site.manager)target.staff.push({...l.site.manager.employee,wageLocal:l.site.manager.wage});target.retainedCash=(target.retainedCash||0)+(l.site.enterprise.reserve||0);l.site.dead=true;}target.siteClosureArchive=structuredClone(target.growth?.locations?.filter(l=>l.site)||[]);}if(!opts.viaSettlement&&(target.familyCoOwners||[]).length)return{ok:false,msg:'Resolve family stakes before voluntary closure. Buy back shares in Money.',salvage:0};
   if(opts.viaSettlement&&(target.familyCoOwners||[]).length){const full=businessSalvage({...target,equityOwned:100}),net=Math.max(0,full-(target.debtLocal||0));for(const co of target.familyCoOwners){const p=S.people[co.personId];if(p){p.career??={};p.career.savingsLocal=(p.career.savingsLocal||0)+convertCurrency(Math.round(net*co.equityPercent/100),target.figuresCurrency||target.country||S.country,p.residenceCountry||S.country,S.year);}}target.familyCloseSettlement={full,net,year:S.year};}
   target.dead = true;
   target.deathCause = reason;

@@ -20,7 +20,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] L6 Editable quantities, compatible substitutions and batch yields with cost/price tradeoffs.
 - [x] L7 More sector incidents with stock/morale/WIP/demand consequences.
 - [x] L8 Distinct sector activity effects on staff, stock, gear, WIP, spoilage, resources and churn.
-- [ ] L9 Branch-specific accounts, staff and stock instead of shared parent pools.
+- [ ] L9 Branch-specific accounts, staff and stock. Physical-site ledger tranche is LOCAL with separate stock, staff, managers, reserves, cash settlement and merge. Pending software audience, independent pricing/recipes, branch people lifecycle and hosted validation.
 - [ ] L10 Per-record server data loss, backup coverage and recovery.
 - [ ] L11 General equipment failure/repair/replacement queue beyond wear.
 - [ ] L12 Equipment lease terms and return/early termination cost.

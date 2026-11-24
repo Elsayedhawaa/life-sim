@@ -1,3 +1,4 @@
+import{branchAction}from'./systems/companyBranches.js';
 import{migrateCompanyModel}from './systems/companyMigration.js';
 import{changeFamilyRota}from './systems/companyRota.js';
 import{familyShareAction,familyCouncil}from './systems/companyOwnership.js';
@@ -1930,7 +1931,7 @@ if (typeof document !== 'undefined') {
     if(action==='biz-employee'){uiState.bizEmployee=btn.dataset.staff;renderApp();return;}
     if(action==='input-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(inputAction(S,biz,btn.dataset.kind,btn.dataset.input,btn.dataset.value));return;}
     if(action==='catalog-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(catalogAction(S,biz,btn.dataset.kind,btn.dataset.item,btn.dataset.value));return;}
-    if(action==='growth-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(growthAction(S,biz,btn.dataset.kind,btn.dataset.value,operatingBase(S,biz)));return;}
+    if(action==='branch-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(branchAction(S,biz,btn.dataset.kind,btn.dataset.index,btn.dataset.value));return;}if(action==='growth-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(growthAction(S,biz,btn.dataset.kind,btn.dataset.value,operatingBase(S,biz)));return;}
     if(action==='operating-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(operatingAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
     if(action==='company-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(companyAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
     if(action==='divorce-share-buyout'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(buyoutDivorceShares(S,biz,btn.dataset.person,Number(btn.dataset.amount)));return;}
