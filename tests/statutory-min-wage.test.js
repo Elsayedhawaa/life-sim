@@ -25,3 +25,6 @@ console.log('statutory minimum wage floors pass');
 // a promotion keeps a real raise: pay is scaled by the rung ratio from the (lifted) current pay
 { const { CAREER_TRACKS } = await import('../src/data/institutions.js'); const t = CAREER_TRACKS.trades; const r = t.rungs; assert(r[1].mult > r[0].mult, 'trades step 1->2 is a real ratio, applied to current pay'); }
 console.log('promotion ratio kept');
+// older save: JSON round trip (as a reload does), then the next settled month catches the job up
+{ const s0 = st('tur', 2026, 5, 22000); const s = JSON.parse(JSON.stringify(s0)); settleHouseholdMonth(s); assert.equal(s.career.job.monthlyGross, 33030); const again = JSON.parse(JSON.stringify(s)); settleHouseholdMonth(again); assert.equal(again.career.job.monthlyGross, 33030, 'stable after reload'); }
+console.log('older-save catch-up and reload pass');
