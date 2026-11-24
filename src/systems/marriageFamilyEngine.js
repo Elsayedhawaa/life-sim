@@ -505,17 +505,21 @@ export function tickMarriageAndFamilyMonthly(S) {
   const livingSpouses = S.relations.spouseIds.map(id => S.people[id]).filter(p => p && p.alive);
 
   /* 1. Active 9-Month Pregnancy Countdown */
+  if(S.marriage.pregnancy&&S.marriage.pregnancy.motherId!=='player'&&!S.people[S.marriage.pregnancy.motherId]?.alive){
+    S.marriage.pregnancy=null;S.marriage.tryingForBaby=false;
+    recordJournal(S,'The pregnancy ended after the mother died. The family needs time to grieve.','health');
+  }
   if (S.marriage.pregnancy) {
     S.marriage.pregnancy.dueMonths -= 1;
     if (S.marriage.pregnancy.dueMonths <= 0) {
-      const motherSpouse = S.people[S.marriage.pregnancy.motherId] || livingSpouses[0] || S.player;
+      const motherSpouse = S.marriage.pregnancy.motherId==='player'?S.player:S.people[S.marriage.pregnancy.motherId];
       S.marriage.pregnancy = null;
       S.marriage.tryingForBaby = false;
       deliverNewbornChild(S, motherSpouse);
     }
   } else if (S.marriage.tryingForBaby && livingSpouses.length > 0) {
-    const coResSpouse = livingSpouses.find(sp => sp.residenceCountry === S.country);
-    if (coResSpouse) {
+    const coResSpouse = livingSpouses.find(sp => sp.residenceCountry === S.country && sp.gender!==S.player.gender && sp.age>=18);
+    if (coResSpouse && S.player.age>=18) {
       const femAge = S.player.gender === 'f' ? S.player.age : coResSpouse.age;
       if (femAge < 46) {
         const baseFert = femAge < 32 ? 0.18 : femAge < 38 ? 0.11 : femAge < 42 ? 0.05 : 0.02;
