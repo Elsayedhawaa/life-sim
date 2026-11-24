@@ -1,3 +1,4 @@
+import {buyBankCertificate} from '../systems/economyEngine.js';
 import {recordCivilLoss} from '../systems/civilClaims.js';
 /* ============================================================================
    World Life 2.5 — Money / Health / Career / School / University / Gulf events
@@ -1577,12 +1578,13 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_money_bank_certificate',
         category: 'money',
         title: "The Bank Offers a Certificate",
-        text: `Your bank calls with an offer: lock ${formatMoney(A, S.country)} away for a year in a certificate and earn a good return. The money would be untouchable until it matures — no early withdrawals.`,
+        text: `Your bank calls with an offer: lock ${formatMoney(A, S.country)} away for a year in a certificate and earn a good return. Paid from cash; principal stays locked for one year and the rate is paid monthly.`,
         choices: [
           {
-            label: "Lock the money away",
+            label: "Open one-year certificate from cash",
+            available: st=>st.money.cash>=A,
             effect: (st) => {
-              moveBalance(st, 'savings', -A, 'Lock the money away', 'money');
+              if(!buyBankCertificate(st,A,1).ok)return;
               st.player.vitals.stress = clamp(st.player.vitals.stress + (-2));
               if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+3));
               recordJournal(st, `You locked ${formatMoney(A, S.country)} into a one-year bank certificate.`, 'money');
@@ -1596,9 +1598,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Lock half away",
+            label: "Open half-size certificate from cash",
+            available: st=>st.money.cash>=B,
             effect: (st) => {
-              moveBalance(st, 'savings', -B, 'Lock half away', 'money');
+              if(!buyBankCertificate(st,B,1).ok)return;
               if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+2));
               recordJournal(st, `You locked ${formatMoney(B, S.country)} into the certificate and kept the rest free.`, 'money');
             },

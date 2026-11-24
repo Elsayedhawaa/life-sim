@@ -75,4 +75,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [ ] W13 Player-as-tenant deposit payment/move-out records. W11gates the old fabricated event until actual dispute records exist; landlord-owned property tenant deposits remain separate.
 
-- [ ] W14 Consular modeled home ties use actual current enterprises/employment/property/living resident spouse; mobility exemption requires valid held passport, not expired citizenship record alone.
+- [x] W14 Consular modeled home ties use actual current enterprises/employment/property/living resident spouse; mobility exemption requires valid held passport, not expired citizenship record alone.
+
+- [ ] W15 Bank-certificate event must create actual rate/principal/maturity record, not delete savings without an asset.
+- [ ] W16 Stock-tip event removes cash without creating a position or resolving the risk.

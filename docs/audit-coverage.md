@@ -426,3 +426,6 @@ Removed invented past-deposit narrative/refund eligibility. Event requires an op
 
 ### W14 consular model source consistency
 Current enterprise array counts as modeled home ties, ghost employed flags do not, property must be in current country and spouse living/resident. High-mobility exemption needs a valid held passport, not citizenship with only an expired booklet.144focused files pass;390px current-enterprise-only fixture paid actual consular fee, granted foil and persisted reload. Inspected mobile consular card. This remains a fictional simplified visa model, not current visa guidance.
+
+### W15 event certificate actual asset
+Certificate scene calls the bank product action, pays from cash, creates principal/rate/maturity and leaves savings unchanged. Insufficient cash disables investment rather than deleting balances into nothing.145focused files pass, including asset/networth conservation.390px scene fixture buys actual certificate and reload preserves it. Pixels inspected. Existing certificate monthly coupons/maturity use the same product record.
