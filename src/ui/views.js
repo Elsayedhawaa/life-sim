@@ -630,7 +630,7 @@ export function renderLifeTabHtml(S, uiState = {}) {
         ${quickActs.map(a => `
           <button type="button" class="btn btn-sm" data-action="do-activity" data-id="${esc(a.id)}">
             ${esc(a.label || a.name)}
-            <span class="muted"> · ${S.player.age < 18 ? 'Parents cover cost' : activityCostLocal(S, a) > 0 ? esc(formatMoney(activityCostLocal(S, a), S.country)) : 'Free'}</span>
+            <span class="muted"> · ${S.player.age < 18 && activityCostLocal(S,a)>0 ? `${esc(formatMoney(activityCostLocal(S,a),S.country))} from living parents’ savings` : activityCostLocal(S, a) > 0 ? esc(formatMoney(activityCostLocal(S, a), S.country)) : 'Free'}</span>
           </button>
         `).join('')}
         ${(zakat.eligible && S.credentials.zakatLastYearPaid !== S.year) ? `

@@ -1,3 +1,4 @@
+import {chargeFamilyEducation as chargeLivingParents} from './educationFunding.js';
 import {hasCurrentLanguage} from '../data/languageQualifications.js';
 import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget} from '../data/propertyAreas.js';
 /* ============================================================================
@@ -1593,6 +1594,7 @@ export function doDailyActivity(S, actId) {
   const act = V1_ACTIVITIES.find(a => a.id === actId);
   if (!act) return { ok: false, msg: 'Unknown activity.' };
   const cost = activityCostLocal(S, act);
+  if(S.player.age<18&&cost>0&&!chargeLivingParents(S,cost))return {ok:false,msg:'Your living parents cannot cover this activity from their savings. Try a free activity.'};
   if (S.player.age >= 18 && cost > 0) {
     if (S.money.cash < cost) return { ok: false, msg: `Need ${formatMoney(cost, S.country)}.` };
     walletMove(S, -cost, `Activity: ${act.label || act.name}`, 'lifestyle');
@@ -1650,7 +1652,7 @@ export function doDailyActivity(S, actId) {
   const deltaTxt = deltas.length
     ? deltas.map(d => `${d.label} ${d.delta > 0 ? '+' : '−'}${Math.abs(d.delta)}`).join(', ')
     : 'no stat change (already maxed)';
-  return { ok: true, msg: `${act.label || act.name}: ${deltaTxt}. ${S.player.age < 18 ? 'Parents cover the cost.' : cost > 0 ? `Paid ${formatMoney(cost, S.country)}.` : 'Free.'}`, deltas, actLabel: act.label || act.name };
+  return { ok: true, msg: `${act.label || act.name}: ${deltaTxt}. ${S.player.age < 18 && cost>0 ? 'Paid from living parents’ savings.' : cost > 0 ? `Paid ${formatMoney(cost, S.country)}.` : 'Free.'}`, deltas, actLabel: act.label || act.name };
 }
 
 export function launchCivilLawsuit(S, suitId) {
@@ -1677,7 +1679,8 @@ export function launchCivilLawsuit(S, suitId) {
 }
 
 export function commitRiskyCrime(S, crimeId) {
-  const cr = V1_CRIMES.find(c => c.id === crimeId) || V1_CRIMES[0];
+  const cr = V1_CRIMES.find(c => c.id === crimeId);
+  if(!cr)return {ok:false,msg:'Unknown action. Nothing happened.'};
   if (S.player.age < (cr.minAge || 16)) return { ok: false, msg: 'Unavailable.' };
 
   if (chance(S, cr.risk || 0.35)) {
