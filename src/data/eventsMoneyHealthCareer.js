@@ -1,4 +1,4 @@
-import{permitRenewalQuote,renewCurrentPermit,returnToHomeCountry}from'../systems/visaMigrationEngine.js';
+import{permitRenewalQuote,renewCurrentPermit,returnToHomeCountry,premiumResidencyQuote,applyPremiumOrGoldenResidency}from'../systems/visaMigrationEngine.js';
 import{CARS_MEGA_CATALOG}from'./megaCarsAndShop.js';
 import{computeEndOfService,resignCurrentJob}from'../systems/careerEducationEngine.js';
 import{payRecordedDebt}from'../systems/recordedDebtPayments.js';
@@ -10852,46 +10852,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'life',
     repeatable: false,
     gates: {"minAge": 22, "abroad": true, "countries": ["sau", "uae"]},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      return {
-        key: 'ev_gulf_sponsor_trouble',
-        category: 'life',
-        title: "Trouble with the Sponsor",
-        text: `Your sponsor — your kafeel — has stopped answering your calls, and your paperwork needs his signature this week. Without it, nothing moves: no renewal, no exit, no transfer.`,
-        choices: [
-          {
-            label: "Go to his office and wait",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+6));
-              if (st.skills) st.skills.charisma = clamp(st.skills.charisma + (+2));
-              recordJournal(st, `You went to your sponsor’s office and waited all day for the signature. You got it.`, 'life');
-            },
-          },
-          {
-            label: "Ask a colleague to intervene",
-            effect: (st) => {
-              st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+2));
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You asked a colleague to intervene with your sponsor. The signature came the next day.`, 'life');
-            },
-          },
-          {
-            label: "Complain to the labour office",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+7));
-              st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+1));
-              recordJournal(st, `You complained to the labour office about your sponsor. The process was slow, but it moved.`, 'life');
-            },
-          },
-        ],
-      };
+    build:(S,ctx)=>{
+      const r=S.legal.residency;if(r.kind!=='gulf_iqama'||!r.sponsorName)return null;
+      return{key:'ev_gulf_sponsor_trouble',category:'life',title:'Review Your Sponsor Record',text:`Recorded sponsor: ${r.sponsorName}. Permit: ${r.permitName}. Expiry: ${r.expiresMonth||12}/${r.expiresYear||'not recorded'}. This review does not invent a missing signature, permit transfer or approved complaint. Renewal uses the actual permit deadline and sponsor checks.`,choices:[{label:'Save a copy of the current sponsor record',effect:st=>{const r2=st.legal.residency;st.legal.sponsorReview={name:r2.sponsorName,permit:r2.permitName,expiresYear:r2.expiresYear,expiresMonth:r2.expiresMonth,year:st.year,month:st.month};recordJournal(st,'Reviewed current sponsor and permit record. No legal status changed.','visa');}},{label:'Leave the record unchanged',effect:st=>{}}]};
     },
   },
   {
@@ -11235,46 +11198,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'life',
     repeatable: false,
     gates: {"minAge": 30, "hasJob": true, "abroad": true, "countries": ["sau", "uae"]},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(8000, S.country, S.year);
-      return {
-        key: 'ev_gulf_golden_visa',
-        category: 'life',
-        title: "The Golden Visa Offer",
-        text: `The government offers a golden visa: ten years, no sponsor, for people with your salary and your record. The application costs ${formatMoney(A, S.country)}, and the freedom it buys is hard to put a price on.`,
-        choices: [
-          {
-            label: "Apply for the golden visa",
-            effect: (st) => {
-              walletMove(st, -A, 'Apply for the golden visa', 'life');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-6));
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+5));
-              recordJournal(st, `You applied for the golden visa for ${formatMoney(A, S.country)}, and the freedom from sponsorship was worth every coin.`, 'life');
-            },
-          },
-          {
-            label: "Wait \u2014 your sponsor is fine",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+1));
-              recordJournal(st, `You waited on the golden visa. Your sponsor was fine, and ${formatMoney(A, S.country)} was a lot.`, 'life');
-            },
-          },
-          {
-            label: "Apply, but only if the company pays",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              recordJournal(st, `You asked the company to pay for the golden visa. They said they would think about it.`, 'life');
-            },
-          },
-        ],
-      };
+    build:(S,ctx)=>{
+      const q=premiumResidencyQuote(S);if(!q.ok)return null;
+      return{key:'ev_gulf_golden_visa',category:'life',title:'Self-Sponsored Residency',text:`Game route: ${S.country==='sau'?'permanent premium residency':'10-year investor residency'}. Fee ${formatMoney(q.fee,S.country)}.${q.capital?` Required liquid capital after fee: ${formatMoney(q.capital,S.country)}.`:''} ${q.eligible?'Current balances qualify.':'Current balances do not qualify.'} No salary-based entitlement or employer funding is assumed.`,choices:[{label:q.eligible?'Apply through Passport rules':'Application unavailable with current balances',effect:st=>applyPremiumOrGoldenResidency(st,st.country)},{label:'Keep current residency',effect:st=>{}}]};
     },
   },
   {

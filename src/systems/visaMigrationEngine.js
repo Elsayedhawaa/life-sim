@@ -805,7 +805,15 @@ export function applyDirectSkilledVisa(S, destCountry) {
 }
 
 /* 4. DIRECT SAUDI IQAMA MUMAYAZA (800k / 100k SAR) & UAE 2M AED INVESTOR GOLDEN VISA */
+export function premiumResidencyQuote(S,destCountry=S.country,tier='permanent'){
+ if(S.year<2019||!['sau','uae'].includes(destCountry)||!['annual','permanent'].includes(tier))return{ok:false,msg:'This game residency route is unavailable.'};
+ if(S.legal.citizenships.includes(destCountry)||S.legal.residency.kind==='golden_visa'&&S.country===destCountry)return{ok:false,msg:'Already holds this status.'};
+ const fee=destCountry==='sau'?Math.round(convertCurrency(eraLocalCost(tier==='annual'?100000:800000,'sau',S.year),'sau',S.country,S.year)):Math.round(convertCurrency(1250,'usa',S.country,S.year));
+ const capital=destCountry==='uae'?Math.round(convertCurrency(eraLocalCost(2000000,'uae',S.year),'uae',S.country,S.year)):0;
+ return{ok:true,fee,capital,eligible:S.money.cash>=fee&&S.money.cash+S.money.savings-fee>=capital,destCountry,tier};
+}
 export function applyPremiumOrGoldenResidency(S, destCountry, tier = 'permanent') {
+  const quote=premiumResidencyQuote(S,destCountry,tier);if(!quote.ok)return quote;if(!quote.eligible)return{ok:false,msg:'Insufficient fee/capital after fees under game rules.'};
   if (S.year < 2019) return { ok: false, msg: 'Gulf Golden & Premium Residency programs launched in 2019.' };
   if (S.country !== destCountry) {
     const border = checkCanCrossBorder(S);
