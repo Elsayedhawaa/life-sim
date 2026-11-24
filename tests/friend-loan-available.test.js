@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { createNewLifeState, ensureExtendedState, createPerson } from '../src/core/schema.js';
+import { ALL_RANDOM_LIFE_EVENTS, resolveEventCtx } from '../src/systems/eventEngine.js';
+const ev = ALL_RANDOM_LIFE_EVENTS.find((e) => e.id === 'ev_money_friend_loan');
+const s = createNewLifeState({ country: 'gbr', seed: 5 }); ensureExtendedState(s); s.player.age = 30;
+const f = createPerson(s, { role: 'friend', age: 30, nationality: 'gbr', residenceCountry: 'gbr' }); s.people[f.id] = f; s.relations.friendIds.push(f.id);
+const sc = ev.build(s, resolveEventCtx(s, ev));
+s.money.cash = 10;
+assert.equal(sc.choices[0].available(s), false); assert.equal(sc.choices[1].available(s), false);
+assert.ok(sc.choices[0].lockReason, 'a reason is stated');
+s.money.cash = 1e7; assert.equal(sc.choices[0].available(s), true);
+console.log('friend loan lend choices are unavailable when cash is short');

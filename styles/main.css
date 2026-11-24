@@ -431,7 +431,8 @@ body {
   display: inline-block;
   font-size: 0.78rem;
   line-height: 1.4;
-  color: var(--ink-muted, #6b6259);
+  color: #6a2a22;
+  font-weight: 500;
   background: #FDF3F2;
   border: 1px solid #E8CFCB;
   border-radius: 6px;
