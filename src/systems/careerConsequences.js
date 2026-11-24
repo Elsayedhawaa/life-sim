@@ -256,30 +256,7 @@ export function makeRedundant(S, opts = {}) {
   if (severance > 0) walletMove(S, severance, `Severance after redundancy — ${employer} (${severanceMonths} months' pay, ${source === 'law' ? 'by law' : 'modelled practice'})`, 'career');
   shiftVitals(S, { stress: 10, happiness: -8 });
   recordJournal(S, `Made redundant from ${employer} (${title}) in the crisis — ${severance > 0 ? `${formatMoney(severance, S.country)} severance paid (${severanceMonths} months' pay).` : 'no severance is owed under local rules.'} The mortgage, the family and the visa all have to be faced now.`, 'career');
-  const scene = {
-    key: `redundant_${S.year}_${S.month}`,
-    baseId: 'made_redundant',
-    maxPerLife: 3,
-    category: 'career',
-    title: `Made Redundant at ${employer}`,
-    text: `${employer} called you in today. The crisis has cut their work, and your role is gone — ${title}, finished at the end of the month.${severance > 0 ? ` They pay ${formatMoney(severance, S.country)} severance (${severanceMonths} months' pay).` : ' There is no severance under local rules.'} Your pay stops now, but the mortgage, the family and the visa do not.`,
-    choices: [
-      {
-        label: 'Start looking for work today',
-        effect: (st) => {
-          ensureCareerConsequenceState(st).jobLoss.lookingEarly = true;
-          recordJournal(st, `Made redundant — you started looking for work the same day.`, 'career');
-        }
-      },
-      {
-        label: 'Ask for a reference before you go',
-        effect: (st) => {
-          st.career.lastReference = { kind: 'good', from: 'Management', note: 'Made redundant in the crisis — not dismissed for cause.' };
-          recordJournal(st, `Made redundant — you left with a good reference: cut in the crisis, not dismissed for cause.`, 'career');
-        }
-      }
-    ]
-  };
+  const scene=buildRedundancyScene(S,{employer,title,severance,severanceMonths,country:S.country,year:S.year,month:S.month});
   /* Same employer, same year, second redundancy: the scene has a
      fixed title ("Made Redundant at X"), so a second queue would
      repeat it in the same year. The severance and the journal line
@@ -630,3 +607,35 @@ export function buildCrisisWarningScene(S,{names,untilYear,employer,key}){
   };
 }
 export function restoreCrisisWarningScene(S,saved){return saved?.crisisWarningSnapshot?buildCrisisWarningScene(S,saved.crisisWarningSnapshot):null;}
+
+export function buildRedundancyScene(S,q){
+ const{employer,title,severance,severanceMonths,country,year,month}=q;
+  return {
+    key: `redundant_${year}_${month}`,
+    baseId: 'made_redundant',
+    maxPerLife: 3,
+    category: 'career',
+    title: `Made Redundant at ${employer}`,
+    text: `${employer} called you in today. The crisis has cut their work, and your role is gone — ${title}, finished at the end of the month.${severance > 0 ? ` They pay ${formatMoney(severance, country)} severance (${severanceMonths} months' pay).` : ' There is no severance under local rules.'} Your pay stops now, but the mortgage, the family and the visa do not.`,
+    redundancySnapshot:q,
+    choices: [
+      {
+        label: 'Start looking for work today',
+        effect: (st) => {
+          if(st.career.job)return;st.career.redundancyReplies??={};const key=employer+'_'+year+'_'+month;if(st.career.redundancyReplies[key])return;st.career.redundancyReplies[key]=true;
+          ensureCareerConsequenceState(st).jobLoss.lookingEarly = true;
+          recordJournal(st, `Made redundant — you started looking for work the same day.`, 'career');
+        }
+      },
+      {
+        label: 'Ask for a reference before you go',
+        effect: (st) => {
+          if(st.career.job)return;st.career.redundancyReplies??={};const key=employer+'_'+year+'_'+month;if(st.career.redundancyReplies[key])return;st.career.redundancyReplies[key]=true;
+          st.career.lastReference = { kind: 'good', from: 'Management', note: 'Made redundant in the crisis — not dismissed for cause.' };
+          recordJournal(st, `Made redundant — you left with a good reference: cut in the crisis, not dismissed for cause.`, 'career');
+        }
+      }
+    ]
+  };
+}
+export function restoreRedundancyScene(S,saved){return saved?.redundancySnapshot?buildRedundancyScene(S,saved.redundancySnapshot):null;}

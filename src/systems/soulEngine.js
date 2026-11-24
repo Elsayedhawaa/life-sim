@@ -138,46 +138,7 @@ function evaluateImmediateFactRipples(S, fact) {
           `Saw you buy ${fact.itemName} while still owing your promise (${openMoneyProm.description}).`,
           { trust: -20, respect: -14, resentment: 28, affection: -10, weight: 3 }
         );
-        queueScene(S, {
-          key: `confront_lux_promise_${p.id}_${S.year}`,
-          category: 'relationship',
-          speakerId: p.id,
-          title: `${p.firstName} Notices Your New ${fact.itemName}`,
-          text: `${p.fullName} (${p.relationLabel}) hears about your ${fact.itemName}. Their voice is tight: "You told me to wait when I needed ${openMoneyProm.description} — yet you had plenty set aside for yourself."`,
-          choices: [
-            {
-              label: () => {
-                const need = Math.round(convertCurrency(openMoneyProm.amountLocal, openMoneyProm.currencyCountry || S.country, S.country, S.year));
-                return `Pay what you promised right now (${formatMoney(need, S.country)})`;
-              },
-              available: () => {
-                const need = Math.round(convertCurrency(openMoneyProm.amountLocal, openMoneyProm.currencyCountry || S.country, S.country, S.year));
-                return S.money.cash >= need;
-              },
-              effect: (st) => {
-                fulfillPromise(st, p, openMoneyProm.id);
-              }
-            },
-            {
-              label: 'Apologize and ask for a few more months',
-              effect: (st) => {
-                p.rel.trust = clamp(p.rel.trust - 8);
-                p.rel.resentment = clamp(p.rel.resentment + 10);
-                recordJournal(st, `You apologized to ${p.firstName} over the ${fact.itemName}, but the awkwardness lingered between you.`, 'relationship');
-              }
-            },
-            {
-              label: '"It’s my money — I don’t owe explanations"',
-              effect: (st) => {
-                openMoneyProm.status = 'broken';
-                rememberDeed(st, p, 'broke_promise', `Told them off after buying ${fact.itemName}.`, {
-                  affection: -22, trust: -25, respect: -15, resentment: 35
-                });
-                recordJournal(st, `You snapped back at ${p.firstName}. The broken promise left a cold rift.`, 'relationship');
-              }
-            }
-          ]
-        });
+        queueScene(S,buildPromiseConfrontationScene(S,{personId:p.id,promiseId:openMoneyProm.id,itemName:fact.itemName,year:S.year}));
         break;
       }
     }
@@ -594,29 +555,7 @@ function npcHaveChild(S, mother, father) {
   if (close) {
     const cObj = getCountry(S.country);
     const giftCost = Math.max(1, Math.round(eraLocalCost(cObj.monthlyBasket2026.rentStandard * 0.08, S.country, S.year)));
-    queueScene(S, {
-      key: `npc_birth_${mother.id}_${S.year}`,
-      category: 'family',
-      title: `A New Baby in the Family`,
-      text: `Your ${npcKinWord(mother)} ${mother.firstName} has had a baby — ${baby.firstName}. The family is passing the little one around, and everyone is asking when you will come and see them.`,
-      choices: [
-        {
-          label: `Visit & bring a gift for the baby (${formatMoney(giftCost, S.country)})`,
-          available: () => S.money.cash >= giftCost,
-          effect: (st) => {
-            walletMove(st, -giftCost, `Baby gift for ${baby.firstName}`, 'family');
-            rememberDeed(st, mother, 'baby_gift', `You came to see the new baby and brought a gift.`, { affection: 8, respect: 4 });
-            recordJournal(st, `You visited ${mother.firstName} and the new baby ${baby.firstName}, with a gift worth ${formatMoney(giftCost, st.country)}. ${mother.firstName} was glowing.`, 'relationship');
-          }
-        },
-        {
-          label: 'Send congratulations and visit later',
-          effect: (st) => {
-            recordJournal(st, `You sent congratulations on the birth of ${baby.firstName} and promised to visit soon.`, 'relationship');
-          }
-        }
-      ]
-    });
+    queueScene(S,buildNpcBirthScene(S,{parentId:mother.id,babyId:baby.id,year:S.year,giftCost,country:S.country}));
   }
 }
 
@@ -659,28 +598,7 @@ function npcDivorce(S, person) {
   rememberDeed(S, spouse, 'divorced', `Their marriage to ${person.firstName} ended.`, { affection: -4, trust: -3 });
   recordJournal(S, `Your ${kin} ${person.firstName} and ${spouse.firstName} divorced${yearsLine}. ${splitLine}${kidsLine}`, 'relationship');
   if (close) {
-    queueScene(S, {
-      key: `npc_divorce_${person.id}_${S.year}`,
-      category: 'family',
-      title: `${person.firstName}'s Marriage Ended`,
-      text: `Your ${kin} ${person.firstName} and ${spouse.firstName} have divorced${yearsLine}. ${splitLine}${kidsLine} ${person.firstName} is trying to hold it together, and could use their family right now.`,
-      choices: [
-        {
-          label: 'Be there for them',
-          effect: (st) => {
-            rememberDeed(st, person, 'supported_crisis', 'You stood by them through the divorce.', { affection: 10, trust: 8 });
-            recordJournal(st, `You sat with ${person.firstName} through the worst of the divorce. It meant more than you said out loud.`, 'relationship');
-          }
-        },
-        {
-          label: 'Stay out of it',
-          effect: (st) => {
-            rememberDeed(st, person, 'neglected', 'You stayed out of their divorce.', { affection: -5, respect: -3 });
-            recordJournal(st, `You stayed out of ${person.firstName}'s divorce. They noticed the silence.`, 'relationship');
-          }
-        }
-      ]
-    });
+    queueScene(S,buildNpcFamilyTransitionScene(S,{kind:'divorce',personId:person.id,spouseId:spouse.id,year:S.year,details:yearsLine+' '+splitLine+kidsLine}));
   }
 }
 
@@ -756,30 +674,7 @@ function npcLeaveHome(S, person) {
     const cObj2 = getCountry(S.country);
     const helpCost = Math.max(1, Math.round(eraLocalCost(cObj2.monthlyBasket2026.rentStandard * 0.15, S.country, S.year)));
     recordJournal(S, `Your ${kin} ${person.firstName} is leaving home and moving to ${dest} for ${reason}.`, 'milestone');
-    queueScene(S, {
-      key: `npc_leavehome_${person.id}_${S.year}`,
-      category: 'family',
-      title: `Your ${kin} ${person.firstName} Is Leaving Home`,
-      text: `Your ${kin} ${person.firstName} is moving to ${dest} for ${reason}. The bags are packed, the room is already quieter, and this is the goodbye that matters.`,
-      choices: [
-        {
-          label: `Help them settle in (${formatMoney(helpCost, S.country)})`,
-          available: () => S.money.cash >= helpCost,
-          effect: (st) => {
-            walletMove(st, -helpCost, `Helping ${person.firstName} settle into their new place`, 'family');
-            rememberDeed(st, person, 'supported_move', 'You helped them settle into their first place of their own.', { affection: 10, trust: 8 });
-            recordJournal(st, `You helped ${person.firstName} settle into their new place in ${dest} (${formatMoney(helpCost, st.country)}). It still feels strange coming home to their empty room.`, 'relationship');
-          }
-        },
-        {
-          label: 'Wish them well and let them go',
-          effect: (st) => {
-            rememberDeed(st, person, 'left_home', 'They left home for a new life of their own.', { affection: 4 });
-            recordJournal(st, `You hugged ${person.firstName} goodbye as they left for ${dest}. They promised to call every week.`, 'relationship');
-          }
-        }
-      ]
-    });
+    queueScene(S,buildNpcFamilyTransitionScene(S,{kind:'leavehome',personId:person.id,year:S.year,dest,reason,amount:helpCost,country:S.country}));
   } else {
     recordJournal(S, `Your ${kin} ${person.firstName} left ${person.role === 'sibling' ? 'the family home' : "their parents' home"} and moved to ${dest} for ${reason}.`, 'relationship');
   }
@@ -1762,10 +1657,36 @@ export function buildParentCareSupportScene(S,q){
 }
 export function restoreParentCareSupportScene(S,saved){return saved?.parentCareSnapshot?buildParentCareSupportScene(S,saved.parentCareSnapshot):null;}
 export function buildGrownChildGiftScene(S,q){
- const p=S.people[q?.personId];if(!p?.alive)return null;
+ const p=S.people[q?.personId];if(!p?.alive||!S.relations.childIds.includes(p.id)||p.age<20||S.player.age<55)return null;
  const country=p.residenceCountry||S.country,amount=Math.round(convertCurrency(q.amount,q.country,S.country,S.year)),native=Math.round(convertCurrency(amount,S.country,country,S.year));
  const answered=st=>!!st.legal.childGiftReplies?.[q.key];
- const reply=(st,accept)=>{const child=st.people[p.id];if(answered(st)||!child?.alive)return;const needed=Math.round(convertCurrency(amount,st.country,child.residenceCountry||st.country,st.year));if(accept&&(child.career?.savingsLocal||0)<needed)return;if(accept){child.career.savingsLocal-=needed;walletMove(st,amount,'Funded gift from '+child.firstName,'family');}st.legal.childGiftReplies??={};st.legal.childGiftReplies[q.key]={personId:p.id,amount:accept?amount:0,country:st.country,year:st.year};rememberDeed(st,child,'contact','Shared a family call.',{affection:6,respect:4});recordJournal(st,accept?'Accepted a funded gift from '+child.firstName+' recorded savings.':'Declined '+child.firstName+' gift and stayed in touch.','family');};
+ const reply=(st,accept)=>{const child=st.people[p.id];if(answered(st)||!child?.alive||!st.relations.childIds.includes(child.id)||child.age<20||st.player.age<55)return;const needed=Math.round(convertCurrency(amount,st.country,child.residenceCountry||st.country,st.year));if(accept&&(child.career?.savingsLocal||0)<needed)return;if(accept){child.career.savingsLocal-=needed;walletMove(st,amount,'Funded gift from '+child.firstName,'family');}st.legal.childGiftReplies??={};st.legal.childGiftReplies[q.key]={personId:p.id,amount:accept?amount:0,country:st.country,year:st.year};rememberDeed(st,child,'contact','Shared a family call.',{affection:6,respect:4});recordJournal(st,accept?'Accepted a funded gift from '+child.firstName+' recorded savings.':'Declined '+child.firstName+' gift and stayed in touch.','family');};
  return{key:q.key,category:'family',speakerId:p.id,childGiftSnapshot:q,title:p.firstName+' Offers a Gift',text:p.firstName+' offers '+formatMoney(amount,S.country)+'. Accepting transfers their actual savings into your cash. No travel, visit or bill payment is claimed.',choices:[{label:'Accept '+formatMoney(amount,S.country),available:()=>!answered(S)&&(p.career?.savingsLocal||0)>=native,effect:st=>reply(st,true)},{label:'Decline and stay in touch',effect:st=>reply(st,false)}]};
 }
 export function restoreGrownChildGiftScene(S,saved){return saved?.childGiftSnapshot?buildGrownChildGiftScene(S,saved.childGiftSnapshot):null;}
+
+export function buildNpcBirthScene(S,q){
+ const parent=S.people[q?.parentId],baby=S.people[q?.babyId];if(!parent?.alive||!baby?.alive)return null;
+ const amount=Math.round(convertCurrency(q.giftCost,q.country,S.country,S.year)),key='npc_birth_'+parent.id+'_'+q.year;
+ const answered=st=>!!st.legal.birthReplies?.[key];
+ const reply=(st,gift)=>{if(answered(st)||!st.people[parent.id]?.alive||!st.people[baby.id]?.alive)return;if(gift&&!givePersonalMoney(st,parent.id,amount).ok)return;st.legal.birthReplies??={};st.legal.birthReplies[key]={parentId:parent.id,babyId:baby.id,amount:gift?amount:0,country:st.country,year:st.year};if(gift)rememberDeed(st,st.people[parent.id],'baby_gift','Sent a gift for the new baby.',{affection:8,respect:4});recordJournal(st,gift?'Sent a funded baby gift to '+parent.firstName+' savings for '+baby.firstName+'. No visit or travel booked.':'Congratulated '+parent.firstName+' on '+baby.firstName+' birth. No visit promised.','family');};
+ return{key,category:'family',birthSnapshot:q,title:'A New Baby in the Family',text:parent.firstName+' has a new baby, '+baby.firstName+'. Send a gift into the parent savings or congratulations. No visit or travel is assumed.',choices:[{label:'Send gift · '+formatMoney(amount,S.country),available:()=>S.money.cash>=amount&&!answered(S),effect:st=>reply(st,true)},{label:'Send congratulations',effect:st=>reply(st,false)}]};
+}
+export function restoreNpcBirthScene(S,saved){return saved?.birthSnapshot?buildNpcBirthScene(S,saved.birthSnapshot):null;}
+
+export function buildNpcFamilyTransitionScene(S,q){
+ const p=S.people[q?.personId];if(!p?.alive)return null;
+ const moving=q.kind==='leavehome',amount=moving?Math.round(convertCurrency(q.amount,q.country,S.country,S.year)):0,key='npc_'+q.kind+'_'+p.id+'_'+q.year;
+ const answered=st=>!!st.legal.familyTransitionReplies?.[key];
+ const reply=(st,support)=>{const person=st.people[p.id];if(answered(st)||!person?.alive)return;if(moving&&support&&!givePersonalMoney(st,p.id,amount).ok)return;st.legal.familyTransitionReplies??={};st.legal.familyTransitionReplies[key]={year:st.year,personId:p.id,amount:moving&&support?amount:0,country:st.country};rememberDeed(st,person,support?'supported_crisis':'contact',support?'Offered family support.':'Stayed in touch.',{affection:support?10:2,trust:support?8:1});recordJournal(st,(support?'Supported ':'Stayed in touch with ')+p.firstName+(moving?' after leaving home.':' after their divorce.')+' No player travel is assumed.','family');};
+ return{key,category:'family',familyTransitionSnapshot:q,title:moving?p.firstName+' Is Leaving Home':p.firstName+' Marriage Ended',text:moving?p.firstName+' is moving to '+q.dest+' for '+q.reason+'. Optional support goes to their actual savings.':p.firstName+' and '+(S.people[q.spouseId]?.firstName||'their spouse')+' divorced. '+q.details,choices:[{label:moving?'Send support · '+formatMoney(amount,S.country):'Offer support',available:()=>!answered(S)&&(!moving||S.money.cash>=amount),effect:st=>reply(st,true)},{label:'Stay in touch · no payment',effect:st=>reply(st,false)}]};
+}
+export function restoreNpcFamilyTransitionScene(S,saved){return saved?.familyTransitionSnapshot?buildNpcFamilyTransitionScene(S,saved.familyTransitionSnapshot):null;}
+export function buildPromiseConfrontationScene(S,q){
+ const p=S.people[q?.personId],pr=p?.rel?.promises.find(r=>r.id===q.promiseId&&r.status==='open');if(!p?.alive||!pr)return null;
+ const key='confront_lux_promise_'+p.id+'_'+q.year,need=Math.round(convertCurrency(pr.amountLocal,pr.currencyCountry||S.country,S.country,S.year));
+ const answered=st=>!!st.legal.promiseConfrontationReplies?.[key];
+ const mark=st=>{st.legal.promiseConfrontationReplies??={};st.legal.promiseConfrontationReplies[key]=true;};
+ return{key,category:'relationship',speakerId:p.id,promiseConfrontationSnapshot:q,title:p.firstName+' Notices Your '+q.itemName,text:p.firstName+' is waiting for your recorded promise: '+pr.description+'. Pay it, apologize without changing the due date, or break the promise.',choices:[{label:'Fulfill promise · '+formatMoney(need,S.country),available:()=>S.money.cash>=need&&!answered(S),effect:st=>{if(answered(st))return;const result=fulfillPromise(st,st.people[p.id],pr.id);if(result.ok)mark(st);}},{label:'Apologize · due date unchanged',effect:st=>{if(answered(st))return;mark(st);rememberDeed(st,st.people[p.id],'apology','Apologized without changing the promise.',{trust:-8,resentment:10});recordJournal(st,'Apologized to '+p.firstName+'. Promise due date is unchanged.','family');}},{label:'Break the promise',effect:st=>{if(answered(st))return;const person=st.people[p.id],promise=person?.rel.promises.find(r=>r.id===pr.id&&r.status==='open');if(!promise)return;mark(st);promise.status='broken';rememberDeed(st,person,'broke_promise','Broke a recorded support promise.',{affection:-22,trust:-25,respect:-15,resentment:35});}}]};
+}
+export function restorePromiseConfrontationScene(S,saved){return saved?.promiseConfrontationSnapshot?buildPromiseConfrontationScene(S,saved.promiseConfrontationSnapshot):null;}

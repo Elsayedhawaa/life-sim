@@ -151,9 +151,18 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W62 Formal warning scene uses runtime closures without restore snapshot; preserve original employer/supervisor/warning and current employment gates.
 
-- [ ] W63 Bereavement funeral decision disappears after reload; preserve deceased/person/fee/inheritance evidence and avoid replaying estate transfers.
+- [x] W63 Bereavement funeral decision disappears after reload; preserve deceased/person/fee/inheritance evidence and avoid replaying estate transfers.
 
-- [ ] W64 Parent illness support invents flights/treatment and has no reload builder; use actual funded support or supported catalog trip/treatment.
-- [ ] W65 Grown-child bill gift mints cash without debiting child savings and disappears on reload; preserve funded offer.
+- [x] W64 Parent illness support invents flights/treatment and has no reload builder; use actual funded support or supported catalog trip/treatment.
+- [x] W65 Grown-child bill gift mints cash without debiting child savings and disappears on reload; preserve funded offer.
 
 - [ ] W66 NPC birth gift scene disappears on reload; preserve named parent/baby/amount, fund recipient and avoid claiming travel.
+
+- [ ] W67 NPC divorce/leave-home decisions lack reload builders; move assistance also debits player without funding child. Preserve snapshots and actual recipient transfer.
+- [ ] W68 Luxury-purchase money-promise confrontation lacks reload builder; preserve promise/person/item, no repeated relationship penalty on load.
+
+- [ ] W69 Redundancy response disappears after reload; restore response without replaying dismissal/severance, preserve employer/job-loss context.
+
+- [ ] W70 Job-loss reaction builders (mortgage/family/visa/career) use closures without durable restore; audit effects and exact loss-specific recovery.
+
+- [ ] W71 Child-gift fixture used father as generic recipient; production generator selects adult child, but restore builder lacked same relationship/age gates. Add guards and correct linked-child mobile fixture.

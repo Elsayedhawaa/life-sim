@@ -561,3 +561,9 @@ Recruitment stores exact offered job data/country and rebuilds acceptance with c
 - Bereavement preserves deceased/quoted funeral/estate share and restores choices without replaying death/company inheritance. Optional contribution needs full funds. Game estate cash share is capped by actual remaining savings and debits deceased savings, with once-only receipt. No fake travel/attendance or local-law claim.
 - Parent care support is a funded recipient gift or call, without fictional flight/specialist treatment/health change. Grown-child gift debits actual child savings before crediting player. Named amount/country/year snapshots and reply receipts survive reload.
 - 189 focused files pass, 390px targeted fixtures each reload twice/act/reload and inspect both sides of cash or estate receipts. Broad fresh scene audit found W66 newborn gift restoration gap, queued.
+
+## W66-W69/W71 family transitions and job-loss reply
+- Newborn, NPC divorce/move, money-promise confrontation and redundancy responses save original people/year/amount/details and restore code-backed choices without replaying birth/divorce/dismissal/severance or relationship penalties.
+- Baby/move gifts fund actual recipient savings, reply effects are once-only. Promise reply settles the exact existing People promise. Redundancy reply does not pay severance again.
+- W71: earlier grown-child fixture incorrectly used a father as a generic transfer recipient. Production generator selected adult children, but restore builder lacked matching gates. Added childIds/age20+/player55+ guards and corrected mobile fixture to linked adult son. Earlier screenshot proves transfer mechanics only, not child eligibility.
+- 192 focused files pass. Targeted 390px newborn/move/promise/redundancy/linked-adult-child gift reload/action/reload checks pass. Inspected screenshots. Broader audit remains open at W70 job-loss reactions.
