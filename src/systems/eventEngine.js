@@ -72,9 +72,11 @@ import {
   buildChainIndex, isChainResolved, resolveThread, closeStaleThreads,
   RECURRING_CHAINS,
 } from '../systems/threadResolution.js';
+import { EVENTS_MAJOR_FOLLOWUPS } from '../data/eventsMajorFollowups.js';
+import { loanOutstanding } from '../systems/familyLoans.js';
 import { findPeopleWithMemory } from '../systems/npcMemory.js';
 
-export const ALL_RANDOM_LIFE_EVENTS = [...EVENTS_EMPLOYMENT_DISPUTE,...EVENTS_EVERYDAY_FAMILY, ...EVENTS_MONEY_HEALTH_CAREER, ...BUSINESS_EVENTS, ...EVENTS_MEMORY, ...EVENTS_LIVED_LIFE];
+export const ALL_RANDOM_LIFE_EVENTS = [...EVENTS_EMPLOYMENT_DISPUTE,...EVENTS_EVERYDAY_FAMILY, ...EVENTS_MONEY_HEALTH_CAREER, ...BUSINESS_EVENTS, ...EVENTS_MEMORY, ...EVENTS_LIVED_LIFE, ...EVENTS_MAJOR_FOLLOWUPS];
 
 /* v2.15 W5 — the chain graph for the whole pool: event id -> root id,
    and root id -> { members, terminals }. A resolved chain refuses every
@@ -302,6 +304,13 @@ export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
     if (!allowed.includes(S.player.gender)) return false;
   }
 
+  if (g.afterMajor) {
+    const now = S.year * 12 + S.month, m = g.afterMajor;
+    const hit = (S.majorEvents || []).some((e) => e.kind === m.kind && (!m.role || e.facts?.role === m.role) && now - (e.year * 12 + e.month) >= (m.minMonths || 0) && now - (e.year * 12 + e.month) <= (m.maxMonths ?? 999));
+    if (!hit) return false;
+  }
+  if (g.loanOutstanding && !loanOutstanding(S, g.loanOutstanding.event, g.loanOutstanding.minMonths || 0)) return false;
+
   /* Chains: the parent must have fired, and the delay (in calendar
      months — see the header note) must have passed. */
   if (g.afterEvent) {
@@ -408,7 +417,7 @@ export function eventRelevance(S,ev){
  const outcome=g.afterEvent&&S.eventOutcomes?.[g.afterEvent];
  if(outcome){score+=16;evidence.push({kind:'resolved_event',eventId:g.afterEvent,choiceIndex:outcome.choiceIndex,year:outcome.year,month:outcome.month,participants:outcome.participants});}
  if(g.memoryKind){score+=6;evidence.push({kind:'memory',kinds:asList(g.memoryKind)});}
- const facts=['civilLossKind','adultChildHome','housingMode','deceasedParent','hasDebt','hasBusiness','hasCar','abroad','employment','education','people','recentPromotionMonths','minJobPerformance'].filter(k=>g[k]!==undefined);
+ const facts=['civilLossKind','adultChildHome','housingMode','deceasedParent','hasDebt','hasBusiness','hasCar','abroad','employment','education','people','recentPromotionMonths','minJobPerformance','loanOutstanding','afterMajor'].filter(k=>g[k]!==undefined);
  if(facts.length){score+=Math.min(6,facts.length*2);evidence.push({kind:'current_state',gates:Object.fromEntries(facts.map(k=>[k,g[k]]))});}
  const recent=(S.eventHistory||[]).slice(-4);const same=recent.filter(r=>EVENT_BY_ID.get(r.eventId)?.category===ev.category).length;
  score/=1+same*1.5;

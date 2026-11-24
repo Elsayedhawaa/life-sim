@@ -15,3 +15,15 @@ import fs from'node:fs';s=setup();s.activeScene=scene(s,'ev_family_dad_loan_requ
 {const s=setup(),ev={gates:{requiredPeople:['child'],people:{child:{minAge:6,maxAge:17,sameCountry:true}}}},baby=createPerson(s,{role:'child',age:2,nationality:'gbr',residenceCountry:'gbr'}),teen=createPerson(s,{role:'child',age:14,nationality:'gbr',residenceCountry:'gbr'});s.people[baby.id]=baby;s.people[teen.id]=teen;s.relations.childIds=[baby.id,teen.id];assert.equal(resolveEventCtx(s,ev).child.id,teen.id);assert(eventGatePasses(ev,s));teen.residenceCountry='usa';assert(!eventGatePasses(ev,s));}
 
 {const s=setup(),mom=s.people[s.relations.motherId];mom.rel.lastContactYear=s.year-1;mom.rel.lastContactMonth=s.month;mom.rel.lastContactUnknown=false;s.activeScene=scene(s,'ev_family_mom_call_more');s.sceneQueue=[];noteRandomLifeEventFired(s,s.activeScene);fs.writeFileSync('/downloads/event-person-facts-fixture.json',JSON.stringify(s));}
+
+{ // W126 loans are real receivables from the player's recorded choice
+  const {loanOutstanding}=await import('../src/systems/familyLoans.js');
+  let s=setup(),root=scene(s,'ev_family_dad_loan_request');noteRandomLifeEventFired(s,root);s.eventHistory=[];
+  const before=s.money.cash;root.choices[2].effect(s);const lent=before-s.money.cash;assert(lent>0);
+  s.year++;const f=getRandomLifeEventById('ev_family_dad_loan_repaid');assert(eventGatePasses(f,s));
+  const rs=scene(s,'ev_family_dad_loan_repaid');const c0=s.money.cash;rs.choices[0].effect(s);assert.equal(s.money.cash-c0,lent,'repays exactly what was lent');
+  assert(!loanOutstanding(s,'ev_family_dad_loan_request'));assert(!eventGatePasses(getRandomLifeEventById('ev_family_dad_loan_unpaid'),s));
+  s=setup();s.money.cash=500000;{const p=createPerson(s,{role:'friend',age:30,nationality:'gbr',residenceCountry:'gbr'});s.people[p.id]=p;s.relations.friendIds.push(p.id);}root=scene(s,'ev_friend_asks_loan');noteRandomLifeEventFired(s,root);root.choices[1].effect(s);s.year+=2;assert(!eventGatePasses(getRandomLifeEventById('ev_friend_loan_repaid'),s),'refused friend loan is not repaid');
+  assert(!/shop/i.test(root.text||''));
+  console.log('W126 loan receivable checks pass');
+}

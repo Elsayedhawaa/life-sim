@@ -51,6 +51,7 @@ import { tickWorldEvents } from '../systems/worldEvents.js';
    growth, teamwork drift). Runs on its own seeded stream, never the
    game's main stream. */
 import { tickCareerMarketMonth } from '../systems/careerMarket.js';
+import { snapshotMajor, announceMajorChanges, tickCarCrashes, restoreMajorScene } from '../systems/majorLifeEvents.js';
 
 const PERSIST_KEY = 'world_life_2_save_v1';
 
@@ -87,7 +88,7 @@ export function loadGameFromStorage() {
         if (!scene || scene.familyBufferId) return null;
         if(!scene.eventId&&scene.key==='formal_bankruptcy_filing')return parsed.money.cash<0&&parsed.year>parsed.money.bankruptUntilYear?buildInsolvencyScene(parsed):null;
         if (!scene.eventId&&scene.key==='st_upstairs_pipe_leak')return buildWaterDamageScene(parsed);
-        if (!scene.eventId) return restoreSpouseConversation(parsed,scene) || restoreCourtshipScene(parsed,scene) || restoreBusinessFateScene(parsed,scene) || restoreLandlordScene(parsed,scene) || restoreInformationScene(parsed,scene) || restoreHealthcareGraduateScene(parsed,scene) || restoreRelocationBusinessScene(parsed,scene) || restoreMonthlyResidencyScene(parsed,scene) || restoreDebtWarningScene(parsed,scene) || restoreCareerMobilityScene(parsed,scene) || restoreDiagnosisScene(parsed,scene) || restoreJobLossReactionScene(parsed,scene) || restoreRedundancyScene(parsed,scene) || restorePromiseConfrontationScene(parsed,scene) || restoreNpcFamilyTransitionScene(parsed,scene) || restoreNpcBirthScene(parsed,scene) || restoreGrownChildGiftScene(parsed,scene) || restoreParentCareSupportScene(parsed,scene) || restoreBereavementScene(parsed,scene) || restoreCareerWarningScene(parsed,scene) || restoreCareerReviewScene(parsed,scene) || restoreFamilyBackingScene(parsed,scene) || restoreCriticalAdmissionScene(parsed,scene) || restoreBurnoutScene(parsed,scene) || restoreCrisisWarningScene(parsed,scene) || restoreNpcWeddingScene(parsed,scene) || restoreRecruitmentScene(parsed,scene) || restoreWorldNewsScene(parsed,scene) || restoreCuratedLifeScene(parsed,scene) || restoreDivorceDecision(parsed,scene) || restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
+        if (!scene.eventId) return restoreMajorScene(parsed,scene) || restoreSpouseConversation(parsed,scene) || restoreCourtshipScene(parsed,scene) || restoreBusinessFateScene(parsed,scene) || restoreLandlordScene(parsed,scene) || restoreInformationScene(parsed,scene) || restoreHealthcareGraduateScene(parsed,scene) || restoreRelocationBusinessScene(parsed,scene) || restoreMonthlyResidencyScene(parsed,scene) || restoreDebtWarningScene(parsed,scene) || restoreCareerMobilityScene(parsed,scene) || restoreDiagnosisScene(parsed,scene) || restoreJobLossReactionScene(parsed,scene) || restoreRedundancyScene(parsed,scene) || restorePromiseConfrontationScene(parsed,scene) || restoreNpcFamilyTransitionScene(parsed,scene) || restoreNpcBirthScene(parsed,scene) || restoreGrownChildGiftScene(parsed,scene) || restoreParentCareSupportScene(parsed,scene) || restoreBereavementScene(parsed,scene) || restoreCareerWarningScene(parsed,scene) || restoreCareerReviewScene(parsed,scene) || restoreFamilyBackingScene(parsed,scene) || restoreCriticalAdmissionScene(parsed,scene) || restoreBurnoutScene(parsed,scene) || restoreCrisisWarningScene(parsed,scene) || restoreNpcWeddingScene(parsed,scene) || restoreRecruitmentScene(parsed,scene) || restoreWorldNewsScene(parsed,scene) || restoreCuratedLifeScene(parsed,scene) || restoreDivorceDecision(parsed,scene) || restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
         return restoreRandomLifeScene(parsed, scene);
       };
       const pending = parsed.activeScene;
@@ -252,6 +253,7 @@ export function advanceSingleTurn(S) {
   if (S.activeScene) return tickWorldWhileSceneOpen(S);
 
   S.turn += 1;
+  const majorBefore = snapshotMajor(S);
 
   if (S.player.age < 18) {
     /* ---- YEARLY CHILDHOOD TURN ---- */
@@ -284,6 +286,7 @@ export function advanceSingleTurn(S) {
       // Keep September: entering adulthood must not rewind the calendar.
     }
 
+    announceMajorChanges(S, majorBefore);
     /* Deal queued scene or occasional childhood story scene */
     if (!S.activeScene && S.sceneQueue.length > 0) {
       S.activeScene = S.sceneQueue.shift();
@@ -339,6 +342,7 @@ export function advanceSingleTurn(S) {
        year, so a later render can never duplicate it. */
     if (crossedNewYear) recordFinanceHistorySnapshot(S);
 
+    if (!S.gameOver) { tickCarCrashes(S); announceMajorChanges(S, majorBefore); }
     /* Drain queued urgent/follow-up scenes first, then roll Domino Soul reactions or Curated Life scenes */
     if (!S.activeScene && !S.gameOver) {
       if (S.sceneQueue.length > 0) {

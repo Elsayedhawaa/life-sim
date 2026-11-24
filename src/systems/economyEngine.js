@@ -1298,6 +1298,7 @@ export function settleHouseholdMonth(S) {
         S.money.missedRentMonths = 0;
         const oldHome = S.housing.currentHomeName;
         closePlayerLease(S,{disputed:true});
+        S.housing.lastEviction = { year: S.year, month: S.month, from: oldHome };
         if (S.country === S.homeCountry) {
           S.housing.mode = 'parents';
           S.housing.currentHomeName = 'Family Home (After Eviction)';

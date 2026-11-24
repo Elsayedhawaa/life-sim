@@ -1,3 +1,4 @@
+import {loanFromOutcome,settleLoan} from '../systems/familyLoans.js';
 import {checkSocialEnergy,spendSocialEnergy,noteSocialContact} from '../systems/socialEnergy.js';
 /* ============================================================================
    World Life 2.0 — v2.5 Events (Part 1): Everyday life & family
@@ -1922,19 +1923,19 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_dad_loan_request', category: 'family',
         title: `${dadName} Asks for Help`,
-        text: `${dadName} calls you in the evening, and it takes him a while to get to the point. The shop has had a bad month, a supplier needs paying, and he is short ${formatMoney(ask, S.country)}. He hates asking — you can hear it in his voice.`,
+        text: `${dadName} calls you in the evening, and it takes him a while to get to the point. Money has run short for him this month and he needs ${formatMoney(ask, S.country)} to cover it. He hates asking — you can hear it in his voice.`,
         choices: [
           { label: `Lend him ${formatMoney(ask, S.country)}`, effect: (st) => {
               walletMove(st, -ask, `Loan to ${dadName}`, 'money');
-              if (p.dad) rememberDeed(st, p.dad, 'helped_money', `Lent ${dadName} ${formatMoney(ask, st.country)} when his shop was short.`, { affection: 10, trust: 8, respect: 5 });
+              if (p.dad) rememberDeed(st, p.dad, 'helped_money', `Lent ${dadName} ${formatMoney(ask, st.country)} when money was short.`, { affection: 10, trust: 8, respect: 5 });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
-              recordJournal(st, `Your father asked to borrow ${formatMoney(ask, st.country)} for his shop, and you lent it to him without hesitation.`, 'family');
+              recordJournal(st, `Your father asked to borrow ${formatMoney(ask, st.country)} and you lent it to him without hesitation.`, 'family');
           } },
           { label: 'Say you cannot spare it right now', effect: (st) => {
-              if (p.dad) rememberDeed(st, p.dad, 'refused_help', 'Could not lend money when his shop was short.', { affection: -8, trust: -6, resentment: 6 });
+              if (p.dad) rememberDeed(st, p.dad, 'refused_help', 'Could not lend money when he asked.', { affection: -8, trust: -6, resentment: 6 });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness - 4);
               st.player.vitals.stress = clamp(st.player.vitals.stress + 4);
-              recordJournal(st, `Your father asked to borrow money for his shop and you had to say you could not spare it. He said he understood.`, 'family');
+              recordJournal(st, `Your father asked to borrow money and you had to say you could not spare it. He said he understood.`, 'family');
           } },
           { label: `Lend half — ${formatMoney(Math.round(ask / 2), S.country)}`, effect: (st) => {
               walletMove(st, -Math.round(ask / 2), `Part-loan to ${dadName}`, 'money');
@@ -1949,24 +1950,24 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_loan_repaid',
     category: 'family',
-    gates: { requiredPeople: ['dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterChoices:[0,2], afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterChoices:[0,2], afterEventMinTurns: 6, loanOutstanding: { event: 'ev_family_dad_loan_request', minMonths: 6 } },
     build: (S, ctx) => {
       const p = live(S, ctx);
-      const back = cost(S, 1500);
+      const back = loanFromOutcome(S, 'ev_family_dad_loan_request')?.amount ?? cost(S, 1500);
       const dadName = nm(p.dad, 'your father');
       return {
         key: 'ev_family_dad_loan_repaid', category: 'family',
         title: `${dadName} Pays You Back`,
-        text: `${dadName} comes to your door with an envelope. The shop had a good month, he says, and he is returning the money you lent him — every note of it, plus a little extra "for the trouble". He looks ten years younger.`,
+        text: `${dadName} comes to your door with an envelope. Things have eased for him, he says, and he is returning the money you lent him — every note of it, plus a little extra "for the trouble". He looks ten years younger.`,
         choices: [
           { label: 'Take it back and thank him', effect: (st) => {
-              walletMove(st, back, `Loan repaid by ${dadName}`, 'money');
+              walletMove(st, back, `Loan repaid by ${dadName}`, 'money'); settleLoan(st, 'ev_family_dad_loan_request', 'repaid');
               if (p.dad) rememberDeed(st, p.dad, 'kept_promise', 'Repaid the loan in full.', { affection: 8, trust: 10, respect: 6 });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 5);
               recordJournal(st, `Your father came to your door and repaid the money you had lent him, in full.`, 'family');
           } },
           { label: 'Refuse the extra — take only what you lent', effect: (st) => {
-              walletMove(st, back, `Loan repaid by ${dadName}`, 'money');
+              walletMove(st, back, `Loan repaid by ${dadName}`, 'money'); settleLoan(st, 'ev_family_dad_loan_request', 'repaid');
               if (p.dad) rememberDeed(st, p.dad, 'kept_promise', 'Repaid the loan; you refused the extra.', { affection: 10, trust: 8, respect: 8 });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 4);
               recordJournal(st, `Your father repaid your loan with a little extra; you took only what you had lent.`, 'family');
@@ -1981,17 +1982,17 @@ export const EVENTS_EVERYDAY_FAMILY = [
     /* v2.15 W5 — mutually exclusive with the repaid branch: once your
        father has repaid the loan, the unpaid-loan story cannot also
        happen. The engine's resolved-chain refusal is the second lock. */
-    gates: { requiredPeople: ['dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterChoices:[0,2], afterEventMinTurns: 18, notAfterEvent: 'ev_family_dad_loan_repaid' },
+    gates: { requiredPeople: ['dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterChoices:[0,2], afterEventMinTurns: 18, notAfterEvent: 'ev_family_dad_loan_repaid', loanOutstanding: { event: 'ev_family_dad_loan_request', minMonths: 18 } },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
       return {
         key: 'ev_family_dad_loan_unpaid', category: 'family',
         title: 'The Loan Is Still Unpaid',
-        text: `It has been over a year since you lent ${dadName} money for his shop, and he has not mentioned it since. He changes the subject whenever money comes up. The silence between you is starting to feel heavier than the money itself.`,
+        text: `It has been over a year since you lent ${dadName} ${formatMoney(loanFromOutcome(S, 'ev_family_dad_loan_request')?.amount ?? 0, S.country)}, and he has not mentioned it since. He changes the subject whenever money comes up. The silence between you is starting to feel heavier than the money itself.`,
         choices: [
           { label: 'Tell him to forget it — family comes first', effect: (st) => {
-              if (p.dad) rememberDeed(st, p.dad, 'helped_money', 'Forgave the unpaid loan.', { affection: 8, trust: 6, resentment: -8 });
+              settleLoan(st, 'ev_family_dad_loan_request', 'forgiven'); if (p.dad) rememberDeed(st, p.dad, 'helped_money', 'Forgave the unpaid loan.', { affection: 8, trust: 6, resentment: -8 });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 2);
               st.player.vitals.stress = clamp(st.player.vitals.stress - 3);
               recordJournal(st, `You told your father to forget the money you had lent him. The relief on his face was worth more than the loan.`, 'family');
@@ -2812,14 +2813,14 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_money_never_back',
     category: 'family',
-    gates: { requiredPeople: ['sib'], minAge: 20, afterEvent: 'ev_family_sib_borrows_money', afterChoices:[0], afterEventMinTurns: 12 },
+    gates: { requiredPeople: ['sib'], minAge: 20, afterEvent: 'ev_family_sib_borrows_money', afterChoices:[0], afterEventMinTurns: 12, loanOutstanding: { event: 'ev_family_sib_borrows_money', minMonths: 12 } },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
       return {
         key: 'ev_family_sib_money_never_back', category: 'family',
         title: 'The Money Never Came Back',
-        text: `It has been a year since you lent ${sibName} money, and there has been no mention of paying it back — no message, no awkward joke, nothing. They have just bought themselves something expensive, and you saw it with your own eyes.`,
+        text: `It has been a year since you lent ${sibName} money, and there has been no mention of paying it back — no message, no awkward joke, nothing. Every time you see them, the subject somehow never comes up.`,
         choices: [
           { label: 'Ask for it back, directly', effect: (st) => {
               if (p.sib) rememberDeed(st, p.sib, 'broke_promise', 'Pressed them about the money they never repaid.', { affection: -7, trust: -5, resentment: 9 });
@@ -2827,7 +2828,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
               recordJournal(st, `A year after lending ${sibName} money, you asked for it back directly. The conversation was ugly.`, 'family');
           } },
           { label: 'Let it go — it is only money, they are family', effect: (st) => {
-              if (p.sib) rememberDeed(st, p.sib, 'helped_money', 'Forgave the loan that was never repaid.', { affection: 6, trust: 4, resentment: -6 });
+              settleLoan(st, 'ev_family_sib_borrows_money', 'forgiven'); if (p.sib) rememberDeed(st, p.sib, 'helped_money', 'Forgave the loan that was never repaid.', { affection: 6, trust: 4, resentment: -6 });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 1);
               st.player.vitals.stress = clamp(st.player.vitals.stress - 2);
               recordJournal(st, `You decided to let go of the money ${sibName} never paid back. Family is family.`, 'family');
@@ -6289,24 +6290,24 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_friend_loan_repaid',
     category: 'friends',
-    gates: { requiredPeople: ['friend'], minAge: 20, afterEvent: 'ev_friend_asks_loan', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['friend'], minAge: 20, afterEvent: 'ev_friend_asks_loan', afterChoices:[0], afterEventMinTurns: 6, loanOutstanding: { event: 'ev_friend_asks_loan', minMonths: 6 } },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
-      const back = cost(S, 1200);
+      const back = loanFromOutcome(S, 'ev_friend_asks_loan')?.amount ?? cost(S, 1200);
       return {
         key: 'ev_friend_loan_repaid', category: 'friends',
         title: `${frName} Pays You Back`,
         text: `${frName} turns up with the money you lent them, in cash, counted twice — plus a small gift on top, "for the trouble". They look relieved, and a little proud, to be able to hand it over.`,
         choices: [
           { label: 'Take it back gladly', effect: (st) => {
-              walletMove(st, back, `Loan repaid by ${frName}`, 'money');
+              walletMove(st, back, `Loan repaid by ${frName}`, 'money'); settleLoan(st, 'ev_friend_asks_loan', 'repaid');
               if (p.friend) rememberDeed(st, p.friend, 'kept_promise', 'Repaid the loan in full.', { affection: 9, trust: 11 });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 4);
               recordJournal(st, `${frName} paid back the money you had lent them, in full.`, 'friends');
           } },
           { label: 'Refuse the gift on top — the money is enough', effect: (st) => {
-              walletMove(st, back, `Loan repaid by ${frName}`, 'money');
+              walletMove(st, back, `Loan repaid by ${frName}`, 'money'); settleLoan(st, 'ev_friend_asks_loan', 'repaid');
               if (p.friend) rememberDeed(st, p.friend, 'kept_promise', 'Repaid the loan; you refused the extra gift.', { affection: 10, trust: 9 });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
               recordJournal(st, `${frName} repaid your loan with a gift on top; you took only the money.`, 'friends');
