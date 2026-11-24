@@ -530,9 +530,9 @@ export function deliverInheritedBusinesses(nextS, outcome, continuingChildId, de
   for (const { biz, heir } of (outcome.inherited || [])) {
     if (heir && heir.id === continuingChildId) {
       if (!Array.isArray(nextS.career.businesses)) nextS.career.businesses = [];
-      const copy = { ...biz, heirId: heir.id };
-      if (Array.isArray(biz.staff)) copy.staff = biz.staff.map(m => ({ ...m }));
-      if (Array.isArray(biz.history)) copy.history = [...biz.history];
+      const copy = structuredClone(biz);copy.heirId=heir.id;convertBusinessFiguresCurrency(nextS,copy,nextS.country);
+
+
       nextS.career.businesses.push(copy);
       nextS.career.business = copy;
       delivered.push(copy);
@@ -542,6 +542,7 @@ export function deliverInheritedBusinesses(nextS, outcome, continuingChildId, de
         'milestone'
       );
     } else {
+      const owner=nextS.people?.[heir.id];if(owner){owner.ownedBusinesses??=[];if(!owner.ownedBusinesses.some(b=>b.id===biz.id))owner.ownedBusinesses.push(structuredClone(biz));owner.career??={};owner.career.businessOwnerIds=owner.ownedBusinesses.map(b=>b.id);}
       toldAbout.push({ biz, heir });
       recordJournal(
         nextS,
@@ -584,10 +585,10 @@ export function renderBusinessWillSection(S, biz) {
     : `<span class="muted">Nobody is eligible to inherit — no living spouse, child, parent or sibling.</span>`;
   return `
     <div style="border-top:1px dashed var(--line-soft);padding-top:8px;margin-top:8px">
-      <div class="muted" style="margin-bottom:6px"><strong>Will &amp; heir:</strong> ${heirLine}</div>
+      <div class="muted" style="margin-bottom:6px"><strong>Will &amp; heir:</strong> ${heirLine}</div>${biz.estateTrust?'<p class="muted">Inherited trust: operations paused until age 18. No free trustee or child work.</p>':''}
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${buttons}
-      </div>
+      </div><details><summary>Estate model rules</summary><p class="muted">Named company value joins the estate charge base. Its heir pays an allocated share from cash or a zero-interest 24-month note. Minority shares, unpaid business bills and company assets stay attached. Under-18 holdings pause until adulthood, no child labor or free trustee. Other heirs keep their company records. Game rules, not local law.</p></details>
     </div>`;
 }
 
@@ -613,6 +614,6 @@ export function renderWillHeirSection(S) {
       <div class="muted" style="margin-bottom:6px"><strong>Primary heir:</strong> ${heirLine}</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${buttons}
-      </div>
+      </div><details><summary>Estate model rules</summary><p class="muted">Named company value joins the estate charge base. Its heir pays an allocated share from cash or a zero-interest 24-month note. Minority shares, unpaid business bills and company assets stay attached. Under-18 holdings pause until adulthood, no child labor or free trustee. Other heirs keep their company records. Game rules, not local law.</p></details>
     </div>`;
 }

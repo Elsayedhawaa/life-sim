@@ -1,3 +1,4 @@
+import{estateChargePlan,remapInheritedCompany}from './companyEstate.js';
 /* ============================================================================
    World Life 2.0 — Medical Care, Mortality, Legacy & Human Story Director
    Zero minor-billing leaks (D1/D11), real extreme-stat crises (D6), accurate
@@ -12,7 +13,7 @@ import { MEDICAL_CONDITIONS, getHospitalsFor } from '../data/institutions.js';
 import { V1_MED_TESTS, V1_MED_MEDICATIONS } from '../data/megaCareerEduMedical.js';
 import { buyGold21k, buyBankCertificate } from './economyEngine.js';
 import { staffTreatmentEligible } from './careerEducationEngine.js';
-import { transferBusinessesOnDeath, deliverInheritedBusinesses, describeBusinessDeathOutcome } from './businessLegacy.js';
+import { transferBusinessesOnDeath, deliverInheritedBusinesses, describeBusinessDeathOutcome, convertBusinessFiguresCurrency } from './businessLegacy.js';
 import { rememberDeed } from './soulEngine.js';
 import { collectExtendedLifeScenes } from './storyLibrary.js';
 import { collectRandomLifeEvents, pickRandomLifeEvent } from './eventEngine.js';
@@ -494,18 +495,11 @@ export function continueAsChild(S, childId) {
   const bizDeath = transferBusinessesOnDeath(S, childId);
 
   const livingKids = S.relations.childIds.map(id => S.people[id]).filter(c => c && c.alive);
-  const grossEstate = Math.max(0, computeNetWorthLocal(S));
-  const charityPct = Math.max(0, Math.min(33, Number(S.willPlan?.charityPct || 0)));
-  const charityAmt = Math.round(grossEstate * (charityPct / 100));
-  let distributable = Math.max(0, grossEstate - charityAmt);
-
-  /* UK 40% Inheritance Tax above £325k nil-rate band */
-  if (S.country === 'gbr') {
-    const nilBand = eraLocalCost(325000, 'gbr', S.year);
-    if (distributable > nilBand) {
-      distributable -= Math.round((distributable - nilBand) * 0.40);
-    }
-  }
+  const cashEstate=Math.max(0,computeNetWorthLocal(S));
+  const estate=estateChargePlan(S,cashEstate,bizDeath.inherited);
+  const grossEstate=estate.gross;
+  let distributable=estate.cashPool;
+  S.estateSettlement={year:S.year,country:S.country,gross:estate.gross,charity:estate.charity,tax:estate.tax,companies:estate.named.map(x=>({id:x.biz.id,name:x.biz.name,heirId:x.heir.id,heirName:x.heir.fullName||x.heir.firstName,equity:x.biz.equityOwned??100,value:x.value,charge:x.charge}))};
 
   /* Spouse statutory / Fara'id 1/8th share if surviving spouse exists */
   const hasSurvivingSpouse = (S.relations.spouseIds || []).some(id => S.people[id]?.alive);
@@ -592,6 +586,7 @@ export function continueAsChild(S, childId) {
   nextS.player.nationality = child.nationality || child.citizenships?.[0] || nextS.country;
   nextS.homeCountry = nextS.player.nationality;
   nextS.money.savings = Math.max(0,Number(child.career?.savingsLocal)||0);
+  if(child.estateDebtLocal>0)nextS.money.loans.push({id:`estate_prior_${child.id}`,label:'Prior inherited company estate note',balance:child.estateDebtLocal,monthlyPayment:Math.max(1,Math.ceil(child.estateDebtLocal/24)),annualRate:0,remainingMonths:24,country:nextS.country,purpose:'estate_charge'});
   nextS.player.vitals={...nextS.player.vitals,...child.vitals};
   nextS.player.traits={...child.traits};nextS.player.traitTags=[...(child.traitTags||[])];
   nextS.player.religion=child.religion||nextS.player.religion;
@@ -622,7 +617,26 @@ export function continueAsChild(S, childId) {
      heir actually runs it; any other heir is journalled so the child is
      told what happened; estate-sale businesses are journalled too. */
   deliverInheritedBusinesses(nextS, bizDeath, childId, S.player.gender);
-  for(const biz of nextS.career.businesses||[])if(biz.heirId===childId)biz.heirId=null;
+  for(const b of nextS.career.businesses||[])remapInheritedCompany(b,remap);
+  for(const p of Object.values(nextS.people))for(const b of p.ownedBusinesses||[])remapInheritedCompany(b,remap);
+  nextS.estateSettlement=structuredClone(S.estateSettlement);
+  for(const kid of livingKids){if(kid.id===childId)continue;const owner=nextS.people[kid.id];if(!owner)continue;const units=useFaraid?(kid.gender==='m'?2:1):1,total=useFaraid?livingKids.reduce((n,k)=>n+(k.gender==='m'?2:1),0):livingKids.length,share=Math.round(kidsPool*units/Math.max(1,total));owner.career??={};owner.career.savingsLocal=(owner.career.savingsLocal||0)+convertCurrency(share,S.country,owner.residenceCountry||S.country,S.year);}
+  const spouses=(S.relations.spouseIds||[]).map(id=>nextS.people[id]).filter(p=>p?.alive);for(const sp of spouses){sp.career??={};sp.career.savingsLocal=(sp.career.savingsLocal||0)+convertCurrency(Math.round((distributable-kidsPool)/spouses.length),S.country,sp.residenceCountry||S.country,S.year);}
+
+  for(const entry of estate.named){
+    const charge=Math.round(convertCurrency(entry.charge,S.country,entry.heir.id===childId?nextS.country:entry.heir.residenceCountry||S.country,S.year));
+    if(entry.heir.id===childId){const paid=Math.min(nextS.money.cash,charge);if(paid)walletMove(nextS,-paid,'Inherited company estate charge','inheritance');const left=charge-paid;if(left>0)nextS.money.loans.push({id:`estate_${entry.biz.id}_${S.year}`,label:`Estate charge: ${entry.biz.name}`,balance:left,monthlyPayment:Math.max(1,Math.ceil(left/24)),annualRate:0,remainingMonths:24,country:nextS.country,purpose:'estate_charge'});}
+    else{const owner=nextS.people[entry.heir.id];if(owner){owner.career??={};const paid=Math.min(Math.max(0,owner.career.savingsLocal||0),charge);owner.career.savingsLocal=(owner.career.savingsLocal||0)-paid;owner.estateDebtLocal=(owner.estateDebtLocal||0)+charge-paid;}}
+  }
+  // A minor owns their inherited stake but cannot work it or draw operating profit.
+  for(const b of nextS.career.businesses||[])if(child.age<18)b.estateTrust={untilAge:18,paused:true};
+  // Existing NPC companies belong to the continuing child too, not to a discarded person record.
+  for(const old of child.ownedBusinesses||[]){if(!(nextS.career.businesses||[]).some(b=>b.id===old.id)){const b=structuredClone(old);convertBusinessFiguresCurrency(nextS,b,nextS.country);b.heirId=null;remapInheritedCompany(b,remap);nextS.career.businesses.push(b);}}
+  for(const b of nextS.career.businesses){b.staff=(b.staff||[]).filter(e=>e.personId!=='player');if(b.manager?.personId==='player')b.manager=null;if(child.age<18)b.estateTrust={untilAge:18,paused:true};}
+  if(nextS.career.businesses.length)nextS.career.business=nextS.career.businesses[0];
+  if(child.career?.businessEmployeeId&&nextS.career.businesses.some(b=>b.id===child.career.businessEmployeeId)){nextS.career.employed=false;nextS.career.job=null;}
+
+  for(const biz of nextS.career.businesses||[])if(biz.heirId===childId||biz.heirId==='player')biz.heirId=null;
 
   recordJournal(
     nextS,

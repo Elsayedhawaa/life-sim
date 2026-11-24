@@ -1,3 +1,4 @@
+import{inheritNpcCompanies}from './companyEstate.js';
 import{personMind,canContactPerson}from './personMind.js';
 /* ============================================================================
    World Life 2.0 — Causal Soul, Memory, Promise & Domino Reaction Engine
@@ -1015,6 +1016,7 @@ export function closeMarriageWithoutCouple(S, spouse, endedReason) {
 
 export function handleNpcDeath(S, person) {
   if (!person || !person.alive) return;
+  inheritNpcCompanies(S,person);
   person.alive = false;
   person.deathYear = S.year;
   person.deathCause = person.age >= 75 ? 'natural causes' : 'cardiac complications';

@@ -1,3 +1,4 @@
+import{renderEstateRecord}from '../systems/companyEstate.js';
 import{renderDivorceShares}from'../systems/companyDivorceShares.js';
 import{renderFamily}from'../systems/companyFamily.js';
 import{operatingBase}from'../systems/companyOperatingContent.js';
@@ -3882,7 +3883,7 @@ export function renderFinanceTabHtml(S, uiState = {}) {
               </button>
             `).join('')}
           </div>
-          ${renderWillHeirSection(S)}
+          ${renderWillHeirSection(S)}${renderEstateRecord(S)}
         </div>
       </div>
     ` : ''}

@@ -1,3 +1,4 @@
+import{settleNpcCompanyHoldings}from './companyEstate.js';
 import{childFoodEquivalent}from './custodyCosts.js';
 import{propertyMarketYear}from './propertyMarketRisk.js';
 import{flyingDutyStatus}from './dutyEligibility.js';
@@ -696,6 +697,7 @@ export function settleHouseholdMonth(S) {
       /* v2.17 W2 — a dead business settles nothing (the fold returns a
          zero P&L anyway; this only avoids noise in the settlement). */
       if (biz.dead) continue;
+      if(biz.estateTrust){if(S.player.age<18)continue;delete biz.estateTrust;}
       const pl = computeBusinessMonthFull(S, biz, { worldRevenueMult: wEff.businessRevenue });
       if (pl.net >= 0) {
         biz.monthsLosing = 0;
@@ -1229,6 +1231,8 @@ export function settleHouseholdMonth(S) {
   if (summary.living - bizSettleCosts) walletMove(S, -(summary.living - bizSettleCosts), `Monthly living costs (${S.month}/${S.year})`, 'monthly_settlement');
   if (summary.debt - bizSettleSeverancePaid) walletMove(S, -(summary.debt - bizSettleSeverancePaid), `Monthly debt payments (${S.month}/${S.year})`, 'monthly_settlement');
   if (summary.support) walletMove(S, -summary.support, `Monthly family support (${S.month}/${S.year})`, 'monthly_settlement');
+
+  settleNpcCompanyHoldings(S);
 
   /* v2.14 §2 — manager monthly tick (loyalty, asks, skimming, quitting).
      AFTER the walletMoves above: skim money and bonuses move cash at
