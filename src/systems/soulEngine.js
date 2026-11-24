@@ -773,6 +773,8 @@ export function tickNpcAutonomyYearly(S) {
       const saveRate = person.traits.materialism > 70 ? 0.06 : 0.16;
       person.career.savingsLocal += Math.round(person.career.monthlyIncomeLocal * 12 * saveRate);
     } else if (person.age === 64 && person.career.monthlyIncomeLocal > 0 && person.career.title !== 'Retired') {
+      person.career.retiredYear = S.year; /* recorded transition: a real income dropped to the pension rate */
+      person.career.previousIncomeLocal = person.career.monthlyIncomeLocal;
       person.career.title = 'Retired';
       person.career.monthlyIncomeLocal = Math.round(person.career.monthlyIncomeLocal * 0.52);
     }

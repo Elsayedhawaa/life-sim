@@ -2151,20 +2151,20 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_retires',
     category: 'family',
-    gates: { requiredPeople: ['dad'], minAge: 30, maxAge: 65, people: { dad: { minAge: 60, maxAge: 68 } } },
+    gates: { requiredPeople: ['dad'], minAge: 30, maxAge: 65, people: { dad: { retiredWithinYears: 1 } } },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
       return {
         key: 'ev_family_dad_retires', category: 'family',
-        title: `${dadName}'s Last Day at Work`,
-        text: `${dadName} has worked for decades, and today is his last day. His colleagues gave him a small party and a gift he did not want to talk about. Tonight he sits at home, quiet, unsure what a man does with himself when there is no work to go to.`,
+        title: `${dadName} Has Retired`,
+        text: `${dadName} has stopped working this year, and his income has dropped to a pension. The first weeks at home are the strange part. Tonight he sits at home, quiet, unsure what a man does with himself when there is no work to go to.`,
         choices: [
           { label: 'Take him out to celebrate properly', effect: (st) => {
               walletMove(st, -cost(st, 400), 'Dinner to celebrate father\'s retirement', 'money');
               if (p.dad) rememberDeed(st, p.dad, 'proud_moment', 'Celebrated his retirement properly.', { affection: 10, trust: 6, respect: 8 });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 5);
-              recordJournal(st, `Your father retired after decades of work; you took him out to celebrate properly.`, 'family');
+              recordJournal(st, `Your father retired; you took him out to celebrate properly.`, 'family');
           } },
           { label: 'Help him plan what comes next — a hobby, a routine', effect: (st) => {
               if (p.dad) rememberDeed(st, p.dad, 'supported_crisis', 'Helped him plan life after retirement.', { affection: 8, trust: 6 });

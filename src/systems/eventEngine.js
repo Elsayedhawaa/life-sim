@@ -156,6 +156,7 @@ function personFitsEvent(S,p,rules={}){
  if(rules.maxAge!==undefined&&p.age>rules.maxAge)return false;
  if(rules.sameCountry!==undefined&&(p.residenceCountry===S.country)!==rules.sameCountry)return false;
  if(rules.minMonthsApart!==undefined&&(p.rel?.lastContactUnknown||!Number.isFinite(p.rel?.lastContactYear)||!Number.isFinite(p.rel?.lastContactMonth)||monthsSinceContact(S,p)<rules.minMonthsApart))return false;
+ if(rules.retiredWithinYears!==undefined&&!(Number.isFinite(p.career?.retiredYear)&&S.year-p.career.retiredYear>=0&&S.year-p.career.retiredYear<=rules.retiredWithinYears))return false;
  if(rules.maxHealth!==undefined&&(p.vitals?.health??100)>rules.maxHealth)return false;
  return true;
 }

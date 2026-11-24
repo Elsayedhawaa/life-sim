@@ -12128,7 +12128,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_career_fired_l1',
         category: 'career',
         title: "Weeks After Being Let Go",
-        text: `It has been weeks since you were let go. The severance is thinning, the job hunt is real, and one thing matters more than you thought: what ${bossName} will say when a new employer calls for a reference.`,
+        text: `It has been weeks since you were let go. The job hunt is real, and one thing matters more than you thought: what ${bossName} will say when a new employer calls for a reference.`,
         choices: [
           {
             label: "Call your old boss about the reference",
