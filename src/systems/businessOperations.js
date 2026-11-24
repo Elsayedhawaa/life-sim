@@ -293,7 +293,7 @@ export function ensureOpsState(S, biz) {
 function escHtml(str) {
   return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
-function fmt(S, n) { return formatMoney(Math.round(n || 0), S.country); }
+function fmt(S, n) { return formatMoney(Number(n) || 0, S.country); }
 function nowIdx(S) { return businessMonthIndex(S); }
 function logOps(S, biz, text) {
   biz.opsLog.unshift({ year: S.year, month: S.month, text });
@@ -379,8 +379,9 @@ export function setPrice(S, biz, itemId, dir) {
   const cur = biz.prices[itemId] || { price: 0, standard: 0 };
   const std = Number(cur.standard) || Math.max(1, Math.round(opsAvgTicket(S, biz) * item.frac));
   let price = Number(cur.price) || std;
-  if (dir === 'up') price = Math.min(Math.round(std * 1.3), Math.round(price + std * 0.1));
-  else if (dir === 'down') price = Math.max(Math.round(std * 0.7), Math.round(price - std * 0.1));
+  const cents=n=>Math.round((n+Number.EPSILON)*100)/100;
+  if (dir === 'up') price = Math.min(cents(std * 1.3), cents(price + std * 0.1));
+  else if (dir === 'down') price = Math.max(cents(std * 0.7), cents(price - std * 0.1));
   else if (dir === 'std') price = std;
   else return { ok: false, msg: 'Raise, lower, or reset the price.' };
   biz.prices[itemId] = { price, standard: std };
@@ -788,7 +789,7 @@ export function renderPricingSectionHtml(S, biz) {
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;">
         <strong>${escHtml(it.label)}</strong><span class="muted">${fmt(S, p.price)} / unit · ${escHtml(state)}</span>
       </div>
-      <div class="muted">${usesPhysicalStock(biz)?'Stock cost estimate':'Direct delivery cost allocation'} ${fmt(S,Math.round(p.standard*.45))}/unit · contribution ${fmt(S,p.price-Math.round(p.standard*.45))} before payroll, rent &amp; tax</div>
+      <div class="muted">${usesPhysicalStock(biz)?'Stock cost estimate':'Direct delivery cost allocation'} ${fmt(S,Math.round(p.standard*.45*100)/100)}/unit · contribution ${fmt(S,p.price-Math.round(p.standard*.45*100)/100)} before payroll, rent &amp; tax</div>
       <div style="display:flex;gap:6px;margin-top:4px;">
         <button class="btn btn-sm" data-action="biz-ops-price" data-biz="${escHtml(biz.id)}" data-item="${escHtml(it.id)}" data-dir="up">+10%</button>
         <button class="btn btn-sm" data-action="biz-ops-price" data-biz="${escHtml(biz.id)}" data-item="${escHtml(it.id)}" data-dir="down">−10%</button>

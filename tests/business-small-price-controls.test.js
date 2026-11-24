@@ -1,0 +1,7 @@
+import assert from 'node:assert/strict';
+import {createNewLifeState,ensureExtendedState} from '../src/core/schema.js';
+import {setPrice,operationsCatalogue,ensureOpsState,renderPricingSectionHtml,pricingEffectFor} from '../src/systems/businessOperations.js';
+for(const country of ['usa','gbr','egy','jpn','ind']){const s=createNewLifeState({country,seed:6});ensureExtendedState(s);const b={id:'tiny',typeId:'cafe',name:'Tiny Cafe',monthlyRev:1,monthlyCost:1,capitalInvested:100,staff:[]};ensureOpsState(s,b);const id=operationsCatalogue(b).items[0].id;b.prices[id]={price:1,standard:1};let r=setPrice(s,b,id,'up');assert.equal(r.price,1.1);assert(renderPricingSectionHtml(s,b).includes('1.1 '));setPrice(s,b,id,'up');assert.equal(b.prices[id].price,1.2);assert(pricingEffectFor(s,b).revenueMult>1);for(let i=0;i<10;i++)setPrice(s,b,id,'up');assert.equal(b.prices[id].price,1.3);for(let i=0;i<10;i++)setPrice(s,b,id,'down');assert.equal(b.prices[id].price,.7);assert(pricingEffectFor(s,b).revenueMult<1);setPrice(s,b,id,'std');assert.equal(b.prices[id].price,1);const reload=JSON.parse(JSON.stringify(b));assert.equal(reload.prices[id].price,1);}
+console.log('Low-unit worldwide price controls visibly move1to1.1, real demand effects,70-130%bounds, reset/reload pass');
+
+const {productLaunchCost}=await import('../src/systems/businessProducts.js');assert.equal(productLaunchCost({monthlyRev:1}),1);assert.equal(productLaunchCost({monthlyRev:0}),1);

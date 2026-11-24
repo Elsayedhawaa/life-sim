@@ -213,3 +213,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W97 Relocation re-denominates premises rent but not premises value or pending rent review; later repairs/review mix currencies. Convert all three together, and make repair/arrears wallet boundaries use business book currency consistently. Marketing/move remaining mixed-book audit separate.
 
 - [x] W98 Business premises catalog always uses player country even when business trades abroad. Use business country for offered units and book currency for stored rent/value; wallet charges remain household currency. Audit marketing/move direct costs with explicit mixed-book test before classifying.
+
+- [x] W99 Low-value product price controls can do nothing: standard1, +10% rounds back to1. Reproduced hosted classic cafe new-product control. Use supported precision for actual change, enforce bounds and test worldwide low-unit pricing; show honest formatting.
+
+- [x] W100 Very-low-sales classic product launch rounds30%development cost down to zero (monthlyRev1). Positive1book-unit minimum quote now matches actual debit.
