@@ -1879,9 +1879,10 @@ ${r(HP(e,a,t))}<details><summary>Branches &amp; locations</summary>${t.branchesH
         <h3>${Ve("heart",17)} Daily Routines & Habits</h3>
         <span class="muted">Looks: <strong class="mono">${Math.round(e.player.vitals.looks||65)}%</strong> \xB7 Reputation: <strong class="mono">${Math.round(e.reputation||50)}/100</strong></span>
       </div>
+      ${e.pacing==="yearly"?'<p class="habit-pacing-hint">Childhood moves a year at a time. Each habit counts once for the year, as a summary of the year, not one single session.</p>':""}
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${i.map(L=>`
-          <button type="button" class="btn btn-sm" data-action="do-activity" data-id="${b(L.id)}" ${rs(e,L).ok?"":"disabled"}>
+          <button type="button" class="btn btn-sm habit-btn" data-action="do-activity" data-id="${b(L.id)}" ${rs(e,L).ok?"":"disabled"}>
             ${b(L.label||L.name)}${rs(e,L).ok?"":pe(rs(e,L).reason,"")}
             <span class="muted"> \xB7 ${e.player.age<18&&ts(e,L)>0?`${b(h(ts(e,L),e.country))} from living parents\u2019 savings`:ts(e,L)>0?b(h(ts(e,L),e.country)):"Free"}</span>
           </button>
@@ -4055,7 +4056,7 @@ ${r(HP(e,a,t))}<details><summary>Branches &amp; locations</summary>${t.branchesH
       <div class="muted" style="font-size:0.78rem;margin-bottom:6px">Fitness: <strong>${Math.round(e.skills?.fitness||50)}/100</strong> \u2014 staying fit slows how fast your health falls after 50. Last full checkup: <strong>${e.medical.lastCheckupYear?b(String(e.medical.lastCheckupYear)):"never"}</strong> \u2014 regular checkups catch serious illness earlier, when it is easier to treat.</div>
       ${(()=>{let t=e.career?.employed&&e.career?.job?om(e):null,o=!!(e.medical.healthInsurance||e.insurance?.employerHealth),r=im(e);return`<div class="muted" style="font-size:0.78rem;margin-bottom:6px">Health cover: <strong>${e.insurance?.health?"Private policy (you pay for it)":t?.covered?b(t.label):t?"No cover from this job":"None"}</strong> \u2014 ${o?"your cover cuts treatment bills (a private policy cuts private treatment to about a quarter; an employer plan cuts it by about 45%).":"no cover \u2014 a serious illness is charged in full and can wipe out your savings."}${r?" Staff treatment at your own hospital cuts your own private treatment to about a quarter \u2014 the prices above already include that.":""}</div>`})()}
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">
-        ${["gym","jog"].map(t=>{let o=rs(e,t);return`<button class="btn btn-sm" data-action="do-activity" data-id="${t}" ${o.ok?"":"disabled"}>${t==="gym"?"Hit the Gym (+fitness)":"Go for a Run (+fitness)"}${o.ok?"":pe(o.reason,"")}</button>`}).join("")}
+        ${["gym","jog"].map(t=>{let o=rs(e,t);return`<button class="btn btn-sm habit-btn" data-action="do-activity" data-id="${t}" ${o.ok?"":"disabled"}>${t==="gym"?"Hit the Gym (+fitness)":"Go for a Run (+fitness)"}${o.ok?"":pe(o.reason,"")}</button>`}).join("")}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">
         <button class="btn btn-sm" data-action="visit-hospital" data-sector="public" ${e.medical.lastCheckupPeriod===e.year*12+e.month?"disabled":""}>Public Hospital (${b(a.find(t=>t.sector==="public")?.name||"General")})</button>
