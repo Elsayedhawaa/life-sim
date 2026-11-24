@@ -206,7 +206,7 @@ console.log('--- (d) embezzlement ---');
   check('clues appear: books do not add up, then a supplier complains', embezzlementClues(S, biz).length >= 2 && /books.*do not add up/.test(embezzlementClues(S, biz)[0]) && /supplier/i.test(embezzlementClues(S, biz)[1]), embezzlementClues(S, biz).join(' | '));
   const quote = investigationCost(S, biz);
   console.log('investigation quote:', quote.text);
-  check('investigation cost and time stated before committing', quote.cost > 0 && quote.timeMonths === 1, quote.text);
+  check('(replacement) investigation cost and timing are stated before committing, and the stated timing (finishes now) matches the immediate result below', quote.cost > 0 && quote.timeMonths === 0 && /costs/.test(quote.text) && /finishes now/.test(quote.text), quote.text);
   const cashInv = S.money.cash;
   const inv = investigateEmbezzlement(S, biz);
   console.log('investigation:', inv.msg, '| recovered:', inv.recovered, 'of', inv.stolenTotal);

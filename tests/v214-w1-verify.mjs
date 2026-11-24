@@ -146,7 +146,7 @@ let S5;
   launchSmallBusiness(S0, 'clinic', 'Clinic', { mode: 'part_time' });
   const cap0 = managementCapacityInfo(S0);
   console.log('no-manager control: intended workload', computeWorkload(S0).businessHours, 'hrs/week; capacity managed', cap0.managedCount, 'unmanaged', cap0.unmanagedCount, 'ownerHoursUsed', cap0.ownerHoursUsed);
-  check('no-manager control: intended load is 134h/week (40+40+18+18+18)', computeWorkload(S0).businessHours === 134, `got ${computeWorkload(S0).businessHours}`);
+  { const w0 = computeWorkload(S0); check('(replacement) no-manager control: intended load is 134h/week (40+40+18+18+18), split into allocated hours (capped at the owner capacity) plus the uncovered remainder', w0.businessHours + w0.uncoveredHours === 134 && w0.businessHours <= 70 && w0.uncoveredHours > 0, `allocated ${w0.businessHours} + uncovered ${w0.uncoveredHours}`); }
   check('no-manager control: only 2 of 5 fit in the 70h week (café 40 + bakery 18)', cap0.managedCount === 2 && cap0.unmanagedCount === 3, `managed=${cap0.managedCount} unmanaged=${cap0.unmanagedCount}`);
   check('no-manager control: 3rd/4th/5th businesses get 0 owner hours', ownerHoursForBusiness(S0, S0.career.businesses[1]) === 0 && ownerHoursForBusiness(S0, S0.career.businesses[3]) === 0 && ownerHoursForBusiness(S0, S0.career.businesses[4]) === 0, '');
 }
@@ -241,7 +241,7 @@ console.log('--- launch gating ---');
   console.log('fresh state constraint:', ev0.constraintNote);
   check('fresh state: launch ok, no cap lock', ev0.ok && !ev0.locks.some(l => /Portfolio full|most one person/.test(l)), ev0.locks.join(' '));
   check('fresh state: self-run note states the real constraint', ev0.selfRunNote === 'You run this yourself: 40h/week.', ev0.selfRunNote);
-  check('fresh state: manager path states the wage', ev0.managerNote.startsWith('Needs a manager: ~') && ev0.managerWageEstimateLocal > 0, ev0.managerNote);
+  check('fresh state: manager path states the wage', ev0.managerNote.startsWith('Needs a manager:') && /\d/.test(ev0.managerNote) && /month/.test(ev0.managerNote) && ev0.managerWageEstimateLocal > 0, ev0.managerNote);
   check('fresh state: full-time fits in free hours (70 free)', ev0.selfRunFullTimeOk === true && ev0.ownerHoursFree === 70, `free=${ev0.ownerHoursFree}`);
   check('fresh state, mode full_time: selfRunOkForMode true, 40h needed', evaluateBusinessLaunch(S, cafeRow, 'full_time').selfRunOkForMode === true && evaluateBusinessLaunch(S, cafeRow, 'full_time').hoursNeeded === 40, '');
 

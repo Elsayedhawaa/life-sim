@@ -2785,6 +2785,7 @@ ${r(sA(e,a,t))}<details><summary>Branches &amp; locations</summary>${t.branchesH
       <div class="section-head">
         <div class="biz-card-title">${qd(_)}<h3>${b(_.name)}</h3></div>
         <span class="hud-pill">${_.enterprise?`${_.enterprise.stage} \xB7 ${_.mode==="full_time"?"Full-time owner":"Part-time owner"}`:_.tech?`${_.tech.stage==="live"?"Trading":"Pre-launch"} \xB7 ${_.mode==="full_time"?"Full-time founder":"Part-time founder"}`:`${Number.isFinite(oe)?`Level ${_.level}/${oe}`:`Level ${_.level}`} \xB7 ${b(B)}`}</span>
+        <span class="hud-pill">${fe}</span>
         ${ba(e,_)?"":'<span class="biz-alert">Management hours uncovered</span>'}
       </div>
       <div class="biz-subtitle">${b(R(_.country||e.country).name)} \xB7 ${b(_.premises?.label||"Home based")} \xB7 ${I} ${I===1?"employee":"employees"}</div>
@@ -2826,7 +2827,7 @@ ${r(sA(e,a,t))}<details><summary>Branches &amp; locations</summary>${t.branchesH
     ${r==="owned"?`<div class="card card-elevated">
       <div class="section-head">
         <h3>Business</h3>
-        <span class="muted">${i.length} owned \xB7 ${y.totalHours} h/wk used \xB7 ${y.ownerHoursFree} h/wk free${y.stretched?" \xB7 Overloaded":""}</span>
+        <span class="muted">${i.length} owned \xB7 ${y.totalHours} h/wk used (job ${y.jobHours} + businesses ${y.businessHours}) \xB7 ${y.ownerHoursFree} h/wk free${y.stretched?" \xB7 Overloaded":""} \xB7 ${y.managedCount} managed \xB7 ${y.unmanagedCount} unmanaged${M}</span>
       </div>
       ${x?`<div class="card" style="border:2px solid var(--brand-crimson);background:rgba(180,35,24,0.10);margin:8px 0"><strong style="color:var(--brand-crimson)">\u26A0 At risk \u2014 nobody is running ${b(x)}.</strong> <span class="muted">Revenue and staff morale fall each month a business stays unmanaged. Hire a manager, take it over yourself, or sell it.</span></div>`:""}
       ${i.length?`

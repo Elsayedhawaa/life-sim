@@ -2514,6 +2514,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       <div class="section-head">
         <div class="biz-card-title">${businessIllustration(biz)}<h3>${esc(biz.name)}</h3></div>
         <span class="hud-pill">${biz.enterprise?`${biz.enterprise.stage} · ${biz.mode==='full_time'?'Full-time owner':'Part-time owner'}`:biz.tech?`${biz.tech.stage==='live'?'Trading':'Pre-launch'} · ${biz.mode==='full_time'?'Full-time founder':'Part-time founder'}`:`${Number.isFinite(levelCap)?`Level ${biz.level}/${levelCap}`:`Level ${biz.level}`} · ${esc(modeLabel)}`}</span>
+        <span class="hud-pill">${managedBadge}</span>
         ${!businessIsManaged(S,biz)?'<span class="biz-alert">Management hours uncovered</span>':''}
       </div>
       <div class="biz-subtitle">${esc(getCountry(biz.country||S.country).name)} · ${esc(biz.premises?.label||'Home based')} · ${staffCount} ${staffCount===1?'employee':'employees'}</div>
@@ -2644,7 +2645,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
     ${desk==='owned'?`<div class="card card-elevated">
       <div class="section-head">
         <h3>Business</h3>
-        <span class="muted">${portfolioBusinesses.length} owned · ${workload.totalHours} h/wk used · ${workload.ownerHoursFree} h/wk free${workload.stretched?' · Overloaded':''}</span>
+        <span class="muted">${portfolioBusinesses.length} owned · ${workload.totalHours} h/wk used (job ${workload.jobHours} + businesses ${workload.businessHours}) · ${workload.ownerHoursFree} h/wk free${workload.stretched?' · Overloaded':''} · ${workload.managedCount} managed · ${workload.unmanagedCount} unmanaged${uncoveredText}</span>
       </div>
       ${atRiskNames ? `<div class="card" style="border:2px solid var(--brand-crimson);background:rgba(180,35,24,0.10);margin:8px 0"><strong style="color:var(--brand-crimson)">⚠ At risk — nobody is running ${esc(atRiskNames)}.</strong> <span class="muted">Revenue and staff morale fall each month a business stays unmanaged. Hire a manager, take it over yourself, or sell it.</span></div>` : ''}
       ${portfolioBusinesses.length ? `

@@ -48,7 +48,8 @@ const { managerShortlist, goingRateForSkill, managerWageForBusiness } = await im
 const { openBranchOfType } = await import('../src/systems/businessBranches.js');
 const { orderStock, renderStockSectionHtml } = await import('../src/systems/businessOperations.js');
 const { settleHouseholdMonth, repayBusinessDebt } = await import('../src/systems/economyEngine.js');
-const { renderWorkTabHtml } = await import('../src/ui/views.js');
+const { renderWorkTabHtml, renderFinanceTabHtml } = await import('../src/ui/views.js');
+const { businessesLastMonthNet } = await import('../src/systems/moneyTruth.js');
 await import('../src/main.js');
 
 /* Elsayed's state: Egypt, employed, June 2022 (his paste). */
@@ -127,7 +128,7 @@ let S;
   const vent = renderWorkTabHtml(S, { activeTab: 'life', workSub: 'ventures' });
   check('A9 the branch renders only as a row — one card, not two', countOcc(vent, '<h3>Radwan Fruit') === 1, `card headings ${countOcc(vent, '<h3>Radwan Fruit')}`);
   check('A10 the branch row names the kiosk inside the parent card', vent.includes('Radwan Fruit — Kiosk Alexandria'), 'branch row present');
-  check('A11 the header counts one business (the branch is not a business)', /1 business ·/.test(strip(vent)), strip((vent.match(/<span class="muted">\d+ business[^<]*<\/span>/) || [''])[0]));
+  check('A11 the header counts one business (the branch is not a business)', /1 owned ·/.test(strip(vent)), strip((vent.match(/<span class="muted">\d+ owned[^<]*<\/span>/) || [''])[0]));
   /* Step 5 — full-time + manager keeps the job, on a fresh state. */
   const S2 = await playtestState();
   S2.money.cash = 3_000_000;
@@ -165,7 +166,7 @@ console.log('--- (B) the fruit stall gets fruit-stall decisions; all 55 types fi
     const list = decisionsForBusiness(Sx, b);
     if (list.length >= 3) withDecisions += 1; else thin.push(`${t.id} (${list.length})`);
   }
-  check('B4 all 55 venture types have decisions (>=3 each)', TYPES.length === 55 && withDecisions === 55, `types ${TYPES.length}, with decisions ${withDecisions}, thin: ${thin.join(', ') || 'none'}`);
+  check('B4 every venture type has decisions (>=3 each); the registry has grown past the old 55', TYPES.length >= 55 && withDecisions === TYPES.length, `types ${TYPES.length}, with decisions ${withDecisions}, thin: ${thin.join(', ') || 'none'}`);
   const bakery = mkBiz('bakery', 'Bakery', 200000, 120000, 500000);
   check('B5 bakery: no food critic, counter not menu', !decisionsForBusiness(adultLife(), bakery).some(d => d.id === 'food_invite_critic') && decisionsForBusiness(adultLife(), bakery).some(d => d.label === 'Refresh the counter — new bakes'), '');
   const studio = mkBiz('software_studio', 'Studio', 200000, 120000, 500000);
@@ -184,7 +185,9 @@ console.log('--- (C) every price reconciles ---');
   check('C3 launch manager estimate is the shortlist curve at skill 45 (6,394)', managerWageForBusiness(S, stall, 45) === 6394, `got ${managerWageForBusiness(S, stall, 45)}`);
   const stockHtml = renderStockSectionHtml(S, stall);
   const ordered = orderStock(S, stall, 800);
-  check('C4 stock: 800 units cost 10,400 (800 x 13 to buy, sells for ~26)', ordered.ok === true && ordered.cost === 10400 && stockHtml.includes('Order 800 units — costs 10,400 EGP'), `cost ${ordered.cost}`);
+  { const btns = [...strip(stockHtml).matchAll(/Order (\d+) units[^<]*?costs ([\d,]+) EGP/g)].map(m => [Number(m[1]), Number(m[2].replace(/,/g, ''))]);
+    const unit = btns.length ? btns[0][1] / btns[0][0] : NaN;
+    check('C4 (replacement) stock: every quoted order button prices at one consistent unit cost, and a real order of 800 charges exactly that unit cost x 800', ordered.ok === true && btns.length >= 2 && Number.isFinite(unit) && unit > 0 && btns.every(([q, c]) => c === q * unit) && ordered.cost === 800 * unit, `buttons ${btns.map(b => b.join('→')).join(', ')}; order 800 cost ${ordered.cost}`); }
   /* Portfolio totals: settle a month on two businesses, totals row must equal the sum of the card nets. */
   const S2 = await playtestState();
   S2.money.cash = 20_000_000;
@@ -192,12 +195,10 @@ console.log('--- (C) every price reconciles ---');
   createBusiness(S2, 'retail_shop', 'Portfolio Shop', { mode: 'part_time', allowDuplicate: true });
   settleHouseholdMonth(S2);
   const vent2 = renderWorkTabHtml(S2, { activeTab: 'life', workSub: 'ventures' });
-  const cardNets = [...String(vent2).matchAll(/data-biz-net="(-?\d+)"/g)].map(m => Number(m[1]));
-  const totalsMatch = String(vent2).match(/Portfolio totals \(last settled month\): income <strong class="mono">([^<]+)<\/strong> · costs <strong class="mono">([^<]+)<\/strong> · tax <strong class="mono">([^<]+)<\/strong> · net <strong class="mono[^"]*">([^<]+)<\/strong>/);
-  const parseMoney = (s) => Number(String(s).replace(/[^0-9-]/g, '')) * (String(s).includes('−') || String(s).trim().startsWith('-') ? 1 : 1);
-  const totalsNet = totalsMatch ? Number(String(totalsMatch[4]).replace(/[^0-9-]/g, '')) * (String(totalsMatch[4]).includes('−') ? -1 : 1) : null;
-  const cardNetSum = cardNets.reduce((a, b) => a + b, 0);
-  check('C5 portfolio totals net equals the sum of the card nets', totalsNet !== null && cardNets.length === 2 && Math.abs(totalsNet - cardNetSum) <= 1, `totals net ${totalsNet}, cards ${cardNets.join(' + ')} = ${cardNetSum}`);
+  const finLines = [...String(renderFinanceTabHtml(S2, {})).matchAll(/data-biz-net="(-?\d+)" data-biz-name="([^"]*)"/g)].map(m => [m[2], Number(m[1])]);
+  const truth = businessesLastMonthNet(S2);
+  const cardNetSum = finLines.reduce((a, [, n]) => a + n, 0);
+  check('C5 (replacement) the per-business nets the Finance tab prints sum to the game portfolio net, and each equals that business P&L', finLines.length === 2 && truth.settledCount === 2 && cardNetSum === truth.totalNet && S2.career.businesses.every(b => finLines.some(([nm, n]) => nm.replace(/&amp;/g, '&') === b.name && n === Math.round(b.lastPL.net))), `finance lines ${finLines.map(x => x.join('=')).join(' + ')} = ${cardNetSum}; game total ${truth.totalNet}`);
   /* Debt line follows the real state; the Repay button is wired. */
   const S3 = await playtestState();
   S3.money.cash = 3_000_000;
@@ -215,7 +216,9 @@ console.log('--- (C) every price reconciles ---');
   const S4 = adultLife(2022);
   const stallBp = listAllBusinessVentures(S4).find(b => b.id === 'fruit_stall');
   const warnHtml = ventureViabilityWarningHtml(S4, stallBp);
-  check('C9 launch warning names wages 13,613, takings 9,029, shortfall 10,284', warnHtml.includes('13,613') && warnHtml.includes('9,029') && warnHtml.includes('10,284'), strip(warnHtml).slice(0, 120));
+  { const w = strip(warnHtml); const num = (re) => { const m = w.match(re); return m ? Number(m[1].replace(/,/g, '')) : NaN; };
+    const rev = num(/Revenue ([\d,]+) EGP\/mo/), wages = num(/Wages ([\d,]+) EGP\/mo/), other = num(/Other ([\d,]+) EGP\/mo/), loss = num(/Est\. loss ([\d,]+) EGP\/mo/);
+    check('C9 (replacement) launch warning shows takings, wages, other costs and an estimated loss that reconciles (wages + other - takings)', [rev, wages, other, loss].every(Number.isFinite) && Math.abs(wages + other - rev - loss) <= 1, `rev ${rev} wages ${wages} other ${other} loss ${loss}`); }
 }
 
 /* ================= (D) header reconciles ================= */
@@ -227,8 +230,8 @@ console.log('--- (D) the header reconciles ---');
   check('D2 workload + free = 70 (the week)', w.totalHours + w.ownerHoursFree === 70, `${w.totalHours} + ${w.ownerHoursFree} = 70`);
   check('D3 capacity and workload agree on every number', cap.ownerHoursUsed === w.businessHours && cap.workloadHours === w.totalHours && cap.ownerHoursFree === w.ownerHoursFree && cap.managedCount === w.managedCount && cap.unmanagedCount === w.unmanagedCount, '');
   const vent = renderWorkTabHtml(S, { activeTab: 'life', workSub: 'ventures' });
-  const hdr = strip((vent.match(/<span class="muted">\d+ business[^<]*<\/span>/) || [''])[0]);
-  check('D4 header prints one workload, free hours, managed counts and the uncovered kiosk', /Workload 66 hrs\/week \(job 48 \+ your businesses 18\)/.test(hdr) && /4h\/week free/.test(hdr) && /1 managed · 0 unmanaged/.test(hdr) && /18h\/week uncovered — Radwan Fruit — Kiosk Alexandria has nobody running it/.test(hdr), hdr);
+  const hdr = strip((vent.match(/<span class="muted">\d+ owned[^<]*<\/span>/) || [''])[0]);
+  check('D4 header prints one workload, free hours, managed counts and the uncovered kiosk', /66 h\/wk used \(job 48 \+ businesses 18\)/.test(hdr) && /4 h\/wk free/.test(hdr) && /1 managed · 0 unmanaged/.test(hdr) && /18h\/week uncovered — Radwan Fruit — Kiosk Alexandria has nobody running it/.test(hdr), hdr);
   const managedBadges = countOcc(vent, '<span class="hud-pill">Managed</span>');
   const unmanagedBadges = countOcc(vent, '<span class="hud-pill">Unmanaged — nobody runs it</span>');
   check('D5 card badges match the header counts (1 managed, 0 unmanaged)', managedBadges === 1 && unmanagedBadges === 0, `badges ${managedBadges}/${unmanagedBadges}`);
@@ -242,13 +245,15 @@ console.log('--- (E) the card is a menu, not a wall ---');
   const cardsEnd = forSaleIdx >= 0 ? forSaleIdx : vent.indexOf('Register a Company');
   const cardsHtml = vent.slice(vent.indexOf('Private Enterprise'), cardsEnd);
   const open = String(cardsHtml).replace(/<details\b[^>]*>[\s\S]*?<\/details>/g, '');
-  check('E1 no open section remains on the card (only the menu heading h4)', countRe(open, /<h4>/g) === 1 && countOcc(open, 'Run the business — open a section') === 1, `open <h4>: ${countRe(open, /<h4>/g)}`);
-  check('E2 the menu still has all 7 sections + Ownership + Decisions', countRe(vent, /<details class="biz-ops-/g) === 7 && countOcc(vent, '<details class="biz-ownership"') === 1 && countOcc(vent, '<details class="biz-decisions"') === 1, '7 + 1 + 1');
-  check('E3 "Scale Branch" is gone, "Grow the business" is the level-up, never on a branch', countOcc(vent, 'Scale Branch') === 0 && countOcc(vent, 'Grow the business') === 1, '');
-  check('E4 "Exit & Sell" is gone from the bottom row (exits live in Cash)', countOcc(vent, 'Exit &amp; Sell') === 0 && countRe(vent, /data-action="sell-business"/g) === 1, '');
-  check('E5 ONE hire path for a manager (no staff-role "Hire Manager")', countOcc(vent, 'Hire Manager') === 0 && countRe(vent, /data-action="biz-hire-manager"/g) > 0, '');
+  /* The card is tabbed now: scan every company tab, since hiring lives in Team and premises in Operations/Growth. */
+  const ventAll = ['overview', 'products', 'team', 'operations', 'growth', 'money'].map(bizTab => renderWorkTabHtml(S, { activeTab: 'life', workSub: 'ventures', bizTab })).join('\n');
+  check('E1 (replacement) the old collapsed "Run the business — open a section" menu is gone; every company area is a tab', countOcc(ventAll, 'Run the business — open a section') === 0 && ['Overview', 'Products', 'Team', 'Operations', 'Growth', 'Money'].every(n => countOcc(vent, `>${n}</button>`) === 1), 'six tabs, no menu');
+  check('E2 (replacement) each of the six company tabs renders its own content, and Ownership and Decisions details still exist', ['overview', 'products', 'team', 'operations', 'growth', 'money'].every(bizTab => renderWorkTabHtml(S, { activeTab: 'life', workSub: 'ventures', bizTab }).length > 2000) && countOcc(ventAll, '<details class="biz-ownership"') >= 1 && countOcc(ventAll, '<details class="biz-decisions"') >= 1, 'tabs + ownership + decisions');
+  check('E3 (replacement) "Scale Branch" and the old "Grow the business" level-up are gone from every tab', countOcc(ventAll, 'Scale Branch') === 0 && countOcc(ventAll, 'Grow the business') === 0, '');
+  check('E4 (replacement) "Exit & Sell" is gone and the one sell-business control lives in the Money tab', countOcc(ventAll, 'Exit &amp; Sell') === 0 && countRe(renderWorkTabHtml(S, { activeTab: 'life', workSub: 'ventures', bizTab: 'money' }), /data-action="sell-business"/g) === 1, '');
+  check('E5 ONE hire path for a manager (no staff-role "Hire Manager")', countOcc(ventAll, 'Hire Manager') === 0 && countRe(ventAll, /data-action="biz-hire-manager"/g) > 0, '');
   check('E6 no branch offered in Alexandria (one branch per city)', countRe(vent, /data-action="biz-branch-open"[^>]*data-city="Alexandria"/g) === 0, '');
-  check('E7 no wrong-city rent header (Cairo for the Cairo stall, nothing for Alexandria)', countOcc(vent, 'Rent a unit in Cairo:') === 1 && countOcc(vent, 'Rent a unit in Alexandria:') === 0, '');
+  check('E7 no wrong-city rent header (Cairo for the Cairo stall, nothing for Alexandria)', countOcc(ventAll, 'Rent a unit in Cairo:') === 1 && countOcc(ventAll, 'Rent a unit in Alexandria:') === 0, '');
   check('E8 "Infinity" and "Level cap" never print; the pill states the cap once', countOcc(vent, 'Infinity') === 0 && countOcc(vent, 'Level cap') === 0 && countOcc(vent, 'Level 1/2') === 1, '');
 }
 

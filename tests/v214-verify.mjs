@@ -28,7 +28,7 @@
 import { createNewLifeState, ensureExtendedState } from '../src/core/schema.js';
 import { settleHouseholdMonth } from '../src/systems/economyEngine.js';
 import { launchSmallBusiness } from '../src/systems/careerEducationEngine.js';
-import { managementCapacityInfo, businessIsManaged, OWNER_WEEKLY_HOURS_MAX } from '../src/systems/businessCapacity.js';
+import { managementCapacityInfo, businessIsManaged, unmanagedRevenueMult, OWNER_WEEKLY_HOURS_MAX } from '../src/systems/businessCapacity.js';
 import { hireManager, setManagerPolicy } from '../src/systems/businessManager.js';
 import { applyDecision } from '../src/systems/businessDecisions.js';
 import { listBusinessesForSale, buyBusinessDueDiligence, buyBusiness } from '../src/systems/businessAcquisitions.js';
@@ -197,9 +197,10 @@ console.log('--- §6 unmanaged decay (settlement, 3 months) ---');
   launchSmallBusiness(S, 'retail_shop', 'Unmanaged Shop', { mode: 'full_time' });
   const biz = S.career.businesses.find(b => b.name === 'Unmanaged Shop');
   check('second full-time business is unmanaged (no hours left)', !businessIsManaged(S, biz));
-  const revs = [], morales = [], months = [];
+  const revs = [], morales = [], months = [], mults = [];
   for (let m = 1; m <= 3; m++) {
     S.month = m;
+    mults.push(unmanagedRevenueMult(biz));
     settleHouseholdMonth(S);
     revs.push(biz.lastPL.revenue);
     morales.push(Math.round(avgMorale(biz)));
@@ -207,7 +208,8 @@ console.log('--- §6 unmanaged decay (settlement, 3 months) ---');
     console.log(`month ${m}: revenue ${biz.lastPL.revenue}, avg morale ${Math.round(avgMorale(biz))}, unmanagedMonths ${biz.unmanagedMonths}, atRisk ${biz.atRisk}`);
   }
   check('unmanagedMonths counts 1, 2, 3', months[0] === 1 && months[1] === 2 && months[2] === 3, months.join(', '));
-  check('settled revenue falls every unmanaged month', revs[0] > revs[1] && revs[1] > revs[2], revs.join(' -> '));
+  /* (replacement) Settled revenue carries monthly market variation (132,872 -> 96,829 -> 117,301 in one run), so a strictly falling raw series is not a valid invariant. The decay itself is the multiplier each month's P&L uses: it must fall every unmanaged month. */
+  check('the unmanaged revenue multiplier applied to each month falls every unmanaged month', mults[0] === 1 && mults[0] > mults[1] && mults[1] > mults[2], mults.join(' -> ') + ' (revenue ' + revs.join(' / ') + ')');
   check('staff morale falls every unmanaged month', morales[0] > morales[1] && morales[1] > morales[2], morales.join(' -> '));
   check('atRisk is true at month 3', biz.atRisk === true, `atRisk=${biz.atRisk}`);
   const flagLine = (S.journal || []).find(j => j.text && /unmanaged for 3 months/.test(j.text) && j.text.includes('Unmanaged Shop'));
@@ -259,9 +261,12 @@ console.log('--- §8 Ventures render ---');
   const h = hireManager(S, biz, { name: 'Render Manager', skill: 70, wage: 20000, loyalty: 75, personId: null });
   check('render-life manager hired', h.ok, h.msg);
   settleHouseholdMonth(S);
-  const vhtml = renderWorkTabHtml(S, { workSub: 'ventures', bizQuery: '' });
+  /* The company card is tabbed now (Overview/Products/Team/Operations/Growth/Money), so the content is read across all tabs and the Buy-existing desk. */
+  const _tabs = ['overview', 'products', 'team', 'operations', 'growth', 'money'].map(bizTab => renderWorkTabHtml(S, { workSub: 'ventures', bizQuery: '', bizTab }));
+  const _buy = renderWorkTabHtml(S, { workSub: 'ventures', bizQuery: '', bizDesk: 'buy' });
+  const vhtml = _tabs.join('\n') + _buy;
   const vtext = strip(vhtml);
-  check('header shows hours used/free, not a cap', /h\/week/.test(vtext) && !/of 3 businesses/.test(vtext), '');
+  check('header shows hours used/free, not a cap', /h\/(week|wk) (used|free)/.test(vtext) && !/of 3 businesses/.test(vtext), '');
   check('manager section shows the manager by name', vtext.includes('Render Manager'), '');
   check('manager policy buttons shown', /Policy/.test(vtext) && /Growth/.test(vtext) && /Harvest/.test(vtext), '');
   check('P&L table shows the manager wage row', /Manager — Render Manager/.test(vtext), '');

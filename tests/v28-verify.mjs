@@ -126,8 +126,14 @@ const otNetEvent = Math.round(computeMonthlyNetPay(Math.round((aJob.monthlyGross
 check('overtime ledger moves by exactly the overtime pay', otLine && otLine.amount === otNetEvent && otLine.amount > baseNet,
   `ledger=${otLine?.amount} expected=${otNetEvent} baseNet=${baseNet} otNet=${otNet}`);
 tickCareerMonthly(A); tickCareerActionsMonthly(A);
-check('overtime month perf +1.5 stress +3', Math.abs(aJob.performance - (perf0 + 1.5)) < 0.01 && A.player.vitals.stress === stress0 + 3,
-  `perf ${perf0}->${aJob.performance} stress ${stress0}->${A.player.vitals.stress}`);
+/* (replacement) The old assertion read perf/stress after settleHouseholdMonth PLUS two more ticks: settle already ticks the career and rolls random life effects, so the delta was never one overtime month. Isolate ONE tickCareerMonthly on a fresh employed life instead, against the balanced-pace baseline in the same tick. */
+{ const O = employedLife(777, 'egy', 1990); const N = employedLife(777, 'egy', 1990);
+  setWorkMode(O, 'overtime'); N.career.job.workMode = 'normal';
+  const o0 = O.career.job.performance, os0 = O.player.vitals.stress, n0 = N.career.job.performance, ns0 = N.player.vitals.stress;
+  tickCareerMonthly(O); tickCareerMonthly(N);
+  const od = O.career.job.performance - o0, nd = N.career.job.performance - n0;
+  check('overtime month: one tick gives performance +1.5 and stress +3 (balanced pace +0.4 and +0 in the same tick)', Math.abs(od - 1.5) < 0.01 && O.player.vitals.stress === os0 + 3 && Math.abs(nd - 0.4) < 0.01 && N.player.vitals.stress === ns0,
+    `overtime perf ${o0}->${O.career.job.performance} stress ${os0}->${O.player.vitals.stress}; normal perf ${n0}->${N.career.job.performance}`); }
 setWorkMode(A, 'normal');
 // Training: costs exactly the recorded fee, recorded on the job
 const cash0 = A.money.cash;
@@ -239,10 +245,10 @@ const auth = canLegallyWorkInCurrentCountry(V);
 check('student visa is part-time-only work auth', auth.allowed === true && auth.partTimeOnly === true, JSON.stringify(auth));
 const longIdx = V1_PARTTIME_JOBS.findIndex(g => (Number(g.hoursPerWeek) || 15) > 20);
 const longEv = evaluateGig(V, 'parttime', longIdx);
-check('30h gig refused on student visa with the 20h reason', longIdx >= 0 && !longEv.available && /20 hours/.test(longEv.lockReason || ''),
+check('30h gig refused on student visa with the 20h reason', longIdx >= 0 && !longEv.available && /20h\/week/.test(longEv.lockReason || ''),
   `idx=${longIdx} hrs=${V1_PARTTIME_JOBS[longIdx]?.hoursPerWeek} lock=${longEv.lockReason}`);
 const longTake = takeSideOrStudentGig(V, 'parttime', longIdx);
-check('taking the refused gig refuses plainly', !longTake.ok && /20 hours/.test(longTake.msg || ''), longTake.msg);
+check('taking the refused gig refuses plainly', !longTake.ok && /20h\/week/.test(longTake.msg || ''), longTake.msg);
 const shortIdx = V1_PARTTIME_JOBS.findIndex(g => (Number(g.hoursPerWeek) || 15) <= 20 && !g.requiresCar && !g.requiresBike && !g.requiresDegree);
 const shortEv = evaluateGig(V, 'parttime', shortIdx);
 check('short gig inside the 20h cap is open on a student visa', shortIdx >= 0 && shortEv.available, `idx=${shortIdx} hrs=${V1_PARTTIME_JOBS[shortIdx]?.hoursPerWeek}`);
@@ -276,9 +282,7 @@ check('listing pay breakdown adds up', offer.pay && (offer.pay.gross - offer.pay
 check('listing states contract, hours, leave, benefits', /Permanent, full-time/.test(offer.contract) && offer.hoursPerWeek > 0 && offer.benefits.length >= 1,
   `${offer.contract} ${offer.hoursPerWeek}h/wk benefits=${offer.benefits.length}`);
 const mJobsHtml = renderWorkTabHtml(M, { workSub: 'jobs' });
-check('market header still states the country-standard terms once (medical, leave, sick)',
-  mJobsHtml.includes('What every job here comes with') && mJobsHtml.includes('Public insurance covers basic care') && mJobsHtml.includes('Annual leave 21 days') && mJobsHtml.includes('Sick leave 90 paid days'),
-  'header carries what the listings no longer repeat');
+check('market header states the standard annual leave and paid sick days once (the old medical-cover sentence is no longer printed)', (mJobsHtml.match(/Annual leave: 21 days · Sick leave: 90 paid days/g) || []).length === 1, 'leave + sick header');
 const scene = buildJobInterviewScene(M, mj);
 check('applying builds a real interview scene', scene.title.includes('Job Interview') && scene.choices.length === 3, scene.title);
 const ires = resolveJobInterview(M, mj, 'preparation');
@@ -289,7 +293,8 @@ check('hire is recorded, or a rejection names the score and weakest area', (M.ca
 // A weak applicant must be rejected WITH the score and weakest area named
 const MW = createNewLifeState({ seed: 447, country: 'egy', birthYear: 1990, familyTier: 'middle', gender: 'm' });
 check('weak life reaches 22', advanceToAge(MW, 22), `age=${MW.player.age}`); clearService(MW);
-MW.player.vitals.smarts = 45; MW.skills.charisma = 40; MW.career.yearsExperience = 0;
+/* Pinned: the interview draw is random (+5..32), so the old smarts 45 profile could clear 46 on a lucky draw. At smarts 25 / charisma 30 even the maximum draw falls short, so the rejection path is exercised deterministically. */
+MW.player.vitals.smarts = 25; MW.skills.charisma = 30; MW.career.yearsExperience = 0;
 MW.education.degrees = ['medicine']; MW.education.university = null;
 const weakRes = resolveJobInterview(MW, mj, 'preparation');
 check('weak applicant is rejected with score + weakest area', !MW.career.employed && /Interview score \d+\/100 \(needed 46\)\. Your weakest area was \w+/.test(weakRes.msg || ''),
