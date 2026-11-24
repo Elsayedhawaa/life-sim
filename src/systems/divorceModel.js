@@ -1,10 +1,11 @@
+import{maritalCompanyValue,companyMaritalShare}from'./companyMarital.js';
 /* Simplified game settlement, not any country's family law. */
 import {nextId,recordJournal,walletMove,moveBalance,getCoupleForSpouse} from '../core/schema.js';
 import {getCountry,formatMoney} from '../data/countries.js';
 import {eraLocalCost,convertCurrency} from '../data/economy.js';
 export function recordMarriageAssets(S,couple){
   couple.assetBaseline={year:S.year,country:S.country,liquid:S.money.cash+S.money.savings,
-    propertyIds:(S.housing.properties||[]).map(p=>p.id),carIds:(S.cars||[]).map(p=>p.id),investments:(S.investments||[]).map(i=>({assetId:i.assetId,valueLocal:i.valueLocal||0})),businesses:(S.career.businesses||[]).map(b=>({id:b.id,equityOwned:b.equityOwned??100})),pensionPot:S.career.market?.pension?.pot||0};
+    propertyIds:(S.housing.properties||[]).map(p=>p.id),carIds:(S.cars||[]).map(p=>p.id),investments:(S.investments||[]).map(i=>({assetId:i.assetId,valueLocal:i.valueLocal||0})),businesses:(S.career.businesses||[]).map(b=>({id:b.id,equityOwned:b.equityOwned??100,netValue:maritalCompanyValue(b),currency:b.figuresCurrency||b.country||S.country})),pensionPot:S.career.market?.pension?.pot||0};
 }
 export function divorceChildren(S,spouseId){return(S.relations.childIds||[]).map(id=>S.people[id]).filter(ch=>ch?.alive&&ch.age<18&&(!(ch.parentIds||[]).length||ch.parentIds.includes(spouseId)));}
 function payCost(S,amount,label){
@@ -48,7 +49,7 @@ export function settleGameDivorce(S,spouse,couple,{custody='shared',contested=fa
   if(spouse.career)spouse.career.savingsLocal=(spouse.career.savingsLocal||0)+convertCurrency(spouseAward,S.country,spouse.residenceCountry||S.country,S.year);
   if(!prenup){
     for(const inv of S.investments||[]){const base=convertCurrency(baseline?.investments?.find(x=>x.assetId===inv.assetId)?.valueLocal||0,baseline?.country||S.country,S.country,S.year);const transfer=Math.max(0,(inv.valueLocal||0)-base)*.5;if(transfer>0){const old=inv.valueLocal;inv.valueLocal-=transfer;inv.costBasisLocal=(inv.costBasisLocal||0)*(inv.valueLocal/old);spouse.divorceInvestments??=[];spouse.divorceInvestments.push({assetId:inv.assetId,value:transfer,country:S.country});financialTransfers.push({kind:'investment',name:inv.name||inv.assetId,value:transfer});}}
-    for(const biz of S.career.businesses||[]){if(biz.dead)continue;const before=baseline?.businesses?.find(x=>x.id===biz.id);if(before)continue;const share=(biz.equityOwned??100)*.5;biz.equityOwned=(biz.equityOwned??100)-share;biz.divorceCoOwners??=[];biz.divorceCoOwners.push({personId:spouse.id,equityPercent:share});financialTransfers.push({kind:'business-equity',name:biz.name,percent:share});}
+    for(const biz of S.career.businesses||[]){if(biz.dead)continue;const share=companyMaritalShare(S,biz,couple);if(share<=0)continue;biz.equityOwned=(biz.equityOwned??100)-share;biz.divorceCoOwners??=[];biz.divorceCoOwners.push({personId:spouse.id,equityPercent:share});financialTransfers.push({kind:'business-equity',name:biz.name,percent:share});}
     const pen=S.career.market?.pension;if(pen){const transfer=Math.max(0,(pen.pot||0)-convertCurrency(baseline?.pensionPot||0,baseline?.country||S.country,S.country,S.year))*.5;pen.pot-=transfer;spouse.divorcePension={balance:(spouse.divorcePension?.balance||0)+transfer,country:S.country};if(transfer)financialTransfers.push({kind:'private-pension',value:transfer});}
   }
   const children=divorceChildren(S,spouse.id);
