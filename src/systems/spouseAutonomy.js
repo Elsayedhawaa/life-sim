@@ -1,5 +1,5 @@
 import {clamp,hashSeed} from '../core/rng.js';
-import {recordJournal,walletMove} from '../core/schema.js';
+import {recordJournal,walletMove,queueScene} from '../core/schema.js';
 import {eraSalary,eraLocalCost} from '../data/economy.js';
 import {getCountry} from '../data/countries.js';
 import {personMind,rememberChoice} from './personMind.js';
@@ -11,6 +11,7 @@ export function spouseRequestCost(S,kind){return kind==='spending'?Math.round(er
 export function tickSpouseAutonomy(S){
  const now=S.year*12+S.month;
  for(const id of S.relations.spouseIds||[]){const sp=S.people[id];if(!sp?.alive)continue;const m=personMind(S,sp),r=sp.relationshipProgress??={stage:'together'};
+ if(m.pending?.kind==='boundary'&&m.pending.reason==='distance'&&monthsSinceContact(S,sp)<3){m.pending=null;continue;}
  if(m.pending){if(now-m.pending.at>=3){sp.rel.trust=clamp(sp.rel.trust-4);rememberChoice(S,sp,m.pending.kind,'unanswered');m.pending=null;}continue;}
  if(m.lastDecision!=null&&now-m.lastDecision<6)continue;
  const hash=hashSeed(`${S.seed}|${sp.id}|spouse|${now}`);
@@ -40,6 +41,7 @@ export function tickSpouseAutonomy(S){
   if(kind==='move')m.moveTargetId=target.id;
  }
  m.goal=kind;m.lastDecision=now;m.pending={kind,at:now};
+ if(kind==='boundary'){m.pending.reason=sp.rel.trust<45||sp.rel.respect<35?'trust':'distance';queueScene(S,buildSpouseConversation(S,id,now));}
  }
 }
 export function answerSpouseDecision(S,id,accept){
@@ -59,3 +61,17 @@ export function answerSpouseDecision(S,id,accept){
  sp.rel.affection=clamp(sp.rel.affection+(accept?4:-2));sp.rel.trust=clamp(sp.rel.trust+(accept?3:-1));rememberChoice(S,sp,kind,accept?'agreed':'declined');m.pending=null;
  recordJournal(S,`${sp.firstName}: ${kind.replaceAll('_',' ')} ${accept?'agreed':'not agreed'}.`,'family');return{ok:true,msg:accept?'Agreed':'Not agreed'};
 }
+
+export function spouseConversationCurrent(S,scene){
+ const d=scene?.spouseConversation;if(!d)return true;const p=S.people[d.id],r=p?.mind?.pending;
+ return !!(p?.alive&&S.relations.spouseIds.includes(d.id)&&p.relationshipProgress?.stage!=='separated'&&r?.kind==='boundary'&&r.at===d.at&&(r.reason!=='distance'||monthsSinceContact(S,p)>=3));
+}
+export function buildSpouseConversation(S,id,at){
+ const p=S.people[id],snapshot={spouseConversation:{id,at}};if(!spouseConversationCurrent(S,snapshot))return null;
+ const trust=p.mind.pending.reason==='trust';
+ return{key:`spouse_talk_${id}_${at}`,baseId:`spouse_talk_${id}_${at}`,spouseConversation:{id,at},category:'relationship',title:`${p.firstName} Wants to Talk`,text:trust?`${p.firstName}: "Can we talk about what has been happening between us?"`:`${p.firstName}: "We keep putting off time together. Can we keep an evening free this month?"`,choices:[
+ {label:'Make time to talk · 3 energy',available:()=>checkSocialEnergy(S,3).ok,effect:st=>{if(spouseConversationCurrent(st,snapshot))answerSpouseDecision(st,id,true);}},
+ {label:'Not this month',effect:st=>{if(spouseConversationCurrent(st,snapshot))answerSpouseDecision(st,id,false);}}
+ ]};
+}
+export function restoreSpouseConversation(S,saved){const d=saved?.spouseConversation;return d?buildSpouseConversation(S,d.id,d.at):null;}
