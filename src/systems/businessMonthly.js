@@ -1,3 +1,4 @@
+import{computeTechMonth}from './techStartup.js';
 import{tickBusinessSafety}from './businessSafety.js';
 /* ============================================================================
    v2.14 — ONE monthly P&L for a business, with everything folded in.
@@ -122,6 +123,7 @@ export function computeBusinessMonthFull(S, biz, opts = {}) {
     biz.lastPL = deadPl;
     return deadPl;
   }
+  if(biz.tech)return computeTechMonth(S,biz,computeBusinessTax,businessIsManaged(S,biz),opts.worldRevenueMult||1);
   /* v2.17 merge — W4's settlement-resolved operations effects (stock
      deliveries, prices, stock on hand) merge into biz.monthEffects
      BEFORE the snapshot below, so the fold at step 5.5 reads them

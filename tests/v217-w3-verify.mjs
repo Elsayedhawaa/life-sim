@@ -268,7 +268,7 @@ function run12Months(S, biz) {
     emp('r2', 'Omar Waiter', 'waiter', 40)
   ];
   biz.staff[0].wageLocal = 15000; biz.staff[1].wageLocal = 8000;
-  const html = renderStaffListHtml(S, biz);
+  const html = biz.staff.map(e=>renderStaffListHtml(S,biz,e.id)).join('');
   const text = strip(html);
   console.log(`  MEASURE staff list text: ${text.slice(0, 300)}...`);
   check('staff list shows the chef role', /Chef/.test(text), text.slice(0, 200));
@@ -276,7 +276,7 @@ function run12Months(S, biz) {
   check('staff list shows skill per person', /skill 80/.test(text) && /skill 40/.test(text), text.slice(0, 300));
   check('staff list shows what the chef does (regulars)', /regulars coming back/.test(text), text.slice(0, 400));
   check('staff list shows waiter output', /brings in extra sales/.test(text), text.slice(0, 400));
-  check('staff list has a Train button stating +8 skill and cost', /Train \(\+8 skill/.test(text), text.slice(0, 500));
+  check('staff list has a Train button stating +8 skill and cost', /Training course: \+8 skill, costs/.test(html), text.slice(0, 500));
   check('staff list has a Promote button', /Promote to/.test(text), text.slice(0, 500));
   check('staff list has a Fire button', /Fire/.test(text), text.slice(0, 500));
   check('hire buttons state the effect before hiring', /Hire Chef.*food quality|Hire Chef.*regulars/.test(text), text.slice(0, 600));

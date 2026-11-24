@@ -1,5 +1,6 @@
 // Game product and staffing profiles. Prices derive from each saved business's scale.
 const PROFILES=[
+ [/tech_founder/,['Software subscription'],['developer','designer','sales','support','cto','bookkeeper']],
  [/restaurant/,['Lunch plate','Family meal','Catering tray'],['chef','waiter','cashier','dishwasher']],
  [/retail|mobile_shop|ecommerce/,['Phone accessory','Refurbished phone','Laptop'],['sales','cashier','technician','packager']],
  [/software|saas/,['Support hour','Software subscription','Development project'],['developer','designer','sales','bookkeeper']],

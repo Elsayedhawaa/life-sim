@@ -412,7 +412,7 @@ function escHtml(str) {
   return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export function renderStaffListHtml(S, biz) {
+export function renderStaffListHtml(S, biz, selectedId=null) {
   if (!biz) return '';
   const staff = ensureStaffArray(S, biz);
   const roles = staffRolesForType(biz.typeId);
@@ -430,13 +430,13 @@ export function renderStaffListHtml(S, biz) {
   /* A repeat-rate move that rounds to 0% is no move at all — naming it
      ("repeat customers 0%") is the same dead text as the zeroes above. */
   if (Math.round(eff.repeatRateDelta * 100) !== 0) effectParts.push(`repeat customers ${eff.repeatRateDelta > 0 ? '+' : ''}${Math.round(eff.repeatRateDelta * 100)}%`);
-  const effectSummary = staff.length === 0
+  const effectSummary = biz.tech?'Engineers build the product; sales bring users; support reduces churn.':staff.length === 0
     ? 'No staff yet — it is just you.'
     : effectParts.length ? `Staff ${effectParts.join(', ')} this month.` : '';
   const rows = staff.length === 0
     ? `<div class="muted">No employees yet — it is just you. Hire below; wages come out of the business every month and morale moves revenue.</div>`
-    : staff.map(emp => {
-        const effectLine = personEffectText(S, biz, emp);
+    : staff.filter(emp=>emp.id===(staff.find(e=>e.id===selectedId)||staff[0])?.id).map(emp => {
+        const effectLine = biz.tech?({developer:'Builds prototypes, ships features and improves quality.',designer:'Improves development speed and product quality.',sales:'Acquires new users after release.',marketing:'Acquires new users after release.',support:'Reduces customer churn.',cto:'Builds products with the engineering team.',bookkeeper:'Administration, charged as payroll.'}[emp.role]||'Support role, charged as payroll.'):personEffectText(S, biz, emp);
         /* v2.18 W3 — the row above already names the person and their
            role, so the effect line drops its "Role Name: " prefix here.
            personEffectText keeps the prefix: the P&L notes use the same
@@ -464,15 +464,15 @@ export function renderStaffListHtml(S, biz) {
           <div class="muted">${escHtml(staffPreference(S,biz,emp))}${emp.request?` · Wants ${emp.request.kind==='raise'?'pay review':emp.request.kind==='rest'?'time off':'training'}`:''}</div>
           ${emp.request?.kind==='raise'?`<button class="btn btn-sm" data-action="biz-staff-request" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" data-accept="yes">Raise 10% · ${formatMoney(Math.round(emp.wageLocal*1.1),countryId)}/mo</button>`:''}
           ${emp.request?`<button class="btn btn-sm" data-action="biz-staff-request" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" data-accept="no">Decline request</button>`:''}
-          <details data-panel="pay_${escHtml(biz.id)}_${escHtml(emp.id)}"><summary>Pay &amp; conduct</summary><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
-          ${[['raise','Raise 10% · '+formatMoney(staffActionQuote(S,biz,emp,'raise').wage,countryId)+'/mo'],['cut','Offer 10% pay cut'],['bonus','Bonus · '+formatMoney(staffActionQuote(S,biz,emp,'bonus').cost,countryId)],['warn','Give warning']].map(([kind,label])=>`<button class="btn btn-sm" data-action="biz-staff-action" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" data-kind="${kind}">${escHtml(label)}</button>`).join('')}</div><div class="muted">Pay cuts require agreement. Warnings reduce trust.</div></details>
-          <details data-panel="benefits_${escHtml(biz.id)}_${escHtml(emp.id)}"><summary>Benefits · ${formatMoney(employeeBenefitsCost(emp),countryId)}/mo</summary><div class="muted">Optional game packages, not statutory coverage. Recurring payroll costs.</div>${Object.entries(STAFF_BENEFITS).map(([id,b])=>`<button class="btn btn-sm" data-action="biz-benefit" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" data-benefit="${id}">${emp.benefits?.[id]?'✓ Remove':'Add'} ${b.label} · ${formatMoney(Math.round(emp.wageLocal*b.rate),countryId)}/mo</button>`).join('')}</details>
+          <section class="biz-person-section"><h5>Pay &amp; conduct</h5><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+          ${[['raise','Raise 10% · '+formatMoney(staffActionQuote(S,biz,emp,'raise').wage,countryId)+'/mo'],['cut','Offer 10% pay cut'],['bonus','Bonus · '+formatMoney(staffActionQuote(S,biz,emp,'bonus').cost,countryId)],['warn','Give warning']].map(([kind,label])=>`<button class="btn btn-sm" data-action="biz-staff-action" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" data-kind="${kind}">${escHtml(label)}</button>`).join('')}</div><div class="muted">Pay cuts require agreement. Warnings reduce trust.</div></section>
+          <section class="biz-person-section"><h5>Benefits · ${formatMoney(employeeBenefitsCost(emp),countryId)}/mo</h5><div class="muted">Optional game packages, not statutory coverage. Recurring payroll costs.</div>${Object.entries(STAFF_BENEFITS).map(([id,b])=>`<button class="btn btn-sm" data-action="biz-benefit" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" data-benefit="${id}">${emp.benefits?.[id]?'✓ Remove':'Add'} ${b.label} · ${formatMoney(Math.round(emp.wageLocal*b.rate),countryId)}/mo</button>`).join('')}</section>
           ${effectShown ? `<div style="font-size:12px;">${escHtml(effectShown)}</div>` : ''}
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
-          <button class="btn btn-sm" data-action="biz-train" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" title="Training course: +${TRAIN_SKILL_GAIN} skill, costs ${formatMoney(trainCost, countryId)}">Train (+${TRAIN_SKILL_GAIN} skill, ${formatMoney(trainCost, countryId)})</button>
+          <button class="btn btn-sm" data-action="biz-train" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" title="Training course: +${TRAIN_SKILL_GAIN} skill, costs ${formatMoney(trainCost, countryId)}">Train · ${formatMoney(trainCost, countryId)}</button>
           ${promoteBtns}
-          <button class="btn btn-sm" data-action="biz-fire" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}">Fire</button>
+          <button class="btn btn-sm btn-danger" data-action="biz-fire" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}">Fire</button>
         </div>
       </div>`;
       }).join('');
@@ -484,15 +484,16 @@ export function renderStaffListHtml(S, biz) {
      repeated in every button's tooltip. */
   const hireBtns = roles.filter(role => String(role).toLowerCase() !== 'manager').map(role => {
     const wage = Math.round(convertCurrency(roleWageLocal(S,role,biz.country||S.country),biz.country||S.country,countryId,S.year));
-    return `<button class="btn btn-sm" data-action="biz-hire" data-biz="${escHtml(biz.id)}" data-role="${escHtml(role)}" title="${escHtml(roleHireBlurb(role))}">Hire ${escHtml(roleLabel(role))} (${formatMoney(wage, countryId)}/mo) — ${escHtml(roleEffectSpec(role).verb)}</button>`;
-  }).join(' ');
+    return `<button class="btn btn-sm" data-action="biz-hire" data-biz="${escHtml(biz.id)}" data-role="${escHtml(role)}" title="${escHtml(roleHireBlurb(role))}">Hire ${escHtml(roleLabel(role))}</button><span class="biz-hire-quote">${formatMoney(wage,countryId)}/mo · ${escHtml(roleEffectSpec(role).verb)}</span>`;
+  }).map(h=>`<div class="biz-hire-row">${h}</div>`).join('');
   return `
   <div class="biz-staff-section" style="margin-top:10px;">
 
     <div class="muted" style="margin-bottom:6px;">Payroll + benefits ${formatMoney(wages, countryId)}/mo${avgMorale === null ? '' : ` · team morale ${Math.round(avgMorale)} · average skill ${Math.round(avgSkill)}`}</div>
     ${effectSummary ? `<div class="muted" style="margin-bottom:6px;">${escHtml(effectSummary)}</div>` : ''}
+    <div class="biz-roster">${staff.map(emp=>`<button data-action="biz-employee" data-staff="${escHtml(emp.id)}" class="${emp.id===(staff.find(e=>e.id===selectedId)||staff[0])?.id?'active':''}">${renderPortraitSvg(employeePerson(S,biz,emp),32)}<span><strong>${escHtml(emp.name)}</strong><small>${escHtml(roleLabel(emp.role))}</small></span><span class="biz-roster-score">${Math.round(emp.morale)}<small>morale</small></span></button>`).join('')}</div>
     ${rows}
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${hireBtns}</div>
-    <div class="muted" style="font-size:12px;margin-top:4px;">Hiring costs one month's wage to onboard. Firing costs game severance based on the country table, paid from your own cash — and shakes the team (morale −8). Persistent distress can lead to resignation. A bad hire hurts: low skill loses customers and sales, and a dishonest cashier steals from the till.</div>
+    <details class="biz-hiring"><summary>Hire an employee</summary>${hireBtns}</details>
+    <details class="biz-employment-rules"><summary>Employment costs &amp; rules</summary><div class="muted" style="font-size:12px;margin-top:4px;">Hiring costs one month's wage to onboard. Firing costs game severance based on the country table, paid from your own cash — and shakes the team (morale −8). Persistent distress can lead to resignation. A bad hire hurts: low skill loses customers and sales, and a dishonest cashier steals from the till.</div></details>
   </div>`;
 }

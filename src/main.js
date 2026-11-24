@@ -1,3 +1,4 @@
+import{techAction}from './systems/techStartup.js';
 import{openInternationalBusiness}from './systems/businessInternational.js';
 import{launchBusinessProduct}from './systems/businessProducts.js';
 import{improveBusiness}from './systems/businessImprovements.js';
@@ -1912,6 +1913,10 @@ if (typeof document !== 'undefined') {
     if(action==='biz-staff-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);const emp=biz?.staff?.find(e=>e.id===btn.dataset.staff);handleActionResult(manageEmployee(S,biz,emp,btn.dataset.kind));return;}
     if(action==='biz-staff-request'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);const emp=biz?.staff?.find(e=>e.id===btn.dataset.staff);handleActionResult(answerEmployeeRequest(S,biz,emp,btn.dataset.accept==='yes'));return;}
     if(action==='biz-sector'){uiState.bizSector=btn.dataset.sector;renderApp();return;}
+    if(action==='biz-employee'){uiState.bizEmployee=btn.dataset.staff;renderApp();return;}
+    if(action==='tech-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(techAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
+    if(action==='biz-tab'){uiState.bizTab=btn.dataset.area;renderApp();return;}
+    if(action==='biz-company'){uiState.bizCompany=btn.dataset.biz;uiState.bizTab='overview';renderApp();return;}
     if(action==='biz-desk'){uiState.bizDesk=btn.dataset.desk;renderApp();return;}
     if(action==='shop-finance'){uiState.activeTab='finance';uiState.finSub=btn.dataset.sub||'banks';renderApp();return;}
     if(action==='shop-category'){uiState.shopCat=btn.dataset.cat;renderApp();return;}

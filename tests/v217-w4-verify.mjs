@@ -94,10 +94,10 @@ console.log('--- §0 hygiene ---');
 console.log('--- §1 menu render ---');
 {
   const S = adultLife(); const biz = launch(S);
-  const html = renderOperationsMenuHtml(S, biz);
+  const html = ['products','team','operations','growth','money'].map(area=>renderOperationsMenuHtml(S,biz,{area})).join('');
   const text = strip(html);
-  for (const sec of OPS_SECTIONS) check(`menu shows section ${sec}`, text.includes(sec==='Pricing'?'Products & prices':sec));
-  check('menu is 10 collapsed <details> (no open attribute)', (html.match(/<details/g) || []).length >= 10 && !/<details[^>]*\bopen\b/.test(html));
+  for (const sec of OPS_SECTIONS) check(`menu shows section ${sec}`, text.includes(sec==='Pricing'?'Product prices':sec==='Cash'?'Cash':sec==='Staff'?'People':sec));
+  check('overview has no nested operations menu',renderOperationsMenuHtml(S,biz,{area:'overview'})==='');
   const costMentions = (text.match(/costs [0-9][0-9,]*/g) || []).length + (text.match(/Spend [0-9][0-9,]*/g) || []).length;
   check('buttons name their cost in plain words (>=5 cost mentions)', costMentions >= 5, `found ${costMentions}`);
   check('stock section states stock level + what the month sells', strip(renderStockSectionHtml(S, biz)).includes('usually sells'));
@@ -351,7 +351,7 @@ console.log('--- §10 cash: withdraw / reinvest / pay down (v2.14 reused) ---');
 console.log('--- §11 wiring anchors exist (views.js / main.js untouched by W4) ---');
 {
   const views = fs.readFileSync('src/ui/views.js', 'utf8');
-  check('views.js still has the decisions render line (insert after it)', views.includes('${renderDecisionsHtml(S, biz)}'));
+  check('views.js still has the decisions render line (insert after it)', views.includes('${renderDecisionsHtml(S,biz)}'));
   check('menu Cash supersedes the standalone cash render (line removed at merge)', !views.includes('${renderCashHtml(S, biz)}'), 'renderCashHtml still rendered — the card would show two withdraw/reinvest controls');
   const main = fs.readFileSync('src/main.js', 'utf8');
   check('main.js still has the biz-decision dispatch (ops dispatch goes beside it)', main.includes("action === 'biz-decision'"));

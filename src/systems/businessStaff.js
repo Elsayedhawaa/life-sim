@@ -67,7 +67,7 @@ export const ROLE_WAGE_FACTOR = {
   driver: 0.5, worker: 0.5, nanny: 0.5, weaver: 0.5,
   /* 0.65 — junior skilled / front of house */
   barista: 0.65, receptionist: 0.65, assistant: 0.65, sales: 0.65, agent: 0.65,
-  marketing: 0.65, typesetter: 0.65,
+  support:0.65, marketing: 0.65, typesetter: 0.65,
   /* 0.85 — skilled */
   developer: 0.85, designer: 0.85, nurse: 0.85, teacher: 0.85, trainer: 0.85,
   technician: 0.85, accountant: 0.85, consultant: 0.85, paralegal: 0.85,

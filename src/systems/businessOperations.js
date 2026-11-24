@@ -390,7 +390,7 @@ export function setPrice(S, biz, itemId, dir) {
     ? 'priced high — more money per sale, but some customers stop coming back'
     : ratio <= OPS_PRICE_LOW_RATIO
       ? 'priced low — thinner margin, but customers come back'
-      : 'at the usual price';
+      : 'Usual price';
   logOps(S, biz, `${item.label} at ${biz.name} is now ${fmt(S, price)} (usual ${fmt(S, std)}) — ${state}.`);
   biz.opsEngaged = true; /* setting a price means the player operates this business now */
   return {
@@ -727,22 +727,19 @@ export function foldMonthEffectsIntoPL(S, biz, pl, eff) {
 export function renderOperationsMenuHtml(S, biz, extras = {}) {
   if (!biz) return '';
   ensureOpsState(S, biz);
-  return `
-  <div class="biz-ops-menu" style="margin-top:10px;">
-    <h4>Business desk</h4>
-    ${!biz.isBranch?`<details data-panel="international_${escHtml(biz.id)}"><summary>Growth path · ${escHtml(growthStage(S,biz))}</summary><div class="muted">Small → established → multi-site → regional → international → multinational. Stages follow actual levels, locations and countries, not a free bonus.</div><div class="muted">${internationalReadiness(S,biz).reasons.join(' ')||'Ready to open abroad.'}</div>${COUNTRY_IDS.filter(c=>c!==(biz.country||S.country)).map(c=>{const q=internationalQuote(S,biz,c);const exists=(S.career.businesses||[]).some(b=>b.parentBusinessId===biz.id&&b.country===c);return`<details style="margin:8px 0"><summary>${escHtml(getCountry(c).name)} · ${exists?'Operating':fmt(S,q.total)+' startup'}</summary><button class="btn btn-sm" data-action="biz-international" data-biz="${escHtml(biz.id)}" data-country="${c}" ${internationalReadiness(S,biz).ok&&!exists?'':'disabled'}>Open in ${escHtml(getCountry(c).name)} · ${fmt(S,q.total)}</button><div class="muted">Setup ${fmt(S,q.setup)} · first rent ${fmt(S,q.rent)} · director onboarding ${fmt(S,q.managerWage)}. Recurring: other costs ${fmt(S,q.other)}, rent ${fmt(S,q.rent)}, director ${fmt(S,q.managerWage)}/mo + local team payroll. Game setup allowance, not legal clearance.</div></details>`}).join('')}</details>`:''}
+  const area=extras.area||'overview';
+  const flat=html=>String(html).replace(/^(\s*)<details\b[^>]*>/,'$1<section class="biz-flat-section">').replace(/<summary>([\s\S]*?)<\/summary>/,'<h4>$1</h4>').replace(/<\/details>\s*$/,'</section>');
+  if(area==='overview')return '';
+  let content='';
+  if(biz.tech&&['products','operations','growth'].includes(area))return '';
+  if(area==='products')content=flat(renderPricingSectionHtml(S,biz));
+  if(area==='team')content=`<h4>People</h4>${extras.staffHtml||''}<details class="biz-manager-details"><summary>Manager &amp; work schedule</summary>${extras.managerHtml||''}${flat(renderStaffRotaSectionHtml(S,biz,{}))}</details>`;
+  if(area==='operations')content=flat(renderStockSectionHtml(S,biz))+flat(renderSuppliersSectionHtml(S,biz,extras))+`<details><summary>Premises &amp; maintenance</summary>${flat(renderPremisesSectionHtml(S,biz,{premisesHtml:extras.premisesHtml}))}</details>`;
+  if(area==='growth')content=`<h4>Invest &amp; expand</h4>    ${!biz.isBranch?`<details data-panel="international_${escHtml(biz.id)}"><summary>Growth path · ${escHtml(growthStage(S,biz))}</summary><div class="muted">Small → established → multi-site → regional → international → multinational. Stages follow actual levels, locations and countries, not a free bonus.</div><div class="muted">${internationalReadiness(S,biz).reasons.join(' ')||'Ready to open abroad.'}</div>${COUNTRY_IDS.filter(c=>c!==(biz.country||S.country)).map(c=>{const q=internationalQuote(S,biz,c);const exists=(S.career.businesses||[]).some(b=>b.parentBusinessId===biz.id&&b.country===c);return`<details style="margin:8px 0"><summary>${escHtml(getCountry(c).name)} · ${exists?'Operating':fmt(S,q.total)+' startup'}</summary><button class="btn btn-sm" data-action="biz-international" data-biz="${escHtml(biz.id)}" data-country="${c}" ${internationalReadiness(S,biz).ok&&!exists?'':'disabled'}>Open in ${escHtml(getCountry(c).name)} · ${fmt(S,q.total)}</button><div class="muted">Setup ${fmt(S,q.setup)} · first rent ${fmt(S,q.rent)} · director onboarding ${fmt(S,q.managerWage)}. Recurring: other costs ${fmt(S,q.other)}, rent ${fmt(S,q.rent)}, director ${fmt(S,q.managerWage)}/mo + local team payroll. Game setup allowance, not legal clearance.</div></details>`}).join('')}</details>`:''}
     <details data-panel="improvements_${escHtml(biz.id)}"><summary>Monthly &amp; yearly improvements</summary><div class="muted">Monthly: review prices, stock, marketing and the team below. Yearly: invest in more capacity or equipment. Results depend on demand and costs, not guaranteed profit.</div>${Object.entries(BUSINESS_IMPROVEMENTS).map(([id,def])=>`<div style="margin:8px 0"><button class="btn btn-sm" data-action="biz-improve" data-biz="${escHtml(biz.id)}" data-kind="${id}" ${biz.improvements?.[id]?.year===S.year||(biz.improvements?.[id]?.level||0)>=3?'disabled':''}>${def.label} · ${fmt(S,improvementQuote(biz,id))}</button><div class="muted">${def.desc} · once/year · ${(biz.improvements?.[id]?.level||0)}/3</div></div>`).join('')}</details>
-
-    ${renderStockSectionHtml(S, biz)}
-    ${renderPricingSectionHtml(S, biz)}
-    ${renderSuppliersSectionHtml(S, biz, extras)}
-    ${renderStaffRotaSectionHtml(S, biz, extras)}
-    ${renderMarketingSectionHtml(S, biz, extras)}
-    ${renderPremisesSectionHtml(S, biz, extras)}
-    ${renderCashSectionHtml(S, biz, extras)}
-    ${biz.lastPL?.safetyNotes?.length?`<div class="muted">${biz.lastPL.safetyNotes.map(escHtml).join(' · ')}</div>`:''}
-    ${biz.opsLog.length ? `<div class="muted" style="margin-top:6px;font-size:12px;"><strong>Recently:</strong> ${biz.opsLog.slice(0, 3).map(l => escHtml(l.text)).join(' · ')}</div>` : ''}
-  </div>`;
+${flat(renderMarketingSectionHtml(S,biz,extras))}<details><summary>Branches &amp; locations</summary>${extras.branchesHtml||''}</details>`;
+  if(area==='money')content=flat(renderCashSectionHtml(S,biz,extras));
+  return `<div class="biz-ops-menu biz-area-${area}">${content}</div>`;
 }
 
 export function renderStockSectionHtml(S, biz) {
@@ -785,24 +782,24 @@ export function renderPricingSectionHtml(S, biz) {
   const rows = cat.items.map(it => {
     const p = biz.prices[it.id] || { price: 0, standard: 0 };
     const ratio = (Number(p.price) || 0) / (Number(p.standard) || 1);
-    const state = ratio >= OPS_PRICE_HIGH_RATIO ? 'priced high — more per sale, some customers leave'
-      : ratio <= OPS_PRICE_LOW_RATIO ? 'priced low — thinner margin, customers come back' : 'at the usual price';
+    const state = ratio >= OPS_PRICE_HIGH_RATIO ? 'High price'
+      : ratio <= OPS_PRICE_LOW_RATIO ? 'Low price' : 'Usual price';
     return `<div style="padding:4px 0;">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;">
-        <strong>${escHtml(it.label)}</strong><span class="muted">${fmt(S, p.price)} (usual ${fmt(S, p.standard)}) — ${escHtml(state)}</span>
+        <strong>${escHtml(it.label)}</strong><span class="muted">${fmt(S, p.price)} / unit · ${escHtml(state)}</span>
       </div>
       <div class="muted">${usesPhysicalStock(biz)?'Stock cost estimate':'Direct delivery cost allocation'} ${fmt(S,Math.round(p.standard*.45))}/unit · contribution ${fmt(S,p.price-Math.round(p.standard*.45))} before payroll, rent &amp; tax</div>
       <div style="display:flex;gap:6px;margin-top:4px;">
-        <button class="btn btn-sm" data-action="biz-ops-price" data-biz="${escHtml(biz.id)}" data-item="${escHtml(it.id)}" data-dir="up">Raise price +10%</button>
-        <button class="btn btn-sm" data-action="biz-ops-price" data-biz="${escHtml(biz.id)}" data-item="${escHtml(it.id)}" data-dir="down">Lower price −10%</button>
-        <button class="btn btn-sm" data-action="biz-ops-price" data-biz="${escHtml(biz.id)}" data-item="${escHtml(it.id)}" data-dir="std">Back to usual price</button>
+        <button class="btn btn-sm" data-action="biz-ops-price" data-biz="${escHtml(biz.id)}" data-item="${escHtml(it.id)}" data-dir="up">+10%</button>
+        <button class="btn btn-sm" data-action="biz-ops-price" data-biz="${escHtml(biz.id)}" data-item="${escHtml(it.id)}" data-dir="down">−10%</button>
+        <button class="btn btn-sm" data-action="biz-ops-price" data-biz="${escHtml(biz.id)}" data-item="${escHtml(it.id)}" data-dir="std">Reset</button>
       </div>
     </div>`;
   }).join('');
   return `
   <details data-panel="products_${escHtml(biz.id)}" class="biz-ops-pricing" style="margin:6px 0;">
-    <summary><strong>Products &amp; prices</strong> — <span class="muted">${cat.items.length} priced items</span></summary>
-    <div class="muted" style="margin:4px 0;">Game price index: usual price 100. Range 70–130. Demand capacity ${cat.monthlyUnits}/mo across the range, not per item. Costs are model allocations, not live market quotes. Higher prices may lose repeat customers.</div>
+    <summary>Product prices</summary>
+    <div class="muted" style="margin:4px 0;">Capacity ${cat.monthlyUnits} units/mo, shared across products. Price changes affect demand. <span title="Game estimates, not market quotes. Direct cost is allocated rather than individually tracked per product. Price range 70–130% of usual." aria-label="Model information">ⓘ</span></div>
     ${rows}
     <details data-panel="newproduct_${escHtml(biz.id)}"><summary>Launch a new product/service</summary><div class="muted">${fmt(S,productLaunchCost(biz))} development cost. Needs average team skill 55. One/year. +6% sales capacity, +4% other costs. Demand is shared, not guaranteed.</div>${productLaunchOptions(biz).map(p=>`<button class="btn btn-sm" data-action="biz-product-launch" data-biz="${escHtml(biz.id)}" data-product="${p.id}" ${biz.lastProductYear===S.year?'disabled':''}>Launch ${escHtml(p.label)}</button>`).join('')||'<div class="muted">All planned products launched.</div>'}</details>
   </details>`;
