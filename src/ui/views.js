@@ -1,3 +1,4 @@
+import{renderCompliance}from'../systems/companyCompliance.js';
 import{renderContracts}from'../systems/companyContracts.js';
 import{renderLots}from'../systems/companyLots.js';
 import{renderCompetition}from'../systems/companyCompetition.js';
@@ -2511,7 +2512,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       ${renderDivorceShares(S,biz,businessTab)}${renderCompanyMarital(S,biz,businessTab)}
       ${renderFamily(S,biz,businessTab)}${renderFamilyRota(S,biz,businessTab)}${renderFamilyOwnership(S,biz,businessTab)}
       ${renderSpace(S,biz,businessTab)}
-      ${renderOperating(S,biz,businessTab)}${renderCompetition(S,biz,businessTab)}${renderLots(S,biz,businessTab)}${renderContracts(S,biz,businessTab)}
+      ${renderOperating(S,biz,businessTab)}${renderCompetition(S,biz,businessTab)}${renderCompliance(S,biz,businessTab)}${renderLots(S,biz,businessTab)}${renderContracts(S,biz,businessTab)}
       ${renderCatalog(S,biz,businessTab)}
       ${renderInputs(S,biz,businessTab)}
       ${renderEquipment(S,biz,businessTab,operatingBase(S,biz))}

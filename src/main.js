@@ -1,3 +1,4 @@
+import{complianceAction}from'./systems/companyCompliance.js';
 import{contractAction}from'./systems/companyContracts.js';
 import{lotAction}from'./systems/companyLots.js';
 import{competitionAction}from'./systems/companyCompetition.js';
@@ -1955,6 +1956,7 @@ if (typeof document !== 'undefined') {
     if(action==='divorce-share-buyout'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(buyoutDivorceShares(S,biz,btn.dataset.person,Number(btn.dataset.amount)));return;}
     if(action==='company-contract'){handleActionResult(contractAction(S,(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz),btn.dataset.kind,btn.dataset.item,btn.dataset.scale));return;}
     if(action==='company-lot'){handleActionResult(lotAction(S,(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz),btn.dataset.kind,btn.dataset.lot));return;}
+    if(action==='company-compliance'){handleActionResult(complianceAction(S,(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz),btn.dataset.kind));return;}
     if(action==='company-competition'){handleActionResult(competitionAction(S,(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz),btn.dataset.kind));return;}
     if(action==='company-receivable'){handleActionResult(receivablesAction(S,(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz),btn.dataset.kind,btn.dataset.value));return;}
     if(action==='company-specialty'){handleActionResult(upgradeSpecialty(S,(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz)));return;}
