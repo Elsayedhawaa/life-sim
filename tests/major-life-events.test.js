@@ -16,8 +16,10 @@ const titles=s=>[...(s.activeScene?[s.activeScene]:[]),...s.sceneQueue].map(x=>x
 {const s=setup();const b=snapshotMajor(s);s.housing.lastEviction={year:s.year,month:s.month,from:'Flat 2'};announceMajorChanges(s,b);assert(titles(s).includes('You Were Evicted'));}
 // affair / separation
 {const s=setup();const sp=createPerson(s,{role:'spouse',age:38,nationality:'gbr',residenceCountry:'gbr'});s.people[sp.id]=sp;s.relations.spouseIds.push(sp.id);sp.relationshipProgress={stage:'together',affair:{status:'hidden'}};const b=snapshotMajor(s);sp.relationshipProgress.affair.status='discovered';announceMajorChanges(s,b);assert(titles(s).some(t=>/Found Out/.test(t)));
- const b2=snapshotMajor(s);sp.relationshipProgress.stage='separated';announceMajorChanges(s,b2);assert(titles(s).some(t=>/Is Leaving/.test(t)));
+ const b2=snapshotMajor(s);sp.relationshipProgress.stage='separated';sp.relationshipProgress.separatedBy='spouse';announceMajorChanges(s,b2);assert(titles(s).some(t=>/Is Leaving/.test(t)));
  const b3=snapshotMajor(s);s.relations.spouseIds=[];announceMajorChanges(s,b3);assert(titles(s).includes('Your Divorce Is Final'));}
+// player-initiated separation
+{const s=setup();const sp=createPerson(s,{role:'spouse',age:38,nationality:'gbr',residenceCountry:'gbr'});s.people[sp.id]=sp;s.relations.spouseIds.push(sp.id);sp.relationshipProgress={stage:'together'};const b=snapshotMajor(s);sp.relationshipProgress.stage='separated';sp.relationshipProgress.separatedBy='player';announceMajorChanges(s,b);assert(titles(s).some(t=>/^You Separated From/.test(t)));assert(!titles(s).some(t=>/Is Leaving/.test(t)));}
 // car crash
 {const s=setup();s.cars=[{id:'c1',name:'Test Car',valueLocal:10000,condition:80}];s.money.cash=50000;let n=0;for(let i=0;i<4000&&!s.carCrashes?.length;i++){tickCarCrashes(s);n++;}assert(s.carCrashes?.length===1,'crash eventually happens');const c=s.carCrashes[0];assert(c.paid<=c.repair);assert(s.money.cash<50000);
  const s2=setup();const b=snapshotMajor(s2);s2.carCrashes=[{carId:'c',carName:'Test Car',year:s2.year,month:s2.month,severity:'minor',repair:500,paid:500,insured:false,injury:false}];announceMajorChanges(s2,b);assert(titles(s2).includes('Your Car Was in a Crash'));

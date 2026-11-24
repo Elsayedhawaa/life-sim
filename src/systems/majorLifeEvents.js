@@ -122,7 +122,11 @@ export function announceMajorChanges(S, before) {
       made.push(announce(S, 'affair_discovered', { title: `You Found Out About ${p.firstName}`, text: `You have learned that ${p.firstName} has been having an affair. Trust between you has taken a real hit.`, personId: id, facts: {} }));
     }
     if (a.stage === 'separated' && b.stage !== 'separated') {
-      made.push(announce(S, 'separation', { title: `${p.firstName} Is Leaving`, text: `You and ${p.firstName} are now separated and living apart.`, personId: id, facts: {} }));
+      const by = p.relationshipProgress?.separatedBy;
+      made.push(announce(S, 'separation', {
+        title: by === 'player' ? `You Separated From ${p.firstName}` : by === 'spouse' ? `${p.firstName} Is Leaving` : `You and ${p.firstName} Have Separated`,
+        text: by === 'player' ? `You chose to separate from ${p.firstName}. You now live apart and shared income has stopped.` : by === 'spouse' ? `${p.firstName} has moved out. You are now separated and living apart.` : `You and ${p.firstName} are now separated and living apart.`,
+        personId: id, facts: { by: by || null } }));
     }
     if (a.court && !b.court) {
       made.push(announce(S, 'divorce_filed', { title: 'A Divorce Case Is Open', text: `A divorce case involving ${p.firstName} has been filed.`, personId: id, facts: {} }));

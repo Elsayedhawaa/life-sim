@@ -21,7 +21,7 @@ export function tickSpouseAutonomy(S){
   if(!r.courtCase&&sp.rel.trust>=65&&sp.rel.affection>=60){m.pending={kind:'reconcile',at:now};m.goal='reconcile';m.lastDecision=now;}
   continue;
  }
- if(sp.rel.trust<25&&sp.rel.affection<30&&m.independence>55){r.stage='separated';r.separatedAt=now;sp.householdWith=sp.id;S.marriage.tryingForBaby=false;rememberChoice(S,sp,'leave','moved out');recordJournal(S,`${sp.firstName} moved out. Trust had broken down.`,'family');continue;}
+ if(sp.rel.trust<25&&sp.rel.affection<30&&m.independence>55){r.stage='separated';r.separatedBy='spouse';r.separatedAt=now;sp.householdWith=sp.id;S.marriage.tryingForBaby=false;rememberChoice(S,sp,'leave','moved out');recordJournal(S,`${sp.firstName} moved out. Trust had broken down.`,'family');continue;}
  let kind;
  if(sp.rel.trust<45||sp.rel.respect<35)kind='boundary';
  else if(!m.wantsChildren&&S.marriage.tryingForBaby){S.marriage.tryingForBaby=false;kind='no_kids';}
