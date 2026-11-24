@@ -1,3 +1,4 @@
+import{settleWaterDamage}from'./systems/homeWaterDamage.js';
 import{settlePersonalReceivable}from'./systems/personalReceivables.js';
 import {repairPlayerRentalDamage,payPlayerRentArrears} from './systems/playerTenancy.js';
 import{hiringAction}from'./systems/companyHiring.js';
@@ -1608,6 +1609,7 @@ if (typeof document !== 'undefined') {
     if(action==='people-decision'){handleActionResult(answerPeopleDecision(S,btn.dataset.id,btn.dataset.accept==='yes'));return;}
     if(action==='spouse-decision'){handleActionResult(answerSpouseDecision(S,btn.dataset.spouse,btn.dataset.accept==='yes'));return;}
     if(action==='relationship-step'){handleActionResult(relationshipAction(S,btn.dataset.spouse,btn.dataset.step));return;}
+    if(action==='repair-ceiling-water'){handleActionResult(settleWaterDamage(S,btn.dataset.id));return;}
     if(action==='child-school-year'){handleActionResult(enrollChildSchoolYear(S,btn.dataset.cid,btn.dataset.tier));return;}
     if(action==='child-course'){handleActionResult(enrollChildCourse(S,btn.dataset.cid));return;}
     if(action==='support-review'){handleActionResult(requestSupportReview(S,btn.dataset.id));return;}

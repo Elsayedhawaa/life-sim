@@ -1,3 +1,4 @@
+import{buildWaterDamageScene}from'./homeWaterDamage.js';
 /* ============================================================================
    World Life Complete Edition — Deep Narrative, Psychological & Cultural Library
    40+ richly authored, context-aware human life scenes (Ages 5 -> 85+) blending
@@ -430,42 +431,7 @@ export function collectExtendedLifeScenes(S, addOnce) {
      5. HOUSING, TRAFFIC, INSURANCE & ECONOMIC REALITIES (Ages 22–68)
      ======================================================================== */
   if (age >= 22) {
-    addOnce('st_upstairs_pipe_leak', () => {
-      const repairBill = eraLocalCost(cObj.monthlyBasket2026.rentModest * 0.75, S.country, S.year);
-      const insured = !!S.insurance?.home;
-      return {
-        key: 'st_upstairs_pipe_leak',
-        category: 'money',
-        title: 'Water Spreading Across the Ceiling',
-        text: `You wake to steady dripping — a burst pipe from the floor above has soaked your ceiling plaster and hallway paint.${insured ? ' Thankfully, your Home & Contents Insurance covers water damage!' : ` Plumbers quote ${formatMoney(repairBill, S.country)} for immediate repairs.`}`,
-        choices: [
-          {
-            label: insured
-              ? 'File a zero-deductible Home Insurance claim & restore everything cleanly'
-              : `Split repairs diplomatically with the upstairs neighbor (${formatMoney(Math.round(repairBill * 0.5), S.country)})`,
-            available: () => insured || S.money.cash >= Math.round(repairBill * 0.5),
-            effect: (st) => {
-              if (!insured) walletMove(st, -Math.round(repairBill * 0.5), 'Ceiling plumbing & paint repair share', 'housing');
-              st.player.vitals.stress = clamp(st.player.vitals.stress - 3);
-              recordJournal(st, insured ? `Your home insurance policy covered the ceiling water leak without costing a penny.` : `Resolved the upstairs water leak amicably and split the plumber’s bill.`, 'money');
-            }
-          },
-          {
-            label: 'Threaten legal action until the neighbor pays every penny',
-            effect: (st) => {
-              if (chance(st, 0.6)) {
-                recordJournal(st, `After a tense confrontation on the landing, the upstairs neighbor covered the plumbing repairs in full.`, 'life');
-              } else {
-                const pay = Math.min(Math.max(0, st.money.cash), repairBill);
-                if (pay > 0) walletMove(st, -pay, 'Emergency ceiling plumbing repair', 'housing');
-                st.player.vitals.stress = clamp(st.player.vitals.stress + 8);
-                recordJournal(st, `The neighbor stalled for weeks, forcing you to pay the plumber upfront amid bitter building tension.`, 'money');
-              }
-            }
-          }
-        ]
-      };
-    });
+    if(S.housing.properties.some(p=>p.id===S.housing.currentHomeId))addOnce('st_upstairs_pipe_leak',()=>buildWaterDamageScene(S));
 
     if (S.cars.length > 0) {
       addOnce('st_traffic_fender_bender', () => {

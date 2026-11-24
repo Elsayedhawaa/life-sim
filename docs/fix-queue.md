@@ -120,7 +120,11 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W45 Gulf school-fee scene needs actual child enrollment/term record and no invented employer subsidy.
 - [x] W46 Gulf Umrah scene needs real travel/calendar/leave route rather than one-off wallet/vitals story.
 
-- [ ] W47 Fresh organic US audit reached a university failed-exam scene that invents failed module/fee/pass or never-fail promise without assessment record. Ground study support in actual university progress rather than fabricate results.
+- [x] W47 Fresh organic US audit reached a university failed-exam scene that invents failed module/fee/pass or never-fail promise without assessment record. Ground study support in actual university progress rather than fabricate results.
 - [ ] W48 Fresh organic US audit ceiling-leak scene grants guaranteed full home-insurance restoration/neighbour payment without damage/claim evidence; model actual repair condition and covered claim rule.
 
 - [ ] W49 Organic audit end screenshot reached mother medicine scene: inspect real recipient transfer and half-payment promise record, not only wallet/vitals.
+
+- [x] W50 Recorded ceiling incident can remain open after deferral; add visible owner-home repair control and inspect existing property damage controls for cross-route consistency.
+
+- [ ] W51 Reloading curated non-event decisions can discard most choices because saved effects are not functions. Ceiling scene now has explicit restoration; audit other curated scenes and preserve durable builders.

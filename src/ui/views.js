@@ -3015,6 +3015,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
               </div>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:5px">
+              ${(pr.incidents||[]).some(d=>d.kind==='ceiling_water'&&d.status==='open')?`<button class="btn btn-sm" data-action="repair-ceiling-water" data-id="${pr.id}">Repair ceiling · ${esc(formatMoney(pr.incidents.find(d=>d.kind==='ceiling_water').quote.paid,S.country))}</button>`:''}
               ${(pr.conditionPct ?? 100) < 98 ? `<button class="btn btn-sm" data-action="renovate-prop" data-id="${pr.id}">Renovate (+5.5%)</button>` : ''}
               ${(pr.country === S.country && S.housing.currentHomeId !== pr.id) ? `<button class="btn btn-primary btn-sm" data-action="move-into-prop" data-id="${pr.id}">Move In</button>` : ''}
               ${S.housing.currentHomeId !== pr.id && !pr.ruralCabin ? `<button class="btn btn-sm" data-action="toggle-rent-prop" data-id="${pr.id}">${pr.rentedOut ? 'Stop Lease' : 'Lease Out'}</button>` : ''}

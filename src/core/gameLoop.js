@@ -1,3 +1,4 @@
+import{buildWaterDamageScene}from'../systems/homeWaterDamage.js';
 import{tickPeopleAutonomy}from '../systems/peopleAutonomy.js';
 /* ============================================================================
    World Life 2.0 — Adaptive Clock & Master Turn Orchestrator (gameLoop.js)
@@ -71,6 +72,7 @@ export function loadGameFromStorage() {
       ensureExtendedState(parsed);
       const restore = scene => {
         if (!scene) return null;
+        if (!scene.eventId&&scene.key==='st_upstairs_pipe_leak')return buildWaterDamageScene(parsed);
         if (!scene.eventId) return restoreDivorceDecision(parsed,scene) || restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
         return restoreRandomLifeScene(parsed, scene);
       };

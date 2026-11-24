@@ -525,3 +525,6 @@ Scene uses catalog Umrah quote and existing travel action, not wallet/vitals-onl
 
 ### Fresh hosted audit / W47 university routine
 130actualactions/43decisions reached US age24/2023 with event reload stability/save retained, no errors/overflow.31tab/subtabstates render clean. FoundW47fakefailedmodule/resitpass,W48unrecordedleakclaim,W49mothermedicine transfer/promise to inspect. W47now requires actual university and sets real shared Education study effort, no invented exam failure/fee/pass/never-fail guarantee.176focused files pass;390pxactualroutine/cashunchanged/noinstantprogress/reload/pixels pass. Detailed modular failed-exam/resit system not implemented, removed false claim.
+
+### W48/W50 recorded ceiling repair
+Ceiling scene requires owner-occupied property. Actual incident lowers condition8points, repair restores those8; game home policy covers80%directly to repairer, player pays20%, otherwise fullbill. Receipt locks coverage at incident recording, no invented neighbour payout/legalaward or insurance cash income. Owner-property repair control handles deferred incident. Explicit reload builder added for this scene.177focused files pass;390pxactual300USDbill/60share/condition/receipt/reload/pixels pass. Found broader curated save restoration gapW51queued; not claiming all curated reloads survive.
