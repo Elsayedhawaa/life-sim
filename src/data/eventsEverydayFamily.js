@@ -1949,7 +1949,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_loan_repaid',
     category: 'family',
-    gates: { requiredPeople: ['dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterChoices:[0,2], afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const back = cost(S, 1500);
@@ -1981,7 +1981,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     /* v2.15 W5 — mutually exclusive with the repaid branch: once your
        father has repaid the loan, the unpaid-loan story cannot also
        happen. The engine's resolved-chain refusal is the second lock. */
-    gates: { requiredPeople: ['dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterEventMinTurns: 18, notAfterEvent: 'ev_family_dad_loan_repaid' },
+    gates: { requiredPeople: ['dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterChoices:[0,2], afterEventMinTurns: 18, notAfterEvent: 'ev_family_dad_loan_repaid' },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
@@ -2811,7 +2811,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_sib_money_never_back',
     category: 'family',
-    gates: { requiredPeople: ['sib'], minAge: 20, afterEvent: 'ev_family_sib_borrows_money', afterEventMinTurns: 12 },
+    gates: { requiredPeople: ['sib'], minAge: 20, afterEvent: 'ev_family_sib_borrows_money', afterChoices:[0], afterEventMinTurns: 12 },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');

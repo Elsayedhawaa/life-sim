@@ -53,7 +53,7 @@ import {EVENTS_EMPLOYMENT_DISPUTE} from '../data/eventsEmploymentDispute.js';
    "Voice" here is living TEXT dialogue, never audio.
    ========================================================================== */
 
-import { chance, pick } from '../core/rng.js';
+import { chance, rand } from '../core/rng.js';
 import { getCountry } from '../data/countries.js';
 import { eraSalary } from '../data/economy.js';
 import { computeNetWorthLocal, ensureExtendedState } from '../core/schema.js';
@@ -147,11 +147,11 @@ function asList(value) {
 
 /* People for the event text, resolved from live relations exactly the way
    storyLibrary.js does it, so a missing person never crashes the text. */
-export function resolveEventCtx(S) {
+export function resolveEventCtx(S, event=null) {
   const byId = (id) => (id && S.people[id]) || null;
   const firstAlive = (ids) => (Array.isArray(ids) ? ids.map(byId).find((p) => p && p.alive) : null) || null;
   const kids = aliveChildren(S);
-  return {
+  const ctx = {
     spouse: firstAlive(S.relations.spouseIds) || firstAlive([S.relations.partnerId]),
     mom: firstAlive([S.relations.motherId]),
     dad: firstAlive([S.relations.fatherId]),
@@ -163,6 +163,12 @@ export function resolveEventCtx(S) {
     adultChild: kids.find((p) => p.age >= 20) || null,
     boss: (S.career.job && S.career.job.bossId ? byId(S.career.job.bossId) : null),
   };
+  // A continuation belongs to the people in the resolved earlier event,
+  // never to whichever sibling/child happens to be first in today's list.
+  const parent=event?.gates?.afterEvent;
+  const participants=parent&&(S.eventOutcomes?.[parent]?.participants||S.eventPending?.[parent]?.participants);
+  if(participants)for(const [role,id]of Object.entries(participants))ctx[role]=byId(id)?.alive?byId(id):null;
+  return ctx;
 }
 
 /* --------------------------------------------------------------------------
@@ -176,7 +182,7 @@ export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
   if(g.civilLossKind&&!(S.legal?.civilLosses||[]).some(x=>x.kind===g.civilLossKind&&x.status==='open'&&x.country===S.country))return false;
 
   // Explicit cast requirements apply to roots and follow-ups alike.
-  const cast = resolveEventCtx(S);
+  const cast = resolveEventCtx(S,ev);
   if ((g.requiredPeople || []).some(role => !cast[role] || !cast[role].alive)) return false;
   if(g.adultChildHome){const child=cast.adultChild;const away=!!child?.leftHome;if(!child||(g.adultChildHome==='away'?!away:away))return false;}
   if (g.hasLivingParent !== undefined) {
@@ -281,7 +287,11 @@ export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
   /* Chains: the parent must have fired, and the delay (in calendar
      months — see the header note) must have passed. */
   if (g.afterEvent) {
-    const fired = (S.eventFiredTurns || {})[g.afterEvent];
+    // New events cannot grow a continuation merely from being queued.
+    if(S.eventPending?.[g.afterEvent])return false;
+    const outcome=S.eventOutcomes?.[g.afterEvent];
+    if(g.afterChoices&&(!outcome||!g.afterChoices.includes(outcome.choiceIndex)))return false;
+    const fired = outcome || (S.eventFiredTurns || {})[g.afterEvent];
     if (!fired) {
       /* No firing record: an older save may still show the parent in
          sceneCounts, which means it fired long enough ago. Otherwise
@@ -374,44 +384,46 @@ export function getRandomLifeEventById(id) {
   return EVENT_BY_ID.get(id) || null;
 }
 
+// An inspectable calculation, not a language-model guess from scene words.
+export function eventRelevance(S,ev){
+ const g=ev.gates||{},evidence=[];let score=1;
+ const outcome=g.afterEvent&&S.eventOutcomes?.[g.afterEvent];
+ if(outcome){score+=16;evidence.push({kind:'resolved_event',eventId:g.afterEvent,choiceIndex:outcome.choiceIndex,year:outcome.year,month:outcome.month,participants:outcome.participants});}
+ if(g.memoryKind){score+=6;evidence.push({kind:'memory',kinds:asList(g.memoryKind)});}
+ const facts=['civilLossKind','adultChildHome','housingMode','deceasedParent','hasDebt','hasBusiness','hasCar','abroad','employment','education'].filter(k=>g[k]!==undefined);
+ if(facts.length){score+=Math.min(6,facts.length*2);evidence.push({kind:'current_state',gates:Object.fromEntries(facts.map(k=>[k,g[k]]))});}
+ const recent=(S.eventHistory||[]).slice(-4);const same=recent.filter(r=>EVENT_BY_ID.get(r.eventId)?.category===ev.category).length;
+ score/=1+same*1.5;
+ return{score,evidence};
+}
+
 /* Build one eligible event into a playable scene (the shape queueScene
    expects). Returns null if nothing is eligible or the build fails. */
 export function pickRandomLifeEvent(S) {
   const eligible = collectRandomLifeEvents(S);
   if (!eligible.length) return null;
-  const ctx = resolveEventCtx(S);
-  /* FOLLOW-UPS FIND THE PLAYER (v2.10): a due follow-up is the point
-     of a chain the player already started, so when one is eligible it
-     wins this roll most of the time instead of drowning in ~500
-     one-offs. The roll itself is untouched — the game still rolls once
-     per turn; only the draw inside that roll is weighted. If every due
-     follow-up fails to build, the rest of the pool is tried as before. */
-  const dueFollowUps = eligible.filter((ev) => ev.gates && ev.gates.afterEvent);
-  const livedIds = new Set(EVENTS_LIVED_LIFE.map(event => event.id));
-  const livedPool = eligible.filter(event => livedIds.has(event.id));
-  // Give relevant personal stories room beside the large legacy catalogue.
-  // Follow-ups still get first priority, and no extra event roll is added.
-  const pools = (dueFollowUps.length && chance(S, 0.75))
-    ? [dueFollowUps, eligible.filter((ev) => !(ev.gates && ev.gates.afterEvent))]
-    : (livedPool.length && chance(S, 0.30))
-      ? [livedPool, eligible.filter(event => !livedIds.has(event.id))]
-      : [eligible];
+  // Rank by recorded cause before catalogue volume. Broad demographic fit
+  // remains background variety, not evidence that something happened.
+  const ranked=eligible.map(ev=>({ev,...eventRelevance(S,ev)}));
+  const causal=ranked.filter(x=>x.evidence.some(e=>e.kind==='resolved_event'));
+  const pools=causal.length&&chance(S,.85)?[causal,ranked.filter(x=>!causal.includes(x))]:[ranked];
   /* A build reads live people and era prices; if one event's build
      throws, try a few others rather than losing the whole roll. */
   for (const pool of pools) {
     const remaining = [...pool];
     for (let attempt = 0; attempt < 5 && remaining.length; attempt++) {
-      const ev = pick(S, remaining);
-      remaining.splice(remaining.indexOf(ev), 1);
+      const total=remaining.reduce((n,x)=>n+x.score,0);let draw=rand(S)*total;
+      let candidate=remaining[remaining.length-1];for(const item of remaining){draw-=item.score;if(draw<0){candidate=item;break;}}
+      const ev=candidate.ev;remaining.splice(remaining.indexOf(candidate),1);
       let scene = null;
       const buildRngState = S.rngState;
       try {
-        scene = ev.build(S, ctx);
+        scene = ev.build(S, resolveEventCtx(S,ev));
       } catch (_) {
         scene = null;
       }
       if (!scene || !scene.title || !Array.isArray(scene.choices) || !scene.choices.length) continue;
-      return prepareRandomLifeScene(S, ev, scene, ctx, buildRngState);
+      return prepareRandomLifeScene(S, ev, scene, resolveEventCtx(S,ev), buildRngState);
     }
   }
   return null;
@@ -424,6 +436,7 @@ export function pickRandomLifeEvent(S) {
 export function noteRandomLifeEventFired(S, scene) {
   if (!S || !scene || !scene.eventId) return;
   ensureExtendedState(S);
+  S.eventPending??={};S.eventPending[scene.eventId]={participants:{...scene.eventParticipantIds},at:S.year*12+S.month};
   S.eventFiredTurns[scene.eventId] = { turn: S.turn, year: S.year, month: S.month };
   const ev = EVENT_BY_ID.get(scene.eventId);
   if (ev && ev.repeatable) {
@@ -445,17 +458,18 @@ export function noteRandomLifeEventFired(S, scene) {
 export function isRandomLifeSceneCurrent(scene, S) {
   const event = scene?.eventId ? EVENT_BY_ID.get(scene.eventId) : null;
   if (!event) return true;
-  const current = resolveEventCtx(S);
+  const current = resolveEventCtx(S,event);
   if (Object.entries(scene.eventParticipantIds || {}).some(([role, id]) =>
     !S.people[id]?.alive || current[role]?.id !== id)) return false;
   return eventGatePasses(event, S, { ignoreHistory: true });
 }
 
-function prepareRandomLifeScene(S, ev, scene, ctx, buildRngState) {
+function prepareRandomLifeScene(S, ev, scene, ctx, buildRngState, savedResolutionKey=null) {
       scene.key = ev.id;
       scene.baseId = ev.id;
       scene.eventId = ev.id;
       scene.eventBuildRngState = buildRngState;
+      scene.eventRelevance=eventRelevance(S,ev);
       scene.eventParticipantIds = Object.fromEntries(
         (ev.gates?.requiredPeople || []).map(role => [role, ctx[role]?.id]).filter(([, id]) => id)
       );
@@ -468,7 +482,7 @@ function prepareRandomLifeScene(S, ev, scene, ctx, buildRngState) {
       const evChainId = CHAIN_INDEX.chainOf.get(ev.id);
       if (evChainId) {
         scene.chainId = evChainId;
-        const chainPerson = ctx.spouse || ctx.friend || ctx.sib || ctx.mom || ctx.dad || ctx.child || null;
+        const chainPerson = (ev.gates?.requiredPeople||[]).map(role=>ctx[role]).find(Boolean)||null;
         scene.chainPersonId = chainPerson ? chainPerson.id : null;
         const isTerminal = !(CHAIN_INDEX.children.get(ev.id) || []).length;
         if (isTerminal) {
@@ -490,6 +504,25 @@ function prepareRandomLifeScene(S, ev, scene, ctx, buildRngState) {
           });
         }
       }
+      const resolutionKey=savedResolutionKey||`${ev.id}:${S.year}:${S.month}:${S.turn}:${buildRngState}`;
+      scene.eventResolutionKey=resolutionKey;
+      scene.choices=scene.choices.map((choice,choiceIndex)=>{
+        const effect=choice.effect;
+        return {...choice,effect:st=>{
+          if(st.eventOutcomes?.[ev.id]?.resolutionKey===resolutionKey)return;
+          const available=choice.available;
+          if(typeof available==='function'&&!available(st))return;
+          const before=Number(st.money?.cash)||0;
+          const result=typeof effect==='function'?effect(st):undefined;
+          if(result?.ok===false)return result;
+          const label=typeof choice.label==='function'?choice.label(st):choice.label;
+          const record={eventId:ev.id,resolutionKey,year:st.year,month:st.month,turn:st.turn,choiceIndex,choiceLabel:label,participants:{...scene.eventParticipantIds},cashDelta:(Number(st.money?.cash)||0)-before};
+          st.eventOutcomes??={};st.eventOutcomes[ev.id]=record;
+          st.eventHistory??=[];st.eventHistory.push(record);if(st.eventHistory.length>240)st.eventHistory.splice(0,st.eventHistory.length-240);
+          if(st.eventPending)delete st.eventPending[ev.id];
+          return result;
+        }};
+      });
       /* queueScene defaults to 2 per life; repeatable events need room
          to come back after their cooldown, once-per-life events need 1. */
       scene.maxPerLife = ev.repeatable ? 99 : 1;
@@ -504,10 +537,10 @@ export function restoreRandomLifeScene(S, saved) {
   const rngNow = S.rngState;
   try {
     if (saved.eventBuildRngState !== undefined) S.rngState = saved.eventBuildRngState;
-    const ctx = resolveEventCtx(S);
+    const ctx = resolveEventCtx(S,ev);
     const scene = ev.build(S, ctx);
     if (!scene?.choices?.length) return null;
-    const restored = prepareRandomLifeScene(S, ev, scene, ctx, saved.eventBuildRngState);
+    const restored = prepareRandomLifeScene(S, ev, scene, ctx, saved.eventBuildRngState,saved.eventResolutionKey);
     for (const key of ['urgent', 'createdTurn', 'createdYear', 'eventParticipantIds']) {
       if (saved[key] !== undefined) restored[key] = saved[key];
     }
