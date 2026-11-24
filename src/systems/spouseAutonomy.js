@@ -1,5 +1,5 @@
 import {clamp,hashSeed} from '../core/rng.js';
-import {recordJournal,walletMove,queueScene} from '../core/schema.js';
+import {recordJournal,walletMove,queueScene,MONTH_NAMES} from '../core/schema.js';
 import {eraSalary,eraLocalCost} from '../data/economy.js';
 import {getCountry} from '../data/countries.js';
 import {personMind,rememberChoice} from './personMind.js';
@@ -69,7 +69,7 @@ export function spouseConversationCurrent(S,scene){
 export function buildSpouseConversation(S,id,at){
  const p=S.people[id],snapshot={spouseConversation:{id,at}};if(!spouseConversationCurrent(S,snapshot))return null;
  const trust=p.mind.pending.reason==='trust';
- return{key:`spouse_talk_${id}_${at}`,baseId:`spouse_talk_${id}_${at}`,spouseConversation:{id,at},category:'relationship',title:`${p.firstName} Wants to Talk`,text:trust?`${p.firstName}: "Can we talk about what has been happening between us?"`:`${p.firstName}: "We keep putting off time together. Can we keep an evening free this month?"`,choices:[
+ return{key:`spouse_talk_${id}_${at}`,baseId:`spouse_talk_${id}_${at}`,spouseConversation:{id,at},category:'relationship',title:`${p.firstName} Wants to Talk · ${MONTH_NAMES[at%12===0?11:at%12-1].slice(0,3)} ${Math.floor((at-1)/12)}`,text:trust?`${p.firstName}: "Can we talk about what has been happening between us?"`:`${p.firstName}: "We keep putting off time together. Can we keep an evening free this month?"`,choices:[
  {label:'Make time to talk · 3 energy',available:()=>checkSocialEnergy(S,3).ok,effect:st=>{if(spouseConversationCurrent(st,snapshot))answerSpouseDecision(st,id,true);}},
  {label:'Not this month',effect:st=>{if(spouseConversationCurrent(st,snapshot))answerSpouseDecision(st,id,false);}}
  ]};

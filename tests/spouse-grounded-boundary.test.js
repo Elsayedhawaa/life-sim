@@ -8,3 +8,6 @@ let[s,p,m]=setup();for(let i=0;i<36;i++){noteSocialContact(s,p);tickSpouseAutono
 
 [s,p,m]=setup();for(let i=0;i<48&&!m.pending;i++){s.month++;if(s.month>12){s.month=1;s.year++;}tickSpouseAutonomy(s);}assert(s.activeScene?.spouseConversation);const saved=JSON.parse(JSON.stringify(s.activeScene)),scene=restoreSpouseConversation(s,saved);assert(scene);const energy=s.social.energy;scene.choices[0].effect(s);assert.equal(s.social.energy,energy-3);scene.choices[0].effect(s);assert.equal(s.social.energy,energy-3);assert.equal(spouseConversationCurrent(s,saved),false);
 [s,p,m]=setup();for(let i=0;i<48&&!m.pending;i++){s.month++;if(s.month>12){s.month=1;s.year++;}tickSpouseAutonomy(s);}fs.writeFileSync('/downloads/spouse-conversation-fixture.json',JSON.stringify(s));const old=s.activeScene;noteSocialContact(s,p);assert.equal(restoreSpouseConversation(s,old),null);tickSpouseAutonomy(s);assert.equal(m.pending,null);
+
+// Recurring concrete conversations need distinct dated titles, not a silent three-per-life cap.
+[s,p,m]=setup();let talks=0;for(let month=0;month<120;month++){tickSpouseAutonomy(s);if(s.activeScene?.spouseConversation){talks++;s.activeScene.choices[1].effect(s);s.activeScene=null;}s.month++;if(s.month>12){s.month=1;s.year++;}}assert(talks>3);

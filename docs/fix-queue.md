@@ -248,3 +248,5 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W116 Spouse time-together requests were the unconditional random fallback, even after real recent contact. Now require at least3months apart unless trust/respect is damaged. No request when all concrete needs are already met; other spouse requests preserve their own gates. No automatic separation or imposed unhappiness added.
 
 - [x] W117 Grounded spouse conversations now surface as named in-play decisions, not only hidden People controls. Distance complaint closes if actual contact occurs; stale saved/queued conversations cannot punish changed circumstances. Trust conversation uses different words from time-apart request. Existing real energy/trust and separation mechanics retained, no imposed loneliness.
+
+- [x] W118 Natural10year marriage comparison exposed identical-title lifetime cap stopping spouse conversations after3. Dated request titles keep genuine recurring decisions available. Ten-year paired play is not deterministic isolation because scene timing changes random events; both marriages can remain intact, no forced divorce for declining requests.
