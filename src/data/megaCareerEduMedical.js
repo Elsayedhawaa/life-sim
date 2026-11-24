@@ -18254,6 +18254,7 @@ export const ALL_SURGERIES = [
     "cures": [
       "type2_diabetes"
     ],
+    "partial": true,
     "healthBoost": 8
   },
   {

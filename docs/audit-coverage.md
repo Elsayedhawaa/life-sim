@@ -20,7 +20,7 @@ Checkpoint: November24,2026. Prior shipped baseline: 85ea930. This checkpoint al
 - Long-horizon balancing, entertainment quality and every old-save combination.
 - The old coherence_suite.mjs remains unpassed: obsolete assumptions and runtime stalls. It is not included in passing totals.
 
-41 focused*.test.js files pass at this checkpoint. A render pass does not prove action outcomes; a local pass does not prove hosted delivery. No full-audit completion claim.
+42 focused*.test.js files pass at this checkpoint. A render pass does not prove action outcomes; a local pass does not prove hosted delivery. No full-audit completion claim.
 
 Travel follow-up: trips now deduct newly unpaid days using the existing leave-action net/30 game formula. Quoted travel cost and lost pay are shown separately. Plan papers use the actual negotiated leave allowance. Aviation staff quotes share the charged price. This is a game pay simplification, not local employment law.
 
@@ -31,3 +31,5 @@ Minor activity funding: paid habits debit actual living parent savings, with cur
 Career leave: sick leave once per game month, unpaid leave one5-day block per game month, parental leave once per12months. Explicit model limits, not employment-law claims. Repeated refused clicks cannot re-charge cash or heal/reward. Actual390px sick leave action/reload verified locally.
 
 Legacy-suite sweep: many historical*.mjs assertions are stale or still fail; they are not included in the focused passing count. Confirmed Land & Build render crash fixed (compound-only variable leaked into land rows),72country/stage/market land renders added, minor direct land purchase blocked, phone plot purchase/reload checked. Added missing visible lock explanations for tutor, study-abroad funding, fertility affordability and doctorate prerequisite. Historical social/business numeric expectations remain triage targets.
+
+Surgery: matching active diagnosis required for corrective surgery; partial-treatment conditions remain managed instead of erased, including game diabetes metabolic surgery. Recovery blocks another procedure; elective appearance surgery adult-only and once per year. Fertility uses its own route. All distinct operations, including LASIK, appear instead of silently slicing after14.42focused suites pass, plus actual phone appendectomy/recovery/reload check. Risks/complications and detailed clinical eligibility are not a medical simulation.

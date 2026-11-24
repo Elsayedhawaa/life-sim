@@ -124,7 +124,7 @@ import { renderBusinessLoanSection } from '../systems/businessLoans.js';
 import { renderBusinessWillSection, renderWillHeirSection } from '../systems/businessLegacy.js';
 import { isSeriousCondition, treatmentOptions, oddsInWords } from '../systems/mortalityModel.js';
 import {
-  fertilityCostLocal, tripCostLocal, tripLeaveImpact,
+  surgeryEligibility, fertilityCostLocal, tripCostLocal, tripLeaveImpact,
   activityCostLocal,
   computeZakatDueLocal,
   computeChancenkartePoints,
@@ -4758,7 +4758,7 @@ function renderMedicalAndSurgeriesSubtabHtml(S) {
 
     <div class="card">
       <div class="section-head">
-        <h3>Surgical Procedures (${ALL_SURGERIES.length} incl. LASIK) & IVF Fertility</h3>
+        <h3>Surgical Procedures (${ALL_SURGERIES.length} catalog entries, incl. LASIK) & IVF Fertility</h3>
         <span class="muted">Corrective, Vision & Reproductive Medicine</span>
       </div>
       <div class="card" style="padding:10px">
@@ -4766,15 +4766,17 @@ function renderMedicalAndSurgeriesSubtabHtml(S) {
         <p class="muted">Game estimates, not medical advice. One consultation/cycle per month. Requires adult, living co-resident opposite-sex spouse, no current pregnancy and maternal age below46. Donor and surrogate routes are not modeled.</p>
         ${V1_FERTILITY_TREATMENTS.map(ft=>`<div style="margin:8px 0"><button class="btn btn-sm" data-action="surgery-ivf" data-kind="ivf" data-id="${ft.id}" ${S.money.cash>=fertilityCostLocal(S,ft)?'':'disabled'}>${esc(ft.label)} · ${esc(formatMoney(fertilityCostLocal(S,ft),S.country))}</button>${S.money.cash<fertilityCostLocal(S,ft)?lockReason("Not enough cash for this clinic option",`Need ${formatMoney(fertilityCostLocal(S,ft)-S.money.cash,S.country)} more`):""}<div class="muted">${ft.successPct>0?`${Math.round(ft.successPct*100)}% game conception chance per cycle; no guarantee.`:'Assessment only, no conception attempt.'}</div></div>`).join('')}
       </div>
-      ${ALL_SURGERIES.slice(0, 14).map(sg => {
+      ${ALL_SURGERIES.filter((sg,i,all)=>sg.id!=='ivf_icsi_cycle'&&all.findIndex(x=>x.id===sg.id)===i).map(sg => {
+        const eligibility=surgeryEligibility(S,sg);
         const cost = eraLocalCost(Math.round(convertCurrency((sg.baseCostEGP || 35000) / 55.83, 'usa', S.country, 2026)), S.country, S.year);
         return `
-          <div class="item-row">
-            <div class="item-row-main">
+          <div class="item-row" style="flex-wrap:wrap">
+            <div class="item-row-main" style="min-width:180px;flex:1">
               <strong>${esc(sg.label)}</strong>
-              <span>Est. Fee: <strong class="mono">${esc(formatMoney(cost, S.country))}</strong>${sg.looksBoost ? ` · +${sg.looksBoost} Looks` : ''}</span>
+              <span>Est. Fee: <strong class="mono">${esc(formatMoney(cost, S.country))}</strong>${sg.looksBoost ? ` · +${sg.looksBoost} Looks` : ''} · ${sg.recoveryMonths||0} game months recovery${sg.partial?" · Ongoing care, not a guaranteed cure":""}</span>
             </div>
-            <button class="btn btn-sm" data-action="surgery-ivf" data-kind="surgery" data-id="${sg.id}" ${S.money.cash >= cost ? '' : 'disabled'}>Book</button>
+            <button class="btn btn-sm" data-action="surgery-ivf" data-kind="surgery" data-id="${sg.id}" ${S.money.cash >= cost && eligibility.ok ? '' : 'disabled'}>Book</button>
+            ${!eligibility.ok?lockReason(eligibility.reason):''}
             ${S.money.cash < cost ? lockReason('Not enough cash for this procedure', `Need ${esc(formatMoney(Math.round(cost - S.money.cash), S.country))} more`) : ''}
           </div>
         `;

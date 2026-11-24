@@ -1312,6 +1312,15 @@ export function applyGermanChancenkarte(S) {
    5. SURGERIES (LASIK!), IVF/ICSI, 102 VACATIONS + NUSUK HAJJ/UMRAH, LAWSUITS & CRIME
    ========================================================================== */
 
+export function surgeryEligibility(S,surg){
+ if(surg.id==='ivf_icsi_cycle')return {ok:false,reason:'Use the fertility clinic for conception treatment.'};
+ if(S.medical.surgeryRecoveryUntil>S.year*12+S.month)return {ok:false,reason:'Finish recovery from the previous surgery first.'};
+ if((surg.cosmetic||!surg.cures?.length)&&S.player.age<18)return {ok:false,reason:'Elective appearance surgery is adult-only in this game.'};
+ if(surg.cures?.length&&!S.medical.conditions.some(c=>surg.cures.includes(c.id)))return {ok:false,reason:'No matching active condition for this procedure.'};
+ if(S.medical.surgeryYears?.[surg.id]===S.year)return {ok:false,reason:'This procedure was already performed this year.'};
+ return {ok:true};
+}
+
 export function fertilityCostLocal(S,ft){return Math.round(convertCurrency((ft.costEGP||0)/55.83,'usa',S.country,S.year));}
 
 export function undergoSurgeryOrFertility(S, kind, id) {
@@ -1319,17 +1328,21 @@ export function undergoSurgeryOrFertility(S, kind, id) {
   if (kind === 'surgery') {
     const surg = ALL_SURGERIES.find(s => s.id === id);
     if (!surg) return { ok: false, msg: 'Procedure not found.' };
+    const eligible=surgeryEligibility(S,surg);if(!eligible.ok)return {ok:false,msg:eligible.reason};
     const cost = eraLocalCost(Math.round(convertCurrency((surg.baseCostEGP || 35000) / 55.83, 'usa', S.country, 2026)), S.country, S.year);
     if (S.money.cash < cost) return { ok: false, msg: `Need ${formatMoney(cost, S.country)} for ${surg.label}.` };
 
     walletMove(S, -cost, `Surgical procedure: ${surg.label}`, 'medical');
-    if (Array.isArray(surg.cures) && surg.cures.length) {
-      S.medical.conditions = S.medical.conditions.filter(c => !surg.cures.includes(c.id));
+    S.medical.surgeryYears||={};S.medical.surgeryYears[surg.id]=S.year;
+    S.medical.surgeryRecoveryUntil=S.year*12+S.month+Math.ceil(surg.recoveryMonths||0);
+    if (surg.cures?.length) {
+      if(surg.partial){for(const c of S.medical.conditions.filter(c=>surg.cures.includes(c.id))){c.managed=true;c.treatmentStatus='treated';c.yearsTreated=0;}}
+      else S.medical.conditions=S.medical.conditions.filter(c=>!surg.cures.includes(c.id));
     }
-    if (surg.looksBoost) S.player.vitals.looks = clamp(S.player.vitals.looks + surg.looksBoost);
+    if (surg.looksBoost||surg.cosmetic) S.player.vitals.looks = clamp(S.player.vitals.looks + (surg.looksBoost||5));
     S.player.vitals.health = clamp(S.player.vitals.health + (surg.healthBoost || 6));
-    recordJournal(S, `Underwent ${surg.label} (${formatMoney(cost, S.country)}) — smooth recovery!`, 'health');
-    return { ok: true, msg: `Completed ${surg.label}!` };
+    recordJournal(S, `Underwent ${surg.label} (${formatMoney(cost, S.country)}) — ${surg.partial?'condition managed, not a guaranteed cure':'procedure completed'}. Recovery: ${surg.recoveryMonths||0} game months.`, 'health');
+    return { ok: true, msg: `Completed ${surg.label}. ${surg.partial?'Condition remains under ongoing care. ':''}Recovery: ${surg.recoveryMonths||0} game months.` };
   }
 
   if(kind!=='ivf')return {ok:false,msg:'Unknown medical treatment.'};
