@@ -317,6 +317,7 @@ function buildRelocationBusinessScene(S, choice) {
   return {
     key: `biz_relocate_${choice.bizId}_${S.year}_${S.month}`,
     baseId: `biz_relocate_${choice.bizId}`,
+    relocationBusinessSnapshot:{bizId:choice.bizId,destCountry:pending.destCountry},
     maxPerLife: 99,
     category: 'visa',
     title: `Your business before you move: ${choice.name}`,
@@ -1294,4 +1295,11 @@ export function restoreMonthlyResidencyScene(S,saved){
  if(key===`citizenship_offer_${S.year}`)q={type:'citizenship',country:S.country,year:S.year,fee:Math.round(convertCurrency(1000,'usa',S.country,S.year)),legalYears:r.yearsInCountryLegally};
  if(key===`grace_expired_${S.year}_${S.month}`)q={type:'grace',country:S.country,homeCountry:S.homeCountry,year:S.year,month:S.month};
  return q?buildMonthlyResidencyScene(S,q):null;
+}
+
+export function restoreRelocationBusinessScene(S,saved){
+ const pending=S.pendingRelocation;if(!pending)return null;
+ const q=saved?.relocationBusinessSnapshot||(saved?.baseId?.startsWith('biz_relocate_')?{bizId:saved.baseId.slice(13),destCountry:pending.destCountry}:null);
+ if(!q||q.destCountry!==pending.destCountry||!pending.remaining.includes(q.bizId))return null;
+ const choice=buildRelocationBusinessChoices(S).find(c=>c.bizId===q.bizId);return choice?buildRelocationBusinessScene(S,choice):null;
 }

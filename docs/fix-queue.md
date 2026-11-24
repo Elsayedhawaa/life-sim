@@ -188,3 +188,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W83 History-based Building chapter description still asserts current earning/saving while unemployed; use between-jobs description.
 - [x] W84 Monthly residency renewal/grace/naturalisation scenes lack reload builders; preserve original status/country/expiry/current eligibility, no replayed fees or automatic grants.
+
+- [x] W85 Business relocation decision loses scene on reload while pending move remains. Restore exact pending business/destination choice without restarting or recharging relocation.
+
+- [ ] W86 Business relocation card is a long essay on390px despite outcome buttons showing same numbers. Shorten main text, keep costs/consequences in compact details. Low-impact UI.
