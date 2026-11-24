@@ -1274,7 +1274,10 @@ export function settleHouseholdMonth(S) {
     S.money.creditScore = clamp(S.money.creditScore - 12, 300, 850);
     S.player.vitals.stress = clamp(S.player.vitals.stress + 6);
 
-    if (S.housing.mode === 'rent') {
+    // Explicit lease evidence wins over unrelated food/debt insolvency.
+    const rentMissed=S.housing.playerLease?.status==='active'?summary.rentArrearsAdded>0:S.money.cash<0;
+    if(S.housing.mode==='rent'&&!rentMissed)S.money.missedRentMonths=0;
+    if (S.housing.mode === 'rent'&&rentMissed) {
       S.money.missedRentMonths += 1;
       if (S.money.missedRentMonths >= 3) {
         S.money.missedRentMonths = 0;

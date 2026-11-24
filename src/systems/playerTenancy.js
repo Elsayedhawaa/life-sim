@@ -30,3 +30,11 @@ export function recordPlayerRentDue(S,amount,available){const l=S.housing?.playe
 export function recordRentalDamage(S,label,cost){const l=S.housing?.playerLease;if(!l||l.status!=='active'||!Number.isSafeInteger(cost)||cost<=0)return null;l.damage??=[];const d={id:'damage_'+l.id+'_'+l.damage.length,label,cost,playerCaused:true,recorded:true,status:'open',at:S.year*12+S.month};l.damage.push(d);return d;}
 export function tickPlayerRentalDamage(S){const l=S.housing?.playerLease;if(!l||l.status!=='active'||l.lastDamageTick===S.year*12+S.month)return;l.lastDamageTick=S.year*12+S.month;if(!(l.damage||[]).some(x=>x.status==='open')&&chance(S,.02)){const cost=Math.max(1,Math.round(l.deposit*.15));recordRentalDamage(S,'Accidental broken cupboard door',cost);recordJournal(S,'You broke a cupboard door in your rented home. Repair cost is recorded against your paid deposit; fix it before moving or it appears in the inspection.','housing');}}
 export function repairPlayerRentalDamage(S,id){const l=S.housing?.playerLease;const d=l?.damage?.find(x=>x.id===id&&x.status==='open');if(!d)return{ok:false,msg:'No recorded rental damage.'};if(S.money.cash<d.cost)return{ok:false,msg:'Not enough cash for this repair.'};walletMove(S,-d.cost,'Rental damage repair: '+d.label,'housing');d.status='repaired';d.paid=d.cost;return{ok:true,msg:'Recorded damage repaired. No deposit deduction for it.'};}
+
+export function payPlayerRentArrears(S){
+ const l=S.housing?.playerLease;const amount=Math.max(0,Math.ceil(Number(l?.rentArrears)||0));
+ if(!l||l.status!=='active'||amount<=0)return{ok:false,msg:'No recorded unpaid rent.'};
+ if(!Number.isSafeInteger(amount)||!Number.isFinite(S.money.cash)||S.money.cash<amount)return{ok:false,msg:'Not enough cash to clear unpaid rent.'};
+ walletMove(S,-amount,'Payment of recorded rental arrears','housing');l.rentArrears=0;l.arrearsPayments??=[];l.arrearsPayments.push({year:S.year,month:S.month,amount,country:S.country});S.money.missedRentMonths=0;
+ return{ok:true,msg:'Recorded unpaid rent cleared. Deposit stays refundable.'};
+}

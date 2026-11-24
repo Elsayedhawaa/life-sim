@@ -71,7 +71,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W9 Traced broker funds: identify/freeze a capped share at actual scam loss, delayed hearing and exactly-once cash recovery, no invented legacy recovery.
 - [x] W10 Redundancy event: every choice ends the actual job; package uses current monthly gross, optional unpaid-package dispute reserves only promised employer funds for a separate claim.
 - [x] W11 Deposit event invents a past rental deposit and refund without a recorded payment; restrict to actual dispute records before narrative or refund.
-- [ ] W12 Wrongful-dismissal and other civil categories need evidence-specific generators, distinct from unpaid package claims.
+- [x] W12 Evidence-specific documented dismissal generator, contractual notice-pay claim distinct from unpaid package claims. Other unmodeled civil categories are not implied complete.
 
 - [x] W13 Player-as-tenant deposit payment/move-out records. W11gates the old fabricated event until actual dispute records exist; landlord-owned property tenant deposits remain separate.
 
@@ -91,3 +91,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W21 Finite private drawdown must apply worldwide, and re-retirement must preserve unspent prior balance rather than replace it.
 
 - [x] W23 Savings liquidity counts before classifying rent unpaid, with actual three-month eviction/deposit/debt regression coverage.
+
+- [ ] W24 Explicit player leases: allow cash payment of recorded arrears before move-out; do not count unrelated negative cash as unpaid rent when this month's rent was fully paid.
+- [ ] W25 Low-impact catalog wording: apartment label says1BR while computed room count prints2BR; unify bedroom/room units, do not silently alter housing capacity.

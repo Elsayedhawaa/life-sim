@@ -3040,6 +3040,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
         </div>
         <div style="border-top:1px solid var(--line-soft);padding-top:8px">
           ${S.housing.playerLease?.status==='active'?'<p>Paid rental deposit · '+esc(formatMoney(S.housing.playerLease.deposit,S.housing.playerLease.country))+' · Unpaid rent '+esc(formatMoney(S.housing.playerLease.rentArrears||0,S.country))+' · Deposit covers recorded unpaid rent, then inspected player damage; balance returned on moving or disputed after eviction.</p>':''}
+          ${S.housing.playerLease?.status==='active'&&S.housing.playerLease.rentArrears>0?'<div style="margin:8px 0"><button class="btn btn-sm" data-action="pay-player-rent-arrears">Clear unpaid rent · '+esc(formatMoney(S.housing.playerLease.rentArrears,S.country))+' cash</button></div>':''}
           ${(S.housing.playerLease?.damage||[]).filter(d=>d.status==='open').map(d=>'<div class="item-row"><span>Recorded damage · '+esc(d.label)+' · '+esc(formatMoney(d.cost,S.country))+'</span><button class="btn btn-sm" data-action="repair-player-rental" data-id="'+esc(d.id)+'">Repair before inspection</button></div>').join('')}
           <strong style="font-size:0.82rem">Quick Rental Apartments in ${esc(getCountry(S.country).name)}:</strong>
           ${rentalUnits.map(h => {
