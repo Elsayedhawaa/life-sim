@@ -224,7 +224,7 @@ export function roleWageLocal(S, role, countryId) {
 /* ------------------------------------------------------------------ */
 export function ensureStaffArray(S, biz) {
   if (!biz) return [];
-  if(Array.isArray(biz.staff)){for(const emp of biz.staff)employeePerson(S,biz,emp);return biz.staff;}
+  if(Array.isArray(biz.staff)){for(const emp of [...biz.staff]){if(emp.personId&&S.people?.[emp.personId]?.alive===false){biz.staff.splice(biz.staff.indexOf(emp),1);recordJournal(S,`${emp.name} died. Their position at ${biz.name} is vacant.`,'career');}else employeePerson(S,biz,emp);}biz.employees=biz.staff.length;return biz.staff;}
   const count = Math.max(0, Math.round(Number(biz.employees) || 0));
   const roles = staffRolesForType(biz.typeId);
   const staff = [];
@@ -421,7 +421,7 @@ export function fireBusinessEmployee(S, biz, staffId) {
     return { ok: false, msg: `Severance for ${emp.name} is ${formatMoney(charge,S.country)} (${sev.months} month${sev.months === 1 ? '' : 's'} under ${getCountry(biz.country || S.country).name || ''} law) — not enough cash to let them go properly.` };
   }
   staff.splice(idx,1);
-  const p=employeePerson(S,biz,emp);p.career.employed=false;p.career.employer=null;
+  const p=employeePerson(S,biz,emp);p.career.employed=false;p.career.employer=null;p.career.monthlyIncomeLocal=0;p.career.businessEmployeeId=null;
   biz.employees = staff.length;
   /* Verdant finding: severance comes out of PERSONAL cash as its own
      ledger line — never buried inside the business P&L. */
@@ -442,7 +442,7 @@ export function fireAllStaff(S, biz, reason = 'closed') {
   let totalSeverance = 0;
   let unpaid = 0;
   for (const emp of leaving) {
-    const p=employeePerson(S,biz,emp);p.career.employed=false;p.career.employer=null;
+    const p=employeePerson(S,biz,emp);p.career.employed=false;p.career.employer=null;p.career.monthlyIncomeLocal=0;p.career.businessEmployeeId=null;
     const sev = severanceFor(S, biz, emp);
     sev.amount=Math.round(convertCurrency(sev.amount,biz.figuresCurrency||biz.country||S.country,S.country,S.year));
     const cash = Math.max(0,Number(S.money.cash) || 0);
@@ -486,6 +486,7 @@ export function monthlyStaffTick(S, biz) {
   const staff = ensureStaffArray(S, biz);
   const quitters = [];
   for (const emp of [...staff]) {
+    if(emp.personId&&S.people[emp.personId]?.alive===false){staff.splice(staff.indexOf(emp),1);recordJournal(S,`${emp.name} died. Their position at ${biz.name} is vacant.`,'career');continue;}
     if(tickEmployeeChoice(S,biz,emp)){
       const idx = staff.findIndex(e => e.id === emp.id);
       if (idx >= 0) staff.splice(idx, 1);

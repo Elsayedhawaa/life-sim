@@ -816,6 +816,7 @@ function npcMaybeLeaveHome(S, person) {
 }
 
 function npcJobChange(S, person) {
+  if(person.career?.businessEmployeeId&&(S.career.businesses||[]).some(b=>b.id===person.career.businessEmployeeId&&((b.staff||[]).some(e=>e.personId===person.id)||b.manager?.personId===person.id)))return;
   const income = Number(person.career.monthlyIncomeLocal) || 0;
   const title = person.career.title || '';
   if (person.age < 22 || person.age >= 63 || title === 'Retired') return;
@@ -872,7 +873,9 @@ export function tickNpcAutonomyYearly(S) {
     personMind(S,person);
     /* Natural NPC age-appropriate schooling & career progression */
     const pCountry = getCountry(person.residenceCountry || S.country);
-    if (person.age < 5 && !person.career.monthlyIncomeLocal) {
+    const managedEmployment=person.career?.businessEmployeeId&&(S.career.businesses||[]).some(b=>b.id===person.career.businessEmployeeId&&((b.staff||[]).some(e=>e.personId===person.id)||b.manager?.personId===person.id));
+    if(managedEmployment){person.career.savingsLocal=(person.career.savingsLocal||0)+Math.round(person.career.monthlyIncomeLocal*12*.12);}
+    else if (person.age < 5 && !person.career.monthlyIncomeLocal) {
       person.career.title = 'Infant / Preschool';
     } else if (person.age >= 5 && person.age < 12 && !person.career.monthlyIncomeLocal) {
       person.career.title = 'Primary School Pupil';

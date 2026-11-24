@@ -8,7 +8,7 @@ export function employeePerson(S,biz,emp){
  S.people||={};const id=emp.personId||`person_${emp.id}`;emp.personId=id;
  if(!S.people[id]){const parts=String(emp.name||'Employee').split(' ');const local={...S,rngState:hashSeed(`${S.seed}|${id}`)};
  S.people[id]=createPerson(local,{id,firstName:parts.shift(),familyName:parts.join(' ')||'Staff',gender:emp.gender,nationality:biz.country||S.country,age:25+hashSeed(id)%25,role:'employee',relationLabel:'Employee',jobTitle:emp.role,employer:biz.name});}
- const p=S.people[id];p.career||={};p.career.employer=biz.name;p.career.title=emp.role;p.career.monthlyIncomeLocal=emp.wageLocal;p.career.employed=true;personMind(S,p);return p;
+ const p=S.people[id];p.career||={};p.career.businessEmployeeId=biz.id;p.career.employer=biz.name;p.career.title=emp.role;p.career.monthlyIncomeLocal=emp.wageLocal;p.career.employed=true;personMind(S,p);return p;
 }
 export function staffPreference(S,biz,emp){const m=personMind(S,employeePerson(S,biz,emp));return m.ambition>=70?'Career growth':m.family>=65?'Work-life balance':m.thrift>=60?'Stable pay':'Team trust';}
 export function tickEmployeeChoice(S,biz,emp){
@@ -16,7 +16,7 @@ export function tickEmployeeChoice(S,biz,emp){
  if(emp.peopleTick===now)return false;
  tickEmployeeBenefits(S,biz,emp);emp.peopleTick=now;
  const threshold=18+Math.floor(m.independence/10);emp.unhappyMonths=emp.morale<threshold?(emp.unhappyMonths||0)+1:0;
- if(emp.unhappyMonths>=3){rememberChoice(S,p,'employment','resigned');p.career.employed=false;p.career.employer=null;return true;}
+ if(emp.unhappyMonths>=3){rememberChoice(S,p,'employment','resigned');p.career.employed=false;p.career.employer=null;p.career.monthlyIncomeLocal=0;p.career.businessEmployeeId=null;return true;}
  if(emp.request&&now>emp.request.expires){emp.morale=Math.max(0,emp.morale-8);rememberChoice(S,p,emp.request.kind,'ignored');emp.request=null;}
  if(!emp.request&&(!emp.lastRequest||now-emp.lastRequest>=6)&&emp.morale<65){const pref=staffPreference(S,biz,emp);const kind=pref==='Career growth'?'training':pref==='Work-life balance'?'rest':'raise';emp.request={kind,created:now,expires:now+3};emp.lastRequest=now;recordJournal(S,`${emp.name} at ${biz.name} asked for ${kind==='raise'?'a pay review':kind==='rest'?'time off':'training'}.`,'career');}
  return false;

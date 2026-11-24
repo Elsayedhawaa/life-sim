@@ -37,7 +37,7 @@ import { V1_BUSINESS_TYPES, EXTRA_BUSINESSES } from '../data/megaCareerEduMedica
    fires the team through the one staff function, revenue uses W2's
    teamMoraleFactor, and the Team Bonus op lifts morale through W2's
    applyStaffBonus — one morale rule, not two. */
-import { fireAllStaff, teamMoraleFactor, applyStaffBonus, seedStartingStaff, staffRolesForType, roleWageLocal, splitWagesFromCostLump, otherCostsFloor } from './businessStaff.js';
+import { fireAllStaff, teamMoraleFactor, applyStaffBonus, seedStartingStaff, ensureStaffArray,staffRolesForType, roleWageLocal, splitWagesFromCostLump, otherCostsFloor } from './businessStaff.js';
 /* v2.14 §1 owns businessCapacity.js. It is imported here so launch
    gating can state the real constraint (your free hours vs a manager's
    salary), workload can skip managed businesses, the monthly tick can
@@ -1070,7 +1070,7 @@ export function computeBusinessMonth(S, biz) {
   ensureExtendedState(S);
   normalizeBusiness(S, biz);
   const now = businessMonthIndex(S);
-  const staff = biz.staff || [];
+  const staff = ensureStaffArray(S,biz);
   const wages=staff.reduce((sum,st)=>sum+(Number(st.wageLocal)||0),0)+benefitsCost(biz);
   const rent = Number(biz.premises?.monthlyRentLocal) || 0;
   const otherBase = Number(biz.monthlyCost) || 0;

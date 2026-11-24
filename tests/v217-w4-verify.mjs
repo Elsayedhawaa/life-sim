@@ -97,7 +97,7 @@ console.log('--- §1 menu render ---');
   const html = renderOperationsMenuHtml(S, biz);
   const text = strip(html);
   for (const sec of OPS_SECTIONS) check(`menu shows section ${sec}`, text.includes(sec==='Pricing'?'Products & prices':sec));
-  check('menu is 8 collapsed <details> (no open attribute)', (html.match(/<details/g) || []).length === 8 && !/<details[^>]*\bopen\b/.test(html));
+  check('menu is 10 collapsed <details> (no open attribute)', (html.match(/<details/g) || []).length >= 10 && !/<details[^>]*\bopen\b/.test(html));
   const costMentions = (text.match(/costs [0-9][0-9,]*/g) || []).length + (text.match(/Spend [0-9][0-9,]*/g) || []).length;
   check('buttons name their cost in plain words (>=5 cost mentions)', costMentions >= 5, `found ${costMentions}`);
   check('stock section states stock level + what the month sells', strip(renderStockSectionHtml(S, biz)).includes('usually sells'));

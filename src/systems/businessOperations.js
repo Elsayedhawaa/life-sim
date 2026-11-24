@@ -1,3 +1,5 @@
+import{growthStage,internationalQuote,internationalReadiness}from './businessInternational.js';
+import{productLaunchOptions,productLaunchCost}from './businessProducts.js';
 import{BUSINESS_IMPROVEMENTS,improvementQuote}from './businessImprovements.js';
 import{staffingRequirement}from './businessSafety.js';
 import{businessProfile}from './businessProfiles.js';
@@ -80,7 +82,7 @@ import{fulfillEmployeeRequest}from './businessPeople.js';
 
 import { rand, clamp } from '../core/rng.js';
 import { ensureExtendedState, nextId, recordJournal, walletMove } from '../core/schema.js';
-import { getCountry, formatMoney } from '../data/countries.js';
+import { getCountry, formatMoney,COUNTRY_IDS } from '../data/countries.js';
 import {
   industryForBusiness, businessMonthIndex, computeBusinessTax, expandBusiness, businessValuation
 } from './businessEngine.js';
@@ -207,7 +209,8 @@ export function operationsCatalogue(biz){
  /salon|barber/.test(id)?[['cut','Haircut',1],['style','Hair styling',1.5],['color','Colour service',2.5]]:null;
  const specific=profile||businessProfile(id)?.products.map((label,i)=>['product_'+i,label,[.5,1,2][i]]);
  const monthlyUnits=/caf|roast/.test(id)?12000:/fruit/.test(id)?4000:/bakery/.test(id)?5000:base.monthlyUnits;
- return specific?{...base,monthlyUnits,items:specific.map(([id,label,frac])=>({id,label,frac}))}:base;
+ const items=specific?specific.map(([id,label,frac])=>({id,label,frac})):base.items;
+ return{...base,monthlyUnits,items:[...items,...(biz.productLaunches||[])]};
 }
 export function opsMonthlyUnits(biz) {
   return operationsCatalogue(biz).monthlyUnits;
@@ -727,6 +730,7 @@ export function renderOperationsMenuHtml(S, biz, extras = {}) {
   return `
   <div class="biz-ops-menu" style="margin-top:10px;">
     <h4>Business desk</h4>
+    ${!biz.isBranch?`<details data-panel="international_${escHtml(biz.id)}"><summary>Growth path · ${escHtml(growthStage(S,biz))}</summary><div class="muted">Small → established → multi-site → regional → international → multinational. Stages follow actual levels, locations and countries, not a free bonus.</div><div class="muted">${internationalReadiness(S,biz).reasons.join(' ')||'Ready to open abroad.'}</div>${COUNTRY_IDS.filter(c=>c!==(biz.country||S.country)).map(c=>{const q=internationalQuote(S,biz,c);const exists=(S.career.businesses||[]).some(b=>b.parentBusinessId===biz.id&&b.country===c);return`<details style="margin:8px 0"><summary>${escHtml(getCountry(c).name)} · ${exists?'Operating':fmt(S,q.total)+' startup'}</summary><button class="btn btn-sm" data-action="biz-international" data-biz="${escHtml(biz.id)}" data-country="${c}" ${internationalReadiness(S,biz).ok&&!exists?'':'disabled'}>Open in ${escHtml(getCountry(c).name)} · ${fmt(S,q.total)}</button><div class="muted">Setup ${fmt(S,q.setup)} · first rent ${fmt(S,q.rent)} · director onboarding ${fmt(S,q.managerWage)}. Recurring: other costs ${fmt(S,q.other)}, rent ${fmt(S,q.rent)}, director ${fmt(S,q.managerWage)}/mo + local team payroll. Game setup allowance, not legal clearance.</div></details>`}).join('')}</details>`:''}
     <details data-panel="improvements_${escHtml(biz.id)}"><summary>Monthly &amp; yearly improvements</summary><div class="muted">Monthly: review prices, stock, marketing and the team below. Yearly: invest in more capacity or equipment. Results depend on demand and costs, not guaranteed profit.</div>${Object.entries(BUSINESS_IMPROVEMENTS).map(([id,def])=>`<div style="margin:8px 0"><button class="btn btn-sm" data-action="biz-improve" data-biz="${escHtml(biz.id)}" data-kind="${id}" ${biz.improvements?.[id]?.year===S.year||(biz.improvements?.[id]?.level||0)>=3?'disabled':''}>${def.label} · ${fmt(S,improvementQuote(biz,id))}</button><div class="muted">${def.desc} · once/year · ${(biz.improvements?.[id]?.level||0)}/3</div></div>`).join('')}</details>
 
     ${renderStockSectionHtml(S, biz)}
@@ -796,10 +800,11 @@ export function renderPricingSectionHtml(S, biz) {
     </div>`;
   }).join('');
   return `
-  <details class="biz-ops-pricing" style="margin:6px 0;">
+  <details data-panel="products_${escHtml(biz.id)}" class="biz-ops-pricing" style="margin:6px 0;">
     <summary><strong>Products &amp; prices</strong> — <span class="muted">${cat.items.length} priced items</span></summary>
     <div class="muted" style="margin:4px 0;">Game price index: usual price 100. Range 70–130. Demand capacity ${cat.monthlyUnits}/mo across the range, not per item. Costs are model allocations, not live market quotes. Higher prices may lose repeat customers.</div>
     ${rows}
+    <details data-panel="newproduct_${escHtml(biz.id)}"><summary>Launch a new product/service</summary><div class="muted">${fmt(S,productLaunchCost(biz))} development cost. Needs average team skill 55. One/year. +6% sales capacity, +4% other costs. Demand is shared, not guaranteed.</div>${productLaunchOptions(biz).map(p=>`<button class="btn btn-sm" data-action="biz-product-launch" data-biz="${escHtml(biz.id)}" data-product="${p.id}" ${biz.lastProductYear===S.year?'disabled':''}>Launch ${escHtml(p.label)}</button>`).join('')||'<div class="muted">All planned products launched.</div>'}</details>
   </details>`;
 }
 

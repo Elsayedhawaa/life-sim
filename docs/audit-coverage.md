@@ -147,3 +147,11 @@ Cash, each owned credit card with available limit/APR, regional installments wit
 - Role-effect audit: very low skill now harms output; theft cannot be canceled by a cashier's apparent till savings.
 - Actual 390px interaction check: café launch, pay-review raise, individual bonus debit, health/training benefits, annual capacity investment, manager hire/policy, second business launch, sale, next-month settlement and reload. Explicit fixture setup funds an adult save and seeds the pay-review request. This is not a natural-life progression test.
 - Remaining: acquisition card redesign, calibration of individual product prices/demand, SKU-level margins, explicit new product launches, statutory benefits/licensing, equity plans, richer remote-work/leave benefits and full multinational structure. Do not label the whole Business rebuild complete.
+
+### Business follow-through
+
+- Buy existing cards compacted behind review. Actual diligence and purchase buttons fixed to pass listing IDs, not objects. Button-level tests confirmed a paid report and acquisition after the one-month waiting period.
+- Literal product launches persist a named item, create a price entry, charge development cash, increase modeled sales capacity and other costs, and enforce a skill threshold plus one launch/year. Not SKU-level demand accounting.
+- Growth stages reflect actual levels/sites/countries. Foreign subsidiaries have a country, local staff, paid director, office rent, startup costs and their own monthly P&L. Currency is kept in household book currency for the settlement. Market-entry quotes are game estimates; host-country licensing/tax treaties/foreign ownership restrictions are not modeled.
+- Persistent employees' salaries are owned by business controls, not generic NPC annual raises/job changes. Death removes a worker from active payroll; manager death leaves a vacancy. Former staff stop showing wages from this employer.
+- Explicit advanced fixture at 390px exercises new item, pricing, UK subsidiary, monthly settlement, paid diligence and purchase after waiting. This does not prove natural progression to a multinational.

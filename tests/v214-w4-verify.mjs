@@ -235,7 +235,7 @@ console.log('--- (f) sell / close a branch separately ---');
   check('sell branch ok at the valuation', sold.ok && sold.valuation === expectedValuation, `valuation ${sold.valuation} vs ${expectedValuation}`);
   check('sell branch pays the valuation into cash', S.money.cash === cashBefore + expectedValuation, `${cashBefore} -> ${S.money.cash}`);
   check('sold branch gone, parent + other branch still trading', S.career.businesses.length === 2 && S.career.businesses.some(b => b.id === parent.id) && S.career.businesses.some(b => b.id === rb2.branch.id), `n=${S.career.businesses.length}`);
-  check('sell branch posts a ledger line', S.ledger.some(x => x.label && x.label.startsWith('Sold branch')), '');
+  check('sell branch posts a ledger line', S.ledger.some(x => x.label && x.label.startsWith('Exited & sold')), '');
 
   const branch2 = rb2.branch;
   const expectedSalvage = Math.round((branch2.capitalInvested || 0) * 0.5);

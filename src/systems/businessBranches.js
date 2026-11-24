@@ -1,3 +1,5 @@
+import{renderStaffListHtml}from './businessRoles.js';
+import{renderPricingSectionHtml}from './businessOperations.js';
 /* ============================================================================
    World Life 2.0 — Business Branches (v2.14 W4, §5)
    A branch is a REAL second location, not a multiplier.
@@ -94,6 +96,7 @@ export const BRANCH_TYPES = {
 };
 
 export function branchTypeLabel(branchType) {
+  if(branchType==='subsidiary')return 'Foreign subsidiary';
   return (BRANCH_TYPES[branchType] || BRANCH_TYPES.shop).label;
 }
 
@@ -454,6 +457,7 @@ export function renderBranchesHtml(S, biz) {
           <span class="muted"> — ${(b.staff || []).length} employee${(b.staff || []).length === 1 ? '' : 's'} · repeat customers ${Math.round((Number(b.repeatRate ?? 0.5)) * 100)}% · premises: ${escHtml(b.premises?.label || 'run from home')}${b.premises?.monthlyRentLocal ? ` (${formatMoney(b.premises.monthlyRentLocal, S.country)}/mo)` : ''}</span>
           <div class="muted" style="font-size:12px;">${plText}</div>
           <div class="muted" style="font-size:12px;">${managerText}</div>
+          ${b.international?`<details data-panel="subsidiary_${escHtml(b.id)}"><summary>Manage subsidiary team &amp; products</summary>${renderStaffListHtml(S,b)}${renderPricingSectionHtml(S,b)}</details>`:''}
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;">
           ${!b.manager ? `<button class="btn btn-sm" data-action="biz-branch-hire-manager" data-biz="${escHtml(b.id)}">Hire a manager</button>` : ''}

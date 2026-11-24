@@ -1,3 +1,5 @@
+import{openInternationalBusiness}from './systems/businessInternational.js';
+import{launchBusinessProduct}from './systems/businessProducts.js';
 import{improveBusiness}from './systems/businessImprovements.js';
 import{toggleEmployeeBenefit}from './systems/businessBenefits.js';
 import{answerEmployeeRequest,manageEmployee}from './systems/businessPeople.js';
@@ -1033,13 +1035,13 @@ if (typeof document !== 'undefined') {
 
     if (action === 'biz-buy-diligence') {
       const listing = findForSaleListing(S, btn.dataset.listing);
-      handleActionResult(listing ? buyBusinessDueDiligence(S, listing) : { ok: false, msg: 'That listing is gone.' });
+      handleActionResult(listing ? buyBusinessDueDiligence(S, listing.id) : { ok: false, msg: 'That listing is gone.' });
       return;
     }
 
     if (action === 'biz-buy') {
       const listing = findForSaleListing(S, btn.dataset.listing);
-      handleActionResult(listing ? buyBusiness(S, listing, { mode: 'part_time' }) : { ok: false, msg: 'That listing is gone.' });
+      handleActionResult(listing ? buyBusiness(S, listing.id, { mode: 'part_time' }) : { ok: false, msg: 'That listing is gone.' });
       return;
     }
 
@@ -1903,6 +1905,8 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='biz-international'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(openInternationalBusiness(S,biz,btn.dataset.country));return;}
+    if(action==='biz-product-launch'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(launchBusinessProduct(S,biz,btn.dataset.product));return;}
     if(action==='biz-improve'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(improveBusiness(S,biz,btn.dataset.kind));return;}
     if(action==='biz-benefit'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);const emp=biz?.staff?.find(e=>e.id===btn.dataset.staff);handleActionResult(toggleEmployeeBenefit(S,biz,emp,btn.dataset.benefit));return;}
     if(action==='biz-staff-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);const emp=biz?.staff?.find(e=>e.id===btn.dataset.staff);handleActionResult(manageEmployee(S,biz,emp,btn.dataset.kind));return;}

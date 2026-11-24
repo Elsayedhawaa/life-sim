@@ -1,3 +1,4 @@
+import{businessIllustration}from '../ui/businessVisuals.js';
 /* ============================================================================
    World Life 2.0 — Business Acquisitions (v2.14 W4, §4)
    Buying an existing business, with due diligence.
@@ -527,8 +528,9 @@ export function renderForSaleHtml(S) {
       : `<div class="muted" style="font-size:12px;margin-top:4px;">Due diligence costs ${formatMoney(l.diligenceCost, S.country)} and takes 1 month.</div>`;
     const staffNames = (l.staff || []).map(e => `${escHtml(e.name)} (${escHtml(e.role)})`).join(', ');
     return `
-    <div class="card" style="margin-top:8px;">
-      <div class="section-head"><h4>${escHtml(l.name)}</h4><span class="muted">${escHtml(l.typeLabel)} · ${escHtml(l.city)}</span></div>
+    <div class="card biz-acquisition-card" style="margin-top:8px;">
+      <div class="section-head"><div class="biz-card-title">${businessIllustration({typeId:l.typeId,name:l.typeLabel})}<h4>${escHtml(l.name)}</h4></div><span class="muted">${escHtml(l.typeLabel)} · ${escHtml(l.city)}</span></div>
+      <strong class="biz-ask">${formatMoney(l.ask,S.country)}<small>Asking price</small></strong><details data-panel="acquisition_${escHtml(l.id)}"><summary>Review business &amp; purchase</summary>
       <div>Trading ${l.ageYears} year${l.ageYears === 1 ? '' : 's'} · repeat customers ${Math.round((Number(l.repeatRate ?? 0.5)) * 100)}% · seller: ${escHtml(l.sellerName)}</div>
       <div>Seller says it makes <strong>${formatMoney(l.statedAnnualProfit, S.country)}/year</strong> · Valuation <strong>${formatMoney(l.valuation, S.country)}</strong> · Ask <strong>${formatMoney(l.ask, S.country)}</strong> — ${askNote}</div>
       <div class="muted" style="font-size:12px;">Staff who come with it: ${staffNames || 'none'} · Premises: ${escHtml(l.premises?.label || 'run from home')}${l.premises?.monthlyRentLocal ? ` (${formatMoney(l.premises.monthlyRentLocal, S.country)}/mo rent)` : ''}</div>
@@ -537,6 +539,7 @@ export function renderForSaleHtml(S) {
         ${!(d && d.done) ? `<button class="btn btn-sm" data-action="biz-buy-diligence" data-listing="${escHtml(l.id)}">Due diligence (${formatMoney(l.diligenceCost, S.country)}, 1 month)</button>` : ''}
         <button class="btn btn-primary btn-sm" data-action="biz-buy" data-listing="${escHtml(l.id)}">Buy for ${formatMoney(l.ask, S.country)}${!(d && d.done) ? ' — BLIND, no inspection done' : ''}</button>
       </div>
+      </details>
     </div>`;
   }).join('');
   return `
