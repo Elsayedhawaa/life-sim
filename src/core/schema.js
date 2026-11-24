@@ -760,6 +760,7 @@ export function walletMove(S, deltaLocal, label, category = 'general') {
 export function computeNetWorthLocal(S) {
   if (!S) return 0;
   let total = playerDepositValue(S)+(Number(S.money.cash) || 0) + (Number(S.money.savings) || 0);
+  total-=Math.max(0,Number(S.housing?.playerLease?.rentArrears)||0);
   const pen=S.career?.market?.pension;if(pen)total+=Math.max(0,Number(pen.pot)||0)+Math.max(0,Number(pen.paidOut?.remaining)||0);
   for (const cd of S.money.certificates) {
     total += Number(cd.principal) || 0;

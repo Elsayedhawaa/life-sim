@@ -1,4 +1,4 @@
-import {closePlayerLease,reconcilePlayerLease} from './playerTenancy.js';
+import {closePlayerLease,reconcilePlayerLease,recordPlayerRentDue} from './playerTenancy.js';
 import{settleCompanyTrusts}from'./companyTrust.js';
 import{settleNpcCompanyHoldings}from './companyEstate.js';
 import{childFoodEquivalent}from './custodyCosts.js';
@@ -1031,8 +1031,10 @@ export function settleHouseholdMonth(S) {
     const credit=S.housing.repairCredit;
     const applied=credit&&credit.country===S.country&&credit.homeId===S.housing.currentHomeId?Math.min(S.housing.monthlyRent,Math.max(0,Number(credit.amount)||0)):0;
     if(credit){if(applied>0){credit.amount-=applied;recordJournal(S,`Applied ${formatMoney(applied,S.country)} game repair credit against rent.`,'housing');}if(credit.amount<=0||credit.country!==S.country||credit.homeId!==S.housing.currentHomeId)S.housing.repairCredit=null;}
-    netDelta -= S.housing.monthlyRent-applied;
-    summary.housing += S.housing.monthlyRent-applied;
+    const rentRecord=recordPlayerRentDue(S,S.housing.monthlyRent-applied,S.money.cash+netDelta);
+    netDelta -= S.housing.monthlyRent-applied-(rentRecord?.unpaid||0);
+    summary.housing += S.housing.monthlyRent-applied-(rentRecord?.unpaid||0);
+    summary.rentArrearsAdded=rentRecord?.unpaid||0;
   }
 
   if(S.housing.mode==='parents'&&S.player.age>=24){
@@ -1267,7 +1269,7 @@ export function settleHouseholdMonth(S) {
   if (pensionAccrual) accruePensionMonth(S, pensionAccrual);
 
   /* 15. REAL INSOLVENCY, EVICTION & BANKRUPTCY CONSEQUENCES */
-  if (S.money.cash < 0) {
+  if (S.money.cash < 0||summary.rentArrearsAdded>0) {
     S.money.creditScore = clamp(S.money.creditScore - 12, 300, 850);
     S.player.vitals.stress = clamp(S.player.vitals.stress + 6);
 

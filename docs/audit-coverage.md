@@ -447,3 +447,6 @@ Two legacy pension scenes now move a finite one-off savings amount into actual p
 
 ### W21 finite private drawdown worldwide
 All retired countries now consume finite private remaining balance with final partial payment, then state component only. Re-retirement preserves prior unspent drawdown when adding a new pot. State/private components convert on relocation.151focused files pass; UK/Egypt/Canada/Japan focused final-partial/exhaustion/re-retirement checks.390px retired UKfixture actual monthly turn pays final5and remaining0persists reload. Inspected timeline pixels; ledger assertions are the decisive monetary evidence.
+
+### W18 tenant rent evidence and deposit priority
+Explicit paid leases record monthly due/paid/unpaid rent. Unpaid portion stays as rent liability rather than double-counted spent cash. Departure applies deposit to recorded arrears first without creating cash, then refunds/disputes only remaining paid deposit; uncovered arrears transfers to zero-interest12-month debt. Networth includes active rent liability and settlement housing summary tracks actual cash paid.152focused files pass.390px departure fixture verifies400recorded arrears deducted,600remaining returned, reload. Pixels inspected. W22rental damage/inspection records remain separate.

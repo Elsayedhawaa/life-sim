@@ -3039,7 +3039,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
           }).join('')}
         </div>
         <div style="border-top:1px solid var(--line-soft);padding-top:8px">
-          ${S.housing.playerLease?.status==='active'?'<p>Paid rental deposit · '+esc(formatMoney(S.housing.playerLease.deposit,S.housing.playerLease.country))+' · Returned on moving; eviction sends a recorded dispute to courts.</p>':''}
+          ${S.housing.playerLease?.status==='active'?'<p>Paid rental deposit · '+esc(formatMoney(S.housing.playerLease.deposit,S.housing.playerLease.country))+' · Unpaid rent '+esc(formatMoney(S.housing.playerLease.rentArrears||0,S.country))+' · Deposit covers recorded unpaid rent first; balance returned on moving or disputed after eviction.</p>':''}
           <strong style="font-size:0.82rem">Quick Rental Apartments in ${esc(getCountry(S.country).name)}:</strong>
           ${rentalUnits.map(h => {
             const quote = rentalMoveInQuote(S, h);
