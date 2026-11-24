@@ -1,3 +1,4 @@
+import{renderCompetition}from'../systems/companyCompetition.js';
 import{renderNpcCompanyControls}from'../systems/companyNpcControls.js';
 import{renderEstateReviews}from'../systems/companyEstateReview.js';
 import{renderNpcCompanyEstates}from'../systems/companyEstate.js';
@@ -2508,7 +2509,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       ${renderDivorceShares(S,biz,businessTab)}${renderCompanyMarital(S,biz,businessTab)}
       ${renderFamily(S,biz,businessTab)}${renderFamilyRota(S,biz,businessTab)}${renderFamilyOwnership(S,biz,businessTab)}
       ${renderSpace(S,biz,businessTab)}
-      ${renderOperating(S,biz,businessTab)}
+      ${renderOperating(S,biz,businessTab)}${renderCompetition(S,biz,businessTab)}
       ${renderCatalog(S,biz,businessTab)}
       ${renderInputs(S,biz,businessTab)}
       ${renderEquipment(S,biz,businessTab,operatingBase(S,biz))}

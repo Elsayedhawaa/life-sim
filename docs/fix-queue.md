@@ -36,7 +36,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 ## Eight ranked business gaps
 
 - [x] G1 Cash/net30/net60 invoices, delayed collections/late payment/write-offs, cash-basis model tax and company-cash factoring.
-- [ ] G2 Named competitors and meaningful responses.
+- [x] G2 Persistent named rivals, deterministic price/quality/reach moves, paid responses and actual demand/price/cost effects.
 - [x] G3 Branch accounts/stock/staff. Shares implementation with L9; count once in totals.
 - [ ] G4 Lot quality, recalls and refunds.
 - [ ] G5 Contracts, backlog, deposits and deadlines.
@@ -46,4 +46,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-6 distinct open packages after G1. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+5 distinct open packages after G2. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.

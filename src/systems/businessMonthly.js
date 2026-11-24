@@ -1,3 +1,4 @@
+import{settleCompetitionMonth}from'./companyCompetition.js';
 import{applyReceivables}from'./companyReceivables.js';
 import{computeCompanyMonth}from './companyLifecycle.js';
 import{computeTechMonth}from './techStartup.js';
@@ -421,4 +422,4 @@ function computeBusinessMonthOperating(S, biz, opts = {}) {
   return pl;
 }
 
-export function computeBusinessMonthFull(S,biz,opts={}){if(biz?.receivables?.lastMonth===S.year*12+S.month&&biz.lastPL?.receivables)return biz.lastPL;const pl=computeBusinessMonthOperating(S,biz,opts);return pl?applyReceivables(S,biz,pl,computeBusinessTax):pl;}
+export function computeBusinessMonthFull(S,biz,opts={}){if(biz?.receivables?.lastMonth===S.year*12+S.month&&biz.lastPL?.receivables)return biz.lastPL;const pl=computeBusinessMonthOperating(S,biz,opts);if(pl)settleCompetitionMonth(S,biz,pl);return pl?applyReceivables(S,biz,pl,computeBusinessTax):pl;}
