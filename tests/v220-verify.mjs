@@ -231,7 +231,7 @@ console.log('--- (D) the header reconciles ---');
   check('D3 capacity and workload agree on every number', cap.ownerHoursUsed === w.businessHours && cap.workloadHours === w.totalHours && cap.ownerHoursFree === w.ownerHoursFree && cap.managedCount === w.managedCount && cap.unmanagedCount === w.unmanagedCount, '');
   const vent = renderWorkTabHtml(S, { activeTab: 'life', workSub: 'ventures' });
   const hdr = strip((vent.match(/<span class="muted">\d+ owned[^<]*<\/span>/) || [''])[0]);
-  check('D4 header prints one workload, free hours, managed counts and the uncovered kiosk', /66 h\/wk used \(job 48 \+ businesses 18\)/.test(hdr) && /4 h\/wk free/.test(hdr) && /1 managed · 0 unmanaged/.test(hdr) && /18h\/week uncovered — Radwan Fruit — Kiosk Alexandria has nobody running it/.test(hdr), hdr);
+  check('D4 header prints one workload, free hours, managed counts and the uncovered kiosk', /66 h\/wk used \(job 48 \+ businesses 18\)/.test(hdr) && /4 h\/wk free/.test(hdr) && /1 managed · 0 unmanaged/.test(hdr) && /Nobody is running Radwan Fruit — Kiosk Alexandria\./.test(strip(vent)) && /18h\/week of work there is not getting done/.test(strip(vent)), hdr);
   const managedBadges = countOcc(vent, '<span class="hud-pill">Managed</span>');
   const unmanagedBadges = countOcc(vent, '<span class="hud-pill">Unmanaged — nobody runs it</span>');
   check('D5 card badges match the header counts (1 managed, 0 unmanaged)', managedBadges === 1 && unmanagedBadges === 0, `badges ${managedBadges}/${unmanagedBadges}`);

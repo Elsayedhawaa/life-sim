@@ -2636,8 +2636,9 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
      separately as uncovered, never folded into the workload. */
   const capacity = managementCapacityInfo(S);
   const atRiskNames = capacity.atRiskList.map(b => b.name).join(', ');
-  const uncoveredText = workload.uncoveredHours > 0
-    ? ` · ${workload.uncoveredHours}h/week uncovered — ${workload.uncoveredNames.join(', ')} ${workload.uncoveredNames.length === 1 ? 'has' : 'have'} nobody running ${workload.uncoveredNames.length === 1 ? 'it' : 'them'}`
+  /* Uncovered work is its own warning block (not a clause in the header line): plain words first, hours second. */
+  const uncoveredWarn = workload.uncoveredHours > 0
+    ? `<div class="card" role="status" style="border:2px solid var(--brand-crimson);background:rgba(180,35,24,0.08);margin:8px 0"><strong style="color:var(--brand-crimson)">⚠ Nobody is running ${esc(workload.uncoveredNames.join(', '))}.</strong> <span class="muted">${workload.uncoveredHours}h/week of work there is not getting done. Hire a manager, or free up your own hours.</span></div>`
     : '';
 
   return `
@@ -2645,8 +2646,9 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
     ${desk==='owned'?`<div class="card card-elevated">
       <div class="section-head">
         <h3>Business</h3>
-        <span class="muted">${portfolioBusinesses.length} owned · ${workload.totalHours} h/wk used (job ${workload.jobHours} + businesses ${workload.businessHours}) · ${workload.ownerHoursFree} h/wk free${workload.stretched?' · Overloaded':''} · ${workload.managedCount} managed · ${workload.unmanagedCount} unmanaged${uncoveredText}</span>
+        <span class="muted">${portfolioBusinesses.length} owned · ${workload.totalHours} h/wk used (job ${workload.jobHours} + businesses ${workload.businessHours}) · ${workload.ownerHoursFree} h/wk free${workload.stretched?' · Overloaded':''} · ${workload.managedCount} managed · ${workload.unmanagedCount} unmanaged</span>
       </div>
+      ${uncoveredWarn}
       ${atRiskNames ? `<div class="card" style="border:2px solid var(--brand-crimson);background:rgba(180,35,24,0.10);margin:8px 0"><strong style="color:var(--brand-crimson)">⚠ At risk — nobody is running ${esc(atRiskNames)}.</strong> <span class="muted">Revenue and staff morale fall each month a business stays unmanaged. Hire a manager, take it over yourself, or sell it.</span></div>` : ''}
       ${portfolioBusinesses.length ? `
       ${totals.settled?`<div class="biz-portfolio-line">Portfolio net <strong class="${totals.net<0?'text-bad':'text-good'}">${esc(formatMoney(totals.net,S.country))}</strong><span>last month · all locations</span></div>`:''}
