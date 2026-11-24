@@ -254,3 +254,5 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W119 Adult children moving home had no living-cost effect: food billing stopped at19regardless of actual household. Explicit co-resident adult children now count as adult food, departing/returning removes/restores it. No automatic child contribution or rent assumed; unknown legacy residence not guessed. Children view states known residence.
 
 - [x] W120 Adult children still had Play With, Teach and no-homework status. Hide child-only verbs/status at18+, guard engine calls, use adult outing words. Family time actions now also record actual social contact instead of only numeric affection, including ordinary visits (not remote gifts/funding).
+
+- [x] W121 Natural adult-child continuation exposed family-call memories from transition/gift scenes with decades-old contact dates. Parent care, grown-child gift replies and family-transition replies now stamp full shared contact date, including care's incomplete turn-only stamp. No inference that family affection must decay like friendship; that broader design remains W108.
