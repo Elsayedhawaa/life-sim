@@ -171,6 +171,7 @@ export function resolveEventCtx(S) {
 export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
   if (!ev || !S) return false;
   const g = ev.gates || {};
+  if(g.housingMode&&S.housing?.mode!==g.housingMode)return false;
   if(g.civilLossKind&&!(S.legal?.civilLosses||[]).some(x=>x.kind===g.civilLossKind&&x.status==='open'&&x.country===S.country))return false;
 
   // Explicit cast requirements apply to roots and follow-ups alike.

@@ -1028,8 +1028,11 @@ export function settleHouseholdMonth(S) {
       S.housing.monthlyRent=Math.round(oldRent*ratio);S.housing.rentIndexedYear=S.year;
       recordJournal(S,`Annual game rent index: ${formatMoney(oldRent,S.country)} to ${formatMoney(S.housing.monthlyRent,S.country)}/month, following the game price basket. Not a local tenancy-law model.`,'housing');
     }
-    netDelta -= S.housing.monthlyRent;
-    summary.housing += S.housing.monthlyRent;
+    const credit=S.housing.repairCredit;
+    const applied=credit&&credit.country===S.country&&credit.homeId===S.housing.currentHomeId?Math.min(S.housing.monthlyRent,Math.max(0,Number(credit.amount)||0)):0;
+    if(credit){if(applied>0){credit.amount-=applied;recordJournal(S,`Applied ${formatMoney(applied,S.country)} game repair credit against rent.`,'housing');}if(credit.amount<=0||credit.country!==S.country||credit.homeId!==S.housing.currentHomeId)S.housing.repairCredit=null;}
+    netDelta -= S.housing.monthlyRent-applied;
+    summary.housing += S.housing.monthlyRent-applied;
   }
 
   if(S.housing.mode==='parents'&&S.player.age>=24){

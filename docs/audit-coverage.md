@@ -438,3 +438,6 @@ Moving country into an owned rental now ends its existing tenancy through the la
 
 ### W13 player-as-tenant paid deposits
 New explicit leases disclose and charge setup fee plus a separate refundable one-month deposit, with one rent reserve. Deposit is an asset, refunds once on new rental/owned-home move/relocation; fallback monthly reconciliation handles other mode transitions. Eviction moves actual paid deposit to a recorded traceable dispute. Legacy setup fees never become deposits; migration starter rentals get no invented paid asset.148focused files pass plus108quote/charge checks across18countries.390px action signs actual lease, verifies cash/asset/reload and refund on next rental, quote pixels inspected. W18damage/arrears evidence deductions remain queued, not claimed current law.
+
+### W19 roof repair and future rent
+Rental-only roof scene now records actual paid repair as home/country-scoped future rent credit. Settlement applies at most rent due, retains unused balance, clears credit on unrelated home/country. Explicitly a game credit, not legal withholding guidance.149focused files pass; comparison settlement verifies actual1500rent difference and non-transferability.390px scene fixture pays repair, stores scoped credit/reloads; inspected scene pixels.

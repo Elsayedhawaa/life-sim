@@ -2833,7 +2833,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_landlord_repairs',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 20, "hasHome": true, "wealth": ["poor", "middle"]},
+    gates: {"minAge": 20, "hasHome": true, "housingMode": "rent", "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -2866,12 +2866,15 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Withhold the repair cost from the rent",
+            label: "Pay repair, apply game rent credit",
+            available: st=>st.money.cash>=A&&st.housing.mode==='rent',
             effect: (st) => {
-              walletMove(st, -A, 'Withhold the repair cost from the rent', 'money');
+              if(st.housing.mode!=='rent'||st.money.cash<A)return;
+              walletMove(st, -A, 'Repair paid against game rent credit', 'money');
+              st.housing.repairCredit={amount:(Number(st.housing.repairCredit?.amount)||0)+A,country:st.country,homeId:st.housing.currentHomeId};
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+7));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (-2));
-              recordJournal(st, `You paid for the repair and took ${formatMoney(A, S.country)} off the next rent. The landlord was furious.`, 'money');
+              recordJournal(st, `You paid the repair and recorded ${formatMoney(A,S.country)} game rent credit, used against future rent for this home. This is a simulation option, not a legal right.`, 'money');
             },
           },
         ],
