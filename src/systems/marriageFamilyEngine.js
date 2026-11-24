@@ -853,3 +853,20 @@ export function restoreDivorceDecision(S,saved){
   initiateDivorce(shadow,saved.divorcePlan.spouseId,saved.divorcePlan.mode);
   return shadow.activeScene?{...saved,...shadow.activeScene}:null;
 }
+
+export function supportChildAfterSeparation(S,childId,kind){
+  const ch=S.people[childId];
+  if(!ch?.alive||!S.relations.childIds.includes(childId))return{ok:false,msg:'Child not found.'};
+  if(!['visit','gift','education'].includes(kind))return{ok:false,msg:'Choose a child-support action.'};
+  if(kind==='visit'&&ch.residenceCountry!==S.country)return{ok:false,msg:'Your child lives abroad. Travel and cross-border visitation are not modelled here; gifts and education funding are still available.'};
+  const cost=kind==='visit'?0:eraLocalCost(getCountry(S.country).monthlyBasket2026.foodAdult*(kind==='gift'?.25:1),S.country,S.year);
+  if(S.money.cash<cost)return{ok:false,msg:`Need ${formatMoney(cost,S.country)} for ${kind}.`};
+  const used=childOncePerTurn(S,`child_support_${childId}_${kind}`,ch);if(used)return{ok:false,msg:used};
+  if(cost)walletMove(S,-cost,`${kind==='gift'?'Gift for':'Education savings for'} ${ch.firstName}`,'family');
+  if(kind==='education'){
+    ch.educationFund??={balance:0,country:S.country};
+    ch.educationFund.balance+=convertCurrency(cost,S.country,ch.educationFund.country,S.year);
+    recordJournal(S,`Added ${formatMoney(cost,S.country)} to ${ch.firstName}'s separate education fund. It is the child's asset, not your spendable cash. Future university withdrawals are not modelled yet.`,'family');
+  }else{ch.rel.affection=clamp(ch.rel.affection+4);ch.vitals.happiness=clamp(ch.vitals.happiness+5);recordJournal(S,kind==='visit'?`Spent time with ${ch.firstName} under the recorded game custody arrangement.`:`Bought ${ch.firstName} a gift for ${formatMoney(cost,S.country)}. This does not replace child support.`,'family');}
+  return{ok:true,msg:kind==='education'?`Education fund increased by ${formatMoney(cost,S.country)}.`:kind==='visit'?`Visited ${ch.firstName}.`:`Gift delivered to ${ch.firstName}; support order unchanged.`};
+}

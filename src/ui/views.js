@@ -1346,6 +1346,8 @@ function renderChildrenSubtabHtml(S) {
                 <span class="npc-name">${esc(ch.fullName)} · Age ${ch.age}</span>
                 <span class="npc-role-badge">Passports: ${esc(ch.citizenships.map(c => getCountry(c).flagCode).join(' '))}</span>
               </div>
+              <div class="muted">${ch.custody?`Custody: ${esc(ch.custody.arrangement)} · ${ch.custody.playerNightsPer14}/14 nights with you. `:''}Education fund: ${esc(formatMoney(convertCurrency(ch.educationFund?.balance||0,ch.educationFund?.country||S.country,S.country,S.year),S.country))}.</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px"><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="visit">Visit / spend time</button><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="gift">Buy a gift</button><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="education">Add to education fund</button></div>
               <div class="muted">Smarts: <strong>${Math.round(ch.vitals.smarts)}%</strong> · Health: <strong>${Math.round(ch.vitals.health)}%</strong> · Happiness: <strong>${Math.round(ch.vitals.happiness)}%</strong></div>
               <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
                 ${ch.age <= 5 ? nurseries.map(n => `
@@ -2187,6 +2189,7 @@ export function renderWorkTabHtml(S, uiState = {}) {
     ${withheldHtml}
     ${renderSecondLossNoteHtml(S)}
     ${currentJobHtml}
+    ${!S.career.job&&S.player.age>=58?`<div class="card"><strong>${S.career.retired?'Retired':'Retirement'}</strong><p>${S.career.retired?'Current pension: '+esc(formatMoney(S.career.monthlyPension||0,S.country))+'/month.':'You can retire while between jobs. The game pension estimate may be lower without a current salary.'}</p>${!S.career.retired?'<button class="btn" data-action="retire">Retire</button>':''}</div>`:''}
     <div class="card">
       <div class="section-head">
         <h3>Local Job Market — ${esc(cObj.name)} (${filteredJobs.length}/${allJobs.length})</h3>

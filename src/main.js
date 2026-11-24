@@ -1,3 +1,4 @@
+import {supportChildAfterSeparation} from './systems/marriageFamilyEngine.js';
 /* ============================================================================
    World Life Complete Edition — Master UI & Action Controller (src/main.js)
    Clean event-delegated loop wiring all 7 tabs, sub-tabs, 3D visuals & catalogs.
@@ -1288,6 +1289,7 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='child-support-action'){handleActionResult(supportChildAfterSeparation(S,btn.dataset.cid,btn.dataset.kind));return;}
     if (action === 'child-program') {
       handleActionResult(enrollChildInProgram(S, btn.dataset.cid, btn.dataset.kind, btn.dataset.pid));
       return;
