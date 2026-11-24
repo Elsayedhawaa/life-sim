@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import { createNewLifeState, ensureExtendedState, createPerson } from '../src/core/schema.js';
+import { snapshotMajor, announceMajorChanges } from '../src/systems/majorLifeEvents.js';
+import { getRandomLifeEventById as G, eventGatePasses as P, restoreRandomLifeScene as R } from '../src/systems/eventEngine.js';
+function setup() { const s = createNewLifeState({ country: 'gbr', seed: 411 }); ensureExtendedState(s); s.player.age = 40; s.year = 2040; s.month = 3; s.turn = 200; return s; }
+const add = (s, role, age, list) => { const p = createPerson(s, { role, age, nationality: 'gbr', residenceCountry: 'gbr' }); s.people[p.id] = p; list.push(p.id); return p; };
+const ids = ['ev_conseq_promotion_spouse','ev_conseq_promotion_workload','ev_conseq_child_after_divorce','ev_conseq_child_after_separation','ev_conseq_sibling_after_mother_death','ev_conseq_sibling_after_father_death','ev_conseq_mom_after_sibling_death','ev_conseq_dad_after_sibling_death','ev_conseq_friend_after_job_loss'];
+for (const id of ids) { const s = setup(); assert(G(id), id); assert(!P(G(id), s), id + ' needs a real event'); }
+const play = (s, id, i) => { s.activeScene = null; s.sceneQueue = []; const sc = R(s, { eventId: id, eventBuildRngState: s.rngState }); assert(sc, id + ' builds'); sc.choices[i].effect(s); };
+// promotion
+{ const s = setup(); const sp = add(s, 'spouse', 38, s.relations.spouseIds); s.career.employed = true; s.career.job = { employer: 'Acme', title: 'Analyst', track: 't', level: 1, performance: 50 };
+  const b = snapshotMajor(s); s.career.job.level = 2; s.career.job.title = 'Senior'; s.career.lastPromotion = { at: s.year * 12 + s.month, employer: 'Acme', track: 't', level: 2, newTitle: 'Senior', oldTitle: 'Analyst' };
+  announceMajorChanges(s, b); assert(P(G('ev_conseq_promotion_spouse'), s)); assert(!P(G('ev_conseq_promotion_workload'), s), 'too soon');
+  s.month += 2; assert(P(G('ev_conseq_promotion_workload'), s)); play(s, 'ev_conseq_promotion_workload', 0); assert.equal(s.career.job.performance, 53);
+  play(s, 'ev_conseq_promotion_spouse', 0); s.career.job = null; s.career.employed = false; assert(!P(G('ev_conseq_promotion_spouse'), s), 'no job, no promotion scene'); }
+// divorce + separation with minor child; adult child excluded
+{ const s = setup(); const sp = add(s, 'spouse', 38, s.relations.spouseIds); const ch = add(s, 'child', 9, s.relations.childIds); sp.relationshipProgress = { stage: 'together' };
+  let b = snapshotMajor(s); sp.relationshipProgress.stage = 'separated'; announceMajorChanges(s, b); assert(P(G('ev_conseq_child_after_separation'), s));
+  play(s, 'ev_conseq_child_after_separation', 0);
+  b = snapshotMajor(s); s.relations.spouseIds = []; announceMajorChanges(s, b); s.month += 2; assert(P(G('ev_conseq_child_after_divorce'), s));
+  const sc = G('ev_conseq_child_after_divorce').build(s, { child: ch, spouse: sp }); assert(sc.text.includes(sp.firstName));
+  ch.age = 25; assert(!P(G('ev_conseq_child_after_divorce'), s)); }
+// parent death -> sibling; sibling death -> parent
+{ const s = setup(); const sib = add(s, 'sibling', 35, s.relations.siblingIds); let b = snapshotMajor(s); s.people[s.relations.motherId].alive = false; announceMajorChanges(s, b);
+  assert(P(G('ev_conseq_sibling_after_mother_death'), s)); assert(!P(G('ev_conseq_sibling_after_father_death'), s)); play(s, 'ev_conseq_sibling_after_mother_death', 0);
+  b = snapshotMajor(s); sib.alive = false; announceMajorChanges(s, b); s.month += 2; assert(P(G('ev_conseq_dad_after_sibling_death'), s)); assert(!P(G('ev_conseq_mom_after_sibling_death'), s), 'mother already dead'); play(s, 'ev_conseq_dad_after_sibling_death', 0); }
+// job loss -> friend
+{ const s = setup(); add(s, 'friend', 38, s.relations.friendIds); s.career.employed = true; s.career.job = { employer: 'Acme', title: 'Analyst' }; const b = snapshotMajor(s);
+  s.career.employed = false; s.career.job = null; s.career.jobLoss = { lastJob: { employer: 'Acme', year: s.year, month: s.month, reason: 'redundancy' } }; announceMajorChanges(s, b); s.month += 2;
+  assert(P(G('ev_conseq_friend_after_job_loss'), s)); play(s, 'ev_conseq_friend_after_job_loss', 0); s.career.employed = true; s.career.job = { employer: 'N', title: 'x' }; assert(!P(G('ev_conseq_friend_after_job_loss'), s)); }
+console.log('linked consequence follow-ups gated on recorded events and real people');

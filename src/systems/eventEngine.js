@@ -73,10 +73,11 @@ import {
   RECURRING_CHAINS,
 } from '../systems/threadResolution.js';
 import { EVENTS_MAJOR_FOLLOWUPS } from '../data/eventsMajorFollowups.js';
+import { EVENTS_CONSEQUENCES } from '../data/eventsConsequences.js';
 import { loanOutstanding } from '../systems/familyLoans.js';
 import { findPeopleWithMemory } from '../systems/npcMemory.js';
 
-export const ALL_RANDOM_LIFE_EVENTS = [...EVENTS_EMPLOYMENT_DISPUTE,...EVENTS_EVERYDAY_FAMILY, ...EVENTS_MONEY_HEALTH_CAREER, ...BUSINESS_EVENTS, ...EVENTS_MEMORY, ...EVENTS_LIVED_LIFE, ...EVENTS_MAJOR_FOLLOWUPS];
+export const ALL_RANDOM_LIFE_EVENTS = [...EVENTS_EMPLOYMENT_DISPUTE,...EVENTS_EVERYDAY_FAMILY, ...EVENTS_MONEY_HEALTH_CAREER, ...BUSINESS_EVENTS, ...EVENTS_MEMORY, ...EVENTS_LIVED_LIFE, ...EVENTS_MAJOR_FOLLOWUPS, ...EVENTS_CONSEQUENCES];
 
 /* v2.15 W5 — the chain graph for the whole pool: event id -> root id,
    and root id -> { members, terminals }. A resolved chain refuses every
