@@ -1,3 +1,4 @@
+import{migrateCompanyModel}from './systems/companyMigration.js';
 import{changeFamilyRota}from './systems/companyRota.js';
 import{familyShareAction,familyCouncil}from './systems/companyOwnership.js';
 import{buyoutDivorceShares}from'./systems/companyDivorceShares.js';
@@ -1933,6 +1934,7 @@ if (typeof document !== 'undefined') {
     if(action==='operating-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(operatingAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
     if(action==='company-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(companyAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
     if(action==='divorce-share-buyout'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(buyoutDivorceShares(S,biz,btn.dataset.person,Number(btn.dataset.amount)));return;}
+    if(action==='company-migrate'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(migrateCompanyModel(S,b));return;}
     if(action==='family-rota'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(changeFamilyRota(S,b,btn.dataset.employee,btn.dataset.hours));return;}
     if(action==='family-share'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(familyShareAction(S,b,btn.dataset.kind,btn.dataset.person,btn.dataset.pct,btn.dataset.amount));return;}
     if(action==='family-council'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(familyCouncil(S,b,btn.dataset.kind));return;}
