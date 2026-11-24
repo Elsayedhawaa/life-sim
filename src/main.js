@@ -1,3 +1,4 @@
+import{equipmentAction}from'./systems/companyEquipment.js';
 import{serverAction}from'./systems/companyServers.js';
 import{techBase}from'./systems/techStartup.js';
 import{inputAction}from './systems/companyInputUI.js';
@@ -1927,6 +1928,7 @@ if (typeof document !== 'undefined') {
     if(action==='growth-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(growthAction(S,biz,btn.dataset.kind,btn.dataset.value,operatingBase(S,biz)));return;}
     if(action==='operating-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(operatingAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
     if(action==='company-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(companyAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
+    if(action==='equipment-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(equipmentAction(S,biz,btn.dataset.kind,btn.dataset.type,btn.dataset.tier,operatingBase(S,biz)));return;}
     if(action==='server-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(serverAction(S,biz,btn.dataset.kind,btn.dataset.value,techBase(S,biz)));return;}
     if(action==='tech-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(techAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
     if(action==='biz-tab'){uiState.bizTab=btn.dataset.area;renderApp();return;}

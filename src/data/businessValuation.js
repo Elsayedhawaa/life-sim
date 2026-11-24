@@ -1,3 +1,5 @@
+import{equipmentAssetValue}from'../systems/companyEquipment.js';
+export function serverAssetValue(biz){const s=biz?.tech?.servers;if(!s)return 0;return [...(s.racks||[]),...(s.pending?[s.pending]:[])].reduce((n,r)=>n+Math.max(0,Math.floor((r.bookValue??r.cost??0)*.7*(r.condition??100)/100*(r.failed?.3:1))),0);}
 /* Game resale estimate, shared by portfolio, exits and net worth.
    Retained cash is a real separate pool; cumulative P&L is not cash. */
 export function businessValuation(biz) {
@@ -6,9 +8,9 @@ export function businessValuation(biz) {
   const rent = Number(biz.premises?.monthlyRentLocal) || 0;
   const lastNet = (biz.tech||biz.enterprise)&&!biz.lastPL?0:biz.lastPL ? Number(biz.lastPL.net) || 0 : (Number(biz.monthlyRev) || 0) - (Number(biz.monthlyCost) || 0) - wages - rent;
   const equity = Math.max(0, Math.min(1, (biz.equityOwned ?? 100) / 100));
-  return Math.round((Math.max(0, Number(biz.capitalInvested) || 0) * .7 + Math.max(0, lastNet) * 12 * 2.8 + Math.max(0, Number(biz.retainedCash) || 0)) * equity);
+  return Math.round((Math.max(0, Number(biz.capitalInvested) || 0) * .7 + Math.max(0, lastNet) * 12 * 2.8 + Math.max(0, Number(biz.retainedCash) || 0)+serverAssetValue(biz)+equipmentAssetValue(biz)) * equity);
 }
 export function businessSalvage(biz) {
   const equity = Math.max(0, Math.min(1, (biz?.equityOwned ?? 100) / 100));
-  return Math.round((Math.max(0, Number(biz?.capitalInvested) || 0) * .5 + Math.max(0, Number(biz?.retainedCash) || 0)) * equity);
+  return Math.round((Math.max(0, Number(biz?.capitalInvested) || 0) * .5 + Math.max(0, Number(biz?.retainedCash) || 0)+serverAssetValue(biz)+equipmentAssetValue(biz)) * equity);
 }

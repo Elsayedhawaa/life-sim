@@ -1,3 +1,6 @@
+import{operatingBase}from'../systems/companyOperatingContent.js';
+import{renderEquipment}from'../systems/companyEquipment.js';
+import{renderSpace}from'../systems/companySpace.js';
 import{renderInputs}from '../systems/companyInputUI.js';
 import{renderCatalog}from '../systems/companyCatalog.js';
 import{renderOperating}from '../systems/companyOperatingContent.js';
@@ -2486,9 +2489,11 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       <div class="biz-subtitle">${esc(getCountry(biz.country||S.country).name)} · ${esc(biz.premises?.label||'Home based')} · ${staffCount} ${staffCount===1?'employee':'employees'}</div>
       <nav class="biz-work-tabs" aria-label="Company area">${[['overview','Overview'],['products','Products'],['team','Team'],['operations','Operations'],['growth','Growth'],['money','Money']].map(([id,label])=>`<button class="${businessTab===id?'active':''}" aria-pressed="${businessTab===id}" data-action="biz-tab" data-area="${id}">${label}</button>`).join('')}</nav>
       ${biz.enterprise?renderCompany(S,biz,businessTab):biz.tech?renderTech(S,biz,businessTab):''}
+      ${renderSpace(S,biz,businessTab)}
       ${renderOperating(S,biz,businessTab)}
       ${renderCatalog(S,biz,businessTab)}
       ${renderInputs(S,biz,businessTab)}
+      ${renderEquipment(S,biz,businessTab,operatingBase(S,biz))}
       ${businessTab==='overview'?`
       <div class="biz-period">LAST SETTLED MONTH ${pl?`· ${MONTH_NAMES[(biz.history?.at(-1)?.month||S.month)-1]} ${biz.history?.at(-1)?.year||S.year}`:''}</div>
       <div class="biz-kpis"><div>Sales<strong>${netR.hasPL?esc(formatMoney(netR.revenue,S.country)):'Pending'}</strong></div><div>Net profit<strong class="${(netR.net||0)<0?'text-bad':'text-good'}">${netR.hasPL?esc(formatMoney(netR.net,S.country)):'Pending'}</strong></div><div>Costs &amp; tax<strong>${netR.hasPL?esc(formatMoney(netR.costs+netR.tax,S.country)):'Pending'}</strong></div><div>${biz.tech||biz.enterprise?'Investor payout':'Repeat customers'}<strong>${biz.tech||biz.enterprise?esc(formatMoney(pl?.investorDistribution||0,S.country)):Math.round((biz.repeatRate??.5)*100)+'%'}</strong></div></div>
