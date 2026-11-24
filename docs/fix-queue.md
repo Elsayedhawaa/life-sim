@@ -127,8 +127,10 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W50 Recorded ceiling incident can remain open after deferral; add visible owner-home repair control and inspect existing property damage controls for cross-route consistency.
 
-- [ ] W51 Reloading curated non-event decisions can discard most choices because saved effects are not functions. Ceiling scene now has explicit restoration; audit other curated scenes and preserve durable builders.
+- [x] W51 Reloading curated non-event decisions can discard most choices because saved effects are not functions. Ceiling scene now has explicit restoration; audit other curated scenes and preserve durable builders.
 
-- [ ] W52 World-event news decisions also lack reload builder. Preserve original event/effect without firing effects again.
+- [x] W52 World-event news decisions also lack reload builder. Preserve original event/effect without firing effects again.
 
 - [ ] W53 Graduate recruitment concrete-offer scene disappears on reload; preserve original offer details and restore validated job acceptance functions.
+
+- [ ] W54 NPC wedding invitations also disappear on reload; preserve named couple/gift/date and code-backed attendance without reroll.

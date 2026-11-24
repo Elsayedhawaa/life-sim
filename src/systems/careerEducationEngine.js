@@ -2047,14 +2047,14 @@ export function describeJobOffer(S, job) {
 }
 
 
-export function presentGraduateOrJobSearchOffers(S, customTitle = null) {
-  const eligible = listAvailableJobs(S)
+export function presentGraduateOrJobSearchOffers(S, customTitle = null, snapshot=null) {
+  const eligible = snapshot?.offers || listAvailableJobs(S)
     .filter(j => j.qualifiedByDegree && !j.missingBoard && checkJobApplication(S,j).ok)
     .sort((a, b) => b.monthlyGross - a.monthlyGross);
   if (!eligible.length) return;
 
   const topOffer = eligible[0];
-  const altOffer = eligible[Math.min(2, eligible.length - 1)];
+  const altOffer = snapshot?eligible[1]:eligible[Math.min(2, eligible.length - 1)];
   const quotedOffer = (st, offer, auth) => ({
     gross: auth.partTimeOnly ? Math.round(offer.monthlyGross * 0.45) : offer.monthlyGross,
     title: auth.partTimeOnly ? `Part-Time ${offer.title}` : offer.title
@@ -2094,12 +2094,13 @@ export function presentGraduateOrJobSearchOffers(S, customTitle = null) {
      come back with the same "new openings" list twice in one year.
      The default-title call (job-search, not graduation) fires at most
      once per calendar year; the next trigger waits for the new year. */
-  if (!customTitle) {
+  if (!customTitle&&!snapshot) {
     if ((Number(S.career._lastJobOffersYear) || 0) === S.year) return;
     S.career._lastJobOffersYear = S.year;
   }
 
-  queueScene(S, {
+  const offerScene={
+    jobOfferSnapshot:snapshot||{offers:[topOffer,...(altOffer&&altOffer.id!==topOffer.id?[altOffer]:[])],country:S.country,year:S.year},
     key: `job_offers_${S.year}_${S.month}`,
     baseId: `job_offers_${Math.floor(S.player.age / 4)}`,
     maxPerLife: 2,
@@ -2107,7 +2108,14 @@ export function presentGraduateOrJobSearchOffers(S, customTitle = null) {
     title: customTitle || `Headhunter & Network Job Leads (${S.city})`,
     text: `Recruiters and industry contacts in ${S.city} come back with concrete openings matching your background.`,
     choices
-  });
+  };
+  if(snapshot)return offerScene;
+  queueScene(S,offerScene);
+}
+
+export function restoreRecruitmentScene(S,saved){
+ if(!String(saved?.key||'').startsWith('job_offers_')||!saved.jobOfferSnapshot||saved.jobOfferSnapshot.country!==S.country)return null;
+ const current=presentGraduateOrJobSearchOffers(S,saved.title,saved.jobOfferSnapshot);return current?{...saved,choices:current.choices}:null;
 }
 
 export function tickCareerMonthly(S) {

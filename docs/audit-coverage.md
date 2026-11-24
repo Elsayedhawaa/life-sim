@@ -531,3 +531,6 @@ Ceiling scene requires owner-occupied property. Actual incident lowers condition
 
 ### W51/W52 curated and world decision restoration
 Curated director now supports base-key rebuild independent of once-seen flags, stores builder RNG and rebuilds effects from code without new random draw. World-news scenes preserve effect snapshot and restore code-backed choices without firing world effects again.178focused files pass;21curatedage/seedinstances same labels/functions/RNG; fresh390px130action/35decisionUSlife reaches25/2024, reloads curated/world/random scenes, no errors/overflow/save loss, pixels inspected. Broad reload attempt found separate graduate-offer gapW53queued. Other scene types still require their own builders, not claimed all saved decisions fixed.
+
+### W53 concrete recruitment restore
+Recruitment stores exact offered job data/country and rebuilds acceptance with current qualification/work authorization gates. No job/pay/employer reroll on reload.179focused files pass; unit accepts restored exact offer.390pxfresh130actions/40decisionsUSage24/2022 includes actual graduate recruitment reload and job acceptance;save/errors/overflow clean,pixels inspected. Further broad reload attempt found NPC wedding gapW54queued, not all scene types covered.
