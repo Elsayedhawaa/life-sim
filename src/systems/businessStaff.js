@@ -1,3 +1,6 @@
+import{businessProfile}from './businessProfiles.js';
+import{benefitsCost}from './businessBenefits.js';
+import{employeePerson,tickEmployeeChoice}from './businessPeople.js';
 /* ============================================================================
    World Life 2.0 — Business Staff (v2.11 W2, Overnight Round 3)
    Employees are people: names, role-based wages, morale, skill, culture fit.
@@ -60,7 +63,7 @@ import { stampMonthEffects, roleHireBlurb, MONEY_HANDLING_ROLES } from './busine
 /* ------------------------------------------------------------------ */
 export const ROLE_WAGE_FACTOR = {
   /* 0.50 — unskilled / junior */
-  cleaner: 0.5, packager: 0.5, dishwasher: 0.5, waiter: 0.5, cashier: 0.5,
+  security:0.65,cleaner: 0.5, packager: 0.5, dishwasher: 0.5, waiter: 0.5, cashier: 0.5,
   driver: 0.5, worker: 0.5, nanny: 0.5, weaver: 0.5,
   /* 0.65 — junior skilled / front of house */
   barista: 0.65, receptionist: 0.65, assistant: 0.65, sales: 0.65, agent: 0.65,
@@ -164,6 +167,7 @@ export function getBusinessTypeRow(typeId) {
    exist, otherwise the sensible default list for the industry — plus
    the v2.17 completions, so no type hires only one or two roles. */
 export function staffRolesForType(typeId) {
+  const profile=businessProfile(typeId);
   let roles = null;
   const row = getBusinessTypeRow(typeId);
   if (row && Array.isArray(row.staffRoles) && row.staffRoles.length > 0) {
@@ -179,6 +183,8 @@ export function staffRolesForType(typeId) {
       roles = [...(DEFAULT_ROLES_BY_INDUSTRY[industryForType(typeId, row?.label || '')] || DEFAULT_ROLES_BY_INDUSTRY.services)];
     }
   }
+  if(profile)roles=[...profile.roles];
+  for(const support of ['manager','cleaner','security'])if(!roles.includes(support))roles.push(support);
   for (const extra of (STAFF_ROLE_COMPLETIONS[typeId] || [])) {
     if (!roles.includes(extra)) roles.push(extra);
   }
@@ -218,7 +224,7 @@ export function roleWageLocal(S, role, countryId) {
 /* ------------------------------------------------------------------ */
 export function ensureStaffArray(S, biz) {
   if (!biz) return [];
-  if (Array.isArray(biz.staff)) return biz.staff;
+  if(Array.isArray(biz.staff)){for(const emp of biz.staff)employeePerson(S,biz,emp);return biz.staff;}
   const count = Math.max(0, Math.round(Number(biz.employees) || 0));
   const roles = staffRolesForType(biz.typeId);
   const staff = [];
@@ -250,7 +256,7 @@ function makeEmployee(S, biz, role) {
   return {
     id: nextId(S, 'emp'),
     name: `${first} ${last}`,
-    role,
+    gender,role,
     wageLocal: roleWageLocal(S, role, countryId),
     morale,
     skill,
@@ -324,7 +330,7 @@ export function seedStartingStaff(S, biz, count = 3) {
 
 export function totalStaffWages(biz) {
   if (!biz || !Array.isArray(biz.staff)) return 0;
-  return biz.staff.reduce((sum, e) => sum + (Number(e.wageLocal) || 0), 0);
+  return biz.staff.reduce((sum,e)=>sum+(Number(e.wageLocal)||0),0)+benefitsCost(biz);
 }
 
 export function averageMorale(biz) {
@@ -414,7 +420,8 @@ export function fireBusinessEmployee(S, biz, staffId) {
   if ((Number(S.money.cash) || 0) < charge) {
     return { ok: false, msg: `Severance for ${emp.name} is ${formatMoney(charge,S.country)} (${sev.months} month${sev.months === 1 ? '' : 's'} under ${getCountry(biz.country || S.country).name || ''} law) — not enough cash to let them go properly.` };
   }
-  staff.splice(idx, 1);
+  staff.splice(idx,1);
+  const p=employeePerson(S,biz,emp);p.career.employed=false;p.career.employer=null;
   biz.employees = staff.length;
   /* Verdant finding: severance comes out of PERSONAL cash as its own
      ledger line — never buried inside the business P&L. */
@@ -435,6 +442,7 @@ export function fireAllStaff(S, biz, reason = 'closed') {
   let totalSeverance = 0;
   let unpaid = 0;
   for (const emp of leaving) {
+    const p=employeePerson(S,biz,emp);p.career.employed=false;p.career.employer=null;
     const sev = severanceFor(S, biz, emp);
     sev.amount=Math.round(convertCurrency(sev.amount,biz.figuresCurrency||biz.country||S.country,S.country,S.year));
     const cash = Math.max(0,Number(S.money.cash) || 0);
@@ -478,7 +486,7 @@ export function monthlyStaffTick(S, biz) {
   const staff = ensureStaffArray(S, biz);
   const quitters = [];
   for (const emp of [...staff]) {
-    if ((Number(emp.morale) || 0) < 25 && rand(S) < 0.25) {
+    if(tickEmployeeChoice(S,biz,emp)){
       const idx = staff.findIndex(e => e.id === emp.id);
       if (idx >= 0) staff.splice(idx, 1);
       quitters.push(emp);
@@ -487,8 +495,8 @@ export function monthlyStaffTick(S, biz) {
         key: `biz_quit_${emp.id}_${S.year}_${S.month}`,
         category: 'career',
         title: `${emp.name} quit`,
-        text: `${emp.name}, your ${emp.role} at ${biz.name}, has handed in their notice. Their morale had dropped to ${Math.round(emp.morale)} — unhappy people do not stay. You will need to hire a replacement if you want the team back to full strength.`,
-        choices: [{ label: 'Understood — I need to look after the team', effect: () => {} }]
+        text: `${emp.name}, your ${emp.role} at ${biz.name}, has handed in their notice. Three months of unresolved low morale. Hire a replacement or reduce work.`,
+        choices: [{ label: 'Acknowledge', effect: () => {} }]
       });
     }
   }

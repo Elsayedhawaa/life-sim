@@ -1,3 +1,8 @@
+import{BUSINESS_IMPROVEMENTS,improvementQuote}from './businessImprovements.js';
+import{staffingRequirement}from './businessSafety.js';
+import{businessProfile}from './businessProfiles.js';
+import{benefitsCost}from './businessBenefits.js';
+import{fulfillEmployeeRequest}from './businessPeople.js';
 /* ============================================================================
    World Life 2.0 — Business Operations (v2.17 W4: §5, operate the business)
    A real operating menu inside each business: Stock, Pricing, Suppliers,
@@ -189,8 +194,23 @@ export function opsGroupForBusiness(biz) {
   const ind = industryForBusiness(biz?.typeId, biz?.name);
   return OPS_CATALOGUE[ind] ? ind : 'services';
 }
+export function usesPhysicalStock(biz){return ['food','retail'].includes(opsGroupForBusiness(biz))||/pharmacy|mobile_shop|factory|manufactur|bookstore|flower|agro_export|textile|fashion|print_shop/.test(biz?.typeId||'');}
+export function operationsCatalogue(biz){
+ const id=biz?.typeId||'',base=OPS_CATALOGUE[opsGroupForBusiness(biz)];
+ const profile=/fruit/.test(id)?[['small','Small produce basket',.45],['basket','Weekly produce basket',1],['box','Family produce box',2]]:
+ /bakery/.test(id)?[['bread','Bread loaf',.3],['pastry','Pastry',.5],['cake','Whole cake',2]]:
+ /caf|roast/.test(id)?[['coffee','Coffee',.4],['tea','Tea',.25],['sandwich','Sandwich',1]]:
+ /pharmacy/.test(id)?[['otc','OTC medicine pack',1],['care','Personal care item',.5],['supply','First-aid kit',1.5]]:
+ /tutor|education|school/.test(id)?[['lesson','Group lesson',.5],['private','Private lesson',1],['course','Short course',3]]:
+ /clean/.test(id)?[['visit','Home cleaning visit',1],['deep','Deep clean',2],['office','Office cleaning visit',1.5]]:
+ /car_wash/.test(id)?[['basic','Exterior wash',.5],['full','Inside & outside wash',1],['detail','Detailing service',2.5]]:
+ /salon|barber/.test(id)?[['cut','Haircut',1],['style','Hair styling',1.5],['color','Colour service',2.5]]:null;
+ const specific=profile||businessProfile(id)?.products.map((label,i)=>['product_'+i,label,[.5,1,2][i]]);
+ const monthlyUnits=/caf|roast/.test(id)?12000:/fruit/.test(id)?4000:/bakery/.test(id)?5000:base.monthlyUnits;
+ return specific?{...base,monthlyUnits,items:specific.map(([id,label,frac])=>({id,label,frac}))}:base;
+}
 export function opsMonthlyUnits(biz) {
-  return OPS_CATALOGUE[opsGroupForBusiness(biz)].monthlyUnits;
+  return operationsCatalogue(biz).monthlyUnits;
 }
 /* v2.20 I3 — one unit price per VENTURE, not per business record: a
    branch prices the same goods the same way as its parent. A branch's
@@ -247,14 +267,13 @@ export function addMonthEffect(biz, partial = {}) {
 
 export function ensureOpsState(S, biz) {
   if (!biz) return null;
-  const cat = OPS_CATALOGUE[opsGroupForBusiness(biz)];
+  const cat = operationsCatalogue(biz);
   if (typeof biz.stockLevel !== 'number' || Number.isNaN(biz.stockLevel)) biz.stockLevel = cat.monthlyUnits;
-  if (!biz.prices || typeof biz.prices !== 'object') {
-    biz.prices = {};
-    const avg = opsAvgTicket(S, biz);
-    for (const it of cat.items) {
-      const p = Math.max(1, Math.round(avg * it.frac));
-      biz.prices[it.id] = { price: p, standard: p };
+  if (!biz.prices || typeof biz.prices !== 'object') biz.prices={};
+  const avg=opsAvgTicket(S,biz);
+  for(const it of cat.items){
+    if(!biz.prices[it.id]||!(Number(biz.prices[it.id].standard)>0)){
+      const p=Math.max(1,Math.round(avg*it.frac));biz.prices[it.id]={price:p,standard:p};
     }
   }
   if (!biz.supplier || typeof biz.supplier !== 'object') {
@@ -297,6 +316,7 @@ export function orderStock(S, biz, qty, opts = {}) {
   ensureExtendedState(S);
   ensureOpsState(S, biz);
   if (!biz) return { ok: false, msg: 'No business selected.' };
+  if(!usesPhysicalStock(biz))return{ok:false,msg:'This business sells services. No stock order required.'};
   const q = Math.max(0, Math.round(Number(qty) || 0));
   if (q <= 0) return { ok: false, msg: 'Order how many units? Pick a pack size.' };
   const unitCost = opsUnitCost(S, biz);
@@ -326,7 +346,7 @@ export function orderStock(S, biz, qty, opts = {}) {
    ------------------------------------------------------------------ */
 export function pricingEffectFor(S, biz) {
   ensureOpsState(S, biz);
-  const cat = OPS_CATALOGUE[opsGroupForBusiness(biz)];
+  const cat = operationsCatalogue(biz);
   let revenueMult = 1, repeatRateDelta = 0;
   const lines = [];
   for (const it of cat.items) {
@@ -350,7 +370,7 @@ export function setPrice(S, biz, itemId, dir) {
   ensureExtendedState(S);
   ensureOpsState(S, biz);
   if (!biz) return { ok: false, msg: 'No business selected.' };
-  const cat = OPS_CATALOGUE[opsGroupForBusiness(biz)];
+  const cat = operationsCatalogue(biz);
   const item = cat.items.find(i => i.id === itemId);
   if (!item) return { ok: false, msg: `This business prices: ${cat.items.map(i => i.label).join(', ')}.` };
   const cur = biz.prices[itemId] || { price: 0, standard: 0 };
@@ -437,6 +457,7 @@ export function giveDayOff(S, biz, staffId) {
   if (!emp) return { ok: false, msg: 'That person does not work here.' };
   if (biz.opsRota.dayOff.includes(staffId)) return { ok: false, msg: `${emp.name} already has a day off this month.` };
   if (biz.opsRota.overtime.includes(staffId)) return { ok: false, msg: `${emp.name} is on overtime this month — not a day off too.` };
+  fulfillEmployeeRequest(S,biz,emp,'rest');
   const lostSales = Math.max(1, Math.round((Number(biz.monthlyRev) || 0) * 0.02));
   biz.opsRota.dayOff.push(staffId);
   emp.morale = clamp(Math.round(Number(emp.morale) || 0) + 8, 5, 100);
@@ -627,7 +648,8 @@ export function applyOperationsEffects(S, biz, opts = {}) {
   repeatRateDelta += pe.repeatRateDelta;
   notes.push(...pe.lines);
 
-  /* 3. Stock on hand vs what the month usually sells. */
+  /* Physical goods only. Service work does not vanish because shelves are empty. */
+  if(usesPhysicalStock(biz)){
   const demand = opsMonthlyUnits(biz);
   const stock = Math.max(0, Math.round(Number(biz.stockLevel) || 0));
   if (stock <= 0) {
@@ -645,6 +667,7 @@ export function applyOperationsEffects(S, biz, opts = {}) {
     }
   }
   biz.stockLevel = 0; /* sold + wasted — next month needs a new order */
+  }
 
   /* Merge into the one monthEffects object (actions may already have
      stamped marketing / rota effects into it this month). */
@@ -703,8 +726,9 @@ export function renderOperationsMenuHtml(S, biz, extras = {}) {
   ensureOpsState(S, biz);
   return `
   <div class="biz-ops-menu" style="margin-top:10px;">
-    <h4>Run the business — open a section</h4>
-    <div class="muted" style="margin-bottom:6px;">One section at a time. Every action names its cost before you commit, and its effect lands in next month's profit and loss.</div>
+    <h4>Business desk</h4>
+    <details data-panel="improvements_${escHtml(biz.id)}"><summary>Monthly &amp; yearly improvements</summary><div class="muted">Monthly: review prices, stock, marketing and the team below. Yearly: invest in more capacity or equipment. Results depend on demand and costs, not guaranteed profit.</div>${Object.entries(BUSINESS_IMPROVEMENTS).map(([id,def])=>`<div style="margin:8px 0"><button class="btn btn-sm" data-action="biz-improve" data-biz="${escHtml(biz.id)}" data-kind="${id}" ${biz.improvements?.[id]?.year===S.year||(biz.improvements?.[id]?.level||0)>=3?'disabled':''}>${def.label} · ${fmt(S,improvementQuote(biz,id))}</button><div class="muted">${def.desc} · once/year · ${(biz.improvements?.[id]?.level||0)}/3</div></div>`).join('')}</details>
+
     ${renderStockSectionHtml(S, biz)}
     ${renderPricingSectionHtml(S, biz)}
     ${renderSuppliersSectionHtml(S, biz, extras)}
@@ -712,11 +736,13 @@ export function renderOperationsMenuHtml(S, biz, extras = {}) {
     ${renderMarketingSectionHtml(S, biz, extras)}
     ${renderPremisesSectionHtml(S, biz, extras)}
     ${renderCashSectionHtml(S, biz, extras)}
+    ${biz.lastPL?.safetyNotes?.length?`<div class="muted">${biz.lastPL.safetyNotes.map(escHtml).join(' · ')}</div>`:''}
     ${biz.opsLog.length ? `<div class="muted" style="margin-top:6px;font-size:12px;"><strong>Recently:</strong> ${biz.opsLog.slice(0, 3).map(l => escHtml(l.text)).join(' · ')}</div>` : ''}
   </div>`;
 }
 
 export function renderStockSectionHtml(S, biz) {
+  if(!usesPhysicalStock(biz))return `<div class="muted" style="padding:10px">Service business · no stock orders. Prices, team and premises affect sales.</div>`;
   ensureOpsState(S, biz);
   const demand = opsMonthlyUnits(biz);
   const unitCost = opsUnitCost(S, biz);
@@ -751,7 +777,7 @@ export function renderStockSectionHtml(S, biz) {
 
 export function renderPricingSectionHtml(S, biz) {
   ensureOpsState(S, biz);
-  const cat = OPS_CATALOGUE[opsGroupForBusiness(biz)];
+  const cat = operationsCatalogue(biz);
   const rows = cat.items.map(it => {
     const p = biz.prices[it.id] || { price: 0, standard: 0 };
     const ratio = (Number(p.price) || 0) / (Number(p.standard) || 1);
@@ -761,6 +787,7 @@ export function renderPricingSectionHtml(S, biz) {
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;">
         <strong>${escHtml(it.label)}</strong><span class="muted">${fmt(S, p.price)} (usual ${fmt(S, p.standard)}) — ${escHtml(state)}</span>
       </div>
+      <div class="muted">${usesPhysicalStock(biz)?'Stock cost estimate':'Direct delivery cost allocation'} ${fmt(S,Math.round(p.standard*.45))}/unit · contribution ${fmt(S,p.price-Math.round(p.standard*.45))} before payroll, rent &amp; tax</div>
       <div style="display:flex;gap:6px;margin-top:4px;">
         <button class="btn btn-sm" data-action="biz-ops-price" data-biz="${escHtml(biz.id)}" data-item="${escHtml(it.id)}" data-dir="up">Raise price +10%</button>
         <button class="btn btn-sm" data-action="biz-ops-price" data-biz="${escHtml(biz.id)}" data-item="${escHtml(it.id)}" data-dir="down">Lower price −10%</button>
@@ -770,13 +797,14 @@ export function renderPricingSectionHtml(S, biz) {
   }).join('');
   return `
   <details class="biz-ops-pricing" style="margin:6px 0;">
-    <summary><strong>Pricing</strong> — <span class="muted">${cat.items.length} priced items</span></summary>
-    <div class="muted" style="margin:4px 0;">Setting a price is free. A price 15% above usual is "high" (+4% revenue per item, some customers stop coming back); 15% below is "low" (−3% revenue per item, customers come back).</div>
+    <summary><strong>Products &amp; prices</strong> — <span class="muted">${cat.items.length} priced items</span></summary>
+    <div class="muted" style="margin:4px 0;">Game price index: usual price 100. Range 70–130. Demand capacity ${cat.monthlyUnits}/mo across the range, not per item. Costs are model allocations, not live market quotes. Higher prices may lose repeat customers.</div>
     ${rows}
   </details>`;
 }
 
 export function renderSuppliersSectionHtml(S, biz, extras = {}) {
+  if(!usesPhysicalStock(biz))return extras.groupSupplyHtml||'';
   ensureOpsState(S, biz);
   const rows = opsSuppliersFor(biz).map(sup => {
     const cur = biz.supplier?.id === sup.id;
@@ -804,14 +832,15 @@ export function renderStaffRotaSectionHtml(S, biz, extras = {}) {
      manager section live HERE now, inside Staff, not open on the card.
      The summary names the headcount and payroll so the collapsed
      section still says what it holds. */
-  const payroll = staff.reduce((sum, e) => sum + (Number(e.wageLocal) || 0), 0);
+  const payroll=staff.reduce((sum,e)=>sum+(Number(e.wageLocal)||0),0)+benefitsCost(biz);
   const summary = staff.length === 0
     ? 'nobody hired yet'
     : `${staff.length} employee${staff.length === 1 ? '' : 's'} · payroll ${fmt(S, payroll)}/mo · rota`;
   if (!staff.length) {
     return `
-  <details class="biz-ops-staff" style="margin:6px 0;">
+  <details data-panel="staff_${escHtml(biz.id)}" class="biz-ops-staff" style="margin:6px 0;">
     <summary><strong>Staff</strong> — <span class="muted">${summary}</span></summary>
+    <div class="muted">Hygiene ${Math.round(biz.hygiene??80)}/100 · safety ${Math.round(biz.safety??45)}/100. Cleaners maintain hygiene; security reduces robbery risk.${staffingRequirement(biz)?' Core professional: '+staffingRequirement(biz)+' (game staffing rule).':''}</div>
     ${extras.staffHtml || ''}
     <div class="muted">No staff to rota — hire someone below.</div>
     ${extras.managerHtml || ''}
@@ -835,8 +864,9 @@ export function renderStaffRotaSectionHtml(S, biz, extras = {}) {
     </div>`;
   }).join('');
   return `
-  <details class="biz-ops-staff" style="margin:6px 0;">
+  <details data-panel="staff_${escHtml(biz.id)}" class="biz-ops-staff" style="margin:6px 0;">
     <summary><strong>Staff</strong> — <span class="muted">${summary}</span></summary>
+    <div class="muted">Hygiene ${Math.round(biz.hygiene??80)}/100 · safety ${Math.round(biz.safety??45)}/100. Cleaners maintain hygiene; security reduces robbery risk.${staffingRequirement(biz)?' Core professional: '+staffingRequirement(biz)+' (game staffing rule).':''}</div>
     ${extras.staffHtml || ''}
     <div class="muted" style="margin:4px 0;">One rota choice per person per month. Tired staff make mistakes — their morale shows on the card.</div>
     ${rows}

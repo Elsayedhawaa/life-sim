@@ -1,3 +1,4 @@
+import{businessSector,businessIllustration,businessHistoryChart}from './businessVisuals.js';
 import{shopCategoryIcon}from './shopVisuals.js';
 import{civilClaimQuote}from '../systems/civilClaims.js';
 import{retirementIncomePreview}from '../systems/usRetirement.js';
@@ -877,7 +878,7 @@ function renderProgressPanelHtml(S) {
              goals card owns the reasons now; this panel keeps the live
              score in its header and points up, instead of repeating
              the whole list. */''}
-      
+
       <div class="muted" style="font-size:0.76rem;margin-top:8px">Dates are when the game first noticed each milestone — milestones already earned before this panel existed are dated to then, not backdated.</div>
     </div>
   `;
@@ -2375,6 +2376,7 @@ function fixBranchHireButtons(S, branchesHtml) {
 function renderVenturesSubtabHtml(S, uiState, allVentures) {
   migrateBusinesses(S);
   const businesses = S.career.businesses || [];
+  const desk=uiState.bizDesk||((businesses||[]).some(b=>!b.isBranch)?'owned':'start');
   /* v2.20 I1 — branches are records in S.career.businesses, but they
      render ONLY as branch rows inside the parent card
      (renderBranchesHtml). Cards, the header count and the portfolio
@@ -2383,7 +2385,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
      branch records from S.career.businesses. */
   const portfolioBusinesses = businesses.filter(b => b && !b.isBranch);
   const q = String(uiState.bizQuery || '').trim().toLowerCase();
-  const filtered = allVentures.filter(b => !q || b.label.toLowerCase().includes(q) || String(b.desc || '').toLowerCase().includes(q));
+  const filtered=allVentures.filter(b=>(!uiState.bizSector||uiState.bizSector==='all'||businessSector(b)===uiState.bizSector)&&(!q||b.label.toLowerCase().includes(q)||String(b.desc||'').toLowerCase().includes(q)));
   const workload = computeWorkload(S);
   const jobHours = workload.jobHours;
 
@@ -2393,9 +2395,9 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
   const totals = portfolioBusinesses.reduce((t, biz) => {
     const r = businessLastMonthNet(S, biz);
     if (!r.hasPL) return t;
-    t.revenue += r.revenue; t.costs += r.costs; t.tax += r.tax; t.net += r.net;
+    t.settled++;t.revenue += r.revenue; t.costs += r.costs; t.tax += r.tax; t.net += r.net;
     return t;
-  }, { revenue: 0, costs: 0, tax: 0, net: 0 });
+  }, { settled:0,revenue: 0, costs: 0, tax: 0, net: 0 });
 
   const bizCard = (biz) => {
     const pl = biz.lastPL;
@@ -2414,7 +2416,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
         <tr><td>Revenue</td><td style="text-align:right" class="mono">${esc(formatMoney(pl.revenue, S.country))}</td></tr>
         ${pl.franchise > 0 ? `<tr><td style="padding-left:12px">— of which franchise royalties</td><td style="text-align:right" class="mono">${esc(formatMoney(pl.franchise, S.country))}</td></tr>` : ''}
         <tr><td>Rent (${esc(biz.premises?.label || 'No premises')})</td><td style="text-align:right" class="mono">${esc(formatMoney(pl.rent, S.country))}</td></tr>
-        <tr><td>Wages (${staffCount} staff)</td><td style="text-align:right" class="mono">${esc(formatMoney(pl.wages, S.country))}</td></tr>
+        <tr><td>Payroll + benefits (${staffCount} staff)</td><td style="text-align:right" class="mono">${esc(formatMoney(pl.wages, S.country))}</td></tr>
         <tr><td>Other costs (supplies, utilities, marketing)</td><td style="text-align:right" class="mono">${esc(formatMoney(pl.other, S.country))}</td></tr>
         ${pl.remote > 0 ? `<tr><td>Remote management</td><td style="text-align:right" class="mono">${esc(formatMoney(pl.remote, S.country))}</td></tr>` : ''}
         ${pl.manager > 0 ? `<tr><td>Manager — ${esc(biz.manager?.name || 'manager')}</td><td style="text-align:right" class="mono">${esc(formatMoney(pl.manager, S.country))}</td></tr>` : ''}
@@ -2443,7 +2445,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
     const losingHtml = losing ? `
       <div class="card" style="border:2px solid var(--brand-crimson);background:rgba(180,35,24,0.10);margin:8px 0">
         <strong style="color:var(--brand-crimson)">⚠ Losing money — ${biz.monthsLosing} month${biz.monthsLosing > 1 ? 's' : ''} in a row.</strong>
-        <span class="muted"> You can invest to grow it, cut costs with a Team Bonus, or close it before the debts pile up. It closes after 3 months you cannot pay for (${biz.misses || 0} so far) — or when its capital runs out (${esc(formatMoney(capitalLeft, S.country))} left).</span>
+        <div class="muted">Unpaid months ${biz.misses||0}/3 · Equity ${esc(formatMoney(capitalLeft,S.country))}</div>
       </div>` : '';
     /* v2.20 I3 — the debt line follows the real state: the miss count
        is never reset while debt stands, the month the debt began is
@@ -2467,15 +2469,16 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
     return `
     <div class="card card-elevated" style="margin-bottom:10px">
       <div class="section-head">
-        <h3>${esc(biz.name)} — ${esc(biz.typeId.replace(/_/g, ' '))}</h3>
+        <div class="biz-card-title">${businessIllustration(biz)}<h3>${esc(biz.name)}</h3></div>
         <span class="hud-pill">${Number.isFinite(levelCap) ? `Level ${biz.level}/${levelCap}` : `Level ${biz.level} · no cap`} · ${esc(modeLabel)} · Repeat customers ${Math.round((Number(biz.repeatRate ?? 0.5)) * 100)}%</span>
         <span class="hud-pill">${esc(managedBadge)}</span>
       </div>
-      <div class="muted">Founded ${MONTH_NAMES[(biz.foundedMonth || 1) - 1]} ${biz.foundedYear} in ${esc(getCountry(biz.country || S.country).name)} · Capital invested ${esc(formatMoney(biz.capitalInvested, S.country))} · ${staffCount} staff · ${esc(biz.premises?.label || 'Run from home')}${biz.remote ? ' · Managed remotely' : ''}</div>
+      <details><summary>Business details</summary><div class="muted">Founded ${MONTH_NAMES[(biz.foundedMonth || 1) - 1]} ${biz.foundedYear} in ${esc(getCountry(biz.country || S.country).name)} · Capital invested ${esc(formatMoney(biz.capitalInvested, S.country))} · ${staffCount} staff · ${esc(biz.premises?.label || 'Run from home')}${biz.remote ? ' · Managed remotely' : ''}</div></details>
       ${losingHtml}
       ${debtHtml}
-      ${plHtml}
-      ${historyHtml}
+      <div class="biz-kpis"><div>Sales/mo<strong>${netR.hasPL?esc(formatMoney(netR.revenue,S.country)):'Pending'}</strong></div><div>Costs + tax/mo<strong>${netR.hasPL?esc(formatMoney(netR.costs+netR.tax,S.country)):'Pending'}</strong></div><div>Net/mo<strong class="${(netR.net||0)<0?'text-bad':'text-good'}">${netR.hasPL?esc(formatMoney(netR.net,S.country)):'Pending'}</strong></div><div>Team<strong>${staffCount} people</strong></div></div>
+      ${businessHistoryChart(biz)}
+      <details class="biz-financials"><summary>Financial statement &amp; history</summary>${plHtml}${historyHtml}</details>
       ${renderOperationsMenuHtml(S, biz, {
         staffHtml: renderStaffListHtml(S, biz),
         managerHtml: renderManagerSectionHtml(S, biz),
@@ -2492,7 +2495,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
         ${renderBusinessWillSection(S, biz)}
       </details>
       <details class="biz-decisions" style="margin-top:10px;">
-        <summary><strong>Decisions</strong> — <span class="muted">each states its cost and effect before you commit</span></summary>
+        <summary>Decisions</summary>
         ${renderDecisionsHtml(S, biz)}
       </details>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
@@ -2571,20 +2574,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       : liveSameType && allowDup
         ? `<div class="muted" style="margin-top:4px">Opening a second ${esc(bp.label)} — it will be named ${esc(liveSameType.name)} 2.</div>`
         : '';
-    return `
-      <div class="item-row" style="align-items:flex-start">
-        <div class="item-row-main">
-          <strong>${esc(bp.label)}</strong>
-          <span>${esc(bp.desc || '')}</span>
-          <span>Capital: <strong class="mono">${esc(formatMoney(cap, S.country))}</strong> · Monthly cost from home ~<strong class="mono">${esc(formatMoney(costFromHome, S.country))}</strong>/mo (other ${esc(formatMoney(otherEstimateLocal, S.country))} + wages ~${esc(formatMoney(ev.wageEstimateLocal, S.country))}) · Rented premises ~${esc(formatMoney(ev.rentEstimateLocal, S.country))}/mo extra${bp.reqMajor ? ` · Needs ${bp.reqMajor.toUpperCase()}` : ''} · ${esc(ev.eraLabel)}</span>
-          ${ventureViabilityWarningHtml(S, bp, ev)}
-          ${locksHtml}
-          ${dupHtml}
-          ${runByHtml}
-          ${managerHtml}
-        </div>
-        ${ev.ok ? (runBy === 'manager' && !pickedMgr ? `<span class="hud-pill">Pick a manager first</span>` : launchBtns) : `<span class="hud-pill">Locked</span>`}
-      </div>`;
+    return `<article class="biz-start-card"><div class="biz-start-head">${businessIllustration(bp)}<div><small>${esc(businessSector(bp))}</small><h3>${esc(bp.label)}</h3><strong>${esc(formatMoney(cap,S.country))}</strong><div class="muted">Startup capital</div></div></div><div class="biz-start-costs">Operating estimate ${esc(formatMoney(costFromHome,S.country))}/mo<br>Premises rent +${esc(formatMoney(ev.rentEstimateLocal,S.country))}/mo</div>${ventureViabilityWarningHtml(S,bp,ev)}<details><summary>Review startup</summary><div class="muted">Wages ${esc(formatMoney(ev.wageEstimateLocal,S.country))}/mo · Other ${esc(formatMoney(otherEstimateLocal,S.country))}/mo</div>${locksHtml}${dupHtml}${runByHtml}${managerHtml}${ev.ok?(runBy==='manager'&&!pickedMgr?'<p>Choose a manager.</p>':launchBtns):'<p class="muted">Requirements not met.</p>'}</details></article>`;
   };
 
   /* v2.14 §1 — no cap any more: the limit is your hours and your
@@ -2602,28 +2592,32 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
     : '';
 
   return `
-    <div class="card card-elevated">
+    <div class="biz-desk-tabs" aria-label="Business desk">${[['owned','My business'],['start','Start'],['buy','Buy existing']].map(([id,label])=>`<button class="btn ${desk===id?'btn-navy':''}" data-action="biz-desk" data-desk="${id}">${label}</button>`).join('')}</div>
+    ${desk==='owned'?`<div class="card card-elevated">
       <div class="section-head">
-        <h3>Private Enterprise &amp; Ownership (${allVentures.length} Venture Types)</h3>
-        <span class="muted">${portfolioBusinesses.length} business${portfolioBusinesses.length === 1 ? '' : 'es'} · Workload ${workload.totalHours} hrs/week (job ${workload.jobHours} + your businesses ${workload.businessHours}) · ${workload.ownerHoursFree}h/week free · ${workload.managedCount} managed · ${workload.unmanagedCount} unmanaged${workload.stretched ? ' — Stretched' : ''}${uncoveredText}</span>
+        <h3>Business</h3>
+        <span class="muted">${portfolioBusinesses.length} owned · ${workload.totalHours} h/wk used · ${workload.ownerHoursFree} h/wk free${workload.stretched?' · Overloaded':''}</span>
       </div>
       ${atRiskNames ? `<div class="card" style="border:2px solid var(--brand-crimson);background:rgba(180,35,24,0.10);margin:8px 0"><strong style="color:var(--brand-crimson)">⚠ At risk — nobody is running ${esc(atRiskNames)}.</strong> <span class="muted">Revenue and staff morale fall each month a business stays unmanaged. Hire a manager, take it over yourself, or sell it.</span></div>` : ''}
       ${portfolioBusinesses.length ? `
-      <div class="muted" style="margin-bottom:8px">Portfolio totals (last settled month): income <strong class="mono">${esc(formatMoney(totals.revenue, S.country))}</strong> · costs <strong class="mono">${esc(formatMoney(totals.costs, S.country))}</strong> · tax <strong class="mono">${esc(formatMoney(totals.tax, S.country))}</strong> · net <strong class="mono ${totals.net < 0 ? 'text-bad' : 'text-good'}">${esc(formatMoney(totals.net, S.country))}</strong></div>
+      ${totals.settled?`<div class="muted" style="margin-bottom:8px">Portfolio totals (last settled month): income <strong class="mono">${esc(formatMoney(totals.revenue, S.country))}</strong> · costs <strong class="mono">${esc(formatMoney(totals.costs, S.country))}</strong> · tax <strong class="mono">${esc(formatMoney(totals.tax, S.country))}</strong> · net <strong class="mono ${totals.net < 0 ? 'text-bad' : 'text-good'}">${esc(formatMoney(totals.net, S.country))}</strong></div>`:`<div class="muted">First monthly result pending.</div>`}
       ${portfolioBusinesses.map(bizCard).join('')}` : `
       <p class="muted">No businesses</p>`}
     </div>
-    ${renderForSaleHtml(S)}
-    <div class="card">
+    `:''}
+    ${desk==='buy'?renderForSaleHtml(S):''}
+    ${desk==='start'?`<div class="card">
       <div class="section-head">
-        <h3>Register a Company (${filtered.length} of ${allVentures.length} ventures)</h3>
+        <h3>Start a business · ${filtered.length} options</h3>
       </div>
+      <details class="biz-index"><summary>Wage &amp; price basis</summary><p>Game wage index · ${esc(getCountry(S.country).name)} · ${S.year}<br>Mid-career ${esc(formatMoney(eraSalary(getCountry(S.country).annualSalaryTiers2026.mid/12,S.country,S.year),S.country))}/mo × role factor.<br>Startup, sales and costs: country/era catalog scaling. Estimates, not live market quotes.</p></details>
+      <div class="biz-sector-tabs">${[['all','All'],['food','Food'],['retail','Retail'],['tech','Tech'],['health','Health'],['services','Services']].map(([id,label])=>`<button class="btn btn-sm ${(uiState.bizSector||'all')===id?'btn-navy':''}" data-action="biz-sector" data-sector="${id}">${label}</button>`).join('')}</div>
       <p class="muted">Full-time ${BUSINESS_FULL_TIME_HOURS} h/wk · Part-time ${BUSINESS_PART_TIME_HOURS} h/wk <span title="Profit varies. Running full-time yourself requires leaving your job. Managers use no player hours." aria-label="Information">ⓘ</span></p>
       <div class="catalog-filter-bar">
         <input type="search" class="filter-input" data-filter="bizQuery" placeholder="Search ${allVentures.length} ventures (e.g. Café, Pharmacy, SaaS, Clinic, Factory)..." value="${esc(uiState.bizQuery || '')}">
       </div>
       ${filtered.map(launchRow).join('') || '<p class="muted">No ventures match that search.</p>'}
-    </div>
+    </div>`:''}
   `;
 }
 
@@ -4982,7 +4976,7 @@ function renderStudyAbroadHtml(S,uiState){
  <p><strong>${q.years} years</strong> · ${esc(formatMoney(q.annualDest,dest))}/year · ${esc(q.feeStatus)}</p><p class="muted">${q.visaRequired?'Student permit required.':'You hold destination citizenship: no student visa or maintenance escrow.'} </p>
  <p class="muted">${level==='bachelor'?'First year prepaid; later tuition billed monthly or renewed by parents.':'Full course tuition prepaid; no further monthly tuition.'} Living costs billed monthly · No stipend</p>
  <div style="background:#f7f3e7;padding:12px;border-radius:10px;font-size:.84rem;line-height:1.8">Tuition due now: ${esc(formatMoney(q.tuitionDest,dest))}<br>Maintenance escrow: ${esc(formatMoney(q.blockedDest,dest))}${q.blockedDest?' (released over12months)':''}<br>Modelled travel/permit budget: ${esc(formatMoney(q.costsDest,dest))}<br><strong>Debit now: ${esc(formatMoney(q.totalPlayer,S.country))}</strong><br>Required liquid funds incl. first-year living buffer: ${esc(formatMoney(Math.max(q.totalPlayer,q.proofPlayer),S.country))}<br>Selected source holds: ${esc(formatMoney(q.available,S.country))}</div>
- 
+
  ${!q.ok?`<p class="text-bad">${esc(q.reason)}</p>`:''}
  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" data-action="apply-study-abroad" data-dest="${dest}" data-uni="${uniId||''}" data-major="${majorId}" data-level="${level}" data-funding="${funding}" ${q.ok?'':'disabled'}>Fund & relocate to study</button>${q.ok?'':lockReason(q.reason)}
  <button class="btn btn-sm" data-action="apply-overseas-scholarship" data-dest="${dest}" data-level="${level}">Apply for game tuition award</button></div>

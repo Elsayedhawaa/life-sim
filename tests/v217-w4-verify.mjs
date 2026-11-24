@@ -77,7 +77,7 @@ function twinPair() {
    inside both twins' numbers and an exact multiplier comparison
    (stock-out x0.55, prices x1.04^3) would need a tolerance. */
 function neutralStaff(S, biz) {
-  for (const e of (biz.staff || [])) e.skill = 50;
+  biz.staff=[];biz.employees=0;
   stampMonthEffects(S, biz);
 }
 
@@ -96,12 +96,12 @@ console.log('--- §1 menu render ---');
   const S = adultLife(); const biz = launch(S);
   const html = renderOperationsMenuHtml(S, biz);
   const text = strip(html);
-  for (const sec of OPS_SECTIONS) check(`menu shows section ${sec}`, text.includes(sec));
-  check('menu is 7 collapsed <details> (no open attribute)', (html.match(/<details/g) || []).length === 7 && !/<details[^>]*\bopen\b/.test(html));
+  for (const sec of OPS_SECTIONS) check(`menu shows section ${sec}`, text.includes(sec==='Pricing'?'Products & prices':sec));
+  check('menu is 8 collapsed <details> (no open attribute)', (html.match(/<details/g) || []).length === 8 && !/<details[^>]*\bopen\b/.test(html));
   const costMentions = (text.match(/costs [0-9][0-9,]*/g) || []).length + (text.match(/Spend [0-9][0-9,]*/g) || []).length;
   check('buttons name their cost in plain words (>=5 cost mentions)', costMentions >= 5, `found ${costMentions}`);
   check('stock section states stock level + what the month sells', strip(renderStockSectionHtml(S, biz)).includes('usually sells'));
-  check('pricing section lists 3 items', (strip(renderPricingSectionHtml(S, biz)).match(/Main dish|Coffee & tea|Dessert & cake/g) || []).length === 3);
+  check('pricing section lists 3 items', (strip(renderPricingSectionHtml(S, biz)).match(/Lunch plate|Family meal|Catering tray/g) || []).length === 3);
   check('suppliers section names 2 suppliers', strip(renderSuppliersSectionHtml(S, biz)).includes('Budget Bulk Traders') && strip(renderSuppliersSectionHtml(S, biz)).includes('Freshline Wholesale'));
   check('staff rota section names a real staff member', strip(renderStaffRotaSectionHtml(S, biz)).includes(biz.staff[0].name));
   check('marketing section names 3 channels + diminishing returns', strip(renderMarketingSectionHtml(S, biz)).includes('Flyers') && strip(renderMarketingSectionHtml(S, biz)).includes('Social media ads') && strip(renderMarketingSectionHtml(S, biz)).includes('Radio') && strip(renderMarketingSectionHtml(S, biz)).includes('worth half'));
@@ -266,7 +266,7 @@ console.log('--- §8 pricing: too high loses customers (repeatRate, measured) --
      would otherwise sit inside both twins' numbers and the exact
      1.04^3 / 0.97^3 comparison would need a tolerance. Twin pairs:
      control (stocked, standard prices) vs priced. */
-  const cat = ['drink', 'main', 'dessert'];
+  const cat = ['product_0','product_1','product_2'];
   const tH = twinPair();
   tH.bizA.stockLevel = opsMonthlyUnits(tH.bizA); tH.bizB.stockLevel = opsMonthlyUnits(tH.bizB);
   neutralStaff(tH.A, tH.bizA); neutralStaff(tH.B, tH.bizB);

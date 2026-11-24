@@ -1,3 +1,4 @@
+import{tickBusinessSafety}from './businessSafety.js';
 /* ============================================================================
    v2.14 — ONE monthly P&L for a business, with everything folded in.
    computeBusinessMonth (businessEngine.js) stays the BASE P&L — it must
@@ -144,6 +145,7 @@ export function computeBusinessMonthFull(S, biz, opts = {}) {
 
   /* 2. Base P&L. */
   const pl = computeBusinessMonth(S, biz);
+  const safeguards=tickBusinessSafety(S,biz);pl.revenue=Math.round(pl.revenue*safeguards.revMult);pl.other+=safeguards.cost;pl.costs+=safeguards.cost;pl.safetyCost=safeguards.cost;pl.safetyNotes=safeguards.notes;
   /* v2.17 W2 — the BASE other-costs line, captured before decisions
      (step 6), shocks (step 3.6) or monthEffects (step 5.5) add to it:
      the supply-chain discount (step 9.5) cuts only this line, never a

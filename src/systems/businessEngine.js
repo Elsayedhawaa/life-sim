@@ -1,3 +1,4 @@
+import{benefitsCost}from './businessBenefits.js';
 import { businessValuation, businessSalvage } from '../data/businessValuation.js';
 export { businessValuation } from '../data/businessValuation.js';
 /* ============================================================================
@@ -1070,7 +1071,7 @@ export function computeBusinessMonth(S, biz) {
   normalizeBusiness(S, biz);
   const now = businessMonthIndex(S);
   const staff = biz.staff || [];
-  const wages = staff.reduce((sum, st) => sum + (Number(st.wageLocal) || 0), 0);
+  const wages=staff.reduce((sum,st)=>sum+(Number(st.wageLocal)||0),0)+benefitsCost(biz);
   const rent = Number(biz.premises?.monthlyRentLocal) || 0;
   const otherBase = Number(biz.monthlyCost) || 0;
 

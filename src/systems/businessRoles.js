@@ -1,3 +1,6 @@
+import{renderPortraitSvg}from '../ui/portraits.js';
+import{STAFF_BENEFITS,employeeBenefitsCost,benefitsCost}from './businessBenefits.js';
+import{staffPreference,fulfillEmployeeRequest,staffActionQuote,employeePerson}from './businessPeople.js';
 /* ============================================================================
    World Life 2.0 — Business Roles, Real (v2.17 W3, §4)
    Hiring in real positions with real titles and real effects.
@@ -71,6 +74,7 @@ export const ROLE_EFFECTS = {
   sales:     { repeatRate: 0,    revenueMult: 0,    revenueAdd: 0.08, costAdd: 0,     moraleDelta: 0, verb: 'sells — more customers walk out with something' },
   agent:     { repeatRate: 0,    revenueMult: 0,    revenueAdd: 0.08, costAdd: 0,     moraleDelta: 0, verb: 'brings in clients — more deals closed' },
   /* The place itself. */
+  security:{repeatRate:0,revenueMult:0,revenueAdd:0,costAdd:0,moraleDelta:0,verb:'protects the premises, reduces robbery losses'},
   cleaner:   { repeatRate: 0.02, revenueMult: 0.01, revenueAdd: 0,    costAdd: 0,     moraleDelta: 0, verb: 'keeps the place clean — customers notice, and come back' },
   manager:   { repeatRate: 0,    revenueMult: 0.04, revenueAdd: 0,    costAdd: 0,     moraleDelta: 5, verb: 'runs the team — better service and a steadier crew' },
   /* Front of house. */
@@ -167,7 +171,8 @@ function pctStr(x) {
 export function roleEffectForEmployee(S, biz, emp) {
   const spec = roleEffectSpec(emp?.role);
   const q = roleQuality(emp);
-  const s = 0.5 + effectiveSkill(emp) / 100;
+  const skill=effectiveSkill(emp);
+  const s=skill<35?(skill-35)/35:0.5+skill/100;
   const base = Math.max(0, Number(biz?.monthlyRev) || 0);
   const revenueMult = 1 + s * (spec.revenueMult || 0);
   const revenueAdd = Math.round(s * (spec.revenueAdd || 0) * base);
@@ -175,7 +180,7 @@ export function roleEffectForEmployee(S, biz, emp) {
   const repeatRateDelta = q * (spec.repeatRate || 0);
   const moraleDelta = q * (spec.moraleDelta || 0);
   const dishonest = emp?.dishonest === true && MONEY_HANDLING_ROLES.includes(String(emp.role || '').toLowerCase());
-  if (dishonest) costAdd += Math.round(THEFT_FRACTION * base);
+  if(dishonest)costAdd=Math.max(0,costAdd)+Math.round(THEFT_FRACTION*base);
   return {
     revenueMult, revenueAdd, costAdd, repeatRateDelta, moraleDelta,
     dishonest, quality: q, note: personEffectText(S, biz, emp, { revenueMult, revenueAdd, costAdd, repeatRateDelta, moraleDelta, dishonest, quality: q })
@@ -327,6 +332,7 @@ export function trainBusinessEmployee(S, biz, staffId) {
   walletMove(S, -cost, `Training — ${emp.name} (${emp.role})`, 'business');
   emp.skill = clamp((Number(emp.skill) || 0) + TRAIN_SKILL_GAIN, 0, TRAIN_MAX_SKILL);
   const after = Math.round(emp.skill);
+  fulfillEmployeeRequest(S,biz,emp,'training');
   recordJournal(S, `Sent ${emp.name} (${emp.role}) on a training course at ${biz.name} for ${formatMoney(cost,S.country)}. Skill ${before} → ${after}.`, 'career');
   stampMonthEffects(S, biz);
   return { ok: true, msg: `Trained ${emp.name}: skill ${before} → ${after} (+${TRAIN_SKILL_GAIN}) for ${formatMoney(cost,S.country)}.`, cost, skillGain: TRAIN_SKILL_GAIN, newSkill: after, employee: emp };
@@ -411,7 +417,7 @@ export function renderStaffListHtml(S, biz) {
   const staff = ensureStaffArray(S, biz);
   const roles = staffRolesForType(biz.typeId);
   const countryId = biz.figuresCurrency||biz.country || S.country;
-  const wages = staff.reduce((sum, e) => sum + (Number(e.wageLocal) || 0), 0);
+  const wages=staff.reduce((sum,e)=>sum+(Number(e.wageLocal)||0),0)+benefitsCost(biz);
   const avgMorale = staff.length ? staff.reduce((s, e) => s + (Number(e.morale) || 0), 0) / staff.length : null;
   const avgSkill = staff.length ? staff.reduce((s, e) => s + (Number(e.skill) || 0), 0) / staff.length : null;
   const eff = roleEffects(S, biz);
@@ -453,8 +459,14 @@ export function renderStaffListHtml(S, biz) {
         return `
       <div class="biz-staff-row" style="padding:6px 0;border-bottom:1px solid var(--hatch-widget-border, #ddd);">
         <div>
-          <strong>${escHtml(emp.name)}</strong> · ${escHtml(roleLabel(emp.role))}
+          <span style="float:left;margin-right:8px">${renderPortraitSvg(employeePerson(S,biz,emp),44)}</span><strong>${escHtml(emp.name)}</strong> · ${escHtml(roleLabel(emp.role))}
           <span class="muted"> — ${formatMoney(emp.wageLocal, countryId)}/mo · skill ${Math.round(emp.skill)} · morale ${Math.round(emp.morale)}</span>
+          <div class="muted">${escHtml(staffPreference(S,biz,emp))}${emp.request?` · Wants ${emp.request.kind==='raise'?'pay review':emp.request.kind==='rest'?'time off':'training'}`:''}</div>
+          ${emp.request?.kind==='raise'?`<button class="btn btn-sm" data-action="biz-staff-request" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" data-accept="yes">Raise 10% · ${formatMoney(Math.round(emp.wageLocal*1.1),countryId)}/mo</button>`:''}
+          ${emp.request?`<button class="btn btn-sm" data-action="biz-staff-request" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" data-accept="no">Decline request</button>`:''}
+          <details data-panel="pay_${escHtml(biz.id)}_${escHtml(emp.id)}"><summary>Pay &amp; conduct</summary><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+          ${[['raise','Raise 10% · '+formatMoney(staffActionQuote(S,biz,emp,'raise').wage,countryId)+'/mo'],['cut','Offer 10% pay cut'],['bonus','Bonus · '+formatMoney(staffActionQuote(S,biz,emp,'bonus').cost,countryId)],['warn','Give warning']].map(([kind,label])=>`<button class="btn btn-sm" data-action="biz-staff-action" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" data-kind="${kind}">${escHtml(label)}</button>`).join('')}</div><div class="muted">Pay cuts require agreement. Warnings reduce trust.</div></details>
+          <details data-panel="benefits_${escHtml(biz.id)}_${escHtml(emp.id)}"><summary>Benefits · ${formatMoney(employeeBenefitsCost(emp),countryId)}/mo</summary><div class="muted">Optional game packages, not statutory coverage. Recurring payroll costs.</div>${Object.entries(STAFF_BENEFITS).map(([id,b])=>`<button class="btn btn-sm" data-action="biz-benefit" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" data-benefit="${id}">${emp.benefits?.[id]?'✓ Remove':'Add'} ${b.label} · ${formatMoney(Math.round(emp.wageLocal*b.rate),countryId)}/mo</button>`).join('')}</details>
           ${effectShown ? `<div style="font-size:12px;">${escHtml(effectShown)}</div>` : ''}
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
@@ -476,11 +488,11 @@ export function renderStaffListHtml(S, biz) {
   }).join(' ');
   return `
   <div class="biz-staff-section" style="margin-top:10px;">
-    <h4>Staff — ${staff.length} employee${staff.length === 1 ? '' : 's'}</h4>
-    <div class="muted" style="margin-bottom:6px;">Payroll ${formatMoney(wages, countryId)}/month${avgMorale === null ? '' : ` · team morale ${Math.round(avgMorale)} · average skill ${Math.round(avgSkill)}`}</div>
+
+    <div class="muted" style="margin-bottom:6px;">Payroll + benefits ${formatMoney(wages, countryId)}/mo${avgMorale === null ? '' : ` · team morale ${Math.round(avgMorale)} · average skill ${Math.round(avgSkill)}`}</div>
     ${effectSummary ? `<div class="muted" style="margin-bottom:6px;">${escHtml(effectSummary)}</div>` : ''}
     ${rows}
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${hireBtns}</div>
-    <div class="muted" style="font-size:12px;margin-top:4px;">Hiring costs one month's wage to onboard. Firing costs severance under ${escHtml(biz.country||S.country)} law, paid from your own cash — and shakes the team (morale −8). Unhappy staff (morale under 25) may quit on their own. A bad hire hurts: low skill loses customers and sales, and a dishonest cashier steals from the till.</div>
+    <div class="muted" style="font-size:12px;margin-top:4px;">Hiring costs one month's wage to onboard. Firing costs game severance based on the country table, paid from your own cash — and shakes the team (morale −8). Persistent distress can lead to resignation. A bad hire hurts: low skill loses customers and sales, and a dishonest cashier steals from the till.</div>
   </div>`;
 }

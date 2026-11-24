@@ -1,3 +1,6 @@
+import{improveBusiness}from './systems/businessImprovements.js';
+import{toggleEmployeeBenefit}from './systems/businessBenefits.js';
+import{answerEmployeeRequest,manageEmployee}from './systems/businessPeople.js';
 import{answerPeopleDecision}from './systems/peopleAutonomy.js';
 import{answerSpouseDecision}from './systems/spouseAutonomy.js';
 import{relationshipAction}from './systems/relationshipProgression.js';
@@ -392,6 +395,7 @@ export function renderApp(preserveFilterKey = null, caretPos = null) {
   if (typeof document === 'undefined') return;
   const root = document.getElementById('app');
   if (!root || !S) return;
+  const openPanels=[...root.querySelectorAll('details[data-panel][open]')].map(e=>e.dataset.panel);
   ensureExtendedState(S);
   // v2.16 W1 — light/dark theme: apply the saved theme (light by default)
   // to #app AND to <html> (so the page background follows) before the
@@ -425,6 +429,7 @@ export function renderApp(preserveFilterKey = null, caretPos = null) {
     ${uiState.showNewLifeModal ? renderNewLifeModalHtml({ country: S.homeCountry, birthYear: 1998, gender: S.player.gender }) : ''}
   `;
 
+  for(const panel of root.querySelectorAll('details[data-panel]'))if(openPanels.includes(panel.dataset.panel))panel.open=true;
   if (preserveFilterKey) {
     const inp = root.querySelector(`[data-filter="${preserveFilterKey}"]`);
     if (inp && inp.tagName === 'INPUT') {
@@ -1898,6 +1903,12 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='biz-improve'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(improveBusiness(S,biz,btn.dataset.kind));return;}
+    if(action==='biz-benefit'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);const emp=biz?.staff?.find(e=>e.id===btn.dataset.staff);handleActionResult(toggleEmployeeBenefit(S,biz,emp,btn.dataset.benefit));return;}
+    if(action==='biz-staff-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);const emp=biz?.staff?.find(e=>e.id===btn.dataset.staff);handleActionResult(manageEmployee(S,biz,emp,btn.dataset.kind));return;}
+    if(action==='biz-staff-request'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);const emp=biz?.staff?.find(e=>e.id===btn.dataset.staff);handleActionResult(answerEmployeeRequest(S,biz,emp,btn.dataset.accept==='yes'));return;}
+    if(action==='biz-sector'){uiState.bizSector=btn.dataset.sector;renderApp();return;}
+    if(action==='biz-desk'){uiState.bizDesk=btn.dataset.desk;renderApp();return;}
     if(action==='shop-finance'){uiState.activeTab='finance';uiState.finSub=btn.dataset.sub||'banks';renderApp();return;}
     if(action==='shop-category'){uiState.shopCat=btn.dataset.cat;renderApp();return;}
     if (action === 'buy-shop-item') {

@@ -136,3 +136,14 @@ Employer picker no longer mixes track matches with unrelated default conglomerat
 
 ## Shop payment clarity
 Cash, each owned credit card with available limit/APR, regional installments with first payment/total, and an explicit Bank loan route to Finance. Bank loan button never silently borrows or buys: apply there, then use cash. Card purchase forwards selected card ID. Actual390px799USDcardcharge/8USDcashback, second799purchase disabled at701available, bankroutecreatesnoloan, reloadconfirmed. Compare/itemdetails no longer assert an unmodeled6monthproductlifespan or call relative category prices a bargain.82focusedtests pass plus45legacyshopchecks(updatednewlabel/actioncountassertions). Hosted verification follows push.
+
+## Business desk rebuild, 2026-11-24
+
+- Startup/owned/acquisition desks, sector filters, illustrated cards, monthly statement/history and explicit pending results.
+- Persistent staff identities/preferences/requests, pay rises and negotiated pay cuts, individual bonuses/warnings, four recurring optional benefit packages. Benefits are charged inside payroll once, not separately duplicated. These are game packages, not statutory insurance advice.
+- Specific product/service profiles and staffing teams replace generic fallback entries. Service firms no longer need shelf stock. Prices and direct-cost contributions are game allocations, not current quotes or SKU-level accounting.
+- Cleaners maintain hygiene; security reduces robbery risk/loss. Missing core professional staffing reduces capacity. Hygiene inspections and staffing are game rules, not jurisdiction-specific licensing claims.
+- Annual capacity/equipment/brand investments have real cash costs, cooldowns and a three-upgrade limit. They do not add literal catalog SKUs. Existing monthly price, supply, marketing, staff and premises controls remain.
+- Role-effect audit: very low skill now harms output; theft cannot be canceled by a cashier's apparent till savings.
+- Actual 390px interaction check: café launch, pay-review raise, individual bonus debit, health/training benefits, annual capacity investment, manager hire/policy, second business launch, sale, next-month settlement and reload. Explicit fixture setup funds an adult save and seeds the pay-review request. This is not a natural-life progression test.
+- Remaining: acquisition card redesign, calibration of individual product prices/demand, SKU-level margins, explicit new product launches, statutory benefits/licensing, equity plans, richer remote-work/leave benefits and full multinational structure. Do not label the whole Business rebuild complete.

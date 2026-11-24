@@ -118,15 +118,15 @@ function run12Months(S, biz) {
   const chef80 = roleEffectForEmployee(S, biz, emp('c80', 'Chef', 'chef', 80));
   check('chef-80 repeatRateDelta is +0.036 (6% of q=0.6)', Math.abs(chef80.repeatRateDelta - 0.036) < 1e-9, `got ${chef80.repeatRateDelta}`);
   const waiter80 = roleEffectForEmployee(S, biz, emp('w80', 'Waiter', 'waiter', 80));
-  check('waiter-80 revenueAdd is +9600 (8% of q=0.6 x 200000)', waiter80.revenueAdd === 9600, `got ${waiter80.revenueAdd}`);
+  check('waiter-80 revenueAdd is +20800 (8% of output=1.3 x 200000)', waiter80.revenueAdd === 20800, `got ${waiter80.revenueAdd}`);
   const cashier80 = roleEffectForEmployee(S, biz, emp('k80', 'Cashier', 'cashier', 80));
-  check('cashier-80 costAdd is -3600 (saves 3% of q=0.6 x 200000)', cashier80.costAdd === -3600, `got ${cashier80.costAdd}`);
+  check('cashier-80 costAdd is -7800 (saves 3% of output=1.3 x 200000)', cashier80.costAdd === -7800, `got ${cashier80.costAdd}`);
   const driver80 = roleEffectForEmployee(S, biz, emp('d80', 'Driver', 'driver', 80));
-  check('driver-80 revenueAdd is +7200 (6% of q=0.6 x 200000)', driver80.revenueAdd === 7200, `got ${driver80.revenueAdd}`);
+  check('driver-80 revenueAdd is +15600 (6% of output=1.3 x 200000)', driver80.revenueAdd === 15600, `got ${driver80.revenueAdd}`);
   const mkt80 = roleEffectForEmployee(S, biz, emp('m80', 'Marketer', 'marketing', 80));
-  check('marketing-80 revenueAdd is +9600 (8% of q=0.6 x 200000)', mkt80.revenueAdd === 9600, `got ${mkt80.revenueAdd}`);
+  check('marketing-80 revenueAdd is +20800 (8% of output=1.3 x 200000)', mkt80.revenueAdd === 20800, `got ${mkt80.revenueAdd}`);
   const bk80 = roleEffectForEmployee(S, biz, emp('b80', 'Bookkeeper', 'bookkeeper', 80));
-  check('bookkeeper-80 costAdd is -4800 (saves 4% of q=0.6 x 200000)', bk80.costAdd === -4800, `got ${bk80.costAdd}`);
+  check('bookkeeper-80 costAdd is -10400 (saves 4% of output=1.3 x 200000)', bk80.costAdd === -10400, `got ${bk80.costAdd}`);
 }
 
 /* ---- 2. Skill 80 vs skill 40, same role, 12 months (measured) ---- */
@@ -275,7 +275,7 @@ function run12Months(S, biz) {
   check('staff list shows a wage per person', /15,?000/.test(text), text.slice(0, 300));
   check('staff list shows skill per person', /skill 80/.test(text) && /skill 40/.test(text), text.slice(0, 300));
   check('staff list shows what the chef does (regulars)', /regulars coming back/.test(text), text.slice(0, 400));
-  check('staff list shows what the waiter does (loses sales)', /loses sales/.test(text), text.slice(0, 400));
+  check('staff list shows waiter output', /brings in extra sales/.test(text), text.slice(0, 400));
   check('staff list has a Train button stating +8 skill and cost', /Train \(\+8 skill/.test(text), text.slice(0, 500));
   check('staff list has a Promote button', /Promote to/.test(text), text.slice(0, 500));
   check('staff list has a Fire button', /Fire/.test(text), text.slice(0, 500));

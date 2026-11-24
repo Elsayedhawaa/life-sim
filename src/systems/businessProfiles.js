@@ -1,0 +1,32 @@
+// Game product and staffing profiles. Prices derive from each saved business's scale.
+const PROFILES=[
+ [/restaurant/,['Lunch plate','Family meal','Catering tray'],['chef','waiter','cashier','dishwasher']],
+ [/retail|mobile_shop|ecommerce/,['Phone accessory','Refurbished phone','Laptop'],['sales','cashier','technician','packager']],
+ [/software|saas/,['Support hour','Software subscription','Development project'],['developer','designer','sales','bookkeeper']],
+ [/diagnostic/,['Blood panel','Ultrasound scan','Imaging referral package'],['technician','nurse','receptionist','bookkeeper']],
+ [/dental/,['Dental exam','Filling','Crown procedure'],['dentist','nurse','receptionist','cleaner']],
+ [/vet_/,['Animal exam','Vaccination visit','Minor procedure'],['vet','nurse','receptionist','cleaner']],
+ [/physio/,['Assessment','Therapy session','Rehab programme'],['physio','receptionist','cleaner','bookkeeper']],
+ [/clinic/,['Consultation','Follow-up visit','Treatment session'],['doctor','nurse','receptionist','cleaner']],
+ [/pharmacy/,['OTC medicine pack','Personal care item','First-aid kit'],['pharmacist','cashier','bookkeeper','cleaner']],
+ [/solar/,['Site survey','Inverter installation','Rooftop solar system'],['technician','worker','sales','driver']],
+ [/contract|interior|architecture/,['Design consultation','Room design package','Renovation project'],['architect','designer','worker','bookkeeper']],
+ [/realestate|prop_brokerage/,['Rental placement','Property valuation','Sale commission'],['agent','photographer','receptionist','bookkeeper']],
+ [/law_/,['Legal consultation','Contract review','Case retainer'],['lawyer','paralegal','receptionist','bookkeeper']],
+ [/audit|accounting/,['Tax return','Monthly bookkeeping','Annual audit'],['accountant','bookkeeper','receptionist','assistant']],
+ [/car_rental/,['Economy car day','Executive car day','Airport transfer'],['driver','technician','receptionist','bookkeeper']],
+ [/agro_export/,['Produce crate','Wholesale pallet','Export shipment'],['worker','packager','driver','bookkeeper']],
+ [/cold_logistics|logistics/,['Local delivery','Regional shipment','Contract delivery route'],['driver','dispatcher','packager','technician']],
+ [/fashion|textile/,['Everyday garment','Tailored outfit','Small production batch'],['designer','weaver','sales','packager']],
+ [/nursery/,['Half-day childcare','Full-day childcare','Monthly childcare place'],['nanny','teacher','receptionist','cleaner']],
+ [/wedding/,['Event consultation','Decor package','Full event planning'],['designer','consultant','worker','bookkeeper']],
+ [/gym/,['Day pass','Monthly membership','Personal training session'],['trainer','receptionist','cleaner','bookkeeper']],
+ [/bookstore/,['Paperback book','Hardback book','Book bundle'],['sales','cashier','packager','bookkeeper']],
+ [/pet_groom/,['Wash & brush','Full grooming','Coat treatment'],['assistant','receptionist','cleaner','bookkeeper']],
+ [/print_/,['Business cards','Poster batch','Booklet print run'],['typesetter','designer','worker','sales']],
+ [/photo_/,['Portrait session','Family photo session','Event photography'],['photographer','designer','receptionist','bookkeeper']],
+ [/travel_/,['Flight-booking service','Hotel-booking service','Holiday planning package'],['agent','consultant','receptionist','bookkeeper']],
+ [/consult/,['Advice session','Business review','Project retainer'],['consultant','assistant','sales','bookkeeper']],
+ [/academy|exam_/,['Group lesson','Private lesson','Exam preparation course'],['teacher','receptionist','cleaner','bookkeeper']]
+];
+export function businessProfile(type){const p=PROFILES.find(([re])=>re.test(type||''));return p?{products:p[1],roles:p[2]}:null;}

@@ -1,3 +1,4 @@
+import{employeePerson}from './businessPeople.js';
 /* ============================================================================
    World Life 2.0 — Business Manager (v2.14 §2, Worker 2)
    A manager is a person, not a toggle: named, skilled, paid, loyal (or
@@ -93,6 +94,7 @@ export function normalizeManagerState(S, biz) {
   }
   if (!Array.isArray(biz.embezzlement.clues)) biz.embezzlement.clues = [];
   if (typeof biz.embezzlement.stolenTotal !== 'number') biz.embezzlement.stolenTotal = 0;
+  if(biz.manager&&S.people){const mgr=biz.manager;const person=employeePerson(S,biz,{id:mgr.personId||`manager_${biz.id}`,personId:mgr.personId,name:mgr.name,role:'manager',wageLocal:mgr.wage});mgr.personId=person.id;}
   if (biz.ownerManaged === undefined) biz.ownerManaged = !biz.manager;
   if (typeof biz.ownerHoursPerWeek !== 'number') {
     biz.ownerHoursPerWeek = biz.ownerManaged ? (biz.mode === 'full_time' ? OWNER_FULL_TIME_HOURS : OWNER_PART_TIME_HOURS) : 0;
@@ -601,6 +603,7 @@ export function investigateEmbezzlement(S, biz) {
   const staff = Array.isArray(biz.staff) ? biz.staff : [];
   for (const e of staff) e.morale = clamp((Number(e.morale) || 0) - 8, 5, 100);
   recordJournal(S, `The audit proved it: ${mgr.name} skimmed ${formatMoney(stolen, biz.country || S.country)} from ${biz.name}. ${formatMoney(recovered, biz.country || S.country)} was recovered (half); the rest is gone. ${mgr.name} was fired on the spot with no severance, and the team is shaken (morale −8). You can still take them to court.`, 'money');
+  if(biz.manager?.personId&&S.people[biz.manager.personId]){S.people[biz.manager.personId].career.employed=false;S.people[biz.manager.personId].career.employer=null;}
   biz.manager = null;
   biz.ownerManaged = false;
   biz.ownerHoursPerWeek = 0;
@@ -674,6 +677,7 @@ export function managerQuits(S, biz, reason = 'low loyalty') {
     text: `${mgr.name} has left ${biz.name} (${reason}). The business is unmanaged until you hire a new manager or take it over yourself.`,
     choices: [{ label: 'Understood — I need a new manager', effect: () => {} }]
   });
+  if(biz.manager?.personId&&S.people[biz.manager.personId]){S.people[biz.manager.personId].career.employed=false;S.people[biz.manager.personId].career.employer=null;}
   biz.manager = null;
   biz.ownerManaged = false;
   biz.ownerHoursPerWeek = 0;
@@ -709,6 +713,7 @@ export function fireManager(S, biz) {
   const staff = Array.isArray(biz.staff) ? biz.staff : [];
   for (const e of staff) e.morale = clamp((Number(e.morale) || 0) - 8, 5, 100);
   recordJournal(S, `You fired ${mgr.name} as manager of ${biz.name}. Severance ${formatMoney(sev.amount, biz.country || S.country)} came out of your own pocket; the remaining team is shaken (morale −8). ${biz.name} is unmanaged until you hire a replacement or run it yourself.`, 'career');
+  if(biz.manager?.personId&&S.people[biz.manager.personId]){S.people[biz.manager.personId].career.employed=false;S.people[biz.manager.personId].career.employer=null;}
   biz.manager = null;
   biz.ownerManaged = false;
   biz.ownerHoursPerWeek = 0;
