@@ -1,3 +1,4 @@
+import {computeNetWorthLocal} from '../src/core/schema.js';
 import {convertFinancesOnCountryMove} from '../src/systems/economyEngine.js';
 import {convertCurrency} from '../src/data/economy.js';
 import {settleHouseholdMonth} from '../src/systems/economyEngine.js';
@@ -18,3 +19,5 @@ x=structuredClone(s);x.player.age=30;x.bnplPlans=[{id:'fees',label:'fees',monthl
 x=structuredClone(s);x.player.age=30;x.bnplPlans=[{id:'fx',label:'fx',monthlyPay:100,monthsLeft:3,balanceRemaining:300}];convertFinancesOnCountryMove(x,'gbr','egy');assert.equal(x.bnplPlans[0].balanceRemaining,Math.round(convertCurrency(300,'gbr','egy',x.year)));console.log('BNPL final split is capped, unpaid fees persist, and remaining debt converts with monthly payment on relocation.');
 
 x=structuredClone(s);x.player.age=30;x.money.loans=[{id:'residue',label:'residue',balance:25,monthlyPayment:10,remainingMonths:1,annualRate:0,flatMarkup:true}];settleHouseholdMonth(x);assert.equal(x.money.loans[0].balance,15);settleHouseholdMonth(x);assert.equal(x.money.loans[0].balance,5);settleHouseholdMonth(x);assert.equal(x.money.loans.length,0);console.log('Loan maturity does not erase unpaid residual debt; final payment clears the actual balance.');
+
+x=structuredClone(s);x.bnplPlans=[];const worth=computeNetWorthLocal(x);x.bnplPlans=[{balanceRemaining:300,monthlyPay:100,monthsLeft:3}];assert.equal(computeNetWorthLocal(x),worth-300);console.log('Net worth subtracts the actual outstanding BNPL debt.');

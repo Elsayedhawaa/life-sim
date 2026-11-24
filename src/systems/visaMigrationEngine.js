@@ -179,6 +179,12 @@ export function executeCountryRelocation(S, destCountry, residencyObj, moveHouse
     const u=S.education.university;S.education.history??=[];S.education.history.push({kind:'withdrawn_move',name:u.name,majorLabel:u.majorLabel,year:S.year});S.education.university=null;S.education.stage='completed';recordJournal(S,`Left full-time study at ${u.name} when moving away. Paid tuition is not refunded.`,'education');
   }
   if(S.postgrad?.active?.international&&S.postgrad.active.country!==destCountry){const p=S.postgrad.active;S.postgrad.history??=[];S.postgrad.history.push({...p,status:'withdrawn_move',year:S.year});S.postgrad.active=null;recordJournal(S,`Left ${p.label} when moving away from its study country. Paid tuition is not refunded.`,'education');}
+  const escrow=S.legal.blockedAccount;
+  if(escrow&&escrow.country!==destCountry){
+    const refund=Math.round(convertCurrency(escrow.balanceLocal||0,escrow.country,oldCountry,S.year));
+    if(refund>0)walletMove(S,refund,'Released remaining game maintenance escrow on departure','education');
+    S.legal.blockedAccount=null;
+  }
   convertFinancesOnCountryMove(S, oldCountry, destCountry);
 
   S.country = destCountry;

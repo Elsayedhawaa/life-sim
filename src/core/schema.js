@@ -7,7 +7,7 @@
 import { hashSeed, rand, randInt, pick, clamp } from './rng.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { pickFirstName, pickFamilyName } from '../data/names.js';
-import { eraSalary, eraLocalCost, goldPricePerGram } from '../data/economy.js';
+import { eraSalary, eraLocalCost, goldPricePerGram,convertCurrency } from '../data/economy.js';
 import { getSchoolsFor, getBanksFor } from '../data/institutions.js';
 import { getMarriageProfile } from '../data/visasAndMarriage.js';
 
@@ -775,8 +775,8 @@ export function computeNetWorthLocal(S) {
       : Number(S.money._lastGoldUnitPrice || 0);
     total += unitPrice * S.money.goldGrams21k;
   }
-  if (S.legal.blockedAccount && S.legal.blockedAccount.balanceInPlayerLocal) {
-    total += Number(S.legal.blockedAccount.balanceInPlayerLocal) || 0;
+  if (S.legal.blockedAccount) {
+    const a=S.legal.blockedAccount;total+=convertCurrency(Number(a.balanceLocal)||0,a.country||S.country,S.country,S.year);
   }
   for (const prop of S.housing.properties) {
     const equity = Math.max(0, (Number(prop.valueLocal) || 0) - (Number(prop.installmentRemaining) || 0));
@@ -797,6 +797,7 @@ export function computeNetWorthLocal(S) {
   for (const cc of (S.creditCards || [])) {
     total -= Math.max(0, Number(cc.balance) || 0);
   }
+  for(const plan of S.bnplPlans||[])total-=Math.max(0,Number(plan.balanceRemaining??plan.monthlyPay*plan.monthsLeft)||0);
   return Math.round(total);
 }
 

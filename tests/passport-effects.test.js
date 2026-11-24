@@ -1,3 +1,4 @@
+import {convertCurrency} from '../src/data/economy.js';
 import {getRequiredForeignBoardForJob} from '../src/systems/careerEducationEngine.js';
 import {annualUniversityBudget} from '../src/data/universityCosts.js';
 import {getUniversitiesFor} from '../src/data/institutions.js';
@@ -16,3 +17,5 @@ s=base();s.education.languages=['English (C1)'];s.credentials.languageCerts=[{la
 
 s=base();s.education.degrees=['medicine'];s.education.degreeCountries={medicine:'egy'};s.country='gbr';s.legal.citizenships.push('gbr');assert.equal(getRequiredForeignBoardForJob(s,'medicine',['medicine']).id,'lic_uk_plab');
 s=base();renewPassport(s);assert.ok(applyStudyAbroad(s,'gbr').ok);executeCountryRelocation(s,'egy',{kind:'citizen'},false);assert.equal(s.education.university,null);assert.ok(s.education.history.some(h=>h.kind==='withdrawn_move'));console.log('Citizenship does not bypass foreign medical licensing; moving away withdraws full-time overseas study.');
+
+s=base();renewPassport(s);assert.ok(applyStudyAbroad(s,'deu').ok);const escrow=s.legal.blockedAccount.balanceLocal,originCash=s.money.cash;executeCountryRelocation(s,'egy',{kind:'citizen'},false);assert.equal(s.legal.blockedAccount,null);assert.ok(Math.abs(s.money.cash-convertCurrency(originCash+escrow,'deu','egy',s.year))<2);console.log('Departing releases remaining game maintenance escrow once instead of trapping it in a foreign account.');
