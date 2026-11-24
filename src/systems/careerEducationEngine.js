@@ -1626,7 +1626,9 @@ export function projectedPension(S) {
   const lastGross = S.career.job?.monthlyGross || eraSalary(getCountry(S.country).annualSalaryTiers2026.entry / 12, S.country, S.year);
   const expFactor = Math.min(0.68, 0.22 + (S.career.yearsExperience || 0) * 0.015);
   const citizen = S.legal.citizenships.includes(S.country) || S.legal.residency.kind === 'permanent_resident';
-  return { monthly: citizen ? Math.round(lastGross * expFactor) : 0, citizen, expFactor };
+  const statePension=citizen&&(S.career.yearsExperience||0)>0?Math.round(lastGross*expFactor):0;
+  const potTopUp=S.career.market?.pension?.paidOut?.monthlyTopUp||0;
+  return { monthly: statePension+potTopUp, citizen, expFactor };
 }
 
 /* End-of-service gratuity accrued so far — the same formula resignCurrentJob
@@ -2331,6 +2333,7 @@ export function resignCurrentJob(S) {
 }
 
 export function retireFromCareer(S) {
+  if(S.career.retired)return {ok:false,msg:'You are already retired.'};
   if (S.player.age < 58) return { ok: false, msg: 'Standard retirement starts from age 58+.' };
   /* v2.8 — projectedPension is the one formula: the Benefits card shows
      this same number before you retire. */

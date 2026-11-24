@@ -1851,7 +1851,7 @@ function renderJobActionsHtml(S, job) {
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
       <button class="btn btn-sm" data-action="job-resign-notice">Resign (Serve ${sec.noticeMonths}-Month Notice)</button>
       <button class="btn btn-sm" data-action="job-walkout">Walk Out Now (No Notice, Poor Reference)</button>
-      ${S.player.age >= 58 ? `<button class="btn btn-sm" data-action="retire">Retire with Pension</button>` : ''}
+      ${S.player.age >= 58 ? `<button class="btn btn-sm" data-action="retire" ${S.career.retired?'disabled':''}>${S.career.retired?'Already retired':'Retire with Pension'}</button>` : ''}
     </div>
     ${['sau', 'uae', 'egy'].includes(S.country) && job.monthsInRole >= 24 ? `<div class="muted" style="margin-top:4px">Your end-of-service gratuity is collected when your notice ends (the same gratuity the old Resign button paid).</div>` : ''}
   `;

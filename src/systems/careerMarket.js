@@ -325,11 +325,12 @@ export function optInPension(S) {
    main.js right after retireFromCareer (the only live retirement path),
    so the top-up lands on the same monthlyPension the settlement pays. */
 export function payOutPensionPot(S) {
+  if(!S?.career?.retired)return {monthlyTopUp:0,pot:0};
   const pen = S?.career?.market?.pension;
   if (!pen || (pen.pot || 0) <= 0) return { monthlyTopUp: 0, pot: 0 };
   const pot = pen.pot;
   const monthlyTopUp = Math.max(1, Math.round(pot / PENSION_PAYOUT_MONTHS));
-  pen.paidOut = { pot, monthlyTopUp, year: S.year, month: S.month };
+  pen.paidOut = { pot:pot+(pen.paidOut?.pot||0), monthlyTopUp:monthlyTopUp+(pen.paidOut?.monthlyTopUp||0), year: S.year, month: S.month };
   pen.pot = 0;
   recordJournal(S, `Your pension pot of ${formatMoney(pot, S.country)} now pays you ${formatMoney(monthlyTopUp, S.country)} a month on top of your state pension, for as long as you live.`, 'money');
   return { monthlyTopUp, pot };
