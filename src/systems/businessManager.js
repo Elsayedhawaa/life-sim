@@ -718,6 +718,7 @@ export function fireManager(S, biz) {
   for (const e of staff) e.morale = clamp((Number(e.morale) || 0) - 8, 5, 100);
   recordJournal(S, `You fired ${mgr.name} as manager of ${biz.name}. Severance ${formatMoney(sev.amount, biz.country || S.country)} came out of your own pocket; the remaining team is shaken (morale −8). ${biz.name} is unmanaged until you hire a replacement or run it yourself.`, 'career');
   if(biz.manager?.personId&&S.people[biz.manager.personId]){S.people[biz.manager.personId].career.employed=false;S.people[biz.manager.personId].career.employer=null;S.people[biz.manager.personId].career.monthlyIncomeLocal=0;S.people[biz.manager.personId].career.businessEmployeeId=null;}
+  if(mgr.familyHire&&S.people[mgr.personId]?.rel){const rel=S.people[mgr.personId].rel;rel.trust=Math.max(0,(rel.trust||50)-15);rel.affection=Math.max(0,(rel.affection||50)-10);}
   biz.manager = null;
   biz.ownerManaged = false;
   biz.ownerHoursPerWeek = 0;
@@ -769,12 +770,14 @@ export function promoteStaffToManager(S, biz, staffId) {
     policy: 'safe',
     hiredYear: S.year,
     hiredMonth: S.month,
-    personId: emp.id
+    personId: emp.personId||emp.id,
+    familyHire:!!emp.familyHire
   };
   biz.ownerManaged = false;
   biz.ownerHoursPerWeek = 0;
   biz.unmanagedMonths = 0;
   biz.unmanagedSince = null;
+  normalizeManagerState(S,biz);
   recordJournal(S, `Promoted ${emp.name} from ${emp.role} to manager of ${biz.name} — no hiring fee, ${formatMoney(wage, biz.country || S.country)}/month (cheaper than hiring outside, about ${formatMoney(outsideWage, biz.country || S.country)}/month for this skill). They start loyal (75) but less skilled as a manager than on the tools (skill ${mgrSkill}, was ${skill}).`, 'career');
   return {
     ok: true,

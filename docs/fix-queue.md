@@ -6,7 +6,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Inheritance tranche
 
-- [ ] I1 Integrated named-company estate charges and persistent non-continuing family ownership. Local tests and phone checks pass; awaiting publication and hosted checks.
+- [x] I1 Integrated named-company estate charges and persistent non-continuing family ownership. Hosted-verified 63b8458, bundle 1ec60947fd16.
 
 ## Disclosed limits: 20 open packages
 
@@ -44,4 +44,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-28 distinct open packages: I1 + 20 limits + 7 additional gaps. G3 duplicates L9 and is not double-counted. Once I1 is hosted-verified, 27 remain. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+27 distinct open packages: 20 limits + 7 additional gaps. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.

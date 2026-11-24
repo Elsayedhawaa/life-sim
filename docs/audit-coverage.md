@@ -270,3 +270,13 @@ A non-continuing heir holds the actual company under their persistent person rec
 Validation: 100 focused test files, 12,152 renders; dedicated integrated-charge allocation, UK-model tax on named companies, company/debt/share preservation, sibling records and accounts, repeat/FX, child trust and onward NPC company-transfer checks. Phone actual death-to-child handoff verifies playable company, sibling holding, tax, estate note and reload. Hosted checks follow publication.
 
 Limits: country rules remain simplified game rules, not legal advice or verified local probate. No local exemptions, challenge/appeal, negotiated estate sale or multi-beneficiary company trust. Minor trust is paused operations, not an appointed paid trustee. NPC onward company handoff uses named/child/parent fallback but does not yet run the full player estate-tax/allocation screen. NPC heirs can hold and operate companies; there is no independent NPC company-management UI. Existing global exit/founder-debt rules remain unchanged. Disclosed limits remain the next work after this tranche, then the eight ranked gaps.
+
+## Existing-relative manager appointments
+
+Team can appoint a living adult relative to the actual manager role with skill 45+, same-country availability, normal manager wage and onboarding debit. Existing work needs an explicit leave-job choice; an existing company job or manager blocks duplicate appointment. The same relative record is bound to manager payroll, workspace and equipment. Trust sets initial loyalty, weak favoritism affects staff morale, and firing uses normal severance plus family trust/affection costs. The existing manager policy, requests, quitting and investigation systems still apply.
+
+Fixed promotion identity: promoting a real employee preserves their person ID and family marker instead of creating a second person keyed by the employee row. Promoted wages update the existing person's income immediately. Role staff and manager panels are labeled separately.
+
+Validation: 101 focused files, 12,152 renders, dedicated real spouse manager payroll versus household contribution, normal onboarding/severance, promotion identity, duplicate/student/job-switch/underage/poor-cash gates, foreign wallet and wage mirror. Local phone appointment/pay/identity/workspace/reload passed. Hosted checks follow publication.
+
+Remaining family ownership/governance and part-time rota are already queued as L2/L3, not silently closed by management employment. No new distinct limit added in this tranche. L1 remains open until hosted verification; current queue 27 packages.

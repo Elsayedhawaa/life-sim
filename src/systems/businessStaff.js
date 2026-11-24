@@ -533,7 +533,7 @@ export function renderBusinessStaffSection(S, biz) {
   const avg = averageMorale(biz);
   const factor = teamMoraleFactor(biz);
   const rows = staff.length === 0
-    ? `<div class="muted">No employees yet — it is just you. Hire below; wages come out of the business every month and morale moves revenue.</div>`
+    ? `<div class="muted">No role employees yet. Hire below; wages come out of the business every month. Managers are listed separately.</div>`
     : staff.map(emp => `
       <div class="biz-staff-row" style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--hatch-widget-border, #ddd);">
         <div>

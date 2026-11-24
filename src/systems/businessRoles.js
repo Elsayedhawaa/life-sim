@@ -434,7 +434,7 @@ export function renderStaffListHtml(S, biz, selectedId=null) {
     ? 'No staff yet — it is just you.'
     : effectParts.length ? `Staff ${effectParts.join(', ')} this month.` : '';
   const rows = staff.length === 0
-    ? `<div class="muted">No employees yet — it is just you. Hire below; wages come out of the business every month and morale moves revenue.</div>`
+    ? `<div class="muted">No role employees yet. Hire below; wages come out of the business every month. Managers are listed separately.</div>`
     : staff.filter(emp=>emp.id===(staff.find(e=>e.id===selectedId)||staff[0])?.id).map(emp => {
         const effectLine = biz.enterprise?'Contributes to the operating team. Wage is charged every month.':biz.tech?({developer:'Builds prototypes, ships features and improves quality.',designer:'Improves development speed and product quality.',sales:'Acquires new users after release.',marketing:'Acquires new users after release.',support:'Reduces customer churn.',cto:'Builds products with the engineering team.',bookkeeper:'Administration, charged as payroll.'}[emp.role]||'Support role, charged as payroll.'):personEffectText(S, biz, emp);
         /* v2.18 W3 — the row above already names the person and their
