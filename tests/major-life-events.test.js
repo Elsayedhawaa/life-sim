@@ -27,3 +27,24 @@ console.log('Major life announcements derive from actual state changes, persist,
  const s=setup();const ev=getRandomLifeEventById('ev_major_surviving_mom_after_father');assert(ev);assert(!eventGatePasses(ev,s),'no death, no follow-up');
  const b=snapshotMajor(s);const dad=s.people[s.relations.fatherId];dad.alive=false;announceMajorChanges(s,b);s.month+=2;assert(s.people[s.relations.motherId].alive);assert(eventGatePasses(ev,s),'follows the actual father death');
  s.year+=2;assert(!eventGatePasses(ev,s),'expires');console.log('linked follow-up gated on recorded death');}
+{const {getRandomLifeEventById:G,eventGatePasses:P,restoreRandomLifeScene:R}=await import('../src/systems/eventEngine.js');
+ // crash audit: cooldown, no debt, owed repair settles once, insurance share
+ const s=setup();s.cars=[{id:'c1',name:'A',valueLocal:20000,condition:80},{id:'c2',name:'B',valueLocal:8000,condition:80}];s.money.cash=0;
+ let months=0;while(!s.carCrashes?.length&&months<20000){tickCarCrashes(s);months++;}
+ const c=s.carCrashes[0];assert(s.money.cash>=0,'no forced debt');assert.equal(c.paid,0);assert(c.owed>0);
+ for(let i=0;i<47;i++){s.month++;if(s.month>12){s.month=1;s.year++;}for(let k=0;k<1000;k++)tickCarCrashes(s);} // cooldown holds within 48 months
+ assert.equal(s.carCrashes.length,1,'cooldown blocks repeat crashes');
+ const car=s.cars.find(x=>x.id===c.carId);const owed=car.repairOwed;s.money.cash=owed+5;tickCarCrashes(s);assert.equal(car.repairOwed,0);assert.equal(s.money.cash,5);tickCarCrashes(s);assert.equal(s.money.cash,5,'repair settled once');
+ // rate over many lives
+ let crashes=0,lifeMonths=0;for(let seed=1;seed<=300;seed++){const t=setup();t.rngState=seed*7919;t.cars=[{id:'c',name:'A',valueLocal:10000,condition:90}];t.money.cash=1e6;for(let m=0;m<600;m++){t.month=1+m%12;t.year=2040+Math.floor(m/12);tickCarCrashes(t);lifeMonths++;}crashes+=t.carCrashes?.length||0;}
+ console.log('crashes per car-year',(crashes/(lifeMonths/12)).toFixed(3));
+ // insurance cover event
+ const a=setup();a.cars=[{id:'c1',name:'A',valueLocal:10000,condition:80}];const b=snapshotMajor(a);a.carCrashes=[{carId:'c1',carName:'A',year:a.year,month:a.month,severity:'minor',repair:500,paid:500,owed:0,insured:false,injury:false}];announceMajorChanges(a,b);a.month+=2;
+ const ev=G('ev_major_after_crash_cover');assert(P(ev,a));a.insurance.auto=true;assert(!P(ev,a),'insured: no cover offer');a.insurance.auto=false;a.activeScene=null;a.sceneQueue=[];
+ // job loss -> spouse
+ const j=setup();const sp=createPerson(j,{role:'spouse',age:38,nationality:'gbr',residenceCountry:'gbr'});j.people[sp.id]=sp;j.relations.spouseIds.push(sp.id);j.career.employed=true;j.career.job={employer:'Acme',title:'Analyst'};const jb=snapshotMajor(j);j.career.employed=false;j.career.job=null;j.career.lastReference={kind:'poor'};announceMajorChanges(j,jb);j.month+=2;
+ const sev=G('ev_major_after_job_loss_spouse');assert(P(sev,j));j.career.employed=true;j.career.job={employer:'New',title:'x'};assert(!P(sev,j),'re-employed: no scene');
+ // affair -> real action
+ const f=setup();const sp2=createPerson(f,{role:'spouse',age:38,nationality:'gbr',residenceCountry:'gbr'});f.people[sp2.id]=sp2;f.relations.spouseIds.push(sp2.id);sp2.relationshipProgress={stage:'together',affair:{status:'hidden'}};const fb=snapshotMajor(f);sp2.relationshipProgress.affair.status='discovered';announceMajorChanges(f,fb);
+ const aev=G('ev_major_after_affair');assert(P(aev,f));const t0=sp2.rel.trust;f.activeScene=null;const sc=R(f,{eventId:'ev_major_after_affair',eventBuildRngState:f.rngState});assert(sc);sc.choices[0].effect(f);assert(sp2.relationshipProgress.affair.status==='discussed');assert(sp2.rel.trust<t0);assert(!P(aev,f),'handled affair does not repeat');
+ console.log('crash audit and linked consumers pass');}

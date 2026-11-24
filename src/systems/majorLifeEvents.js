@@ -4,7 +4,7 @@
    announcement is an urgent card that interrupts play, and each is stored in
    S.majorEvents so later events can be gated on it. Nothing here invents a
    change: if the state did not change, nothing is announced. */
-import { chance } from '../core/rng.js';
+import { chance, randInt } from '../core/rng.js';
 import { queueScene, recordJournal, walletMove } from '../core/schema.js';
 import { formatMoney } from '../data/countries.js';
 
@@ -103,7 +103,7 @@ export function announceMajorChanges(S, before) {
       const nm = p.fullName || p.firstName || ROLE_WORD[b.role];
       made.push(announce(S, 'death', {
         title: `${p.firstName || 'Someone close'} Has Died`,
-        text: `${nm}, ${ROLE_WORD[b.role]}, has died${p.age ? ` at ${p.age}` : ''}${p.deathCause ? ` of ${p.deathCause}` : ''}.`,
+        text: `${nm}, ${ROLE_WORD[b.role]}, has died${p.age >= 1 ? ` at ${p.age}` : ''}${p.deathCause ? ` of ${p.deathCause}` : ''}.`,
         personId: id, facts: { role: b.role, age: p.age || null, cause: p.deathCause || null },
       }));
     }
@@ -136,34 +136,47 @@ export function announceMajorChanges(S, before) {
     const c = S.carCrashes[S.carCrashes.length - 1];
     made.push(announce(S, 'car_crash', {
       title: 'Your Car Was in a Crash',
-      text: `Your ${c.carName} was in a ${c.severity} crash. ${c.injury ? 'You were hurt. ' : 'You were not badly hurt. '}Repairs cost ${formatMoney(c.repair, S.country)}; ${c.insured ? `insurance covered most of it and you paid ${formatMoney(c.paid, S.country)}` : `you had no auto cover, so you paid ${formatMoney(c.paid, S.country)}`}.`,
+      text: `Your ${c.carName} was in a ${c.severity} crash. ${c.injury ? 'You were hurt. ' : 'You were not badly hurt. '}Repairs cost ${formatMoney(c.repair, S.country)}. ${c.insured ? 'Your insurance covered most of it' : 'You had no auto cover'}; ${c.owed > 0 ? `you could only pay ${formatMoney(c.paid, S.country)} now and ${formatMoney(c.owed, S.country)} stays owed until you can cover it` : `you paid ${formatMoney(c.paid, S.country)}`}.`,
       facts: { carId: c.carId, severity: c.severity, paid: c.paid, insured: c.insured },
     }));
   }
   return made;
 }
 
-/* Rare, real consequence of owning and driving a car. */
+/* Rare, real consequence of owning a car. At most one roll a month across
+   all cars, a long cooldown after any crash, adults only. Insurance (when
+   held) leaves a 15% share. A repair the wallet cannot cover now stays owed
+   on the car and is paid once cash allows, so a crash never forces debt. */
 export function tickCarCrashes(S) {
-  for (const car of S.cars || []) {
-    let p = 0.004;
-    if ((S.player?.age || 30) < 25) p *= 1.6;
-    if ((car.condition ?? 100) < 50) p *= 1.4;
-    if (!chance(S, p)) continue;
-    const roll = chance(S, 0.2) ? 'serious' : chance(S, 0.5) ? 'moderate' : 'minor';
-    const share = roll === 'serious' ? 0.28 : roll === 'moderate' ? 0.14 : 0.05;
-    const repair = Math.max(1, Math.round((car.valueLocal || 0) * share));
-    const insured = !!S.insurance?.auto;
-    const paid = insured ? Math.round(repair * 0.15) : repair;
-    const injury = roll === 'serious' || (roll === 'moderate' && chance(S, 0.3));
-    walletMove(S, -paid, `Crash repair, ${car.name}`, 'money');
-    car.condition = Math.max(20, (car.condition ?? 100) - (roll === 'serious' ? 35 : roll === 'moderate' ? 20 : 8));
-    if (injury && S.player?.vitals) S.player.vitals.health = Math.max(1, S.player.vitals.health - (roll === 'serious' ? 14 : 6));
-    S.carCrashes ??= [];
-    S.carCrashes.push({ carId: car.id, carName: car.name, year: S.year, month: S.month, severity: roll, repair, paid, insured, injury });
-    recordJournal(S, `Your ${car.name} was in a ${roll} crash. Repairs ${repair}; you paid ${paid}.`, 'money');
-    break; // one crash a month
+  const cars = S.cars || [];
+  for (const car of cars) {
+    if (car.repairOwed > 0 && (Number(S.money?.cash) || 0) >= car.repairOwed) {
+      walletMove(S, -car.repairOwed, `Crash repair settled, ${car.name}`, 'money');
+      recordJournal(S, `You settled the outstanding repair bill for your ${car.name}.`, 'money');
+      car.repairOwed = 0;
+    }
   }
+  if (!cars.length || (S.player?.age || 0) < 18) return;
+  const last = (S.carCrashes || [])[ (S.carCrashes || []).length - 1 ];
+  if (last && (S.year * 12 + S.month) - (last.year * 12 + last.month) < 48) return;
+  let p = 0.0025;
+  if (S.player.age < 25) p *= 1.5;
+  if (!chance(S, p)) return;
+  const car = cars[randInt(S, 0, cars.length - 1)];
+  const severity = chance(S, 0.15) ? 'serious' : chance(S, 0.5) ? 'moderate' : 'minor';
+  const share = severity === 'serious' ? 0.25 : severity === 'moderate' ? 0.12 : 0.05;
+  const repair = Math.max(1, Math.round((car.valueLocal || 0) * share));
+  const insured = !!S.insurance?.auto;
+  const due = insured ? Math.round(repair * 0.15) : repair;
+  const cash = Math.max(0, Number(S.money?.cash) || 0);
+  const paid = Math.min(due, cash);
+  if (paid > 0) walletMove(S, -paid, `Crash repair, ${car.name}`, 'money');
+  if (due > paid) car.repairOwed = (car.repairOwed || 0) + (due - paid);
+  const injury = severity === 'serious' || (severity === 'moderate' && chance(S, 0.25));
+  if (injury && S.player?.vitals) S.player.vitals.health = Math.max(1, S.player.vitals.health - (severity === 'serious' ? 12 : 5));
+  S.carCrashes ??= [];
+  S.carCrashes.push({ carId: car.id, carName: car.name, year: S.year, month: S.month, severity, repair, paid, owed: due - paid, insured, injury });
+  recordJournal(S, `Your ${car.name} was in a ${severity} crash.`, 'money');
 }
 
 export function majorEventRecent(S, kind, withinMonths = 12) {

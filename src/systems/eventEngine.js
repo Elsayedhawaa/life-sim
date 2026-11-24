@@ -180,6 +180,8 @@ export function resolveEventCtx(S, event=null) {
   };
   const roleIds={spouse:[...(S.relations.spouseIds||[]),S.relations.partnerId],mom:[S.relations.motherId],dad:[S.relations.fatherId],sib:S.relations.siblingIds,friend:S.relations.friendIds,child:S.relations.childIds,youngChild:S.relations.childIds,teen:S.relations.childIds,adultChild:S.relations.childIds,boss:[S.career.job?.bossId]};
   for(const [role,rules]of Object.entries(event?.gates?.people||{}))ctx[role]=(roleIds[role]||[]).map(byId).find(p=>personFitsEvent(S,p,rules))||null;
+  const major=event?.gates?.afterMajor;
+  if(major?.castRole){const now=S.year*12+S.month;const rec=[...(S.majorEvents||[])].reverse().find(e=>asList(major.kind).includes(e.kind)&&e.personId&&(!major.role||e.facts?.role===major.role)&&now-(e.year*12+e.month)<=(major.maxMonths??999));if(rec)ctx[major.castRole]=byId(rec.personId)?.alive?byId(rec.personId):null;}
   // A continuation belongs to the people in the resolved earlier event,
   // never to whichever sibling/child happens to be first in today's list.
   const parent=event?.gates?.afterEvent;
@@ -304,9 +306,11 @@ export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
     if (!allowed.includes(S.player.gender)) return false;
   }
 
+  if (g.autoInsured !== undefined && !!S.insurance?.auto !== !!g.autoInsured) return false;
+  if (g.affairStatus) { const sp = cast.spouse, st = sp?.relationshipProgress; if (!st || st.affair?.status !== g.affairStatus || st.stage === 'separated') return false; }
   if (g.afterMajor) {
     const now = S.year * 12 + S.month, m = g.afterMajor;
-    const hit = (S.majorEvents || []).some((e) => e.kind === m.kind && (!m.role || e.facts?.role === m.role) && now - (e.year * 12 + e.month) >= (m.minMonths || 0) && now - (e.year * 12 + e.month) <= (m.maxMonths ?? 999));
+    const hit = (S.majorEvents || []).some((e) => asList(m.kind).includes(e.kind) && (!m.role || e.facts?.role === m.role) && now - (e.year * 12 + e.month) >= (m.minMonths || 0) && now - (e.year * 12 + e.month) <= (m.maxMonths ?? 999));
     if (!hit) return false;
   }
   if (g.loanOutstanding && !loanOutstanding(S, g.loanOutstanding.event, g.loanOutstanding.minMonths || 0)) return false;
@@ -416,8 +420,9 @@ export function eventRelevance(S,ev){
  const g=ev.gates||{},evidence=[];let score=1;
  const outcome=g.afterEvent&&S.eventOutcomes?.[g.afterEvent];
  if(outcome){score+=16;evidence.push({kind:'resolved_event',eventId:g.afterEvent,choiceIndex:outcome.choiceIndex,year:outcome.year,month:outcome.month,participants:outcome.participants});}
+ if(g.afterMajor){score+=16;evidence.push({kind:'major_event',major:g.afterMajor.kind});}
  if(g.memoryKind){score+=6;evidence.push({kind:'memory',kinds:asList(g.memoryKind)});}
- const facts=['civilLossKind','adultChildHome','housingMode','deceasedParent','hasDebt','hasBusiness','hasCar','abroad','employment','education','people','recentPromotionMonths','minJobPerformance','loanOutstanding','afterMajor'].filter(k=>g[k]!==undefined);
+ const facts=['civilLossKind','adultChildHome','housingMode','deceasedParent','hasDebt','hasBusiness','hasCar','abroad','employment','education','people','recentPromotionMonths','minJobPerformance','loanOutstanding','afterMajor','autoInsured','affairStatus'].filter(k=>g[k]!==undefined);
  if(facts.length){score+=Math.min(6,facts.length*2);evidence.push({kind:'current_state',gates:Object.fromEntries(facts.map(k=>[k,g[k]]))});}
  const recent=(S.eventHistory||[]).slice(-4);const same=recent.filter(r=>EVENT_BY_ID.get(r.eventId)?.category===ev.category).length;
  score/=1+same*1.5;
@@ -432,7 +437,7 @@ export function pickRandomLifeEvent(S) {
   // Rank by recorded cause before catalogue volume. Broad demographic fit
   // remains background variety, not evidence that something happened.
   const ranked=eligible.map(ev=>({ev,...eventRelevance(S,ev)}));
-  const causal=ranked.filter(x=>x.evidence.some(e=>e.kind==='resolved_event'));
+  const causal=ranked.filter(x=>x.evidence.some(e=>e.kind==='resolved_event'||e.kind==='major_event'));
   const pools=causal.length&&chance(S,.85)?[causal,ranked.filter(x=>!causal.includes(x))]:[ranked];
   /* A build reads live people and era prices; if one event's build
      throws, try a few others rather than losing the whole roll. */
