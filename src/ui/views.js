@@ -156,7 +156,7 @@ import { renderLandlordSectionHtml } from './propertyLandlord.js';
 /* v2.15 W3 — social energy meter + drift warnings on the People tab. */
 import { renderSocialEnergyHtml, renderDriftWarningHtml, socialEnergyCostLabel } from './socialEnergy.js';
 /* v2.12 W6: haircut / outfit tables (priced choices with real effects). */
-import { HAIRCUT_STYLES, OUTFIT_STYLES } from '../systems/completeLifeSystems.js';
+import { HAIRCUT_STYLES, OUTFIT_STYLES, activityAvailability } from '../systems/completeLifeSystems.js';
 /* v2.11 merge: business card sections (staff + loan by W2, will by W4). */
 import { renderBusinessLoanSection } from '../systems/businessLoans.js';
 import { renderBusinessWillSection, renderWillHeirSection } from '../systems/businessLegacy.js';
@@ -666,8 +666,8 @@ export function renderLifeTabHtml(S, uiState = {}) {
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${quickActs.map(a => `
-          <button type="button" class="btn btn-sm" data-action="do-activity" data-id="${esc(a.id)}">
-            ${esc(a.label || a.name)}
+          <button type="button" class="btn btn-sm" data-action="do-activity" data-id="${esc(a.id)}" ${activityAvailability(S, a).ok ? '' : 'disabled'}>
+            ${esc(a.label || a.name)}${activityAvailability(S, a).ok ? '' : lockReason(activityAvailability(S, a).reason, '')}
             <span class="muted"> · ${S.player.age < 18 && activityCostLocal(S,a)>0 ? `${esc(formatMoney(activityCostLocal(S,a),S.country))} from living parents’ savings` : activityCostLocal(S, a) > 0 ? esc(formatMoney(activityCostLocal(S, a), S.country)) : 'Free'}</span>
           </button>
         `).join('')}
@@ -4801,8 +4801,7 @@ function renderMedicalAndSurgeriesSubtabHtml(S) {
       <div class="muted" style="font-size:0.78rem;margin-bottom:6px">Fitness: <strong>${Math.round(S.skills?.fitness || 50)}/100</strong> — staying fit slows how fast your health falls after 50. Last full checkup: <strong>${S.medical.lastCheckupYear ? esc(String(S.medical.lastCheckupYear)) : 'never'}</strong> — regular checkups catch serious illness earlier, when it is easier to treat.</div>
       ${(() => { const cov = (S.career?.employed && S.career?.job) ? employerHealthCover(S) : null; const has = !!(S.medical.healthInsurance || S.insurance?.employerHealth); const staff = staffTreatmentEligible(S); return `<div class="muted" style="font-size:0.78rem;margin-bottom:6px">Health cover: <strong>${S.insurance?.health ? 'Private policy (you pay for it)' : cov?.covered ? esc(cov.label) : cov ? 'No cover from this job' : 'None'}</strong> — ${has ? 'your cover cuts treatment bills (a private policy cuts private treatment to about a quarter; an employer plan cuts it by about 45%).' : 'no cover — a serious illness is charged in full and can wipe out your savings.'}${staff ? ' Staff treatment at your own hospital cuts your own private treatment to about a quarter — the prices above already include that.' : ''}</div>`; })()}
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">
-        <button class="btn btn-sm" data-action="do-activity" data-id="gym">Hit the Gym (+fitness)</button>
-        <button class="btn btn-sm" data-action="do-activity" data-id="jog">Go for a Run (+fitness)</button>
+        ${['gym', 'jog'].map(id => { const av = activityAvailability(S, id); return `<button class="btn btn-sm" data-action="do-activity" data-id="${id}" ${av.ok ? '' : 'disabled'}>${id === 'gym' ? 'Hit the Gym (+fitness)' : 'Go for a Run (+fitness)'}${av.ok ? '' : lockReason(av.reason, '')}</button>`; }).join('')}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">
         <button class="btn btn-sm" data-action="visit-hospital" data-sector="public" ${S.medical.lastCheckupPeriod===S.year*12+S.month?'disabled':''}>Public Hospital (${esc(hospitals.find(h => h.sector === 'public')?.name || 'General')})</button>

@@ -1620,9 +1620,36 @@ export function activityCostLocal(S, actOrId) {
   return Math.round(convertCurrency(egp, 'egy', S.country, S.year));
 }
 
+/* Habit cadence (game design, not a real-world rule). A habit declares how
+   often it can count: once per calendar month ("month") or once per year
+   ("year"). Adult turns are months, so "month" means once per month. A
+   childhood turn is a whole year, so a "month" habit counts once per
+   childhood turn (one use per real period, no hidden multiplier). Each
+   habit also has a minAge. State lives in S.habitUse, part of the save. */
+export const CHILD_YEAR_SESSIONS = 1;
+export function activityAvailability(S, actOrId) {
+  const act = typeof actOrId === 'string' ? V1_ACTIVITIES.find(a => a.id === actOrId) : actOrId;
+  if (!act) return { ok: false, reason: 'Unknown activity.' };
+  if (act.minAge && (S.player?.age ?? 0) < act.minAge) return { ok: false, reason: `Needs age ${act.minAge}.`, locked: 'age' };
+  const use = S.habitUse?.[act.id];
+  if (!use) return { ok: true };
+  const yearly = act.repeat === 'year';
+  const childYear = S.pacing === 'yearly' && !yearly;
+  if (yearly) {
+    return use.year === S.year ? { ok: false, reason: 'Done this year. Available again next year.' } : { ok: true };
+  }
+  if (childYear) {
+    return use.year === S.year && (use.count || 1) >= CHILD_YEAR_SESSIONS
+      ? { ok: false, reason: 'Done this year. Available again next year.' } : { ok: true };
+  }
+  return use.year === S.year && use.month === S.month ? { ok: false, reason: 'Done this month. Available again next month.' } : { ok: true };
+}
+
 export function doDailyActivity(S, actId) {
   const act = V1_ACTIVITIES.find(a => a.id === actId);
   if (!act) return { ok: false, msg: 'Unknown activity.' };
+  const gate = activityAvailability(S, act);
+  if (!gate.ok) return { ok: false, msg: `${act.label || act.name}: ${gate.reason}` };
   const cost = activityCostLocal(S, act);
   if(S.player.age<18&&cost>0&&!chargeLivingParents(S,cost))return {ok:false,msg:'Your living parents cannot cover this activity from their savings. Try a free activity.'};
   if (S.player.age >= 18 && cost > 0) {
@@ -1677,6 +1704,12 @@ export function doDailyActivity(S, actId) {
     S.medical.lastExerciseYear = S.year;
   }
 
+  {
+    const prev = S.habitUse?.[act.id];
+    S.habitUse = S.habitUse || {};
+    const sameYear = prev && prev.year === S.year;
+    S.habitUse[act.id] = { year: S.year, month: S.month, count: sameYear ? (prev.count || 1) + 1 : 1 };
+  }
   if (act.line) recordJournal(S, act.line, 'lifestyle');
 
   const deltaTxt = deltas.length
