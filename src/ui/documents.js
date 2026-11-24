@@ -336,7 +336,7 @@ export function renderMarriageContractHtml(S, contract) {
         ${contract.mahrPrompt > 0 ? `<div><span>Prompt Mahr (مقدم)</span><strong class="mono">${esc(formatMoney(contract.mahrPrompt, contract.country))}</strong></div>` : ''}
         ${contract.mahrDeferred > 0 ? `<div><span>Deferred Mahr (مؤخر)</span><strong class="mono">${esc(formatMoney(contract.mahrDeferred, contract.country))}</strong></div>` : ''}
         ${isArab ? `<div><span>Qa'ima Inventory (قائمة المنقولات)</span><strong>${contract.qaimaSigned ? `Signed (${esc(formatMoney(contract.qaimaValueLocal, contract.country))})` : 'Waived'}</strong></div>` : ''}
-        ${!isArab ? `<div><span>Matrimonial Property Regime</span><strong>${contract.prenupSigned ? 'Notarized Prenuptial Agreement' : 'Statutory Equitable Sharing'}</strong></div>` : ''}
+        ${!isArab ? `<div><span>Game settlement</span><strong>${contract.prenupSigned ? 'Prenup recorded' : 'Shared-asset agreement'}</strong></div>` : ''}
       </div>
     </div>
   `;

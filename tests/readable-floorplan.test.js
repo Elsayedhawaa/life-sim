@@ -3,7 +3,7 @@ import {renderReadableFloorplanHtml,renderHome3dAndFloorplanHtml} from '../src/u
 for(const shape of ['studio','apartment','duplex','villa','mansion','townhouse','chalet','commercial','land']){
  for(let floor=0;floor<3;floor++){
  const h=renderReadableFloorplanHtml(shape,{'101':true},floor,'owned-home');
- assert.ok(!h.includes('undefined'));assert.ok(h.includes('<svg'));if(shape!=='land'){assert.ok(h.includes('Room numbers match'));assert.ok(h.includes('data-action="room-info"'));assert.ok(!h.includes('data-action="furnish-room"'));}
+ assert.ok(!h.includes('undefined'));assert.ok(h.includes('<svg'));if(shape!=='land'){assert.ok(h.includes('Enlarge plan'));assert.ok(!h.includes('Room numbers match'));assert.ok(h.includes('data-action="room-info"'));assert.ok(!h.includes('data-action="furnish-room"'));}
  }
  const h=renderHome3dAndFloorplanHtml({id:'owned-home',shape,areaM2:240,furnishedRooms:{}});assert.ok(h.includes('Detailed architectural sheets'));
 }

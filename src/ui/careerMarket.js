@@ -114,7 +114,7 @@ function renderPensionHtml(S) {
     ? `<div class="muted" style="margin-top:4px">${esc(scheme.note)}</div>`
     : pen.optedOut
     ? `<div style="margin-top:6px"><button class="btn btn-sm" data-action="cm-pension-optin">Opt back into the pension</button> <span class="muted">Contributions from you and your employer start again next month.</span></div>`
-    : `<div style="margin-top:6px"><button class="btn btn-sm" data-action="cm-pension-optout">Opt out of the pension</button> <span class="muted">${S.country === 'usa' ? 'You keep the 6% of your pay in your pocket and your employer stops matching 3% — your Social Security share still goes in. Your pot stops growing from the 401(k), and at retirement you get less a month.' : `Your employer stops paying ${esc(formatMoney(preview.employer, S.country))}/month and you stop paying ${esc(formatMoney(preview.employee, S.country))}/month. What is already in your pot stays yours.`}</span></div>`;
+    : `<div style="margin-top:6px"><button class="btn btn-sm" data-action="cm-pension-optout">Opt out of the pension</button> <span class="muted">${S.country === 'usa' ? 'You keep the 6% of your pay in your pocket and your employer stops matching 3% — Social Security stays separate. 401(k) deposits stop.' : `Your employer stops paying ${esc(formatMoney(preview.employer, S.country))}/month and you stop paying ${esc(formatMoney(preview.employee, S.country))}/month. What is already in your pot stays yours.`}</span></div>`;
   return `
     <div style="margin-top:12px">
       <strong>Pension — ${esc(scheme.scheme)}</strong>

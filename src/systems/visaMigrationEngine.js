@@ -1,3 +1,4 @@
+import{recordCivilLoss}from './civilClaims.js';
 import {studyAbroadQuote,studyAwardKey,abroadLanguageReady} from './studyAbroadPlanning.js';
 import {chargeFamilyEducation} from './educationFunding.js';
 /* ============================================================================
@@ -578,6 +579,7 @@ export function applyGulfWorkChannel(S, destCountry, channelId) {
 
   /* Agency / Free-Visa Broker Scam Realism! */
   if (ch.scamRisk > 0 && chance(S, ch.scamRisk)) {
+    recordCivilLoss(S,'broker_fraud',feeLocal,'visa broker');
     S.player.vitals.stress = clamp(S.player.vitals.stress + 18);
     S.player.vitals.happiness = clamp(S.player.vitals.happiness - 14);
     recordJournal(

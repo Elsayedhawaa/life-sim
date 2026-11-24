@@ -31,3 +31,10 @@ export function settleUSRetirement(S){
  if(paid){if(paid.remaining==null){const elapsed=Math.max(0,(S.year-paid.year)*12+(S.month-paid.month));paid.remaining=Math.max(0,(paid.pot||0)-elapsed*(paid.monthlyTopUp||0));}draw=Math.min(paid.remaining,paid.monthlyTopUp||0);paid.remaining-=draw;}
  S.career.monthlyPension=state.monthly+draw;S.career.statePensionMonthly=state.monthly;S.career.privateDrawdownMonthly=draw;return state.monthly+draw;
 }
+
+export function retirementIncomePreview(S){
+ if((S.career.retirementCountry||S.country)!=='usa')return{monthly:S.career.monthlyPension||0,state:S.career.statePensionMonthly||0,private:S.career.privateDrawdownMonthly||0};
+ const state=usStatePension(S).monthly,paid=S.career.market?.pension?.paidOut;let draw=0;
+ if(paid){const elapsed=Math.max(0,(S.year-paid.year)*12+(S.month-paid.month));const remaining=paid.remaining??Math.max(0,(paid.pot||0)-elapsed*(paid.monthlyTopUp||0));draw=Math.min(remaining,paid.monthlyTopUp||0);}
+ return{monthly:state+draw,state,private:draw};
+}

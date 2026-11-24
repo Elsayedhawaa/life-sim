@@ -1,3 +1,4 @@
+import{recordCivilLoss,fileCivilClaim,tickCivilClaims}from './civilClaims.js';
 import{personMind}from './personMind.js';
 import {chargeFamilyEducation as chargeLivingParents} from './educationFunding.js';
 import {hasCurrentLanguage} from '../data/languageQualifications.js';
@@ -1143,6 +1144,7 @@ export function sendInternationalRemittance(S, channelId, amountLocal) {
 
   walletMove(S, -amt, `Remittance via ${ch.label}`, 'family');
   if (ch.scamRisk > 0 && chance(S, ch.scamRisk)) {
+    recordCivilLoss(S,'broker_fraud',amt,'remittance');
     S.player.vitals.stress = clamp(S.player.vitals.stress + 14);
     recordJournal(S, `Disaster — the informal Hawala broker vanished mid-transfer! Your ${formatMoney(amt, S.country)} remittance never reached ${recipient.firstName}.`, 'money');
     return { ok: false, msg: 'Hawala scam! Broker disappeared with the transfer!' };
@@ -1682,24 +1684,7 @@ export function doDailyActivity(S, actId) {
 export function launchCivilLawsuit(S, suitId) {
   const suit = CIVIL_LAWSUITS.find(s => s.id === suitId);
   if (!suit) return { ok: false, msg: 'Claim type not found.' };
-  const fee = Math.round(convertCurrency(suit.lawyerFeeUsd, 'usa', S.country, S.year));
-  if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} legal filing & counsel retainer.` };
-
-  walletMove(S, -fee, `Legal retainer: ${suit.label}`, 'legal');
-  if (chance(S, suit.winProb)) {
-    const basePay = S.career.job?.monthlyGross || eraSalary(getCountry(S.country).annualSalaryTiers2026.mid / 12, S.country, S.year);
-    const award = suit.awardMonthsPay
-      ? Math.round(basePay * suit.awardMonthsPay)
-      : Math.round(convertCurrency(suit.awardUsd || 3000, 'usa', S.country, S.year));
-    walletMove(S, award, `Court judgment won: ${suit.label}`, 'legal');
-    S.player.vitals.happiness = clamp(S.player.vitals.happiness + 10);
-    recordJournal(S, `Won your ${suit.label} in court — awarded ${formatMoney(award, S.country)}!`, 'milestone');
-    return { ok: true, msg: `Won judgment: +${formatMoney(award, S.country)}!` };
-  } else {
-    S.player.vitals.stress = clamp(S.player.vitals.stress + 8);
-    recordJournal(S, `The court dismissed your ${suit.label} on evidentiary grounds.`, 'life');
-    return { ok: false, msg: 'Court dismissed the claim.' };
-  }
+  return fileCivilClaim(S,suit);
 }
 
 export function commitRiskyCrime(S, crimeId) {
@@ -2684,6 +2669,7 @@ export function buyOutfit(S, styleId) {
    6. MONTHLY & ANNUAL MEGA-SYSTEMS TICK (Called from gameLoop.js!)
    ========================================================================== */
 export function tickMegaSystemsMonthly(S) {
+  tickCivilClaims(S);
   for(const prop of [...(S.housing.properties||[])])if(prop.salePending&&S.year*12+S.month>=prop.salePending.dueAt){const res=sellOwnedProperty(S,prop.id,{complete:true});if(!res.ok){prop.salePending.dueAt++;recordJournal(S,'Property sale delayed: available cash cannot clear the outstanding debt.','housing');}}
 
   ensureExtendedState(S);

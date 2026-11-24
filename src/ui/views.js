@@ -1,3 +1,5 @@
+import{civilClaimQuote}from '../systems/civilClaims.js';
+import{retirementIncomePreview}from '../systems/usRetirement.js';
 import{PEOPLE_REQUESTS,peopleRequestAmount}from '../systems/peopleAutonomy.js';
 import{personMind,canContactPerson}from '../systems/personMind.js';
 import{spouseMind,SPOUSE_DECISIONS,spouseRequestCost}from '../systems/spouseAutonomy.js';
@@ -1957,8 +1959,8 @@ function renderPayslipHtml(S, job, cObj, isCit) {
             : slip.incomeTax <= 0 ? `<span class="muted">— ${esc(incomeTaxNote(S.country))}</span>`
             : `<span class="muted">${freeBand ? `first ${esc(formatMoney(freeBand.taxableMonthly, S.country))}/mo tax-free; ` : ''}${taxedBands.map(b => `${Math.round(b.rate * 100)}% on ${esc(formatMoney(b.taxableMonthly, S.country))}/mo`).join('; ')}</span>`}
         </div>
-        <div>− Social insurance: <strong class="mono">${esc(formatMoney(slip.socialSecurity, S.country))}</strong>/mo <span class="muted">(${(slip.socialPct * 100).toFixed(1)}% of gross — includes your pension contribution of ${esc(formatMoney(slip.pensionContribution, S.country))}/mo${slip.pensionContribution > 0 && slip.pensionModelled ? ' (estimated split)' : ''})</span></div>
-        <div>Allowances (transport, housing, medical): <span class="muted">paid inside your gross — this employer pays one combined salary, not separate allowances, so there is no allowance line to invent.</span></div>
+        <div>− Social insurance: <strong class="mono">${esc(formatMoney(slip.socialSecurity, S.country))}</strong>/mo <span class="muted">(${(slip.socialPct * 100).toFixed(1)}% of gross ${S.country==='usa'?' · Social Security/Medicare, separate from 401(k)':' · pension '+esc(formatMoney(slip.pensionContribution,S.country))+'/mo'})</span></div>
+        <div class="muted">Allowances included in gross</div>
         <div style="margin-top:4px">Net take-home: <strong class="mono text-good">${esc(formatMoney(slip.net, S.country))}</strong>/mo <span class="muted">(${Math.round(slip.effectiveRate * 100)}% of gross goes on tax and social insurance${job.workMode === 'overtime' ? ' — overtime is on, so this net includes the overtime pay' : ''})</span></div>
         <div class="muted" style="margin-top:4px">A mid-career salary in ${esc(cObj.name)} is about ${esc(formatMoney(Math.round(midMonthly), S.country))}/mo — your gross is ${ratio.toFixed(2)}× that, ${esc(verdict)}.</div>
         ${homeNote}
@@ -2203,7 +2205,7 @@ export function renderWorkTabHtml(S, uiState = {}) {
     ${renderSecondLossNoteHtml(S)}
     ${currentJobHtml}
     ${flyingDutyStatus(S).grounded?'<div class="card"><strong>Ground duty</strong> <span title="Employer pay estimate." aria-label="Information">ⓘ</span><p>Base pay 50% · Overtime unavailable</p><p>Renew medical & simulator checks</p></div>':''}
-    ${!S.career.job&&S.player.age>=58?`<div class="card"><strong>${S.career.retired?'Retired':'Retirement'}</strong><p>${S.career.retired?'Current pension: '+esc(formatMoney(S.career.monthlyPension||0,S.country))+'/month.':'Stop work · State pension from 62 with 40 credits (US)'}</p>${!S.career.retired?'<button class="btn" data-action="retire">Retire</button>':''}</div>`:''}
+    ${!S.career.job&&S.player.age>=58?`<div class="card"><strong>${S.career.retired?'Retired':'Retirement'}</strong><p>${S.career.retired?'Next pension: '+esc(formatMoney(retirementIncomePreview(S).monthly,S.country))+'/mo':(S.country==='usa'?'State pension: age 62 · 40 credits':'Pension depends on work history')}</p>${!S.career.retired?'<button class="btn" data-action="retire">Retire</button>':''}</div>`:''}
     <div class="card">
       <div class="section-head">
         <h3>Local Job Market — ${esc(cObj.name)} (${filteredJobs.length}/${allJobs.length})</h3>
@@ -4827,15 +4829,17 @@ function renderCourtsAndCrimeSubtabHtml(S) {
         <h2>${icon('gavel', 18)} Civil & Labor Courts</h2>
         <span class="hud-pill">${S.legal.criminalRecord ? '⚠ Criminal Record on File' : 'Clean Record'}</span>
       </div>
+      ${(S.legal.civilLosses||[]).filter(x=>x.status!=='open').map(x=>`<p>Claim · ${x.status==='filed'?'Review pending · '+Math.max(0,x.dueAt-S.year*12-S.month)+' mo':'Reviewed · Collection unavailable'}</p>`).join('')}
       ${CIVIL_LAWSUITS.map(su => {
         const fee = Math.round(convertCurrency(su.lawyerFeeUsd, 'usa', S.country, S.year));
+        const claim=civilClaimQuote(S,su.id);
         return `
           <div class="item-row">
             <div class="item-row-main">
               <strong>${esc(su.label)}</strong>
-              <span>Counsel Retainer: <strong class="mono">${esc(formatMoney(fee, S.country))}</strong> · Win Odds: ${Math.round(su.winProb * 100)}%</span>
+              <span>Counsel Retainer: <strong class="mono">${esc(formatMoney(fee, S.country))}</strong> · ${claim.available?'Review 3 mo · Loss '+esc(formatMoney(claim.amount,S.country)):'No recorded dispute'}</span>
             </div>
-            <button class="btn btn-primary btn-sm" data-action="file-lawsuit" data-id="${su.id}" ${S.money.cash >= fee ? '' : 'disabled'}>File Suit</button>
+            <button class="btn btn-primary btn-sm" data-action="file-lawsuit" data-id="${su.id}" ${S.money.cash >= fee&&claim.available ? '' : 'disabled'}>File Suit</button>
             ${S.money.cash < fee ? lockReason('Not enough cash for the retainer', `Need ${esc(formatMoney(Math.round(fee - S.money.cash), S.country))} more`) : ''}
           </div>
         `;
