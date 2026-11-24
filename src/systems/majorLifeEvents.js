@@ -65,7 +65,7 @@ function announce(S, kind, { title, text, personId = null, facts = {}, journal =
   const key = `major_${kind}_${S.year}_${S.month}_${personId || 'self'}`;
   const who = personId ? S.people?.[personId] : null;
   const roleKey = facts.role || (/^(separation|divorce|affair)/.test(kind) ? 'spouse' : null);
-  const people = who && who.firstName && roleKey ? [{ name: who.firstName, label: (ROLE_WORD[roleKey] || '').replace('your spouse', who.gender === 'f' ? 'your wife' : who.gender === 'm' ? 'your husband' : 'your spouse') }].filter((x) => x.label) : [];
+  const people = kind !== 'death' && who && who.firstName && roleKey ? [{ name: who.firstName, label: (ROLE_WORD[roleKey] || '').replace('your spouse', who.gender === 'f' ? 'your wife' : who.gender === 'm' ? 'your husband' : 'your spouse') }].filter((x) => x.label) : [];
   queueScene(S, {
     people,
     key, baseId: key, category: 'milestone', title, text, urgent: true, major: true, majorKind: kind, maxPerLife: 99,
@@ -146,7 +146,7 @@ export function announceMajorChanges(S, before) {
     made.push(announce(S, 'car_crash', {
       title: 'Your Car Was in a Crash',
       text: `Your ${c.carName} was in a ${c.severity} crash. ${c.injury ? 'You were hurt. ' : 'You were not badly hurt. '}Repairs cost ${formatMoney(c.repair, S.country)}. ${c.insured ? 'Your insurance covered most of it' : 'You had no auto cover'}; ${c.owed > 0 ? `you could only pay ${formatMoney(c.paid, S.country)} now and ${formatMoney(c.owed, S.country)} stays owed until you can cover it` : `you paid ${formatMoney(c.paid, S.country)}`}.`,
-      facts: { carId: c.carId, severity: c.severity, paid: c.paid, insured: c.insured },
+      facts: { carId: c.carId, severity: c.severity, paid: c.paid, insured: c.insured, injury: !!c.injury },
     }));
   }
   return made;

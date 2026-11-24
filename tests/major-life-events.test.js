@@ -74,4 +74,10 @@ console.log('NPC death causes come from recorded illness, health and age, otherw
  const m=s.people[s.relations.motherId];m.alive=true;assert(/your mother/.test(G('ev_family_sib_wedding').build(s,{sib:{firstName:'Sam'}}).text));console.log('sibling/child scenes mention parents and spouse only when alive/present');}
 // relationships are named
 {const s=setup();const b=snapshotMajor(s);const f=s.people[s.relations.fatherId];f.alive=false;f.age=70;announceMajorChanges(s,b);const sc=[...(s.activeScene?[s.activeScene]:[]),...s.sceneQueue].find(x=>x.major&&x.majorKind==='death');
- assert(sc,'death scene queued');{assert(/^Your father, /.test(sc.title),sc.title);assert(sc.people&&sc.people[0].label==='your father');}}
+ assert(sc,'death scene queued');{assert(/^Your father, /.test(sc.title),sc.title);assert(!sc.people.length);}}
+// afterMajor facts filter
+{const {eventGatePasses}=await import('../src/systems/eventEngine.js');
+ const s=setup();s.majorEvents=[{kind:'car_crash',year:s.year,month:s.month,turn:s.turn,personId:null,facts:{injury:true}}];
+ const mk=(facts)=>({id:'x',gates:{afterMajor:{kind:'car_crash',facts}}});
+ assert(eventGatePasses(mk({injury:true}),s,{ignoreHistory:true})===true);
+ assert(eventGatePasses(mk({injury:false}),s,{ignoreHistory:true})===false);}

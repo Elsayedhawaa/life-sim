@@ -312,7 +312,7 @@ export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
   if (g.affairStatus) { const sp = cast.spouse, st = sp?.relationshipProgress; if (!st || st.affair?.status !== g.affairStatus || st.stage === 'separated') return false; }
   if (g.afterMajor) {
     const now = S.year * 12 + S.month, m = g.afterMajor;
-    const hit = (S.majorEvents || []).some((e) => asList(m.kind).includes(e.kind) && (!m.role || e.facts?.role === m.role) && now - (e.year * 12 + e.month) >= (m.minMonths || 0) && now - (e.year * 12 + e.month) <= (m.maxMonths ?? 999));
+    const hit = (S.majorEvents || []).some((e) => asList(m.kind).includes(e.kind) && (!m.role || e.facts?.role === m.role) && Object.entries(m.facts || {}).every(([k, v]) => e.facts?.[k] === v) && now - (e.year * 12 + e.month) >= (m.minMonths || 0) && now - (e.year * 12 + e.month) <= (m.maxMonths ?? 999));
     if (!hit) return false;
   }
   if (g.loanOutstanding && !loanOutstanding(S, g.loanOutstanding.event, g.loanOutstanding.minMonths || 0)) return false;
