@@ -727,7 +727,7 @@ export function startCustomConstructionOnLand(S, ownedLandId, projectTypeId = 'v
 
   const upfront = Math.round(buildCostPlayer * 0.35);
   const totalMos = Math.max(6, Number(pSpec.buildMonths || 10));
-  const monthlyDraw = Math.round((buildCostPlayer - upfront) / totalMos);
+  const monthlyDraw = Math.ceil((buildCostPlayer - upfront) / totalMos);
 
   { const paid = purchase(S, upfront, `Broke ground on ${pSpec.label} at ${land.name}`, 'cash', { category: 'housing' }); if (!paid.ok) return paid; }
   land.buildProject = {
@@ -739,6 +739,7 @@ export function startCustomConstructionOnLand(S, ownedLandId, projectTypeId = 'v
     monthsLeft: totalMos,
     totalMonths: totalMos,
     monthlyDrawPlayer: monthlyDraw,
+    remainingDrawPlayer:buildCostPlayer-upfront,
     totalInvestedNative: Math.round(convertCurrency(buildCostPlayer, S.country, land.country, S.year)),
     progressPct: 8
   };
@@ -2740,16 +2741,18 @@ export function tickMegaSystemsMonthly(S) {
   for (const land of [...S.housing.lands]) {
     const bp = land.buildProject;
     if (!bp) continue;
-    if (S.money.cash < bp.monthlyDrawPlayer && S.money.savings > 0) {
-      const pull = Math.min(S.money.savings, bp.monthlyDrawPlayer - S.money.cash);
+    const draw=Math.min(bp.monthlyDrawPlayer,bp.remainingDrawPlayer??bp.monthlyDrawPlayer*bp.monthsLeft);
+    if (S.money.cash < draw && S.money.savings > 0) {
+      const pull = Math.min(S.money.savings, draw - S.money.cash);
       moveBalance(S, 'savings', -pull, 'Savings transfer for construction draw', 'bank');
       walletMove(S, pull, 'Savings transfer for construction draw', 'bank');
     }
-    if (S.money.cash >= bp.monthlyDrawPlayer) {
-      walletMove(S, -bp.monthlyDrawPlayer, `Construction draw: ${bp.label}`, 'housing');
+    if (S.money.cash >= draw) {
+      walletMove(S, -draw, `Construction draw: ${bp.label}`, 'housing');
+      bp.remainingDrawPlayer=Math.max(0,(bp.remainingDrawPlayer??bp.monthlyDrawPlayer*bp.monthsLeft)-draw);
       bp.monthsLeft -= 1;
       bp.progressPct = Math.min(100, Math.round(((bp.totalMonths - bp.monthsLeft) / bp.totalMonths) * 100));
-      if (bp.monthsLeft <= 0) {
+      if (bp.monthsLeft <= 0 && bp.remainingDrawPlayer<=0) {
         /* Construction Completed -> Converts into high-equity finished Property! */
         const finishedNativeVal = Math.round((land.nativeValue + bp.totalInvestedNative) * 1.28);
         const newProp = {

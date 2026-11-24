@@ -1,0 +1,4 @@
+import assert from 'node:assert/strict';
+import {createNewLifeState,ensureExtendedState} from '../src/core/schema.js';
+import {closeBusiness} from '../src/systems/businessEngine.js';
+const s=createNewLifeState({country:'gbr',seed:77});ensureExtendedState(s);s.player.age=30;s.money.cash=100000;const b={id:'test',name:'Test',typeId:'cafe',country:'gbr',capitalInvested:10000,monthlyRevenue:1000,monthlyCost:500,staff:[],equityOwned:100};s.career.businesses=[b];s.career.business=b;assert.ok(closeBusiness(s,b,'test').ok);const cash=s.money.cash;assert.equal(closeBusiness(s,b,'repeat').ok,false);assert.equal(s.money.cash,cash);assert.equal(closeBusiness(s,{...b,id:'not-owned'},'fake').ok,false);assert.equal(s.money.cash,cash);console.log('Closed business object cannot be replayed for another salvage payout.');

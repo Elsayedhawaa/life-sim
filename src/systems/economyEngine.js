@@ -1795,7 +1795,8 @@ export function convertFinancesOnCountryMove(S, fromCountry, toCountry) {
   for (const lnd of (S.housing.lands || [])) {
     lnd.valueLocal = Math.round(convertCurrency(lnd.nativeValue || lnd.valueLocal, lnd.country || fromCountry, toCountry, S.year));
     if (lnd.buildProject) {
-      lnd.buildProject.monthlyDrawPlayer = Math.max(10, Math.round(convertCurrency(lnd.buildProject.monthlyDrawPlayer, fromCountry, toCountry, S.year)));
+      if(lnd.buildProject.remainingDrawPlayer!=null)lnd.buildProject.remainingDrawPlayer=Math.max(0,Math.round(convertCurrency(lnd.buildProject.remainingDrawPlayer,fromCountry,toCountry,S.year)));
+      lnd.buildProject.monthlyDrawPlayer = Math.max(1, Math.round(convertCurrency(lnd.buildProject.monthlyDrawPlayer, fromCountry, toCountry, S.year)));
     }
   }
   if (S.housing.gehazInvestedLocal > 0) {

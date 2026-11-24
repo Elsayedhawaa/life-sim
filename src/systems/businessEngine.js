@@ -967,7 +967,7 @@ export function closeBusiness(S, biz, reason, opts = {}) {
   ensureExtendedState(S);
   migrateBusinesses(S);
   const target = typeof biz === 'object' ? biz : (S.career.businesses || []).find(b => b.id === biz);
-  if (!target) return { ok: false, msg: 'No such business.', salvage: 0 };
+  if (!target || !(S.career.businesses||[]).some(b=>b.id===target.id)) return { ok: false, msg: 'No such owned business.', salvage: 0 };
   /* v2.17 W2 — the W5 contract: ANY closure marks the record dead
      with a plain-words cause (this is the miss-3 settlement path too
      — the record is removed from the portfolio below, but the flags
