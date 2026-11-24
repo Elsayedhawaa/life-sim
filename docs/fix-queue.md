@@ -156,13 +156,15 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W64 Parent illness support invents flights/treatment and has no reload builder; use actual funded support or supported catalog trip/treatment.
 - [x] W65 Grown-child bill gift mints cash without debiting child savings and disappears on reload; preserve funded offer.
 
-- [ ] W66 NPC birth gift scene disappears on reload; preserve named parent/baby/amount, fund recipient and avoid claiming travel.
+- [x] W66 NPC birth gift scene disappears on reload; preserve named parent/baby/amount, fund recipient and avoid claiming travel.
 
-- [ ] W67 NPC divorce/leave-home decisions lack reload builders; move assistance also debits player without funding child. Preserve snapshots and actual recipient transfer.
-- [ ] W68 Luxury-purchase money-promise confrontation lacks reload builder; preserve promise/person/item, no repeated relationship penalty on load.
+- [x] W67 NPC divorce/leave-home decisions lack reload builders; move assistance also debits player without funding child. Preserve snapshots and actual recipient transfer.
+- [x] W68 Luxury-purchase money-promise confrontation lacks reload builder; preserve promise/person/item, no repeated relationship penalty on load.
 
-- [ ] W69 Redundancy response disappears after reload; restore response without replaying dismissal/severance, preserve employer/job-loss context.
+- [x] W69 Redundancy response disappears after reload; restore response without replaying dismissal/severance, preserve employer/job-loss context.
 
-- [ ] W70 Job-loss reaction builders (mortgage/family/visa/career) use closures without durable restore; audit effects and exact loss-specific recovery.
+- [x] W70 Job-loss reaction builders (mortgage/family/visa/career) use closures without durable restore; audit effects and exact loss-specific recovery.
 
-- [ ] W71 Child-gift fixture used father as generic recipient; production generator selects adult child, but restore builder lacked same relationship/age gates. Add guards and correct linked-child mobile fixture.
+- [x] W71 Child-gift fixture used father as generic recipient; production generator selects adult child, but restore builder lacked same relationship/age gates. Add guards and correct linked-child mobile fixture.
+
+- [x] W72 Job-loss visa text asserts universal grace/sponsor rules and mortgage holiday wording hides game scope; review shared actual permit and payment-holiday semantics.

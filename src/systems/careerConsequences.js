@@ -286,8 +286,9 @@ function mortgageOf(S) {
   return { prop: home, instLocal, remainingLocal: Math.round(Number(home.installmentRemaining) || 0) };
 }
 
-function buildMortgageScene(S, lossKey, lastJob) {
-  const m = mortgageOf(S);
+function buildMortgageScene(S, lossKey, lastJob, propertyId=null) {
+  const selected=propertyId&&(S.housing.properties||[]).find(p=>p.id===propertyId);
+  const m = propertyId?(selected&&selected.monthsLeft>0?{prop:selected,instLocal:Math.round(convertCurrency(selected.nativeMonthlyInstallment,selected.country,S.country,S.year)),remainingLocal:selected.installmentRemaining}:null):mortgageOf(S);
   if (!m) return null;
   const { prop, instLocal, remainingLocal } = m;
   const canPayEarly = (Number(S.money?.cash) || 0) >= instLocal;
@@ -318,12 +319,12 @@ function buildMortgageScene(S, lossKey, lastJob) {
         }
       },
       {
-        label: 'Ask the bank for a 3-month payment holiday',
+        label: 'Use game payment holiday · three months',
         effect: (st) => {
           prop.paymentHolidayUntil = untilIdx;
           shiftVitals(st, { stress: -3 });
           st.career.jobLoss.mortgageChoiceTaken = 'took the 3-month payment holiday';
-          recordJournal(st, `The bank agreed to a 3-month payment holiday on ${prop.name} after you lost your job — no instalment is due and no missed payment is recorded while it lasts. The months are added at the end; the debt does not shrink.`, 'money');
+          recordJournal(st, `Game payment holiday: three months on ${prop.name} after you lost your job — no instalment is due and no missed payment is recorded while it lasts. The months are added at the end; the debt does not shrink.`, 'money');
         }
       },
       {
@@ -413,30 +414,25 @@ function buildVisaScene(S, lossKey) {
   const res = S?.legal?.residency;
   if (!res || !VISA_DEPENDS_ON_JOB.includes(res.kind)) return null;
   const cObj = getCountry(S.country);
-  const sponsor = res.sponsorName ? ` Your sponsor is ${res.sponsorName}.` : '';
-  const expiry = res.expiresYear ? ` It expires ${res.expiresMonth || ''}/${res.expiresYear}.` : '';
-  const grace = res.kind === 'grace_period'
-    ? ''
-    : ` If the permit lapses you fall into the 60-day grace period — ${Number(res.graceMonthsLeft) || 0} grace months are on record right now.`;
   return {
     key: `jobloss_visa_${lossKey}`,
     baseId: 'jobloss_visa',
     maxPerLife: 3,
     category: 'visa',
     title: `Your Visa Depends on That Job`,
-    text: `Your ${res.permitName || res.kind} in ${cObj.name} is tied to your employment — losing the job puts the permit itself at risk.${sponsor}${expiry}${grace} A new sponsor, or a new job with one, is the only thing that fixes it. The visa office will not wait while you decide.`,
+    text: `Job loss may affect your recorded ${res.permitName||res.kind} in ${cObj.name}. Expiry: ${res.expiresMonth||'?'}/${res.expiresYear||'?'}. Check Passport for current game status and work authorization. No grace extension or sponsor agreement is granted here.`,
     choices: [
       {
-        label: 'Start the job hunt now — a new sponsor is the only fix',
+        label: 'Start looking for eligible work',
         effect: (st) => {
           st.career.jobLoss.visaJobHunt = true;
-          recordJournal(st, `Your work visa in ${getCountry(st.country).name} depends on your job, so losing it puts the permit at risk — you started hunting for a new sponsor at once.`, 'visa');
+          recordJournal(st, `Started looking for eligible work after job loss. Check Passport for current game permit status in ${getCountry(st.country).name}.`, 'visa');
         }
       },
       {
-        label: 'Ask your old sponsor for more time',
+        label: 'Record a sponsor follow-up',
         effect: (st) => {
-          recordJournal(st, `Asked your old sponsor${st.legal?.residency?.sponsorName ? ` (${st.legal.residency.sponsorName})` : ''} for more time on your visa after losing the job — nothing is promised, and the permit still depends on finding work.`, 'visa');
+          recordJournal(st, `Recorded a sponsor follow-up${st.legal?.residency?.sponsorName ? ` (${st.legal.residency.sponsorName})` : ''}. No message was sent and no permit extension was granted.`, 'visa');
         }
       }
     ]
@@ -460,6 +456,7 @@ export function fireJobLossReactions(S, lossKey) {
        queue would repeat it in the same year. Hold the scene back;
        the journal line below is the record instead. */
     if (c.jobLoss.yearFired[`${kind}_${S.year}`]) { yearSuppressed += 1; yearSuppressedKinds.push(kind); report.skipped.push({ kind, reason: 'already fired this year' }); return; }
+    scene=decorateJobLossScene(S,scene,{kind,lossKey,lastJob,personId:kind==='spouse'?spouseOf(S)?.id:null,childIds:kind==='children'?[...(S.relations.childIds||[])]:[],propertyId:kind==='mortgage'?mortgageOf(S)?.prop.id:null,country:S.country,residencyKind:S.legal.residency.kind});
     if (queueScene(S, scene, true)) {
       c.jobLoss.fired[`${lossKey}_${kind}`] = true;
       c.jobLoss.yearFired[`${kind}_${S.year}`] = true;
@@ -639,3 +636,11 @@ export function buildRedundancyScene(S,q){
   };
 }
 export function restoreRedundancyScene(S,saved){return saved?.redundancySnapshot?buildRedundancyScene(S,saved.redundancySnapshot):null;}
+
+function decorateJobLossScene(S,scene,snapshot){if(!scene)return null;scene.jobLossReactionSnapshot=snapshot;scene.choices=scene.choices.map(choice=>({...choice,effect:st=>{if(st.career.job||typeof choice.available==='function'&&!choice.available(st))return;ensureCareerConsequenceState(st);st.career.jobLossReactionReplies??={};const key=snapshot.lossKey+'_'+snapshot.kind;if(st.career.jobLossReactionReplies[key])return;const result=choice.effect?.(st);st.career.jobLossReactionReplies[key]=true;return result;}}));return scene;}
+export function restoreJobLossReactionScene(S,saved){const q=saved?.jobLossReactionSnapshot;if(!q||S.career.job)return null;ensureCareerConsequenceState(S);let scene=null;
+ if(q.kind==='mortgage')scene=buildMortgageScene(S,q.lossKey,q.lastJob,q.propertyId);
+ if(q.kind==='spouse'){const spouse=S.people[q.personId];if(spouse?.alive&&spouseOf(S)?.id===spouse.id)scene=buildSpouseScene(S,q.lossKey,spouse,q.lastJob);}
+ if(q.kind==='children')scene=buildChildrenScene(S,q.lossKey,(q.childIds||[]).filter(id=>S.relations.childIds.includes(id)).map(id=>S.people[id]).filter(Boolean),q.lastJob);
+ if(q.kind==='visa'&&S.country===q.country&&S.legal.residency.kind===q.residencyKind)scene=buildVisaScene(S,q.lossKey);
+ if(!scene)return null;scene.title=saved.title;scene.text=saved.text;return decorateJobLossScene(S,scene,q);}
