@@ -25,7 +25,7 @@ export function renderSocialEnergyHtml(S) {
     : energy <= 2
     ? `Social energy: ${energy} of ${max} left this month — nearly spent. It comes back at the start of next month.`
     : `Social energy: ${energy} of ${max} left this month.`;
-  return `<div class="muted" style="font-size:0.85rem;margin:6px 0 2px">Social energy — ${esc(line)} A call costs 1 energy, a conversation 2, a visit 3, a gift 2, asking for help 4.</div>`;
+  return `<div class="muted" style="font-size:0.85rem;margin:6px 0 2px">${esc(line)} <span title="Call 1 · Talk 2 · Visit 3 · Gift 2 · Ask for help 4" aria-label="Energy costs">ⓘ</span></div>`;
 }
 
 /* The drifting warning on a person card. Shown while the relationship is

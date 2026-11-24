@@ -225,4 +225,5 @@ export const LOCAL_PROPERTY_STYLES = [
  {"id":"usa_manufactured","country":"usa","name":"Single-Storey Garden Manufactured Home","shape":"chalet_one","area":60,"rooms":2,"priceMult":1.1,"maintenanceMult":1.1,"art":"usa-manufactured.jpg","note":"One-bedroom manufactured-style home with low roof, porch and private garden. Game deed bundles the home and its fictional plot, with no real land lease or mobility simulation.","hasGarden":true},
  {"id":"usa_coastal_cottage","country":"usa","name":"Coastal Weatherboard Garden Cottage","shape":"cottage_two","area":135,"rooms":3,"priceMult":1.1,"maintenanceMult":1.1,"art":"usa-coastal-cottage.jpg","note":"Two main floors with two upper bedrooms and private garden. Coastal setting grants no private beach or water ownership. Roof space is not an extra floor.","hasGarden":true}
 ];
-export function propertyStyle(id){return LOCAL_PROPERTY_STYLES.find(s=>s.id===id)||null;}
+const CABIN_ART={id:'usa_rural_cabin',name:'Woodland Cabin',art:'usa-woodland-cabin.jpg'};
+export function propertyStyle(id){if(id==='usa_rural_cabin'||id==='cabin')return CABIN_ART;return LOCAL_PROPERTY_STYLES.find(s=>s.id===id)||null;}

@@ -1,3 +1,4 @@
+import{tickPeopleAutonomy}from '../systems/peopleAutonomy.js';
 /* ============================================================================
    World Life 2.0 — Adaptive Clock & Master Turn Orchestrator (gameLoop.js)
    - Ages 0–17: Yearly turns (fast childhood pacing, zero adult money clutter)
@@ -252,6 +253,7 @@ export function advanceSingleTurn(S) {
     tickWorldEvents(S);
     ensureSocialCast(S);
     tickNpcAutonomyYearly(S);
+    tickPeopleAutonomy(S);
     refillSocialEnergy(S); /* v2.15 W3 — one year-turn is one refill (see import note above). */
     tickEducationYearly(S);
     tickHealthAndMortalityYearly(S);
@@ -316,6 +318,7 @@ export function advanceSingleTurn(S) {
       checkCareerConsequences(S); /* v2.18 W2 §3 — job loss reaches the mortgage, spouse, children and visa; crisis years warn, freeze pay and risk redundancy */
       tickMegaSystemsMonthly(S);
       tickMarriageAndFamilyMonthly(S);
+      tickPeopleAutonomy(S);
     }
     /* v2.18 W3 — the new year's net-worth snapshot is recorded here, at
        the end of the year-crossing turn, after the January settlement

@@ -1,3 +1,4 @@
+import{personMind}from './personMind.js';
 import {chargeFamilyEducation as chargeLivingParents} from './educationFunding.js';
 import {hasCurrentLanguage} from '../data/languageQualifications.js';
 import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget} from '../data/propertyAreas.js';
@@ -1358,6 +1359,7 @@ export function undergoSurgeryOrFertility(S, kind, id) {
   if(S.marriage.pregnancy)return {ok:false,msg:'Already expecting. No further fertility cycle is needed.'};
   const partner=(S.relations.spouseIds||[]).map(pid=>S.people[pid]).find(p=>p?.alive&&p.residenceCountry===S.country&&p.gender!==S.player.gender);
   if(!partner)return {ok:false,msg:'This fertility route requires a living co-resident spouse of the opposite sex. Donor and surrogate routes are not modeled.'};
+  if(!personMind(S,partner).wantsChildren)return{ok:false,msg:partner.firstName+' does not want children.'};
   const maternalAge=S.player.gender==='f'?S.player.age:partner.age;
   if(maternalAge>=46)return {ok:false,msg:'This game models own-egg fertility cycles only below age46. Donor-egg routes are not modeled.'};
   if(S.medical.lastFertilityCycleYear===S.year&&S.medical.lastFertilityCycleMonth===S.month)return {ok:false,msg:'Wait until next month before another fertility cycle.'};

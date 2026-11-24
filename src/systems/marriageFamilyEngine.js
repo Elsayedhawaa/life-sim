@@ -1,3 +1,4 @@
+import{tickSpouseAutonomy,spouseMind}from './spouseAutonomy.js';
 import{fileFamilyCase,tickRelationshipProgression}from './relationshipProgression.js';
 import {recordMarriageAssets,settleGameDivorce,divorceChildren,divorceBuyoutRequired} from './divorceModel.js';
 /* ============================================================================
@@ -319,6 +320,7 @@ export function toggleEngagementPrenup(S) {
 
 /* Household settings the UI used to write directly — now engine functions. */
 export function setTryingForBaby(S, value) {
+  if(value){const sp=S.relations.spouseIds.map(id=>S.people[id]).find(p=>p?.alive&&p.relationshipProgress?.stage!=='separated');if(!sp)return{ok:false,msg:'No partner ready for family planning.'};if(!spouseMind(S,sp).wantsChildren)return{ok:false,msg:sp.firstName+' does not want children.'};}
   S.marriage.tryingForBaby = !!value;
   return { ok: true, msg: S.marriage.tryingForBaby ? 'Now trying for a baby!' : 'Paused family planning.' };
 }
@@ -333,6 +335,8 @@ export function cycleHouseholdSplit(S) {
    open a pregnancy through here, so there is exactly one record and one shape. */
 export function startPregnancy(S, motherId, opts = {}) {
   if (S.marriage.pregnancy) return { ok: false, msg: 'Already expecting.' };
+  const familyPartner=motherId&&motherId!=='player'?S.people[motherId]:S.relations.spouseIds.map(id=>S.people[id]).find(p=>p?.alive&&p.gender!==S.player.gender);
+  if(familyPartner&&!spouseMind(S,familyPartner).wantsChildren)return{ok:false,msg:familyPartner.firstName+' does not want children.'};
   const couple = opts.coupleId
     ? S.marriage.couples.find(c => c.id === opts.coupleId)
     : (motherId && motherId !== 'player' ? getCoupleForSpouse(S, motherId) : getActiveCoupleForPlayer(S));
@@ -505,6 +509,7 @@ export function celebrateWedding(S, venueId = null, opts = {}) {
 
 /* Monthly Pregnancy, Birth (with Jus Soli vs Jus Sanguinis Citizenship Logic!) & Marital Health */
 export function tickMarriageAndFamilyMonthly(S) {
+  tickSpouseAutonomy(S);
   for(const c of tickRelationshipProgression(S)){if(S.people[c.spouseId]?.relationshipProgress?.courtCase)delete S.people[c.spouseId].relationshipProgress.courtCase;const result=initiateDivorce(S,c.spouseId,c.mode,c.options);if(!result.ok)recordJournal(S,'Court settlement postponed: '+result.msg,'family');}
 
   const livingSpouses = S.relations.spouseIds.map(id => S.people[id]).filter(p => p && p.alive);
@@ -523,7 +528,7 @@ export function tickMarriageAndFamilyMonthly(S) {
       deliverNewbornChild(S, motherSpouse);
     }
   } else if (S.marriage.tryingForBaby && livingSpouses.length > 0) {
-    const coResSpouse = livingSpouses.find(sp => sp.residenceCountry === S.country && sp.relationshipProgress?.stage!=='separated' && sp.gender!==S.player.gender && sp.age>=18);
+    const coResSpouse = livingSpouses.find(sp => sp.residenceCountry === S.country && sp.relationshipProgress?.stage!=='separated' && sp.gender!==S.player.gender && sp.age>=18&&spouseMind(S,sp).wantsChildren);
     if (coResSpouse && S.player.age>=18) {
       const femAge = S.player.gender === 'f' ? S.player.age : coResSpouse.age;
       if (femAge < 46) {

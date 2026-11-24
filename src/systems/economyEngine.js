@@ -1877,6 +1877,6 @@ export function buyRuralCabin(S){
   if(S.country!=='usa')return{ok:false,msg:'The rural cabin listing is available while living in the USA.'};
   const price=eraLocalCost(RURAL_CABIN.price2026,'usa',S.year);
   const result=finalizePropertyPurchase(S,{catalogId:RURAL_CABIN.id,name:RURAL_CABIN.name,shape:'cabin',country:'usa',city:'Rural Pennsylvania',tier:'modest',rooms:3,areaM2:109,nativeValue:price,nativeMonthlyRent:0,downInPlayerLocal:price},null,{moveIn:false});
-  if(result.ok){result.prop.rentedOut=false;result.prop.ruralCabin=true;result.prop.annualTaxNative=eraLocalCost(RURAL_CABIN.tax2026,'usa',S.year);result.prop.annualInsuranceNative=eraLocalCost(RURAL_CABIN.insurance2026,'usa',S.year);result.prop.maintenanceRate=.03;recordJournal(S,'Purchased a rural getaway, not a rental-income machine. Cabin property tax, insurance and maintenance are charged monthly. Prices and costs are game estimates, not a current quote.','housing');}
+  if(result.ok){result.prop.rentedOut=false;result.prop.ruralCabin=true;result.prop.styleId=RURAL_CABIN.id;result.prop.annualTaxNative=eraLocalCost(RURAL_CABIN.tax2026,'usa',S.year);result.prop.annualInsuranceNative=eraLocalCost(RURAL_CABIN.insurance2026,'usa',S.year);result.prop.maintenanceRate=.03;recordJournal(S,'Purchased a rural getaway, not a rental-income machine. Cabin property tax, insurance and maintenance are charged monthly. Prices and costs are game estimates, not a current quote.','housing');}
   return result;
 }

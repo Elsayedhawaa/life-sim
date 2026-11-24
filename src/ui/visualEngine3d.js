@@ -1377,7 +1377,7 @@ export function renderReadableFloorplanHtml(shape = 'apartment', furnishedRooms 
   const attrs = rm => `data-action="room-info" data-room="${escAttr(rm.key)}" data-no="${escAttr(rm.no)}" data-name="${escAttr(planRoomName(rm))}" data-m2="${rm.m2 || 0}" data-floor="${escAttr(plainFloorLabel(idx, shape))}"`;
   return `<section class="readable-floor" style="border:1px solid #c9c2b5;border-radius:12px;padding:12px;background:#faf5e9;color:#3c3228;min-width:0">
     <h4 style="margin:0 0 4px">${escAttr(plainFloorLabel(idx, shape))}</h4>${idx === 0 ? `<p style="font-size:0.78rem;line-height:1.5;margin:4px 0 8px">${escAttr(outdoorFeatures.styleNote || homeStyleNote(country, shape))}</p>` : ''}
-    <p style="font-size:0.78rem;margin:0 0 12px;color:#625b50">Room numbers match the list below. Fictional layout, not to scale.</p>
+    
     ${illustratedPlanSvg(plan, idx, outdoorFeatures, attrs)}
     ${idx===0&&outdoorFeatures.areas?`<p style="font-size:.78rem;line-height:1.6"><strong>${outdoorFeatures.areas.indoorM2} m² indoor floor area</strong>${outdoorFeatures.areas.plotM2?` · ${outdoorFeatures.areas.plotM2} m² plot (building footprint ${outdoorFeatures.areas.footprintM2} m²)`:``}<br>${outdoorAreaSummary(outdoorFeatures.areas)}<br>Outdoor areas are separate, non-overlapping game deed allocations, not part of indoor room totals.</p>`:''}
     <button class="btn btn-sm" data-action="zoom-floorplan">Enlarge plan · pinch or scroll</button>
@@ -1472,7 +1472,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
   const allHomeRooms = floors.flatMap(f => f.rooms).filter(r => furnishableKeys.includes(r.key));
   const furnishedCount = allHomeRooms.filter(r => isRoomFurnished(furnishedRooms, r)).length;
   const totalFurnishable = allHomeRooms.length;
-  const style = propertyStyle(home?.styleId || home?.unitId || home?.id);
+  const style = propertyStyle(home?.ruralCabin||home?.shape==='cabin'?'usa_rural_cabin':home?.styleId || home?.unitId || home?.id);
   const shapeName = (style?.name || shape).split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
   return `
@@ -1481,7 +1481,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
          is the home. How you look at it — from outside or inside, morning
          or night, which floor, drawing style — lives behind this single
          control, in plain words. No technical toolbar on the main view. -->
-      <p class="muted" style="font-size:0.82rem;margin:0 0 6px">This is your home as it looks today. The rooms and their sizes are listed below the picture.</p>
+      
       <details style="margin-bottom:8px">
         <summary class="btn btn-sm" style="display:inline-block;cursor:pointer">Change how you see your home</summary>
         <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:8px">
@@ -1523,7 +1523,7 @@ export function renderHome3dAndFloorplanHtml(home, opts = {}) {
         </div>
       </details>
 
-      ${style ? `<div style="padding:8px;background:#f6efdf;border-radius:12px;margin-bottom:12px"><img src="assets/homes/${style.art}" alt="${escAttr(style.name)} fictional exterior illustration" style="width:100%;max-height:330px;object-fit:contain"><p class="muted" style="font-size:.8rem;margin:4px">${escAttr(style.name)} · Illustrative exterior, not a photograph or exact address.</p></div>` : `<div class="vis3d-stage">
+      ${style ? `<div style="padding:8px;background:#f6efdf;border-radius:12px;margin-bottom:12px"><img src="assets/homes/${style.art}" alt="${escAttr(style.name)} fictional exterior illustration" style="width:100%;max-height:330px;object-fit:contain"><p class="muted" style="font-size:.8rem;margin:4px">${escAttr(style.name)} <span title="Fictional illustration, not an exact address." aria-label="Information">ⓘ</span></p></div>` : `<div class="vis3d-stage">
         <canvas
           data-canvas3d="home"
           data-spec="${specJson}"

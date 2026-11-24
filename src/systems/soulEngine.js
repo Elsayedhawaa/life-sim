@@ -1,3 +1,4 @@
+import{personMind,canContactPerson}from './personMind.js';
 /* ============================================================================
    World Life 2.0 — Causal Soul, Memory, Promise & Domino Reaction Engine
    Every NPC is a persistent human with personality sliders, career/wealth,
@@ -758,7 +759,7 @@ function npcMove(S, person) {
 
 function npcMaybeMove(S, person) {
   if (person.age < 18 || person.age > 65) return;
-  if (!npcChance(S, 0.018)) return;
+  if (!npcChance(S, 0.008+personMind(S,person).adventure/10000)) return;
   npcMove(S, person);
 }
 
@@ -868,6 +869,7 @@ export function tickNpcAutonomyYearly(S) {
     // Ages are set in exactly one place — ageAllPeople() in gameLoop.js
     // (birth-month ageing). This tick only progresses NPC lives.
 
+    personMind(S,person);
     /* Natural NPC age-appropriate schooling & career progression */
     const pCountry = getCountry(person.residenceCountry || S.country);
     if (person.age < 5 && !person.career.monthlyIncomeLocal) {
@@ -1403,6 +1405,7 @@ export function generateContextualLine(S, person) {
 export function interactWithPerson(S, personId, action, opts = {}) {
   const p = S.people[personId];
   if (!p || !p.alive) return { ok: false, msg: 'Person unavailable.' };
+  if(!canContactPerson(S,p))return{ok:false,msg:p.firstName+' is not accepting contact.'};
 
   /* v2.15 W3 — every relationship action costs social energy. Checked up
      front (a refusal in plain words, before anything happens); spent at
@@ -1597,6 +1600,7 @@ export function visitTripCostLocal(S, p) {
 export function callPerson(S, personId) {
   const p = S.people[personId];
   if (!p || !p.alive) return { ok: false, msg: 'Person unavailable.' };
+  if(!canContactPerson(S,p))return{ok:false,msg:p.firstName+' is not accepting contact.'};
   if (p.age < 4) return { ok: false, msg: `${p.firstName} is too young to talk on the phone.` };
   /* v2.15 W3 — a call costs 1 social energy. Checked before the
      once-per-turn mark, and spent only after it, so a refused call never
@@ -1620,6 +1624,7 @@ export function callPerson(S, personId) {
 export function visitPerson(S, personId) {
   const p = S.people[personId];
   if (!p || !p.alive) return { ok: false, msg: 'Person unavailable.' };
+  if(!canContactPerson(S,p))return{ok:false,msg:p.firstName+' is not accepting contact.'};
   /* v2.15 W3 — a visit costs 3 social energy. Checked before the
      once-per-turn mark and spent only once the trip is affordable, so a
      refused visit never burns energy or the month's visit. */
@@ -1666,6 +1671,7 @@ function giftAffection(itemPriceUsd, p) {
 export function openGiftScene(S, personId, rebuild = false) {
   const p = S.people[personId];
   if (!p || !p.alive) return { ok: false, msg: 'Person unavailable.' };
+  if(!canContactPerson(S,p))return{ok:false,msg:p.firstName+' is not accepting contact.'};
   if (S.player.age < 16) return { ok: false, msg: 'Wait until you are 16 and earning pocket money.' };
   if (!rebuild && S.activeScene) return { ok: false, msg: 'Finish the open moment first.' };
   const affordable = giftableShopItems(S).filter(i => i.priceLocal <= S.money.cash);
@@ -1739,6 +1745,7 @@ export function openGiftScene(S, personId, rebuild = false) {
 export function openAskHelpScene(S, personId, rebuild = false) {
   const p = S.people[personId];
   if (!p || !p.alive) return { ok: false, msg: 'Person unavailable.' };
+  if(!canContactPerson(S,p))return{ok:false,msg:p.firstName+' is not accepting contact.'};
   if (S.player.age < 18) return { ok: false, msg: 'Your household already covers your needs until adulthood.' };
   if (p.age < 22) return { ok: false, msg: `${p.firstName} is too young to help you out.` };
   if (!rebuild && S.activeScene) return { ok: false, msg: 'Finish the open moment first.' };
@@ -1812,6 +1819,7 @@ export function openAskHelpScene(S, personId, rebuild = false) {
 export function openConversationScene(S, personId, rebuild = false) {
   const p = S.people[personId];
   if (!p || !p.alive) return { ok: false, msg: 'Person unavailable.' };
+  if(!canContactPerson(S,p))return{ok:false,msg:p.firstName+' is not accepting contact.'};
   if (p.age < 4) return { ok: false, msg: `${p.firstName} is too young for a real conversation.` };
   if (p.rel.resentment >= 80) return { ok: false, msg: `${p.firstName} will not talk to you right now — clear the air first (Apologize / Clear Air).` };
   if (!rebuild && S.activeScene) return { ok: false, msg: 'Finish the open moment first.' };

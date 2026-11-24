@@ -1,3 +1,6 @@
+import{PEOPLE_REQUESTS,peopleRequestAmount}from '../systems/peopleAutonomy.js';
+import{personMind,canContactPerson}from '../systems/personMind.js';
+import{spouseMind,SPOUSE_DECISIONS,spouseRequestCost}from '../systems/spouseAutonomy.js';
 import{flyingDutyStatus}from '../systems/dutyEligibility.js';
 import {RURAL_CABIN} from '../data/ruralCabin.js';
 import {hasCurrentLanguage} from '../data/languageQualifications.js';
@@ -1149,19 +1152,19 @@ function renderLegacyScreenHtml(S) {
 }
 
 /* ============================================================================
-   TAB 2: PEOPLE (Sub-tabs: Circle & Soul | Courtship, Gehaz & Marriage | Children & Nurseries)
+   TAB 2: PEOPLE (Sub-tabs: Circle & Soul | Relationships & Marriage | Children & Nurseries)
    ========================================================================== */
 export function renderPeopleTabHtml(S, uiState = {}) {
   ensureExtendedState(S);
   const sub = uiState.peopleSub || 'circle';
   const nav = renderSubtabs('people', [
     { id: 'circle', label: 'Circle & Soul' },
-    { id: 'marriage', label: 'Courtship, Gehaz & Marriage' },
+    { id: 'marriage', label: 'Relationships & Marriage' },
     { id: 'children', label: `Children & Nurseries (${S.relations.childIds.length})` }
   ], sub);
 
   if (sub === 'marriage') {
-    return renderEditorialBannerHtml(pickDynamicBanner(S, 'people', 'marriage'), 'Courtship, Al-Fatiha, Shabka & Sacred Matrimony') + nav + renderMarriageSubtabHtml(S);
+    return renderEditorialBannerHtml(pickDynamicBanner(S, 'people', 'marriage'), 'Relationships & Marriage') + nav + renderMarriageSubtabHtml(S);
   }
   if (sub === 'children') {
     return renderEditorialBannerHtml(pickDynamicBanner(S, 'people', 'children'), 'Generations, Nurseries & Family Heritage') + nav + renderChildrenSubtabHtml(S);
@@ -1192,14 +1195,15 @@ export function renderPeopleTabHtml(S, uiState = {}) {
   }
 
   return `
-    ${renderEditorialBannerHtml(pickDynamicBanner(S, 'people', 'circle'), `${getCountry(S.country).name} Family Courtyard, Kinship Bonds & Social Circle`)}
+    ${renderEditorialBannerHtml(pickDynamicBanner(S, 'people', 'circle'), `${getCountry(S.country).name} · People`)}
     ${nav}
     <div class="card card-elevated">
       <div class="section-head">
-        <h3>${icon('people', 18)} 4D Kinship Constellation &amp; People in Your Life (${livingPeople.length})</h3>
-        <span class="muted">Every promise, gift, slight &amp; Wasta bond is remembered</span>
+        <h3>${icon('people', 18)} People in Your Life (${livingPeople.length})</h3>
+        <span class="muted"></span>
       </div>
       ${/* v2.15 W3 — the social-energy budget, stated on the screen. */ renderSocialEnergyHtml(S)}
+      ${livingPeople.filter(p=>p.role!=='spouse'&&p.mind?.pending).map(p=>`<div class="card"><strong>${esc(p.firstName)}</strong>${renderPersonRequest(S,p)}</div>`).join('')}
       ${renderSocialConstellationSvg(S)}
       <div class="npc-grid">
         ${livingPeople.map(p => renderNpcCardHtml(S, p)).join('')}
@@ -1216,7 +1220,7 @@ export function renderPeopleTabHtml(S, uiState = {}) {
 
 function renderMarriageSubtabHtml(S) {
   if (S.player.age < 18) {
-    return `<div class="card"><p class="muted">Courtship, Al-Fatiha, Shabka, and marriage open at adulthood (age 18).</p></div>`;
+    return `<div class="card"><p class="muted">Relationships open at age 18.</p></div>`;
   }
   const prof = getMarriageProfile(S.country, S.year);
   const partner = S.relations.partnerId ? S.people[S.relations.partnerId] : null;
@@ -1233,7 +1237,7 @@ function renderMarriageSubtabHtml(S) {
   return `
     <div class="card card-elevated">
       <div class="section-head">
-        <h2>${icon('ring', 18)} Courtship, Gehaz, Noqta & Marriage (${esc(getCountry(S.country).name)})</h2>
+        <h2>${icon('ring', 18)} Relationships & Marriage (${esc(getCountry(S.country).name)})</h2>
         <span class="hud-pill">${esc(S.marriage.status.toUpperCase())}</span>
       </div>
 
@@ -1266,7 +1270,7 @@ function renderMarriageSubtabHtml(S) {
 
       ${(!partner && (spouses.length === 0 || canPolygamy)) ? `
         <p class="muted" style="margin-bottom:10px">
-          ${spouses.map(sp=>{const r=sp.relationshipProgress;return `<div class="card"><strong>${esc(sp.firstName)} · ${r?.stage==='separated'?'Separated':'Together'}</strong>${r?.affair&&r.affair.status!=='hidden'?'<p>Affair confirmed</p>':''}${r?.courtCase?`<p>${esc(r.courtCase.stage)} · ${Math.max(0,r.courtCase.dueAt-S.year*12-S.month)} mo</p>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="counsel">Counselling</button>${r?.stage==='separated'?`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="reconcile" ${r?.courtCase?'disabled':''}>Reconcile</button>`:`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="separate">Separate</button>`}${r?.affair?.status==='discovered'?`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="discuss">Discuss affair</button>`:''}</div></div>`;}).join('')}
+          ${spouses.map(sp=>{const r=sp.relationshipProgress;const m=spouseMind(S,sp);return `<div class="card"><strong>${esc(sp.firstName)} · ${r?.stage==='separated'?'Separated':'Together'}</strong><div class="muted">${m.ambition>65?'Ambitious · ':''}${m.thrift>65?'Careful with money · ':''}${m.independence>55?'Independent · ':''}${m.wantsChildren?'Wants children':'Does not want children'}</div>${m.pending?`<p>${esc(SPOUSE_DECISIONS[m.pending.kind])}${m.pending.kind==='spending'?` · ${esc(formatMoney(spouseRequestCost(S,'spending'),S.country))}`:['boundary','reconcile'].includes(m.pending.kind)?' · 3 energy':''}</p><button class="btn btn-sm" data-action="spouse-decision" data-spouse="${sp.id}" data-accept="yes">Agree</button> <button class="btn btn-sm" data-action="spouse-decision" data-spouse="${sp.id}" data-accept="no">Not now</button>`:''}${r?.affair&&r.affair.status!=='hidden'?'<p>Affair confirmed</p>':''}${r?.courtCase?`<p>${esc(r.courtCase.stage)} · ${Math.max(0,r.courtCase.dueAt-S.year*12-S.month)} mo</p>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="counsel">Counselling</button>${r?.stage==='separated'?`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="reconcile" ${r?.courtCase?'disabled':''}>Reconcile</button>`:`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="separate">Separate</button>`}${r?.affair?.status==='discovered'?`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="discuss">Discuss affair</button>`:''}</div></div>`;}).join('')}
       ${spouses.length > 0 ? `You are already married to ${esc(spousePath.firstSpouse?.fullName || 'your spouse')}. These meetings are for a second wife: personal status law here permits a second marriage if financially capable — but your first wife will learn of it, and she can ask for a divorce.` : 'Meet someone through your work/social circle or ask family for a traditional Salonat match.'}
         </p>
         <div style="display:flex;flex-wrap:wrap;gap:8px">
@@ -1307,14 +1311,14 @@ function renderMarriageSubtabHtml(S) {
         </div>
       ` : ''}
 
-      ${spouses.map(sp=>{const r=sp.relationshipProgress;return `<div class="card"><strong>${esc(sp.firstName)} · ${r?.stage==='separated'?'Separated':'Together'}</strong>${r?.affair&&r.affair.status!=='hidden'?'<p>Affair confirmed</p>':''}${r?.courtCase?`<p>${esc(r.courtCase.stage)} · ${Math.max(0,r.courtCase.dueAt-S.year*12-S.month)} mo</p>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="counsel">Counselling</button>${r?.stage==='separated'?`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="reconcile" ${r?.courtCase?'disabled':''}>Reconcile</button>`:`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="separate">Separate</button>`}${r?.affair?.status==='discovered'?`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="discuss">Discuss affair</button>`:''}</div></div>`;}).join('')}
+      ${spouses.map(sp=>{const r=sp.relationshipProgress;const m=spouseMind(S,sp);return `<div class="card"><strong>${esc(sp.firstName)} · ${r?.stage==='separated'?'Separated':'Together'}</strong><div class="muted">${m.ambition>65?'Ambitious · ':''}${m.thrift>65?'Careful with money · ':''}${m.independence>55?'Independent · ':''}${m.wantsChildren?'Wants children':'Does not want children'}</div>${m.pending?`<p>${esc(SPOUSE_DECISIONS[m.pending.kind])}${m.pending.kind==='spending'?` · ${esc(formatMoney(spouseRequestCost(S,'spending'),S.country))}`:['boundary','reconcile'].includes(m.pending.kind)?' · 3 energy':''}</p><button class="btn btn-sm" data-action="spouse-decision" data-spouse="${sp.id}" data-accept="yes">Agree</button> <button class="btn btn-sm" data-action="spouse-decision" data-spouse="${sp.id}" data-accept="no">Not now</button>`:''}${r?.affair&&r.affair.status!=='hidden'?'<p>Affair confirmed</p>':''}${r?.courtCase?`<p>${esc(r.courtCase.stage)} · ${Math.max(0,r.courtCase.dueAt-S.year*12-S.month)} mo</p>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="counsel">Counselling</button>${r?.stage==='separated'?`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="reconcile" ${r?.courtCase?'disabled':''}>Reconcile</button>`:`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="separate">Separate</button>`}${r?.affair?.status==='discovered'?`<button class="btn btn-sm" data-action="relationship-step" data-spouse="${sp.id}" data-step="discuss">Discuss affair</button>`:''}</div></div>`;}).join('')}
       ${spouses.length > 0 ? `
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft)">
           ${S.marriage.pregnancy
             ? `<span class="hud-pill" style="background:#EAF6F0;color:#1B734E">Expecting Baby in ${S.marriage.pregnancy.dueMonths} month(s)!</span>`
             : `<button class="btn btn-primary btn-sm" data-action="toggle-baby" ${spouses.every(sp=>sp.relationshipProgress?.stage==='separated')?'disabled':''}>${S.marriage.tryingForBaby ? '✓ Trying for Baby (Pause)' : 'Try for a Baby'}</button>`
           }
-          <button class="btn btn-sm" data-action="cycle-split">Finances: ${S.marriage.householdSplit === 'traditional_provider' ? 'Provider (Nafaqa)' : S.marriage.householdSplit === 'shared_50_50' ? 'Shared 50/50' : 'Proportional'}</button>
+          <button class="btn btn-sm" data-action="cycle-split">Finances: ${S.marriage.householdSplit === 'traditional_provider' ? 'Provider' : S.marriage.householdSplit === 'shared_50_50' ? 'Shared 50/50' : 'Proportional'}</button>
           ${spouses.some(sp => sp.residenceCountry !== S.country) ? `<button class="btn btn-navy btn-sm" data-action="reunify-family">Sponsor Family Reunification to ${esc(getCountry(S.country).name)}</button>` : ''}
           <button class="btn btn-sm" data-action="divorce" data-mode="standard">Divorce, sell shared titles</button><button class="btn btn-sm" data-action="divorce" data-mode="standard" data-assets="buyout">Negotiate keeping home/car titles (cash buyout)</button>
           ${(S.player.gender === 'f' && prof.hasMahr) ? `<button class="btn btn-sm" data-action="divorce" data-mode="khula">File Khula</button>` : ''}
@@ -1398,8 +1402,10 @@ function renderChildrenSubtabHtml(S) {
   `;
 }
 
+function renderPersonRequest(S,p){const m=personMind(S,p);if(!canContactPerson(S,p))return '<p class="muted">Taking space · Not accepting contact</p>';const q=m.pending;if(!q||p.role==='spouse')return '';return `<div class="person-request"><p>${esc(PEOPLE_REQUESTS[q.kind]||q.kind)} · ${q.kind==='call'?1:2} energy${q.kind==='money'?` · ${esc(formatMoney(peopleRequestAmount(S,p),S.country))}`:''}</p><button class="btn btn-sm" data-action="people-decision" data-id="${p.id}" data-accept="yes">${q.kind==='call'?'Answer':'Help'}</button> <button class="btn btn-sm" data-action="people-decision" data-id="${p.id}" data-accept="no">Not now</button></div>`;}
 function renderNpcCardHtml(S, p) {
   const quote = generateContextualLine(S, p);
+  const mind=personMind(S,p);
   const openPromises = (p.rel?.promises || []).filter(pr => pr.status === 'open');
   /* v2.15 W5 — the full memory list is rendered below ("What X remembers"). */
   const pCountry = getCountry(p.residenceCountry || S.country);
@@ -1437,6 +1443,7 @@ function renderNpcCardHtml(S, p) {
         </div>
       </div>
 
+      ${renderPersonRequest(S,p)}
       <div class="npc-meters">
         ${vitalBarHtml('Affection', p.rel.affection, '#C84B31')}
         ${vitalBarHtml('Respect', p.rel.respect, '#1D3557')}
@@ -3215,7 +3222,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
 
   return `
     ${renderEditorialBannerHtml(selUnit.shape === 'chalet' ? 'coastal_summer_chalet_ink.jpg' : pickDynamicBanner(S, 'realestate', 'compounds'), `${mktCountryObj.name} Real Estate, Gated Compounds & National Housing`)}
-    ${propMarket==='usa'?`<div class="card"><h3>Woodland Cabin <span title="Pennsylvania example; prices and costs are estimates." aria-label="Information">ⓘ</span></h3><p>109 m² · 2 bedrooms · Rural getaway</p><strong>${esc(formatMoney(eraLocalCost(RURAL_CABIN.price2026,'usa',S.year),S.country))}</strong><p>Tax 576 USD/yr · Insurance 420 USD/yr<br>Maintenance 3%/yr · Personal use</p><button class="btn" data-action="buy-rural-cabin" ${S.country==='usa'&&S.money.cash>=eraLocalCost(RURAL_CABIN.price2026,'usa',S.year)?'':'disabled'}>Buy cabin</button></div>`:''}
+    ${propMarket==='usa'?`<div class="card"><img src="assets/homes/usa-woodland-cabin.jpg" alt="Woodland Cabin exterior" style="width:100%;max-height:260px;object-fit:contain"><h3>Woodland Cabin <span title="Pennsylvania example; prices and costs are estimates." aria-label="Information">ⓘ</span></h3><p>109 m² · 2 bedrooms · Rural getaway</p><strong>${esc(formatMoney(eraLocalCost(RURAL_CABIN.price2026,'usa',S.year),S.country))}</strong><p>Tax ${esc(formatMoney(eraLocalCost(576,'usa',S.year),'usa'))}/yr · Insurance ${esc(formatMoney(eraLocalCost(420,'usa',S.year),'usa'))}/yr<br>Maintenance 3%/yr · Personal use</p><button class="btn" data-action="buy-rural-cabin" ${S.country==='usa'&&S.money.cash>=eraLocalCost(RURAL_CABIN.price2026,'usa',S.year)?'':'disabled'}>Buy cabin</button></div>`:''}
     <div class="card card-elevated">
       <div class="section-head">
         <h2>${icon('realestate', 18)} Real Compounds, Districts & National Housing (${esc(mktCountryObj.name)})</h2>
@@ -3650,7 +3657,7 @@ function renderFinanceChartsHtml(S) {
   return `
     <div class="card">
       <div class="section-head">
-        <h3>Your Money in Pictures — drawn from your real ledger</h3>
+        <h3>Money History</h3>
         <span class="hud-pill mono">${ledgerCount} transactions recorded</span>
       </div>
       <h4 style="font-family:var(--font-editorial);font-size:1rem;margin:10px 0 6px">Money In vs Money Out</h4>

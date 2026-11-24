@@ -1,3 +1,5 @@
+import{answerPeopleDecision}from './systems/peopleAutonomy.js';
+import{answerSpouseDecision}from './systems/spouseAutonomy.js';
 import{relationshipAction}from './systems/relationshipProgression.js';
 import{enrollChildCourse}from './systems/educationFunding.js';
 import{requestSupportReview}from './systems/divorceModel.js';
@@ -1564,6 +1566,8 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='people-decision'){handleActionResult(answerPeopleDecision(S,btn.dataset.id,btn.dataset.accept==='yes'));return;}
+    if(action==='spouse-decision'){handleActionResult(answerSpouseDecision(S,btn.dataset.spouse,btn.dataset.accept==='yes'));return;}
     if(action==='relationship-step'){handleActionResult(relationshipAction(S,btn.dataset.spouse,btn.dataset.step));return;}
     if(action==='child-course'){handleActionResult(enrollChildCourse(S,btn.dataset.cid));return;}
     if(action==='support-review'){handleActionResult(requestSupportReview(S,btn.dataset.id));return;}

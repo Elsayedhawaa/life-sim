@@ -3,7 +3,7 @@ import {propertyStyle} from '../data/localPropertyStyles.js';
 export function renderHomeTypeArt(shape='apartment', country='egy', size=84, styleId=null) {
  const labels={studio:'Studio building',apartment:'Apartment block',duplex:'Two-level home',penthouse:'Rooftop penthouse',townhouse:'Terraced townhouse',twin_house:'Attached twin home',villa:'Detached villa',chalet:'Coastal chalet',mansion:'Large estate',land:'Land plot',commercial:'Shop building'};
  const label=labels[shape]||'Home';
- const style=propertyStyle(styleId);
+ const style=propertyStyle(shape==='cabin'?'usa_rural_cabin':styleId);
  if(style)return `<img src="assets/homes/${style.art}" alt="${style.name}" width="${size}" height="${size}" style="object-fit:contain;flex-shrink:0;border-radius:8px">`;
  if(country==='egy'&&['apartment','villa'].includes(shape))return `<img src="assets/homes/egypt-${shape}.jpg" alt="${label}" width="${size}" height="${size}" style="object-fit:contain;flex-shrink:0;mix-blend-mode:multiply;border-radius:8px">`;
  const flat=['egy','sau','uae'].includes(country);const roof=(x,y,w)=>flat?`<path d="M${x-2} ${y}h${w+4}v-5h-${w+4}Z" fill="#c7b28d"/>`:`<path d="M${x-3} ${y}l${w/2+3}-15 ${w/2+3} 15Z" fill="#a08270"/>`;
