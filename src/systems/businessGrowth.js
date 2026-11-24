@@ -1,3 +1,4 @@
+import { businessSalvage } from '../data/businessValuation.js';
 /* ============================================================================
    World Life 2.0 — Business Growth (v2.17 W2: §3 outcome distribution +
    §6 expansion — a store becomes a chain/group).
@@ -444,7 +445,7 @@ export function killBusiness(S, biz, cause) {
       biz.employees = 0;
     }
   }
-  const salvage = Math.round((Number(biz.capitalInvested) || 0) * 0.5 * clamp((biz.equityOwned ?? 100) / 100, 0, 1));
+  const salvage = businessSalvage(biz);
   const exit = settleBusinessExitDebt(S, biz, salvage);
   const debtPaid = exit.debtPaid;
   const remainder = exit.proceeds;

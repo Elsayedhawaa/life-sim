@@ -1,3 +1,4 @@
+import { businessValuation } from '../data/businessValuation.js';
 /* ============================================================================
    World Life 2.0 — Canonical State & Unified Person Schema
    ONE Person shape for player, parents, siblings, classmates, friends, boss,
@@ -793,6 +794,13 @@ export function computeNetWorthLocal(S) {
   }
   for (const loan of S.money.loans) {
     total -= Math.max(0, Number(loan.balance) || 0);
+  }
+  const businesses = S.career?.businesses?.length ? S.career.businesses : S.career?.business ? [S.career.business] : [];
+  const seenBusinesses = new Set();
+  for (const biz of businesses) {
+    if (!biz || seenBusinesses.has(biz.id)) continue;
+    seenBusinesses.add(biz.id);
+    total += businessValuation(biz) - Math.max(0, Number(biz.debtLocal) || 0);
   }
   for (const cc of (S.creditCards || [])) {
     total -= Math.max(0, Number(cc.balance) || 0);

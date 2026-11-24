@@ -575,7 +575,7 @@ export function renderExitsHtml(S, biz) {
   return `
   <div class="biz-exits-section" style="margin-top:10px;">
     <h4>Exits — sell the business, list it, or franchise it</h4>
-    <div class="muted" style="margin-bottom:6px;">Valuation: <strong>${money(S, valuation)}</strong> (0.7× capital + 2.8× annual net profit).</div>
+    <div class="muted" style="margin-bottom:6px;">Valuation: <strong>${money(S, valuation)}</strong> (your ownership share of 0.7× capital + 2.8× annual net profit + retained cash; unpaid bills settle on exit).</div>
     <div style="margin-bottom:8px;">
       <strong>Trade sale.</strong> ${offer ? esc(offer.reason) + (offer.negotiated ? ` Counter: <strong>${money(S, offer.counter)}</strong>.` : '') : 'A named buyer will offer above or below the valuation, depending on the business\'s health and the market.'}
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">

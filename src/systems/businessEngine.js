@@ -1,3 +1,5 @@
+import { businessValuation, businessSalvage } from '../data/businessValuation.js';
+export { businessValuation } from '../data/businessValuation.js';
 /* ============================================================================
    World Life 2.0 — Business Engine (v2.11 W1: Core, v2.14 §1: no cap)
    Multiple businesses at once (no hard cap — management capacity is
@@ -930,20 +932,6 @@ export function expandBusiness(S, bizRef) {
   return { ok: true, msg: `Expanded ${biz.name} (level ${biz.level})!`, biz };
 }
 
-export function businessValuation(biz) {
-  const wages = (biz.staff || []).reduce((sum, st) => sum + (st.wageLocal || 0), 0);
-  const rent = biz.premises?.monthlyRentLocal || 0;
-  const lastNet = biz.lastPL ? biz.lastPL.net : (biz.monthlyRev - biz.monthlyCost - wages - rent);
-  const annualProfit = Math.max(0, lastNet * 12);
-  /* v2.20 I2 — equity is real now (item 5): a business you own 80%
-     of sells for 80% of its valuation. Funding rounds and co-founders
-     dilute equityOwned in businessDecisions.js; the old code paid the
-     full valuation whatever you owned, so the dilution was a dead
-     number. Unset equity means 100%. */
-  const equity = clamp((biz.equityOwned ?? 100) / 100, 0, 1);
-  return Math.round((biz.capitalInvested * 0.7 + annualProfit * 2.8) * equity);
-}
-
 /* Owner-funded game ventures retain unpaid bills after an exit. */
 export function settleBusinessExitDebt(S, biz, grossProceeds) {
   const proceeds = Math.max(0, Math.round(grossProceeds || 0));
@@ -951,6 +939,7 @@ export function settleBusinessExitDebt(S, biz, grossProceeds) {
   const debtPaid = Math.min(debt, proceeds);
   const shortfall = debt - debtPaid;
   biz.debtLocal = 0;
+  biz.retainedCash = 0;
   if (shortfall > 0) {
     S.money.loans.push({ id: nextId(S, 'loan'), label: `Business exit shortfall: ${biz.name}`, balance: shortfall,
       monthlyPayment: Math.max(1, Math.ceil(shortfall / 24)), annualRate: 0, remainingMonths: 24,
@@ -993,7 +982,7 @@ export function closeBusiness(S, biz, reason, opts = {}) {
   target.deathCause = reason;
   target.deadYear = S.year;
   target.deadMonth = S.month;
-  const salvage = Math.round((target.capitalInvested || 0) * 0.5 * clamp((target.equityOwned ?? 100) / 100, 0, 1)); /* v2.20 I2 — equity is real: salvage pays out your share only. */
+  const salvage = businessSalvage(target);
   const exit = settleBusinessExitDebt(S, target, salvage);
   const staffCount = (target.staff || []).length;
   let severancePaid = 0;

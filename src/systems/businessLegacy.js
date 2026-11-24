@@ -1,3 +1,4 @@
+import { businessSalvage } from '../data/businessValuation.js';
 /* ============================================================================
    World Life 2.11 (W4) — Business Legacy: relocation keep/sell/close,
    remote management, inheritance on death, and the will / heir choice.
@@ -128,7 +129,7 @@ export function computeBusinessValuation(biz) {
 /* Salvage on a close, per W1's canonical close rule: 0.5 x capital. */
 export function computeBusinessSalvage(biz) {
   if (!biz) return 0;
-  return Math.round((Number(biz.capitalInvested) || 0) * 0.5);
+  return businessSalvage(biz);
 }
 
 /* A local manager's wage: the highest-paid employee's wage when the
