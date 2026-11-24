@@ -102,4 +102,8 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W31 Family loan repayments need actual outstanding paid principal, not merely an after-event flag; gift/saving/spending labels must match real transfers rather than credit full gift after giving half.
 - [x] W32 Zakat narrative invents flat due amount/half promise independently of Finance, can charge twice without annual record. Use same modeled threshold/amount/payment record, no invented half-payment obligation.
 - [x] W33 Personal receivable on borrower death has no estate outcome, leaves uncollectible asset. Mark bad debt with honest write-off if estate recovery is not modeled, preserve history.
-- [ ] W34 Early-retirement event promises pension but leaves player merely unemployed; negotiated package pays while retaining job. Make explicit employer-exit package with actual salary multiple, both payout choices end job, no unsupported pension promise or five-year instant narrative.
+- [x] W34 Early-retirement event promises pension but leaves player merely unemployed; negotiated package pays while retaining job. Make explicit employer-exit package with actual salary multiple, both payout choices end job, no unsupported pension promise or five-year instant narrative.
+- [ ] W35 Salary-review scene advertises fixed monthly raise but applies4%/7%; ground quote/effects in actual gross and honor active pay freeze.
+- [ ] W36 Card-minimum/collector chain invents liabilities and repayments without matching actual balance; use recorded card/collections debt, same-payment route and actual remaining balance.
+- [ ] W37 Overdraft/refund narrative needs actual fee/tax evidence; no retroactive invented bank withdrawal, refund, fake account switch or card-payment label that only adds cash.
+- [ ] W38 Gulf remittance/end-service scenes require real transfer/job/entitlement evidence, not fixed arbitrary promised payments; review concrete path.

@@ -7631,47 +7631,11 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     cooldownYears: 2,
     gates: { requiredPeople: ['boss'],"minAge": 24, "hasJob": true},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(1200, S.country, S.year);
-      return {
-        key: 'ev_career_salary_review',
-        category: 'career',
-        title: "The Annual Salary Review",
-        text: `The annual review arrives: your salary is reviewed against the market, your performance, and the budget. The number ${bossName} offers is ${formatMoney(A, S.country)} a month more — less than you hoped, more than nothing.`,
-        choices: [
-          {
-            label: "Accept the offer",
-            effect: (st) => {
-              if (st.career.job) st.career.job.monthlyGross = Math.round(st.career.job.monthlyGross * (1 + (+4) / 100));
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+2));
-              recordJournal(st, `You accepted the salary review offer of ${formatMoney(A, S.country)} a month more.`, 'career');
-            },
-          },
-          {
-            label: "Negotiate for more",
-            effect: (st) => {
-              if (st.career.job) st.career.job.monthlyGross = Math.round(st.career.job.monthlyGross * (1 + (+7) / 100));
-              st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+2));
-              if (st.skills) st.skills.charisma = clamp(st.skills.charisma + (+2));
-              recordJournal(st, `You negotiated the salary review up from ${formatMoney(A, S.country)}. ${bossName} respected the pushback.`, 'career');
-            },
-          },
-          {
-            label: "Reject it and look elsewhere",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (-1));
-              recordJournal(st, `You rejected the salary review offer and started looking elsewhere.`, 'career');
-            },
-          },
-        ],
-      };
+      const job=S.career.job;if(!S.career.employed||!job)return null;
+      const gross=Math.max(0,Math.round(job.monthlyGross||0)),base=Math.round(gross*1.04),higher=Math.round(gross*1.07),id=job.id;
+      if((job.payFrozenUntilYear||0)>=S.year)return null;
+      const apply=(st,value)=>{const current=st.career.job;if(!st.career.employed||current?.id!==id||(current.payFrozenUntilYear||0)>=st.year||current.monthlyGross!==gross)return;current.monthlyGross=value;recordJournal(st,'Salary review applied to actual monthly gross. New gross: '+formatMoney(value,st.country)+'.','career');};
+      return{key:'ev_career_salary_review',category:'career',title:'The Annual Salary Review',text:`Current gross ${formatMoney(gross,S.country)}/month. Offer: +${formatMoney(base-gross,S.country)} (4%), new gross ${formatMoney(base,S.country)}. Negotiated option: +${formatMoney(higher-gross,S.country)} (7%), new gross ${formatMoney(higher,S.country)}. Tax and pension deductions still apply.`,choices:[{label:'Accept the 4% offer',effect:st=>apply(st,base)},{label:'Accept the negotiated 7% raise',effect:st=>apply(st,higher)},{label:'Keep current pay and look elsewhere',effect:st=>{}}]};
     },
   },
   {

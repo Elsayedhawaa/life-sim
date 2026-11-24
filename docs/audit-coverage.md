@@ -486,3 +486,6 @@ Giving scene uses same actual Finance threshold/estimate/payment-year flag, no f
 
 ### W34 employer exit promise integrity
 Fresh hosted German/Swedish starting-life action/reload passes returned clean but only reached early adulthood, not full-life certification. Source audit found early-retirement scene promised unsupported pension, and negotiation paid while keeping job. Reframed as explicit employer-exit package of6actual gross months/negotiated7.5months: both payment choices end job, keep-working does not skip5years or pay. Normal pension eligibility/private assets remain separate.163focused files pass,390px actual22500USDnegotiated departure/job loss/reload checked and pixels inspected.
+
+### W35 salary review quote
+Salary-review scene now quotes actual current gross, exact4/7%raise amounts/new gross, applies same snapshot once and honors active pay freeze both on scene creation and choice.164focused files pass.390px actual7%raise3000to3210USDgross, no instant cash, reload passed and pixels inspected. W36/37/38new event-cash provenance findings queued, not assumed fixed.
