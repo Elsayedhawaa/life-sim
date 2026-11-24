@@ -550,11 +550,17 @@ export function continueAsChild(S, childId) {
   /* Fast-set child's current real age, citizenships & status */
   nextS.year = S.year;nextS.month=S.month;
   nextS.player.age = child.age;
+  nextS.player.birthYear = child.birthYear;
+  nextS.player.birthMonth = child.birthMonth || 1;
+  nextS.player.nationality = child.nationality || child.citizenships?.[0] || nextS.country;
+  nextS.homeCountry = nextS.player.nationality;
+  nextS.money.savings = Math.max(0,Number(child.career?.savingsLocal)||0);
   nextS.player.vitals={...nextS.player.vitals,...child.vitals};
   nextS.player.religion=child.religion||nextS.player.religion;
   if(child.appearance)nextS.player.appearance={...child.appearance};
   nextS.education.stage=child.age<6?'infancy':child.age<12?'primary':child.age<15?'middle':child.age<18?'high':'completed';
-  nextS.legal.citizenships = [...new Set([...child.citizenships])];
+  nextS.legal.citizenships = [...new Set(child.citizenships?.length?child.citizenships:[child.nationality||S.country])];
+  nextS.player.citizenships=[...nextS.legal.citizenships];
   nextS.legal.passports = nextS.legal.citizenships.map(cid => ({
     country: cid,
     issuedYear: S.year,
@@ -567,6 +573,10 @@ export function continueAsChild(S, childId) {
     nextS.education.highSchoolScore = clamp(child.vitals.smarts, 65, 95);
     nextS.education.degrees=child.education?.degree?[child.education.degree]:[];
     nextS.money.parentalAllowanceActive = false;
+    if(child.career?.job && child.career.monthlyIncomeLocal>0){
+      nextS.career.employed=true;
+      nextS.career.job={...child.career.job,bossId:null};
+    }
   }
 
   /* v2.11 W4 — deliver the inherited businesses: one whose heir IS this
