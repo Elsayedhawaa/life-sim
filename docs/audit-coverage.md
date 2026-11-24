@@ -249,3 +249,14 @@ Team can hire the existing living spouse, adult child, parent or sibling identit
 Validation: 98 focused test files, 81 navigation checks, 12,152 renders, ten local phone family-hire/reload flows. Identity count, duplicate rejection, underage/stranger/country/qualification gates, job replacement, onboarding/payroll, dismissal and exact spouse contribution versus company wage cash identity pass. Employee income mirrors convert from business book currency to person residence currency. Hosted checks follow publication.
 
 Limits: employees only, not appointing family as the separate manager role or giving ownership. Eligibility is a simplified degree/recorded-role check, not verified national licensing. Full-time work blocks young full-time students; no family part-time apprenticeship rota. Loyalty follows trust and can still lead to quitting, not a guaranteed relative bonus. No family ownership council, automatic succession or special kin tax treatment. These are not silently marked complete by employee hiring.
+
+
+## Former-spouse company share buyout
+
+Money shows the existing co-owner register after an actual divorce: percent, debt-adjusted whole-company model value, wallet-currency price and founder ownership before/after. A full cash+savings buyback pays the same former spouse in their residence currency, removes only their shares, restores founder ownership and preserves investor equity, reserve and company debt. Stale price, missing person, insufficient liquidity, ownership overflow and replay are rejected. Continuing co-ownership retains positive-profit distributions.
+
+Corrected two old distribution errors: former-spouse percentages now apply to whole-company profit rather than a founder/ex-only denominator that overlapped investors. The recipient credit now has an actual matching household cash debit, rather than only a summary/ledger label. Tests reconcile real settlement with a 42.5/42.5/15 founder/ex/investor register before and after buyout.
+
+Validation: 99 focused files, 12,152 renders, ten local sector phone buy/pay/recipient/share/reload flows. Actual divorce creates the register; foreign wallets and foreign recipients convert correctly. Hosted checks follow publication.
+
+Limits: fixed full-share model quote, no bargaining, installment note or partial buyback. New marital businesses split half the founder stake; premarital businesses remain excluded under the existing simplified agreement. This is not local divorce law. Existing business debt remains a founder liability on exit and net worth, even while minority shares exist; the buyout does not rewrite those legacy liability mechanics. Expanded inheritance is next. Remaining previously disclosed limits and the eight ranked gaps stay open.

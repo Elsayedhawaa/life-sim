@@ -1,3 +1,4 @@
+import{renderDivorceShares}from'../systems/companyDivorceShares.js';
 import{renderFamily}from'../systems/companyFamily.js';
 import{operatingBase}from'../systems/companyOperatingContent.js';
 import{renderEquipment}from'../systems/companyEquipment.js';
@@ -2490,6 +2491,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       <div class="biz-subtitle">${esc(getCountry(biz.country||S.country).name)} · ${esc(biz.premises?.label||'Home based')} · ${staffCount} ${staffCount===1?'employee':'employees'}</div>
       <nav class="biz-work-tabs" aria-label="Company area">${[['overview','Overview'],['products','Products'],['team','Team'],['operations','Operations'],['growth','Growth'],['money','Money']].map(([id,label])=>`<button class="${businessTab===id?'active':''}" aria-pressed="${businessTab===id}" data-action="biz-tab" data-area="${id}">${label}</button>`).join('')}</nav>
       ${biz.enterprise?renderCompany(S,biz,businessTab):biz.tech?renderTech(S,biz,businessTab):''}
+      ${renderDivorceShares(S,biz,businessTab)}
       ${renderFamily(S,biz,businessTab)}
       ${renderSpace(S,biz,businessTab)}
       ${renderOperating(S,biz,businessTab)}
