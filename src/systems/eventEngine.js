@@ -500,6 +500,7 @@ export function isRandomLifeSceneCurrent(scene, S) {
 function prepareRandomLifeScene(S, ev, scene, ctx, buildRngState, savedResolutionKey=null) {
       scene.key = ev.id;
       scene.baseId = ev.id;
+      scene.people = scenePeopleLabels(scene, ctx);
       scene.eventId = ev.id;
       scene.eventBuildRngState = buildRngState;
       scene.eventRelevance=eventRelevance(S,ev);
@@ -580,4 +581,32 @@ export function restoreRandomLifeScene(S, saved) {
     return restored;
   } catch (_) { return null; }
   finally { S.rngState = rngNow; }
+}
+
+
+/* Who is who. Names in event text are real people from the character's
+   circle; this lists each one that the scene names with their relationship
+   so the player never has to guess. Built from the resolved cast only. */
+const CAST_LABEL = {
+  mom: () => 'your mother', dad: () => 'your father',
+  sib: (p) => (p.gender === 'f' ? 'your sister' : p.gender === 'm' ? 'your brother' : 'your sibling'),
+  spouse: (p) => (p.gender === 'f' ? 'your wife' : p.gender === 'm' ? 'your husband' : 'your spouse'),
+  child: (p) => (p.gender === 'f' ? 'your daughter' : p.gender === 'm' ? 'your son' : 'your child'),
+  youngChild: (p) => (p.gender === 'f' ? 'your daughter' : 'your son'),
+  teen: (p) => (p.gender === 'f' ? 'your daughter' : 'your son'),
+  adultChild: (p) => (p.gender === 'f' ? 'your daughter' : 'your son'),
+  friend: () => 'your friend', boss: () => 'your boss',
+};
+export function scenePeopleLabels(scene, ctx) {
+  const text = `${scene?.title || ''} ${scene?.text || ''}`;
+  const out = [], seen = new Set();
+  for (const [role, label] of Object.entries(CAST_LABEL)) {
+    const p = ctx?.[role];
+    if (!p || !p.firstName || seen.has(p.id)) continue;
+    const esc = p.firstName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (!new RegExp(`(^|[^\\p{L}])${esc}([^\\p{L}]|$)`, 'u').test(text)) continue;
+    seen.add(p.id);
+    out.push({ name: p.firstName, label: label(p) });
+  }
+  return out;
 }

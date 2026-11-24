@@ -72,3 +72,6 @@ console.log('NPC death causes come from recorded illness, health and age, otherw
  for(const id of ['ev_family_sib_tuition','ev_family_sib_engaged','ev_family_sib_wedding','ev_family_sib_moves_abroad']){const t=G(id).build(s,{sib:{firstName:'Sam'}}).text;assert(!/your (mother|father)/.test(t),id+': '+t);}
  const t2=G('ev_child_first_word').build(s,{youngChild:{firstName:'Jack'}}).text;assert(!/spouse/i.test(t2));
  const m=s.people[s.relations.motherId];m.alive=true;assert(/your mother/.test(G('ev_family_sib_wedding').build(s,{sib:{firstName:'Sam'}}).text));console.log('sibling/child scenes mention parents and spouse only when alive/present');}
+// relationships are named
+{const s=setup();const b=snapshotMajor(s);const f=s.people[s.relations.fatherId];f.alive=false;f.age=70;announceMajorChanges(s,b);const sc=[...(s.activeScene?[s.activeScene]:[]),...s.sceneQueue].find(x=>x.major&&x.majorKind==='death');
+ assert(sc,'death scene queued');{assert(/^Your father, /.test(sc.title),sc.title);assert(sc.people&&sc.people[0].label==='your father');}}

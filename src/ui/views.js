@@ -1126,6 +1126,7 @@ function renderActiveSceneHtml(S) {
         </div>
         ${renderEditorialSketchSvg(sc.category || 'life', 124, 80, `${S.turn || 0}_${sc.id || sc.title || ''}_${S.seed || 1}`)}
       </div>
+      ${Array.isArray(sc.people) && sc.people.length ? `<div class="muted scene-people" style="font-size:0.85rem;margin:2px 0 6px">${sc.people.map(x => `${esc(x.label.charAt(0).toUpperCase() + x.label.slice(1))}, ${esc(x.name)}`).join(" · ")}</div>` : ""}
       <p class="scene-body">${esc(countryLevelNarrative(sc.text,S))}</p>
       ${sc.details?.text?`<details class="scene-details"><summary>${esc(sc.details.label||'Details')}</summary><p class="muted">${esc(sc.details.text)}</p></details>`:''}
       <div class="scene-choices">

@@ -63,13 +63,18 @@ function announce(S, kind, { title, text, personId = null, facts = {}, journal =
   S.majorEvents.push(rec);
   if (S.majorEvents.length > 120) S.majorEvents.splice(0, S.majorEvents.length - 120);
   const key = `major_${kind}_${S.year}_${S.month}_${personId || 'self'}`;
+  const who = personId ? S.people?.[personId] : null;
+  const roleKey = facts.role || (/^(separation|divorce|affair)/.test(kind) ? 'spouse' : null);
+  const people = who && who.firstName && roleKey ? [{ name: who.firstName, label: (ROLE_WORD[roleKey] || '').replace('your spouse', who.gender === 'f' ? 'your wife' : who.gender === 'm' ? 'your husband' : 'your spouse') }].filter((x) => x.label) : [];
   queueScene(S, {
+    people,
     key, baseId: key, category: 'milestone', title, text, urgent: true, major: true, majorKind: kind, maxPerLife: 99,
     choices: continueChoices(text, journal),
   }, true);
   return rec;
 }
 
+const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 const ROLE_WORD = { mother: 'your mother', father: 'your father', spouse: 'your spouse', partner: 'your partner', child: 'your child', sibling: 'your sibling' };
 
 export function announceMajorChanges(S, before) {
@@ -102,7 +107,7 @@ export function announceMajorChanges(S, before) {
     if (b.alive && p && !p.alive) {
       const nm = p.fullName || p.firstName || ROLE_WORD[b.role];
       made.push(announce(S, 'death', {
-        title: `${p.firstName || 'Someone close'} Has Died`,
+        title: `${b.role in ROLE_WORD && p.firstName ? `${cap(ROLE_WORD[b.role])}, ${p.firstName}, Has Died` : `${p.firstName || 'Someone close'} Has Died`}`,
         text: `${nm}, ${ROLE_WORD[b.role]}, has died${p.age >= 1 ? ` at ${p.age}` : ''}${p.deathCause ? ` from ${p.deathCause}.` : '. The cause is not known.'}`,
         personId: id, facts: { role: b.role, age: p.age || null, cause: p.deathCause || null },
       }));
