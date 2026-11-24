@@ -8,9 +8,11 @@
    Scope, stated plainly: relatives are parents, siblings, spouses and
    children who are 18 to 57. Minors are deliberately excluded (a design
    choice, not a gap to hide). Friends, partners, bosses and everyone
-   58 and over are handled elsewhere or not at all. An illness recorded
-   at 57 stays on the person; from 58 the older branch in soulEngine owns
-   it (extra mortality, no recovery roll).
+   58 and over get no NEW illness or accident from this file. An illness
+   this file recorded keeps being ticked here after 58 (recovery or death
+   by its own rates), alongside the older elderly branch in soulEngine,
+   which adds its normal age and illness mortality. Death cause is always
+   the recorded illness.
 
    The caller passes the death function (die), so this file never imports
    soulEngine.js and there is no import cycle.
@@ -75,7 +77,9 @@ export function tickNpcHealthLife(S, { die } = {}) {
   if (!S?.people || typeof die !== 'function') return [];
   const events = [];
   for (const [person, role] of relatives(S)) {
-    if (!person.alive || person.age < NPC_HEALTH_MIN_AGE || person.age > NPC_HEALTH_MAX_AGE) continue;
+    if (!person.alive || person.age < NPC_HEALTH_MIN_AGE) continue;
+    const elderly = person.age > NPC_HEALTH_MAX_AGE;
+    if (elderly && !(person.illness && person.illness.src === 'young')) continue;
     person.vitals ??= { health: 70 };
     const y = S.year;
     /* One health tick per person per calendar year, however often this runs. */
@@ -87,7 +91,7 @@ export function tickNpcHealthLife(S, { die } = {}) {
       if (person.accident.severity === 'moderate') recordJournal(S, `${cap(who(person, role))}, has recovered from the accident.`, 'family');
     }
     /* 1. A sudden accident. */
-    if (roll(S, person, y, 'accident') < ACCIDENT_YEARLY) {
+    if (!elderly && roll(S, person, y, 'accident') < ACCIDENT_YEARLY) {
       let r = roll(S, person, y, 'severity'), sev = 'minor';
       for (const [k, w] of ACCIDENT_SEVERITY) { if (r < w) { sev = k; break; } r -= w; }
       person.accident = { year: y, severity: sev };
@@ -102,7 +106,7 @@ export function tickNpcHealthLife(S, { die } = {}) {
     }
     /* 2. An existing illness runs its course. */
     const ill = person.illness;
-    if (ill && !ill.old) {
+    if (ill && ill.src === 'young') {
       const def = YOUNG_ILLNESSES.find((k) => k.kind === ill.kind);
       if (def && ill.sinceYear < y) {
         if (roll(S, person, y, 'death') < def.mort) {
@@ -123,7 +127,7 @@ export function tickNpcHealthLife(S, { die } = {}) {
     /* 3. A new serious illness. */
     if (!person.illness && roll(S, person, y, 'onset') < onsetHazard(person)) {
       const def = pickIllness(S, person);
-      person.illness = { kind: def.kind, sinceYear: y };
+      person.illness = { kind: def.kind, sinceYear: y, src: 'young' };
       person.vitals.health = clamp(person.vitals.health - 15);
       recordJournal(S, `${cap(who(person, role))}, has been diagnosed with ${def.kind}.`, 'family');
       events.push({ kind: 'illness_onset', id: person.id, role, illness: def.kind });

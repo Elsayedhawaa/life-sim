@@ -22,8 +22,8 @@ for (let seed = 1; seed <= LIVES; seed++) {
       if (e.kind === 'illness_onset') onsets++;
       if (e.kind === 'illness_recovered') recoveries++;
       if (e.kind.endsWith('_death')) {
-        const p = s.people[e.id]; deaths++; lost++; assert(!p.alive); assert(p.age >= 18 && p.age <= 57, 'no minors, no elderly path');
-        const b = Math.floor(p.age / 10) * 10; bands[b].d++;
+        const p = s.people[e.id]; deaths++; lost++; assert(!p.alive); assert(p.age >= 18, 'no minors'); if (p.age > 57) assert(p.illness?.src === 'young', 'past 57 only an illness recorded by this module can kill here');
+        const b = Math.floor(Math.min(p.age, 57) / 10) * 10; bands[b].d++;
         if (e.kind === 'accident_death') { assert.equal(p.deathCause, 'an accident'); assert(p.accident?.severity === 'fatal'); accidentsFatal++; withCause++; }
         else { assert(p.illness && p.illness.sinceYear < s.year, 'illness recorded in an earlier year'); assert(p.deathCause == null || /./.test(p.deathCause)); withCause++; }
       }

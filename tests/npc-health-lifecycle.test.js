@@ -48,8 +48,37 @@ console.log('reload, idempotence and identity checks pass');
 // Healed injury gets a recovery year; fatal one never does.
 { let healed = 0; for (let seed = 1; seed <= 600 && healed < 3; seed++) { const s = fresh(seed); const sib = s.people[s.relations.siblingIds[0]]; for (let y = 0; y < 40 && sib.alive; y++) { s.year++; sib.age = Math.min(57, sib.age + 1); tickNpcHealthLife(s, D); }
     const a = sib.accident; if (a && a.severity !== 'fatal' && a.year < s.year) { assert(a.recoveredYear > a.year, 'non-fatal accident recorded as healed'); healed++; } if (a?.severity === 'fatal') assert(!a.recoveredYear); } assert(healed > 0); }
-// Hand-off at 58: an illness recorded at 57 stays; this module stops rolling for the person.
-{ const s = fresh(3); const sib = s.people[s.relations.siblingIds[0]]; sib.age = 58; sib.illness = { kind: 'cancer', sinceYear: s.year - 1 }; const before = JSON.stringify(sib); s.year++; assert.equal(tickNpcHealthLife(s, D).length, 0); assert.equal(JSON.stringify(sib), before, 'no health tick for 58+'); }
+// Past 57: no new illness or accident, but an illness recorded here runs to recovery or death with its recorded cause.
+{ let died = 0, healed = 0, newPast57 = 0;
+  for (let seed = 1; seed <= 300; seed++) { const s = fresh(seed); const sib = s.people[s.relations.siblingIds[0]]; sib.age = 56; sib.illness = { kind: seed % 2 ? 'cancer' : 'heart disease', sinceYear: s.year - 1, src: 'young' };
+    for (let y = 0; y < 40 && sib.alive; y++) { s.year++; sib.age++; tickNpcHealthLife(s, D); if (sib.age > 57 && !sib.illness && !sib.pastIllnesses?.length && sib.accident?.year > s.year - 40 && sib.accident?.year >= s.year) newPast57++; }
+    if (!sib.alive) { died++; assert(/cancer|heart disease/.test(sib.deathCause), 'cause is the recorded illness'); } else if (!sib.illness) healed++; }
+  assert(died > 0 && healed > 0 && newPast57 === 0, 'both outcomes occur, no new accidents past 57'); console.log(`past-57 own-illness: ${died} died with recorded cause, ${healed} recovered, 0 new accidents`); }
+// An elderly-branch illness (no src) is left to soulEngine.
+{ const s = fresh(4); const sib = s.people[s.relations.siblingIds[0]]; sib.age = 70; sib.illness = { kind: 'dementia', sinceYear: s.year - 1 }; const before = JSON.stringify(sib); s.year++; tickNpcHealthLife(s, D); assert.equal(JSON.stringify(sib), before); }
 // Spouse who is also listed elsewhere is processed once.
 { const s = fresh(9); const sp = add(s, 'spouse', 40, s.relations.spouseIds); s.relations.siblingIds.push(sp.id); s.year = 2055; tickNpcHealthLife(s, D); assert.equal(sp.healthTickYear, 2055); }
 console.log('strict idempotence, injury recovery, 58+ hand-off and dedup pass');
+
+// REAL marriage, children, widowhood and divorce through the real helpers and the real yearly tick.
+import { newCoupleRecord, syncCoupleToLegacy } from '../src/core/schema.js';
+import { tickNpcAutonomyYearly } from '../src/systems/soulEngine.js';
+import { initiateDivorce } from '../src/systems/marriageFamilyEngine.js';
+import { getRandomLifeEventById as G, eventGatePasses as P } from '../src/systems/eventEngine.js';
+function married(seed, spouseAge = 36) { const s = createNewLifeState({ country: 'usa', seed }); ensureExtendedState(s); s.year = 2040; s.player.age = 38; s.money.cash = 100000;
+  const w = createPerson(s, { gender: 'f', age: spouseAge, role: 'spouse', nationality: 'usa', residenceCountry: 'usa' }); s.people[w.id] = w; const c = newCoupleRecord(s, 'player', w.id, { stage: 'married' }); s.marriage.couples.push(c); syncCoupleToLegacy(s, c);
+  const kid = createPerson(s, { gender: 'm', age: 9, role: 'child', nationality: 'usa', residenceCountry: 'usa' }); kid.parentIds = ['player', w.id]; s.people[kid.id] = kid; s.relations.childIds.push(kid.id);
+  const grown = createPerson(s, { gender: 'f', age: 22, role: 'child', nationality: 'usa', residenceCountry: 'usa' }); grown.parentIds = ['player', w.id]; s.people[grown.id] = grown; s.relations.childIds.push(grown.id);
+  return { s, w, c, kid, grown }; }
+{ let widowed = 0, adultChildLost = 0, followUps = 0;
+  for (let seed = 1; seed <= 400; seed++) { const { s, w, kid, grown } = married(seed);
+    for (let y = 0; y < 30; y++) { const b = snapshotMajor(s); s.year++; for (const p of Object.values(s.people)) if (p.alive && p.id !== 'player') p.age++; const minorNow = kid.alive && kid.age < 18; tickNpcAutonomyYearly(s); if (minorNow) assert(kid.alive && !kid.illness && !kid.accident, 'a minor child is never touched'); announceMajorChanges(s, b); if (!w.alive || !grown.alive) break; }
+        if (!w.alive && w.age <= 57) { widowed++; assert(w.deathCause && (w.illness || w.accident)); assert(!s.relations.spouseIds.includes(w.id), 'widowed spouse leaves the spouse list');
+      assert(s.majorEvents.some(e => e.kind === 'death' && e.personId === w.id && e.facts.role === 'spouse' && e.facts.cause === w.deathCause), 'announcement carries the recorded cause');
+      s.month += 2; if (P(G('ev_major_child_after_spouse_death'), s)) followUps++; }
+    if (!grown.alive && grown.age <= 57) { adultChildLost++; assert(grown.deathCause && (grown.illness || grown.accident)); assert(s.majorEvents.some(e => e.kind === 'death' && e.personId === grown.id && e.facts.role === 'child')); } }
+  assert(widowed > 0 && adultChildLost > 0); console.log(`real marriage lives: ${widowed} young widowings (each with recorded cause, announcement, spouse list updated; child-after-spouse-death follow-up eligible ${followUps}x), ${adultChildLost} adult-child deaths with recorded cause`); }
+// Divorce: the ex-spouse stops being a relative for health ticks; the minor child is unaffected.
+{ const { s, w, kid } = married(5); assert.ok(initiateDivorce(s, w.id, 'standard', { confirmed: true, custody: 'spouse' }).ok);
+  for (let y = 0; y < 20; y++) { s.year++; for (const p of Object.values(s.people)) if (p.alive && p.id !== 'player') p.age++; tickNpcAutonomyYearly(s); }
+  assert.equal(w.healthTickYear, undefined, 'ex-spouse is not ticked as a relative'); assert(kid.alive && !kid.illness); console.log('divorce: ex-spouse no longer a health-tick relative'); }
