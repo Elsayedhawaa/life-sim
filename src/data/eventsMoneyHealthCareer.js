@@ -446,7 +446,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_money_school_fees_due',
         category: 'money',
         title: "School Fees Are Due on Monday",
-        text: `${childName}Name’s school sends the note home: fees of ${formatMoney(A, S.country)} are due on Monday, or ${childName}Name cannot sit the new term. The school office is firm — they have heard every excuse before.`,
+        text: `${childName}’s school sends the note home: fees of ${formatMoney(A, S.country)} are due on Monday, or ${childName} cannot sit the new term. The school office is firm — they have heard every excuse before.`,
         choices: [
           {
             label: "Pay the fees in full",
@@ -454,7 +454,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
               walletMove(st, -A, 'Pay the fees in full', 'money');
               st.player.vitals.stress = clamp(st.player.vitals.stress + (-3));
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Pay the fees in full', { affection: (+4) });
-              recordJournal(st, `You paid ${childName}Name’s school fees of ${formatMoney(A, S.country)} in full, on time.`, 'money');
+              recordJournal(st, `You paid ${childName}’s school fees of ${formatMoney(A, S.country)} in full, on time.`, 'money');
             },
           },
           {
@@ -462,16 +462,16 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               walletMove(st, -B, 'Pay half and beg for a month', 'money');
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+6));
-              recordJournal(st, `You paid half of ${childName}Name’s school fees and asked the school for a month to find the rest.`, 'money');
+              recordJournal(st, `You paid half of ${childName}’s school fees and asked the school for a month to find the rest.`, 'money');
             },
           },
           {
-            label: "Move $childName to a cheaper school",
+            label: `Move ${childName} to a cheaper school`,
             effect: (st) => {
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+8));
-              if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Move $childName to a cheaper school', { affection: (-6) });
+              if (ctx.child) rememberDeed(st, ctx.child, 'event', `Move ${childName} to a cheaper school`, { affection: (-6) });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-4));
-              recordJournal(st, `You could not pay the fees, so you moved ${childName}Name to a cheaper school across ${S.city}.`, 'money');
+              recordJournal(st, `You could not pay the fees, so you moved ${childName} to a cheaper school across ${S.city}.`, 'money');
             },
           },
         ],
@@ -910,14 +910,14 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_money_uniform_cost',
         category: 'money',
         title: "New School Uniforms",
-        text: `${childName}Name has outgrown everything. The school shop lists the full uniform at ${formatMoney(A, S.country)}, and the shoes alone are ${formatMoney(B, S.country)}. The old uniform is two sizes too small and patched at the knee.`,
+        text: `${childName} has outgrown everything. The school shop lists the full uniform at ${formatMoney(A, S.country)}, and the shoes alone are ${formatMoney(B, S.country)}. The old uniform is two sizes too small and patched at the knee.`,
         choices: [
           {
             label: "Buy the full uniform",
             effect: (st) => {
               walletMove(st, -A, 'Buy the full uniform', 'money');
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Buy the full uniform', { affection: (+3) });
-              recordJournal(st, `You bought ${childName}Name the full new school uniform for ${formatMoney(A, S.country)}.`, 'money');
+              recordJournal(st, `You bought ${childName} the full new school uniform for ${formatMoney(A, S.country)}.`, 'money');
             },
           },
           {
@@ -925,7 +925,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               walletMove(st, -B, 'Buy the essentials only', 'money');
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Buy the essentials only', { affection: (+1) });
-              recordJournal(st, `You bought ${childName}Name the essential uniform pieces for ${formatMoney(B, S.country)} and made the rest last.`, 'money');
+              recordJournal(st, `You bought ${childName} the essential uniform pieces for ${formatMoney(B, S.country)} and made the rest last.`, 'money');
             },
           },
           {
@@ -933,7 +933,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               walletMove(st, -B, 'Buy second-hand from another parent', 'money');
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              recordJournal(st, `You bought ${childName}Name a second-hand uniform from another parent for ${formatMoney(B, S.country)}.`, 'money');
+              recordJournal(st, `You bought ${childName} a second-hand uniform from another parent for ${formatMoney(B, S.country)}.`, 'money');
             },
           },
         ],
@@ -1052,7 +1052,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(800, S.country, S.year);
+      const A = Math.min(Math.max(0, Number(S.money.cash) || 0), Math.round(eraLocalCost(800, S.country, S.year)));
       return {
         key: 'ev_money_stolen_wallet',
         category: 'money',
@@ -1062,23 +1062,25 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
           {
             label: "Cancel everything and replace the ID",
             effect: (st) => {
-              walletMove(st, -A, 'Cancel everything and replace the ID', 'money');
+              walletMove(st, -A, 'Cash stolen from wallet', 'money');
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+8));
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-4));
               recordJournal(st, `Your wallet was stolen with ${formatMoney(A, S.country)} inside. You spent the day cancelling cards and replacing your ID.`, 'money');
             },
           },
           {
-            label: "Borrow from $fr until payday",
+            label: `Ask ${frName} for practical help`,
             effect: (st) => {
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Borrow from $fr until payday', { affection: (+3) });
+              walletMove(st, -A, 'Cash stolen from wallet', 'money');
+              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', `Asked ${frName} for practical help`, { affection: (+3) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+6));
-              recordJournal(st, `With your wallet stolen, you borrowed from ${frName} to get through the week.`, 'money');
+              recordJournal(st, `With your wallet stolen, ${frName} helped you cancel cards and get home. No money was borrowed.`, 'money');
             },
           },
           {
             label: "Report it and wait",
             effect: (st) => {
+              walletMove(st, -A, 'Cash stolen from wallet', 'money');
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+7));
               recordJournal(st, `You reported the stolen wallet and waited, hoping the police or a stranger would find it.`, 'money');
             },
@@ -1396,9 +1398,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Ask $sp to cover it this time",
+            label: `Ask ${spName} to cover it this time`,
             effect: (st) => {
-              if (ctx.spouse) rememberDeed(st, ctx.spouse, 'event', 'Ask $sp to cover it this time', { affection: (-2) });
+              if (ctx.spouse) rememberDeed(st, ctx.spouse, 'event', `Ask ${spName} to cover it this time`, { affection: (-2) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
               recordJournal(st, `You asked ${spName} to cover the baby costs this time. ${spName} paid, without a word.`, 'money');
             },
@@ -1428,22 +1430,22 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_money_child_phone',
         category: 'money',
-        title: "$childName Wants a Phone Like Everyone Else",
-        text: `${childName}Name comes home from school: everyone in the class has a phone, and the cheapest decent one — a ${phoneItem ? `${phoneItem.brand} ${phoneItem.name}` : 'basic mobile'} from the shop — is ${formatMoney(A, S.country)}. ${childName}Name promises to look after it, to study harder, to never lose it.`,
+        title: `${childName} Wants a Phone Like Everyone Else`,
+        text: `${childName} comes home from school: everyone in the class has a phone, and the cheapest decent one — a ${phoneItem ? `${phoneItem.brand} ${phoneItem.name}` : 'basic mobile'} from the shop — is ${formatMoney(A, S.country)}. ${childName} promises to look after it, to study harder, to never lose it.`,
         choices: [
           {
             label: `Buy the phone (${formatMoney(A, S.country)})`,
             available: (st) => st.money.cash >= A,
             effect: (st) => {
               const res = phoneItem
-                ? buyShopItemForEvent(st, phoneItem, { label: `Phone for ${childName}Name (shop catalogue)` })
+                ? buyShopItemForEvent(st, phoneItem, { label: `Phone for ${childName} (shop catalogue)` })
                 : { ok: false, msg: 'No phone in the shop catalogue.' };
               if (res.ok) {
                 if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Buy the phone', { affection: (+6) });
                 st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+2));
-                recordJournal(st, `You bought ${childName}Name a ${phoneItem.brand} ${phoneItem.name} for ${formatMoney(res.priceLocal, S.country)}. The smile lasted all evening.`, 'money');
+                recordJournal(st, `You bought ${childName} a ${phoneItem.brand} ${phoneItem.name} for ${formatMoney(res.priceLocal, S.country)}. The smile lasted all evening.`, 'money');
               } else {
-                recordJournal(st, `You wanted to buy ${childName}Name a phone but could not pay for it (${res.msg}).`, 'money');
+                recordJournal(st, `You wanted to buy ${childName} a phone but could not pay for it (${res.msg}).`, 'money');
               }
             },
           },
@@ -1452,13 +1454,13 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             available: (st) => st.money.cash >= B,
             effect: (st) => {
               const res = phoneItem
-                ? buyShopItemForEvent(st, phoneItem, { secondHand: true, label: `Second-hand phone for ${childName}Name (shop catalogue)` })
+                ? buyShopItemForEvent(st, phoneItem, { secondHand: true, label: `Second-hand phone for ${childName} (shop catalogue)` })
                 : { ok: false, msg: 'No phone in the shop catalogue.' };
               if (res.ok) {
                 if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Buy a cheaper second-hand one', { affection: (+2) });
-                recordJournal(st, `You bought ${childName}Name a second-hand ${phoneItem.brand} ${phoneItem.name} for ${formatMoney(res.priceLocal, S.country)}. It is not the newest, but it works.`, 'money');
+                recordJournal(st, `You bought ${childName} a second-hand ${phoneItem.brand} ${phoneItem.name} for ${formatMoney(res.priceLocal, S.country)}. It is not the newest, but it works.`, 'money');
               } else {
-                recordJournal(st, `You wanted a second-hand phone for ${childName}Name but could not pay for it (${res.msg}).`, 'money');
+                recordJournal(st, `You wanted a second-hand phone for ${childName} but could not pay for it (${res.msg}).`, 'money');
               }
             },
           },
@@ -1467,7 +1469,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Say no — too young, too expensive', { affection: (-6) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              recordJournal(st, `You told ${childName}Name no phone yet. The argument lasted the whole evening.`, 'money');
+              recordJournal(st, `You told ${childName} no phone yet. The argument lasted the whole evening.`, 'money');
             },
           },
         ],
@@ -1491,24 +1493,24 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_money_child_tutor',
         category: 'money',
-        title: "$childName Is Falling Behind in Maths",
-        text: `The teacher calls: ${childName}Name is falling behind in maths, and a tutor would help. A good tutor costs ${formatMoney(A, S.country)} a month — money you had not planned to spend.`,
+        title: `${childName} Is Falling Behind in Maths`,
+        text: `The teacher calls: ${childName} is falling behind in maths, and a tutor would help. A good tutor costs ${formatMoney(A, S.country)} a month — money you had not planned to spend.`,
         choices: [
           {
             label: "Hire the tutor",
             effect: (st) => {
               walletMove(st, -A, 'Hire the tutor', 'money');
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Hire the tutor', { affection: (+4) });
-              recordJournal(st, `You hired a maths tutor for ${childName}Name at ${formatMoney(A, S.country)} a month.`, 'money');
+              recordJournal(st, `You hired a maths tutor for ${childName} at ${formatMoney(A, S.country)} a month.`, 'money');
             },
           },
           {
-            label: "Tutor $childName yourself in the evenings",
+            label: `Tutor ${childName} yourself in the evenings`,
             effect: (st) => {
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+6));
-              if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Tutor $childName yourself in the evenings', { affection: (+5) });
+              if (ctx.child) rememberDeed(st, ctx.child, 'event', `Tutor ${childName} yourself in the evenings`, { affection: (+5) });
               if (st.skills) st.skills.charisma = clamp(st.skills.charisma + (+1));
-              recordJournal(st, `You decided to tutor ${childName}Name yourself every evening after work.`, 'money');
+              recordJournal(st, `You decided to tutor ${childName} yourself every evening after work.`, 'money');
             },
           },
           {
@@ -1516,7 +1518,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Wait and see if it improves', { affection: (-3) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You decided to wait a term before paying for a tutor for ${childName}Name.`, 'money');
+              recordJournal(st, `You decided to wait a term before paying for a tutor for ${childName}.`, 'money');
             },
           },
         ],
@@ -1545,7 +1547,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_money_spouse_sofa',
         category: 'money',
-        title: "$sp Wants a New Sofa",
+        title: `${spName} Wants a New Sofa`,
         text: `${spName} has been looking at the sofa — the springs, the stain, the way it sags in the middle — and found a good one, a ${sofa ? `${sofa.brand} ${sofa.name}` : 'new sofa'} from the shop, for ${formatMoney(A, S.country)}. "We sit on it every single day," ${spName} says, which is hard to argue with.`,
         choices: [
           {
@@ -1609,7 +1611,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_money_spouse_family_gift',
         category: 'money',
-        title: "A Gift Is Expected for $sp\u2019s Family",
+        title: `A Gift Is Expected for ${spName}\u2019s Family`,
         text: `${spName}’s family is visiting, and custom says you arrive with a proper gift — about ${formatMoney(A, S.country)}. ${spName} is nervous about it: the family notices these things, and remembers.`,
         choices: [
           {
@@ -1929,11 +1931,11 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Give it to $childName",
+            label: `Give it to ${childName}`,
             effect: (st) => {
-              if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Give it to $childName', { affection: (+4) });
+              if (ctx.child) rememberDeed(st, ctx.child, 'event', `Give it to ${childName}`, { affection: (+4) });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+3));
-              recordJournal(st, `You gave the old phone to ${childName}Name, who acted like it was brand new.`, 'money');
+              recordJournal(st, `You gave the old phone to ${childName}, who acted like it was brand new.`, 'money');
             },
           },
         ],
@@ -2234,8 +2236,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_money_school_trip_fee',
         category: 'money',
-        title: "$childName\u2019s School Trip",
-        text: `${childName}Name comes home waving a letter: the class trip costs ${formatMoney(A, S.country)}, and everyone is going. ${childName}Name has already told friends you said yes — which you have not, yet.`,
+        title: `${childName}\u2019s School Trip`,
+        text: `${childName} comes home waving a letter: the class trip costs ${formatMoney(A, S.country)}, and everyone is going. ${childName} has already told friends you said yes — which you have not, yet.`,
         choices: [
           {
             label: "Pay for the trip",
@@ -2243,16 +2245,16 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
               walletMove(st, -A, 'Pay for the trip', 'money');
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Pay for the trip', { affection: (+5) });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+3));
-              recordJournal(st, `You paid ${formatMoney(A, S.country)} for ${childName}Name’s school trip. The bag is already packed.`, 'money');
+              recordJournal(st, `You paid ${formatMoney(A, S.country)} for ${childName}’s school trip. The bag is already packed.`, 'money');
             },
           },
           {
-            label: "Pay, but ask $childName to earn half",
+            label: `Pay, but ask ${childName} to earn half`,
             effect: (st) => {
-              walletMove(st, -A, 'Pay, but ask $childName to earn half', 'money');
-              if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Pay, but ask $childName to earn half', { affection: (+2) });
+              walletMove(st, -A, `Pay, but ask ${childName} to earn half`, 'money');
+              if (ctx.child) rememberDeed(st, ctx.child, 'event', `Pay, but ask ${childName} to earn half`, { affection: (+2) });
               if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+1));
-              recordJournal(st, `You paid for the trip and asked ${childName}Name to earn half of it back with chores.`, 'money');
+              recordJournal(st, `You paid for the trip and asked ${childName} to earn half of it back with chores.`, 'money');
             },
           },
           {
@@ -2260,7 +2262,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Say no — the money is not there', { affection: (-5) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You told ${childName}Name the school trip was too expensive this year. ${childName}Name cried.`, 'money');
+              recordJournal(st, `You told ${childName} the school trip was too expensive this year. ${childName} cried.`, 'money');
             },
           },
         ],
@@ -2536,7 +2538,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_money_birthday_gift_spouse',
         category: 'money',
-        title: "$sp\u2019s Birthday Is Coming",
+        title: `${spName}\u2019s Birthday Is Coming`,
         text: `${spName}’s birthday is next week, and you have not bought anything yet. A proper gift — the one ${spName} has mentioned twice — costs ${formatMoney(A, S.country)}. A smaller one costs ${formatMoney(B, S.country)}.`,
         choices: [
           {
@@ -3272,9 +3274,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Lean on $fr",
+            label: `Lean on ${frName}`,
             effect: (st) => {
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Lean on $fr', { affection: (+5) });
+              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', `Lean on ${frName}`, { affection: (+5) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (-3));
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+3));
               recordJournal(st, `You leaned on ${frName} through the low weeks. ${frName} showed up, every time.`, 'health');
@@ -3753,25 +3755,25 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_health_child_fever',
         category: 'health',
-        title: "$childName Has a High Fever",
-        text: `${childName}Name is burning up at 2 a.m., flushed and shivering, and the thermometer reads a number that frightens you. The clinic is closed; the hospital is twenty minutes away.`,
+        title: `${childName} Has a High Fever`,
+        text: `${childName} is burning up at 2 a.m., flushed and shivering, and the thermometer reads a number that frightens you. The clinic is closed; the hospital is twenty minutes away.`,
         choices: [
           {
-            label: "Take $childName to the hospital now",
+            label: `Take ${childName} to the hospital now`,
             effect: (st) => {
-              walletMove(st, -A, 'Take $childName to the hospital now', 'health');
+              walletMove(st, -A, `Take ${childName} to the hospital now`, 'health');
               st.player.vitals.health = clamp(st.player.vitals.health + (+2));
-              if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Take $childName to the hospital now', { affection: (+4) });
+              if (ctx.child) rememberDeed(st, ctx.child, 'event', `Take ${childName} to the hospital now`, { affection: (+4) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (-2));
-              recordJournal(st, `You took ${childName}Name to the hospital at 2 a.m. and paid ${formatMoney(A, S.country)}. The fever broke by morning.`, 'health');
+              recordJournal(st, `You took ${childName} to the hospital at 2 a.m. and paid ${formatMoney(A, S.country)}. The fever broke by morning.`, 'health');
             },
           },
           {
-            label: "Cool $childName down at home and watch",
+            label: `Cool ${childName} down at home and watch`,
             effect: (st) => {
               st.player.vitals.health = clamp(st.player.vitals.health + (-2));
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+7));
-              recordJournal(st, `You cooled ${childName}Name down with wet cloths and watched through the night, terrified.`, 'health');
+              recordJournal(st, `You cooled ${childName} down with wet cloths and watched through the night, terrified.`, 'health');
             },
           },
           {
@@ -3779,7 +3781,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Call ${momName} for advice`, { affection: (+3) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              recordJournal(st, `You called ${momName} at 2 a.m. about ${childName}Name’s fever. She talked you through it, calmly.`, 'health');
+              recordJournal(st, `You called ${momName} at 2 a.m. about ${childName}’s fever. She talked you through it, calmly.`, 'health');
             },
           },
         ],
@@ -3853,23 +3855,23 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_health_spouse_sick',
         category: 'health',
-        title: "$sp Is Ill in Bed",
+        title: `${spName} Is Ill in Bed`,
         text: `${spName} has been in bed for three days with a fever that will not break, too weak to eat properly. The house has gone quiet, and everything — cooking, cleaning, the children — is on you.`,
         choices: [
           {
-            label: "Look after $sp properly",
+            label: `Look after ${spName} properly`,
             effect: (st) => {
-              if (ctx.spouse) rememberDeed(st, ctx.spouse, 'event', 'Look after $sp properly', { affection: (+7) });
+              if (ctx.spouse) rememberDeed(st, ctx.spouse, 'event', `Look after ${spName} properly`, { affection: (+7) });
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
               st.player.vitals.health = clamp(st.player.vitals.health + (-1));
               recordJournal(st, `You looked after ${spName} through the illness — food, medicine, and patience.`, 'health');
             },
           },
           {
-            label: "Take $sp to the doctor",
+            label: `Take ${spName} to the doctor`,
             effect: (st) => {
-              walletMove(st, -A, 'Take $sp to the doctor', 'health');
-              if (ctx.spouse) rememberDeed(st, ctx.spouse, 'event', 'Take $sp to the doctor', { affection: (+6) });
+              walletMove(st, -A, `Take ${spName} to the doctor`, 'health');
+              if (ctx.spouse) rememberDeed(st, ctx.spouse, 'event', `Take ${spName} to the doctor`, { affection: (+6) });
               recordJournal(st, `You took ${spName} to the doctor and paid ${formatMoney(A, S.country)}. The medicine worked within days.`, 'health');
             },
           },
@@ -4672,9 +4674,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Call $sp to decide with you",
+            label: `Call ${spName} to decide with you`,
             effect: (st) => {
-              if (ctx.spouse) rememberDeed(st, ctx.spouse, 'event', 'Call $sp to decide with you', { affection: (+3) });
+              if (ctx.spouse) rememberDeed(st, ctx.spouse, 'event', `Call ${spName} to decide with you`, { affection: (+3) });
               st.player.vitals.health = clamp(st.player.vitals.health + (-4));
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
               recordJournal(st, `You woke ${spName} at 3 a.m. with the chest pain. ${spName} drove you to the hospital without a word.`, 'health');
@@ -4909,9 +4911,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Tell $sp first, then decide together",
+            label: `Tell ${spName} first, then decide together`,
             effect: (st) => {
-              if (ctx.spouse) rememberDeed(st, ctx.spouse, 'event', 'Tell $sp first, then decide together', { affection: (+6) });
+              if (ctx.spouse) rememberDeed(st, ctx.spouse, 'event', `Tell ${spName} first, then decide together`, { affection: (+6) });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+5));
               recordJournal(st, `You told ${spName} about the pregnancy first. You decided everything together after that.`, 'health');
             },
@@ -5045,16 +5047,16 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_health_dentist_child',
         category: 'health',
-        title: "$childName Is Afraid of the Dentist",
-        text: `${childName}Name needs a filling, and is terrified of the dentist — crying at the mention of the chair, the light, the sound. The appointment is tomorrow, and ${childName}Name is begging not to go.`,
+        title: `${childName} Is Afraid of the Dentist`,
+        text: `${childName} needs a filling, and is terrified of the dentist — crying at the mention of the chair, the light, the sound. The appointment is tomorrow, and ${childName} is begging not to go.`,
         choices: [
           {
-            label: "Go with $childName and hold their hand",
+            label: `Go with ${childName} and hold their hand`,
             effect: (st) => {
-              walletMove(st, -A, 'Go with $childName and hold their hand', 'health');
-              if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Go with $childName and hold their hand', { affection: (+6) });
+              walletMove(st, -A, `Go with ${childName} and hold their hand`, 'health');
+              if (ctx.child) rememberDeed(st, ctx.child, 'event', `Go with ${childName} and hold their hand`, { affection: (+6) });
               st.player.vitals.health = clamp(st.player.vitals.health + (+2));
-              recordJournal(st, `You took ${childName}Name to the dentist and held their hand through the filling, ${formatMoney(A, S.country)}.`, 'health');
+              recordJournal(st, `You took ${childName} to the dentist and held their hand through the filling, ${formatMoney(A, S.country)}.`, 'health');
             },
           },
           {
@@ -5062,7 +5064,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               walletMove(st, -B, 'Promise a treat afterwards', 'health');
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Promise a treat afterwards', { affection: (+4) });
-              recordJournal(st, `You promised ${childName}Name a treat after the dentist, ${formatMoney(B, S.country)}, and it worked.`, 'health');
+              recordJournal(st, `You promised ${childName} a treat after the dentist, ${formatMoney(B, S.country)}, and it worked.`, 'health');
             },
           },
           {
@@ -5070,7 +5072,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Cancel the appointment', { affection: (-2) });
               st.player.vitals.health = clamp(st.player.vitals.health + (-2));
-              recordJournal(st, `You cancelled ${childName}Name’s dental appointment. The tooth got worse.`, 'health');
+              recordJournal(st, `You cancelled ${childName}’s dental appointment. The tooth got worse.`, 'health');
             },
           },
         ],
@@ -11441,15 +11443,15 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       return {
         key: 'ev_back_child_thanks',
         category: 'life',
-        title: "$childName Thanks You for the Phone",
-        text: `Months later, ${childName}Name comes to you — not asking for anything, just saying thank you for the phone, and for trusting them with it. It is a small moment, and it lands hard.`,
+        title: `${childName} Thanks You for the Phone`,
+        text: `Months later, ${childName} comes to you — not asking for anything, just saying thank you for the phone, and for trusting them with it. It is a small moment, and it lands hard.`,
         choices: [
           {
             label: "Hug them and say you are proud",
             effect: (st) => {
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Hug them and say you are proud', { affection: (+6) });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+5));
-              recordJournal(st, `${childName}Name thanked you for the phone, months later, out of nowhere. You hugged them.`, 'life');
+              recordJournal(st, `${childName} thanked you for the phone, months later, out of nowhere. You hugged them.`, 'life');
             },
           },
           {
@@ -11457,7 +11459,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Use it to talk about responsibility', { affection: (+3) });
               if (st.skills) st.skills.charisma = clamp(st.skills.charisma + (+1));
-              recordJournal(st, `You used ${childName}Name’s thanks to talk about responsibility, and they listened.`, 'life');
+              recordJournal(st, `You used ${childName}’s thanks to talk about responsibility, and they listened.`, 'life');
             },
           },
           {
@@ -11465,7 +11467,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               if (ctx.child) rememberDeed(st, ctx.child, 'event', 'Say it was nothing', { affection: (+2) });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+2));
-              recordJournal(st, `You said the phone was nothing. ${childName}Name knew it was not.`, 'life');
+              recordJournal(st, `You said the phone was nothing. ${childName} knew it was not.`, 'life');
             },
           },
         ],

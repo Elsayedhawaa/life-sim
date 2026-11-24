@@ -31,7 +31,7 @@ for(const country of ['egy','usa','sau','uae','gbr','deu','can','aus','fra','jpn
    const sc=event.build(s,resolveEventCtx(s));
    if(!sc)continue;
    const text=[sc.title,sc.text,...sc.choices.map(c=>typeof c.label==='function'?c.label(s):c.label)].join(' ');
-   ok(!/\$(mom|dad|spouse|friend|sib|child|boss)\b/.test(text),'no role placeholder in '+event.id);
+   ok(!/\$(mom|dad|spouse|friend|sib|child|boss|fr|sp|childName)\b/.test(text),'no role placeholder in '+event.id);
   }catch(error){throw new Error(event.id+': '+error.message)}
  }
 }

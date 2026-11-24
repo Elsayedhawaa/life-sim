@@ -219,3 +219,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W100 Very-low-sales classic product launch rounds30%development cost down to zero (monthlyRev1). Positive1book-unit minimum quote now matches actual debit.
 
 - [x] W101 Remote classic branches omit inherited book currency, mixing converted sales/capital with native premises and starter wages. Preserve the parent book marker and convert locally seeded wages into that book currency.
+
+- [x] W102 Unresolved short friend/spouse/child placeholders in money/health event titles, choices and relationship records.
+- [x] W103 Wallet theft charges stolen cash only on one response and claims borrowing without a loan. Charge actual available stolen cash on every response; make the help route explicitly non-monetary.
