@@ -3992,7 +3992,7 @@ function renderCardsAndBnplSubtabHtml(S, cObj) {
               ${cc.balance > 0 ? `
                 <div style="display:flex;gap:6px">
                   <button class="btn btn-primary btn-sm" data-action="pay-card" data-id="${cc.id}" data-full="1">Pay Full (${esc(formatMoney(cc.balance, S.country))})</button>
-                  <button class="btn btn-sm" data-action="pay-card" data-id="${cc.id}" data-full="0">Pay 10%</button>
+                  <button class="btn btn-sm" data-action="pay-card" data-id="${cc.id}" data-full="0">Pay minimum (${esc(formatMoney(Math.min(cc.balance,Math.max(10,Math.round(cc.balance*.1))),S.country))})</button>
                 </div>
               ` : `<span class="muted">✓ Zero Balance · ${(cc.cashbackRate * 100).toFixed(1)}% Cashback Active</span>`}
               <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">

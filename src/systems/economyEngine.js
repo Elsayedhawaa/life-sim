@@ -531,7 +531,7 @@ function settleRecurringHouseholdItems(S, summary, netDeltaAtEntry) {
         cc.balance += interest;
         recordLedgerEntry(S, interest, `Card interest (${cc.name})`, 'debt', 'card', cc.balance);
       }
-      const minDue = Math.max(10, Math.round(cc.balance * 0.05));
+      const minDue = Math.min(cc.balance,Math.max(10, Math.round(cc.balance * 0.05)));
       if (cc.missedMonths == null) cc.missedMonths = 0;
       if (avail() >= minDue) {
         summary.debt += minDue;

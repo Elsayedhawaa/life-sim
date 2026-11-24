@@ -813,6 +813,8 @@ export function purchaseShopCatalogItem(S, itemId, payMethod = 'cash', opts = {}
   ensureExtendedState(S);
   const item = SHOP_MEGA_CATALOG.find(i => i.id === itemId);
   if (!item) return { ok: false, msg: 'Item not found.' };
+  if(!['cash','card','bnpl'].includes(payMethod))return {ok:false,msg:'Choose cash, card or BNPL.'};
+  if(payMethod!=='cash'&&S.player.age<18)return {ok:false,msg:'Credit purchases require an adult.'};
 
   const priceLocal = Math.max(5, Math.round(convertCurrency(item.priceUsd2026, 'usa', S.country, S.year)));
 
@@ -859,7 +861,7 @@ export function purchaseShopCatalogItem(S, itemId, payMethod = 'cash', opts = {}
     valueLocal: item.appreciates ? priceLocal : Math.round(priceLocal * 0.6),
     appreciates: !!item.appreciates
   });
-  if (S.inventory.length > 60) S.inventory.length = 60;
+  // Owned assets are never silently deleted when the inventory grows.
 
   S.player.vitals.happiness = clamp(S.player.vitals.happiness + Math.min(8, item.hap));
   if (item.looks > 0) S.player.vitals.looks = clamp(S.player.vitals.looks + item.looks);
@@ -1026,7 +1028,7 @@ export function openCreditCard(S, cardId) {
 export function payCreditCard(S, ccId, full = true) {
   const cc = S.creditCards.find(c => c.id === ccId);
   if (!cc || cc.balance <= 0) return { ok: false, msg: 'Card balance is already 0.' };
-  const target = full ? cc.balance : Math.max(10, Math.round(cc.balance * 0.10));
+  const target = full ? cc.balance : Math.min(cc.balance,Math.max(10, Math.round(cc.balance * 0.10)));
   const pay = Math.min(S.money.cash, target);
   if (pay <= 0) return { ok: false, msg: 'Insufficient cash to pay statement.' };
 
