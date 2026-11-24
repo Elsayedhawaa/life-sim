@@ -2212,7 +2212,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_sib_tuition', category: 'family',
         title: `${sibName} Needs Tuition Money`,
-        text: `${sibName} has been accepted into a good programme, but the fees are more than the family can manage this year — ${formatMoney(fee, S.country)} for the first term alone. They are too proud to ask directly, so your mother asks for them.`,
+        text: `${sibName} has been accepted into a good programme, but the fees are more than the family can manage this year — ${formatMoney(fee, S.country)} for the first term alone. They are too proud to ask directly, so ${p.mom ? 'your mother' : 'someone in the family'} asks for them.`,
         choices: [
           { label: `Pay the first term (${formatMoney(fee, S.country)})`, effect: (st) => {
               walletMove(st, -fee, `Tuition for ${sibName}`, 'money');
@@ -2266,7 +2266,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_sib_engaged', category: 'family',
         title: `${sibName} Is Getting Engaged`,
-        text: `${sibName} arrives at the family home beaming, barely able to get the words out: they are engaged. The ring is shown around the table three times, your mother is already crying, and your father is asking about the other family.`,
+        text: `${sibName} arrives at the family home beaming, barely able to get the words out: they are engaged. The ring is shown around the table three times, ${p.mom ? 'your mother is already crying' : 'everyone is congratulating them'}${p.dad ? ', and your father is asking about the other family' : ''}.`,
         choices: [
           { label: 'Celebrate properly — dinner on you tonight', effect: (st) => {
               walletMove(st, -cost(st, 300), 'Celebration dinner for sibling\'s engagement', 'money');
@@ -2294,7 +2294,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_sib_wedding', category: 'family',
         title: `${sibName}'s Wedding Day`,
-        text: `The day has come: ${sibName} is getting married. The hall is full, the music is loud, and your mother has been crying since the morning. As the eldest present, people keep looking to you — and the gift you bring matters.`,
+        text: `The day has come: ${sibName} is getting married. The hall is full, the music is loud, and ${p.mom ? 'your mother has been crying since the morning' : 'the whole family is emotional from the morning'}. As the eldest present, people keep looking to you — and the gift you bring matters.`,
         choices: [
           { label: `Give a generous wedding gift (${formatMoney(gift, S.country)})`, effect: (st) => {
               walletMove(st, -gift, `Wedding gift for ${sibName}`, 'money');
@@ -2356,7 +2356,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_sib_moves_abroad', category: 'family',
         title: `${sibName} Is Moving Abroad`,
-        text: `${sibName} has accepted a job in another country and is leaving next month. The family gathers for a farewell dinner, and everyone is proud — but the house will feel emptier, and your mother is already counting the time zones.`,
+        text: `${sibName} has accepted a job in another country and is leaving next month. The family gathers for a farewell dinner, and everyone is proud — but the house will feel emptier, and ${p.mom ? 'your mother is already counting the time zones' : 'everyone is already counting the time zones'}.`,
         choices: [
           { label: 'Help them pack and plan the move', effect: (st) => {
               if (p.sib) rememberDeed(st, p.sib, 'supported_crisis', 'Helped them pack for the move abroad.', { affection: 9, trust: 7 });
@@ -5049,7 +5049,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_child_first_word', category: 'children',
         title: `${chName}'s First Word`,
-        text: `Your youngest, ${chName}, has been babbling for weeks — and then, clear as anything, out comes a real word. You freeze. Your spouse freezes. Then everyone is talking at once, trying to get them to say it again.`,
+        text: `Your youngest, ${chName}, has been babbling for weeks — and then, clear as anything, out comes a real word. You freeze. ${p.spouse ? 'Your spouse freezes. ' : ''}Then everyone is talking at once, trying to get them to say it again.`,
         choices: [
           { label: 'Cheer, clap, and say it back a hundred times', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 8);

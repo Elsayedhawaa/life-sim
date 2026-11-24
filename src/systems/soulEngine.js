@@ -914,8 +914,8 @@ export function npcDeathCause(S, person) {
   }
   if (person.age >= 85) return 'old age';
   if ((person.vitals?.health ?? 100) < 28) return 'organ failure after years of failing health';
-  if (person.age < 80) return chance(S, 0.2) ? 'an accident' : chance(S, 0.5) ? 'a sudden heart attack' : 'a sudden illness';
-  return 'old age';
+  /* Nothing recorded explains this death, so none is invented. */
+  return null;
 }
 
 export function handleNpcDeath(S, person) {

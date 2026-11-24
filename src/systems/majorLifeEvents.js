@@ -103,7 +103,7 @@ export function announceMajorChanges(S, before) {
       const nm = p.fullName || p.firstName || ROLE_WORD[b.role];
       made.push(announce(S, 'death', {
         title: `${p.firstName || 'Someone close'} Has Died`,
-        text: `${nm}, ${ROLE_WORD[b.role]}, has died${p.age >= 1 ? ` at ${p.age}` : ''}${p.deathCause ? ` from ${p.deathCause}` : ''}.`,
+        text: `${nm}, ${ROLE_WORD[b.role]}, has died${p.age >= 1 ? ` at ${p.age}` : ''}${p.deathCause ? ` from ${p.deathCause}.` : '. The cause is not known.'}`,
         personId: id, facts: { role: b.role, age: p.age || null, cause: p.deathCause || null },
       }));
     }

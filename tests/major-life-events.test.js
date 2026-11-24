@@ -60,5 +60,12 @@ console.log('Major life announcements derive from actual state changes, persist,
 {const {handleNpcDeath}=await import('../src/systems/soulEngine.js');
  let s=setup();let m=s.people[s.relations.motherId];m.age=70;m.illness={kind:'cancer',sinceYear:s.year-3};handleNpcDeath(s,m);assert(/cancer/.test(m.deathCause)&&/3 years/.test(m.deathCause));
  s=setup();m=s.people[s.relations.motherId];m.age=88;m.vitals.health=60;handleNpcDeath(s,m);assert.equal(m.deathCause,'old age');
- s=setup();m=s.people[s.relations.motherId];m.age=62;m.vitals.health=80;handleNpcDeath(s,m);assert(!/old age|natural|cardiac complications/.test(m.deathCause),'young healthy parent never dies of old age: '+m.deathCause);
- console.log('NPC death causes come from recorded illness, health and age');}
+ s=setup();m=s.people[s.relations.motherId];m.age=62;m.vitals.health=80;handleNpcDeath(s,m);assert.equal(m.deathCause,null,'no recorded illness and decent health: cause unknown, not invented');
+ {const s2=setup();const b=snapshotMajor(s2);const p=s2.people[s2.relations.fatherId];p.age=66;p.vitals.health=75;handleNpcDeath(s2,p);announceMajorChanges(s2,b);const A2=[s2.activeScene,...s2.sceneQueue].find(x=>x.major);assert(/The cause is not known\./.test(A2.text),A2.text);assert(!/from /.test(A2.text));
+ const s3=setup();const b3=snapshotMajor(s3);const q=s3.people[s3.relations.motherId];q.age=72;q.illness={kind:'stroke',sinceYear:s3.year-1};handleNpcDeath(s3,q);announceMajorChanges(s3,b3);const A3=[s3.activeScene,...s3.sceneQueue].find(x=>x.major);const txt=A3.text;assert(/from stroke/.test(txt));
+ const rl=JSON.parse(JSON.stringify(s3));assert.equal(rl.people[q.id].deathCause,q.deathCause);assert.equal(rl.people[q.id].illness.kind,'stroke');assert.equal(rl.majorEvents[0].facts.cause,q.deathCause);const sc=restoreMajorScene(rl,JSON.parse(JSON.stringify(A3)));assert.equal(sc.text,txt);sc.choices[0].effect(rl);assert(rl.journal[0].text===txt,'journal matches announcement');}
+console.log('NPC death causes come from recorded illness, health and age, otherwise unknown; persist and match across announcement, record, journal');}
+{const {getRandomLifeEventById:G}=await import('../src/systems/eventEngine.js');const s=setup();s.people[s.relations.motherId].alive=false;s.people[s.relations.fatherId].alive=false;
+ for(const id of ['ev_family_sib_tuition','ev_family_sib_engaged','ev_family_sib_wedding','ev_family_sib_moves_abroad']){const t=G(id).build(s,{sib:{firstName:'Sam'}}).text;assert(!/your (mother|father)/.test(t),id+': '+t);}
+ const t2=G('ev_child_first_word').build(s,{youngChild:{firstName:'Jack'}}).text;assert(!/spouse/i.test(t2));
+ const m=s.people[s.relations.motherId];m.alive=true;assert(/your mother/.test(G('ev_family_sib_wedding').build(s,{sib:{firstName:'Sam'}}).text));console.log('sibling/child scenes mention parents and spouse only when alive/present');}
