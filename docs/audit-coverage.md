@@ -444,3 +444,6 @@ Rental-only roof scene now records actual paid repair as home/country-scoped fut
 
 ### W20 pension scene asset conservation
 Two legacy pension scenes now move a finite one-off savings amount into actual private pension principal/history, no imaginary ongoing contribution or guaranteed age62income. Insufficient savings/retired state block action, no fabricated employer match. Private pot/finite remaining drawdown included in networth.150focused files pass, conservation and payout transfer checked.390px scene fixture transfers actual savings/pot and reload, inspected pixels.
+
+### W21 finite private drawdown worldwide
+All retired countries now consume finite private remaining balance with final partial payment, then state component only. Re-retirement preserves prior unspent drawdown when adding a new pot. State/private components convert on relocation.151focused files pass; UK/Egypt/Canada/Japan focused final-partial/exhaustion/re-retirement checks.390px retired UKfixture actual monthly turn pays final5and remaining0persists reload. Inspected timeline pixels; ledger assertions are the decisive monetary evidence.

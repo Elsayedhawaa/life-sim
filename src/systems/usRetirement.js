@@ -24,16 +24,19 @@ export function usStatePension(S){
  return{monthly:Math.round(convertCurrency(usd,'usa',S.country,S.year)),credits,eligible:true,claimAge:claim};
 }
 export function settleUSRetirement(S){
- if(!S.career.retired||(S.career.retirementCountry||S.country)!=='usa')return null;
- if(!S.career.usRetirementMigrationNoted){S.career.usRetirementMigrationNoted=true;recordJournal(S,'US retirement model corrected: state benefit cannot begin before 62 and requires 40 recorded credits. Old saves have no verified US earnings history, so missing credits are not invented. Existing cash is unchanged. Private retirement savings now pay from a finite balance, not forever. This is a simplified game estimate.','money');}
- const state=usStatePension(S);if(state.eligible&&S.career.usSocialSecurity.claimAge==null)S.career.usSocialSecurity.claimAge=state.claimAge;
- const paid=S.career.market?.pension?.paidOut;let draw=0;
+ if(!S.career.retired)return null;
+ const us=(S.career.retirementCountry||S.country)==='usa';
+ if(us&&!S.career.usRetirementMigrationNoted){S.career.usRetirementMigrationNoted=true;recordJournal(S,'US retirement model: state benefit starts at62with40recorded credits. Missing history is not invented. Private savings use a finite balance. Simplified game estimate.','money');}
+ const state=us?usStatePension(S):null;if(state?.eligible&&S.career.usSocialSecurity.claimAge==null)S.career.usSocialSecurity.claimAge=state.claimAge;
+ const paid=S.career.market?.pension?.paidOut;
+ let draw=0;
  if(paid){if(paid.remaining==null){const elapsed=Math.max(0,(S.year-paid.year)*12+(S.month-paid.month));paid.remaining=Math.max(0,(paid.pot||0)-elapsed*(paid.monthlyTopUp||0));}draw=Math.min(paid.remaining,paid.monthlyTopUp||0);paid.remaining-=draw;}
- S.career.monthlyPension=state.monthly+draw;S.career.statePensionMonthly=state.monthly;S.career.privateDrawdownMonthly=draw;return state.monthly+draw;
+ const stateAmount=us?state.monthly:(S.career.statePensionMonthly??Math.max(0,(S.career.monthlyPension||0)-(paid?.monthlyTopUp||0)));
+ S.career.monthlyPension=stateAmount+draw;S.career.statePensionMonthly=stateAmount;S.career.privateDrawdownMonthly=draw;return S.career.monthlyPension;
 }
 
 export function retirementIncomePreview(S){
- if((S.career.retirementCountry||S.country)!=='usa')return{monthly:S.career.monthlyPension||0,state:S.career.statePensionMonthly||0,private:S.career.privateDrawdownMonthly||0};
+ if((S.career.retirementCountry||S.country)!=='usa'){const p=S.career.market?.pension?.paidOut;const remaining=p?.remaining??Math.max(0,(p?.pot||0)-Math.max(0,(S.year-(p?.year||S.year))*12+S.month-(p?.month||S.month))*(p?.monthlyTopUp||0));const draw=p?Math.min(remaining,p.monthlyTopUp||0):0;const state=S.career.statePensionMonthly??Math.max(0,(S.career.monthlyPension||0)-(p?.monthlyTopUp||0));return{monthly:state+draw,state,private:draw};}
  const state=usStatePension(S).monthly,paid=S.career.market?.pension?.paidOut;let draw=0;
  if(paid){const elapsed=Math.max(0,(S.year-paid.year)*12+(S.month-paid.month));const remaining=paid.remaining??Math.max(0,(paid.pot||0)-elapsed*(paid.monthlyTopUp||0));draw=Math.min(remaining,paid.monthlyTopUp||0);}
  return{monthly:state+draw,state,private:draw};

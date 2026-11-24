@@ -340,8 +340,9 @@ export function payOutPensionPot(S) {
   if (!pen || (pen.pot || 0) <= 0) return { monthlyTopUp: 0, pot: 0 };
   const pot = pen.pot;
   const monthlyTopUp = Math.max(1, Math.round(pot / PENSION_PAYOUT_MONTHS));
+  const previousRemaining=pen.paidOut?Math.max(0,pen.paidOut.remaining??((pen.paidOut.pot||0)-Math.max(0,(S.year-pen.paidOut.year)*12+S.month-pen.paidOut.month)*(pen.paidOut.monthlyTopUp||0))):0;
   pen.paidOut = { pot:pot+(pen.paidOut?.pot||0), monthlyTopUp:monthlyTopUp+(pen.paidOut?.monthlyTopUp||0), year: S.year, month: S.month };
-  pen.paidOut.remaining=(pen.paidOut.remaining||0)+pot;
+  pen.paidOut.remaining=previousRemaining+pot;
   pen.pot = 0;
   recordJournal(S, `Your pension pot of ${formatMoney(pot, S.country)} now pays you ${formatMoney(monthlyTopUp, S.country)} a month on top of your state pension, as a finite drawdown over approximately 20 years, not guaranteed income for life.`, 'money');
   return { monthlyTopUp, pot };

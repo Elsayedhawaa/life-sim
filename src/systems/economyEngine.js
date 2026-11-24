@@ -1799,6 +1799,7 @@ export function convertFinancesOnCountryMove(S, fromCountry, toCountry) {
   fxMove('cash', S.money.cash, convertCurrency(S.money.cash, fromCountry, toCountry, S.year), `Currency conversion: cash (${getCountry(fromCountry).currency} → ${getCountry(toCountry).currency})`);
   fxMove('savings', S.money.savings, convertCurrency(S.money.savings, fromCountry, toCountry, S.year), `Currency conversion: savings (${getCountry(fromCountry).currency} → ${getCountry(toCountry).currency})`);
   S.money.remittanceMonthlyLocal = Math.round(convertCurrency(S.money.remittanceMonthlyLocal, fromCountry, toCountry, S.year));
+  for(const key of ['statePensionMonthly','privateDrawdownMonthly'])if(Number.isFinite(S.career[key]))S.career[key]=Math.max(0,Math.round(convertCurrency(S.career[key],fromCountry,toCountry,S.year)));
   S.career.monthlyPension=Math.max(0,Math.round(convertCurrency(S.career.monthlyPension||0,fromCountry,toCountry,S.year)));
   const pension=S.career.market?.pension;
   if(pension){

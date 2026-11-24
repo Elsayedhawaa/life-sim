@@ -2326,6 +2326,7 @@ export function retireFromCareer(S) {
   S.career.retired = true;
   S.career.retirementCountry=S.country;
   S.career.monthlyPension = proj.monthly;
+  S.career.statePensionMonthly=Math.max(0,proj.monthly-(S.career.market?.pension?.paidOut?.monthlyTopUp||0));
   syncEmployerBenefits(S);
   S.player.vitals.stress = clamp(S.player.vitals.stress - 25);
   recordJournal(
