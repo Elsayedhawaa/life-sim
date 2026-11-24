@@ -1,3 +1,4 @@
+import {closePlayerLease} from './playerTenancy.js';
 import{careerHours}from'./careerSchedule.js';
 import{recordCivilLoss,fileCivilClaim,tickCivilClaims}from './civilClaims.js';
 import{personMind}from './personMind.js';
@@ -216,6 +217,7 @@ export function upgradePropertyFinishing(S, propId, targetFinishId) {
   prop.nativeMonthlyRent = Math.round(prop.nativeValue * 0.068 * nextF.rentMult / 12);
 
   if (nextF.canLive && S.housing.mode !== 'owned' && prop.country === S.country) {
+    closePlayerLease(S);
     S.housing.mode = 'owned';
     S.housing.currentHomeId = prop.id;
     S.housing.currentHomeName = prop.name;

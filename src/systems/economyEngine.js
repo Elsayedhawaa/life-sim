@@ -1,3 +1,4 @@
+import {closePlayerLease,reconcilePlayerLease} from './playerTenancy.js';
 import{settleCompanyTrusts}from'./companyTrust.js';
 import{settleNpcCompanyHoldings}from './companyEstate.js';
 import{childFoodEquivalent}from './custodyCosts.js';
@@ -243,6 +244,7 @@ export function finalizePropertyPurchase(S, spec, plan, opts = {}) {
   };
   S.housing.properties.push(prop);
   if (opts.moveIn !== false && spec.country === S.country) {
+    closePlayerLease(S);
     S.housing.mode = 'owned';
     S.housing.currentHomeId = prop.id;
     S.housing.currentHomeName = prop.name;
@@ -572,6 +574,7 @@ function settleRecurringHouseholdItems(S, summary, netDeltaAtEntry) {
 
 /* Settle one adult month (18+ ONLY) — transparent, penny-exact, zero ghost charges */
 export function settleHouseholdMonth(S) {
+  if(S)reconcilePlayerLease(S);
   /* v2.15 W3 — the monthly settlement refills social energy. Placed
      before the under-18 early return, so the refill is the settlement's
      own job, not an adult-only afterthought (childhood turns refill in
@@ -1270,6 +1273,7 @@ export function settleHouseholdMonth(S) {
       if (S.money.missedRentMonths >= 3) {
         S.money.missedRentMonths = 0;
         const oldHome = S.housing.currentHomeName;
+        closePlayerLease(S,{disputed:true});
         if (S.country === S.homeCountry) {
           S.housing.mode = 'parents';
           S.housing.currentHomeName = 'Family Home (After Eviction)';
@@ -1608,9 +1612,8 @@ export function resolveCurrentHome(S) {
 
 export function rentalMoveInQuote(S, item) {
   const monthlyRent = Math.round(eraLocalCost(item.monthlyRent2026, S.country, S.year) * worldEventEffects(S, S.country).housePrice);
-  // This simulation has a one-month non-refundable setup cost, not a
-  // refundable deposit system. Keep a further month's rent in reserve.
-  return { monthlyRent, moveInFee: monthlyRent, cashRequired: monthlyRent * 2 };
+  // New explicit leases: one setup fee, one refundable deposit, one rent reserve.
+  return { monthlyRent, moveInFee: monthlyRent, deposit:monthlyRent, cashRequired: monthlyRent * 3 };
 }
 
 export function rentHousingUnit(S, catalogId) {
@@ -1622,12 +1625,16 @@ export function rentHousingUnit(S, catalogId) {
   const item = list.find(h => h.id === catalogId);
   if (!item) return { ok: false, msg: 'Property unavailable.' };
 
-  const { monthlyRent, moveInFee, cashRequired } = rentalMoveInQuote(S, item);
+  const { monthlyRent, moveInFee, deposit, cashRequired } = rentalMoveInQuote(S, item);
+  if(S.housing.playerLease?.status==='active'&&S.housing.playerLease.homeId===item.id)return{ok:false,msg:'Already leasing this home.'};
   if (S.money.cash < cashRequired) {
-    return { ok: false, msg: `Need ${formatMoney(cashRequired, S.country)} cash: ${formatMoney(moveInFee, S.country)} non-refundable move-in fee plus one month's rent kept in reserve. Rent is billed on the next monthly turn.` };
+    return { ok: false, msg: `Need ${formatMoney(cashRequired, S.country)} cash: ${formatMoney(moveInFee, S.country)} non-refundable setup fee, one refundable deposit and one month rent reserve. Rent is billed on the next monthly turn.` };
   }
 
+  closePlayerLease(S);
   walletMove(S, -moveInFee, `Non-refundable move-in fee for ${item.name}`, 'housing');
+  walletMove(S,-deposit,`Refundable rental deposit for ${item.name}`,'housing');
+  S.housing.playerLease={id:nextId(S,'lease'),homeId:item.id,name:item.name,country:S.country,deposit,status:'active',startedAt:S.year*12+S.month,landlord:`Landlord of ${item.name}`};
   S.housing.mode = 'rent';
   S.housing.currentHomeId = item.id;
   S.housing.currentHomeName = item.name;
@@ -1706,6 +1713,7 @@ export function moveIntoOwnedProperty(S, propId) {
      deposit is settled against any real damage. */
   if (prop.landlord && prop.landlord.tenant) endTenancy(S, prop, 'you moved in');
   prop.rentedOut = false;
+  closePlayerLease(S);
   S.housing.mode = 'owned';
   S.housing.currentHomeId = prop.id;
   S.housing.currentHomeName = prop.name;

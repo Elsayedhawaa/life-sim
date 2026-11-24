@@ -3039,6 +3039,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
           }).join('')}
         </div>
         <div style="border-top:1px solid var(--line-soft);padding-top:8px">
+          ${S.housing.playerLease?.status==='active'?'<p>Paid rental deposit · '+esc(formatMoney(S.housing.playerLease.deposit,S.housing.playerLease.country))+' · Returned on moving; eviction sends a recorded dispute to courts.</p>':''}
           <strong style="font-size:0.82rem">Quick Rental Apartments in ${esc(getCountry(S.country).name)}:</strong>
           ${rentalUnits.map(h => {
             const quote = rentalMoveInQuote(S, h);
@@ -3048,7 +3049,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
                 <div class="item-row-main">
                   <strong>Lease: ${esc(h.name)} (${h.rooms}BR)</strong>
                   <span>Rent: <strong class="mono">${esc(formatMoney(rCost, S.country))}/mo</strong>, billed from the next monthly turn.</span>
-                  <span>Move-in fee: ${esc(formatMoney(quote.moveInFee, S.country))}, non-refundable. Keep another month's rent in cash. Required: ${esc(formatMoney(quote.cashRequired, S.country))}.</span>
+                  <span>Move-in fee: ${esc(formatMoney(quote.moveInFee, S.country))}, non-refundable. Deposit: ${esc(formatMoney(quote.deposit,S.country))}, refundable on moving. Keep one month's rent in cash. Required: ${esc(formatMoney(quote.cashRequired, S.country))}.</span>
                 </div>
                 <button class="btn btn-sm" data-action="rent-home" data-id="${h.id}">Sign Lease</button>
               </div>

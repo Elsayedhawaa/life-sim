@@ -435,3 +435,6 @@ Investment-tip scene now names an era-available modeled ETF and buys a real inve
 
 ### W17 repatriation and occupied property
 Moving country into an owned rental now ends its existing tenancy through the landlord system before occupation. Intact deposit returns; actual damage keeps the existing settlement decision rather than silently confiscating or auto-deciding it.147focused files pass for intact/damaged cases.390px repatriation fixture returns to owned home, existing tenant cleared/deposit returned, reload retained; inspected home pixels. No claim that this models jurisdiction-specific owner-occupation notice rules.
+
+### W13 player-as-tenant paid deposits
+New explicit leases disclose and charge setup fee plus a separate refundable one-month deposit, with one rent reserve. Deposit is an asset, refunds once on new rental/owned-home move/relocation; fallback monthly reconciliation handles other mode transitions. Eviction moves actual paid deposit to a recorded traceable dispute. Legacy setup fees never become deposits; migration starter rentals get no invented paid asset.148focused files pass plus108quote/charge checks across18countries.390px action signs actual lease, verifies cash/asset/reload and refund on next rental, quote pixels inspected. W18damage/arrears evidence deductions remain queued, not claimed current law.

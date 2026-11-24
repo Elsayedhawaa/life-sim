@@ -1,3 +1,4 @@
+import {closePlayerLease} from './playerTenancy.js';
 import {endTenancy} from './propertyLandlord.js';
 import{recordCivilLoss}from './civilClaims.js';
 import {studyAbroadQuote,studyAwardKey,abroadLanguageReady} from './studyAbroadPlanning.js';
@@ -187,6 +188,7 @@ export function executeCountryRelocation(S, destCountry, residencyObj, moveHouse
     if(refund>0)walletMove(S,refund,'Released remaining game maintenance escrow on departure','education');
     S.legal.blockedAccount=null;
   }
+  closePlayerLease(S);
   convertFinancesOnCountryMove(S, oldCountry, destCountry);
 
   S.country = destCountry;

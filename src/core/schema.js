@@ -1,3 +1,4 @@
+import {playerDepositValue} from '../systems/playerTenancy.js';
 import{ownedCompanyNetValue}from'../systems/companyLiability.js';
 import { businessValuation } from '../data/businessValuation.js';
 /* ============================================================================
@@ -758,7 +759,7 @@ export function walletMove(S, deltaLocal, label, category = 'general') {
 
 export function computeNetWorthLocal(S) {
   if (!S) return 0;
-  let total = (Number(S.money.cash) || 0) + (Number(S.money.savings) || 0);
+  let total = playerDepositValue(S)+(Number(S.money.cash) || 0) + (Number(S.money.savings) || 0);
   for (const cd of S.money.certificates) {
     total += Number(cd.principal) || 0;
   }
