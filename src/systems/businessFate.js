@@ -166,8 +166,7 @@ function rawBankCallScene(S, biz) {
   if (loan) {
     const monthly = Math.round(Number(loan.monthlyPayment) || 0);
     const balance = Math.round(Number(loan.balance) || 0);
-    const threeMonths = monthly * 3;
-    const canPayThree = (Number(S.money?.cash) || 0) >= threeMonths;
+    const extraPayment = Math.min(balance, monthly * 3);
     return {
       key: `fate_bank_${biz.id}`,
       baseId: `fate_bank_${biz.id}`,
@@ -188,14 +187,15 @@ function rawBankCallScene(S, biz) {
           },
         },
         {
-          label: `Pay three months now — ${formatMoney(threeMonths, S.country)}`,
-          available: (st) => (Number(st.money?.cash) || 0) >= threeMonths,
+          label: `${extraPayment >= balance ? 'Clear the loan' : 'Pay extra principal'} — ${formatMoney(extraPayment, S.country)}`,
+          available: (st) => !getBusinessLoan(st,biz)?.inCollections && extraPayment > 0 && (Number(st.money?.cash) || 0) >= extraPayment,
           effect: (st) => {
-            const r = payExtraOnBusinessLoan(st, biz, threeMonths);
+            const r = payExtraOnBusinessLoan(st, biz, extraPayment);
             if (r.ok) {
               if (st.money) st.money.creditScore = clamp(Math.round((Number(st.money.creditScore) || 600) + 5), 300, 850);
-              recordJournal(st, `Paid ${formatMoney(threeMonths, st.country)} off the ${biz.name} loan in one go — three months' payments, up front. The bank backs off, for now.`, 'money');
+              recordJournal(st, `Paid ${formatMoney(extraPayment, st.country)} off the ${biz.name} loan principal. ${r.cleared ? 'The loan is cleared.' : 'Normal monthly payments still apply.'}`, 'money');
             }
+            return r;
           },
         },
         {
@@ -602,7 +602,7 @@ export function checkBusinessFate(S) {
   return report;
 }
 
-function fateFingerprint(S,biz){const loan=getBusinessLoan(S,biz);return JSON.stringify({country:S.country,loan:loan?{id:loan.id,balance:loan.balance,monthlyPayment:loan.monthlyPayment,remainingMonths:loan.remainingMonths}:null,debt:biz.debtLocal,rev:biz.monthlyRev,cost:biz.monthlyCost,repeat:biz.repeatRate,capital:biz.capitalInvested});}
+function fateFingerprint(S,biz){const loan=getBusinessLoan(S,biz);return JSON.stringify({country:S.country,loan:loan?{id:loan.id,balance:loan.balance,monthlyPayment:loan.monthlyPayment,remainingMonths:loan.remainingMonths,inCollections:loan.inCollections}:null,debt:biz.debtLocal,rev:biz.monthlyRev,cost:biz.monthlyCost,repeat:biz.repeatRate,capital:biz.capitalInvested});}
 function durableFateScene(S,biz,person,kind,snapshot){
  if(!biz)return null;const q=snapshot||{kind,bizId:biz.id,country:S.country,personId:person?.id,year:S.year,month:S.month,fingerprint:fateFingerprint(S,biz),affection:kind==='SpouseReaction'?Number(person?.rel?.affection)||0:null,offer:kind==='FriendJob'?friendJobOffer(S,person):kind==='BiggerLoan'?biggerLoanOffer(S,biz):null};
  const raw={BankCall:rawBankCallScene,SpouseReaction:rawSpouseReactionScene,FriendJob:rawFriendJobScene,BiggerHouse:rawBiggerHouseScene,BiggerLoan:rawBiggerLoanScene,Rival:rawRivalScene}[kind];

@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';
+import {createNewLifeState,ensureExtendedState} from '../src/core/schema.js';
+import {buildBankCallScene,restoreBusinessFateScene} from '../src/systems/businessFate.js';
+function setup(balance,cash=10000){const s=createNewLifeState({country:'usa',seed:6});ensureExtendedState(s);s.money.cash=cash;const b={id:'loan-biz',name:'Loan Cafe',typeId:'cafe',country:'usa',loanId:'loan',monthlyRev:1000,monthlyCost:500};s.career.businesses=[b];s.career.business=b;s.money.loans=[{id:'loan',label:'Business loan',businessId:b.id,balance,monthlyPayment:1000,remainingMonths:12,annualRate:.1}];return {s,b};}
+const {s,b}=setup(1500,1500),scene=buildBankCallScene(s,b),restored=restoreBusinessFateScene(s,JSON.parse(JSON.stringify(scene)));assert.match(restored.choices[1].label,/Clear the loan.*1,500 USD/);assert(restored.choices[1].available(s));restored.choices[1].effect(s);assert.equal(s.money.cash,0);assert.equal(s.money.loans.length,0);restored.choices[1].effect(s);assert.equal(s.money.cash,0);
+const x=setup(10000),sc=buildBankCallScene(x.s,x.b);assert.match(sc.choices[1].label,/Pay extra principal.*3,000 USD/);sc.choices[1].effect(x.s);assert.equal(x.s.money.loans[0].balance,7000);assert.equal(x.s.money.loans[0].monthlyPayment,1000);assert.equal(x.s.money.cash,7000);
+const y=setup(10000);y.s.money.loans[0].inCollections=true;const blocked=buildBankCallScene(y.s,y.b);assert.equal(blocked.choices[1].available(y.s),false);blocked.choices[1].effect(y.s);assert.equal(y.s.money.cash,10000);assert(!y.s.career.businessFateReplies?.['BankCall_loan-biz']);
+console.log('Balance-capped bank quote, exact cash gate/payment, principal-only monthly obligation, collections refusal and repeat guard pass');
