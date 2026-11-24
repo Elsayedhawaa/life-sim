@@ -250,3 +250,5 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W117 Grounded spouse conversations now surface as named in-play decisions, not only hidden People controls. Distance complaint closes if actual contact occurs; stale saved/queued conversations cannot punish changed circumstances. Trust conversation uses different words from time-apart request. Existing real energy/trust and separation mechanics retained, no imposed loneliness.
 
 - [x] W118 Natural10year marriage comparison exposed identical-title lifetime cap stopping spouse conversations after3. Dated request titles keep genuine recurring decisions available. Ten-year paired play is not deterministic isolation because scene timing changes random events; both marriages can remain intact, no forced divorce for declining requests.
+
+- [x] W119 Adult children moving home had no living-cost effect: food billing stopped at19regardless of actual household. Explicit co-resident adult children now count as adult food, departing/returning removes/restores it. No automatic child contribution or rent assumed; unknown legacy residence not guessed. Children view states known residence.

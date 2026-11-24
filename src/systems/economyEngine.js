@@ -2,7 +2,7 @@ import{reviewPersonalReceivables}from'./personalReceivables.js';
 import {closePlayerLease,reconcilePlayerLease,recordPlayerRentDue,tickPlayerRentalDamage} from './playerTenancy.js';
 import{settleCompanyTrusts}from'./companyTrust.js';
 import{settleNpcCompanyHoldings}from './companyEstate.js';
-import{childFoodEquivalent}from './custodyCosts.js';
+import{childFoodEquivalent,residentAdultChildren}from './custodyCosts.js';
 import{propertyMarketYear}from './propertyMarketRisk.js';
 import{flyingDutyStatus}from './dutyEligibility.js';
 import{settleUSRetirement}from './usRetirement.js';
@@ -1074,7 +1074,7 @@ export function settleHouseholdMonth(S) {
   if (livingWithParentsFree) {
     monthlyLiving = eraLocalCost((cObj.monthlyBasket2026.transport + cObj.monthlyBasket2026.phoneInternet) * lifeMult, S.country, S.year);
   } else {
-    const adults = 1 + coResidentSpouses.length;
+    const adults = 1 + coResidentSpouses.length + residentAdultChildren(S).length;
     const baseFood = cObj.monthlyBasket2026.foodAdult * adults + cObj.monthlyBasket2026.foodChild * childFoodEquivalent(S);
     const baseUtil = S.housing.mode === 'parents' ? cObj.monthlyBasket2026.utilities * 0.5 : cObj.monthlyBasket2026.utilities;
     const baseTrans = S.cars.length > 0 ? 0 : cObj.monthlyBasket2026.transport;
