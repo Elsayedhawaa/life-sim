@@ -316,9 +316,14 @@ console.log('--- §3 pension ---');
       amounts.employee === slip.pensionContribution && amounts.employer === slip.employerPension,
       `slip ${slip.pensionContribution}/${slip.employerPension} vs pot ${amounts.employee}/${amounts.employer}`);
   }
-  const us = pensionSlipFor(60000, 'usa', 2026, true);
-  check('USA: 401(k) 6% is real cash out (3,600 on 60,000)', us.cashOut === 3600 && us.employee === computePayslip(60000, 'usa', 2026, true).pensionContribution + 3600, `cashOut ${us.cashOut}, employee ${us.employee}`);
-  check('USA: employer matches 3% (1,800 on 60,000)', us.employer === 1800, `got ${us.employer}`);
+  /* Below the IRS limits: 6% employee, 3% match. */
+  const us = pensionSlipFor(5000, 'usa', 2026, true);
+  check('USA: 401(k) 6% is real cash out (300 on 5,000)', us.cashOut === 300 && us.employee === 300, `cashOut ${us.cashOut}, employee ${us.employee}`);
+  check('USA: employer matches 3% (150 on 5,000)', us.employer === 150, `got ${us.employer}`);
+  /* Above the limits (60,000 a month): the IRS caps bind (24,500 a year employee, 360,000 compensation for the match). */
+  const usHigh = pensionSlipFor(60000, 'usa', 2026, true);
+  check('USA: 401(k) employee deferral is capped at the annual limit (2,042 a month)', usHigh.cashOut === 2042, `cashOut ${usHigh.cashOut}`);
+  check('USA: employer match is capped by the compensation limit (900 a month)', usHigh.employer === 900, `got ${usHigh.employer}`);
 
   /* Settlement identity over 12 months (UK — the named 5% + 3%). */
   const P = employedLife(401, 'gbr');
@@ -352,7 +357,7 @@ console.log('--- §3 pension ---');
   tickCareerMarketMonth(U);
   settleHouseholdMonth(U);
   const k401 = ledgerLines(U, /401\(k\) contribution/);
-  check('USA 401(k) lands as a real ledger line (−3,600)', k401.length === 1 && k401[0].delta === -3600, k401.map(l => `${l.label} → ${l.delta}`).join(' | '));
+  check('USA 401(k) lands as a real ledger line (−2,042, capped)', k401.length === 1 && k401[0].delta === -2042, k401.map(l => `${l.label} → ${l.delta}`).join(' | '));
 
   /* Opt-out stops contributions; opting back in resumes them. */
   const O = employedLife(403, 'gbr');
