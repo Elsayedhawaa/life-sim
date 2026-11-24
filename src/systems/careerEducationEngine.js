@@ -1317,7 +1317,7 @@ export function employerCandidates(country,year,trackId,industry){
  const direct=Object.hasOwn(CAREER_TRACKS,trackId)?getEmployersFor(country,trackId):[];
  const extra=(EXTRA_REAL_COMPANIES||[]).filter(c=>c.country===country&&(c.industry===sector||c.industry===trackId)&&(!c.founded||c.founded<=year)).map(c=>c.name);
  let names=[...new Set([...direct,...pool.filter(c=>(!c.founded||c.founded<=year)&&(!c.availableFrom||c.availableFrom<=year)).map(c=>c.name),...extra])].filter(n=>n&&!SLOP_COMPANY_RE.test(n)&&!/^Frontier AI Lab/i.test(n));
- if(['civil_eng','urban_masterplan','real_estate_dev'].includes(trackId))names=names.filter(n=>/construction|bechtel|contract|hassan|orascom|r[oö]nesans|en.?ka|roshn|vinci|bouygues|skanska|aec|arup|tata projects|larsen|obayashi|shimizu|taisei|hyundai.*construct|samsung.*c.?t/i.test(n));
+ if(['engineering','civil_eng','urban_masterplan','real_estate_dev'].includes(trackId))names=names.filter(n=>/construction|bechtel|contract|hassan|orascom|r[oö]nesans|en.?ka|roshn|vinci|bouygues|skanska|aec|arup|tata projects|larsen|obayashi|shimizu|taisei|hyundai.*construct|samsung.*c.?t/i.test(n));
  if(trackId==='prosecutor')names=names.filter(n=>/prosecut|justice|attorney|court/i.test(n));
  return names;
 }
