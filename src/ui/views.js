@@ -1,3 +1,4 @@
+import{renderNpcCompanyControls}from'../systems/companyNpcControls.js';
 import{renderEstateReviews}from'../systems/companyEstateReview.js';
 import{renderNpcCompanyEstates}from'../systems/companyEstate.js';
 import{renderCompanyTrusts}from'../systems/companyTrust.js';
@@ -3895,7 +3896,7 @@ export function renderFinanceTabHtml(S, uiState = {}) {
               </button>
             `).join('')}
           </div>
-          ${renderWillHeirSection(S)}${renderEstateRecord(S)}${renderCompanyTrusts(S)}${renderNpcCompanyEstates(S)}${renderEstateReviews(S)}
+          ${renderWillHeirSection(S)}${renderEstateRecord(S)}${renderCompanyTrusts(S)}${renderNpcCompanyEstates(S)}${renderEstateReviews(S)}${renderNpcCompanyControls(S)}
         </div>
       </div>
     ` : ''}

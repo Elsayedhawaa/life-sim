@@ -31,7 +31,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] L17 One-company paid trustee trust, equal child beneficiaries, real funded fees/trading/estate charges, adult release and stake/cash allocation once.
 - [x] L18 NPC onward inheritance with combined cash/company charge allocation, recipient payments/notes and recorded settlements.
 - [x] L19 Fictional named/fallback gift disputes, paid proof-based trading-tax relief appeal and sale-to-fund note choices, without claiming local probate law.
-- [ ] L20 NPC-owned company management/account controls beyond stored records and monthly model operation.
+- [x] L20 NPC company owner accounts, funded management, policy/retention requests, gifts and owner bill payments, with consent/age/job guards.
 
 ## Eight ranked business gaps
 
@@ -46,4 +46,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-10 distinct open packages after L19. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+9 distinct open packages after L20. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.

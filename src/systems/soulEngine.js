@@ -875,7 +875,8 @@ export function tickNpcAutonomyYearly(S) {
     /* Natural NPC age-appropriate schooling & career progression */
     const pCountry = getCountry(person.residenceCountry || S.country);
     const managedEmployment=person.career?.businessEmployeeId&&(S.career.businesses||[]).some(b=>b.id===person.career.businessEmployeeId&&((b.staff||[]).some(e=>e.personId===person.id)||b.manager?.personId===person.id));
-    if(managedEmployment){person.career.savingsLocal=(person.career.savingsLocal||0)+Math.round(person.career.monthlyIncomeLocal*12*.12);}
+    if(person.career?.npcCompanyPayroll){}
+    else if(managedEmployment){person.career.savingsLocal=(person.career.savingsLocal||0)+Math.round(person.career.monthlyIncomeLocal*12*.12);}
     else if (person.age < 5 && !person.career.monthlyIncomeLocal) {
       person.career.title = 'Infant / Preschool';
     } else if (person.age >= 5 && person.age < 12 && !person.career.monthlyIncomeLocal) {
