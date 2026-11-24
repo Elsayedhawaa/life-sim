@@ -57,6 +57,7 @@ export function renewPassport(S, countryId = null) {
 }
 
 export function checkCanCrossBorder(S) {
+  if(S.pendingRelocation)return {ok:false,reason:'Finish the existing business relocation decisions before starting another departure.'};
   if (S.player.age < 18) return { ok: false, reason: 'Minors cannot migrate independently until age 18.' };
   if (!hasValidPassport(S)) return { ok: false, reason: 'Your passport is expired — renew it on the Passport & World screen first.' };
   if (!S.legal.military.travelPermitted) {
@@ -173,6 +174,11 @@ export function executeCountryRelocation(S, destCountry, residencyObj, moveHouse
     return { deferred: true };
   }
 
+  // These courses are full-time in-person routes, not portable remote credentials.
+  if(S.education.university?.international&&S.education.university.country!==destCountry){
+    const u=S.education.university;S.education.history??=[];S.education.history.push({kind:'withdrawn_move',name:u.name,majorLabel:u.majorLabel,year:S.year});S.education.university=null;S.education.stage='completed';recordJournal(S,`Left full-time study at ${u.name} when moving away. Paid tuition is not refunded.`,'education');
+  }
+  if(S.postgrad?.active?.international&&S.postgrad.active.country!==destCountry){const p=S.postgrad.active;S.postgrad.history??=[];S.postgrad.history.push({...p,status:'withdrawn_move',year:S.year});S.postgrad.active=null;recordJournal(S,`Left ${p.label} when moving away from its study country. Paid tuition is not refunded.`,'education');}
   convertFinancesOnCountryMove(S, oldCountry, destCountry);
 
   S.country = destCountry;
@@ -911,6 +917,7 @@ export function sponsorFamilyReunification(S) {
 }
 
 export function returnToHomeCountry(S) {
+  if(S.pendingRelocation)return {ok:false,msg:'Finish your pending move first.'};
   if (S.country === S.homeCountry) return { ok: false, msg: 'You are already in your home country.' };
   if (S.legal.travelBanInCountry === S.country) {
     return { ok: false, msg: `Debt travel ban in ${getCountry(S.country).name} prevents departure until debts are settled.` };

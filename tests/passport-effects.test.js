@@ -1,3 +1,4 @@
+import {getRequiredForeignBoardForJob} from '../src/systems/careerEducationEngine.js';
 import {annualUniversityBudget} from '../src/data/universityCosts.js';
 import {getUniversitiesFor} from '../src/data/institutions.js';
 import assert from 'node:assert/strict';
@@ -12,3 +13,6 @@ s=base();executeCountryRelocation(s,'deu',{kind:'permanent_resident',permitName:
 s=base();const uni=getUniversitiesFor('gbr',2026).find(u=>u.id==='gbr_ucl');const foreignBudget=annualUniversityBudget(s,uni,'cs');s.legal.citizenships.push('gbr');assert.ok(annualUniversityBudget(s,uni,'cs')<foreignBudget);console.log('Domestic education and overseas quotes share citizenship fee rules.');
 
 s=base();s.education.languages=['English (C1)'];s.credentials.languageCerts=[{lang:'English (C1)',expiresYear:2025}];assert.equal(studyAbroadQuote(s,'gbr').ok,false);s.credentials.languageCerts[0].expiresYear=2028;assert.equal(studyAbroadQuote(s,'gbr').ok,true);console.log('Expired language test blocks new overseas admission, renewed certificate unlocks it.');
+
+s=base();s.education.degrees=['medicine'];s.education.degreeCountries={medicine:'egy'};s.country='gbr';s.legal.citizenships.push('gbr');assert.equal(getRequiredForeignBoardForJob(s,'medicine',['medicine']).id,'lic_uk_plab');
+s=base();renewPassport(s);assert.ok(applyStudyAbroad(s,'gbr').ok);executeCountryRelocation(s,'egy',{kind:'citizen'},false);assert.equal(s.education.university,null);assert.ok(s.education.history.some(h=>h.kind==='withdrawn_move'));console.log('Citizenship does not bypass foreign medical licensing; moving away withdraws full-time overseas study.');

@@ -1332,7 +1332,7 @@ export function getRequiredForeignBoardForJob(S, trackId, reqDegrees = []) {
   const isMedical = trackId === 'medicine' || reqDegrees.includes('medicine') || reqDegrees.includes('dentistry');
   const isEng = trackId === 'engineering' || reqDegrees.includes('engineering');
   const degCountry = S.education.degreeCountries?.[reqDegrees[0]] || S.homeCountry;
-  const foreignEducated = degCountry !== S.country && !S.legal.citizenships.includes(S.country);
+  const foreignEducated = degCountry !== S.country; // Nationality does not convert a foreign qualification into a local one.
 
   if (isMedical && foreignEducated) {
     if (S.country === 'sau' && !S.credentials.licenses.includes('lic_sau_scfhs')) {
