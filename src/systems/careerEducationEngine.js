@@ -30,7 +30,7 @@ import { emitFact, spawnUniversityPeer, spawnWorkplaceCast, rememberDeed } from 
 /* v2.18 W1 (§1) — real work inside the job: one piece of work a month,
    resolved by the player's choice. The ONLY call the engine makes in. */
 import { maybeAssignCareerWork } from './careerWork.js';
-import { transitionResidency } from './visaMigrationEngine.js';
+import { transitionResidency,grantGameGraduatePermit } from './visaMigrationEngine.js';
 import {
   listAllBusinessVentures,
   createBusiness,
@@ -878,6 +878,7 @@ export function applyInternship(S, intId) {
 
 export function applyToUniversity(S, uniId, majorId,funding='auto') {
   const edu = ensureEduExtras(S);
+  if(S.postgrad?.active||S.pendingRelocation)return {ok:false,msg:'Finish current postgraduate study or your pending move first.'};
   if (edu.university) return { ok: false, msg: 'You are already enrolled at university — finish or leave first.' };
   if (S.player.age < 18) return { ok: false, msg: 'University opens at 18, after your secondary exam.' };
   if (!['graduated_high', 'completed'].includes(edu.stage)) {
@@ -928,7 +929,9 @@ export function applyToUniversity(S, uniId, majorId,funding='auto') {
 /* Progress University & Conscription Monthly when age 18+ */
 export function tickUniversityAndConscriptionMonthly(S) {
   /* 1. University Progression on September / academic year rollover */
-  if (S.education.university && S.month === 6) {
+  const overseas=S.education.university?.international;
+  if(overseas){const u=S.education.university;u.elapsedMonths=(u.elapsedMonths||0)+1;u.yearInProgram=Math.min(u.totalYears,Math.floor(u.elapsedMonths/12)+1);}
+  if (S.education.university && (overseas?S.education.university.elapsedMonths>=S.education.university.totalYears*12:S.month === 6)) {
     const u = S.education.university;
     if (u.yearInProgram >= u.totalYears) {
       /* GRADUATION! */
@@ -999,23 +1002,7 @@ export function tickUniversityAndConscriptionMonthly(S) {
 
       /* If studying abroad on a Student Visa, transition automatically to Post-Study Work Visa (PSW / OPT / PGWP / Job-Seeker)! */
       if (S.legal.residency.kind === 'student_visa' && gradCountry === S.country) {
-        const postStudyNames = {
-          deu: { name: '18-Month German Job-Seeker Permit', mos: 18 },
-          gbr: { name: '2-Year UK Graduate Visa (PSW)', mos: 24 },
-          usa: { name: ['cs', 'engineering', 'medicine', 'pharma'].includes(S.education.degrees[0]) ? '36-Month F-1 STEM OPT' : '12-Month F-1 OPT', mos: ['cs', 'engineering', 'medicine', 'pharma'].includes(S.education.degrees[0]) ? 36 : 12 },
-          can: { name: '3-Year Canadian PGWP', mos: 36 }
-        };
-        const psw = postStudyNames[S.country] || { name: 'Post-Study Graduate Permit', mos: 18 };
-        // Correct month arithmetic: expiry is exactly `mos` months from now
-        // (was: year/month computed separately, expiring up to a year early).
-        const expTotalMonths = (S.month - 1) + psw.mos;
-        transitionResidency(S, 'post_study_work', {
-          permitName: psw.name,
-          expiresYear: S.year + Math.floor(expTotalMonths / 12),
-          expiresMonth: (expTotalMonths % 12) + 1,
-          force: true
-        });
-        recordJournal(S, `Granted ${psw.name} — you now have full work authorization to launch your career in ${getCountry(S.country).name}!`, 'visa');
+        grantGameGraduatePermit(S,'bachelor',u.majorId);
       }
 
       evaluateConscriptionCheck(S);

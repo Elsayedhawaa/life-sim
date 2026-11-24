@@ -1,3 +1,5 @@
+import {studyAbroadQuote,studyAwardKey,abroadLanguageReady} from './studyAbroadPlanning.js';
+import {chargeFamilyEducation} from './educationFunding.js';
 /* ============================================================================
    World Life 2.0 — Passports, Visas, Study Abroad, Gulf Kafala & Migration
    Enforces passport validity, military travel clearance, debt travel bans,
@@ -392,23 +394,7 @@ export function finishPendingRelocation(S) {
 export function runRelocationContinuation(S, after) {
   if (!after || typeof after.kind !== 'string') return;
   if (after.kind === 'study') {
-    const unis = getUniversitiesFor(after.destCountry, S.year);
-    const uni = unis.find(u => u.id === after.uniId) || unis[0];
-    if (after.blockedDest > 0) {
-      S.legal.blockedAccount = {
-        kind: after.blockedKind || 'blocked account',
-        country: after.destCountry,
-        balanceLocal: after.blockedDest,
-        balanceInPlayerLocal: after.blockedDest,
-        monthlyReleaseLocal: Math.round(after.blockedDest / 12)
-      };
-    }
-    if (uni) enrollInUniversity(S, uni, after.majorId || 'cs', after.scholarshipPct || 0);
-    recordJournal(
-      S,
-      `Visa stamped! Landed in ${S.city}, ${getCountry(after.destCountry).name} on a ${after.visaName || 'student visa'} to study at ${uni ? uni.name : 'university'}${after.blockedDest > 0 ? ` (${S.legal.blockedAccount.kind} funded: ${formatMoney(after.blockedDest, after.destCountry)})` : ''}.`,
-      'visa'
-    );
+    finishStudyAbroad(S,after);
   } else if (after.kind === 'gulf') {
     if (after.sponsorArchId !== 'ghost') {
       const track = CAREER_TRACKS[after.trackId];
@@ -482,98 +468,68 @@ export function runRelocationContinuation(S, after) {
 /* ============================================================================
    1. STUDY ABROAD PIPELINE (DEU Sperrkonto / GBR CAS / USA I-20 / CAN GIC)
    ========================================================================== */
-export function applyStudyAbroad(S, destCountry, majorId = 'cs') {
-  const border = checkCanCrossBorder(S);
-  if (!border.ok) return { ok: false, msg: border.reason };
-  if (destCountry === S.country) return { ok: false, msg: 'You already live in this country.' };
-
-  const pipe = STUDY_ABROAD_PIPELINES[destCountry];
-  if (!pipe) return { ok: false, msg: 'Student visa pathways are available for: ' + Object.keys(STUDY_ABROAD_PIPELINES).map(c => getCountry(c).name).join(', ') + '.' };
-
-  const score = S.education.highSchoolScore || 68;
-  if (score < 68 && S.education.degrees.length === 0) {
-    return { ok: false, msg: `International admission requires >= 68% secondary marks (yours: ${score}%).` };
+export function grantGameGraduatePermit(S,level='bachelor',majorId='cs'){
+ if(S.legal.residency.kind!=='student_visa')return;
+ const pipe=STUDY_ABROAD_PIPELINES[S.country];
+ let months=pipe?.postStudyMonths||12;
+ if(S.country==='gbr')months=level==='phd'?36:S.year>=2027?18:24;
+ if(S.country==='usa')months=['cs','engineering'].includes(majorId)?36:12;
+ const expiry=S.year*12+S.month-1+months;
+ transitionResidency(S,'post_study_work',{permitName:`Modelled graduate job-search/work route (${months} months)`,expiresYear:Math.floor(expiry/12),expiresMonth:expiry%12+1,force:true});
+ recordJournal(S,'Game graduate route activated. Real eligibility, applications and work restrictions vary; this is not an automatic real-world entitlement.','visa');
+}
+export function applyOverseasScholarship(S,dest,level='bachelor'){
+  if(!['bachelor','masters','phd'].includes(level))return {ok:false,msg:'Choose a study level.'};
+  const q=studyAbroadQuote(S,dest,{level});
+  if(!q.uni||dest===S.country||S.player.age<18||!['graduated_high','completed'].includes(S.education.stage)||S.education.university||S.postgrad?.active)return {ok:false,msg:'Finish your current school/course and choose a different destination first.'};
+  if(level!=='bachelor'&&!S.education.degrees.length)return {ok:false,msg:'A first degree is required.'};
+  if(level==='phd'&&!S.postgrad?.completed?.some(p=>p.tier==='masters_mba'))return {ok:false,msg:'A master’s credential is required.'};
+  if(!abroadLanguageReady(S))return {ok:false,msg:'A recorded English qualification is required.'};
+  if((S.education.highSchoolScore??0)<85||S.player.vitals.smarts<75)return {ok:false,msg:'Game award requires85+secondary marks and75+smarts.'};
+  const key=studyAwardKey(S,dest,level);S.education.studyAwards??={};
+  if(S.education.studyAwards[key])return {ok:false,msg:'Already reviewed this country/level award this year.'};
+  const awarded=chance(S,.35);S.education.studyAwards[key]={awarded,year:S.year,dest,level};
+  recordJournal(S,`Overseas game tuition award (${dest}, ${level}): ${awarded?'awarded':'not awarded'}. Living costs and travel are not covered.`,'education');
+  return {ok:awarded,msg:awarded?'Full game tuition award won for this destination and level this year. Travel and living costs remain yours.':'Not awarded. You can try again next game year or fund the course yourself.'};
+}
+function finishStudyAbroad(S,q){
+  // Keep pre-upgrade saved business-deferred undergraduate moves recoverable.
+  if(!q.dest&&q.destCountry){
+    const uni=getUniversitiesFor(q.destCountry,S.year).find(u=>u.id===q.uniId)||getUniversitiesFor(q.destCountry,S.year)[0];
+    if(!uni)return;
+    enrollInUniversity(S,uni,q.majorId||'cs',q.scholarshipPct||0);
+    if(S.education.university)Object.assign(S.education.university,{prepaidMonths:6,international:true,elapsedMonths:0,fundingSource:'self'});
+    if(q.blockedDest>0)S.legal.blockedAccount={kind:q.blockedKind||'Legacy study escrow',country:q.destCountry,balanceLocal:q.blockedDest,balanceInPlayerLocal:q.blockedDest,monthlyReleaseLocal:Math.round(q.blockedDest/12)};
+    recordJournal(S,'Completed a previously funded study move from an older save. Its original deposit is credited for6months; new international budgets apply to new applications only.','education');return;
   }
-
-  const unis = getUniversitiesFor(destCountry, S.year);
-  const uni = unis[0];
-  const annualTuitionDest = eraLocalCost(uni.annualTuition2026, destCountry, S.year);
-  const blockedDest = eraLocalCost(pipe.blockedAmountLocal2026 || 0, destCountry, S.year);
-  const proofDest = eraLocalCost(pipe.requiredProofLocal2026 || 0, destCountry, S.year);
-  const visaFeePlayer = Math.round(convertCurrency(pipe.visaFeeUsd2026, 'usa', S.country, S.year));
-  const flightPlayer = Math.round(convertCurrency(850, 'usa', S.country, S.year));
-
-  /* Scholarship chance for high-scoring students */
-  const scholarshipPct = (score >= 92 && S.player.vitals.smarts >= 85) ? 0.75 : (score >= 86 ? 0.35 : 0);
-  const firstYearTuitionDest = Math.round(annualTuitionDest * (1 - scholarshipPct));
-
-  const upfrontDestNeed = blockedDest + Math.round(firstYearTuitionDest * 0.5);
-  const totalCashNeededPlayer = Math.round(convertCurrency(upfrontDestNeed, destCountry, S.country, S.year)) + visaFeePlayer + flightPlayer;
-  const proofNeededPlayer = Math.round(convertCurrency(proofDest, destCountry, S.country, S.year));
-
-  if ((S.money.cash + S.money.savings) < Math.max(totalCashNeededPlayer, proofNeededPlayer + visaFeePlayer)) {
-    return {
-      ok: false,
-      msg: `${pipe.requirementLabel} + visa & tuition deposit requires ${formatMoney(Math.max(totalCashNeededPlayer, proofNeededPlayer + visaFeePlayer), S.country)} in liquid funds.`
-    };
+  if(q.blockedDest>0)S.legal.blockedAccount={kind:'Study maintenance escrow (game)',country:q.dest,balanceLocal:q.blockedDest,balanceInPlayerLocal:q.blockedDest,monthlyReleaseLocal:Math.round(q.blockedDest/12)};
+  if(q.level==='bachelor'){
+    const uni=getUniversitiesFor(q.dest,S.year).find(u=>u.id===q.uniId);
+    enrollInUniversity(S,uni,q.majorId,q.scholarshipPct);
+    Object.assign(S.education.university,{annualTuition:q.annualDest,fundingSource:q.funding==='parents'?'family':q.funding,international:true,prepaidMonths:12,elapsedMonths:0,familyMonthsRemaining:12,scholarshipPct:q.scholarshipPct});
+  }else{
+    S.postgrad??={active:null,completed:[]};
+    S.postgrad.active={tier:q.level==='phd'?'fellowship_phd':'masters_mba',label:`${q.level==='phd'?'PhD':"Master's"} in ${q.majorLabel} · ${q.uniName}`,monthsLeft:q.years*12,totalMonths:q.years*12,feePaid:q.tuitionDest,country:q.dest,international:true,uniId:q.uniId,majorId:q.majorId};
   }
-
-  /* US 214(b) / Embassy Visa Interview check */
-  const approvalChance = destCountry === 'usa' ? 0.74 : 0.88;
-  if (!chance(S, approvalChance)) {
-    walletMove(S, -visaFeePlayer, `Non-refundable embassy visa fee (${getCountry(destCountry).name})`, 'visa');
-    recordJournal(S, `Refused at the ${getCountry(destCountry).adjective} Embassy interview under consular ties review — visa fee (${formatMoney(visaFeePlayer, S.country)}) lost.`, 'visa');
-    return { ok: false, msg: `Embassy refused the student visa this round.` };
+  recordJournal(S,`Started overseas ${q.level} study at ${q.uniName}. International game tuition funded via ${q.funding}; no living stipend. Student residence is temporary, not permanent residency.`,'education');
+}
+export function applyStudyAbroad(S,destCountry,majorId='cs',opts={}){
+  const q=studyAbroadQuote(S,destCountry,{...opts,majorId});
+  if(!q.ok)return {ok:false,msg:q.reason};
+  const border=checkCanCrossBorder(S);if(!border.ok)return {ok:false,msg:border.reason};
+  if(q.funding==='parents'){
+    if(!chargeFamilyEducation(S,q.totalPlayer))return {ok:false,msg:'Parent savings changed.'};
+  }else{
+    const pull=Math.max(0,q.totalPlayer-S.money.cash);
+    if(pull){moveBalance(S,'savings',-pull,'Study abroad savings withdrawal','bank');walletMove(S,pull,'Study abroad savings withdrawal','bank');}
+    walletMove(S,-q.totalPlayer,'International tuition, maintenance escrow and modelled relocation budget','education');
   }
-
-  /* Deduct upfront fee + blocked account + flight in origin currency, then relocate! */
-  if (S.money.cash < totalCashNeededPlayer && S.money.savings > 0) {
-    const pull = Math.min(S.money.savings, totalCashNeededPlayer - S.money.cash);
-    moveBalance(S, 'savings', -pull, 'Savings withdrawal for study-abroad funding', 'bank');
-    walletMove(S, pull, 'Savings withdrawal for study-abroad funding', 'bank');
-  }
-  walletMove(S, -totalCashNeededPlayer, `${pipe.requirementLabel}, tuition deposit & flight to ${getCountry(destCountry).name}`, 'visa');
-
-  /* v2.11 W4: if the player owns a business, the move pauses here for the
-     keep/sell/close decision — the blocked account, enrolment and journal
-     below run only once the move completes (inline now, or from the
-     'study' continuation in finishPendingRelocation). */
-  const moved = executeCountryRelocation(S, destCountry, {
-    kind: 'student_visa',
-    permitName: pipe.visaName,
-    sponsorName: uni.name,
-    sponsorArchetype: null,
-    expiresYear: S.year + 4,
-    expiresMonth: 9,
-    familySponsored: false
-  }, householdMovePolicy('study'), {
-    after: {
-      kind: 'study', destCountry, uniId: uni.id, majorId, scholarshipPct,
-      blockedDest, blockedKind: pipe.blockedAccountKind || 'blocked account',
-      requirementLabel: pipe.requirementLabel, visaName: pipe.visaName
-    }
-  });
-  if (moved && moved.deferred) {
-    return { ok: true, deferred: true, msg: `Your student visa to ${getCountry(destCountry).name} is approved — but first decide what happens to ${businessCountWord(S)} before you move.` };
-  }
-
-  if (blockedDest > 0) {
-    S.legal.blockedAccount = {
-      kind: pipe.blockedAccountKind || 'blocked account',
-      country: destCountry,
-      balanceLocal: blockedDest,
-      balanceInPlayerLocal: blockedDest,
-      monthlyReleaseLocal: Math.round(blockedDest / 12)
-    };
-  }
-
-  enrollInUniversity(S, uni, majorId, scholarshipPct);
-  recordJournal(
-    S,
-    `Visa stamped! Landed in ${S.city}, ${getCountry(destCountry).name} on a ${pipe.visaName} to study at ${uni.name}${blockedDest > 0 ? ` (${S.legal.blockedAccount.kind} funded: ${formatMoney(blockedDest, destCountry)})` : ''}.`,
-    'visa'
-  );
-  return { ok: true, msg: `Moved to ${getCountry(destCountry).name} to study at ${uni.name}!` };
+  const after={kind:'study',...q,uniId:q.uni.id,uniName:q.uni.name};delete after.uni;
+  const months=q.years*12+3,expiry=S.year*12+S.month-1+months;
+  const moved=executeCountryRelocation(S,destCountry,{kind:'student_visa',permitName:q.visaName,sponsorName:q.uni.name,expiresYear:Math.floor(expiry/12),expiresMonth:expiry%12+1,familySponsored:false},householdMovePolicy('study'),{after});
+  if(moved?.deferred)return {ok:true,deferred:true,msg:'Student route accepted in the game. Resolve your business move before departure; tuition and relocation funds are reserved.'};
+  finishStudyAbroad(S,after);
+  return {ok:true,msg:`Moved to ${getCountry(destCountry).name} for ${q.level} study. Tuition paid ${q.level==='bachelor'?'for12months':'for the full course'}; living costs continue monthly. This is a simplified game route, not a real visa decision.`};
 }
 
 /* ============================================================================
@@ -1087,7 +1043,7 @@ export function tickVisaAndLegalMonthly(S) {
                     return;
                   }
                 }
-                if (kindNow === 'student_visa' && st.education.stage !== 'university') {
+                if (kindNow === 'student_visa' && st.education.stage !== 'university' && !st.postgrad?.active?.international) {
                   recordJournal(st, `Student visa renewal refused — you are no longer enrolled at a university in ${getCountry(st.country).name}.`, 'visa');
                   transitionResidency(st, 'grace_period', { permitName: `${permitNow} Expired (60-Day Grace)`, graceMonthsLeft: 2 });
                   return;

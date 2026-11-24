@@ -1,3 +1,4 @@
+import {ABROAD_LEVELS,ABROAD_SUBJECTS,abroadUniversities,studyAbroadQuote} from '../systems/studyAbroadPlanning.js';
 import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget,outdoorAreaSummary} from '../data/propertyAreas.js';
 import {familyCoversUniversity} from '../systems/educationFunding.js';
 import {annualUniversityBudget,universityBudgetRange} from '../data/universityCosts.js';
@@ -4839,7 +4840,7 @@ export function renderWorldTabHtml(S, uiState = {}) {
 
   const passBanner = renderEditorialBannerHtml(pickDynamicBanner(S, 'world', sub), 'ICAO Biometric Travel Documents, Consular Visa Foils & Global Mobility');
   if (sub === 'gulf') return passBanner + nav + renderGulfMigrationSubtabHtml(S, uiState);
-  if (sub === 'global') return passBanner + nav + renderGlobalMigrationSubtabHtml(S);
+  if (sub === 'global') return passBanner + nav + renderGlobalMigrationSubtabHtml(S,uiState);
 
   const rulesHere = SKILLED_MIGRATION_RULES[S.country];
   return `
@@ -4955,7 +4956,30 @@ function renderGulfMigrationSubtabHtml(S, uiState) {
   `;
 }
 
-function renderGlobalMigrationSubtabHtml(S) {
+function renderStudyAbroadHtml(S,uiState){
+ const dest=uiState.studyDest&&uiState.studyDest!==S.country?uiState.studyDest:COUNTRY_IDS.find(c=>c!==S.country);
+ const unis=abroadUniversities(S,dest),uniId=unis.some(u=>u.id===uiState.studyUni)?uiState.studyUni:unis[0]?.id;
+ const level=uiState.studyLevel||'bachelor',majorId=uiState.studyMajor||'cs',funding=uiState.studyFunding||'self';
+ const q=studyAbroadQuote(S,dest,{uniId,level,majorId,funding});
+ const field=(title,key,value,options)=>`<label style="display:grid;gap:5px;font-size:.84rem">${title}<select class="filter-select" data-filter="${key}" style="width:100%;max-width:100%">${options.map(o=>`<option value="${esc(o.id)}" ${o.id===value?'selected':''}>${esc(o.label)}</option>`).join('')}</select></label>`;
+ return `<div class="card"><h3>Study abroad</h3><p class="muted">Choose a country, university, level, subject and real funding source. These are English-taught game pathways and overseas budgets, not verified course offers or immigration advice. A student permit is temporary. No automatic permanent residency.</p>
+ <div style="display:grid;gap:10px;margin:14px 0">
+ ${field('Country','studyDest',dest,COUNTRY_IDS.filter(c=>c!==S.country).map(c=>({id:c,label:getCountry(c).name})))}
+ ${field('University','studyUni',uniId,unis.map(u=>({id:u.id,label:u.name})))}
+ ${field('Level','studyLevel',level,ABROAD_LEVELS)}
+ ${field('Subject','studyMajor',majorId,MAJORS.filter(m=>ABROAD_SUBJECTS.includes(m.id)).map(m=>({id:m.id,label:m.label})))}
+ ${field('Funding','studyFunding',funding,[{id:'self',label:'My cash + savings'},{id:'parents',label:'Living parents’ actual savings'},{id:'scholarship',label:'Awarded game tuition scholarship'}])}</div>
+ <p><strong>${q.years} years</strong> · ${esc(formatMoney(q.annualDest,dest))}/year international game tuition</p>
+ <p class="muted">${level==='bachelor'?'First year prepaid; later tuition billed monthly or renewed by parents.':'Full course tuition prepaid; no further monthly tuition.'} Living costs are separate and continue monthly. No stipend or free language fluency.</p>
+ <div style="background:#f7f3e7;padding:12px;border-radius:10px;font-size:.84rem;line-height:1.8">Tuition due now: ${esc(formatMoney(q.tuitionDest,dest))}<br>Maintenance escrow: ${esc(formatMoney(q.blockedDest,dest))}${q.blockedDest?' (released over12months)':''}<br>Modelled travel/permit budget: ${esc(formatMoney(q.costsDest,dest))}<br><strong>Debit now: ${esc(formatMoney(q.totalPlayer,S.country))}</strong><br>Required liquid funds incl. first-year living buffer: ${esc(formatMoney(Math.max(q.totalPlayer,q.proofPlayer),S.country))}<br>Selected source holds: ${esc(formatMoney(q.available,S.country))}</div>
+ <p class="muted">Admission uses the game’s score index for bachelor study. Master’s requires a first degree; PhD requires a master’s. English qualification/fluent English is required unless your home country is an English-language country model. Modelled permit processing is deterministic after these checks, not an embassy decision.</p>
+ ${!q.ok?`<p class="text-bad">${esc(q.reason)}</p>`:''}
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" data-action="apply-study-abroad" data-dest="${dest}" data-uni="${uniId||''}" data-major="${majorId}" data-level="${level}" data-funding="${funding}" ${q.ok?'':'disabled'}>Fund & relocate to study</button>
+ <button class="btn btn-sm" data-action="apply-overseas-scholarship" data-dest="${dest}" data-level="${level}">Apply for game tuition award</button></div>
+ <p class="muted">Award:85+secondary score,75+smarts, English qualification;35%game chance, one review per country/level/year. Pays tuition only after an actual win. No fee. Parents sponsor upfront from real savings; later undergraduate renewal needs available funds.</p></div>`;
+}
+
+function renderGlobalMigrationSubtabHtml(S,uiState={}) {
   if (S.player.age < 18) return `<div class="card"><p class="muted">Study-abroad and skilled visas unlock at age 18.</p></div>`;
   const ckPts = computeChancenkartePoints(S);
   const globalTargets = ['gbr', 'deu', 'can', 'usa', 'aus', 'nld', 'fra', 'sgp', 'jpn', 'ita'].filter(c => c !== S.country);
@@ -4975,27 +4999,7 @@ function renderGlobalMigrationSubtabHtml(S) {
       ${S.country === 'deu' ? lockReason('You already live in Germany', 'No Opportunity Card needed') : ''}
     </div>
 
-    <div class="card">
-      <div class="section-head">
-        <h3>${icon('graduation', 18)} Study Abroad Student Pipelines</h3>
-        <span class="muted">Includes Post-Study Work (OPT / UK PSW / PGWP / §20)</span>
-      </div>
-      ${Object.values(STUDY_ABROAD_PIPELINES).map(pipe => {
-        const destObj = getCountry(pipe.country);
-        const blockedOrProof = pipe.blockedAmountLocal2026 || pipe.requiredProofLocal2026 || 0;
-        const inPlayer = Math.round(convertCurrency(eraLocalCost(blockedOrProof, pipe.country, S.year), pipe.country, S.country, S.year));
-        return `
-          <div class="item-row">
-            <div class="item-row-main">
-              <strong>${esc(destObj.name)} — ${esc(pipe.visaName)}</strong>
-              <span>${esc(pipe.requirementLabel)} (~<strong class="mono">${esc(formatMoney(inPlayer, S.country, true))}</strong>) → ${esc(pipe.postStudyVisaName)}</span>
-            </div>
-            <button class="btn btn-sm btn-primary" data-action="apply-study-abroad" data-dest="${pipe.country}" data-major="cs" ${S.country === pipe.country ? 'disabled' : ''}>Apply (CS/Eng)</button>
-            ${S.country === pipe.country ? lockReason('You already live here', 'Pick another country to study in') : ''}
-          </div>
-        `;
-      }).join('')}
-    </div>
+    ${renderStudyAbroadHtml(S,uiState)}
 
     <div class="card">
       <div class="section-head">

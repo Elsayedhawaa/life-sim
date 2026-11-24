@@ -69,7 +69,9 @@ import {
 } from './systems/careerActions.js';
 import {
   renewPassport,
+  transitionResidency,
   applyStudyAbroad,
+  applyOverseasScholarship,
   applyGulfWorkChannel,
   applyDirectSkilledVisa,
   applyPremiumOrGoldenResidency,
@@ -1361,7 +1363,7 @@ if (typeof document !== 'undefined') {
 
     if(action==='education-withdraw-confirm'){
       const u=S.education.university;if(!u)return;
-      S.education.history=S.education.history||[];S.education.history.push({kind:'withdrawn',name:u.name,majorLabel:u.majorLabel,year:S.year});S.education.university=null;S.education.stage='completed';handleActionResult({ok:true,msg:'You left the degree. Prior tuition is not refunded.'});return;
+      S.education.history=S.education.history||[];S.education.history.push({kind:'withdrawn',name:u.name,majorLabel:u.majorLabel,year:S.year});S.education.university=null;S.education.stage='completed';if(u.international&&S.legal.residency.kind==='student_visa')transitionResidency(S,'grace_period',{permitName:'Study withdrawn ·60-day game grace period',graceMonthsLeft:2});handleActionResult({ok:true,msg:'You left the degree. Prior tuition is not refunded.'});return;
     }
     if (action === 'apply-university') {
       handleActionResult(applyToUniversity(S, btn.dataset.uid, btn.dataset.major,btn.dataset.funding||'auto'));
@@ -1990,8 +1992,9 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='apply-overseas-scholarship'){handleActionResult(applyOverseasScholarship(S,btn.dataset.dest,btn.dataset.level));return;}
     if (action === 'apply-study-abroad') {
-      handleActionResult(applyStudyAbroad(S, btn.dataset.dest, btn.dataset.major || 'cs'));
+      handleActionResult(applyStudyAbroad(S, btn.dataset.dest, btn.dataset.major || 'cs',{uniId:btn.dataset.uni,level:btn.dataset.level,funding:btn.dataset.funding}));
       return;
     }
 

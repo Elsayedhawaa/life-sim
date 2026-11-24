@@ -20,16 +20,17 @@ export function chargeFamilyEducation(S,amount){
  return left<=.01;
 }
 export function settleFamilyUniversityMonth(S){
- const u=S.education.university;if(!u||u.fundingSource!=='family')return;
+ const u=S.education.university;if(!u)return;if(u.prepaidMonths>0){u.prepaidMonths--;u._tuitionPrepaidThisMonth=true;if(u.fundingSource==='family')u.familyMonthsRemaining=Math.max(0,(u.familyMonthsRemaining||0)-1);return;}u._tuitionPrepaidThisMonth=false;if(u.fundingSource!=='family')return;
  if(!(u.familyMonthsRemaining>0)){
   // No retroactive free family funding in legacy saves; renew against real funds.
-  if(chargeFamilyEducation(S,u.annualTuition)){u.familyMonthsRemaining=12;u.familyPaidTotal=(u.familyPaidTotal||0)+u.annualTuition;recordJournal(S,`Your parents paid another year of tuition at ${u.name}.`,'money');}
+  const renewal=Math.round(convertCurrency(u.annualTuition,u.country||S.country,S.country,S.year));
+  if(chargeFamilyEducation(S,renewal)){u.familyMonthsRemaining=12;u.familyPaidTotal=(u.familyPaidTotal||0)+u.annualTuition;recordJournal(S,`Your parents paid another year of tuition at ${u.name}.`,'money');}
   else{u.fundingSource='self';u.scholarshipPct=0;recordJournal(S,`Your parents cannot renew tuition at ${u.name}. You now pay monthly tuition yourself.`,'money');return;}
  }
  u.familyMonthsRemaining--;
 }
 export function monthlyUniversityTuition(S){
- const u=S.education.university;if(!u)return 0;
+ const u=S.education.university;if(!u||u._tuitionPrepaidThisMonth||u.prepaidMonths>0)return 0;
  if(u.fundingSource==='family')return 0;
  return Math.round(convertCurrency(u.annualTuition,u.country||S.country,S.country,S.year)*(1-(u.scholarshipPct||0))/12);
 }

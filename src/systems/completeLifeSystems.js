@@ -63,7 +63,7 @@ import { emitFact, rememberDeed } from './soulEngine.js';
    tenant's deposit the same way "Sell with tenant in place" does. */
 import { settleDepositOnSale } from './propertyLandlord.js';
 import { FURNISHABLE_KEYS } from '../ui/planRoomLookup.js';
-import { executeCountryRelocation, checkCanCrossBorder, transitionResidency, needsTouristVisaFor, hasValidPassport } from './visaMigrationEngine.js';
+import { executeCountryRelocation, checkCanCrossBorder, transitionResidency, grantGameGraduatePermit, needsTouristVisaFor, hasValidPassport } from './visaMigrationEngine.js';
 import { finalizePropertyPurchase, finalizeCarPurchase, hasValidResidenceForBanking, purchase } from './economyEngine.js';
 import { startPregnancy } from './marriageFamilyEngine.js';
 
@@ -2062,6 +2062,7 @@ export function registerProfessionalSyndicate(S) {
 /* Postgraduate Degrees: 2-Yr MSc/MBA & 3-Yr Clinical Fellowship / PhD */
 export function enrollPostgraduateProgram(S, tier = 'masters_mba') {
   ensureExtendedState(S);
+  if(S.pendingRelocation)return {ok:false,msg:'Finish your pending move first.'};
   if (S.education.degrees.length === 0) return { ok: false, msg: 'Complete a bachelor’s degree before enrolling in postgraduate study.' };
   if (S.education.university) return { ok: false, msg: 'Finish undergraduate university first.' };
   if (S.postgrad.active) return { ok: false, msg: `Already enrolled in ${S.postgrad.active.label}.` };
@@ -2641,7 +2642,8 @@ export function tickMegaSystemsMonthly(S) {
     if (S.postgrad.active.monthsLeft <= 0) {
       const done = S.postgrad.active;
       S.postgrad.active = null;
-      S.postgrad.completed.push({ tier: done.tier, label: done.label, year: S.year });
+      S.postgrad.completed.push({ tier: done.tier, label: done.label, year: S.year,country:done.country,uniId:done.uniId });
+      if(done.international)grantGameGraduatePermit(S,done.tier==='fellowship_phd'?'phd':'masters',done.majorId);
       S.player.vitals.smarts = clamp(S.player.vitals.smarts + (done.tier === 'fellowship_phd' ? 9 : 6));
       S.player.vitals.happiness = clamp(S.player.vitals.happiness + 12);
       if (S.career.employed && S.career.job) {
