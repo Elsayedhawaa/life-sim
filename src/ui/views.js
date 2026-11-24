@@ -1,3 +1,4 @@
+import{personalLoanGates}from'../systems/economyEngine.js';
 import{renderHiring}from'../systems/companyHiring.js';
 import{renderCustomers}from'../systems/companyCustomers.js';
 import{renderCompliance}from'../systems/companyCompliance.js';
@@ -3966,7 +3967,7 @@ function renderBanksSubtabHtml(S, cObj) {
     ${S.player.age >= 21 ? `
       <div class="card">
         <div class="section-head">
-          <h3>Bank Loan Facilities (${loansHere.length || 3} Products)</h3>
+          <h3>Personal Loan Facilities (3 modeled sizes)</h3>
           <span class="muted">${S.money.loans.length} active loan(s)</span>
         </div>
         ${S.money.loans.map(l => `
@@ -3974,15 +3975,15 @@ function renderBanksSubtabHtml(S, cObj) {
         `).join('')}
         ${[3, 8, 18].map((mult, idx) => {
           const amt = eraLocalCost(cObj.monthlyBasket2026.rentStandard * mult, S.country, S.year);
-          const prodName = loansHere[idx]?.name || `${mult === 3 ? 'Express' : mult === 8 ? 'Standard' : 'Executive'} Personal Finance`;
+          const prodName = `${mult === 3 ? 'Small' : mult === 8 ? 'Standard' : 'Large'} unsecured personal loan`;
           return `
             <div class="item-row">
               <div class="item-row-main">
                 <strong>${esc(prodName)}</strong>
                 <span>Principal: <strong class="mono">${esc(formatMoney(amt, S.country))}</strong> · 36-Month Term</span>
               </div>
-              <button class="btn btn-sm" data-action="take-loan" data-amt="${amt}" ${(S.money.loans.length < 3 && S.year > S.money.bankruptUntilYear) ? '' : 'disabled'}>Borrow</button>
-              ${S.money.loans.length >= 3 ? lockReason('You already have 3 active loans', 'Pay one off first') : S.year <= S.money.bankruptUntilYear ? lockReason('Bankruptcy is still on your record', `You can borrow again after ${S.money.bankruptUntilYear}`) : ''}
+              <button class="btn btn-sm" data-action="take-loan" data-amt="${amt}" ${(!personalLoanGates(S)) ? '' : 'disabled'}>Borrow</button>
+              ${personalLoanGates(S)?lockReason(personalLoanGates(S),''):''}
             </div>
           `;
         }).join('')}
@@ -3994,7 +3995,7 @@ function renderBanksSubtabHtml(S, cObj) {
                 <strong>Staff Loan — bank staff rate ${(staffTerms.staffRate * 100).toFixed(1)}%</strong>
                 <span>Principal: <strong class="mono">${esc(formatMoney(amt, S.country))}</strong> · 36-Month Term · the staff rate is the bank’s own 1-year deposit rate with no markup — the usual personal rate is ${(staffTerms.standardRate * 100).toFixed(1)}%. The loan record carries the staff rate, and it is repaid like any other loan.</span>
               </div>
-              <button class="btn btn-sm btn-primary" data-action="take-staff-loan" data-amt="${amt}" ${(S.money.loans.length < 3 && S.year > S.money.bankruptUntilYear) ? '' : 'disabled'}>Borrow at staff rate</button>
+              <button class="btn btn-sm btn-primary" data-action="take-staff-loan" data-amt="${amt}" ${(!personalLoanGates(S)) ? '' : 'disabled'}>Borrow at staff rate</button>
             </div>
           `;
         })() : ''}

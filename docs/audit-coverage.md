@@ -402,3 +402,6 @@ Application no longer pays several months instantly or grants instant completion
 
 ### W4 degree duration
 Local and overseas degrees now advance by distinct elapsed monthly settlements, not any June immediately after enrollment. New enrollments start0months; legacy saves retain completed year progress. UI shows actual month count.136focused files pass,390px seeded May enrollment advanced through actual June settlement and stayedYear1with1month, reload/pixels checked. Full duration graduation is system-tested; study-abroad fixture now advances a real month before its graduation check rather than replaying enrollment month.
+
+### W5 personal credit integrity
+Shared eligibility disables a third personal loan before click and exposes the actual reason. Non-finite principals and invalid/fractional terms rejected without mutation. New amortized loans use rounded-up installments and actual interest-inclusive final settlement; legacy residuals still remain payable. Personal loan sizes no longer borrow mortgage product names from a mixed catalog.137focused files pass;390px actual loan/disbursement, two-loan cap and reload inspected.12-month payoff is system-tested, not a phone-year playthrough.

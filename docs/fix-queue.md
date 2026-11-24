@@ -59,4 +59,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W3 Timed internship progress/pay, country/work eligibility, one active placement and no instant completion.
 
-- [ ] W4 University duration uses actual elapsed months, not immediate June rollover after a late enrollment; preserve legacy year progress and monthly replay safety.
+- [x] W4 University duration uses actual elapsed months, not immediate June rollover after a late enrollment; preserve legacy year progress and monthly replay safety.
+
+- [ ] W5 Personal loan finite amount/term guards, shared two-loan eligibility with UI, and final interest-inclusive payoff without endless rounded residual.

@@ -1117,7 +1117,8 @@ export function settleHouseholdMonth(S) {
      markup) accrues NO further interest; a rate loan accrues monthly. */
   const remainingLoans = [];
   for (const loan of S.money.loans) {
-    const payAmt = Math.min(loan.balance, loan.monthlyPayment);
+    const scheduledInterest=loan.flatMarkup||loan.inCollections?0:Math.round(loan.balance*((loan.annualRate||0)/12));
+    const payAmt = Math.min(loan.balance+scheduledInterest,loan.amortizedTerm&&loan.remainingMonths===1?loan.balance+scheduledInterest:loan.monthlyPayment);
     if (loan.inCollections) {
       // In collections: frozen balance, no interest, still payable.
       if (debtCanPay(S, netDelta, payAmt)) {
@@ -1495,7 +1496,7 @@ export function sellGold21k(S, grams) {
 /* v2.12 — the gates every personal loan passes (staff or standard): the
    bank checks age, residence, bankruptcy, credit score and the active-loan
    cap. Returns an error message or null. */
-function personalLoanGates(S) {
+export function personalLoanGates(S) {
   if (S.player.age < 21) return 'Must be at least 21 for bank credit.';
   if (!hasValidResidenceForBanking(S)) return 'New bank credit requires a valid residence status — regularise your visa first.';
   if (S.year <= S.money.bankruptUntilYear) return `Bankruptcy flag blocks new credit until ${S.money.bankruptUntilYear}.`;
@@ -1505,11 +1506,12 @@ function personalLoanGates(S) {
 }
 
 function bookLoanAtRate(S, amount, years, annualRate, label) {
-  const amt = Math.round(Number(amount) || 0);
-  if (amt <= 0) return { ok: false, msg: 'Invalid loan amount.' };
+  const amt = Math.round(Number(amount));
+  if (!Number.isFinite(amt)||amt<=0||amt>Number.MAX_SAFE_INTEGER)return{ok:false,msg:'Invalid finite loan amount.'};
+  if(!Number.isInteger(years)||years<1||years>30)return{ok:false,msg:'Choose a whole term from1to30years.'};
   const months = years * 12;
   const r = annualRate / 12;
-  const monthlyPayment = Math.round((amt * r) / (1 - Math.pow(1 + r, -months)));
+  const monthlyPayment = Math.max(1,Math.ceil(r===0?amt/months:(amt*r)/(1-Math.pow(1+r,-months))));
 
   S.money.loans.push({
     id: nextId(S, 'loan'),
@@ -1518,6 +1520,7 @@ function bookLoanAtRate(S, amount, years, annualRate, label) {
     monthlyPayment,
     annualRate,
     remainingMonths: months,
+    amortizedTerm:true,
     country: S.country,
     missedMonths: 0
   });
