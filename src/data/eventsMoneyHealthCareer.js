@@ -12119,9 +12119,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_fired_l1',
     category: 'career',
     repeatable: false,
-    gates: { requiredPeople: ['boss'],"minAge": 24, "afterEvent": "ev_career_fired", "afterEventMinTurns": 3},
+    gates: { "minAge": 24, hasJob: false, afterMajor: { kind: ['job_lost_redundancy', 'job_lost_dismissed'], minMonths: 1, maxMonths: 6 } },
     build: (S, ctx) => {
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
+      const lost = S.career?.jobLoss?.lastJob;
+      const bossName = ctx.boss ? ctx.boss.firstName : (lost?.employer ? `someone at ${lost.employer}` : 'your old manager');
       const A = eraLocalCost(2500, S.country, S.year);
       return {
         key: 'ev_career_fired_l1',

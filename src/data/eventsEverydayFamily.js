@@ -2151,7 +2151,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_dad_retires',
     category: 'family',
-    gates: { requiredPeople: ['dad'], minAge: 30, maxAge: 65 },
+    gates: { requiredPeople: ['dad'], minAge: 30, maxAge: 65, people: { dad: { minAge: 60, maxAge: 68 } } },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');

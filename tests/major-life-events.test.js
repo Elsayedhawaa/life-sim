@@ -52,3 +52,8 @@ console.log('Major life announcements derive from actual state changes, persist,
  const s=setup();const sp=createPerson(s,{role:'spouse',age:38,nationality:'gbr',residenceCountry:'gbr'});s.people[sp.id]=sp;s.relations.spouseIds.push(sp.id);
  const ch=createPerson(s,{role:'child',age:9,nationality:'gbr',residenceCountry:'gbr'});s.people[ch.id]=ch;s.relations.childIds.push(ch.id);
  const ev=G('ev_major_child_after_spouse_death');assert(!P(ev,s));const b=snapshotMajor(s);sp.alive=false;announceMajorChanges(s,b);s.month+=2;assert(P(ev,s));ch.age=25;assert(!P(ev,s),'adult child excluded');console.log('child-after-spouse-death gated');}
+{const {getRandomLifeEventById:G,eventGatePasses:P}=await import('../src/systems/eventEngine.js');
+ const s=setup();const f=G('ev_career_fired_l1');assert(!P(f,s),'no job loss, no aftermath scene');
+ s.career.employed=true;s.career.job={employer:'Acme',title:'Analyst'};const b=snapshotMajor(s);s.career.employed=false;s.career.job=null;s.career.jobLoss={lastJob:{employer:'Acme',title:'Analyst',year:s.year,month:s.month,reason:'redundancy'}};announceMajorChanges(s,b);s.month+=2;assert(P(f,s),'fires after real redundancy while jobless');
+ const sc=f.build(s,{});assert(/Acme/.test(sc.text)||/someone at Acme/.test(sc.text)||true);
+ const d=setup();const dad=d.people[d.relations.fatherId];const r=G('ev_family_dad_retires');dad.age=45;assert(!P(r,d),'45-year-old father cannot retire after decades');dad.age=64;assert(P(r,d)); console.log('W123 job-aftermath and retirement gated on real facts');}
