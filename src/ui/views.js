@@ -1384,7 +1384,7 @@ function renderChildrenSubtabHtml(S) {
                 <span class="npc-name">${esc(ch.fullName)} · Age ${ch.age}</span>
                 <span class="npc-role-badge">Passports: ${esc(ch.citizenships.map(c => getCountry(c).flagCode).join(' '))}</span>
               </div>
-              <div class="muted">${ch.age>=19?(ch.leftHome||ch.householdWith&&ch.householdWith!=='player'?'Separate household · ':ch.householdWith==='player'||ch.leftHome===false?'Living at home · ':''):''}${ch.age<18&&ch.custody?`Custody: ${esc(ch.custody.arrangement)} · ${ch.custody.playerNightsPer14}/14 nights with you. `:''}Education fund: ${esc(formatMoney(convertCurrency(ch.educationFund?.balance||0,ch.educationFund?.country||S.country,S.country,S.year),S.country))}.</div>
+              <div class="muted">${ch.age>=18?(ch.leftHome||ch.householdWith&&ch.householdWith!=='player'?'Separate household · ':ch.householdWith==='player'||ch.leftHome===false?'Living at home · ':''):''}${ch.age<18&&ch.custody?`Custody: ${esc(ch.custody.arrangement)} · ${ch.custody.playerNightsPer14}/14 nights with you. `:''}Education fund: ${esc(formatMoney(convertCurrency(ch.educationFund?.balance||0,ch.educationFund?.country||S.country,S.country,S.year),S.country))}.</div>
               <div style="display:flex;flex-wrap:wrap;gap:6px"><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="visit">Visit / spend time</button><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="gift">Buy a gift</button><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="education">Add to education fund</button></div>
               ${ch.schoolEnrollment?`<p>School: ${esc(ch.schoolEnrollment.label)} · ${ch.schoolEnrollment.until>S.year*12+S.month?'Prepaid '+(ch.schoolEnrollment.until-S.year*12-S.month)+' months left':'Paid year ended; no automatic renewal'}</p>`:''}
               ${ch.age>=6&&ch.age<18?`<button class="btn btn-sm" data-action="child-school-year" data-cid="${ch.id}" data-tier="standard">Local year · ${esc(formatMoney(childSchoolQuote(S,ch.id).cost,S.country))}</button><button class="btn btn-sm" data-action="child-school-year" data-cid="${ch.id}" data-tier="international">International year · ${esc(formatMoney(childSchoolQuote(S,ch.id,"international").cost,S.country))}</button>`:''}
@@ -1408,8 +1408,8 @@ function renderChildrenSubtabHtml(S) {
                     const outingCost = childOutingCostLocal(S);
                     const mySmarts = Math.round(S.player.vitals.smarts || 0);
                     return `
-                <button class="btn btn-sm" data-action="child-play" data-cid="${ch.id}">Play With</button>
-                ${ch.age < 4
+                ${ch.age<18?`<button class="btn btn-sm" data-action="child-play" data-cid="${ch.id}">Play With</button>`:''}
+                ${ch.age >= 18 ? '' : ch.age < 4
                   ? `<span class="hud-pill">Too young for lessons yet</span>`
                   : mySmarts < 50
                   ? `<span class="hud-pill">Teach needs your Smarts at 50%+ (yours: ${mySmarts}%)</span>`
@@ -1418,8 +1418,8 @@ function renderChildrenSubtabHtml(S) {
                   ? `<span class="hud-pill">Outings from age 4</span>`
                   : S.money.cash < outingCost
                   ? `<span class="hud-pill">A day out costs ${esc(formatMoney(outingCost, S.country))} — you hold ${esc(formatMoney(S.money.cash, S.country))}</span>`
-                  : `<button class="btn btn-sm" data-action="child-outing" data-cid="${ch.id}">Take Out (${esc(formatMoney(outingCost, S.country))})</button>`}
-                ${ch.age < 6
+                  : `<button class="btn btn-sm" data-action="child-outing" data-cid="${ch.id}">${ch.age>=18?'Go out together':'Take Out'} (${esc(formatMoney(outingCost, S.country))})</button>`}
+                ${ch.age >= 18 ? '' : ch.age < 6
                   ? `<span class="hud-pill">Not in school yet — homework help starts at 6</span>`
                   : ch.age >= 18
                   ? `<span class="hud-pill">Finished school — no homework left</span>`

@@ -1,3 +1,4 @@
+import {noteSocialContact} from './socialEnergy.js';
 import {courtshipState,tickCourtship} from './courtshipLife.js';
 import{tickSpouseAutonomy,spouseMind}from './spouseAutonomy.js';
 import{fileFamilyCase,tickRelationshipProgression}from './relationshipProgression.js';
@@ -801,8 +802,11 @@ export function childOutingCostLocal(S) {
 export function playWithChild(S, childId) {
   const ch = S.people[childId];
   if (!ch || !ch.alive || !S.relations.childIds.includes(childId)) return { ok: false, msg: 'Child not found.' };
+  if(ch.age>=18)return{ok:false,msg:'For adult children, spend time together or go out together.'};
+  if(ch.residenceCountry!==S.country)return{ok:false,msg:'Playing together requires being in the same country.'};
   const used = childOncePerTurn(S, `child_play_${ch.id}`, ch);
   if (used) return { ok: false, msg: used };
+  noteSocialContact(S,ch);
   ch.vitals.happiness = clamp(ch.vitals.happiness + 6);
   ch.rel.affection = clamp(ch.rel.affection + 3);
   S.player.vitals.happiness = clamp(S.player.vitals.happiness + 3);
@@ -819,8 +823,10 @@ export function teachChild(S, childId) {
   if ((S.player.vitals.smarts || 0) < 50) {
     return { ok: false, msg: `Your own Smarts are ${Math.round(S.player.vitals.smarts || 0)}% — teach needs 50%+. Study or read first, then teach.` };
   }
+  if(ch.age>=18)return{ok:false,msg:'For adult children, spend time together or go out together.'};
   const used = childOncePerTurn(S, `child_teach_${ch.id}`, ch);
   if (used) return { ok: false, msg: used };
+  noteSocialContact(S,ch);
   ch.vitals.smarts = clamp(ch.vitals.smarts + 5);
   ch.rel.affection = clamp(ch.rel.affection + 3);
   S.player.vitals.happiness = clamp(S.player.vitals.happiness + 2);
@@ -834,15 +840,16 @@ export function takeChildOut(S, childId) {
   if (!ch || !ch.alive || !S.relations.childIds.includes(childId)) return { ok: false, msg: 'Child not found.' };
   if (ch.age < 4) return { ok: false, msg: `${ch.firstName} is too young for outings — wait until age 4.` };
   if(ch.residenceCountry!==S.country)return{ok:false,msg:'Your child lives abroad. An in-person outing requires being in the same country.'};
-  const used=childOncePerTurn(S,`child_outing_${ch.id}`,ch);if(used)return{ok:false,msg:used};
   const cost = childOutingCostLocal(S);
   if (S.money.cash < cost) return { ok: false, msg: `A day out with ${ch.firstName} costs ${formatMoney(cost, S.country)} — you hold ${formatMoney(S.money.cash, S.country)}.` };
+  const used=childOncePerTurn(S,`child_outing_${ch.id}`,ch);if(used)return{ok:false,msg:used};
   walletMove(S, -cost, `Day out with ${ch.firstName}`, 'family');
+  noteSocialContact(S,ch);
   ch.vitals.happiness = clamp(ch.vitals.happiness + 8);
   ch.vitals.health = clamp(ch.vitals.health + 2);
   ch.rel.affection = clamp(ch.rel.affection + 4);
   S.player.vitals.happiness = clamp(S.player.vitals.happiness + 4);
-  recordJournal(S, `You took ${ch.firstName} out for a proper day — fresh air, treats, and time together (${formatMoney(cost, S.country)}).`, 'family');
+  recordJournal(S, ch.age>=18?`You went out with ${ch.firstName} (${formatMoney(cost,S.country)}).`:`You took ${ch.firstName} out for the day (${formatMoney(cost, S.country)}).`, 'family');
   return { ok: true, msg: `A day out with ${ch.firstName} (+8 Happiness)!` };
 }
 
@@ -855,6 +862,7 @@ export function helpChildWithHomework(S, childId) {
   if (ch.age >= 18) return { ok: false, msg: `${ch.firstName} has finished school — no homework left to help with.` };
   const used = childOncePerTurn(S, `child_hw_${ch.id}`, ch);
   if (used) return { ok: false, msg: used };
+  noteSocialContact(S,ch);
   ch.vitals.smarts = clamp(ch.vitals.smarts + 4);
   ch.rel.affection = clamp(ch.rel.affection + 2);
   ch.homeworkHelped = (ch.homeworkHelped || 0) + 1;
@@ -882,6 +890,6 @@ export function supportChildAfterSeparation(S,childId,kind){
     ch.educationFund??={balance:0,country:S.country};
     ch.educationFund.balance+=convertCurrency(cost,S.country,ch.educationFund.country,S.year);
     recordJournal(S,`Added ${formatMoney(cost,S.country)} to ${ch.firstName}'s separate education fund. It is the child's asset, not your spendable cash. Future university withdrawals are not modelled yet.`,'family');
-  }else{ch.rel.affection=clamp(ch.rel.affection+4);ch.vitals.happiness=clamp(ch.vitals.happiness+5);recordJournal(S,kind==='visit'?`Spent time with ${ch.firstName} under the recorded game custody arrangement.`:`Bought ${ch.firstName} a gift for ${formatMoney(cost,S.country)}. This does not replace child support.`,'family');}
+  }else{if(kind==='visit')noteSocialContact(S,ch);ch.rel.affection=clamp(ch.rel.affection+4);ch.vitals.happiness=clamp(ch.vitals.happiness+5);recordJournal(S,kind==='visit'?`Spent time with ${ch.firstName}.`:`Bought ${ch.firstName} a gift for ${formatMoney(cost,S.country)}. This does not replace child support.`,'family');}
   return{ok:true,msg:kind==='education'?`Education fund increased by ${formatMoney(cost,S.country)}.`:kind==='visit'?`Visited ${ch.firstName}.`:`Gift delivered to ${ch.firstName}; support order unchanged.`};
 }
