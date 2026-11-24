@@ -3423,7 +3423,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_family_grounded',
     category: 'family',
-    gates: { requiredPeople: ['dad'], minAge: 10, maxAge: 16 },
+    gates: { requiredPeople: ['dad'], minAge: 10, maxAge: 16, education: ['inSchool'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
