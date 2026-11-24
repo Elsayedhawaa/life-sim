@@ -8,7 +8,12 @@
    Scope, stated plainly: relatives are parents, siblings, spouses and
    children who are 18 to 57. Minors are deliberately excluded (a design
    choice, not a gap to hide). Friends, partners, bosses and everyone
-   58 and over are handled elsewhere or not at all.
+   58 and over are handled elsewhere or not at all. An illness recorded
+   at 57 stays on the person; from 58 the older branch in soulEngine owns
+   it (extra mortality, no recovery roll).
+
+   The caller passes the death function (die), so this file never imports
+   soulEngine.js and there is no import cycle.
 
    Rolls are deterministic hashes of (life seed, person, year, purpose), so
    they never consume the shared random stream and old saves and tests keep
@@ -17,7 +22,6 @@
    actuarial data. */
 import { hashSeed, clamp } from '../core/rng.js';
 import { recordJournal } from '../core/schema.js';
-import { handleNpcDeath } from './soulEngine.js';
 
 export const NPC_HEALTH_MIN_AGE = 18;
 export const NPC_HEALTH_MAX_AGE = 57;
@@ -46,8 +50,8 @@ function onsetHazard(person) {
 }
 
 function relatives(S) {
-  const r = S.relations || {}, out = [];
-  const add = (id, role) => { const p = id && S.people?.[id]; if (p && p.alive && p.id !== 'player') out.push([p, role]); };
+  const r = S.relations || {}, out = [], seen = new Set();
+  const add = (id, role) => { const p = id && S.people?.[id]; if (p && p.alive && p.id !== 'player' && !seen.has(p.id)) { seen.add(p.id); out.push([p, role]); } };
   add(r.motherId, 'mother'); add(r.fatherId, 'father');
   (r.spouseIds || []).forEach((id) => add(id, 'spouse'));
   (r.siblingIds || []).forEach((id) => add(id, 'sibling'));
@@ -67,26 +71,33 @@ function pickIllness(S, person) {
   return pool[0];
 }
 
-export function tickNpcHealthLife(S) {
-  if (!S?.people) return [];
+export function tickNpcHealthLife(S, { die } = {}) {
+  if (!S?.people || typeof die !== 'function') return [];
   const events = [];
   for (const [person, role] of relatives(S)) {
     if (!person.alive || person.age < NPC_HEALTH_MIN_AGE || person.age > NPC_HEALTH_MAX_AGE) continue;
     person.vitals ??= { health: 70 };
     const y = S.year;
+    /* One health tick per person per calendar year, however often this runs. */
+    if (person.healthTickYear === y) continue;
+    person.healthTickYear = y;
+    /* An earlier non-fatal injury is recorded as healed once a later year arrives. */
+    if (person.accident && person.accident.severity !== 'fatal' && !person.accident.recoveredYear && person.accident.year < y) {
+      person.accident.recoveredYear = y;
+      if (person.accident.severity === 'moderate') recordJournal(S, `${cap(who(person, role))}, has recovered from the accident.`, 'family');
+    }
     /* 1. A sudden accident. */
     if (roll(S, person, y, 'accident') < ACCIDENT_YEARLY) {
       let r = roll(S, person, y, 'severity'), sev = 'minor';
       for (const [k, w] of ACCIDENT_SEVERITY) { if (r < w) { sev = k; break; } r -= w; }
       person.accident = { year: y, severity: sev };
       if (sev === 'fatal') {
-        handleNpcDeath(S, person);
-        person.deathCause = 'an accident';
+        die(S, person); /* cause comes from the recorded accident via npcDeathCause */
         events.push({ kind: 'accident_death', id: person.id, role });
         continue;
       }
       person.vitals.health = clamp(person.vitals.health - (sev === 'moderate' ? 15 : 5));
-      recordJournal(S, `${cap(who(person, role))}, was hurt in an accident (${sev}).`, 'family');
+      recordJournal(S, sev === 'minor' ? `${cap(who(person, role))}, had a minor accident.` : `${cap(who(person, role))}, was hurt in an accident.`, 'family');
       events.push({ kind: 'accident_injury', id: person.id, role, severity: sev });
     }
     /* 2. An existing illness runs its course. */
@@ -95,7 +106,7 @@ export function tickNpcHealthLife(S) {
       const def = YOUNG_ILLNESSES.find((k) => k.kind === ill.kind);
       if (def && ill.sinceYear < y) {
         if (roll(S, person, y, 'death') < def.mort) {
-          handleNpcDeath(S, person);
+          die(S, person);
           events.push({ kind: 'illness_death', id: person.id, role });
           continue;
         }

@@ -21,6 +21,7 @@ import { energyCostFor, checkSocialEnergy, spendSocialEnergy, noteSocialContact,
 /* v2.15 W5 — memories are capped at 5 per person (oldest small memory
    forgotten, defining memories never dropped); see npcMemory.js. */
 import { pruneMemories } from './npcMemory.js';
+import { tickNpcHealthLife } from './npcHealthLife.js';
 
 export function getAllKnownLivingPeople(S) {
   return Object.values(S.people).filter(p => p && p.alive && p.id !== 'player');
@@ -863,6 +864,8 @@ export function tickNpcAutonomyYearly(S) {
      drifting (warned on the card), at 12 months a notice fires with a
      real choice. Friends only; family ties are not friendships. */
   tickFriendshipDrift(S);
+  /* Adults 18-57 can fall ill or have accidents; see npcHealthLife.js. */
+  tickNpcHealthLife(S, { die: handleNpcDeath });
 }
 
 /* v2.9 — the ONE writer for a marriage ending with no live couple record
@@ -912,6 +915,7 @@ export function npcDeathCause(S, person) {
     const yrs = S.year - (ill.sinceYear ?? S.year);
     return yrs >= 2 ? `${ill.kind}, first diagnosed ${yrs} years earlier` : ill.kind;
   }
+  if (person.accident?.severity === 'fatal') return 'an accident';
   if (person.age >= 85) return 'old age';
   /* Nothing recorded explains this death, so none is invented. */
   return null;
