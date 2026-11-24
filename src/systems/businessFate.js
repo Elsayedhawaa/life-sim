@@ -373,7 +373,7 @@ function rawFriendJobScene(S, biz, friend, savedOffer=null) {
     maxPerLife: 1,
     category: 'career',
     title: `${first} Offers You a Job`,
-    text: `${deadNote} ${first} calls: "Come and work with me at ${offer.employerLabel} — ${offer.title}, ${formatMoney(offer.monthlyGross, S.country)} a month. Shared job qualification and work-permit checks apply. The offer stands until the end of the month."`,
+    text: `${deadNote} ${first} calls: "Come and work with me at ${offer.employerLabel} — ${offer.title}, ${formatMoney(offer.monthlyGross, S.country)} a month. You still need the right qualifications and permission to work. The offer stands until the end of the month."`,
     choices: [
       {
         label: `Take the job — ${offer.title}, ${formatMoney(offer.monthlyGross, S.country)}/mo`,
@@ -474,6 +474,7 @@ function rawBiggerLoanScene(S, biz) {
           if (!r.ok) {
             recordJournal(st, `The bank's bigger loan for ${biz.name} fell through at signing: ${r.msg}`, 'money');
           }
+          return r;
         },
       },
       {
@@ -603,11 +604,11 @@ export function checkBusinessFate(S) {
 
 function fateFingerprint(S,biz){const loan=getBusinessLoan(S,biz);return JSON.stringify({country:S.country,loan:loan?{id:loan.id,balance:loan.balance,monthlyPayment:loan.monthlyPayment,remainingMonths:loan.remainingMonths}:null,debt:biz.debtLocal,rev:biz.monthlyRev,cost:biz.monthlyCost,repeat:biz.repeatRate,capital:biz.capitalInvested});}
 function durableFateScene(S,biz,person,kind,snapshot){
- if(!biz)return null;const q=snapshot||{kind,bizId:biz.id,country:S.country,personId:person?.id,year:S.year,month:S.month,fingerprint:fateFingerprint(S,biz),offer:kind==='FriendJob'?friendJobOffer(S,person):null};
+ if(!biz)return null;const q=snapshot||{kind,bizId:biz.id,country:S.country,personId:person?.id,year:S.year,month:S.month,fingerprint:fateFingerprint(S,biz),affection:kind==='SpouseReaction'?Number(person?.rel?.affection)||0:null,offer:kind==='FriendJob'?friendJobOffer(S,person):kind==='BiggerLoan'?biggerLoanOffer(S,biz):null};
  const raw={BankCall:rawBankCallScene,SpouseReaction:rawSpouseReactionScene,FriendJob:rawFriendJobScene,BiggerHouse:rawBiggerHouseScene,BiggerLoan:rawBiggerLoanScene,Rival:rawRivalScene}[kind];
  const scene=kind==='FriendJob'?raw(S,biz,person,q.offer):raw(S,biz,person);if(!scene)return null;
  scene.businessFateSnapshot=q;
- const valid=st=>{const b=businessesOf(st).find(b=>b.id===q.bizId);if(!b||st.country!==q.country||fateFingerprint(st,b)!==q.fingerprint)return false;if(q.personId&&(!st.people[q.personId]?.alive))return false;if(['SpouseReaction','BiggerHouse'].includes(kind)&&spouseOf(st)?.id!==q.personId)return false;return true;};
+ const valid=st=>{const b=businessesOf(st).find(b=>b.id===q.bizId);if(!b||st.country!==q.country||fateFingerprint(st,b)!==q.fingerprint)return false;if(q.personId&&(!st.people[q.personId]?.alive))return false;if(kind==='SpouseReaction'&&q.affection!==undefined&&(Number(st.people[q.personId]?.rel?.affection)||0)!==q.affection)return false;if(kind==='BiggerLoan'&&JSON.stringify(biggerLoanOffer(st,b))!==JSON.stringify(q.offer))return false;if(['SpouseReaction','BiggerHouse'].includes(kind)&&spouseOf(st)?.id!==q.personId)return false;return true;};
  scene.choices=scene.choices.map(c=>({...c,available:st=>valid(st)&&(!c.available||c.available(st))&&(kind!=='FriendJob'||st.year===q.year&&st.month===q.month),effect:st=>{if(!valid(st)||c.available&&!c.available(st)||kind==='FriendJob'&&(st.year!==q.year||st.month!==q.month))return;st.career.businessFateReplies??={};const key=kind+'_'+q.bizId;if(st.career.businessFateReplies[key])return;const r=c.effect?.(st);if(r?.ok===false)return r;st.career.businessFateReplies[key]=true;return r;}}));return scene;
 }
 export function buildBankCallScene(S,biz,person){return durableFateScene(S,biz,person,'BankCall');}
@@ -616,4 +617,4 @@ export function buildFriendJobScene(S,biz,person){return durableFateScene(S,biz,
 export function buildBiggerHouseScene(S,biz,person){return durableFateScene(S,biz,person,'BiggerHouse');}
 export function buildBiggerLoanScene(S,biz,person){return durableFateScene(S,biz,person,'BiggerLoan');}
 export function buildRivalScene(S,biz,person){return durableFateScene(S,biz,person,'Rival');}
-export function restoreBusinessFateScene(S,saved){const q=saved?.businessFateSnapshot;if(!q)return null;const biz=businessesOf(S).find(b=>b.id===q.bizId);if(!biz||fateFingerprint(S,biz)!==q.fingerprint||S.country!==q.country)return null;const person=q.personId?S.people[q.personId]:null;if(q.personId&&!person?.alive)return null;return durableFateScene(S,biz,person,q.kind,q);}
+export function restoreBusinessFateScene(S,saved){const q=saved?.businessFateSnapshot;if(!q)return null;const biz=businessesOf(S).find(b=>b.id===q.bizId);if(!biz||fateFingerprint(S,biz)!==q.fingerprint||S.country!==q.country)return null;const person=q.personId?S.people[q.personId]:null;if(q.personId&&!person?.alive)return null;if(q.kind==='SpouseReaction'&&q.affection!==undefined&&(Number(person?.rel?.affection)||0)!==q.affection)return null;if(q.kind==='BiggerLoan'&&JSON.stringify(biggerLoanOffer(S,biz))!==JSON.stringify(q.offer))return null;return durableFateScene(S,biz,person,q.kind,q);}
