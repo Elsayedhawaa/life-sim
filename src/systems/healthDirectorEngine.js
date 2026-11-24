@@ -1129,7 +1129,7 @@ export function pickCuratedLifeScene(S, restoreBaseId=null) {
         key: 'ad_midlife_perspective',
         category: 'life',
         title: 'Forty Candles & Looking Back',
-        text: `Turning ${age} brings an unexpectedly quiet evening. Looking over the years since ${S.homeCity}, you weigh what deserves the best of your remaining energy.`,
+        text: `Turning ${age} brings an unexpectedly quiet evening. Looking back over the years, you weigh what deserves the best of your remaining energy.`,
         choices: [
           {
             label: 'Prioritize health, peace of mind, and the people who truly love you',
@@ -1143,8 +1143,9 @@ export function pickCuratedLifeScene(S, restoreBaseId=null) {
           {
             label: 'Double down on building lasting wealth and generational assets',
             effect: (st) => {
+              st.player.vitals.stress = clamp(st.player.vitals.stress + 4);
               if (st.career.job) st.career.job.performance = clamp(st.career.job.performance + 8);
-              recordJournal(st, `At ${age}, you sharpened your focus on building an unshakable financial estate.`, 'milestone');
+              recordJournal(st, st.career.job ? `At ${age}, you put more of yourself into work and into building something to leave behind. It cost you some rest.` : `At ${age}, you decided to put your energy into building something to leave behind. It cost you some rest.`, 'milestone');
             }
           }
         ]

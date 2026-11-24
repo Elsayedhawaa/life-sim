@@ -545,7 +545,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: {"minAge": 22, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const d=S.money.loans.find(x=>x.inCollections&&x.balance>0);if(!d)return null;
-      return{key:'ev_money_collector_call',category:'money',title:'Your Recorded Collections Balance',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${true?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the recorded balance',effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
+      return{key:'ev_money_collector_call',category:'money',title:'Your Recorded Collections Balance',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${true?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',available:st=>st.money.cash>=Math.ceil(d.balance),effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the recorded balance',available:st=>st.money.cash>=Math.ceil(d.balance*.5),effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
     },
   },
   {
@@ -11228,7 +11228,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: {"minAge": 22, "afterEvent": "ev_money_collector_call", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const d=S.money.loans.find(x=>x.inCollections&&x.balance>0);if(!d)return null;
-      return{key:'ev_back_collector_returns',category:'money',title:'Your Recorded Collections Balance',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${true?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the recorded balance',effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
+      return{key:'ev_back_collector_returns',category:'money',title:'Your Recorded Collections Balance',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${true?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',available:st=>st.money.cash>=Math.ceil(d.balance),effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the recorded balance',available:st=>st.money.cash>=Math.ceil(d.balance*.5),effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
     },
   },
   {
@@ -11805,7 +11805,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: {"minAge": 22, "afterEvent": "ev_back_collector_returns", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const d=S.money.loans.find(x=>x.inCollections&&x.balance>0);if(!d)return null;
-      return{key:'ev_back_collector_returns_l2',category:'money',title:'Your Recorded Collections Balance',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${true?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the recorded balance',effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
+      return{key:'ev_back_collector_returns_l2',category:'money',title:'Your Recorded Collections Balance',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${true?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',available:st=>st.money.cash>=Math.ceil(d.balance),effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the recorded balance',available:st=>st.money.cash>=Math.ceil(d.balance*.5),effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
     },
   },
   {
