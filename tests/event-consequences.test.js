@@ -30,11 +30,11 @@ const play = (s, id, i) => { s.activeScene = null; s.sceneQueue = []; const sc =
   assert(P(G('ev_conseq_friend_after_job_loss'), s)); play(s, 'ev_conseq_friend_after_job_loss', 0); s.career.employed = true; s.career.job = { employer: 'N', title: 'x' }; assert(!P(G('ev_conseq_friend_after_job_loss'), s)); }
 console.log('linked consequence follow-ups gated on recorded events and real people');
 // eviction abroad: real rent, real liability, real payment
-{ const s = setup(); s.homeCountry = 'gbr'; s.country = 'uae'; s.housing.mode = 'rent'; s.housing.monthlyRent = 900; s.money.cash = 1000;
+{ const s = setup(); s.homeCountry = 'gbr'; s.country = 'uae'; s.housing.mode = 'rent'; s.housing.monthlyRent = 900; s.housing.currentHomeName = 'Shared Bedspace / Room'; s.money.cash = 1000;
   s.money.loans.push({ id: 'rentarrears_x', label: 'Rental liability after deposit', balance: 1000, monthlyPayment: 84, annualRate: 0, remainingMonths: 12, country: 'uae', missedMonths: 0 });
   const ev = G('ev_conseq_eviction_abroad'); assert(!P(ev, s)); const b = snapshotMajor(s); s.housing.lastEviction = { year: s.year, month: s.month, from: 'Flat 2' }; announceMajorChanges(s, b); s.month += 2;
   assert(P(ev, s)); const sc = ev.build(s, {}); assert(/Flat 2/.test(sc.text) && /owe/.test(sc.text) && sc.choices.length === 2);
   const cash = s.money.cash; play(s, 'ev_conseq_eviction_abroad', 0); assert(s.money.cash < cash); assert(s.money.loans[0].balance < 1000);
   const s2 = setup(); s2.homeCountry = 'gbr'; s2.housing.mode = 'parents'; const b2 = snapshotMajor(s2); s2.housing.lastEviction = { year: s2.year, month: s2.month, from: 'F' }; announceMajorChanges(s2, b2); s2.month += 2; assert(!P(ev, s2), 'at home, the parent scene applies instead');
-  const s3 = setup(); s3.homeCountry = 'gbr'; s3.country = 'uae'; s3.housing.mode = 'rent'; s3.housing.monthlyRent = 900; const b3 = snapshotMajor(s3); s3.housing.lastEviction = { year: s3.year, month: s3.month, from: 'F' }; announceMajorChanges(s3, b3); s3.month += 2; assert.equal(ev.build(s3, {}).choices.length, 1, 'no liability, no payment choice'); }
+  const s3 = setup(); s3.homeCountry = 'gbr'; s3.country = 'uae'; s3.housing.mode = 'rent'; s3.housing.monthlyRent = 900; s3.housing.currentHomeName = 'Flat 9'; const b3 = snapshotMajor(s3); s3.housing.lastEviction = { year: s3.year, month: s3.month, from: 'F' }; announceMajorChanges(s3, b3); s3.month += 2; const t3 = ev.build(s3, {}); assert.equal(t3.choices.length, 1, 'no liability, no payment choice'); assert(!/shared room/.test(t3.text), 'moved on: no shared-room claim'); }
 console.log('eviction abroad follow-up pass');

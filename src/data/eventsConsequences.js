@@ -127,6 +127,7 @@ const evictionAbroad = {
   gates: { abroad: true, housingMode: 'rent', afterMajor: { kind: 'eviction', minMonths: 1, maxMonths: 8 } },
   build: (S) => {
     const e = S.housing?.lastEviction || {}, rent = Number(S.housing?.monthlyRent) || 0, loan = rentalLiability(S);
+    const shared = S.housing?.currentHomeName === 'Shared Bedspace / Room';
     const part = loan ? Math.min(Math.floor(loan.balance), Math.floor(Math.max(0, Number(S.money?.cash) || 0) / 2)) : 0;
     const choices = [];
     if (loan && part > 0) {
@@ -138,11 +139,11 @@ const evictionAbroad = {
         stress(st, -2); recordJournal(st, `You paid ${formatMoney(pay, st.country)} toward the rental liability left after the eviction.`, 'money');
       } });
     }
-    choices.push({ label: 'Stay in the shared room for now', effect: (st) => { recordJournal(st, 'You stayed in the shared room after the eviction.', 'money'); } });
+    choices.push({ label: shared ? 'Stay in the shared room for now' : 'Carry on for now', effect: (st) => { recordJournal(st, 'You carried on after the eviction.', 'money'); } });
     return {
       key: 'ev_conseq_eviction_abroad', category: 'money',
       title: 'After the Eviction',
-      text: `Since the eviction${e.from ? ` from ${e.from}` : ''}, you have been renting a shared room${rent > 0 ? ` at ${formatMoney(rent, S.country)} a month` : ''}.${loan ? ` You still owe ${formatMoney(Math.floor(loan.balance), S.country)} on the rental liability.` : ''}`,
+      text: `Since the eviction${e.from ? ` from ${e.from}` : ''}, ${shared ? `you have been renting a shared room${rent > 0 ? ` at ${formatMoney(rent, S.country)} a month` : ''}` : 'you have found another place to rent'}.${loan ? ` You still owe ${formatMoney(Math.floor(loan.balance), S.country)} on the rental liability.` : ''}`,
       choices,
     };
   },
