@@ -20,7 +20,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] L6 Editable quantities, compatible substitutions and batch yields with cost/price tradeoffs.
 - [x] L7 More sector incidents with stock/morale/WIP/demand consequences.
 - [x] L8 Distinct sector activity effects on staff, stock, gear, WIP, spoilage, resources and churn.
-- [ ] L9 Branch-specific accounts, staff and stock. Physical-site ledger tranche has separate stock, staff, managers, reserves, group cash/tax settlement, people lifecycle and merge. Pending software audience, independent pricing/recipes, richer manager requests and hosted validation.
+- [ ] L9 Branch-specific accounts, staff and stock. Physical-site ledger tranche has separate stock, staff, managers, reserves, group cash/tax settlement, people lifecycle and merge. Hosted physical-site ledgers verified cdae978. Independent site pricing/active lines/quantity/substitution/yields and manager raises implemented. Pending software audience and richer manager requests.
 - [ ] L10 Per-record server data loss, backup coverage and recovery.
 - [ ] L11 General equipment failure/repair/replacement queue beyond wear.
 - [ ] L12 Equipment lease terms and return/early termination cost.

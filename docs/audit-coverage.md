@@ -320,3 +320,6 @@ Per-line input amounts, compatible substitutions and1/2/4 batch yield. Original 
 
 ## Separate physical site tranche
 Physical catalog locations can split without copied people, money, stock, income or historic assets. Actual employee/manager hires, transfers, reserve funding, valued stock transfers, input orders, per-site results and merge/archive. Group tax and household cash/reserve reconciled with one statement and combined line rows; nested currency conversion, merge/exit safeguards.109 focused files and12,152renders, phone split/hire/transfer/trade/reload pass. Site identities/pay/dismissal/benefits/resignation/death and nested estate identity remapping also tested. L9 stays OPEN: software audience allocation, independent site pricing/recipes and richer site manager requests remain. Hosted verification follows publication.
+
+## Site range follow-through
+Independent site price/active lines/quantities/substitutions/yields and manager pay review. Parent unchanged; original bounds and WIP protection apply. Independent-range merge stock regression covered.109 focused files,12,152renders and phone price/trade/reload pass. Software audience allocation and richer site-manager requests remainL9.
