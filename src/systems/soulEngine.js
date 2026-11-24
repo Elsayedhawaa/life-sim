@@ -347,7 +347,7 @@ function npcCreatePerson(S, opts = {}) {
   return person;
 }
 
-const NPC_AUTONOMY_ROLES = new Set(['sibling', 'child', 'friend', 'classmate', 'colleague', 'nephew', 'niece', 'grandchild', 'in-law']);
+const NPC_AUTONOMY_ROLES = new Set(['sibling', 'child', 'friend', 'classmate', 'colleague', 'nephew', 'niece', 'grandchild', 'in-law', 'ex_partner']);
 const NPC_CAREER_CHANGE_TITLES = ['Teacher', 'Accountant', 'Shop Manager', 'Driver', 'Nurse', 'Sales Representative', 'Project Manager', 'Engineer', 'Operations Coordinator', 'Graduate Specialist'];
 
 /* Plain words for who this person is to the player. */

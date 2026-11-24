@@ -1,3 +1,4 @@
+import {courtshipState,tickCourtship} from './courtshipLife.js';
 import{tickSpouseAutonomy,spouseMind}from './spouseAutonomy.js';
 import{fileFamilyCase,tickRelationshipProgression}from './relationshipProgression.js';
 import {recordMarriageAssets,settleGameDivorce,divorceChildren,divorceBuyoutRequired} from './divorceModel.js';
@@ -119,9 +120,10 @@ export function introducePartnerProspect(S, channel = 'social') {
   if (!S.relations.inLawIds.includes(wali.id)) S.relations.inLawIds.push(wali.id);
 
   const introText = channel === 'family_intro'
-    ? `Through family introductions, you met ${partner.fullName} (age ${partner.age}, ${partner.career.title.toLowerCase()}) alongside her father ${wali.fullName} (${wali.traitTags.join(' · ')}).`
+    ? `Through family introductions, you met ${partner.fullName} (age ${partner.age}, ${partner.career.title.toLowerCase()}) alongside ${partner.gender === 'f' ? 'her' : 'his'} father ${wali.fullName} (${wali.traitTags.join(' · ')}).`
     : `You hit it off with ${partner.fullName} (age ${partner.age}, ${partner.career.title.toLowerCase()}, ${partner.traitTags.join(' · ')}) in ${S.city}.`;
 
+  courtshipState(S, partner);
   recordJournal(S, introText, 'relationship');
   return { ok: true, msg: `Met ${partner.fullName}!`, partner };
 }
@@ -509,6 +511,7 @@ export function celebrateWedding(S, venueId = null, opts = {}) {
 
 /* Monthly Pregnancy, Birth (with Jus Soli vs Jus Sanguinis Citizenship Logic!) & Marital Health */
 export function tickMarriageAndFamilyMonthly(S) {
+  tickCourtship(S);
   tickSpouseAutonomy(S);
   for(const c of tickRelationshipProgression(S)){if(S.people[c.spouseId]?.relationshipProgress?.courtCase)delete S.people[c.spouseId].relationshipProgress.courtCase;const result=initiateDivorce(S,c.spouseId,c.mode,c.options);if(!result.ok)recordJournal(S,'Court settlement postponed: '+result.msg,'family');}
 

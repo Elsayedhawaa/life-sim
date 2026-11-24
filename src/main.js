@@ -1,3 +1,4 @@
+import {courtshipAction,reconnectCourtship} from './systems/courtshipLife.js';
 import{settleWaterDamage}from'./systems/homeWaterDamage.js';
 import{settlePersonalReceivable}from'./systems/personalReceivables.js';
 import {repairPlayerRentalDamage,payPlayerRentArrears} from './systems/playerTenancy.js';
@@ -1282,6 +1283,8 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if (action === 'courtship-action') {handleActionResult(courtshipAction(S,btn.dataset.id,btn.dataset.kind));return;}
+    if (action === 'courtship-reconnect') {handleActionResult(reconnectCourtship(S,btn.dataset.id));return;}
     if (action === 'meet-partner') {
       handleActionResult(introducePartnerProspect(S, btn.dataset.channel));
       return;

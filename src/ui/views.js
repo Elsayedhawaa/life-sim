@@ -1,3 +1,4 @@
+import {courtshipMonthsApart} from '../systems/courtshipLife.js';
 import{personalLoanGates}from'../systems/economyEngine.js';
 import{renderHiring}from'../systems/companyHiring.js';
 import{renderCustomers}from'../systems/companyCustomers.js';
@@ -1313,6 +1314,12 @@ function renderMarriageSubtabHtml(S) {
 
       ${(partner && !S.marriage.engagement) ? `
         <div style="background:var(--bg-canvas);padding:12px;border-radius:8px;margin-top:8px">
+          <p class="muted">${courtshipMonthsApart(S,partner)} months since time together. Making plans costs 3 social energy.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+            <button class="btn btn-sm" data-action="courtship-action" data-id="${partner.id}" data-kind="time">Make Time · 3 energy</button>
+            <button class="btn btn-sm" data-action="courtship-action" data-id="${partner.id}" data-kind="later">${S.career.employed&&S.career.job?'Work First · performance +2, stress +3':'Not Ready Yet'}</button>
+            <button class="btn btn-sm" data-action="courtship-action" data-id="${partner.id}" data-kind="end">End Courtship</button>
+          </div>
           <strong>Seeing: ${esc(partner.fullName)}</strong> <span class="muted">(Age ${partner.age}, ${esc(partner.career.title)}, ${esc(getCountry(partner.nationality).adjective)})</span>
           ${prof.hasShabkaGold ? `<div class="muted" style="margin-top:4px">21K Gold today: <strong class="mono">${esc(formatMoney(goldPricePerGram(S.country, S.year, 21), S.country))}/g</strong>. ${S.country === 'egy' ? 'Wali vetting checks job stability, military clearance & Qa\'ima.' : ''}</div>` : ''}
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center">
@@ -1325,6 +1332,7 @@ function renderMarriageSubtabHtml(S) {
         </div>
       ` : ''}
 
+      ${Object.values(S.people).filter(p=>p?.alive&&p.role==='ex_partner'&&p.courtship).map(p=>`<details class="card"><summary>${esc(p.fullName)} · Former partner${p.maritalStatus==='married'?' · Married':''}</summary><p class="muted">${p.courtship.endedReason==='stopped_waiting'?'Ended after months without time together.':'You chose to end the courtship.'}${p.courtship.deferrals?' Plans put off '+p.courtship.deferrals+' times.':''}</p>${!partner&&!spouses.length&&!S.marriage.engagement?`<button class="btn btn-sm" data-action="courtship-reconnect" data-id="${p.id}">Ask to Meet Again · 2 energy</button>`:''}</details>`).join('')}
       ${S.marriage.engagement ? `
         <div style="background:var(--bg-accent-warm);border:1px solid var(--brand-gold);padding:12px;border-radius:8px;margin-top:8px">
           <strong>Engaged to ${esc(S.people[S.marriage.engagement.partnerId]?.fullName || '')}</strong>
