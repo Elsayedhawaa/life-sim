@@ -425,7 +425,7 @@ export function fireBusinessEmployee(S, biz, staffId) {
     return { ok: false, msg: `Severance for ${emp.name} is ${formatMoney(charge,S.country)} (${sev.months} month${sev.months === 1 ? '' : 's'} under ${getCountry(biz.country || S.country).name || ''} law) — not enough cash to let them go properly.` };
   }
   staff.splice(idx,1);
-  const p=employeePerson(S,biz,emp);p.career.employed=false;p.career.employer=null;p.career.monthlyIncomeLocal=0;p.career.businessEmployeeId=null;
+  const p=employeePerson(S,biz,emp);if(emp.familyHire){p.rel.trust=Math.max(0,(p.rel.trust||50)-10);p.rel.affection=Math.max(0,(p.rel.affection||50)-5);}p.career.employed=false;p.career.employer=null;p.career.monthlyIncomeLocal=0;p.career.businessEmployeeId=null;
   biz.employees = staff.length;
   /* Verdant finding: severance comes out of PERSONAL cash as its own
      ledger line — never buried inside the business P&L. */
@@ -446,7 +446,7 @@ export function fireAllStaff(S, biz, reason = 'closed') {
   let totalSeverance = 0;
   let unpaid = 0;
   for (const emp of leaving) {
-    const p=employeePerson(S,biz,emp);p.career.employed=false;p.career.employer=null;p.career.monthlyIncomeLocal=0;p.career.businessEmployeeId=null;
+    const p=employeePerson(S,biz,emp);if(emp.familyHire){p.rel.trust=Math.max(0,(p.rel.trust||50)-10);p.rel.affection=Math.max(0,(p.rel.affection||50)-5);}p.career.employed=false;p.career.employer=null;p.career.monthlyIncomeLocal=0;p.career.businessEmployeeId=null;
     const sev = severanceFor(S, biz, emp);
     sev.amount=Math.round(convertCurrency(sev.amount,biz.figuresCurrency||biz.country||S.country,S.country,S.year));
     const cash = Math.max(0,Number(S.money.cash) || 0);
