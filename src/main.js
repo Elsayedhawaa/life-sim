@@ -5,7 +5,7 @@ import{familyShareAction,familyCouncil}from './systems/companyOwnership.js';
 import{buyoutDivorceShares}from'./systems/companyDivorceShares.js';
 import{hireFamily,hireFamilyManager}from'./systems/companyFamily.js';
 import{equipmentAction}from'./systems/companyEquipment.js';
-import{serverAction}from'./systems/companyServers.js';
+import{customCloudQuote,serverAction}from'./systems/companyServers.js';
 import{techBase}from'./systems/techStartup.js';
 import{inputAction}from './systems/companyInputUI.js';
 import{catalogAction}from './systems/companyCatalog.js';
@@ -486,6 +486,7 @@ function handleActionResult(res) {
 if (typeof document !== 'undefined') {
   document.addEventListener('input', (e) => {
     const el = e.target;
+    if(el?.dataset?.resource){const panel=el.closest('.custom-cloud'),values=['cpu','storage','bandwidth'].map(key=>panel.querySelector('[data-resource='+key+']').value),q=customCloudQuote(Number(panel.dataset.base),...values);panel.querySelector('[data-cloud-quote]').textContent=q?formatMoney(q.monthly,panel.dataset.currency):'Enter valid whole units';return;}
     if (!el || !el.dataset || !el.dataset.filter) return;
     if (el.tagName !== 'INPUT') return;
     const key = el.dataset.filter;
@@ -1942,7 +1943,7 @@ if (typeof document !== 'undefined') {
     if(action==='family-manager'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(hireFamilyManager(S,biz,btn.dataset.person,btn.dataset.switch==='yes'));return;}
     if(action==='family-hire'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(hireFamily(S,biz,btn.dataset.person,btn.dataset.role,btn.dataset.switch==='yes',Number(btn.dataset.hours||40)));return;}
     if(action==='equipment-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(equipmentAction(S,biz,btn.dataset.kind,btn.dataset.type,btn.dataset.tier,operatingBase(S,biz)));return;}
-    if(action==='server-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(serverAction(S,biz,btn.dataset.kind,btn.dataset.value,techBase(S,biz)));return;}
+    if(action==='server-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(serverAction(S,biz,btn.dataset.kind,btn.dataset.kind==='custom-cloud'?JSON.stringify(Object.fromEntries([...btn.closest('.custom-cloud').querySelectorAll('[data-resource]')].map(el=>[el.dataset.resource,el.value]))):btn.dataset.value,techBase(S,biz)));return;}
     if(action==='tech-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(techAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
     if(action==='biz-tab'){uiState.bizTab=btn.dataset.area;renderApp();return;}
     if(action==='biz-company'){uiState.bizCompany=btn.dataset.biz;uiState.bizTab='overview';renderApp();return;}
