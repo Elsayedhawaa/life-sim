@@ -1,3 +1,4 @@
+import{renderHiring}from'../systems/companyHiring.js';
 import{renderCustomers}from'../systems/companyCustomers.js';
 import{renderCompliance}from'../systems/companyCompliance.js';
 import{renderContracts}from'../systems/companyContracts.js';
@@ -2511,7 +2512,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       <nav class="biz-work-tabs" aria-label="Company area">${[['overview','Overview'],['products','Products'],['team','Team'],['operations','Operations'],['growth','Growth'],['money','Money']].map(([id,label])=>`<button class="${businessTab===id?'active':''}" aria-pressed="${businessTab===id}" data-action="biz-tab" data-area="${id}">${label}</button>`).join('')}</nav>
       ${renderBranches(S,biz,businessTab)}${renderMigration(S,biz,businessTab)}${biz.enterprise?renderCompany(S,biz,businessTab):biz.tech?renderTech(S,biz,businessTab):''}
       ${renderDivorceShares(S,biz,businessTab)}${renderCompanyMarital(S,biz,businessTab)}
-      ${renderFamily(S,biz,businessTab)}${renderFamilyRota(S,biz,businessTab)}${renderFamilyOwnership(S,biz,businessTab)}
+      ${renderFamily(S,biz,businessTab)}${renderFamilyRota(S,biz,businessTab)}${renderHiring(S,biz,businessTab)}${renderFamilyOwnership(S,biz,businessTab)}
       ${renderSpace(S,biz,businessTab)}
       ${renderOperating(S,biz,businessTab)}${renderCompetition(S,biz,businessTab)}${renderCompliance(S,biz,businessTab)}${renderCustomers(S,biz,businessTab)}${renderLots(S,biz,businessTab)}${renderContracts(S,biz,businessTab)}
       ${renderCatalog(S,biz,businessTab)}
