@@ -1739,6 +1739,14 @@ export function convertFinancesOnCountryMove(S, fromCountry, toCountry) {
   fxMove('cash', S.money.cash, convertCurrency(S.money.cash, fromCountry, toCountry, S.year), `Currency conversion: cash (${getCountry(fromCountry).currency} → ${getCountry(toCountry).currency})`);
   fxMove('savings', S.money.savings, convertCurrency(S.money.savings, fromCountry, toCountry, S.year), `Currency conversion: savings (${getCountry(fromCountry).currency} → ${getCountry(toCountry).currency})`);
   S.money.remittanceMonthlyLocal = Math.round(convertCurrency(S.money.remittanceMonthlyLocal, fromCountry, toCountry, S.year));
+  S.career.monthlyPension=Math.max(0,Math.round(convertCurrency(S.career.monthlyPension||0,fromCountry,toCountry,S.year)));
+  const pension=S.career.market?.pension;
+  if(pension){
+    for(const key of ['pot','employeeTotal','employerTotal','growthTotal'])pension[key]=Math.max(0,Math.round(convertCurrency(pension[key]||0,fromCountry,toCountry,S.year)));
+    if(pension.paidOut)for(const key of ['pot','monthlyTopUp'])pension.paidOut[key]=Math.max(0,Math.round(convertCurrency(pension.paidOut[key]||0,fromCountry,toCountry,S.year)));
+    for(const row of pension.history||[])for(const key of ['employee','employer','growth','pot'])if(Number.isFinite(row[key]))row[key]=Math.round(convertCurrency(row[key],fromCountry,toCountry,S.year));
+  }
+
 
   /* Liquidate certificates cleanly on international bank move (without penalty) */
   for (const cd of S.money.certificates) {
