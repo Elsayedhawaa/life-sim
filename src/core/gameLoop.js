@@ -1,3 +1,4 @@
+import{restoreWorldNewsScene}from'../systems/worldEvents.js';
 import{buildWaterDamageScene}from'../systems/homeWaterDamage.js';
 import{tickPeopleAutonomy}from '../systems/peopleAutonomy.js';
 /* ============================================================================
@@ -25,7 +26,7 @@ import {
 import { tickVisaAndLegalMonthly } from '../systems/visaMigrationEngine.js';
 import { tickCareerActionsMonthly } from '../systems/careerActions.js';
 import { tickMarriageAndFamilyMonthly,restoreDivorceDecision } from '../systems/marriageFamilyEngine.js';
-import { tickHealthAndMortalityYearly, pickCuratedLifeScene } from '../systems/healthDirectorEngine.js';
+import { tickHealthAndMortalityYearly, pickCuratedLifeScene,restoreCuratedLifeScene } from '../systems/healthDirectorEngine.js';
 import { getCurrentChapter, noteChapterChange, ambitionStatus, noteAmbitionOutcome } from '../systems/storyLibrary.js';
 import { tickMegaSystemsMonthly } from '../systems/completeLifeSystems.js';
 import { checkBusinessFate } from '../systems/businessFate.js';
@@ -73,7 +74,7 @@ export function loadGameFromStorage() {
       const restore = scene => {
         if (!scene) return null;
         if (!scene.eventId&&scene.key==='st_upstairs_pipe_leak')return buildWaterDamageScene(parsed);
-        if (!scene.eventId) return restoreDivorceDecision(parsed,scene) || restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
+        if (!scene.eventId) return restoreWorldNewsScene(parsed,scene) || restoreCuratedLifeScene(parsed,scene) || restoreDivorceDecision(parsed,scene) || restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
         return restoreRandomLifeScene(parsed, scene);
       };
       const pending = parsed.activeScene;

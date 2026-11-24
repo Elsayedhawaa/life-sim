@@ -233,6 +233,7 @@ export function buildWorldEventScene(S, ev, effect) {
     : `For you, in ${cObj.name}, daily life carries on much as before.`;
   return {
     key: `world_${ev.id}`,
+    worldEffectSnapshot:{...effect},
     baseId: `world_${ev.id}`,
     maxPerLife: 1,
     category: 'world',
@@ -334,3 +335,5 @@ export function worldSummaryLine(S, countryId) {
 export function formatWorldRate(rate) {
   return `${(Number(rate) * 100).toFixed(1)}%`;
 }
+
+export function restoreWorldNewsScene(S,saved){const id=(saved?.key||'').replace(/^world_/,'');const ev=WORLD_EVENTS.find(x=>x.id===id);if(!ev)return null;const effect=saved.worldEffectSnapshot||eventAffectsCountry(ev,S.country);if(!effect)return null;return buildWorldEventScene(S,ev,effect);}

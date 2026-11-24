@@ -655,23 +655,28 @@ export function continueAsChild(S, childId) {
    2. CURATED, HUMAN-AUTHORED SCENE DIRECTOR (ZERO AI SLOP, COOLDOWN GUARDED)
    ========================================================================== */
 
-export function pickCuratedLifeScene(S) {
-  if (!S || S.activeScene) return null;
+export function pickCuratedLifeScene(S, restoreBaseId=null) {
+  if (!S || (S.activeScene&&!restoreBaseId)) return null;
   const age = S.player.age;
   const cObj = getCountry(S.country);
   const seen = S.sceneCounts || {};
   const candidates = [];
+  let restoreBuilder=null;
 
   function addOnce(baseId, builder) {
-    if ((seen[baseId] || 0) >= 1) return;
-    candidates.push(() => {
+    if(restoreBaseId&&baseId!==restoreBaseId)return;
+    if (!restoreBaseId&&(seen[baseId] || 0) >= 1) return;
+    const build=() => {
+      const buildRng=S.rngState;
       const sc = builder();
       if (sc) {
         sc.baseId = baseId;
+        sc.curatedBuildRngState=buildRng;
         sc.maxPerLife = 1;
       }
       return sc;
-    });
+    };
+    if(restoreBaseId)restoreBuilder=build;else candidates.push(build);
   }
 
   const friend = S.relations.friendIds.map(id => S.people[id]).find(p => p && p.alive);
@@ -1289,6 +1294,7 @@ export function pickCuratedLifeScene(S) {
 
   /* Collect 30+ extended psychological, workplace, marriage, expat & elder-life scenes */
   collectExtendedLifeScenes(S, addOnce);
+  if(restoreBaseId)return restoreBuilder?restoreBuilder():null;
 
   /* v2.5: the same roll also draws from the new random-events pool.
      Weighted by pool size, so the total pop-up rate does not change —
@@ -1307,4 +1313,10 @@ export function pickCuratedLifeScene(S) {
   if (!candidates.length) return null;
   const builder = pick(S, candidates);
   return builder ? builder() : null;
+}
+
+export function restoreCuratedLifeScene(S,saved){
+ if(!saved?.baseId||saved.eventId)return null;
+ const before=S.rngState;
+ try{if(saved.curatedBuildRngState!==undefined)S.rngState=saved.curatedBuildRngState;const scene=pickCuratedLifeScene(S,saved.baseId);if(!scene)return null;for(const key of['urgent','createdTurn','createdYear'])if(saved[key]!==undefined)scene[key]=saved[key];return scene;}catch{return null;}finally{S.rngState=before;}
 }
