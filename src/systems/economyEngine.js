@@ -1031,7 +1031,7 @@ export function settleHouseholdMonth(S) {
     const credit=S.housing.repairCredit;
     const applied=credit&&credit.country===S.country&&credit.homeId===S.housing.currentHomeId?Math.min(S.housing.monthlyRent,Math.max(0,Number(credit.amount)||0)):0;
     if(credit){if(applied>0){credit.amount-=applied;recordJournal(S,`Applied ${formatMoney(applied,S.country)} game repair credit against rent.`,'housing');}if(credit.amount<=0||credit.country!==S.country||credit.homeId!==S.housing.currentHomeId)S.housing.repairCredit=null;}
-    const rentRecord=recordPlayerRentDue(S,S.housing.monthlyRent-applied,S.money.cash+netDelta);
+    const rentRecord=recordPlayerRentDue(S,S.housing.monthlyRent-applied,S.money.cash+netDelta+Math.max(0,S.money.savings||0));
     netDelta -= S.housing.monthlyRent-applied-(rentRecord?.unpaid||0);
     summary.housing += S.housing.monthlyRent-applied-(rentRecord?.unpaid||0);
     summary.rentArrearsAdded=rentRecord?.unpaid||0;

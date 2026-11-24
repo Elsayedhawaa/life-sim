@@ -82,10 +82,12 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W17 Relocation into an owned home must settle its existing tenant/deposit rather than silently occupying it while tenant still lives/pays there.
 
-- [ ] W18 Player rental rent-payment evidence, capped deposit deduction for actual unpaid rent before refund/dispute; never recover full deposit plus unpaid rent.
+- [x] W18 Player rental rent-payment evidence, capped deposit deduction for actual unpaid rent before refund/dispute; never recover full deposit plus unpaid rent.
 - [ ] W22 Player-caused rental damage records/inspection/deductions before deposit settlement, distinct from landlords owned-property damage.
 
 - [x] W19 Landlord roof event must require a rental and actually apply its advertised repair/rent credit, scoped to this home, not silently charge full rent again.
 - [x] W20 Legacy pension-contribution events remove savings without a pension asset; connect to actual pension record rather than stat-only loss.
 
 - [x] W21 Finite private drawdown must apply worldwide, and re-retirement must preserve unspent prior balance rather than replace it.
+
+- [ ] W23 Savings liquidity counts before classifying rent unpaid, with actual three-month eviction/deposit/debt regression coverage.

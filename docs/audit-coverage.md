@@ -450,3 +450,6 @@ All retired countries now consume finite private remaining balance with final pa
 
 ### W18 tenant rent evidence and deposit priority
 Explicit paid leases record monthly due/paid/unpaid rent. Unpaid portion stays as rent liability rather than double-counted spent cash. Departure applies deposit to recorded arrears first without creating cash, then refunds/disputes only remaining paid deposit; uncovered arrears transfers to zero-interest12-month debt. Networth includes active rent liability and settlement housing summary tracks actual cash paid.152focused files pass.390px departure fixture verifies400recorded arrears deducted,600remaining returned, reload. Pixels inspected. W22rental damage/inspection records remain separate.
+
+### W23 liquid savings rent priority
+Rent paid/unpaid allocation includes liquid savings available for the existing auto-overdraft buffer, avoiding false rental arrears while savings can cover it. Focused regression runs three actual settlements through eviction:4400unpaid rent,1000deposit deduction,3400remaining debt and no refundable full-deposit claim. Savings-funded month has zero rent arrears. Existing152focused suite passed before one-line liquidity refinement; expanded rent regression passes after it. Hosted UI follow-up pending.
