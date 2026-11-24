@@ -1611,7 +1611,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_money_deposit_dispute',
     category: 'money',
     repeatable: false,
-    gates: {"minAge": 22, "hasHome": true, "wealth": ["poor", "middle"]},
+    gates: {"minAge": 22, "civilLossKind": "deposit", "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
@@ -1620,26 +1620,31 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(3000, S.country, S.year);
-      const B = eraLocalCost(1500, S.country, S.year);
+      const loss=(S.legal.civilLosses||[]).find(x=>x.kind==='deposit'&&x.status==='open'&&x.country===S.country);
+      const A=loss?.amount||0;
+      const B=Math.floor(Math.min(A,Number(loss?.defendant?.frozenLocal)||0)/2);
+      const current=st=>loss&&st.legal.civilLosses.includes(loss)&&loss.status==='open';
       return {
         key: 'ev_money_deposit_dispute',
         category: 'money',
         title: "The Old Landlord Keeps the Deposit",
-        text: `You moved out a month ago, and the old landlord still has your ${formatMoney(A, S.country)} deposit. He claims the flat was damaged — the stain on the wall was there when you arrived, and you both know it.`,
+        text: `Your recorded tenancy dispute is for ${formatMoney(A, S.country)} deposit. Any settlement is limited to traced funds. A paid court claim is separate.`,
         choices: [
           {
-            label: "Fight for the full deposit",
+            label: "Keep the dispute open for court",
             effect: (st) => {
+              if(!current(st))return;
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+7));
               if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+2));
               recordJournal(st, `You fought the old landlord for your ${formatMoney(A, S.country)} deposit, with photos and a written complaint.`, 'money');
             },
           },
           {
-            label: "Accept half and walk away",
+            label: `Accept ${formatMoney(B,S.country)} traced settlement`,
+            available: ()=>B>0,
             effect: (st) => {
-              walletMove(st, +B, 'Accept half and walk away', 'money');
+              if(!current(st)||B<=0)return;
+              walletMove(st, +B, 'Deposit dispute settlement', 'money');loss.status='settled';loss.recovered=B;loss.paidLocal=B;loss.paidCountry=st.country;loss.defendant.frozenLocal=0;
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
               recordJournal(st, `You accepted half the deposit back, ${formatMoney(B, S.country)}, and walked away from the argument.`, 'money');
             },
@@ -1647,6 +1652,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
           {
             label: "Let it go entirely",
             effect: (st) => {
+              if(!current(st))return;loss.status='waived';if(loss.defendant)loss.defendant.frozenLocal=0;
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-3));
               recordJournal(st, `You let the ${formatMoney(A, S.country)} deposit go. The fight would have cost more than the money.`, 'money');

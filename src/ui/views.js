@@ -4834,7 +4834,7 @@ function renderCourtsAndCrimeSubtabHtml(S) {
         <h2>${icon('gavel', 18)} Civil & Labor Courts</h2>
         <span class="hud-pill">${S.legal.criminalRecord ? '⚠ Criminal Record on File' : 'Clean Record'}</span>
       </div>
-      ${(S.legal.civilLosses||[]).filter(x=>x.status!=='open').map(x=>`<p>Claim · ${x.status==='filed'?'Hearing pending · '+Math.max(0,x.dueAt-S.year*12-S.month)+' mo':x.status==='settled'?'Recovered '+esc(formatMoney(x.paidLocal,x.paidCountry)):'Reviewed · Collection unavailable'}</p>`).join('')}
+      ${(S.legal.civilLosses||[]).filter(x=>x.status!=='open').map(x=>`<p>Claim · ${x.status==='filed'?'Hearing pending · '+Math.max(0,x.dueAt-S.year*12-S.month)+' mo':x.status==='settled'?'Recovered '+esc(formatMoney(x.paidLocal,x.paidCountry)):x.status==='waived'?'Waived':'Reviewed · Collection unavailable'}</p>`).join('')}
       ${CIVIL_LAWSUITS.map(su => {
         const fee = Math.round(convertCurrency(su.lawyerFeeUsd, 'usa', S.country, S.year));
         const claim=civilClaimQuote(S,su.id);
