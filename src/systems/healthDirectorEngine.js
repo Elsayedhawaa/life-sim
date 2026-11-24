@@ -205,96 +205,7 @@ export function tickHealthAndMortalityYearly(S) {
         entry.managed = true;
         recordJournal(S, `Diagnosed with ${picked.label.toLowerCase()} — your parents took you to the clinic and arranged medication.`, 'health');
       } else {
-        const hospitals = getHospitalsFor(S.country, S.year);
-        const pubHosp = hospitals.find(h => h.sector === 'public') || hospitals[0];
-        const privHosp = hospitals.find(h => h.sector === 'private') || hospitals[hospitals.length - 1];
-        const isDependentStudent = age <= 22 && S.education.university && ['middle', 'upper_middle', 'wealthy'].includes(S.familyTier) && S.country === S.homeCountry;
-        const privCost = isDependentStudent
-          ? 0
-          /* v2.9 — same cover rule as treatmentCostLocal: a private policy
-             pays about a quarter, any other confirmed cover 45% off, no
-             confirmed cover pays in full. Being merely employed gives no
-             discount (the old employed→45%-off inline rule is gone).
-             v2.12 — hospital staff are the exception: staff treatment at
-             their own hospital pays about a quarter (staffTreatmentEligible),
-             the same factor treatmentCostLocal charges, so the price shown
-             here and the amount taken from cash are the same number. */
-          : Math.round(convertCurrency(picked.treatmentUsd2026, 'usa', S.country, S.year) * (S.insurance?.health ? 0.25 : staffTreatmentEligible(S) ? 0.25 : S.medical?.healthInsurance ? 0.55 : 1));
-        const pubCost = isDependentStudent
-          ? 0
-          : Math.round(privCost * 0.22 * (1 - cObj.healthcare.publicCoveragePct * 0.7));
-
-        /* Serious diseases get STAGED, PROBABILISTIC treatment — one shared
-           function (runDiseaseTreatment) also used by the Medical tab.
-           Private treat is NOT an instant cure any more: chemotherapy can
-           work or not, and the odds are shown honestly. Minor conditions
-           keep the old simple cure path. */
-        const serious = isSeriousCondition(picked.id);
-        const treatPrivCost = isDependentStudent ? 0 : treatmentCostLocal(S, entry, 'private');
-        const treatPubCost = isDependentStudent ? 0 : treatmentCostLocal(S, entry, 'public');
-        const stageTxt = entry.stage ? ` It is stage ${entry.stage}.` : '';
-        const oddsTxt = serious
-          ? ` With private specialist care, ${oddsInWords(treatmentSuccessProb(S, entry, 'private'))}; public care is a little less certain.`
-          : '';
-        queueScene(S, {
-          key: `med_onset_${picked.id}_${S.year}`,
-          category: 'health',
-          title: `Medical Diagnosis: ${picked.label}`,
-          text: `After weeks of symptoms, doctors diagnose you with ${picked.label}.${stageTxt} ${picked.desc || 'Left unmanaged, it will steadily wear down your health.'}${oddsTxt}`,
-          choices: [
-            {
-              label: isDependentStudent
-                ? `Treat immediately at ${privHosp.name} (Covered by family / university medical plan)`
-                : serious
-                  ? `Start treatment at ${privHosp.name} (${formatMoney(treatPrivCost, S.country)}) — ${oddsInWords(treatmentSuccessProb(S, entry, 'private'))}`
-                  : `Treat immediately at ${privHosp.name} (${formatMoney(privCost, S.country)})`,
-              available: () => isDependentStudent || S.money.cash >= (serious ? treatPrivCost : privCost),
-              effect: (st) => {
-                if (serious) {
-                  const r = runDiseaseTreatment(st, entry.id, 'private', { free: isDependentStudent });
-                  if (!r.ok) recordJournal(st, `You could not start private treatment for your ${picked.label.toLowerCase()}: ${r.msg}`, 'health');
-                  return;
-                }
-                if (privCost > 0) walletMove(st, -privCost, `Specialist treatment at ${privHosp.name} (${picked.label})`, 'medical');
-                if (!entry.chronic) {
-                  st.medical.conditions = st.medical.conditions.filter(x => x.id !== entry.id);
-                  st.player.vitals.health = clamp(st.player.vitals.health + 8);
-                  recordJournal(st, `Specialist care at ${privHosp.name} resolved your ${picked.label.toLowerCase()}.`, 'health');
-                } else {
-                  entry.managed = true;
-                  recordJournal(st, `Started specialist management for ${picked.label.toLowerCase()} at ${privHosp.name}.`, 'health');
-                }
-              }
-            },
-            {
-              label: serious
-                ? `Use public care at ${pubHosp.name} (${treatPubCost > 0 ? formatMoney(treatPubCost, S.country) : 'Publicly / Student covered'}) — ${oddsInWords(treatmentSuccessProb(S, entry, 'public'))}`
-                : `Use public care at ${pubHosp.name} (${pubCost > 0 ? formatMoney(pubCost, S.country) : 'Publicly / Student covered'})`,
-              available: () => S.money.cash >= (serious ? treatPubCost : pubCost),
-              effect: (st) => {
-                if (serious) {
-                  const r = runDiseaseTreatment(st, entry.id, 'public', { free: isDependentStudent });
-                  if (!r.ok) recordJournal(st, `You could not start public treatment for your ${picked.label.toLowerCase()}: ${r.msg}`, 'health');
-                  return;
-                }
-                if (pubCost > 0) walletMove(st, -pubCost, `Public hospital care at ${pubHosp.name}`, 'medical');
-                entry.managed = true;
-                recordJournal(st, `Completed morning outpatient care at ${pubHosp.name} and stabilized your ${picked.label.toLowerCase()}.`, 'health');
-              }
-            },
-            {
-              label: 'Delay full specialist workup and rely on basic clinic precautions for now',
-              effect: (st) => {
-                st.player.vitals.health = clamp(st.player.vitals.health - 6);
-                if (serious) {
-                  const c = (st.medical.conditions || []).find(x => x.id === entry.id);
-                  if (c) c.treatmentStatus = 'untreated';
-                }
-                recordJournal(st, `You postponed specialist care on your ${picked.label.toLowerCase()}, hoping rest alone would be enough.`, 'health');
-              }
-            }
-          ]
-        });
+        queueScene(S,buildDiagnosisScene(S,{conditionId:entry.id,sinceYear:entry.sinceYear,year:S.year,country:S.country}));
       }
     }
   }
@@ -1282,3 +1193,27 @@ export function buildCriticalAdmissionScene(S,snapshot){
  return{key:q.key,baseId:q.key,maxPerLife:1,category:'health',title:'Game Emergency Aid ('+q.year+')',criticalAdmissionSnapshot:q,text:'Free fictional emergency aid restores a minimum health level. No cash is charged and existing conditions are not cured or marked managed.',choices:[{label:'Accept game emergency aid · free',effect:st=>{st.medical.emergencyAidHistory??=[];if(st.medical.emergencyAidHistory.some(r=>r.key===q.key))return;st.medical.emergencyAidHistory.push({key:q.key,year:st.year,month:st.month,cost:0});st.player.vitals.health=Math.max(42,st.player.vitals.health);st.player.vitals.stress=clamp(st.player.vitals.stress-15);recordJournal(st,'Received free fictional emergency aid. Existing medical conditions and treatment plans remain.','health');}}]};
 }
 export function restoreCriticalAdmissionScene(S,saved){return saved?.criticalAdmissionSnapshot?buildCriticalAdmissionScene(S,saved.criticalAdmissionSnapshot):null;}
+
+export function buildDiagnosisScene(S,snapshot){
+ const q={...snapshot},entry=S.medical.conditions.find(c=>c.id===q.conditionId&&c.sinceYear===q.sinceYear),picked=MEDICAL_CONDITIONS.find(c=>c.id===q.conditionId);
+ if(!entry||!picked||S.country!==q.country)return null;
+ const hospitals=getHospitalsFor(S.country,S.year),pub=hospitals.find(h=>h.sector==='public')||hospitals[0],priv=hospitals.find(h=>h.sector==='private')||hospitals.at(-1),serious=isSeriousCondition(entry.id);
+ q.costs??={private:treatmentCostLocal(S,entry,'private'),public:treatmentCostLocal(S,entry,'public')};q.hospitals??={private:priv.name,public:pub.name};
+ const key='diagnosis_'+q.conditionId+'_'+q.sinceYear;
+ const current=st=>st.country===q.country&&st.medical.conditions.find(c=>c.id===q.conditionId&&c.sinceYear===q.sinceYear);
+ const answered=st=>st.medical.diagnosisReplies?.[key];
+ const record=st=>{st.medical.diagnosisReplies??={};st.medical.diagnosisReplies[key]=true;};
+ const choices=['private','public'].map(care=>({label:(care==='private'?'Private':'Public')+' game treatment · '+formatMoney(q.costs[care],q.country),available:st=>{const c=current(st);return !!c&&!answered(st)&&(!c.managed||serious)&&c.treatmentStatus!=='treated'&&c.lastTreatmentPeriod!==st.year*12+st.month&&st.money.cash>=q.costs[care]&&treatmentCostLocal(st,c,care)===q.costs[care];},effect:st=>{const c=current(st);if(!c||answered(st)||c.managed&&!serious||c.treatmentStatus==='treated'||c.lastTreatmentPeriod===st.year*12+st.month||st.money.cash<q.costs[care]||treatmentCostLocal(st,c,care)!==q.costs[care])return;
+ if(serious){const r=runDiseaseTreatment(st,c.id,care);if(r.ok)record(st);return;}
+ walletMove(st,-q.costs[care],'Game treatment: '+c.label+' at '+q.hospitals[care],'medical');c.lastTreatmentPeriod=st.year*12+st.month;
+ if(c.chronic||care==='public'){c.managed=true;c.treatmentStatus='treated';}else{st.medical.conditions=st.medical.conditions.filter(x=>x!==c);st.player.vitals.health=clamp(st.player.vitals.health+8);}
+ record(st);recordJournal(st,'Completed game '+care+' care for '+c.label+'.','health');}}));
+ choices.push({label:'Leave care unchanged for now',effect:st=>{if(answered(st))return;record(st);recordJournal(st,'Deferred diagnosis-scene care. Current condition and treatment records remain.','health');}});
+ return{key:'med_onset_'+entry.id+'_'+q.year,baseId:'Medical Diagnosis: '+picked.label,category:'health',title:'Medical Diagnosis: '+picked.label,diagnosisSnapshot:q,text:q.text||('Recorded '+picked.label+(entry.stage?' · stage '+entry.stage:'')+'. Game care has simplified outcomes. Review Health for ongoing treatment; no family or university cover is assumed.'),choices};
+}
+export function restoreDiagnosisScene(S,saved){
+ if(saved?.diagnosisSnapshot)return buildDiagnosisScene(S,saved.diagnosisSnapshot);
+ if(!saved?.key?.startsWith('med_onset_'))return null;
+ const entry=S.medical.conditions.find(c=>saved.key==='med_onset_'+c.id+'_'+c.sinceYear);
+ return entry?buildDiagnosisScene(S,{conditionId:entry.id,sinceYear:entry.sinceYear,year:entry.sinceYear,country:S.country}):null;
+}

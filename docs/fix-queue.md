@@ -168,3 +168,8 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W71 Child-gift fixture used father as generic recipient; production generator selects adult child, but restore builder lacked same relationship/age gates. Add guards and correct linked-child mobile fixture.
 
 - [x] W72 Job-loss visa text asserts universal grace/sponsor rules and mortgage holiday wording hides game scope; review shared actual permit and payment-holiday semantics.
+
+- [x] W73 Organic Egypt life diagnosis decision disappears on reload; retain exact condition and treatment choices without another diagnosis.
+- [x] W74 Diagnosis scene assumes free family/university care without funded policy record; remove implicit coverage and stop defer choice from undoing existing care.
+
+- [x] W75 Shared specialist price falls back to8500USD when active condition lacks catalog cost; resolve by matching condition catalog so scene/tab/action use actual configured price.

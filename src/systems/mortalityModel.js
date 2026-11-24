@@ -14,6 +14,7 @@ import { hashSeed, clamp } from '../core/rng.js';
 import { recordJournal, walletMove } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { convertCurrency } from '../data/economy.js';
+import { MEDICAL_CONDITIONS } from '../data/institutions.js';
 import { staffTreatmentEligible } from './careerEducationEngine.js';
 
 /* Mortality has its OWN seeded RNG stream (S.mortalityRng, derived from the
@@ -284,7 +285,7 @@ export function assignStage(S, cond) {
    immediate and full. Insurance cuts the private bill.
    -------------------------------------------------------------------------- */
 export function treatmentCostLocal(S, cond, care) {
-  const baseUsd = cond.treatmentUsd2026 || 8500;
+  const baseUsd = cond.treatmentUsd2026 ?? MEDICAL_CONDITIONS.find(c=>c.id===cond.id)?.treatmentUsd2026 ?? 8500;
   let usd = baseUsd;
   if (care === 'public') {
     const cObj = getCountry(S.country);
