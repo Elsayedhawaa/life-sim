@@ -37,6 +37,7 @@ import { rand, clamp } from '../core/rng.js';
 import { nextId, recordJournal, walletMove, recordLedgerEntry, ensureExtendedState } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { pickFirstName, pickFamilyName } from '../data/names.js';
+import { convertCurrency } from '../data/economy.js';
 import {
   businessValuation, normalizeBusiness, migrateBusinesses, syncBusinessMirror,
   resolveBusiness, computeBusinessMonth, closeBusiness, sellBusiness
@@ -286,6 +287,7 @@ export function openBranchOfType(S, bizRef, cityId, branchTypeRaw = 'shop', opts
     typeId: parent.typeId,
     name: `${parent.name} — ${type.label} ${cityId}`,
     country: countryId,
+    figuresCurrency: parent.figuresCurrency || parent.country || S.country,
     city: cityId,
     level: 1,
     maxLevel: Infinity, /* placeholder — normalizeBusiness replaces it with businessLevelCap(biz) (home = 2, rented/owned = no cap) */
@@ -320,6 +322,9 @@ export function openBranchOfType(S, bizRef, cityId, branchTypeRaw = 'shop', opts
     acquiredMonth: S.month
   });
   seedStartingStaff(S, branch, type.staff);
+  for (const employee of branch.staff) {
+    employee.wageLocal = Math.round(convertCurrency(employee.wageLocal, countryId, branch.figuresCurrency, S.year));
+  }
   branch.monthlyCost = Math.round((parent.monthlyCost || 0) * costShare);
   branch.employees = (branch.staff || []).length;
   S.career.businesses.push(branch);
@@ -482,7 +487,7 @@ export function renderBranchesHtml(S, biz) {
     const typeBtns = Object.values(BRANCH_TYPES).map(t => {
       const costing = branchTypeSetupCost(S, parent, c, t.id);
       const price = costing.fundedByFranchisee
-        ? `franchisee pays setup, you pay rent ${formatMoney((listCommercialPremises(S) || []).find(u => u.unitId === t.premisesUnitId)?.monthlyRentLocal || 0, S.country)}`
+        ? `franchisee pays setup, you pay rent ${formatMoney((listCommercialPremises(S, c, parent.country || S.country, S.country) || []).find(u => u.unitId === t.premisesUnitId)?.monthlyRentLocal || 0, S.country)}`
         : formatMoney(costing.setupCost, S.country);
       return `<button class="btn btn-sm" data-action="biz-branch-open" data-biz="${escHtml(parent.id)}" data-city="${escHtml(c)}" data-branch-type="${escHtml(t.id)}" title="${escHtml(costing.reason)} ${escHtml(t.desc)}">${escHtml(t.label)} in ${escHtml(c)} (${escHtml(price)})</button>`;
     }).join(' ');

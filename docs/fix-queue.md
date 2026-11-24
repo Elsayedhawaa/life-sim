@@ -217,3 +217,5 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W99 Low-value product price controls can do nothing: standard1, +10% rounds back to1. Reproduced hosted classic cafe new-product control. Use supported precision for actual change, enforce bounds and test worldwide low-unit pricing; show honest formatting.
 
 - [x] W100 Very-low-sales classic product launch rounds30%development cost down to zero (monthlyRev1). Positive1book-unit minimum quote now matches actual debit.
+
+- [x] W101 Remote classic branches omit inherited book currency, mixing converted sales/capital with native premises and starter wages. Preserve the parent book marker and convert locally seeded wages into that book currency.

@@ -2376,7 +2376,7 @@ function branchHireShortlistHtml(S, branch) {
   const shortlist = managerShortlist(S, branch);
   if (!shortlist.length) return '';
   return shortlist.map(c => `
-        <button class="btn btn-sm" data-action="biz-hire-manager" data-biz="${esc(branch.id)}" data-person="${esc(c.personId)}" data-name="${esc(c.name)}" data-skill="${c.skill}" data-wage="${c.wage}" data-loyalty="${c.loyalty}" title="Hire ${esc(c.name)} to manage ${esc(branch.name)} — ${esc(formatMoney(c.wage, branch.country || S.country))}/month">Hire ${esc(c.name.split(' ')[0])} — ${esc(c.tier)} · skill ${c.skill} · ${esc(formatMoney(c.wage, branch.country || S.country))}/mo</button>`).join('');
+        <button class="btn btn-sm" data-action="biz-hire-manager" data-biz="${esc(branch.id)}" data-person="${esc(c.personId)}" data-name="${esc(c.name)}" data-skill="${c.skill}" data-wage="${c.wage}" data-loyalty="${c.loyalty}" title="Hire ${esc(c.name)} to manage ${esc(branch.name)} — ${esc(formatMoney(c.wage, branch.figuresCurrency || branch.country || S.country))}/month">Hire ${esc(c.name.split(' ')[0])} — ${esc(c.tier)} · skill ${c.skill} · ${esc(formatMoney(c.wage, branch.figuresCurrency || branch.country || S.country))}/mo</button>`).join('');
 }
 
 function fixBranchHireButtons(S, branchesHtml) {
