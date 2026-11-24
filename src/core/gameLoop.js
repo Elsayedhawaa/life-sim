@@ -266,7 +266,7 @@ export function advanceSingleTurn(S) {
     /* Switch seamlessly to Monthly Adaptive Realism at age 18! */
     if (S.player.age >= 18) {
       S.pacing = 'monthly';
-      S.month = 7; // Summer after final exams!
+      // Keep September: entering adulthood must not rewind the calendar.
     }
 
     /* Deal queued scene or occasional childhood story scene */
