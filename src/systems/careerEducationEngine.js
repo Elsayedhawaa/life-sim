@@ -2051,7 +2051,7 @@ export function describeJobOffer(S, job) {
 
 export function presentGraduateOrJobSearchOffers(S, customTitle = null) {
   const eligible = listAvailableJobs(S)
-    .filter(j => j.qualifiedByDegree && !j.missingBoard)
+    .filter(j => j.qualifiedByDegree && !j.missingBoard && checkJobApplication(S,j).ok)
     .sort((a, b) => b.monthlyGross - a.monthlyGross);
   if (!eligible.length) return;
 
@@ -2061,6 +2061,7 @@ export function presentGraduateOrJobSearchOffers(S, customTitle = null) {
     {
       label: `Accept ${topOffer.title} at ${topOffer.employer} (${formatMoney(topOffer.monthlyGross, S.country)}/mo gross)`,
       effect: (st) => {
+        const gate=checkJobApplication(st,topOffer);if(!gate.ok){recordJournal(st,`Job offer no longer available: ${gate.msg}`,'career');return;}
         st.career.employed = true;
         st.career.unemployedMonths = 0;
         st.career.job = {
@@ -2068,7 +2069,7 @@ export function presentGraduateOrJobSearchOffers(S, customTitle = null) {
           title: topOffer.title,
           track: topOffer.track,
           level: topOffer.level,
-          monthlyGross: topOffer.monthlyGross,
+          monthlyGross: gate.workAuth.partTimeOnly?Math.round(topOffer.monthlyGross*.45):topOffer.monthlyGross,
           startYear: st.year,
           monthsInRole: 0,
           performance: 72,
@@ -2088,6 +2089,7 @@ export function presentGraduateOrJobSearchOffers(S, customTitle = null) {
     choices.push({
       label: `Take steady role: ${altOffer.title} at ${altOffer.employer} (${formatMoney(altOffer.monthlyGross, S.country)}/mo, lower pressure)`,
       effect: (st) => {
+        const gate=checkJobApplication(st,altOffer);if(!gate.ok){recordJournal(st,`Job offer no longer available: ${gate.msg}`,'career');return;}
         st.career.employed = true;
         st.career.unemployedMonths = 0;
         st.career.job = {
@@ -2095,7 +2097,7 @@ export function presentGraduateOrJobSearchOffers(S, customTitle = null) {
           title: altOffer.title,
           track: altOffer.track,
           level: altOffer.level,
-          monthlyGross: altOffer.monthlyGross,
+          monthlyGross: gate.workAuth.partTimeOnly?Math.round(altOffer.monthlyGross*.45):altOffer.monthlyGross,
           startYear: st.year,
           monthsInRole: 0,
           performance: 74,
@@ -2230,10 +2232,16 @@ export function tickCareerMonthly(S) {
           recordJournal(S, `No yearly rise this year — pay at ${job.employer} is frozen while the crisis lasts, so your ${formatMoney(job.monthlyGross, S.country)}/month stays exactly where it is.`, 'career');
         }
       } else {
-        const merit = job.performance >= 65 ? 0.055 : 0.02;
         const previousGross = job.monthlyGross;
-        job.monthlyGross = Math.round(previousGross * (1 + merit));
-        recordJournal(S, `Annual pay review at ${job.employer}: ${merit === 0.055 ? '5.5' : '2'}% raise, from ${formatMoney(previousGross, S.country)} to ${formatMoney(job.monthlyGross, S.country)}/month gross.`, 'career');
+        const listed=listAvailableJobs(S).find(j=>j.track===job.track);
+        const rung=(track?.rungs||[]).find(r=>r.level===job.level);
+        const baseRung=(track?.rungs||[]).find(r=>r.level===listed?.level);
+        const market=listed&&rung?Math.round(listed.monthlyGross*rung.mult/(baseRung?.mult||1)):previousGross;
+        const headroom=job.performance>=65?1.25:1.10;
+        const requested=Math.round(previousGross*(job.performance>=65?1.055:1.02));
+        // No retrospective pay cut, but no endless above-market compounding.
+        job.monthlyGross=Math.max(previousGross,Math.min(requested,Math.round(market*headroom)));
+        recordJournal(S,`Annual pay review at ${job.employer}: ${formatMoney(previousGross,S.country)} to ${formatMoney(job.monthlyGross,S.country)}/month gross. Game market reference ${formatMoney(market,S.country)}/month for this rung, merit ceiling ${Math.round(headroom*100)}%of market. Above-ceiling pay is held, not cut.`,'career');
       }
       if (wouldPromote && rivalBlocks) {
         const rivalPerson = S.people[rivalRec.personId];

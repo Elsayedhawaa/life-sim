@@ -3746,6 +3746,7 @@ export function renderFinanceTabHtml(S, uiState = {}) {
   return `
     ${finBanner}
     ${nav}
+    ${S.housing.mode==='parents'&&S.player.age>=24?`<div class="card"><strong>Adult family-home board</strong><p>${esc(formatMoney(eraLocalCost(cObj.monthlyBasket2026.rentModest*.35,S.country,S.year),S.country))}/month, 35% of the game modest-rent basket, contributes toward the household. Food/utilities are separate in living costs.</p></div>`:''}
     <div class="card card-elevated">
       <div class="section-head">
         <h2>${icon('finance', 18)} Monthly Ledger & Inflation (${esc(cObj.name)})</h2>

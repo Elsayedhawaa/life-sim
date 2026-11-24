@@ -268,6 +268,12 @@ export function tickAssetsAnnually(S) {
 
   /* Rent adjustments on renewals */
   if (S.housing.mode === 'rent' && S.housing.monthlyRent > 0) {
+    if(S.month===1&&S.housing.rentIndexedYear!==S.year){
+      const oldRent=S.housing.monthlyRent;
+      const ratio=eraLocalCost(10000,S.country,S.year)/eraLocalCost(10000,S.country,S.year-1);
+      S.housing.monthlyRent=Math.round(oldRent*ratio);S.housing.rentIndexedYear=S.year;
+      recordJournal(S,`Annual game rent index: ${formatMoney(oldRent,S.country)} to ${formatMoney(S.housing.monthlyRent,S.country)}/month, following the game price basket. Not a local tenancy-law model.`,'housing');
+    }
     const inf = Math.max(0, inflationRate(S.country, S.year) / 100);
     if (inf > 0.02) {
       S.housing.monthlyRent = Math.round(S.housing.monthlyRent * (1 + inf * 0.75));
@@ -1004,8 +1010,20 @@ export function settleHouseholdMonth(S) {
 
   /* 10. HOUSING RENT */
   if (S.housing.mode === 'rent' && S.housing.monthlyRent > 0) {
+    if(S.month===1&&S.housing.rentIndexedYear!==S.year){
+      const oldRent=S.housing.monthlyRent;
+      const ratio=eraLocalCost(10000,S.country,S.year)/eraLocalCost(10000,S.country,S.year-1);
+      S.housing.monthlyRent=Math.round(oldRent*ratio);S.housing.rentIndexedYear=S.year;
+      recordJournal(S,`Annual game rent index: ${formatMoney(oldRent,S.country)} to ${formatMoney(S.housing.monthlyRent,S.country)}/month, following the game price basket. Not a local tenancy-law model.`,'housing');
+    }
     netDelta -= S.housing.monthlyRent;
     summary.housing += S.housing.monthlyRent;
+  }
+
+  if(S.housing.mode==='parents'&&S.player.age>=24){
+    const board=eraLocalCost(cObj.monthlyBasket2026.rentModest*.35,S.country,S.year);
+    netDelta-=board;summary.housing+=board;
+    S.housing.familyBoardMonthly=board;
   }
 
   /* 11. HOUSEHOLD LIVING BASKET (Food, Utilities, Transport/Car, Kids, Lifestyle) */
