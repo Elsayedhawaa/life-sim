@@ -1,0 +1,5 @@
+import assert from 'node:assert/strict';
+import {createNewLifeState,ensureExtendedState} from '../src/core/schema.js';
+import {propertyPaymentBudgetHtml} from '../src/ui/views.js';
+const s=createNewLifeState({country:'gbr',seed:7});ensureExtendedState(s);assert.equal(propertyPaymentBudgetHtml(s,0),'');s.money.lastMonthSummary=null;assert(propertyPaymentBudgetHtml(s,100).includes('not recorded'));s.money.lastMonthSummary={income:2000,living:600,debt:100,support:200,housing:900};s.career.employed=false;const warning=propertyPaymentBudgetHtml(s,1500);assert(warning.includes('400 GBP'));assert(warning.includes('no current job'));assert(warning.includes('Historical snapshot'));assert(warning.includes('before other housing'));assert(warning.includes('text-bad'));s.career.employed=true;const good=propertyPaymentBudgetHtml(s,500);assert(good.includes('600 GBP'));assert(!good.includes('text-bad'));assert(!good.includes('no current job'));assert.equal(s.money.lastMonthSummary.housing,900);
+console.log('Deposit filter not monthly-affordability promise; historical take-home budget deducts living/debt/support and proposed installment without mutating state');

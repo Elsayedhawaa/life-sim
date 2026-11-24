@@ -3112,6 +3112,15 @@ function compoundListingPrice(S, propMarket, dev, selUnit, selFinish, selPlan) {
   return { fullPlayer, downPlayer, monthlyPlayer, areaM2: selUnit.area };
 }
 
+export function propertyPaymentBudgetHtml(S, monthly) {
+  if (!(monthly > 0)) return '';
+  const summary = S.money?.lastMonthSummary;
+  if (!summary || !Number.isFinite(summary.income) || !Number.isFinite(summary.living)) return '<p class="muted">Monthly budget not recorded yet. Check income, living costs and existing debts before signing.</p>';
+  const available = summary.income - summary.living - (summary.debt || 0) - (summary.support || 0);
+  const after = Math.round(available - monthly);
+  return `<details class="property-budget"><summary class="${after < 0 ? 'text-bad' : 'muted'}">Monthly budget: ${esc(formatMoney(after,S.country))} left before housing upkeep</summary><p class="muted">Last settled month: ${esc(formatMoney(summary.income, S.country))} take-home income. After its living, debt and support costs, this installment would leave ${esc(formatMoney(after, S.country))}/mo before other housing, upkeep or new borrowing. Historical snapshot, not a forecast${!S.career?.employed ? '; no current job' : ''}.</p></details>`;
+}
+
 function landListingPrice(S, pl) {
   const area = pl.minArea || 400;
   const nativeCost = eraLocalCost(pl.ppm2026 * area, pl.country, S.year);
@@ -3165,9 +3174,9 @@ function renderCompareTableHtml(S, uiState, keys) {
     { label: 'Down payment', val: it => formatMoney(it.down, S.country) },
     { label: 'Running cost', val: it => it.monthlyLabel },
     {
-      label: 'Within reach?',
+      label: 'Deposit funding',
       val: it => it.down <= funds
-        ? 'Yes — you could buy this today'
+        ? 'Deposit fits cash, savings and estimated credit; monthly budget not checked'
         : `Not yet — need ${formatMoney(it.down - funds, S.country)} more`
     }
   ];
@@ -3235,7 +3244,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
   if (affordableOnly && shownDevs.length === 0 && filteredDevs.length > 0) {
     const cheapest = filteredDevs.reduce((a, b) => (priceOf(a).downPlayer <= priceOf(b).downPlayer ? a : b));
     shownDevs = [cheapest];
-    cheapestNote = `Nothing is within reach yet — the cheapest here is ${cheapest.name} (down ${formatMoney(priceOf(cheapest).downPlayer, S.country)}; you could put ${formatMoney(funds, S.country)} toward a home today). Save for it below.`;
+    cheapestNote = `No deposit fits these funds yet — the cheapest here is ${cheapest.name} (down ${formatMoney(priceOf(cheapest).downPlayer, S.country)}; you could put ${formatMoney(funds, S.country)} toward a home today). Save for it below.`;
   }
 
   return `
@@ -3280,8 +3289,8 @@ function renderCompoundsSubtabHtml(S, uiState) {
       ${renderRoomDetailCardHtml(uiState)}
 
       <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px">
-        <button class="btn btn-sm ${affordableOnly ? 'btn-navy' : ''}" data-action="toggle-affordable-only">${affordableOnly ? '✓ Showing only what you can afford' : 'View cheaper — only what I can afford'}</button>
-        <span class="muted" style="font-size:0.82rem">You hold ${esc(formatMoney(liquidFundsLocal(S), S.country))}${loanCap > 0 ? ` + up to ${esc(formatMoney(loanCap, S.country))} in bank credit` : ''} — ${affordableDevs.length} of ${filteredDevs.length} within reach.</span>
+        <button class="btn btn-sm ${affordableOnly ? 'btn-navy' : ''}" data-action="toggle-affordable-only">${affordableOnly ? '✓ Deposit within funding range' : 'Filter by deposit funding'}</button>
+        <span class="muted" style="font-size:0.82rem">You hold ${esc(formatMoney(liquidFundsLocal(S), S.country))}${loanCap > 0 ? ` + up to ${esc(formatMoney(loanCap, S.country))} in bank credit` : ''} — ${affordableDevs.length} of ${filteredDevs.length} deposits within funding range. This does not check monthly affordability.</span>
       </div>
       ${renderCompareTableHtml(S, uiState, compareKeys)}
       ${cheapestNote ? `<p class="muted" style="font-size:0.85rem">${esc(cheapestNote)}</p>` : ''}
@@ -3301,6 +3310,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
                 <span>Total: <strong class="mono">${esc(formatMoney(fullPlayer, S.country, true))}</strong> · ${selPlan.years > 0 ? `Down: <strong>${esc(formatMoney(downPlayer, S.country, true))}</strong> + ${esc(formatMoney(monthlyPlayer, S.country, true))}/mo (${selPlan.years}y)` : 'Full Cash'} ${dev.program ? `· [${esc(dev.program.toUpperCase())}]` : ''}</span>
                 <span>${esc(outdoorAreaSummary(selUnit))} · Outdoor upkeep ${esc(formatMoney(Math.round(convertCurrency(outdoorAnnualBudget(selUnit,eraLocalCost(dev.ppm2026,propMarket,S.year)),propMarket,S.country,S.year)),S.country))}/yr game budget</span>
                 ${saving ? `<span class="text-good">Saving for this — see Life Goals on the Timeline tab.</span>` : ''}
+                ${propertyPaymentBudgetHtml(S,monthlyPlayer)}
               </div>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:5px">
@@ -3392,8 +3402,8 @@ function renderLandAndBuildSubtabHtml(S, uiState) {
         ` : ''}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px">
-        <button class="btn btn-sm ${affordableOnly ? 'btn-navy' : ''}" data-action="toggle-affordable-only">${affordableOnly ? '✓ Showing only what you can afford' : 'View cheaper — only what I can afford'}</button>
-        <span class="muted" style="font-size:0.82rem">You hold ${esc(formatMoney(liquidFundsLocal(S), S.country))}${loanCap > 0 ? ` + up to ${esc(formatMoney(loanCap, S.country))} in bank credit` : ''} — ${affordablePlots.length} of ${plots.length} within reach.</span>
+        <button class="btn btn-sm ${affordableOnly ? 'btn-navy' : ''}" data-action="toggle-affordable-only">${affordableOnly ? '✓ Deposit within funding range' : 'Filter by deposit funding'}</button>
+        <span class="muted" style="font-size:0.82rem">You hold ${esc(formatMoney(liquidFundsLocal(S), S.country))}${loanCap > 0 ? ` + up to ${esc(formatMoney(loanCap, S.country))} in bank credit` : ''} — ${affordablePlots.length} of ${plots.length} prices within funding range. Building costs extra.</span>
       </div>
       ${renderCompareTableHtml(S, uiState, compareKeys)}
       ${cheapestNote ? `<p class="muted" style="font-size:0.85rem">${esc(cheapestNote)}</p>` : ''}

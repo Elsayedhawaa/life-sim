@@ -222,3 +222,10 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W102 Unresolved short friend/spouse/child placeholders in money/health event titles, choices and relationship records.
 - [x] W103 Wallet theft charges stolen cash only on one response and claims borrowing without a loan. Charge actual available stolen cash on every response; make the help route explicitly non-monetary.
+
+## Life agency review requested November24,18:32
+
+- [ ] W104 Parent housing agency: no dedicated house purchase/gift/occupancy route found. Design a real title/occupancy/upkeep/estate transfer, not a relationship reward pretending to buy a home.
+- [ ] W105 Funded parent retirement: existing retirement story does not change employment or fund living costs. Add a supported retirement decision only with actual parent income/savings, player funding, recurring costs and shortfall consequences.
+- [ ] W106 Deliberate long-term progression/balance review: follow sensible work/saving/housing paths, compare divergent decisions through later life, inspect crisis/redundancy and social reminder repetition. Current natural UK birth-to26graduate case and rented-vs-family-home split show persistent assets/costs but do not validate every household or late-life path.
+- [x] W107 Home affordability wording treats deposit funding as overall affordability, even unemployed character with installments above any prior take-home pay. Distinguish deposit-ready from sustainable recurring payments; show household budget without forbidding intentional risky purchases.
