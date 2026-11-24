@@ -1,3 +1,5 @@
+import{STAFF_TIERS,SECTOR_STAFF}from './companyWorkforce.js';
+import{catalogFor}from './companyCatalogData.js';
 import{COMPANY_SECTORS}from './companyLifecycle.js';
 import{businessProfile}from './businessProfiles.js';
 import{benefitsCost}from './businessBenefits.js';
@@ -368,10 +370,10 @@ export function teamMoraleFactor(biz) {
 /* ------------------------------------------------------------------ */
 export const MAX_STAFF_PER_BUSINESS = 12;
 
-export function hireBusinessEmployee(S, biz, roleId) {
+export function hireBusinessEmployee(S, biz, roleId, tierId) {
   if (!biz) return { ok: false, msg: 'No business selected.' };
   const staff = ensureStaffArray(S, biz);
-  const roles = staffRolesForType(biz.typeId);
+  const roles = [...new Set([...staffRolesForType(biz.typeId),...(biz.catalog?[...catalogFor(biz).map(x=>x[5]),...Object.values(SECTOR_STAFF[biz.enterprise?.sector||'software']||{}).filter(x=>typeof x==='string')]:[])])];
   if (!roleId || !roles.includes(roleId)) {
     return { ok: false, msg: `This business hires: ${roles.join(', ')}.` };
   }
@@ -379,13 +381,14 @@ export function hireBusinessEmployee(S, biz, roleId) {
     return { ok: false, msg: `${biz.name} already has the maximum ${MAX_STAFF_PER_BUSINESS} employees.` };
   }
   const bookCountry=biz.figuresCurrency||biz.country||S.country;
-  const wage = Math.round(convertCurrency(roleWageLocal(S,roleId,biz.country||S.country),biz.country||S.country,bookCountry,S.year));
+  const tier=tierId&&biz.catalog?STAFF_TIERS[tierId]:null;if(tierId&&!tier)return{ok:false,msg:'Choose a listed experience tier for an item-catalog company.'};
+  const wage = Math.round(convertCurrency(roleWageLocal(S,roleId,biz.country||S.country),biz.country||S.country,bookCountry,S.year)*(tier?.wage||1));
   const charge=Math.round(convertCurrency(wage,bookCountry,S.country,S.year));
   if ((Number(S.money.cash) || 0) < charge) {
     return { ok: false, msg: `Onboarding costs one month's wage (${formatMoney(wage, bookCountry)}) — not enough cash.` };
   }
   const emp = makeEmployee(S, biz, roleId);
-  emp.wageLocal=wage;emp.hiredYear=S.year;emp.hiredMonth=S.month;
+  if(tier){emp.tier=tierId;emp.skill=tier.skill;}emp.wageLocal=wage;emp.hiredYear=S.year;emp.hiredMonth=S.month;
   staff.push(emp);
   biz.employees = staff.length;
   walletMove(S, -charge, `Onboarding — ${emp.name} (${roleId})`, 'business');
