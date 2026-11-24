@@ -1690,3 +1690,46 @@ export function buildPromiseConfrontationScene(S,q){
  return{key,category:'relationship',speakerId:p.id,promiseConfrontationSnapshot:q,title:p.firstName+' Notices Your '+q.itemName,text:p.firstName+' is waiting for your recorded promise: '+pr.description+'. Pay it, apologize without changing the due date, or break the promise.',choices:[{label:'Fulfill promise · '+formatMoney(need,S.country),available:()=>S.money.cash>=need&&!answered(S),effect:st=>{if(answered(st))return;const result=fulfillPromise(st,st.people[p.id],pr.id);if(result.ok)mark(st);}},{label:'Apologize · due date unchanged',effect:st=>{if(answered(st))return;mark(st);rememberDeed(st,st.people[p.id],'apology','Apologized without changing the promise.',{trust:-8,resentment:10});recordJournal(st,'Apologized to '+p.firstName+'. Promise due date is unchanged.','family');}},{label:'Break the promise',effect:st=>{if(answered(st))return;const person=st.people[p.id],promise=person?.rel.promises.find(r=>r.id===pr.id&&r.status==='open');if(!promise)return;mark(st);promise.status='broken';rememberDeed(st,person,'broke_promise','Broke a recorded support promise.',{affection:-22,trust:-25,respect:-15,resentment:35});}}]};
 }
 export function restorePromiseConfrontationScene(S,saved){return saved?.promiseConfrontationSnapshot?buildPromiseConfrontationScene(S,saved.promiseConfrontationSnapshot):null;}
+
+/* W110: a family transition reaches the parent's actual budget. Existing
+   saves use only surviving payment records, never invented sacrifice. */
+export function familyBufferSituation(S,p){
+ if(!p?.alive||p.age<22||!p.leftHome||!S.relations.childIds.includes(p.id)||S.player.age<45)return null;
+ const m=S.money.lastMonthSummary;if(!m)return null;
+ const costs=Math.max(0,(m.housing||0)+(m.living||0)+(m.debt||0)+(m.support||0));
+ const buffer=Math.max(0,(S.money.cash||0)+(S.money.savings||0));if(costs<=0||buffer>=costs*2)return null;
+ let tuition=0;
+ for(const row of p.schoolHistory||[])tuition+=convertCurrency(row.paidLocal||0,row.paymentCountry||S.country,S.country,S.year);
+ const c=p.parentFundedCourse;if(c)tuition+=convertCurrency(c.paid||0,c.country||S.country,S.country,S.year);
+ if(tuition<=0)return null;
+ return{buffer:Math.round(buffer),costs:Math.round(costs),tuition:Math.round(tuition),net:Math.round(m.net||0)};
+}
+export function buildFamilyBufferScene(S,id){
+ const p=S.people[id],s=familyBufferSituation(S,p);if(!s||p.familyBufferAnswered)return null;
+ const reply=(st,kind)=>{
+  const person=st.people[id];if(!person?.alive||person.familyBufferAnswered||!familyBufferSituation(st,person))return;
+  if(kind!=='keep'&&!canContactPerson(st,person))return;
+  const cost=kind==='ask'?energyCostFor('askHelp',st,person):kind==='call'?1:0;
+  if(!checkSocialEnergy(st,cost).ok)return;
+  if(kind==='ask'){
+   spendSocialEnergy(st,cost);noteSocialContact(st,person);
+   const result=interactWithPerson(st,id,'ask_for_help',{energyCharged:true});
+   if(!result.ok)recordJournal(st,`${person.firstName}: ${result.msg}`,'family');
+  }else if(kind==='call'){
+   spendSocialEnergy(st,1);noteSocialContact(st,person);person.rel.affection=clamp(person.rel.affection+3);
+   recordJournal(st,`You called ${person.firstName} after the move. You did not ask for money.`,'family');
+  }else recordJournal(st,`After ${person.firstName} moved out, you kept the remaining money aside. No gift or recurring payment was set up.`,'family');
+  person.familyBufferAnswered={year:st.year,month:st.month,choice:kind};person.familyBufferPending=false;
+ };
+ return{key:`family_buffer_${id}`,familyBufferId:id,category:'family',title:`After ${p.firstName} Moved Out`,text:`${p.firstName} has a separate household now. Recorded school and course payments: ${formatMoney(s.tuition,S.country)}. Your cash and savings: ${formatMoney(s.buffer,S.country)}; last month's housing, living costs, debt and support: ${formatMoney(s.costs,S.country)}.${s.net<0?` Last month's budget was short by ${formatMoney(-s.net,S.country)}.`:''} No further gift is due.`,choices:[
+  {label:`Ask ${p.firstName} for help · 4 energy`,available:()=>canContactPerson(S,p)&&checkSocialEnergy(S,4).ok,effect:st=>reply(st,'ask')},
+  {label:'Call, without asking for money · 1 energy',available:()=>canContactPerson(S,p)&&checkSocialEnergy(S,1).ok,effect:st=>reply(st,'call')},
+  {label:'Keep the remaining money aside',effect:st=>reply(st,'keep')}
+ ]};
+}
+export function restoreFamilyBufferScene(S,saved){return saved?.familyBufferId?buildFamilyBufferScene(S,saved.familyBufferId):null;}
+export function checkFamilyBuffer(S){
+ for(const id of S.relations.childIds||[]){const p=S.people[id];if(p?.familyBufferPending&&!S.activeScene?.familyBufferId&&!S.sceneQueue.some(sc=>sc.familyBufferId===id))p.familyBufferPending=false;}
+ if(S.player.age<45||S.gameOver)return;
+ for(const id of S.relations.childIds||[]){const p=S.people[id];if(p?.familyBufferAnswered||p?.familyBufferPending)continue;const scene=buildFamilyBufferScene(S,id);if(scene&&queueScene(S,scene)){p.familyBufferPending=true;break;}}
+}

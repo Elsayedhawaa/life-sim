@@ -1,3 +1,4 @@
+import {checkSocialEnergy,spendSocialEnergy,noteSocialContact} from '../systems/socialEnergy.js';
 /* ============================================================================
    World Life 2.0 — v2.5 Events (Part 1): Everyday life & family
    ~250 NEW random events: everyday small-life, family, married life,
@@ -7992,21 +7993,22 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_child_adult_moves_out_l1', category: 'children',
         title: 'The Empty Room',
-        text: `It has been months since ${chName} moved out, and their room is still exactly as they left it. They call — sometimes. The house is quieter, and you are not sure whether to be proud or lonely.`,
+        text: `${chName} has moved out. Their old room is available. You could invite them over, call, or use the space differently.`,
         choices: [
-          { label: `Invite them back for dinner every week (${formatMoney(dinner, S.country)})`, effect: (st) => {
-              walletMove(st, -dinner, `Weekly dinner with ${chName}`, 'money');
+          { label: `Invite them for dinner (${formatMoney(dinner, S.country)}) · 2 energy`, available:()=>S.money.cash>=dinner&&checkSocialEnergy(S,2).ok, effect: (st) => {
+              if(st.money.cash<dinner||!checkSocialEnergy(st,2).ok)return;spendSocialEnergy(st,2);if(p.child)noteSocialContact(st,p.child);
+              walletMove(st, -dinner, `Dinner with ${chName}`, 'money');
               if (p.child) { p.child.rel.affection = clamp(p.child.rel.affection + 10); p.child.rel.trust = clamp(p.child.rel.trust + 6); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 4);
-              recordJournal(st, `You started inviting ${chName} back for dinner every week after they moved out.`, 'children');
+              recordJournal(st, `You invited ${chName} for dinner after the move. No recurring dinner or cost was scheduled.`, 'children');
           } },
-          { label: 'Call them every week and mean it', effect: (st) => {
+          { label: 'Call to catch up · 1 energy', available:()=>checkSocialEnergy(S,1).ok, effect: (st) => {
+              if(!checkSocialEnergy(st,1).ok)return;spendSocialEnergy(st,1);if(p.child)noteSocialContact(st,p.child);
               if (p.child) { p.child.rel.affection = clamp(p.child.rel.affection + 8); p.child.rel.trust = clamp(p.child.rel.trust + 6); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
-              recordJournal(st, `You started calling ${chName} every week after they moved out — and you meant it.`, 'children');
+              recordJournal(st, `You called ${chName} to catch up after the move.`, 'children');
           } },
           { label: 'Turn the room into something useful', effect: (st) => {
-              if (p.child) { p.child.rel.affection = clamp(p.child.rel.affection - 4); p.child.rel.trust = clamp(p.child.rel.trust - 3); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 1);
               st.player.vitals.stress = clamp(st.player.vitals.stress - 2);
               recordJournal(st, `You turned ${chName}'s old room into something useful, months after they moved out.`, 'children');
