@@ -53,6 +53,24 @@ import { renderPortraitSvg } from '../src/ui/portraits.js';
 
 /* The player can only press an available choice, so the harness does the same.
    (Index 0 can be unavailable, for example when cash is short.) */
+const isNavigationScene = (sig) => /^(post_highschool_choice|pick_major_)/.test(sig);
+/* The repeat rules in one place so the self-test below exercises the same code
+   the lives use. Returns what a shown scene adds to D3 (4+ in a life) and D4
+   (twice in one year). Explicit back-navigation is exempt. */
+function makeRepeatTracker() {
+  const life = {}, year = {};
+  return (sig, yr) => {
+    life[sig] = (life[sig] || 0) + 1; const yk = `${yr}::${sig}`; year[yk] = (year[yk] || 0) + 1;
+    if (isNavigationScene(sig)) return { d3: 0, d4: 0 };
+    return { d3: life[sig] >= 4 ? 1 : 0, d4: year[yk] >= 2 ? 1 : 0 };
+  };
+}
+{ /* Self-test: the exemption must not swallow real duplicates. */
+  const t = makeRepeatTracker(); const out = [1, 2, 3, 4].map(() => t('job_offer_xyz', 2030));
+  if (out[0].d4 !== 0 || out[1].d4 !== 1 || out[3].d3 !== 1) throw new Error('Repeat rule must flag a repeated non-navigation key');
+  const n = makeRepeatTracker(); for (let i = 0; i < 6; i++) { const r = n('pick_major_x_2030', 2030); if (r.d3 || r.d4) throw new Error('Navigation scenes are exempt'); }
+  const m = makeRepeatTracker(); const first = m('courtship_p_1_1', 2030), second = m('courtship_p_1_2', 2030); if (first.d4 || second.d4) throw new Error('Distinct keys are not duplicates');
+}
 function firstAvailableChoice(S) {
   const ch = S.activeScene?.choices || [];
   const i = ch.findIndex((c) => typeof c.available !== 'function' || c.available(S));
@@ -301,6 +319,7 @@ for (let i = 0; i < 30; i++) {
     ambition: style === 1 || style === 2 ? 'global_passport' : 'balanced'
   });
 
+  const repeatTracker = makeRepeatTracker();
   const seenTitleCount = {};
   const seenTitleInYear = {};
   let zeroHappyYears = 0;
@@ -325,13 +344,12 @@ for (let i = 0; i < 30; i++) {
          Choosing a university and then going back to pick another is explicit
          navigation, not a repeat. */
       const sig = S.activeScene.key || S.activeScene.eventId || S.activeScene.title;
-      const navigation = /^(post_highschool_choice|pick_major_)/.test(sig);
       seenTitleCount[sig] = (seenTitleCount[sig] || 0) + 1;
-      if (!navigation && seenTitleCount[sig] >= 4) defects.D3_eventSpam3Plus++;
+      
 
       const yrSig = `${S.year}::${sig}`;
       seenTitleInYear[yrSig] = (seenTitleInYear[yrSig] || 0) + 1;
-      if (!navigation && seenTitleInYear[yrSig] >= 2) defects.D4_duplicateSceneSameYear++;
+      const rep = repeatTracker(sig, S.year); defects.D3_eventSpam3Plus += rep.d3; defects.D4_duplicateSceneSameYear += rep.d4;
 
       if (S.activeScene.key === 'formal_bankruptcy_filing' && S.year <= S.money.bankruptUntilYear) {
         defects.D5_repeatBankruptcyDuringWindow++;

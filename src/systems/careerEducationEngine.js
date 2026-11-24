@@ -343,6 +343,7 @@ export function presentPostHighSchoolCrossroads(S) {
 
   queueScene(S, {
     key: 'post_highschool_choice',
+    maxPerLife: 99, /* the player may browse universities and come back as often as they like; a count cap would silently remove the way forward */
     category: 'career',
     title: 'After school: university or work?',
     text: `Your admission score is ${score}/100. Browse a university to see eligible majors and funding, or start working. Scores, tuition and courses use simplified game rules, not official admission requirements.${unis.length ? '' : ' No universities are listed for this country and year.'}`,
@@ -383,6 +384,7 @@ export function presentUniversityMajorPicker(S, uni) {
 
   queueScene(S, {
     key: `pick_major_${uni.id}_${S.year}`,
+    maxPerLife: 99,
     category: 'career',
     title: `${uni.name} — Pick Your Major`,
     text: `Select a programme to see its annual budget. Each option shows the cost charged by the game. Programme-cost differences are modelled, not institutional quotes. Your admission score is ${score}/100. ${uni.feeBasis || 'Fees are game budgets, not official quotes.'} Course availability and entry scores are simplified. Durations are modelled study pathways, not verified named courses. Clinical programmes require additional supervised training/licensing; a degree alone is not a licence.`,
