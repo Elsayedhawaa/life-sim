@@ -334,8 +334,8 @@ export function ipoBusiness(S, bizRef, opts = {}) {
   const totalCost = Math.max(1000, Math.round(valuation * IPO_COST_RATE));
   const stage1 = Math.round(totalCost / 2);
   const stage2 = totalCost - stage1;
-  if ((Number(S.money.cash) || 0) < stage1) {
-    return { ok: false, threshold: th, msg: `An IPO costs ${money(S, totalCost)} in underwriting and legal fees (5% of the ${money(S, valuation)} valuation), starting with ${money(S, stage1)} at filing — you do not have that in cash.` };
+  if ((Number(S.money.cash) || 0) < totalCost) {
+    return { ok: false, threshold: th, msg: `An IPO costs ${money(S, totalCost)} in underwriting and legal fees (5% of the ${money(S, valuation)} valuation), starting with ${money(S, stage1)} at filing. Keep the full fee available before starting; you do not have the total in cash.` };
   }
   const chance = ipoSuccessChance(S, biz);
   walletMove(S, -stage1, `IPO filing — ${biz.name} (legal fees, stage 1 of 2)`, 'business');
@@ -555,13 +555,14 @@ export function consumeReinvestBoost(S, bizRef) {
 export function renderExitsHtml(S, biz) {
   if (!biz) return '';
   const b = ensureExitState(S, biz);
+  if (!b) return '';
   const valuation = businessValuation(b);
   const th = ipoThreshold(S, b);
   const fth = franchiseThreshold(S, b);
   const mgr = b.manager;
   const offer = b.exitOffer && b.exitOffer.kind === 'trade' ? b.exitOffer : null;
   const ipoLine = th.ok
-    ? `Big enough to list — an IPO ${th.text}. Yours: annual revenue ${money(S, th.annualRevenue)}, ${th.years.toFixed(1)} years in business. Listing costs 5% of valuation (${money(S, Math.round(valuation * IPO_COST_RATE))}), sells ${IPO_FLOAT_PCT}% of the business, and can fail.`
+    ? `Big enough to list — an IPO ${th.text}. Yours: annual revenue ${money(S, th.annualRevenue)}, ${th.years.toFixed(1)} years in business. Listing costs 5% of valuation, with a 1,000 local-currency minimum (${money(S, Math.max(1000, Math.round(valuation * IPO_COST_RATE)))}), sells ${IPO_FLOAT_PCT}% of the business, and can fail.`
     : `Too small to list — an IPO ${th.text}. Yours: ${money(S, th.annualRevenue)} a year, ${th.years.toFixed(1)} years.`;
   const franLine = fth.ok
     ? `Proven enough to franchise — franchising ${fth.text}. Yours: level ${fth.level}, ${fth.monthsInBusiness} months trading, ${fth.profitableMonths} profitable months in a row, ${Math.round(fth.repeatRate * 100)}% repeat customers. Each franchisee pays ${money(S, Math.max(10000, Math.round(b.monthlyRev * 3)))} up front plus 5% of monthly revenue (${money(S, Math.round(b.monthlyRev * FRANCHISE_ROYALTY_RATE))}/month).`
@@ -589,7 +590,7 @@ export function renderExitsHtml(S, biz) {
     </div>
     <div style="margin-bottom:8px;">
       <strong>IPO.</strong> ${esc(ipoLine)}
-      ${th.ok ? `<div style="margin-top:4px;"><button class="btn btn-sm" data-action="biz-ipo" data-biz="${esc(b.id)}">List ${esc(b.name)} (costs ${money(S, Math.round(valuation * IPO_COST_RATE))})</button></div>` : ''}
+      ${th.ok && !b.publicFloat ? `<div style="margin-top:4px;"><button class="btn btn-sm" data-action="biz-ipo" data-biz="${esc(b.id)}">List ${esc(b.name)} (fees ${money(S, Math.max(1000, Math.round(valuation * IPO_COST_RATE)))}; keep full fee available)</button></div>` : ''}
       ${b.publicFloat ? `<div class="muted">Already listed — ${b.publicFloat}% owned by public shareholders.</div>` : ''}
     </div>
     <div>

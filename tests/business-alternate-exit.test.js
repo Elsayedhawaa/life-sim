@@ -8,3 +8,7 @@ let{s,b}=setup();let r=acceptTradeSale(s,b,7000);assert.ok(r.ok);assert.equal(r.
 console.log('Alternate exits retain debt; IPO reduces ownership and cannot repeat its payout.');
 
 ({s,b}=setup());b.equityOwned=80;r=ipoBusiness(s,b,{force:"success"});assert.equal(b.equityOwned,55);assert.ok(r.payout>0);
+
+({s,b}=setup());s.money.cash=200;const before=s.money.cash;r=ipoBusiness(s,b,{force:"success"});assert.equal(r.ok,false);assert.equal(s.money.cash,before);
+
+({s,b}=setup());s.money.cash=700;r=ipoBusiness(s,b,{force:"success"});assert.equal(r.ok,false);assert.equal(s.money.cash,700);
