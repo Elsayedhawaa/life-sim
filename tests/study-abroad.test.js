@@ -21,7 +21,7 @@ for(const dest of COUNTRY_IDS.filter(c=>c!=='egy'))for(const level of ['bachelor
  assert.equal(s.education.university.annualTuition,q.annualDest);assert.equal(monthlyUniversityTuition(s),0);
  for(let i=0;i<12;i++){settleFamilyUniversityMonth(s);assert.equal(monthlyUniversityTuition(s),0);}
  settleFamilyUniversityMonth(s);assert.equal(monthlyUniversityTuition(s),funding==='self'?Math.round(q.annualDest/12):0);
- s.education.university.elapsedMonths=q.years*12-1;tickUniversityAndConscriptionMonthly(s);assert.equal(s.education.university,null);assert.ok(s.education.degrees.includes('cs'));assert.equal(s.legal.residency.kind,'post_study_work');
+ s.education.university.elapsedMonths=q.years*12-1;s.month++;tickUniversityAndConscriptionMonthly(s);assert.equal(s.education.university,null);assert.ok(s.education.degrees.includes('cs'));assert.equal(s.legal.residency.kind,'post_study_work');
  }else{assert.ok(s.postgrad.active);assert.equal(s.postgrad.active.feePaid,q.tuitionDest);s.postgrad.active.monthsLeft=1;tickMegaSystemsMonthly(s);assert.equal(s.postgrad.active,null);assert.equal(s.legal.residency.kind,'post_study_work');}
  checks++;
 }

@@ -399,3 +399,6 @@ Formal student gigs now add the actual existing job schedule before checking the
 
 ### W3 timed internship placement
 Application no longer pays several months instantly or grants instant completion. One active20hplacement; local country, major and work-hour authorization gates are shared by UI/action. Each subsequent worked month pays once, progress completes after listed months; changed country withdraws, lost authorization/overloaded work pauses. Existing completed records stay completed.135focused files pass,390px seeded university application recordedWorking0/3 with unchanged cash and persisted on reload, pixels inspected. Three-month pay/progress is system-tested, not a full phone playthrough. Named placements/pay remain game estimates, not live openings.
+
+### W4 degree duration
+Local and overseas degrees now advance by distinct elapsed monthly settlements, not any June immediately after enrollment. New enrollments start0months; legacy saves retain completed year progress. UI shows actual month count.136focused files pass,390px seeded May enrollment advanced through actual June settlement and stayedYear1with1month, reload/pixels checked. Full duration graduation is system-tested; study-abroad fixture now advances a real month before its graduation check rather than replaying enrollment month.

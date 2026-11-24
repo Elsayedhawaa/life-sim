@@ -424,6 +424,7 @@ export function enrollInUniversity(S, uniObj, majorId, scholarshipPct = 0) {
     majorId: major.id,
     majorLabel: major.label,
     yearInProgram: 1,
+    enrolledMonth:S.year*12+S.month,elapsedMonths:0,progressMonth:S.year*12+S.month,
     totalYears: major.years,
     qualificationLevel:major.level,
     pathwayNote:major.note,
@@ -928,10 +929,10 @@ export function tickInternshipsMonthly(S){const edu=ensureEduExtras(S),now=S.yea
 export function tickUniversityAndConscriptionMonthly(S) {
   tickInternshipsMonthly(S);
   /* 1. University Progression on September / academic year rollover */
-  const overseas=S.education.university?.international;
-  if(overseas){const u=S.education.university;u.elapsedMonths=(u.elapsedMonths||0)+1;u.yearInProgram=Math.min(u.totalYears,Math.floor(u.elapsedMonths/12)+1);}
-  if (S.education.university && (overseas?S.education.university.elapsedMonths>=S.education.university.totalYears*12:S.month === 6)) {
-    const u = S.education.university;
+  const activeUni=S.education.university,now=S.year*12+S.month;
+  if(activeUni){if(activeUni.elapsedMonths==null)activeUni.elapsedMonths=Math.max(0,((activeUni.yearInProgram||1)-1)*12);if(activeUni.progressMonth!==now){activeUni.elapsedMonths++;activeUni.progressMonth=now;}activeUni.yearInProgram=Math.min(activeUni.totalYears,Math.floor(activeUni.elapsedMonths/12)+1);}
+  if (activeUni&&activeUni.elapsedMonths>=activeUni.totalYears*12) {
+    const u=activeUni;
     if (u.yearInProgram >= u.totalYears) {
       /* GRADUATION! */
       if (!S.education.degrees.includes(u.majorId)) {
@@ -1008,8 +1009,6 @@ export function tickUniversityAndConscriptionMonthly(S) {
       if (S.legal.military.status !== 'active_duty' && !S.activeScene && S.sceneQueue.length === 0) {
         presentGraduateOrJobSearchOffers(S, `Graduate Recruitment — ${gradUniName}`);
       }
-    } else {
-      u.yearInProgram += 1;
     }
   }
 
