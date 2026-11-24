@@ -303,14 +303,14 @@ function debtCanPay(S, netDelta, amount) {
   return (Number(S.money.cash) || 0) + (Number(S.money.savings) || 0) + netDelta >= amount;
 }
 
-function debtMissedWarning(S, key, title, text) {
-  queueScene(S, {
-    key: `${key}_${S.year}_${S.month}`,
-    category: 'money',
-    title,
-    text,
-    choices: [{ label: 'Understood — I will catch up on payments', effect: () => {} }]
-  });
+function debtMissedWarning(S,key,title,text){queueScene(S,buildDebtWarningScene(S,{key:key+'_'+S.year+'_'+S.month,title,text}));}
+export function buildDebtWarningScene(S,q){
+ if(!q?.key||!q?.title||!q?.text)return null;
+ return{key:q.key,category:'money',title:q.title,text:q.text,debtWarningSnapshot:q,choices:[{label:'Acknowledge warning · no payment',effect:st=>{st.money.debtWarningAcknowledgments??=[];if(!st.money.debtWarningAcknowledgments.includes(q.key))st.money.debtWarningAcknowledgments.push(q.key);}}]};
+}
+export function restoreDebtWarningScene(S,saved){
+ const q=saved?.debtWarningSnapshot||(saved?.key?.startsWith('missed_')?{key:saved.key,title:saved.title,text:saved.text}:null);
+ return q?buildDebtWarningScene(S,q):null;
 }
 
 /* v2.20 I3 — business-debt repayment. The settlement never had one:

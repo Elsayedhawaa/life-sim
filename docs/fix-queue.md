@@ -179,3 +179,5 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W78 USA software training screenshot offers Saudi SCE credential because course chooses first matching degree without country/track relevance; constrain local board selection.
 - [x] W79 Investigated repeat-step-up hypothesis: disproved. Existing per-kind three-turn cooldown rejects repeats. No extra mechanic added; visible cooldown feedback remains a low-impact UI follow-up.
+
+- [x] W80 Debt warning scenes (loan/card/BNPL/property/business second miss) lose acknowledgment on reload. Durable warning snapshot/legacy key recovery, acknowledgment explicitly no payment or promise.
