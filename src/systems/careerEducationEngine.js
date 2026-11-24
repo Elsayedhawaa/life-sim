@@ -1468,6 +1468,8 @@ export function syncEmployerBenefits(S) {
    current job. Backfills old saves (jobs hired before v2.8 have none of
    this) and resets the leave year when the year turns. Called by the
    monthly tick and by the Career tab render — both read the same object. */
+export const SENIOR_RUNG_LEVEL = 3; // game design: rungs at or above this level need an application
+
 export function jobEmploymentFraction(job) {
   return job?.employmentFraction === 0.45 || /^part-time/i.test(job?.title || '') ? 0.45 : 1;
 }
@@ -2142,7 +2144,16 @@ export function tickCareerMonthly(S) {
     const overdue=(check.medicalDueYear!=null&&check.medicalDueYear<S.year)||(check.simDueYear!=null&&check.simDueYear<S.year)||PROFESSIONAL_LICENSES.some(l=>(track?.reqDegrees||[]).includes(l.reqDegree)&&(S.credentials.licenses||[]).includes(l.id)&&(S.credentials.licenceRenewals?.[l.id]?.validUntilYear??Infinity)<S.year);
     const wouldPromote = nextRung && trackExp >= nextRung.minExp && job.performance + mentorBoost >= 72 && !payFrozen && !overdue;
     if(overdue&&nextRung&&trackExp>=nextRung.minExp)recordJournal(S,'Automatic promotion paused: renew the overdue career medical, simulator or board check under Train & Licences.','career');
-    if (wouldPromote && !rivalBlocks) {
+    /* GAME DESIGN (not a real-world figure): the two senior rungs (level 3 and
+       above) are not handed out by a tenure clock. Meeting the bar makes you
+       eligible; the player applies under Career (the existing promotion
+       interview: performance, boss respect, references, mentor, rival, and a
+       chance the company has frozen that grade). Lower rungs stay automatic. */
+    const needsApplication = !!nextRung && nextRung.level >= SENIOR_RUNG_LEVEL;
+    if (wouldPromote && !rivalBlocks && needsApplication) {
+      recordJournal(S, `You now meet the bar for ${nextRung.title} at ${job.employer}. This rung is not automatic: apply for it under Career, or look for the title at another employer.`, 'career');
+    }
+    if (wouldPromote && !rivalBlocks && !needsApplication) {
       const ratio = nextRung.mult / (track.rungs[job.level]?.mult || 1);
       const promotionFrom={title:job.title,monthlyGross:job.monthlyGross};
       job.level = nextRung.level;
