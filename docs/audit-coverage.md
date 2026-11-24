@@ -405,3 +405,6 @@ Local and overseas degrees now advance by distinct elapsed monthly settlements, 
 
 ### W5 personal credit integrity
 Shared eligibility disables a third personal loan before click and exposes the actual reason. Non-finite principals and invalid/fractional terms rejected without mutation. New amortized loans use rounded-up installments and actual interest-inclusive final settlement; legacy residuals still remain payable. Personal loan sizes no longer borrow mortgage product names from a mixed catalog.137focused files pass;390px actual loan/disbursement, two-loan cap and reload inspected.12-month payoff is system-tested, not a phone-year playthrough.
+
+### W6 payment terms
+Reject non-finite/unsafe purchase totals, a card object not actually in the wallet, invalid BNPL splits/markup and invalid certificate duration without cash/debt mutation.138focused files pass.390px real card shopping799charge/8cashback/701remaining limit, disabled second purchase, bank route no loan/reload pass; inspected pixels. Invalid-input guards are system-tested. Legacy v212-w4 broad text-check script has39passes/1failure because it bans all not-wired text, including an honest unrelated disclosure, not because staff-loan mechanics failed.

@@ -89,7 +89,7 @@ export function hasValidResidenceForBanking(S) {
    gates, messages) stays in the caller; the money movement is here, once. */
 export function purchase(S, amountLocal, label, method = 'cash', opts = {}) {
   const amt = Math.round(Number(amountLocal) || 0);
-  if (amt <= 0) return { ok: false, msg: 'Invalid amount.' };
+  if (!Number.isSafeInteger(amt)||amt<=0) return { ok: false, msg: 'Invalid finite amount.' };
   if (method === 'cash') {
     if (S.money.cash < amt) return { ok: false, msg: `Need ${formatMoney(amt, S.country)} in cash.` };
     walletMove(S, -amt, label, opts.category || 'general');
@@ -97,7 +97,7 @@ export function purchase(S, amountLocal, label, method = 'cash', opts = {}) {
   }
   if (method === 'card') {
     const card = opts.card;
-    if (!card) return { ok: false, msg: 'No credit card selected.' };
+    if (!card||(S.creditCards||[]).every(c=>c!==card)) return { ok: false, msg: 'Choose a card from your actual wallet.' };
     if ((card.limit - card.balance) < amt) return { ok: false, msg: 'Credit card limit insufficient.' };
     card.balance = Math.round(card.balance + amt);
     recordLedgerEntry(S, amt, `${label} (card: ${card.name})`, opts.category || 'lifestyle', 'card', card.balance);
@@ -108,6 +108,7 @@ export function purchase(S, amountLocal, label, method = 'cash', opts = {}) {
   if (method === 'bnpl') {
     const bnpl = opts.bnpl; // { providerName, markup, months }
     if (!bnpl) return { ok: false, msg: 'No BNPL provider.' };
+    if(!Number.isFinite(bnpl.markup??1)||(bnpl.markup??1)<1||!Number.isInteger(bnpl.months??4)||(bnpl.months??4)<2||(bnpl.months??4)>60)return{ok:false,msg:'Invalid installment terms.'};
     const totalFinanced = Math.round(amt * (bnpl.markup || 1.0));
     const firstSplit = Math.round(totalFinanced / (bnpl.months || 4));
     if (S.money.cash < firstSplit) return { ok: false, msg: `Need first split (${formatMoney(firstSplit, S.country)}).` };
@@ -1449,6 +1450,7 @@ export function withdrawFromSavings(S, amount) {
 
 export function buyBankCertificate(S, amount, termYears = 1) {
   const amt = Math.floor(Number(amount) || 0);
+  if(!Number.isInteger(termYears)||termYears<1||termYears>10)return{ok:false,msg:'Certificate term must be1to10whole years.'};
   if (!hasValidResidenceForBanking(S)) return { ok: false, msg: 'Opening a new bank product requires a valid residence status — regularise your visa first.' };
   if (amt <= 0 || S.money.cash < amt) return { ok: false, msg: 'Insufficient cash for certificate.' };
   const rates = eraDepositRates(S.country, S.year);

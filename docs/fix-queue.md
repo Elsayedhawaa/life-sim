@@ -61,4 +61,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W4 University duration uses actual elapsed months, not immediate June rollover after a late enrollment; preserve legacy year progress and monthly replay safety.
 
-- [ ] W5 Personal loan finite amount/term guards, shared two-loan eligibility with UI, and final interest-inclusive payoff without endless rounded residual.
+- [x] W5 Personal loan finite amount/term guards, shared two-loan eligibility with UI, and final interest-inclusive payoff without endless rounded residual.
+
+- [ ] W6 Payment/term integrity: reject non-finite purchases, outside-wallet cards, invalid installment and certificate terms without changing balances.
