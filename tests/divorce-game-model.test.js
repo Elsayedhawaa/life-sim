@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {createNewLifeState,ensureExtendedState,createPerson,newCoupleRecord,syncCoupleToLegacy} from '../src/core/schema.js';
+import {initiateDivorce} from '../src/systems/marriageFamilyEngine.js';
+import {recordMarriageAssets,settleChildSupportMonth} from '../src/systems/divorceModel.js';
+const s=createNewLifeState({country:'usa',seed:77});ensureExtendedState(s);s.year=2040;s.player.age=42;s.money.cash=100000;s.money.savings=0;
+const wife=createPerson(s,{gender:'f',age:40,role:'spouse',nationality:'usa',residenceCountry:'usa'});s.people[wife.id]=wife;const c=newCoupleRecord(s,'player',wife.id,{stage:'married'});s.marriage.couples.push(c);syncCoupleToLegacy(s,c);
+s.housing.properties=[{id:'before',name:'Before marriage',country:'egy',valueLocal:50000,nativeValue:50000}];recordMarriageAssets(s,c);
+s.housing.properties.push({id:'house',name:'US house',country:'usa',valueLocal:200000,installmentRemaining:50000},{id:'cabin',name:'Cabin',country:'usa',valueLocal:100000},{id:'egy',name:'Egypt rental',country:'egy',valueLocal:50000});s.housing.currentHomeId='house';s.housing.mode='owned';s.cars=[{id:'car',name:'Car',valueLocal:20000}];s.career.job={monthlyGross:10000};
+const child=createPerson(s,{gender:'m',age:8,role:'child',nationality:'usa',residenceCountry:'usa'});child.parentIds=['player',wife.id];s.people[child.id]=child;s.relations.childIds.push(child.id);
+assert.ok(initiateDivorce(s,wife.id,'standard',{confirmed:true,custody:'spouse'}).ok);assert.equal(s.housing.properties.length,1);assert.equal(s.housing.properties[0].id,'before');assert.equal(s.cars.length,0);assert.equal(s.housing.mode,'rent');const o=s.marriage.divorceOrders[0];assert.equal(o.soldAssets.length,4);assert.equal(o.monthlySupport,2000);assert.equal(child.householdWith,wife.id);assert.equal(s.relations.spouseIds.length,0);assert.equal(initiateDivorce(s,wife.id,'standard',{confirmed:true}).ok,false);
+let payment=settleChildSupportMonth(s,500);assert.equal(payment.outgoing,500);assert.equal(o.arrears,1500);child.age=18;payment=settleChildSupportMonth(s,10000);assert.equal(payment.outgoing,1500);assert.equal(o.arrears,0);payment=settleChildSupportMonth(s,10000);assert.equal(payment.outgoing,0);
+console.log('Game divorce sells marital domestic/foreign homes/car, protects baseline, sets custody and real support arrears, repeat refuses.');

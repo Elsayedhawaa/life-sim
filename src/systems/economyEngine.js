@@ -1,3 +1,4 @@
+import {settleChildSupportMonth} from './divorceModel.js';
 import { monthlyUniversityTuition,settleFamilyUniversityMonth } from './educationFunding.js';
 /* ============================================================================
    World Life 2.0 — Household Economy, Banking, Gold, Real Estate & Cars Engine
@@ -1017,7 +1018,7 @@ export function settleHouseholdMonth(S) {
   /* 11. HOUSEHOLD LIVING BASKET (Food, Utilities, Transport/Car, Kids, Lifestyle) */
   const coResidentKids = S.relations.childIds
     .map(id => S.people[id])
-    .filter(ch => ch && ch.alive && ch.age < 19 && ch.residenceCountry === S.country);
+    .filter(ch => ch && ch.alive && ch.age < 19 && ch.residenceCountry === S.country && ch.householdWith!=='ex_spouse' && (!ch.householdWith||ch.householdWith==='player'));
 
   const livingWithParentsFree = S.housing.mode === 'parents' && S.player.age < 24 && coResidentSpouses.length === 0;
   const lifeMult = LIFESTYLE_MULTS[S.money.lifestyleMode] || 1.0;
@@ -1059,6 +1060,11 @@ export function settleHouseholdMonth(S) {
       summary.support += levy;
     }
   }
+
+  const childSupport=settleChildSupportMonth(S,Math.max(0,S.money.cash+netDelta));
+  netDelta+=childSupport.incoming-childSupport.outgoing;
+  summary.support+=childSupport.outgoing;
+  if(childSupport.incoming)addIncome(childSupport.incoming,'Child support received (game order)');
 
   /* 13. REMITTANCES TO PARENTS BACK HOME */
   if (S.money.remittanceMonthlyLocal > 0) {

@@ -802,6 +802,7 @@ export function computeNetWorthLocal(S) {
     seenBusinesses.add(biz.id);
     total += businessValuation(biz) - Math.max(0, Number(biz.debtLocal) || 0);
   }
+  for(const order of S.marriage?.divorceOrders||[])if(order.payer==='player')total-=convertCurrency(Math.max(0,order.arrears||0),order.country,S.country,S.year);
   for (const cc of (S.creditCards || [])) {
     total -= Math.max(0, Number(cc.balance) || 0);
   }

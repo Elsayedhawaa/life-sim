@@ -22,7 +22,7 @@ import {
 } from '../systems/careerEducationEngine.js';
 import { tickVisaAndLegalMonthly } from '../systems/visaMigrationEngine.js';
 import { tickCareerActionsMonthly } from '../systems/careerActions.js';
-import { tickMarriageAndFamilyMonthly } from '../systems/marriageFamilyEngine.js';
+import { tickMarriageAndFamilyMonthly,restoreDivorceDecision } from '../systems/marriageFamilyEngine.js';
 import { tickHealthAndMortalityYearly, pickCuratedLifeScene } from '../systems/healthDirectorEngine.js';
 import { getCurrentChapter, noteChapterChange, ambitionStatus, noteAmbitionOutcome } from '../systems/storyLibrary.js';
 import { tickMegaSystemsMonthly } from '../systems/completeLifeSystems.js';
@@ -70,7 +70,7 @@ export function loadGameFromStorage() {
       ensureExtendedState(parsed);
       const restore = scene => {
         if (!scene) return null;
-        if (!scene.eventId) return restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
+        if (!scene.eventId) return restoreDivorceDecision(parsed,scene) || restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
         return restoreRandomLifeScene(parsed, scene);
       };
       const pending = parsed.activeScene;

@@ -1320,12 +1320,17 @@ function renderMarriageSubtabHtml(S) {
   `;
 }
 
+function divorceSummaryHtml(S){
+  return (S.marriage.divorceOrders||[]).map(o=>`<div class="card"><strong>Divorce and child-support order (simplified game model)</strong><p>${esc(S.people[o.spouseId]?.fullName||'Former spouse')} · ${o.year} · Custody: ${esc(o.custody)}. Minor children: ${o.childIds.filter(id=>S.people[id]?.alive&&S.people[id].age<18).length}. Support: ${esc(formatMoney(convertCurrency(o.monthlySupport,o.country,S.country,S.year),S.country))}/month from ${esc(o.payer)}, reduces as children reach 18; unpaid arrears remain owed. Arrears: ${esc(formatMoney(convertCurrency(o.arrears||0,o.country,S.country,S.year),S.country))}.</p><p>Legal fees: ${esc(formatMoney(convertCurrency(o.legalFees,o.country,S.country,S.year),S.country))}. Former spouse's asset award: ${esc(formatMoney(convertCurrency(o.spouseAward,o.country,S.country,S.year),S.country))}. Sold: ${o.soldAssets.map(p=>esc(p.name)+' ('+esc(getCountry(p.country||o.country).name)+')').join(', ')||'none'}. Remaining titles are yours. Stocks, business ownership, pensions and detailed tax rules are not divided by this first game model. Not a local court ruling.</p></div>`).join('');
+}
+
 function renderChildrenSubtabHtml(S) {
   const kids = S.relations.childIds.map(id => S.people[id]).filter(c => c && c.alive);
   const nurseries = (V1_CHILD_NURSERIES || []).slice(0, 4);
   const clubs = (V1_CHILD_ACTIVITIES || []).slice(0, 6);
 
   return `
+    ${divorceSummaryHtml(S)}
     <div class="card card-elevated">
       <div class="section-head">
         <h2>${icon('people', 18)} Children, Nurseries & Enrichment Clubs</h2>
@@ -3746,6 +3751,7 @@ export function renderFinanceTabHtml(S, uiState = {}) {
   return `
     ${finBanner}
     ${nav}
+    ${divorceSummaryHtml(S)}
     ${S.housing.mode==='parents'&&S.player.age>=24?`<div class="card"><strong>Adult family-home board</strong><p>${esc(formatMoney(eraLocalCost(cObj.monthlyBasket2026.rentModest*.35,S.country,S.year),S.country))}/month, 35% of the game modest-rent basket, contributes toward the household. Food/utilities are separate in living costs.</p></div>`:''}
     <div class="card card-elevated">
       <div class="section-head">
