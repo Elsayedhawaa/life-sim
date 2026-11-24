@@ -1,3 +1,4 @@
+import{ownedCompanyNetValue}from'../systems/companyLiability.js';
 import { businessValuation } from '../data/businessValuation.js';
 /* ============================================================================
    World Life 2.0 — Canonical State & Unified Person Schema
@@ -800,7 +801,7 @@ export function computeNetWorthLocal(S) {
   for (const biz of businesses) {
     if (!biz || seenBusinesses.has(biz.id)) continue;
     seenBusinesses.add(biz.id);
-    total += businessValuation(biz) - Math.max(0, Number(biz.debtLocal) || 0);
+    total += convertCurrency(ownedCompanyNetValue(biz,businessValuation({...biz,equityOwned:100})),biz.figuresCurrency||biz.country||S.country,S.country,S.year);
   }
   for(const order of S.marriage?.divorceOrders||[])if(order.payer==='player')total-=convertCurrency(Math.max(0,order.arrears||0),order.country,S.country,S.year);
   for (const cc of (S.creditCards || [])) {

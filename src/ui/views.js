@@ -2445,8 +2445,12 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
         ${pl.staffSavings > 0 ? `<tr><td>Staff savings</td><td style="text-align:right" class="mono">−${esc(formatMoney(pl.staffSavings, S.country))}</td></tr>` : ''}
         ${pl.supplyChainSaving > 0 ? `<tr><td>Supply-chain saving</td><td style="text-align:right" class="mono">−${esc(formatMoney(pl.supplyChainSaving, S.country))}</td></tr>` : ''}
         <tr><td>${esc(pl.taxLabel)}</td><td style="text-align:right" class="mono">${esc(formatMoney(pl.tax, S.country))}</td></tr>
-        <tr><td><strong>Net (lands in your ledger, net of tax)</strong></td><td style="text-align:right" class="mono" data-biz-net="${netR.net ?? ''}" data-biz-name="${esc(biz.name)}"><strong class="${(netR.net ?? 0) < 0 ? 'text-bad' : 'text-good'}">${netR.hasPL ? esc(formatMoney(netR.net, S.country)) : '—'}</strong></td></tr>
+        <tr><td><strong>Company net after tax, before debt and owners</strong></td><td style="text-align:right" class="mono" data-biz-net="${netR.net ?? ''}" data-biz-name="${esc(biz.name)}"><strong class="${(netR.net ?? 0) < 0 ? 'text-bad' : 'text-good'}">${netR.hasPL ? esc(formatMoney(netR.net, S.country)) : '—'}</strong></td></tr>
+        ${pl.debtRepaid>0?`<tr><td>Less old company bills</td><td>${esc(formatMoney(pl.debtRepaid,S.country))}</td></tr>`:''}
+        ${pl.familyRetained>0?`<tr><td>Less cash retained in company</td><td>${esc(formatMoney(pl.familyRetained,S.country))}</td></tr>`:''}
+        ${pl.coOwnerDistribution>0?`<tr><td>Less family/former-partner dividends</td><td>${esc(formatMoney(pl.coOwnerDistribution,S.country))}</td></tr>`:''}
         ${pl.investorDistribution>0?`<tr><td>Less investor distribution</td><td>${esc(formatMoney(pl.investorDistribution,S.country))}</td></tr>`:''}
+        ${Number.isFinite(pl.ownerCash)?`<tr><td><strong>Your business cash</strong></td><td><strong>${esc(formatMoney(pl.ownerCash,S.country))}</strong></td></tr>`:''}
         ${pl.harvestOut > 0 ? `<tr><td>Plus harvest cash out (lands separately — taken from the business's capital)</td><td style="text-align:right" class="mono">${esc(formatMoney(pl.harvestOut, S.country))}</td></tr>` : ''}
       </table>` : `
       <p class="muted">No month settled yet — the first profit-and-loss lands at the end of this month.</p>`;
@@ -2474,7 +2478,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
        button needs one main.js branch (biz-repay-debt); see
        repayBusinessDebt in economyEngine.js. */
     const debtSinceTxt = (biz.debtSinceYear && biz.debtSinceMonth) ? ` (${MONTH_NAMES[(biz.debtSinceMonth || 1) - 1]} ${biz.debtSinceYear})` : '';
-    const debtHtml = (biz.debtLocal || 0) > 0 ? `<div class="muted">Unpaid business debt: <strong class="text-bad">${esc(formatMoney(biz.debtLocal, S.country))}</strong> — owes ${esc(formatMoney(biz.debtLocal, S.country))} from ${biz.misses || 0} missed month${(biz.misses || 0) === 1 ? '' : 's'}${esc(debtSinceTxt)} — repay from cash. <button class="btn btn-sm" data-action="biz-repay-debt" data-biz="${biz.id}" title="Pay the debt down from your cash now">Repay debt (${esc(formatMoney(biz.debtLocal, S.country))})</button></div>` : '';
+    const debtHtml = (biz.debtLocal || 0) > 0 ? `<div class="muted">Company bills, before dividends: <strong class="text-bad">${esc(formatMoney(biz.debtLocal, S.country))}</strong> — owes ${esc(formatMoney(biz.debtLocal, S.country))} from ${biz.misses || 0} missed month${(biz.misses || 0) === 1 ? '' : 's'}${esc(debtSinceTxt)} — founder guarantees uncovered bills; other owners risk their stake only. <button class="btn btn-sm" data-action="biz-repay-debt" data-biz="${biz.id}" title="Pay the debt down from your cash now">Repay debt (${esc(formatMoney(biz.debtLocal, S.country))})</button></div>` : '';
     /* v2.20 I4 — the card is a menu now: the P&L, the history and the
        alerts stay open (that is the card), and everything else lives
        inside collapsed sections — the 7-section operating menu, with

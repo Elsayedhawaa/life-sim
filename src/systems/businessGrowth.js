@@ -1,3 +1,4 @@
+import{equipmentLeaseClose}from'./companyEquipment.js';
 import { businessSalvage } from '../data/businessValuation.js';
 /* ============================================================================
    World Life 2.0 — Business Growth (v2.17 W2: §3 outcome distribution +
@@ -426,6 +427,8 @@ export function checkDistressAndDeath(S, biz, pl) {
    cash; the journal says what happened in plain words. */
 export function killBusiness(S, biz, cause) {
   ensureExtendedState(S);
+  if(!biz||biz.dead||!(S.career.businesses||[]).includes(biz))return{ok:false,msg:'No active owned business.'};
+  equipmentLeaseClose(biz,S.year*12+S.month);
   const name = biz.name || 'The business';
   biz.dead = true;
   biz.deathCause = cause;
@@ -446,7 +449,7 @@ export function killBusiness(S, biz, cause) {
     }
   }
   const salvage = businessSalvage(biz);
-  const exit = settleBusinessExitDebt(S, biz, salvage);
+  const exit = settleBusinessExitDebt(S, biz, salvage,businessSalvage({...biz,equityOwned:100}));
   const debtPaid = exit.debtPaid;
   const remainder = exit.proceeds;
   if (remainder > 0) walletMove(S, remainder, `Salvage sale, after bills: ${name} (${cause})`, 'business');

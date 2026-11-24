@@ -702,10 +702,13 @@ export function settleHouseholdMonth(S) {
       if (pl.net >= 0) {
         biz.monthsLosing = 0;
         netDelta += pl.net;
-        const retained=Math.round(pl.net*(biz.familyRetention||0));if(retained>0){biz.retainedCash=(biz.retainedCash||0)+retained;netDelta-=retained;summary.living+=retained;pl.familyRetained=retained;pl.investorDistribution=Math.round((pl.investorDistribution||0)*(1-(biz.familyRetention||0)));}
-        const familyPool=pl.net-retained;for(const co of biz.familyCoOwners||[]){const distribution=Math.round(familyPool*co.equityPercent/100),person=S.people[co.personId];netDelta-=distribution;summary.living+=distribution;if(person){person.career??={};person.career.savingsLocal=(person.career.savingsLocal||0)+convertCurrency(distribution,S.country,person.residenceCountry||S.country,S.year);}recordLedgerEntry(S,-distribution,'Family company dividend','family','business',0);}
+        const debtFirst=repayBusinessDebtFromMonth(S,biz,summary,netDelta,pl.net);netDelta=debtFirst.netDelta;pl.debtRepaid=debtFirst.repaid;
+        const distributable=Math.max(0,pl.net-debtFirst.repaid);pl.distributable=distributable;const retained=Math.round(distributable*(biz.familyRetention||0));if(retained>0){biz.retainedCash=(biz.retainedCash||0)+retained;netDelta-=retained;summary.living+=retained;pl.familyRetained=retained;}
+        const investorPct=biz.tech?.investorShare??biz.enterprise?.investorShare??null;pl.investorDistribution=investorPct==null?Math.round((pl.investorDistribution||0)*(distributable-retained)/Math.max(1,pl.net)):Math.round((distributable-retained)*investorPct/100);
+        const familyPool=distributable-retained;for(const co of biz.familyCoOwners||[]){const distribution=Math.round(familyPool*co.equityPercent/100),person=S.people[co.personId];netDelta-=distribution;summary.living+=distribution;if(person){person.career??={};person.career.savingsLocal=(person.career.savingsLocal||0)+convertCurrency(distribution,S.country,person.residenceCountry||S.country,S.year);}recordLedgerEntry(S,-distribution,'Family company dividend','family','business',0);}
         const formerShares=(biz.divorceCoOwners||[]).reduce((n,c)=>n+(c.equityPercent||0),0);
         if(formerShares>0){const distribution=Math.round(familyPool*formerShares/100);netDelta-=distribution;summary.living+=distribution;for(const co of biz.divorceCoOwners){const person=S.people[co.personId];if(person){person.career??={};person.career.savingsLocal=(person.career.savingsLocal||0)+convertCurrency(distribution*(co.equityPercent/formerShares),S.country,person.residenceCountry||S.country,S.year);}}recordLedgerEntry(S,-distribution,'Divorce business co-owner profit distribution','family','business',0);}
+        pl.coOwnerDistribution=Math.round(familyPool*formerShares/100)+(biz.familyCoOwners||[]).reduce((n,c)=>n+Math.round(familyPool*c.equityPercent/100),0);pl.ownerCash=familyPool-pl.coOwnerDistribution-(pl.investorDistribution||0);
         if(pl.investorDistribution>0){netDelta-=pl.investorDistribution;summary.living+=pl.investorDistribution;recordLedgerEntry(S,-pl.investorDistribution,`Startup investor profit share — ${biz.name}`,'business','business',0);}
         addIncome(pl.revenue, `Business revenue — ${biz.name}`);
         summary.living += pl.costs;
@@ -718,12 +721,7 @@ export function settleHouseholdMonth(S) {
            helper does it); a profitable month with debt still standing
            keeps its miss count — the old unconditional reset hid the
            debt ("14,294 owed, 0 missed months"). */
-        if ((Number(biz.debtLocal) || 0) > 0) {
-          const r = repayBusinessDebtFromMonth(S, biz, summary, netDelta, pl.net);
-          netDelta = r.netDelta;
-        } else {
-          biz.misses = 0;
-        }
+        if((biz.debtLocal||0)<=0)biz.misses=0;
       } else {
         biz.monthsLosing = (biz.monthsLosing || 0) + 1;
         const shortfall = Math.abs(pl.net);

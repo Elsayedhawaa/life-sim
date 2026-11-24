@@ -1,3 +1,4 @@
+import{exitWaterfall}from'./companyLiability.js';
 import{equipmentLeaseClose}from'./companyEquipment.js';
 import{companyVentures,initCompany,COMPANY_SECTORS}from './companyLifecycle.js';
 import{initTech}from './techStartup.js';
@@ -923,11 +924,10 @@ export function expandBusiness(S, bizRef) {
 }
 
 /* Owner-funded game ventures retain unpaid bills after an exit. */
-export function settleBusinessExitDebt(S, biz, grossProceeds) {
-  const proceeds = Math.max(0, Math.round(grossProceeds || 0));
-  const debt = Math.max(0, Math.round(Number(biz.debtLocal) || 0));
-  const debtPaid = Math.min(debt, proceeds);
-  const shortfall = debt - debtPaid;
+export function settleBusinessExitDebt(S, biz, grossProceeds, fullGross=null) {
+  const book=biz.figuresCurrency||biz.country||S.country,water=exitWaterfall(biz,grossProceeds,fullGross),proceeds=water.proceeds,debtPaid=water.debtPaid,shortfall=Math.round(convertCurrency(water.shortfall,book,S.country,S.year));
+  for(const co of water.others){const p=S.people?.[co.personId];if(p){p.career??={};p.career.savingsLocal=(p.career.savingsLocal||0)+convertCurrency(co.amount,book,p.residenceCountry||S.country,S.year);}}
+  biz.lastExitWaterfall={...water,book,year:S.year,month:S.month};
   biz.debtLocal = 0;
   biz.retainedCash = 0;
   if(biz.tech)biz.tech.reserve=0;
@@ -938,7 +938,7 @@ export function settleBusinessExitDebt(S, biz, grossProceeds) {
       country: S.country, missedMonths: 0, inCollections: true, purpose: 'business_exit' });
     recordJournal(S, `${biz.name}: ${formatMoney(shortfall, S.country)} of unpaid bills remains in collections after the exit. No additional interest in this game model.`, 'money');
   }
-  return { proceeds: proceeds - debtPaid, debtPaid, shortfall };
+  return { proceeds: Math.round(convertCurrency(proceeds,book,S.country,S.year)), debtPaid:Math.round(convertCurrency(debtPaid,book,S.country,S.year)), shortfall };
 }
 
 export function sellBusiness(S, bizRef) {
@@ -947,7 +947,7 @@ export function sellBusiness(S, bizRef) {
   if (!biz || biz.dead || !(S.career.businesses || []).includes(biz)) return { ok: false, msg: 'No active owned business.' };
   if((biz.growth?.locations||[]).some(l=>l.site))return{ok:false,msg:'Merge separate site records before selling the company.'};if((biz.familyCoOwners||[]).some(c=>c.equityPercent>0))return{ok:false,msg:'Resolve family stakes before selling. Buy back their shares in Money.'};
   const valuation = businessValuation(biz);
-  const exit = settleBusinessExitDebt(S, biz, valuation);
+  const exit = settleBusinessExitDebt(S, biz, valuation,businessValuation({...biz,equityOwned:100}));
   const bName = biz.name;
   const equityPct = Math.round(biz.equityOwned ?? 100);
   S.career.businesses = (S.career.businesses || []).filter(b => b.id !== biz.id);
@@ -973,13 +973,12 @@ export function closeBusiness(S, biz, reason, opts = {}) {
      and the journal line stay on the object, so fate can read them). */
   if(!opts.viaSettlement&&(target.growth?.locations||[]).some(l=>l.site))return{ok:false,msg:'Merge separate site records before voluntary closure.',salvage:0};if(opts.viaSettlement){for(const l of target.growth?.locations||[]){if(!l.site)continue;equipmentLeaseClose(l.site,S.year*12+S.month);target.debtLocal=(target.debtLocal||0)+(l.site.debtLocal||0);l.site.debtLocal=0;target.staff.push(...l.site.staff);if(l.site.manager)target.staff.push({...l.site.manager.employee,wageLocal:l.site.manager.wage});target.retainedCash=(target.retainedCash||0)+((l.site.enterprise||l.site.tech).reserve||0);l.site.dead=true;}target.siteClosureArchive=structuredClone(target.growth?.locations?.filter(l=>l.site)||[]);}if(!opts.viaSettlement&&(target.familyCoOwners||[]).length)return{ok:false,msg:'Resolve family stakes before voluntary closure. Buy back shares in Money.',salvage:0};
   equipmentLeaseClose(target,S.year*12+S.month);
-  if(opts.viaSettlement&&(target.familyCoOwners||[]).length){const full=businessSalvage({...target,equityOwned:100}),net=Math.max(0,full-(target.debtLocal||0));for(const co of target.familyCoOwners){const p=S.people[co.personId];if(p){p.career??={};p.career.savingsLocal=(p.career.savingsLocal||0)+convertCurrency(Math.round(net*co.equityPercent/100),target.figuresCurrency||target.country||S.country,p.residenceCountry||S.country,S.year);}}target.familyCloseSettlement={full,net,year:S.year};}
   target.dead = true;
   target.deathCause = reason;
   target.deadYear = S.year;
   target.deadMonth = S.month;
   const salvage = businessSalvage(target);
-  const exit = settleBusinessExitDebt(S, target, salvage);
+  const exit = settleBusinessExitDebt(S, target, salvage,businessSalvage({...target,equityOwned:100}));
   const staffCount = (target.staff || []).length;
   let severancePaid = 0;
   let severanceUnpaid = 0;
