@@ -1,3 +1,4 @@
+import{givePersonalMoney}from'./personalReceivables.js';
 import{inheritNpcCompanies}from './companyEstate.js';
 import{personMind,canContactPerson}from './personMind.js';
 /* ============================================================================
@@ -1151,61 +1152,7 @@ export function maybePickDominoSoulScene(S) {
           ? (asker.age < 29 ? 'covering marriage apartment deposits' : 'bridging a supplier gap in a small venture')
           : 'covering an urgent lease and clinic deposit';
 
-        return {
-          key: `ask_loan_${asker.id}_${S.year}`,
-          category: 'relationship',
-          speakerId: asker.id,
-          title: `${asker.firstName} Asks for Financial Backing`,
-          text: `${asker.fullName} (${asker.relationLabel}, ${asker.traitTags.join(' · ')}) brings it up ${abroadContext}: "Things have gone well for you lately, thank God. I’m short about ${formatMoney(askAmt, S.country)} for ${purpose}. Can you back me?"`,
-          choices: [
-            {
-              label: `Give ${formatMoney(askAmt, S.country)} as family/friend support (no repayment expected)`,
-              available: () => S.money.cash >= askAmt,
-              effect: (st) => {
-                walletMove(st, -askAmt, `Supported ${asker.fullName} (${purpose})`, 'family');
-                asker.career.savingsLocal += Math.round(convertCurrency(askAmt, st.country, asker.residenceCountry, st.year));
-                rememberDeed(st, asker, 'helped_money', `Gave ${formatMoney(askAmt, st.country)} generously without strings.`, {
-                  affection: 18, respect: 16, trust: 15, resentment: -20, weight: 3
-                });
-                recordJournal(st, `You backed ${asker.fullName} with ${formatMoney(askAmt, st.country)} — no IOU attached. They were visibly moved.`, 'relationship');
-              }
-            },
-            {
-              label: `Give half (${formatMoney(Math.round(askAmt * 0.5), S.country)}) — what you can safely spare`,
-              available: () => S.money.cash >= Math.round(askAmt * 0.5),
-              effect: (st) => {
-                const half = Math.round(askAmt * 0.5);
-                walletMove(st, -half, `Partial support to ${asker.fullName}`, 'family');
-                asker.career.savingsLocal += Math.round(convertCurrency(half, st.country, asker.residenceCountry, st.year));
-                rememberDeed(st, asker, 'helped_money', `Helped with ${formatMoney(half, st.country)}.`, {
-                  affection: 8, respect: 7, trust: 6, resentment: -8
-                });
-                recordJournal(st, `You met ${asker.firstName} halfway with ${formatMoney(half, st.country)}. Practical and fair.`, 'relationship');
-              }
-            },
-            {
-              label: `Promise to send ${formatMoney(askAmt, S.country)} within a year`,
-              effect: (st) => {
-                createPromise(st, asker, 'money_help', `Help ${asker.firstName} with ${purpose}`, askAmt, 12);
-                recordJournal(st, `You promised ${asker.firstName} ${formatMoney(askAmt, st.country)} within a year. They’re counting on your word.`, 'relationship');
-              }
-            },
-            {
-              label: 'Politely decline — keep money and relationships separate',
-              effect: (st) => {
-                const hurt = asker.traits.materialism >= 68 || asker.traits.pride >= 70 ? 18 : 7;
-                rememberDeed(st, asker, 'refused_help', `Declined request for ${formatMoney(askAmt, st.country)}.`, {
-                  affection: -Math.round(hurt * 0.6),
-                  resentment: hurt
-                });
-                const reactionLine = asker.traits.warmth >= 68
-                  ? `${asker.firstName} nodded quietly: "I understand — everyone has their own commitments."`
-                  : `${asker.firstName}'s tone cooled at once: "Right. Good to know who stands where."`;
-                recordJournal(st, `You declined ${asker.firstName}'s request for ${formatMoney(askAmt, st.country)}. ${reactionLine}`, 'relationship');
-              }
-            }
-          ]
-        };
+        return buildFamilyBackingScene(S,{personId:asker.id,amount:askAmt,country:S.country,year:S.year,purpose});
       }
     }
   }
@@ -1906,3 +1853,13 @@ export function buildNpcWeddingScene(S,invite){
  return{key:`npc_wedding_${person.id}_${invite.year}`,weddingInvite:invite,category:'family',title:person.firstName+' Is Getting Married',text:`${person.firstName} and ${partner.fullName}: ${invite.place}. Send a gift from your actual cash. This does not book travel or claim attendance.`,choices:[{label:`Send wedding gift · ${formatMoney(cost,S.country)}`,available:()=>S.money.cash>=cost&&!S.legal.weddingReplies?.[person.id+'_'+invite.year],effect:st=>{const p=st.people[invite.personId];if(!p?.alive||st.money.cash<cost)return;st.legal.weddingReplies??={};const key=person.id+'_'+invite.year;if(st.legal.weddingReplies[key])return;walletMove(st,-cost,'Wedding gift for '+p.firstName,'family');p.career??={};p.career.savingsLocal=(p.career.savingsLocal||0)+convertCurrency(cost,st.country,p.residenceCountry||st.country,st.year);st.legal.weddingReplies[key]='gift';rememberDeed(st,p,'wedding_gift','Sent a wedding gift.',{affection:10,respect:6,trust:5});recordJournal(st,'Sent an actual wedding gift to '+p.firstName+'. No travel or attendance was booked.','family');}},{label:'Send congratulations without a gift',effect:st=>{st.legal.weddingReplies??={};st.legal.weddingReplies[person.id+'_'+invite.year]='congratulations';recordJournal(st,'Congratulated '+person.firstName+' without sending money.','family');}}]};
 }
 export function restoreNpcWeddingScene(S,saved){return saved?.weddingInvite?buildNpcWeddingScene(S,saved.weddingInvite):null;}
+
+export function buildFamilyBackingScene(S,request){
+ const p=S.people[request?.personId];if(!p?.alive||!Number.isSafeInteger(request.amount)||request.amount<=0)return null;
+ const amount=Math.round(convertCurrency(request.amount,request.country,S.country,S.year)),key='ask_loan_'+p.id+'_'+request.year;
+ const resolved=st=>!!st.legal.familyBackingReplies?.[key];
+ const mark=(st,kind)=>{st.legal.familyBackingReplies??={};st.legal.familyBackingReplies[key]={kind,year:st.year,month:st.month};};
+ const gift=(st,value)=>{if(resolved(st))return;const result=givePersonalMoney(st,p.id,value);if(!result.ok)return;mark(st,'gift');rememberDeed(st,st.people[p.id],'helped_money','Sent financial support.',{affection:8,respect:7,trust:6});recordJournal(st,'Sent '+formatMoney(value,st.country)+' to '+p.firstName+'. Purpose: '+request.purpose+'. No purchase or venture is claimed.','family');};
+ return{key,category:'relationship',speakerId:p.id,familyBackingSnapshot:request,title:p.firstName+' Asks for Financial Backing',text:p.firstName+' needs '+formatMoney(amount,S.country)+' for '+request.purpose+'. Gifts move actual cash to their savings. A promise records a one-year commitment, without sending money now.',choices:[{label:'Give '+formatMoney(amount,S.country),available:()=>S.money.cash>=amount&&!resolved(S),effect:st=>gift(st,amount)},{label:'Give half · '+formatMoney(Math.round(amount/2),S.country),available:()=>S.money.cash>=Math.round(amount/2)&&!resolved(S),effect:st=>gift(st,Math.round(amount/2))},{label:'Promise support within one year',effect:st=>{if(resolved(st)||!st.people[p.id]?.alive)return;createPromise(st,st.people[p.id],'money_help','Support for '+request.purpose,amount,12);mark(st,'promise');recordJournal(st,'Recorded a one-year support promise to '+p.firstName+'. No money sent.','family');}},{label:'Decline',effect:st=>{if(resolved(st))return;mark(st,'declined');rememberDeed(st,st.people[p.id],'refused_help','Declined financial support.',{affection:-4,resentment:7});}}]};
+}
+export function restoreFamilyBackingScene(S,saved){return saved?.familyBackingSnapshot?buildFamilyBackingScene(S,saved.familyBackingSnapshot):null;}

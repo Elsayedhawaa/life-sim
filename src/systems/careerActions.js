@@ -976,46 +976,7 @@ function queueReviewScene(S) {
     : perf >= 60 ? 'solid but unremarkable'
     : perf >= 45 ? 'below where it needs to be' : 'poor';
   const steppedUp = ensureJobActionState(S).steppedUp.length;
-  queueScene(S, {
-    key: `review_${S.year}`,
-    baseId: 'annual_review',
-    title: `Your annual review with ${boss.firstName}`,
-    category: 'career',
-    text: `${boss.firstName} closes the door and opens your file. “Let me be straight with you. This year your performance was ${band} — ${perf}%. ${steppedUp > 0 ? `You stepped up ${steppedUp} time(s) when the team needed it, and I have not forgotten that.` : 'I did not see you step up for the team once this year — that counts, and not in your favour.'} ${perf < 60 ? 'If next year looks like this one, we will be having a different conversation — warnings, then a plan.' : 'Keep this up and the next rung is yours to take.'}” What do you say?`,
-    choices: [
-      {
-        label: 'Thank them, and ask what to improve',
-        effect: (stt) => {
-          const b = bossOf(stt);
-          if (b) rememberDeed(stt, b, 'review_good', 'You took the review well and asked how to improve.', { affection: 3, respect: 4 });
-          if (stt.career.job) stt.career.job.performance = clamp(stt.career.job.performance + 2, 0, 100);
-          recordJournal(stt, `Your annual review with ${boss.firstName}: ${perf}% — you thanked them and asked what to improve. Performance +2.`, 'career');
-        }
-      },
-      {
-        label: 'Ask directly about promotion',
-        effect: (stt) => {
-          recordJournal(stt, `At your review you asked ${boss.firstName} directly about promotion.`, 'career');
-          const res = applyPromotion(stt);
-          if (!res.ok) recordJournal(stt, `${boss.firstName}’s answer: ${res.msg}`, 'career');
-        }
-      },
-      {
-        label: 'Push back — the rating is unfair',
-        effect: (stt) => {
-          const b = bossOf(stt);
-          if (!b) return;
-          if (chance(stt, 0.4)) {
-            rememberDeed(stt, b, 'review_pushback', 'You pushed back on your review rating and made a fair case.', { respect: 2 });
-            recordJournal(stt, `You pushed back on your review rating — and ${boss.firstName} admitted the year had been harder than the file showed.`, 'career');
-          } else {
-            rememberDeed(stt, b, 'review_pushback_bad', 'You pushed back on your review rating and it went badly.', { respect: -5, resentment: 6 });
-            recordJournal(stt, `You pushed back on your review rating and ${boss.firstName} did not take it well — respect −5 on their record.`, 'career');
-          }
-        }
-      }
-    ]
-  });
+  queueScene(S,buildCareerReviewScene(S,{year:S.year,bossId:boss.id,bossName:boss.firstName,employer:job.employer,jobId:job.id,perf,band,steppedUp}));
 }
 
 function queueWarningScene(S) {
@@ -1023,40 +984,7 @@ function queueWarningScene(S) {
   const boss = bossOf(S);
   if (!boss) return;
   const st = ensureJobActionState(S);
-  queueScene(S, {
-    key: `warning_${st.warnings}_${S.year}`,
-    baseId: 'formal_warning',
-    title: `A formal warning from ${boss.firstName}`,
-    category: 'career',
-    text: `${boss.firstName} calls you in. “Your performance has been under 45% for three months now. This is formal warning ${st.warnings} of 3. ${st.warnings >= 2 ? 'You are now on a performance plan — improve, or the next step is dismissal.' : 'Two more warnings and you are on a performance plan. After that, dismissal.'}” What do you do?`,
-    choices: [
-      {
-        label: 'Accept it and commit to improving',
-        effect: (stt) => {
-          const b = bossOf(stt);
-          if (b) rememberDeed(stt, b, 'warning_accepted', 'You accepted a formal warning and committed to improving.', { respect: 2 });
-          if (stt.career.job) stt.career.job.performance = clamp(stt.career.job.performance + 2, 0, 100);
-          recordJournal(stt, `You accepted the formal warning from ${boss.firstName} and committed to improving.`, 'career');
-        }
-      },
-      {
-        label: 'Appeal it — the targets were impossible',
-        effect: (stt) => {
-          const b = bossOf(stt);
-          if (!b) return;
-          if (chance(stt, 0.35)) {
-            const ast = ensureJobActionState(stt);
-            if (ast && ast.warnings > 0) ast.warnings -= 1;
-            rememberDeed(stt, b, 'warning_appealed', 'You appealed a warning and it was withdrawn.', { respect: 2 });
-            recordJournal(stt, `You appealed the warning — ${boss.firstName} checked the targets and withdrew it.`, 'career');
-          } else {
-            rememberDeed(stt, b, 'warning_appeal_failed', 'You appealed a warning and it was refused.', { respect: -3, resentment: 4 });
-            recordJournal(stt, `You appealed the warning and ${boss.firstName} refused — the warning stands.`, 'career');
-          }
-        }
-      }
-    ]
-  });
+  queueScene(S,buildCareerWarningScene(S,{year:S.year,bossId:boss.id,bossName:boss.firstName,employer:job.employer,jobId:job.id,warnings:st.warnings}));
 }
 
 /* Monthly tick — called from the game loop after tickCareerMonthly. */
@@ -1179,3 +1107,101 @@ export function actionPreviews(S) {
     reference: st.reference
   };
 }
+
+export function buildCareerReviewScene(S,snapshot){
+ const{year,bossId,bossName,employer,jobId,perf,band,steppedUp}=snapshot;
+ const boss=S.people[bossId];if(!boss?.alive||!S.career.job||S.career.job.employer!==employer||(jobId&&S.career.job.id!==jobId))return null;
+  return {
+    key: `review_${year}`,
+    baseId: 'annual_review',
+    title: `Your annual review with ${boss.firstName}`,
+    category: 'career',
+    text: `${employer} · ${year}. ${bossName} rates you ${perf}% (${band}). Team contributions: ${steppedUp}. Ask for feedback, check current promotion requirements, or contest the rating.`,
+    careerReviewSnapshot:snapshot,
+    choices: [
+      {
+        label: 'Thank them, and ask what to improve',
+        effect: (stt) => {
+          if(!stt.career.job||stt.career.job.employer!==employer||(jobId&&stt.career.job.id!==jobId)||!stt.people[bossId]?.alive)return;
+          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey])return;stt.career.reviewReplies[replyKey]=true;
+          const b = stt.people[bossId];
+          if (b) rememberDeed(stt, b, 'review_good', 'You took the review well and asked how to improve.', { affection: 3, respect: 4 });
+          if (stt.career.job) stt.career.job.performance = clamp(stt.career.job.performance + 2, 0, 100);
+          recordJournal(stt, `Your annual review with ${boss.firstName}: ${perf}% — you thanked them and asked what to improve. Performance +2.`, 'career');
+        }
+      },
+      {
+        label: 'Ask directly about promotion',
+        effect: (stt) => {
+          if(!stt.career.job||stt.career.job.employer!==employer||(jobId&&stt.career.job.id!==jobId)||!stt.people[bossId]?.alive)return;
+          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey])return;stt.career.reviewReplies[replyKey]=true;
+          recordJournal(stt, `At your review you asked ${boss.firstName} directly about promotion.`, 'career');
+          const res = applyPromotion(stt);
+          if (!res.ok) recordJournal(stt, `${boss.firstName}’s answer: ${res.msg}`, 'career');
+        }
+      },
+      {
+        label: 'Push back — the rating is unfair',
+        effect: (stt) => {
+          if(!stt.career.job||stt.career.job.employer!==employer||(jobId&&stt.career.job.id!==jobId)||!stt.people[bossId]?.alive)return;
+          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey])return;stt.career.reviewReplies[replyKey]=true;
+          const b = stt.people[bossId];
+          if (!b) return;
+          if (chance(stt, 0.4)) {
+            rememberDeed(stt, b, 'review_pushback', 'You pushed back on your review rating and made a fair case.', { respect: 2 });
+            recordJournal(stt, `You pushed back on your review rating — and ${boss.firstName} admitted the year had been harder than the file showed.`, 'career');
+          } else {
+            rememberDeed(stt, b, 'review_pushback_bad', 'You pushed back on your review rating and it went badly.', { respect: -5, resentment: 6 });
+            recordJournal(stt, `You pushed back on your review rating and ${boss.firstName} did not take it well — respect −5 on their record.`, 'career');
+          }
+        }
+      }
+    ]
+  };
+}
+export function restoreCareerReviewScene(S,saved){return saved?.careerReviewSnapshot?buildCareerReviewScene(S,saved.careerReviewSnapshot):null;}
+
+export function buildCareerWarningScene(S,snapshot){
+ const{year,bossId,bossName,employer,jobId,warnings}=snapshot;
+ const boss=S.people[bossId],st={warnings};if(!boss?.alive||!S.career.job||S.career.job.employer!==employer||(jobId&&S.career.job.id!==jobId))return null;
+  return {
+    key: `warning_${st.warnings}_${year}`,
+    baseId: 'formal_warning',
+    title: `A formal warning from ${boss.firstName}`,
+    category: 'career',
+    text: `${boss.firstName} calls you in. “Your performance has been under 45% for three months now. This is formal warning ${st.warnings} of 3. ${st.warnings >= 2 ? 'You are now on a performance plan — improve, or the next step is dismissal.' : 'Two more warnings and you are on a performance plan. After that, dismissal.'}” What do you do?`,
+    careerWarningSnapshot:snapshot,
+    choices: [
+      {
+        label: 'Accept it and commit to improving',
+        effect: (stt) => {
+          if(!stt.career.job||stt.career.job.employer!==employer||(jobId&&stt.career.job.id!==jobId)||!stt.people[bossId]?.alive)return;
+          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey])return;stt.career.reviewReplies[replyKey]=true;
+          const b = stt.people[bossId];
+          if (b) rememberDeed(stt, b, 'warning_accepted', 'You accepted a formal warning and committed to improving.', { respect: 2 });
+          if (stt.career.job) stt.career.job.performance = clamp(stt.career.job.performance + 2, 0, 100);
+          recordJournal(stt, `You accepted the formal warning from ${boss.firstName} and committed to improving.`, 'career');
+        }
+      },
+      {
+        label: 'Appeal it — the targets were impossible',
+        effect: (stt) => {
+          if(!stt.career.job||stt.career.job.employer!==employer||(jobId&&stt.career.job.id!==jobId)||!stt.people[bossId]?.alive)return;
+          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey])return;stt.career.reviewReplies[replyKey]=true;
+          const b = stt.people[bossId];
+          if (!b) return;
+          if (chance(stt, 0.35)) {
+            const ast = ensureJobActionState(stt);
+            if (ast && ast.warnings > 0) ast.warnings -= 1;
+            rememberDeed(stt, b, 'warning_appealed', 'You appealed a warning and it was withdrawn.', { respect: 2 });
+            recordJournal(stt, `You appealed the warning — ${boss.firstName} checked the targets and withdrew it.`, 'career');
+          } else {
+            rememberDeed(stt, b, 'warning_appeal_failed', 'You appealed a warning and it was refused.', { respect: -3, resentment: 4 });
+            recordJournal(stt, `You appealed the warning and ${boss.firstName} refused — the warning stands.`, 'career');
+          }
+        }
+      }
+    ]
+  };
+}
+export function restoreCareerWarningScene(S,saved){return saved?.careerWarningSnapshot?buildCareerWarningScene(S,saved.careerWarningSnapshot):null;}

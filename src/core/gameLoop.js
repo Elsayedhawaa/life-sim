@@ -1,7 +1,8 @@
+import{restoreCareerReviewScene,restoreCareerWarningScene}from'../systems/careerActions.js';
 import{restoreBurnoutScene,restoreCriticalAdmissionScene}from'../systems/healthDirectorEngine.js';
 import{buildInsolvencyScene}from'../systems/economyEngine.js';
 import{restoreCrisisWarningScene}from'../systems/careerConsequences.js';
-import{restoreNpcWeddingScene}from'../systems/soulEngine.js';
+import{restoreNpcWeddingScene,restoreFamilyBackingScene}from'../systems/soulEngine.js';
 import{restoreRecruitmentScene}from'../systems/careerEducationEngine.js';
 import{restoreWorldNewsScene}from'../systems/worldEvents.js';
 import{buildWaterDamageScene}from'../systems/homeWaterDamage.js';
@@ -80,7 +81,7 @@ export function loadGameFromStorage() {
         if (!scene) return null;
         if(!scene.eventId&&scene.key==='formal_bankruptcy_filing')return parsed.money.cash<0&&parsed.year>parsed.money.bankruptUntilYear?buildInsolvencyScene(parsed):null;
         if (!scene.eventId&&scene.key==='st_upstairs_pipe_leak')return buildWaterDamageScene(parsed);
-        if (!scene.eventId) return restoreCriticalAdmissionScene(parsed,scene) || restoreBurnoutScene(parsed,scene) || restoreCrisisWarningScene(parsed,scene) || restoreNpcWeddingScene(parsed,scene) || restoreRecruitmentScene(parsed,scene) || restoreWorldNewsScene(parsed,scene) || restoreCuratedLifeScene(parsed,scene) || restoreDivorceDecision(parsed,scene) || restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
+        if (!scene.eventId) return restoreCareerWarningScene(parsed,scene) || restoreCareerReviewScene(parsed,scene) || restoreFamilyBackingScene(parsed,scene) || restoreCriticalAdmissionScene(parsed,scene) || restoreBurnoutScene(parsed,scene) || restoreCrisisWarningScene(parsed,scene) || restoreNpcWeddingScene(parsed,scene) || restoreRecruitmentScene(parsed,scene) || restoreWorldNewsScene(parsed,scene) || restoreCuratedLifeScene(parsed,scene) || restoreDivorceDecision(parsed,scene) || restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
         return restoreRandomLifeScene(parsed, scene);
       };
       const pending = parsed.activeScene;

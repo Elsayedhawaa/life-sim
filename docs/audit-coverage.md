@@ -551,3 +551,8 @@ Recruitment stores exact offered job data/country and rebuilds acceptance with c
 - Burnout exact stage/quoted fee persists; paid fictional counseling needs full funds and records a session, free pace reset remains. No medical cure is claimed.
 - Critical admission is explicit free fictional game aid, with receipt, and no longer marks all medical conditions managed. Reload does not apply aid or any choice automatically.
 - 185 focused files pass, targeted 390px reload/action/reload checks for relief, counseling and emergency aid; screenshots inspected. Broad fresh all-scene audit remains open at W60 family-backing request.
+
+## W60-W62 family backing, annual review and warnings
+- Family backing saves exact named recipient/amount/purpose/year/currency. Gifts use funded actual recipient transfers, one-year promises are real People records, and duplicate reply effects are blocked.
+- Annual review and formal warning save employer/job/supervisor/year/evidence, restore code-backed choices and reject changed employer/job. Replies affect actual performance/relationships/promotion gates, once per review or warning.
+- 187 focused files pass; targeted 390px family gift/review/warning fixtures reload twice, act, reload and check recipient balances and performance. Review text shortened. Broad all-scene audit remains open at W63 bereavement.

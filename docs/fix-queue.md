@@ -137,12 +137,18 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W55 Broad all-scene mobile reload audit found crisis career warning disappears after reload; preserve crisis/employer/frozen-pay warning and valid choices.
 
-- [ ] W56 Broad mobile reload audit found formal bankruptcy filing disappears on reload; restore insolvency response without applying filing twice.
+- [x] W56 Broad mobile reload audit found formal bankruptcy filing disappears on reload; restore insolvency response without applying filing twice.
 
-- [ ] W57 Insolvency review found blanket loan deletion/vehicle seizure/travel-ban clearing without secured-debt or legal evidence; replace with explicit game-scope relief and preserve unrelated obligations.
+- [x] W57 Insolvency review found blanket loan deletion/vehicle seizure/travel-ban clearing without secured-debt or legal evidence; replace with explicit game-scope relief and preserve unrelated obligations.
 
-- [ ] W58 Broad all-scene reload audit found burnout_stage_1 disappears; preserve health decision stage and code-backed choices.
+- [x] W58 Broad all-scene reload audit found burnout_stage_1 disappears; preserve health decision stage and code-backed choices.
 
-- [ ] W59 Critical admission scene has no reload builder and charges only remaining cash for full care; audit supported game-aid/fee/receipt and restore choices.
+- [x] W59 Critical admission scene has no reload builder and charges only remaining cash for full care; audit supported game-aid/fee/receipt and restore choices.
 
 - [ ] W60 Family financial-backing request disappears after reload; preserve named asker/amount/purpose and funded choices/promise record.
+
+- [ ] W61 Broad all-scene reload audit found annual review disappears; preserve exact supervisor/rating/employer evidence and current job gates.
+
+- [ ] W62 Formal warning scene uses runtime closures without restore snapshot; preserve original employer/supervisor/warning and current employment gates.
+
+- [ ] W63 Bereavement funeral decision disappears after reload; preserve deceased/person/fee/inheritance evidence and avoid replaying estate transfers.
