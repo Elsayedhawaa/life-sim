@@ -1,3 +1,4 @@
+import{specialtyProfile}from'./companySpecialtyProfiles.js';
 import{catalogFor}from'./companyCatalogData.js';
 /* Input-stock and recipe ledger used by explicit catalog migration.
    Quantities use integer base units (grams, millilitres, pieces, resource units). */
@@ -39,4 +40,5 @@ if(sector==='retail'&&b.enterprise.niche>0){resources=[['small','Small stocked m
 if(sector==='retail'||sector==='pharmacy'){const catalog=catalogFor(b);resources=catalog.map((item,i)=>['sku_'+i,'Sealed '+item[0]+' stock','unit',item[1]*item[2],sector==='pharmacy'?.02:0]);resources.push(['pack','Bags & traceability labels','set',.015,0]);vendors=catalog.map((_,i)=>(sector==='pharmacy'?'Meridian Health Distribution':'Northline Merchandise')+' Line '+(i+1));vendors.push('Batchmark Packaging');recipes=catalog.map((_,i)=>({['sku_'+i]:1,pack:1}));}
 if(sector==='food'&&b.enterprise.niche===1){resources=[...resources,['fruit','Fresh fruit for juice','portion',.12,.3]];vendors=[...vendors,'Orchard Trade'];recipes=recipes.map((recipe,i)=>i===6?{fruit:2,pack:1}:recipe);}
 if(sector==='food'&&b.enterprise.niche===2){resources=[...resources,['coffee','Ground coffee','portion',.04,.02],['tea','Tea portions','portion',.025,.01]];vendors=[...vendors,'Harbour Roastery','Leaf & Kettle'];recipes=recipes.map((recipe,i)=>i===5?{coffee:2,tea:2,pack:1}:recipe);}
+const specialty=specialtyProfile(b);if(specialty){resources=specialty.resources;vendors=resources.map((r,i)=>'Specialty Trade '+(i+1));recipes=b.catalog.items.map((item,i)=>Object.fromEntries(resources.map(([id],j)=>[id,j===(i%resources.length)?2:1])));}
 const base=(b.enterprise||b.tech).price;const definitions=resources.map(([id,name,unit,factor,expiry],i)=>({id,name,unit,expiry,suppliers:[{name:vendors[i],unit:Math.max(.001,Math.round(base*factor*1000)/1000),reliability:.98,lead:1},{name:vendors[i]+' Economy Trade',unit:Math.max(.001,Math.round(base*factor*.8*1000)/1000),reliability:.83,lead:1}]}));return{definitions,recipes,metered:sector==='software'};}

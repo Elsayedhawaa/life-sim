@@ -1,3 +1,4 @@
+import{upgradeSpecialty}from'./systems/companyMigration.js';
 import{governanceAction,negotiateFamilyStake}from'./systems/companyGovernance.js';
 import{npcCompanyAction}from'./systems/companyNpcControls.js';
 import{estateReviewAction}from'./systems/companyEstateReview.js';
@@ -1948,6 +1949,7 @@ if (typeof document !== 'undefined') {
     if(action==='company-marital-agreement'){const b=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(companyAgreementAction(S,b,btn.dataset.couple,btn.dataset.rule));return;}
     if(action==='divorce-share-negotiate'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(negotiateDivorceShares(S,biz,btn.dataset.person,Number(btn.dataset.pct),btn.dataset.offer,btn.dataset.mode,Number(btn.dataset.amount)));return;}
     if(action==='divorce-share-buyout'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(buyoutDivorceShares(S,biz,btn.dataset.person,Number(btn.dataset.amount)));return;}
+    if(action==='company-specialty'){handleActionResult(upgradeSpecialty(S,(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz)));return;}
     if(action==='company-migrate'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(migrateCompanyModel(S,b));return;}
     if(action==='family-rota'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(changeFamilyRota(S,b,btn.dataset.employee,btn.dataset.hours));return;}
     if(action==='family-share'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(familyShareAction(S,b,btn.dataset.kind,btn.dataset.person,btn.dataset.pct,btn.dataset.amount));return;}
