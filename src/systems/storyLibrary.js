@@ -959,7 +959,7 @@ export function getCurrentChapter(S) {
   else id = 'first_steps';
 
   const def = LIFE_CHAPTERS.find(c => c.id === id);
-  return { id, name: def.name, meaning: def.meaning, beats: chapterBeats(S, id) };
+  return { id, name: def.name, meaning: id==='building'&&!employed?'You have work behind you and are between jobs now. Your experience remains while you choose what comes next.':def.meaning, beats: chapterBeats(S, id) };
 }
 
 /* Mark a chapter change as an event. The first time a chapter is seen it is

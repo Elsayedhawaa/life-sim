@@ -185,3 +185,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W81 Canadian2034audit screenshot still labels era The2020s. Use current decade for future-year visual label rather than latest historical bucket. Low-impact presentation.
 
 - [x] W82 Chapter is live-derived, not stale, but unemployment reverts an experienced graduate to First Steps/find first job. Keep Building for recorded work history and show next-job wording, without altering progress/experience.
+
+- [x] W83 History-based Building chapter description still asserts current earning/saving while unemployed; use between-jobs description.
+- [ ] W84 Monthly residency renewal/grace/naturalisation scenes lack reload builders; preserve original status/country/expiry/current eligibility, no replayed fees or automatic grants.
