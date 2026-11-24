@@ -99,4 +99,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W28 Gam'iya missed contributions vanish at cycle end and unrelated random payout event invents cash. Preserve paid/unpaid ledger, carry real unpaid shares as debt, and gate narrative to actual already-paid pot without paying twice.
 - [x] W29 Gold-price scene sells fixed5g/2g for invented fiat amounts even without those holdings; use actual holdings/current market sale route and half quantity.
 - [x] W30 Narrative loan offers need real terms/liabilities and shared bank gates: payday/student loans currently grant cash without debt, repayment follow-ups can invent charges, bank offer bypasses eligibility.
-- [ ] W31 Family loan repayments need actual outstanding paid principal, not merely an after-event flag; gift/saving/spending labels must match real transfers rather than credit full gift after giving half.
+- [x] W31 Family loan repayments need actual outstanding paid principal, not merely an after-event flag; gift/saving/spending labels must match real transfers rather than credit full gift after giving half.
+- [ ] W32 Zakat narrative invents flat due amount/half promise independently of Finance, can charge twice without annual record. Use same modeled threshold/amount/payment record, no invented half-payment obligation.
+- [ ] W33 Personal receivable on borrower death has no estate outcome, leaves uncollectible asset. Mark bad debt with honest write-off if estate recovery is not modeled, preserve history.

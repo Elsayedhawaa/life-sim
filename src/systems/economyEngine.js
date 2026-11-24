@@ -1,3 +1,4 @@
+import{reviewPersonalReceivables}from'./personalReceivables.js';
 import {closePlayerLease,reconcilePlayerLease,recordPlayerRentDue,tickPlayerRentalDamage} from './playerTenancy.js';
 import{settleCompanyTrusts}from'./companyTrust.js';
 import{settleNpcCompanyHoldings}from './companyEstate.js';
@@ -582,6 +583,7 @@ function settleRecurringHouseholdItems(S, summary, netDeltaAtEntry) {
 
 /* Settle one adult month (18+ ONLY) — transparent, penny-exact, zero ghost charges */
 export function settleHouseholdMonth(S) {
+  reviewPersonalReceivables(S);
   if(S)reconcilePlayerLease(S);
   /* v2.15 W3 — the monthly settlement refills social energy. Placed
      before the under-18 early return, so the refill is the settlement's

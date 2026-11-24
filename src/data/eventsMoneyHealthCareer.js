@@ -3,7 +3,7 @@ import{eraDepositRates}from'./economy.js';
 import{worldEventEffects}from'../systems/worldEvents.js';
 import{bookNarrativeLoan,narrativeLoanQuote,payNarrativeLoan}from'../systems/narrativeLoans.js';
 import {topUpPrivatePension} from '../systems/careerMarket.js';
-import {investInMarketAsset} from '../systems/completeLifeSystems.js';
+import {computeZakatDueLocal,payAnnualZakat,investInMarketAsset} from '../systems/completeLifeSystems.js';
 import {GLOBAL_MARKET_ASSETS} from './megaFinanceAndMarkets.js';
 import {personalLoanGates,takePersonalLoan,sellGold21k,buyBankCertificate} from '../systems/economyEngine.js';
 import {recordCivilLoss} from '../systems/civilClaims.js';
@@ -1335,48 +1335,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 25},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(3000, S.country, S.year);
-      const B = eraLocalCost(1500, S.country, S.year);
-      return {
-        key: 'ev_money_zakat_due',
-        category: 'money',
-        title: "Zakat Is Due",
-        text: `Ramadan is here, and your zakat is due: ${formatMoney(A, S.country)} on the savings you have held for a year. It is not a bill — it is an obligation, and you know exactly who in the family needs it most.`,
-        choices: [
-          {
-            label: "Pay it in full",
-            effect: (st) => {
-              walletMove(st, -A, 'Pay it in full', 'money');
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+6));
-              st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+3));
-              recordJournal(st, `You paid your zakat of ${formatMoney(A, S.country)} in full, to family who needed it.`, 'money');
-            },
-          },
-          {
-            label: "Pay half now, half next month",
-            effect: (st) => {
-              walletMove(st, -B, 'Pay half now, half next month', 'money');
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+3));
-              recordJournal(st, `You paid half your zakat now, ${formatMoney(B, S.country)}, and promised the rest next month.`, 'money');
-            },
-          },
-          {
-            label: "Give it as food instead of cash",
-            effect: (st) => {
-              walletMove(st, -A, 'Give it as food instead of cash', 'money');
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+5));
-              recordJournal(st, `You gave your zakat as food parcels worth ${formatMoney(A, S.country)}, handed out yourself.`, 'money');
-            },
-          },
-        ],
-      };
+      const q=computeZakatDueLocal(S);if(!q.eligible||q.due<=0||S.credentials.zakatLastYearPaid===S.year)return null;
+      return{key:'ev_money_zakat_due',category:'money',title:'Review Your Annual Giving',text:`The game's simplified Finance estimate is ${formatMoney(q.due,S.country)}, using the same 85g-gold threshold and 2.5% calculation. This is not a personal religious ruling or a verified holding-period calculation. Payment records this year's fulfillment in Finance, so it cannot be charged twice.`,choices:[{label:`Pay the modeled ${formatMoney(q.due,S.country)}`,effect:st=>payAnnualZakat(st)},{label:'Review later in Finance',effect:st=>{}}]};
     },
   },
   {
