@@ -181,3 +181,14 @@ Cash, each owned credit card with available limit/APR, regional installments wit
 - Verification: 88 focused files pass, including 9-sector unit/cost/cycle reconciliation, required role/premises gates, monthly idempotency, reserve settlement, investor distributions, dilution/exit anti-arbitrage, and actual missed-bill failure. Core 155, roles 71, operations 75 pass. Actual 390px phone playthroughs of all 9 sectors cover launch/choice/preparation/core hire/premises/funding/opening/sales/reload. Broad v220-i1 suite still has 7 old layout/catalog assertions failing, not reported as green.
 
 - Updated v220-i1 navigation assertions now pass 81/81. Two older numeric/layout snapshot suites remain non-green: v220-i3 113/134, v220-i4 31/50, including assumptions that the first catalog item is the old fruit stall, all statements render on Overview, old multi-accordion structure and fixed old stock price constants. Their failures remain disclosed; 88 focused regression files and actual sector playthroughs are separate evidence, not a claim every historical test passes.
+
+
+## Operating content pass, November 24
+
+Ten lifecycle sectors now have supplier, product-specification, customer and routine choices wired into monthly settlement. Each sector has 2 fictional suppliers, 3 specifications, 3 customer segments, 2 routines and 2 incidents with 2 responses. Food and retail specifications also follow the chosen niche. Quotes are country/era game values, not real vendor offers.
+
+Changes affect invoice costs, effective sale prices, service capacity, demand, recurring costs and quality. Paid incident responses debit actual household cash. Open incidents limit output; cheaper responses trade cash for next-month output/quality. Stock invoices preserve purchase quotes and supplier reliability; late deliveries do not charge an invoice until goods arrive. Stock must clear before changing range. In-progress projects preserve quoted input price and sale price.
+
+Checks: all ten sectors have unit tests for all four incident responses, every choice category affecting settlement, repeated-month guards, order quote preservation, cycle price preservation and save/reload. Nine-sector phone launch-to-trading tests exercise supplier/specification/customer/routine buttons. Tech phone test covers launch-to-release and actual billable-price revenue.
+
+Still deliberately thin: one active range rather than simultaneous SKU lots; customer segments rather than named contract accounts or a customer ledger; monthly rather than daily simulation; two incidents per sector rather than a long event library; supplier choice rather than negotiated contracts. Classic-model specialty businesses do not get this operating layer. Medical/legal requirements remain simplified, not real professional guidance. This is a content/mechanics tranche, not a claim that the whole business game is deep or finished.

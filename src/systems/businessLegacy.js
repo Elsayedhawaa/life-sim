@@ -303,7 +303,8 @@ export function convertBusinessFiguresCurrency(S, biz, toCountry) {
   const conv = (v) => Math.round(convertCurrency(Number(v) || 0, from, toCountry, S.year));
   biz.monthlyRev = conv(biz.monthlyRev);
   biz.monthlyCost = conv(biz.monthlyCost);
-  if(biz.enterprise)for(const key of ['price','unitCost','fixed','burn','reserve','pendingStockCost','wipUnitCost'])if(Number.isFinite(biz.enterprise[key]))biz.enterprise[key]=conv(biz.enterprise[key]);
+  if(biz.enterprise)for(const key of ['price','unitCost','fixed','burn','reserve','pendingStockCost','wipUnitCost','wipPrice','pendingStockUnit'])if(Number.isFinite(biz.enterprise[key]))biz.enterprise[key]=conv(biz.enterprise[key]);
+  if(biz.operating?.history)for(const entry of biz.operating.history)entry.cost=conv(entry.cost);
   if(biz.tech)for(const key of ['price','cloud','fixed','burn','bookings','capitalRaised','reserve'])if(Number.isFinite(biz.tech[key]))biz.tech[key]=conv(biz.tech[key]);
   biz.capitalInvested = conv(biz.capitalInvested);
   for(const key of ['totalCapitalIn','retainedCash','retainedEarnings','debtLocal','brandValue'])if(Number.isFinite(biz[key]))biz[key]=conv(biz[key]);

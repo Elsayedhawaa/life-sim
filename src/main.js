@@ -1,3 +1,4 @@
+import{operatingAction}from './systems/companyOperatingContent.js';
 import{companyAction}from './systems/companyLifecycle.js';
 import{techAction}from './systems/techStartup.js';
 import{openInternationalBusiness}from './systems/businessInternational.js';
@@ -1915,6 +1916,7 @@ if (typeof document !== 'undefined') {
     if(action==='biz-staff-request'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);const emp=biz?.staff?.find(e=>e.id===btn.dataset.staff);handleActionResult(answerEmployeeRequest(S,biz,emp,btn.dataset.accept==='yes'));return;}
     if(action==='biz-sector'){uiState.bizSector=btn.dataset.sector;renderApp();return;}
     if(action==='biz-employee'){uiState.bizEmployee=btn.dataset.staff;renderApp();return;}
+    if(action==='operating-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(operatingAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
     if(action==='company-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(companyAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
     if(action==='tech-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(techAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
     if(action==='biz-tab'){uiState.bizTab=btn.dataset.area;renderApp();return;}
