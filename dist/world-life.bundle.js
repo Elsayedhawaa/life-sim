@@ -2080,7 +2080,7 @@ ${r(AP(e,a,t))}<details><summary>Branches &amp; locations</summary>${t.branchesH
     </div>
   `}function GC(e,a,t){let o=typeof a.lockReason=="function"?a.lockReason(e):a.lockReason;return o?ye(String(o),""):ye("Not available right now","This choice needs something you do not have yet")}function jC(e){let a=e.activeScene,t=a.speakerId?e.people[a.speakerId]:null,o=Nd(e);return`
     <section class="scene-card" aria-live="polite" tabindex="-1">
-      <div class="scene-kicker">${a.urgent?"URGENT CROSSROADS":`CHAPTER: ${b(o.name.toUpperCase())} \u2014 A DECISION`}</div>
+      <div class="scene-kicker">${a.major?"MAJOR LIFE EVENT":a.urgent?"URGENT CROSSROADS":`CHAPTER: ${b(o.name.toUpperCase())} \u2014 A DECISION`}</div>
       <div class="scene-header" style="justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:220px">
           ${t?at(t,58):""}

@@ -1115,7 +1115,7 @@ function renderActiveSceneHtml(S) {
 
   return `
     <section class="scene-card" aria-live="polite" tabindex="-1">
-      <div class="scene-kicker">${sc.urgent ? 'URGENT CROSSROADS' : `CHAPTER: ${esc(chapter.name.toUpperCase())} — A DECISION`}</div>
+      <div class="scene-kicker">${sc.major ? 'MAJOR LIFE EVENT' : sc.urgent ? 'URGENT CROSSROADS' : `CHAPTER: ${esc(chapter.name.toUpperCase())} — A DECISION`}</div>
       <div class="scene-header" style="justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:220px">
           ${speaker ? renderPortraitSvg(speaker, 58) : ''}
