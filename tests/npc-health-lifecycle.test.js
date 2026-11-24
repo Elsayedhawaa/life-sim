@@ -82,3 +82,29 @@ function married(seed, spouseAge = 36) { const s = createNewLifeState({ country:
 { const { s, w, kid } = married(5); assert.ok(initiateDivorce(s, w.id, 'standard', { confirmed: true, custody: 'spouse' }).ok);
   for (let y = 0; y < 20; y++) { s.year++; for (const p of Object.values(s.people)) if (p.alive && p.id !== 'player') p.age++; tickNpcAutonomyYearly(s); }
   assert.equal(w.healthTickYear, undefined, 'ex-spouse is not ticked as a relative'); assert(kid.alive && !kid.illness); console.log('divorce: ex-spouse no longer a health-tick relative'); }
+
+// Real 56-62 ticks through the real yearly tick: illness ownership continues across 57/58.
+{ const out = { acuteResolved: 0, acuteDied: 0, chronicDied: 0, chronicKept: 0, healedAfter58: 0, diedAfter58: 0 };
+  for (const kind of ['a serious infection', 'an autoimmune disease', 'heart disease']) for (let seed = 1; seed <= 400; seed++) {
+    const s = fresh(seed); const sib = s.people[s.relations.siblingIds[0]]; sib.age = 56; const rec = { kind, sinceYear: s.year, src: 'young' }; sib.illness = { ...rec };
+    for (let y = 0; y < 7 && sib.alive; y++) { s.year++; sib.age++; const had = sib.illness; tickNpcAutonomyYearly(s);
+      if (sib.alive && had && !sib.illness) { assert(sib.pastIllnesses?.some(p => p.kind === kind && p.sinceYear === rec.sinceYear && p.resolvedYear === s.year), 'never cleared without a recovery record'); if (sib.age > 57) out.healedAfter58++; }
+      if (sib.alive && sib.illness) assert.equal(JSON.stringify(sib.illness), JSON.stringify(rec), 'illness record is carried unchanged, not rewritten by the old branch');
+      if (!sib.alive) { if (had) assert(sib.deathCause && sib.deathCause.startsWith(kind), 'cause is the recorded illness: ' + sib.deathCause); else assert(sib.pastIllnesses?.length, 'died only after recovering'); if (sib.age > 57) out.diedAfter58++; } }
+    if (!sib.alive) (kind === 'a serious infection' ? out.acuteDied++ : out.chronicDied++); else if (!sib.illness) out.acuteResolved += kind === 'a serious infection' ? 1 : 0; else out.chronicKept++; }
+  assert(out.healedAfter58 > 0 && out.diedAfter58 > 0, 'both resolutions occur after 58'); console.log('56-62 real ticks:', JSON.stringify(out)); }
+// Ex-spouse is never processed or labeled as a spouse after divorce; journal has no health lines naming them.
+{ let checked = 0; for (let seed = 1; seed <= 60; seed++) { const { s, w } = married(seed, 40); assert.ok(initiateDivorce(s, w.id, 'standard', { confirmed: true, custody: 'spouse' }).ok);
+    for (let y = 0; y < 25; y++) { s.year++; for (const p of Object.values(s.people)) if (p.alive && p.id !== 'player') p.age++; tickNpcAutonomyYearly(s); }
+    assert(!w.illness?.src && !w.accident && w.healthTickYear === undefined);
+    assert(!(s.journal || []).some(j => /diagnosed|accident|recovered from/.test(j.text || j.message || JSON.stringify(j)) && JSON.stringify(j).includes(w.firstName) && /your spouse/i.test(JSON.stringify(j))), 'no spouse-labeled health line about the ex'); checked++; }
+  console.log(`divorce exclusion: ${checked} divorced lives, ex never ticked or labeled spouse`); }
+// Spouse who owns a company dies young through the health path: estate settles once, cause recorded.
+{ let settled = 0;
+  for (let seed = 1; seed <= 600 && settled < 3; seed++) { const { s, w } = married(seed, 40);
+    w.ownedBusinesses = [{ id: 'Spouse Co', name: 'Spouse Co', typeId: 'kiosk', country: 'usa', figuresCurrency: 'usa', capitalInvested: 50000, equityOwned: 100, heirId: 'player', debtLocal: 0, staff: [], monthlyRev: 5000, monthlyCost: 1000, lastPL: { net: 0 }, history: [] }];
+    for (let y = 0; y < 30 && w.alive; y++) { s.year++; for (const p of Object.values(s.people)) if (p.alive && p.id !== 'player') p.age++; tickNpcAutonomyYearly(s); }
+    if (!w.alive && w.age <= 57) { settled++; assert(w.deathCause && (w.illness || w.accident)); assert(w.companyEstateSettlement && w.ownedBusinesses.length === 0, 'estate settled and holdings moved');
+      assert.equal(s.npcCompanyEstates.filter(e => e.ownerId === w.id).length, 1, 'settled once'); assert(s.career.businesses.some(b => b.name === 'Spouse Co'), 'player received the named company');
+      const snap = JSON.stringify(s); tickNpcAutonomyYearly(s); assert.equal(s.npcCompanyEstates.filter(e => e.ownerId === w.id).length, 1, 'still once after more ticks'); } }
+  assert(settled > 0); console.log(`company-owning spouse: ${settled} young deaths settled once with recorded cause`); }
