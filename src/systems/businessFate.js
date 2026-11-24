@@ -1,3 +1,4 @@
+import{convertCurrency}from'../data/economy.js';
 /* ============================================================================
    World Life 2.0 — Business Fate (v2.17 W5, §6)
    The business's fate reaches the rest of the life.
@@ -223,18 +224,18 @@ function rawBankCallScene(S, biz) {
     maxPerLife: 1,
     category: 'money',
     title: `The Bank Calls About ${biz.name}`,
-    text: `${deadNote}Your bank is on the phone about ${biz.name}: ${formatMoney(debt, S.country)} of unpaid business bills is on the books${(Number(biz.misses) || 0) > 0 ? ` after ${biz.misses} missed month${biz.misses === 1 ? '' : 's'}` : ''}. "The arrears need clearing, or we start collections."`,
+    text: `${deadNote}Your bank is on the phone about ${biz.name}: ${formatMoney(debt, biz.figuresCurrency||biz.country||S.country)} of unpaid business bills is on the books${(Number(biz.misses) || 0) > 0 ? ` after ${biz.misses} missed month${biz.misses === 1 ? '' : 's'}` : ''}. "The arrears need clearing, or we start collections."`,
     choices: [
       {
-        label: `Clear the arrears now — ${formatMoney(debt, S.country)}`,
-        available: (st) => (Number(st.money?.cash) || 0) >= Math.round(Number(biz.debtLocal) || 0) && (Number(biz.debtLocal) || 0) > 0,
+        label: `Clear the arrears now — ${formatMoney(debt, biz.figuresCurrency||biz.country||S.country)}`,
+        available: (st) => (Number(st.money?.cash) || 0) >= Math.round(convertCurrency(Number(biz.debtLocal)||0,biz.figuresCurrency||biz.country||st.country,st.country,st.year)) && (Number(biz.debtLocal) || 0) > 0,
         effect: (st) => {
           const owed = Math.round(Number(biz.debtLocal) || 0);
           if (owed <= 0) return;
-          walletMove(st, -owed, `Cleared ${biz.name} business arrears after the bank's call`, 'bank');
+          walletMove(st, -Math.round(convertCurrency(owed,biz.figuresCurrency||biz.country||st.country,st.country,st.year)), `Cleared ${biz.name} business arrears after the bank's call`, 'bank');
           biz.debtLocal = 0;
           biz.misses = 0;
-          recordJournal(st, `Cleared the ${formatMoney(owed, st.country)} of arrears on ${biz.name} after the bank's call — the account is clean again.`, 'money');
+          recordJournal(st, `Cleared the ${formatMoney(owed, biz.figuresCurrency||biz.country||st.country)} of arrears on ${biz.name} after the bank's call — the account is clean again.`, 'money');
         },
       },
       {
@@ -604,7 +605,7 @@ export function checkBusinessFate(S) {
   return report;
 }
 
-function fateFingerprint(S,biz){const loan=getBusinessLoan(S,biz);return JSON.stringify({country:S.country,loan:loan?{id:loan.id,balance:loan.balance,monthlyPayment:loan.monthlyPayment,remainingMonths:loan.remainingMonths,inCollections:loan.inCollections,annualRate:loan.annualRate,flatMarkup:loan.flatMarkup,missedMonths:loan.missedMonths}:null,debt:biz.debtLocal,rev:biz.monthlyRev,cost:biz.monthlyCost,repeat:biz.repeatRate,capital:biz.capitalInvested});}
+function fateFingerprint(S,biz){const loan=getBusinessLoan(S,biz);return JSON.stringify({country:S.country,figuresCurrency:biz.figuresCurrency,loan:loan?{id:loan.id,balance:loan.balance,monthlyPayment:loan.monthlyPayment,remainingMonths:loan.remainingMonths,inCollections:loan.inCollections,annualRate:loan.annualRate,flatMarkup:loan.flatMarkup,missedMonths:loan.missedMonths}:null,debt:biz.debtLocal,rev:biz.monthlyRev,cost:biz.monthlyCost,repeat:biz.repeatRate,capital:biz.capitalInvested});}
 function durableFateScene(S,biz,person,kind,snapshot){
  if(!biz)return null;const q=snapshot||{kind,bizId:biz.id,country:S.country,personId:person?.id,year:S.year,month:S.month,fingerprint:fateFingerprint(S,biz),affection:kind==='SpouseReaction'?Number(person?.rel?.affection)||0:null,offer:kind==='FriendJob'?friendJobOffer(S,person):kind==='BiggerLoan'?biggerLoanOffer(S,biz):null};
  const raw={BankCall:rawBankCallScene,SpouseReaction:rawSpouseReactionScene,FriendJob:rawFriendJobScene,BiggerHouse:rawBiggerHouseScene,BiggerLoan:rawBiggerLoanScene,Rival:rawRivalScene}[kind];

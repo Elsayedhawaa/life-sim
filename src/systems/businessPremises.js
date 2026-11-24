@@ -400,10 +400,11 @@ export function repairBusinessPremises(S, biz) {
   const cond = Number(biz.premises.conditionPct ?? 100);
   if (cond >= 95) return { ok: false, msg: `${biz.premises.label} is already in good shape (${Math.round(cond)}%).` };
   const cost = repairCostLocal(S, biz);
-  if (S.money.cash < cost) {
-    return { ok: false, msg: `Repairing ${biz.premises.label} from ${Math.round(cond)}% to 100% costs ${formatMoney(cost, S.country)} — you have ${formatMoney(S.money.cash, S.country)}.` };
+  const charge = Math.round(convertCurrency(cost,biz.figuresCurrency||biz.country||S.country,S.country,S.year));
+  if (S.money.cash < charge) {
+    return { ok: false, msg: `Repairing ${biz.premises.label} from ${Math.round(cond)}% to 100% costs ${formatMoney(cost, biz.figuresCurrency||biz.country||S.country)} — you have ${formatMoney(S.money.cash, S.country)}.` };
   }
-  walletMove(S, -cost, `Repairs at ${biz.premises.label} for ${biz.name}`, 'business');
+  walletMove(S, -charge, `Repairs at ${biz.premises.label} for ${biz.name}`, 'business');
   biz.premises.conditionPct = 100;
   /* An owned property's own condition is the same condition — fixing
      the shop fixes the property record too. */
@@ -412,8 +413,8 @@ export function repairBusinessPremises(S, biz) {
     const prop = (S.housing.properties || []).find((p) => p.id === propId);
     if (prop) prop.conditionPct = Math.max(Number(prop.conditionPct ?? 0), 100);
   }
-  recordJournal(S, `You paid ${formatMoney(cost, S.country)} to repair ${biz.premises.label} for ${biz.name} — condition back to 100%.`, 'business');
-  return { ok: true, msg: `${biz.premises.label} repaired to 100% for ${formatMoney(cost, S.country)}.` };
+  recordJournal(S, `You paid ${formatMoney(cost, biz.figuresCurrency||biz.country||S.country)} to repair ${biz.premises.label} for ${biz.name} — condition back to 100%.`, 'business');
+  return { ok: true, msg: `${biz.premises.label} repaired to 100% for ${formatMoney(cost, biz.figuresCurrency||biz.country||S.country)}.` };
 }
 
 /* --------------------------------------------------------------------------
@@ -447,7 +448,7 @@ export function reviewBusinessRent(S, biz) {
   }
   if (biz.premises.pendingReview) {
     const p = biz.premises.pendingReview;
-    return { ok: true, msg: `The landlord already proposed ${formatMoney(p.newRentLocal, S.country)} a month (was ${formatMoney(biz.premises.monthlyRentLocal, S.country)}). Accept it on the business card, or decline it.` };
+    return { ok: true, msg: `The landlord already proposed ${formatMoney(p.newRentLocal, biz.figuresCurrency||biz.country||S.country)} a month (was ${formatMoney(biz.premises.monthlyRentLocal, biz.figuresCurrency||biz.country||S.country)}). Accept it on the business card, or decline it.` };
   }
   if (!rentReviewDue(S, biz)) {
     return { ok: false, msg: `The lease on ${biz.premises.label} is not up for review yet — it renews yearly.` };
@@ -456,10 +457,10 @@ export function reviewBusinessRent(S, biz) {
   const pct = randInt(S, -5, 20);
   const newRent = Math.max(1, Math.round(oldRent * (1 + pct / 100)));
   biz.premises.pendingReview = { newRentLocal: newRent, pct, proposedYear: S.year, proposedMonth: S.month };
-  recordJournal(S, `The landlord of ${biz.premises.label} proposed a new rent for ${biz.name}: ${formatMoney(newRent, S.country)} a month (was ${formatMoney(oldRent, S.country)}). You have not accepted it yet.`, 'business');
+  recordJournal(S, `The landlord of ${biz.premises.label} proposed a new rent for ${biz.name}: ${formatMoney(newRent, biz.figuresCurrency||biz.country||S.country)} a month (was ${formatMoney(oldRent, biz.figuresCurrency||biz.country||S.country)}). You have not accepted it yet.`, 'business');
   return {
     ok: true,
-    msg: `Rent review: the landlord wants ${formatMoney(newRent, S.country)} a month (was ${formatMoney(oldRent, S.country)}, ${pct >= 0 ? '+' : ''}${pct}%). Nothing changes until you accept — the old rent is still what is charged.`,
+    msg: `Rent review: the landlord wants ${formatMoney(newRent, biz.figuresCurrency||biz.country||S.country)} a month (was ${formatMoney(oldRent, biz.figuresCurrency||biz.country||S.country)}, ${pct >= 0 ? '+' : ''}${pct}%). Nothing changes until you accept — the old rent is still what is charged.`,
   };
 }
 
@@ -478,10 +479,10 @@ export function acceptBusinessRentReview(S, biz) {
   biz.premises.lastReviewMonth = S.month;
   biz.premises.leaseMonthsLeft = 12;
   biz.premises.pendingReview = null;
-  recordJournal(S, `You accepted the new rent for ${biz.name}: ${formatMoney(p.newRentLocal, S.country)} a month (was ${formatMoney(oldRent, S.country)}). That is the rent the business will be charged from next month.`, 'business');
+  recordJournal(S, `You accepted the new rent for ${biz.name}: ${formatMoney(p.newRentLocal, biz.figuresCurrency||biz.country||S.country)} a month (was ${formatMoney(oldRent, biz.figuresCurrency||biz.country||S.country)}). That is the rent the business will be charged from next month.`, 'business');
   return {
     ok: true,
-    msg: `Accepted: rent is now ${formatMoney(p.newRentLocal, S.country)} a month — that is the rent charged from next month, not the old ${formatMoney(oldRent, S.country)}.`,
+    msg: `Accepted: rent is now ${formatMoney(p.newRentLocal, biz.figuresCurrency||biz.country||S.country)} a month — that is the rent charged from next month, not the old ${formatMoney(oldRent, biz.figuresCurrency||biz.country||S.country)}.`,
   };
 }
 
@@ -525,22 +526,22 @@ export function renderBusinessPremisesSection(S, biz) {
   const current = !p ? `<span class="muted">No premises yet — the business trades without a base. Rent a unit below, use a property you own, or run it from home.</span>`
     : p.kind === 'home'
       ? `<span><strong>Run from home</strong> · No rent · Revenue x0.8</span>`
-      : `<span><strong>${esc(p.label)}</strong> · ${p.kind === 'rented' ? `Rent: <strong class="mono">${esc(formatMoney(p.monthlyRentLocal, S.country))}/mo</strong>` : 'Owned — no rent'} · Condition: <strong class="${(p.conditionPct ?? 100) < 60 ? 'text-bad' : 'text-good'}">${Math.round(p.conditionPct ?? 100)}%</strong>${factor < 1 ? ` · Run-down premises: revenue x${factor}` : ''}${p.kind === 'rented' && typeof p.leaseMonthsLeft === 'number' ? ` · Lease: ${p.leaseMonthsLeft} month${p.leaseMonthsLeft === 1 ? '' : 's'} left` : ''}</span>`;
+      : `<span><strong>${esc(p.label)}</strong> · ${p.kind === 'rented' ? `Rent: <strong class="mono">${esc(formatMoney(p.monthlyRentLocal, biz.figuresCurrency||biz.country||S.country))}/mo</strong>` : 'Owned — no rent'} · Condition: <strong class="${(p.conditionPct ?? 100) < 60 ? 'text-bad' : 'text-good'}">${Math.round(p.conditionPct ?? 100)}%</strong>${factor < 1 ? ` · Run-down premises: revenue x${factor}` : ''}${p.kind === 'rented' && typeof p.leaseMonthsLeft === 'number' ? ` · Lease: ${p.leaseMonthsLeft} month${p.leaseMonthsLeft === 1 ? '' : 's'} left` : ''}</span>`;
 
   return `
     <div class="card" style="margin-top:8px">
       <div class="section-head"><h4>Premises — ${esc(biz.name)}</h4></div>
       <div class="item-row"><div class="item-row-main">${current}</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${p && p.kind !== 'home' && repairCost > 0 ? `<button class="btn btn-sm" data-action="biz-premises-repair" data-biz="${esc(biz.id)}">Repair (${esc(formatMoney(repairCost, S.country))})</button>` : ''}
+          ${p && p.kind !== 'home' && repairCost > 0 ? `<button class="btn btn-sm" data-action="biz-premises-repair" data-biz="${esc(biz.id)}">Repair (${esc(formatMoney(repairCost, biz.figuresCurrency||biz.country||S.country))})</button>` : ''}
           ${p && p.kind === 'rented' && pending ? `
-            <button class="btn btn-primary btn-sm" data-action="biz-premises-review-accept" data-biz="${esc(biz.id)}">Accept new rent ${esc(formatMoney(pending.newRentLocal, S.country))}/mo</button>
+            <button class="btn btn-primary btn-sm" data-action="biz-premises-review-accept" data-biz="${esc(biz.id)}">Accept new rent ${esc(formatMoney(pending.newRentLocal, biz.figuresCurrency||biz.country||S.country))}/mo</button>
             <button class="btn btn-sm" data-action="biz-premises-review-decline" data-biz="${esc(biz.id)}">Decline</button>` : ''}
           ${p && p.kind === 'rented' && !pending && due ? `<button class="btn btn-sm" data-action="biz-premises-review" data-biz="${esc(biz.id)}">Rent review (lease year up)</button>` : ''}
           ${!p || p.kind !== 'home' ? `<button class="btn btn-sm" data-action="biz-premises-home" data-biz="${esc(biz.id)}">Run from home (no rent, x0.8 revenue)</button>` : ''}
         </div>
       </div>
-      ${pending ? `<p class="muted" style="font-size:0.85rem">Landlord's proposal: <strong class="mono">${esc(formatMoney(pending.newRentLocal, S.country))}/mo</strong> (was ${esc(formatMoney(p.monthlyRentLocal, S.country))}/mo, ${pending.pct >= 0 ? '+' : ''}${pending.pct}%). Nothing changes until you accept — the old rent is still charged.</p>` : ''}
+      ${pending ? `<p class="muted" style="font-size:0.85rem">Landlord's proposal: <strong class="mono">${esc(formatMoney(pending.newRentLocal, biz.figuresCurrency||biz.country||S.country))}/mo</strong> (was ${esc(formatMoney(p.monthlyRentLocal, biz.figuresCurrency||biz.country||S.country))}/mo, ${pending.pct >= 0 ? '+' : ''}${pending.pct}%). Nothing changes until you accept — the old rent is still charged.</p>` : ''}
       <div style="margin-top:6px">
         <strong style="font-size:0.82rem">Rent a unit in ${esc(biz.city || S.city)}:</strong>
         ${units.map((u) => `

@@ -935,7 +935,7 @@ export function renderPremisesSectionHtml(S, biz, extras = {}) {
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:4px 0;">
       <span><strong>Maintain the premises</strong> — repair to 100% condition</span>
       <span>${repairCost > 0
-        ? `<button class="btn btn-sm" data-action="biz-ops-repair" data-biz="${escHtml(biz.id)}">Repair premises — costs ${fmt(S, repairCost)}</button>`
+        ? `<button class="btn btn-sm" data-action="biz-ops-repair" data-biz="${escHtml(biz.id)}">Repair premises — costs ${formatMoney(repairCost,biz.figuresCurrency||biz.country||S.country)}</button>`
         : '<span class="muted">Nothing to repair — condition is good, or the business runs from home.</span>'}</span>
     </div>
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:4px 0;">

@@ -209,3 +209,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W95 Bank restructuring now quotes a fully priced extended-term payment at unchanged APR (flat-markup stays flat), not independent75%payment/150%term numbers. Declining a plan does not invent another missed month during the same call or promise a repeated once-only call. Snapshot includes interest type/rate/missed count.
 
 - [x] W96 Mixed-currency manager actions: onboarding/severance convert business book units to household cash, but theft/audit/court/bonus/helper salary use raw book amounts. Verify and unify wallet charging/affordability; preserve native recovery/accounting amounts and correct displayed units. Also migrate outstanding manager asks/embezzlement records when book currency changes.
+
+- [x] W97 Relocation re-denominates premises rent but not premises value or pending rent review; later repairs/review mix currencies. Convert all three together, and make repair/arrears wallet boundaries use business book currency consistently. Marketing/move remaining mixed-book audit separate.
+
+- [ ] W98 Business premises catalog always uses player country even when business trades abroad. Use business country for offered units and book currency for stored rent/value; wallet charges remain household currency. Audit marketing/move direct costs with explicit mixed-book test before classifying.
