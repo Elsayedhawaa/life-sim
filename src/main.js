@@ -388,7 +388,7 @@ const uiState = {
   cadShowMep: false,
   cadFloor: -1,
   previewShape: null,
-  reUnitId: 'apt_m',
+  reUnitId: '', /* empty: the market shows its own default unit; the buy button carries the shown unit's id */
   reFinishId: 'standard',
   rePlanId: 'cash',
   reQuery: '',
@@ -1621,7 +1621,7 @@ if (typeof document !== 'undefined') {
       handleActionResult(buyCompoundOrDistrictUnit(S, {
         country: btn.dataset.country || S.country,
         devId: btn.dataset.dev,
-        unitId: btn.dataset.unit || uiState.reUnitId || 'apt_m',
+        unitId: btn.dataset.unit || uiState.reUnitId,
         finishId: uiState.reFinishId || 'standard',
         planId: uiState.rePlanId || 'cash'
       }));

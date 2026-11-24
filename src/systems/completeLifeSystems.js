@@ -98,7 +98,9 @@ export function buyCompoundOrDistrictUnit(S, opts = {}) {
     return { ok: false, msg: 'Sakani REDF eligibility starts at age 20 for Saudi citizens.' };
   }
 
-  const unit = PROPERTY_UNITS.find(u => u.id === opts.unitId) || PROPERTY_UNITS[4];
+  /* A missing or stale unit id must never buy a different property. */
+  const unit = PROPERTY_UNITS.find(u => u.id === opts.unitId);
+  if (!unit) return { ok: false, msg: 'That property type is not on the market any more. Nothing was bought and nothing was charged.' };
   if(unit.countries&&!unit.countries.includes(targetCountry))return {ok:false,msg:'That property style is not offered in this country.'};
   const finish = FINISHING_TIERS.find(f => f.id === opts.finishId) || FINISHING_TIERS[2];
   const plan = PAYMENT_PLANS.find(p => p.id === opts.planId) || PAYMENT_PLANS[0];

@@ -319,13 +319,19 @@ for (let i = 0; i < 30; i++) {
     }
 
     if (S.activeScene) {
-      const sig = S.activeScene.title;
+      /* Identity is the scene's own key (it carries the year, month and person for
+         major events and courtship steps), not its title: three steps of one
+         courtship or redundancies at different employers are distinct moments.
+         Choosing a university and then going back to pick another is explicit
+         navigation, not a repeat. */
+      const sig = S.activeScene.key || S.activeScene.eventId || S.activeScene.title;
+      const navigation = /^(post_highschool_choice|pick_major_)/.test(sig);
       seenTitleCount[sig] = (seenTitleCount[sig] || 0) + 1;
-      if (seenTitleCount[sig] >= 4) defects.D3_eventSpam3Plus++;
+      if (!navigation && seenTitleCount[sig] >= 4) defects.D3_eventSpam3Plus++;
 
       const yrSig = `${S.year}::${sig}`;
       seenTitleInYear[yrSig] = (seenTitleInYear[yrSig] || 0) + 1;
-      if (seenTitleInYear[yrSig] >= 2) defects.D4_duplicateSceneSameYear++;
+      if (!navigation && seenTitleInYear[yrSig] >= 2) defects.D4_duplicateSceneSameYear++;
 
       if (S.activeScene.key === 'formal_bankruptcy_filing' && S.year <= S.money.bankruptUntilYear) {
         defects.D5_repeatBankruptcyDuringWindow++;
