@@ -534,3 +534,9 @@ Curated director now supports base-key rebuild independent of once-seen flags, s
 
 ### W53 concrete recruitment restore
 Recruitment stores exact offered job data/country and rebuilds acceptance with current qualification/work authorization gates. No job/pay/employer reroll on reload.179focused files pass; unit accepts restored exact offer.390pxfresh130actions/40decisionsUSage24/2022 includes actual graduate recruitment reload and job acceptance;save/errors/overflow clean,pixels inspected. Further broad reload attempt found NPC wedding gapW54queued, not all scene types covered.
+
+## W54 NPC wedding exact invite, real remote gift
+- Saves named couple, place, year, original currency/gift and rebuilds choices on reload, without rerunning marriage.
+- Removed imaginary attendance: remote gift debits actual cash and credits recipient savings once, congratulations remains free. No travel booking is claimed.
+- 180 focused test files pass. 390px targeted save fixture reloads twice, sends gift, checks player/recipient balances and reload persistence. Fresh 130-action mobile pass remains separate from fixture evidence.
+- Broader all-baseId reload audit found W55 crisis warning restoration gap, queued rather than hidden.

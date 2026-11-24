@@ -131,6 +131,8 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W52 World-event news decisions also lack reload builder. Preserve original event/effect without firing effects again.
 
-- [ ] W53 Graduate recruitment concrete-offer scene disappears on reload; preserve original offer details and restore validated job acceptance functions.
+- [x] W53 Graduate recruitment concrete-offer scene disappears on reload; preserve original offer details and restore validated job acceptance functions.
 
 - [ ] W54 NPC wedding invitations also disappear on reload; preserve named couple/gift/date and code-backed attendance without reroll.
+
+- [ ] W55 Broad all-scene mobile reload audit found crisis career warning disappears after reload; preserve crisis/employer/frozen-pay warning and valid choices.

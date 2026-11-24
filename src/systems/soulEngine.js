@@ -506,32 +506,8 @@ function npcMarry(S, person, polygamy = false) {
       : `Your ${kin} ${person.firstName} married ${partner.fullName} in ${place}.${movedAbroad ? ` ${person.firstName} is moving to ${pCountry.name} to build their life together.` : ''}`,
     'relationship'
   );
-  queueScene(S, {
-    key: `npc_wedding_${person.id}_${S.year}`,
-    category: 'family',
-    title: `${person.firstName} Is Getting Married`,
-    text: polygamy
-      ? `Your ${kin} ${person.firstName} has taken a second wife, ${partner.fullName}. The wedding is in ${place}, and the family is talking about little else.`
-      : `Your ${kin} ${person.firstName} is marrying ${partner.fullName} in ${place}. There is a wedding to go to, and a gift is expected if you show up.`,
-    choices: [
-      {
-        label: `Go to the wedding & bring a gift (${formatMoney(giftCost, S.country)})`,
-        available: () => S.money.cash >= giftCost,
-        effect: (st) => {
-          walletMove(st, -giftCost, `Wedding gift for ${person.firstName}`, 'family');
-          rememberDeed(st, person, 'wedding_attended', 'You came to their wedding and gave a proper gift.', { affection: 10, respect: 6, trust: 5 });
-          recordJournal(st, `You went to ${person.firstName}'s wedding in ${place} and gave ${formatMoney(giftCost, st.country)} as a gift. ${person.firstName} kept thanking you all evening.`, 'relationship');
-        }
-      },
-      {
-        label: 'Send your congratulations from afar',
-        effect: (st) => {
-          rememberDeed(st, person, 'wedding_missed', 'You missed their wedding and only sent congratulations.', { affection: -4, respect: -2 });
-          recordJournal(st, `You could not make it to ${person.firstName}'s wedding in ${place}. You sent congratulations, and ${person.firstName} understood — mostly.`, 'relationship');
-        }
-      }
-    ]
-  });
+  queueScene(S,buildNpcWeddingScene(S,{personId:person.id,partnerId:partner.id,place,giftCost,country:S.country,year:S.year,kin,polygamy}));
+
   if (polygamy && firstWifeId) {
     const firstWife = S.people[firstWifeId];
     if (firstWife && firstWife.alive) {
@@ -1922,3 +1898,11 @@ export function restorePeopleDecision(S, saved) {
   if (!scene?.choices) return null;
   return { ...saved, ...scene, title: saved.title, text: saved.text };
 }
+
+export function buildNpcWeddingScene(S,invite){
+ if(!invite || !Number.isFinite(invite.giftCost) || invite.giftCost<=0 || !invite.country)return null;
+ const person=S.people[invite.personId],partner=S.people[invite.partnerId];if(!person?.alive||!partner?.alive)return null;
+ const cost=Math.round(convertCurrency(invite.giftCost,invite.country,S.country,S.year));
+ return{key:`npc_wedding_${person.id}_${invite.year}`,weddingInvite:invite,category:'family',title:person.firstName+' Is Getting Married',text:`${person.firstName} and ${partner.fullName}: ${invite.place}. Send a gift from your actual cash. This does not book travel or claim attendance.`,choices:[{label:`Send wedding gift · ${formatMoney(cost,S.country)}`,available:()=>S.money.cash>=cost&&!S.legal.weddingReplies?.[person.id+'_'+invite.year],effect:st=>{const p=st.people[invite.personId];if(!p?.alive||st.money.cash<cost)return;st.legal.weddingReplies??={};const key=person.id+'_'+invite.year;if(st.legal.weddingReplies[key])return;walletMove(st,-cost,'Wedding gift for '+p.firstName,'family');p.career??={};p.career.savingsLocal=(p.career.savingsLocal||0)+convertCurrency(cost,st.country,p.residenceCountry||st.country,st.year);st.legal.weddingReplies[key]='gift';rememberDeed(st,p,'wedding_gift','Sent a wedding gift.',{affection:10,respect:6,trust:5});recordJournal(st,'Sent an actual wedding gift to '+p.firstName+'. No travel or attendance was booked.','family');}},{label:'Send congratulations without a gift',effect:st=>{st.legal.weddingReplies??={};st.legal.weddingReplies[person.id+'_'+invite.year]='congratulations';recordJournal(st,'Congratulated '+person.firstName+' without sending money.','family');}}]};
+}
+export function restoreNpcWeddingScene(S,saved){return saved?.weddingInvite?buildNpcWeddingScene(S,saved.weddingInvite):null;}
