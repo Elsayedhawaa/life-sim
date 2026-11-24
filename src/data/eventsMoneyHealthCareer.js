@@ -2,7 +2,7 @@ import{ALL_VACATIONS}from'./megaCareerEduMedical.js';
 import{childSchoolQuote,enrollChildSchoolYear}from'../systems/educationFunding.js';
 import{permitRenewalQuote,renewCurrentPermit,returnToHomeCountry,premiumResidencyQuote,applyPremiumOrGoldenResidency}from'../systems/visaMigrationEngine.js';
 import{CARS_MEGA_CATALOG}from'./megaCarsAndShop.js';
-import{computeEndOfService,resignCurrentJob}from'../systems/careerEducationEngine.js';
+import{setStudyEffort,computeEndOfService,resignCurrentJob}from'../systems/careerEducationEngine.js';
 import{payRecordedDebt}from'../systems/recordedDebtPayments.js';
 import{lendPersonalMoney,settlePersonalReceivable,givePersonalMoney}from'../systems/personalReceivables.js';
 import{eraDepositRates}from'./economy.js';
@@ -9963,48 +9963,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'school',
     repeatable: false,
     gates: {"minAge": 18, "maxAge": 26, "education": ["inUni"]},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(2000, S.country, S.year);
-      return {
-        key: 'ev_uni_failed_exam',
-        category: 'school',
-        title: "You Fail an Exam",
-        text: `The results are posted, and your name is on the wrong list: you failed. The module must be retaken, the fee is ${formatMoney(A, S.country)}, and the shame is worse than the money.`,
-        choices: [
-          {
-            label: "Retake it and pass",
-            effect: (st) => {
-              walletMove(st, -A, 'Retake it and pass', 'school');
-              st.education.academicSkill = clamp(st.education.academicSkill + (+4));
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You failed an exam, paid ${formatMoney(A, S.country)} to retake it, and passed the second time.`, 'school');
-            },
-          },
-          {
-            label: "Study twice as hard",
-            effect: (st) => {
-              st.education.academicSkill = clamp(st.education.academicSkill + (+5));
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
-              recordJournal(st, `You studied twice as hard after failing the exam, and never failed again.`, 'school');
-            },
-          },
-          {
-            label: "Consider dropping out",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+7));
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-5));
-              recordJournal(st, `You considered dropping out after failing the exam. The thought stayed for weeks.`, 'school');
-            },
-          },
-        ],
-      };
+    build:(S,ctx)=>{
+      const u=S.education.university;if(S.education.stage!=='university'||!u)return null;
+      return{key:'ev_uni_failed_exam',category:'school',title:'Rethink Your Study Routine',text:`${u.name}: current study routine ${S.education.studyEffort||'normal'}. No failed module or resit fee is recorded. Choose your actual Education study routine; it affects future progress and stress, not an instant pass or guarantee.`,choices:[{label:'Commit to hard study',effect:st=>setStudyEffort(st,'hard')},{label:'Use a balanced study routine',effect:st=>setStudyEffort(st,'normal')},{label:'Keep current study routine',effect:st=>{}}]};
     },
   },
   {

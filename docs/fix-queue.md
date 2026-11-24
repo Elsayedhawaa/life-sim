@@ -118,4 +118,9 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W44 Gulf golden-visa/sponsor scenes need real eligibility/evidence rather than invented salary qualification/signatures.
 
 - [x] W45 Gulf school-fee scene needs actual child enrollment/term record and no invented employer subsidy.
-- [ ] W46 Gulf Umrah scene needs real travel/calendar/leave route rather than one-off wallet/vitals story.
+- [x] W46 Gulf Umrah scene needs real travel/calendar/leave route rather than one-off wallet/vitals story.
+
+- [ ] W47 Fresh organic US audit reached a university failed-exam scene that invents failed module/fee/pass or never-fail promise without assessment record. Ground study support in actual university progress rather than fabricate results.
+- [ ] W48 Fresh organic US audit ceiling-leak scene grants guaranteed full home-insurance restoration/neighbour payment without damage/claim evidence; model actual repair condition and covered claim rule.
+
+- [ ] W49 Organic audit end screenshot reached mother medicine scene: inspect real recipient transfer and half-payment promise record, not only wallet/vitals.

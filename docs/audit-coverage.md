@@ -522,3 +522,6 @@ School-fee scene selects actual eligible6-17child with no unexpired prepaid year
 
 ### W46 real Umrah travel
 Scene uses catalog Umrah quote and existing travel action, not wallet/vitals-only pilgrimage. Exact package plus unpaid leave cash, calendar days, planned departure, leave, border/travel-ban gates, actual credential/journal completion. Quote honestly covers player only, no invented family tickets or universal short drive.175focused files pass.390px actual1400SARtrip/calendar/leave/credential/reload and pixels inspected. Targeted Saudi fixture, not broad visa-policy validation.
+
+### Fresh hosted audit / W47 university routine
+130actualactions/43decisions reached US age24/2023 with event reload stability/save retained, no errors/overflow.31tab/subtabstates render clean. FoundW47fakefailedmodule/resitpass,W48unrecordedleakclaim,W49mothermedicine transfer/promise to inspect. W47now requires actual university and sets real shared Education study effort, no invented exam failure/fee/pass/never-fail guarantee.176focused files pass;390pxactualroutine/cashunchanged/noinstantprogress/reload/pixels pass. Detailed modular failed-exam/resit system not implemented, removed false claim.
