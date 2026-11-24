@@ -326,3 +326,6 @@ Independent site price/active lines/quantities/substitutions/yields and manager 
 
 ## Software site audience ledger
 Starts at zero users, explicit25% main-to-site transfer. Separate team/manager/payroll/cloud/catalog and results; no duplicated server racks. Market saturation includes sibling audiences. Missing manager pauses sales/acquisition but existing hosting continues. Merge returns users once. Group tax/cash/reserve and replay tests pass.110 focused files,12,152renders and phone transfer/hiring/manager/funding/real revenue/reload pass. Richer site-manager request workflow remainsL9.
+
+## Site request follow-through
+Worker training costs cash and raises skill; paid rest reduces work25% for one trading month. Site manager requests can fund training, rest or monthly pay review.110 focused files,12,152renders and local phone actual manager request/pay/trade/reload pass. Site-level accounts package now implemented across physical/software, without claiming separate legal entities or local-law verification. Family transfers conservatively remain main-site-only, shared legal ownership/tax consolidates.

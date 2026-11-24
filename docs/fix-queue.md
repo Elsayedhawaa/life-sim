@@ -20,7 +20,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] L6 Editable quantities, compatible substitutions and batch yields with cost/price tradeoffs.
 - [x] L7 More sector incidents with stock/morale/WIP/demand consequences.
 - [x] L8 Distinct sector activity effects on staff, stock, gear, WIP, spoilage, resources and churn.
-- [ ] L9 Branch-specific accounts, staff and stock. Physical-site ledger tranche has separate stock, staff, managers, reserves, group cash/tax settlement, people lifecycle and merge. Hosted physical-site ledgers verified cdae978. Independent site pricing/active lines/quantity/substitution/yields and manager raises implemented. Software audience transfer/separate cloud/payroll/sales now LOCAL. Richer site manager requests remain.
+- [x] L9 Separate physical/software site books, people, stock, audience, prices/recipes, reserve, requests and grouped settlement. G3 closes with it.
 - [ ] L10 Per-record server data loss, backup coverage and recovery.
 - [ ] L11 General equipment failure/repair/replacement queue beyond wear.
 - [ ] L12 Equipment lease terms and return/early termination cost.
@@ -37,7 +37,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [ ] G1 Receivables, late payment and bad debt.
 - [ ] G2 Named competitors and meaningful responses.
-- [ ] G3 Branch accounts/stock/staff. Shares implementation with L9; count once in totals.
+- [x] G3 Branch accounts/stock/staff. Shares implementation with L9; count once in totals.
 - [ ] G4 Lot quality, recalls and refunds.
 - [ ] G5 Contracts, backlog, deposits and deadlines.
 - [ ] G6 Compliance and insurance with modeled costs/risks, not legal assurances.
@@ -46,4 +46,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-21 distinct open packages after L8. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+20 distinct open packages after L9. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
