@@ -205,3 +205,5 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W93 Business-bank catch-up agreement: stored three-month flag had no settlement reader, so promised grace could still close business. Settlement now defers missed-bill closure through stated window while debt/fees continue.
 
 - [x] W94 Bank-call extra payment advertised three monthly payments even when remaining balance was smaller, over-gated cash and implied prepaid months despite principal-only payment. Quote exact balance-capped principal, apply current collections gate, propagate failure and retain normal-payment wording.
+
+- [x] W95 Bank restructuring now quotes a fully priced extended-term payment at unchanged APR (flat-markup stays flat), not independent75%payment/150%term numbers. Declining a plan does not invent another missed month during the same call or promise a repeated once-only call. Snapshot includes interest type/rate/missed count.

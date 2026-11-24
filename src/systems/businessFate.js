@@ -167,6 +167,9 @@ function rawBankCallScene(S, biz) {
     const monthly = Math.round(Number(loan.monthlyPayment) || 0);
     const balance = Math.round(Number(loan.balance) || 0);
     const extraPayment = Math.min(balance, monthly * 3);
+    const extendedMonths = Math.max(1, Math.ceil((Number(loan.remainingMonths)||1) * 1.5));
+    const rate = loan.flatMarkup ? 0 : Math.max(0,Number(loan.annualRate)||0)/12;
+    const extendedPayment = Math.max(1,Math.ceil(rate > 0 ? balance*rate/(1-Math.pow(1+rate,-extendedMonths)) : balance/extendedMonths));
     return {
       key: `fate_bank_${biz.id}`,
       baseId: `fate_bank_${biz.id}`,
@@ -176,14 +179,15 @@ function rawBankCallScene(S, biz) {
       text: `${deadNote}Your bank's business team is on the phone about the ${biz.name} loan — ${formatMoney(balance, S.country)} still owed, ${formatMoney(monthly, S.country)} a month. "${biz.name} is not covering its payments. We need a plan today — restructure the loan, or pay something now."`,
       choices: [
         {
-          label: `Restructure — pay ${formatMoney(Math.round(monthly * 0.75), S.country)}/mo instead, for longer`,
+          label: `Restructure — ${formatMoney(extendedPayment, S.country)}/mo for ${extendedMonths} months`,
+          available:st=>!getBusinessLoan(st,biz)?.inCollections,
           effect: (st) => {
             const l = getBusinessLoan(st, biz);
-            if (!l) return;
-            l.monthlyPayment = Math.max(1, Math.round((Number(l.monthlyPayment) || 0) * 0.75));
-            l.remainingMonths = Math.max(1, Math.round((Number(l.remainingMonths) || 0) * 1.5));
+            if (!l || l.inCollections) return {ok:false};
+            l.monthlyPayment = extendedPayment;
+            l.remainingMonths = extendedMonths;
             if (st.money) st.money.creditScore = clamp(Math.round((Number(st.money.creditScore) || 600) - 5), 300, 850);
-            recordJournal(st, `Restructured the ${biz.name} loan — payments down to ${formatMoney(l.monthlyPayment, st.country)}/month, but the term is longer and the bank notes it on your credit file.`, 'money');
+            recordJournal(st, `Restructured the ${biz.name} loan — ${formatMoney(l.monthlyPayment, st.country)}/month for ${l.remainingMonths} months at the existing rate. The final payment is capped at the balance; the bank notes the change on your credit file.`, 'money');
           },
         },
         {
@@ -199,13 +203,11 @@ function rawBankCallScene(S, biz) {
           },
         },
         {
-          label: 'Tell them you need time — you will call back',
+          label: 'Decline a plan — keep the current payment schedule',
           effect: (st) => {
-            const l = getBusinessLoan(st, biz);
-            if (l) l.missedMonths = (Number(l.missedMonths) || 0) + 1;
             if (st.money) st.money.creditScore = clamp(Math.round((Number(st.money.creditScore) || 600) - 3), 300, 850);
             shiftVitals(st, { stress: 4 });
-            recordJournal(st, `Told the bank you need time on the ${biz.name} loan and hung up. Nothing is paid, the month still counts as missed, and the call will come again.`, 'money');
+            recordJournal(st, `Declined a new plan for the ${biz.name} loan. Nothing is paid or deferred; the current payment schedule and any existing missed payments remain.`, 'money');
           },
         },
       ],
@@ -602,7 +604,7 @@ export function checkBusinessFate(S) {
   return report;
 }
 
-function fateFingerprint(S,biz){const loan=getBusinessLoan(S,biz);return JSON.stringify({country:S.country,loan:loan?{id:loan.id,balance:loan.balance,monthlyPayment:loan.monthlyPayment,remainingMonths:loan.remainingMonths,inCollections:loan.inCollections}:null,debt:biz.debtLocal,rev:biz.monthlyRev,cost:biz.monthlyCost,repeat:biz.repeatRate,capital:biz.capitalInvested});}
+function fateFingerprint(S,biz){const loan=getBusinessLoan(S,biz);return JSON.stringify({country:S.country,loan:loan?{id:loan.id,balance:loan.balance,monthlyPayment:loan.monthlyPayment,remainingMonths:loan.remainingMonths,inCollections:loan.inCollections,annualRate:loan.annualRate,flatMarkup:loan.flatMarkup,missedMonths:loan.missedMonths}:null,debt:biz.debtLocal,rev:biz.monthlyRev,cost:biz.monthlyCost,repeat:biz.repeatRate,capital:biz.capitalInvested});}
 function durableFateScene(S,biz,person,kind,snapshot){
  if(!biz)return null;const q=snapshot||{kind,bizId:biz.id,country:S.country,personId:person?.id,year:S.year,month:S.month,fingerprint:fateFingerprint(S,biz),affection:kind==='SpouseReaction'?Number(person?.rel?.affection)||0:null,offer:kind==='FriendJob'?friendJobOffer(S,person):kind==='BiggerLoan'?biggerLoanOffer(S,biz):null};
  const raw={BankCall:rawBankCallScene,SpouseReaction:rawSpouseReactionScene,FriendJob:rawFriendJobScene,BiggerHouse:rawBiggerHouseScene,BiggerLoan:rawBiggerLoanScene,Rival:rawRivalScene}[kind];
