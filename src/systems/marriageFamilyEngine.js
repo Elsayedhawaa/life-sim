@@ -1,4 +1,4 @@
-import {recordMarriageAssets,settleGameDivorce,divorceChildren} from './divorceModel.js';
+import {recordMarriageAssets,settleGameDivorce,divorceChildren,divorceBuyoutRequired} from './divorceModel.js';
 /* ============================================================================
    World Life 2.0 — Cultural Courtship, Marriage Contracts, Children & Divorce
    Authentic Egypt (Fatiha, Shabka, Qa'ima, Mahr, Khula), Saudi/UAE (Wali,
@@ -655,9 +655,10 @@ export function initiateDivorce(S, spouseId = null, mode = 'standard', options =
   const targetId = spouseId || S.relations.spouseIds[0];
   const spouse = targetId ? S.people[targetId] : null;
   if (!spouse || !S.relations.spouseIds.includes(targetId)) return { ok: false, msg: 'No active spouse.' };
+  if(options.assetMode==='buyout'&&S.money.cash+S.money.savings<divorceBuyoutRequired(S,targetId))return{ok:false,msg:'Not enough liquid cash for the game asset buyout and settlement. Save more or choose sale.'};
   if(!options.confirmed){
     const children=divorceChildren(S,targetId);
-    queueScene(S,{key:`divorce_plan_${targetId}_${S.year}_${S.month}`,divorcePlan:{spouseId:targetId,mode},category:'family',title:'Divorce settlement and children',text:'Simplified game model, not local family law. Without a prenup, post-wedding properties (including foreign homes), cars and liquid gains are split 50/50 after debts; homes/cars are sold, not silently kept. Recorded premarital assets remain separate. Old marriages without an inventory treat existing property/cars as shared. Legal fees apply. Business ownership, stocks and pensions are not divided in this first model. Existing mahr obligations are settled separately. Child support lasts to 18, while unpaid arrears remain owed, custody does not delete a parent or child. Infidelity is not a financial penalty.',choices:[...((children.length?['shared','player','spouse','contest']:['shared']).map(c=>({label:c==='contest'?'Contest custody (higher legal fees; game best-interest review)':`Proceed: ${children.length?c+' custody':'asset settlement, no minor children'}`,effect:st=>initiateDivorce(st,targetId,mode,{confirmed:true,custody:c==='contest'?'shared':c,contested:c==='contest'})}))),{label:'Pause, do not file',effect:()=>{}}]},true);
+    queueScene(S,{key:`divorce_plan_${targetId}_${S.year}_${S.month}`,divorcePlan:{spouseId:targetId,mode,assetMode:options.assetMode},category:'family',title:'Divorce settlement and children',text:'Simplified game model, not local family law. Without a prenup, post-wedding properties (including foreign homes), cars and liquid gains are split 50/50 after debts; Choose sale, or negotiate keeping home/car titles through a funded buyout. 50/50 is a game agreement, not the law everywhere. Recorded premarital assets remain separate. Old marriages without an inventory treat existing property/cars as shared. Legal fees apply. Investment gains, new business equity and funded private-pension growth are split in kind. Pre-existing business equity and public pension rights are not divided; mixed funds and detailed tax/court orders remain unmodelled. Existing mahr obligations are settled separately. Child support lasts to 18, while unpaid arrears remain owed, custody does not delete a parent or child. Infidelity is not a financial penalty.',choices:[...((children.length?['shared','player','spouse','contest']:['shared']).map(c=>({label:c==='contest'?'Contest custody (higher legal fees; game best-interest review)':`Proceed: ${children.length?c+' custody':'asset settlement, no minor children'}`,effect:st=>initiateDivorce(st,targetId,mode,{confirmed:true,assetMode:options.assetMode||'sell',custody:c==='contest'?'shared':c,contested:c==='contest'})}))),{label:'Pause, do not file',effect:()=>{}}]},true);
     return {ok:true,msg:'Review the game settlement and custody choice.'};
   }
 
@@ -852,7 +853,7 @@ export function helpChildWithHomework(S, childId) {
 export function restoreDivorceDecision(S,saved){
   if(!saved?.divorcePlan)return null;
   const shadow={...S,activeScene:null,sceneQueue:[],sceneCounts:{},titleCounts:{},cooldowns:{}};
-  initiateDivorce(shadow,saved.divorcePlan.spouseId,saved.divorcePlan.mode);
+  initiateDivorce(shadow,saved.divorcePlan.spouseId,saved.divorcePlan.mode,{assetMode:saved.divorcePlan.assetMode});
   return shadow.activeScene?{...saved,...shadow.activeScene}:null;
 }
 

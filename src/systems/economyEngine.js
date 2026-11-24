@@ -696,6 +696,8 @@ export function settleHouseholdMonth(S) {
       if (pl.net >= 0) {
         biz.monthsLosing = 0;
         netDelta += pl.net;
+        const formerShares=(biz.divorceCoOwners||[]).reduce((n,c)=>n+(c.equityPercent||0),0);
+        if(formerShares>0){const distribution=Math.round(pl.net*formerShares/Math.max(1,(biz.equityOwned??100)+formerShares));netDelta-=distribution;summary.living+=distribution;bizSettleCosts+=distribution;for(const co of biz.divorceCoOwners){const person=S.people[co.personId];if(person){person.career??={};person.career.savingsLocal=(person.career.savingsLocal||0)+convertCurrency(distribution*(co.equityPercent/formerShares),S.country,person.residenceCountry||S.country,S.year);}}recordLedgerEntry(S,-distribution,'Divorce business co-owner profit distribution','family','business',0);}
         addIncome(pl.revenue, `Business revenue — ${biz.name}`);
         summary.living += pl.costs;
         summary.tax += pl.tax;

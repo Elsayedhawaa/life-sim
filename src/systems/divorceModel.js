@@ -1,10 +1,10 @@
 /* Simplified game settlement, not any country's family law. */
-import {nextId,recordJournal,walletMove,moveBalance} from '../core/schema.js';
+import {nextId,recordJournal,walletMove,moveBalance,getCoupleForSpouse} from '../core/schema.js';
 import {getCountry,formatMoney} from '../data/countries.js';
 import {eraLocalCost,convertCurrency} from '../data/economy.js';
 export function recordMarriageAssets(S,couple){
   couple.assetBaseline={year:S.year,country:S.country,liquid:S.money.cash+S.money.savings,
-    propertyIds:(S.housing.properties||[]).map(p=>p.id),carIds:(S.cars||[]).map(p=>p.id)};
+    propertyIds:(S.housing.properties||[]).map(p=>p.id),carIds:(S.cars||[]).map(p=>p.id),investments:(S.investments||[]).map(i=>({assetId:i.assetId,valueLocal:i.valueLocal||0})),businesses:(S.career.businesses||[]).map(b=>({id:b.id,equityOwned:b.equityOwned??100})),pensionPot:S.career.market?.pension?.pot||0};
 }
 export function divorceChildren(S,spouseId){return(S.relations.childIds||[]).map(id=>S.people[id]).filter(ch=>ch?.alive&&ch.age<18&&(!(ch.parentIds||[]).length||ch.parentIds.includes(spouseId)));}
 function payCost(S,amount,label){
@@ -13,17 +13,18 @@ function payCost(S,amount,label){
   const paid=Math.min(Math.max(0,S.money.cash),amount);if(paid)walletMove(S,-paid,label,'family');
   const debt=amount-paid;if(debt)S.money.loans.push({id:nextId(S,'loan'),label,balance:debt,monthlyPayment:Math.max(1,Math.ceil(debt/24)),annualRate:0,remainingMonths:24,country:S.country,missedMonths:0,inCollections:true});
 }
-export function settleGameDivorce(S,spouse,couple,{custody='shared',contested=false,prenup=false}={}){
+export function settleGameDivorce(S,spouse,couple,{custody='shared',contested=false,prenup=false,assetMode='sell'}={}){
   S.marriage.divorceOrders??=[];
   const baseline=couple?.assetBaseline;
   const fee=eraLocalCost(getCountry(S.country).monthlyBasket2026.rentModest*(contested?3:1),S.country,S.year);
   payCost(S,fee,'Divorce legal fees (simplified game model)');
-  const sold=[];let assetProceeds=0;
+  const sold=[];const kept=[];let assetProceeds=0;let buyoutEquity=0;const financialTransfers=[];
   if(!prenup){
     S.housing.properties=(S.housing.properties||[]).filter(p=>{
       if(baseline?.propertyIds?.includes(p.id))return true;
       const value=Math.max(0,Number(p.valueLocal)||convertCurrency(p.nativeValue||0,p.country||S.country,S.country,S.year));
       const debt=p.nativeInstallmentRemaining!=null?convertCurrency(p.nativeInstallmentRemaining,p.country||S.country,S.country,S.year):Number(p.installmentRemaining)||0;
+      if(assetMode==='buyout'){buyoutEquity+=Math.max(0,value-debt);kept.push({id:p.id,name:p.name,country:p.country,value,debt,kind:'property'});return true;}
       assetProceeds+=value-debt;sold.push({id:p.id,name:p.name,country:p.country,value,debt,kind:'property'});
       if(S.housing.currentHomeId===p.id){S.housing.mode='rent';S.housing.currentHomeId=null;S.housing.currentHomeName='Post-divorce modest rental';S.housing.monthlyRent=eraLocalCost(getCountry(S.country).monthlyBasket2026.rentModest,S.country,S.year);S.housing.rentIndexedYear=S.year;}
       return false;
@@ -31,6 +32,7 @@ export function settleGameDivorce(S,spouse,couple,{custody='shared',contested=fa
     S.cars=(S.cars||[]).filter(car=>{
       if(baseline?.carIds?.includes(car.id))return true;
       const loans=S.money.loans.filter(l=>l.carId===car.id);const debt=loans.reduce((n,l)=>n+(Number(l.balance)||0),0);
+      if(assetMode==='buyout'){buyoutEquity+=Math.max(0,(Number(car.valueLocal)||0)-debt);kept.push({id:car.id,name:car.name,country:S.country,value:car.valueLocal||0,debt,kind:'car'});return true;}
       S.money.loans=S.money.loans.filter(l=>l.carId!==car.id);assetProceeds+=(Number(car.valueLocal)||0)-debt;
       sold.push({id:car.id,name:car.name,kind:'car',country:S.country,value:Number(car.valueLocal)||0,debt});return false;
     });
@@ -42,8 +44,13 @@ export function settleGameDivorce(S,spouse,couple,{custody='shared',contested=fa
   }
   const protectedLiquid=baseline?convertCurrency(baseline.liquid,baseline.country,S.country,S.year):0;
   const divisible=prenup?0:Math.max(0,S.money.cash+S.money.savings-protectedLiquid);
-  const spouseAward=Math.round(divisible*.5);payCost(S,spouseAward,`Divorce asset award to ${spouse.firstName}`);
+  const spouseAward=Math.round((divisible+buyoutEquity)*.5);payCost(S,spouseAward,`Divorce asset award to ${spouse.firstName}`);
   if(spouse.career)spouse.career.savingsLocal=(spouse.career.savingsLocal||0)+convertCurrency(spouseAward,S.country,spouse.residenceCountry||S.country,S.year);
+  if(!prenup){
+    for(const inv of S.investments||[]){const base=convertCurrency(baseline?.investments?.find(x=>x.assetId===inv.assetId)?.valueLocal||0,baseline?.country||S.country,S.country,S.year);const transfer=Math.max(0,(inv.valueLocal||0)-base)*.5;if(transfer>0){const old=inv.valueLocal;inv.valueLocal-=transfer;inv.costBasisLocal=(inv.costBasisLocal||0)*(inv.valueLocal/old);spouse.divorceInvestments??=[];spouse.divorceInvestments.push({assetId:inv.assetId,value:transfer,country:S.country});financialTransfers.push({kind:'investment',name:inv.name||inv.assetId,value:transfer});}}
+    for(const biz of S.career.businesses||[]){if(biz.dead)continue;const before=baseline?.businesses?.find(x=>x.id===biz.id);if(before)continue;const share=(biz.equityOwned??100)*.5;biz.equityOwned=(biz.equityOwned??100)-share;biz.divorceCoOwners??=[];biz.divorceCoOwners.push({personId:spouse.id,equityPercent:share});financialTransfers.push({kind:'business-equity',name:biz.name,percent:share});}
+    const pen=S.career.market?.pension;if(pen){const transfer=Math.max(0,(pen.pot||0)-convertCurrency(baseline?.pensionPot||0,baseline?.country||S.country,S.country,S.year))*.5;pen.pot-=transfer;spouse.divorcePension={balance:(spouse.divorcePension?.balance||0)+transfer,country:S.country};if(transfer)financialTransfers.push({kind:'private-pension',value:transfer});}
+  }
   const children=divorceChildren(S,spouse.id);
   let result=custody;
   if(contested){
@@ -54,11 +61,11 @@ export function settleGameDivorce(S,spouse,couple,{custody='shared',contested=fa
   const spouseIncome=Math.max(0,convertCurrency(spouse.career?.monthlyIncomeLocal||0,spouse.residenceCountry||S.country,S.country,S.year));
   const payer=result==='player'?'spouse':result==='spouse'?'player':playerIncome>=spouseIncome?'player':'spouse';
   const monthly=children.length?Math.round((payer==='player'?playerIncome:spouseIncome)*Math.min(.4,(result==='shared'?.10:.20)+Math.max(0,children.length-1)*.05)):0;
-  const order={id:nextId(S,'divorce'),spouseId:spouse.id,year:S.year,month:S.month,country:S.country,legalFees:fee,spouseAward,soldAssets:sold,custody:result,childIds:children.map(c=>c.id),payer,monthlySupport:monthly,arrears:0,contested,baselineKnown:!!baseline};
+  const order={id:nextId(S,'divorce'),spouseId:spouse.id,year:S.year,month:S.month,country:S.country,legalFees:fee,spouseAward,soldAssets:sold,keptAssets:kept,financialTransfers,assetMode,custody:result,childIds:children.map(c=>c.id),payer,monthlySupport:monthly,arrears:0,contested,baselineKnown:!!baseline};
   S.marriage.divorceOrders.push(order);
   for(const ch of children){ch.custody={orderId:order.id,arrangement:result,otherParentId:spouse.id,playerNightsPer14:result==='shared'?7:result==='player'?11:3};ch.householdWith=result==='spouse'?spouse.id:'player';}
   spouse.householdWith=spouse.id;spouse.maritalStatus='divorced';spouse.spouseIds=(spouse.spouseIds||[]).filter(id=>id!=='player');spouse.role='ex_spouse';spouse.relationLabel='Ex-spouse';
-  recordJournal(S,`Simplified game divorce: ${sold.length} marital properties/cars sold, debts cleared first; ${formatMoney(spouseAward,S.country)} awarded to ${spouse.firstName}. Legal fees ${formatMoney(fee,S.country)}. Custody ${result}; ${formatMoney(monthly,S.country)}/month child support from ${payer}. ${baseline?'Recorded premarital assets protected.':'Legacy marriage has no premarital inventory: existing properties/cars treated as shared.'} Not local family law; no automatic fault penalty for infidelity.`,'family');
+  recordJournal(S,`Simplified game divorce: ${sold.length} marital properties/cars sold, ${kept.length} kept through buyout; debts remain with kept titles; ${formatMoney(spouseAward,S.country)} awarded to ${spouse.firstName}. Legal fees ${formatMoney(fee,S.country)}. Custody ${result}; ${formatMoney(monthly,S.country)}/month child support from ${payer}. ${baseline?'Recorded premarital assets protected.':'Legacy marriage has no premarital inventory: existing properties/cars treated as shared.'} Not local family law; no automatic fault penalty for infidelity.`,'family');
   return order;
 }
 export function settleChildSupportMonth(S,available){
@@ -110,4 +117,13 @@ export function completeSupportReviews(S){
   o.reviews??=[];o.reviews.push({at:now,oldMonthly:old,newMonthly:o.monthlySupport,arrearsPreserved:o.arrears||0});
   recordJournal(S,`Support review completed: prospective game order ${formatMoney(monthly,o.country)}/month from ${payer}. Prior arrears are unchanged. This simplified income-percentage calculation is not a state guideline.`,'family');
  }
+}
+
+export function divorceBuyoutRequired(S,spouseId){
+ const couple=getCoupleForSpouse(S,spouseId);
+ const base=couple?.assetBaseline;
+ const homes=(S.housing.properties||[]).filter(p=>!base?.propertyIds?.includes(p.id)).reduce((n,p)=>n+Math.max(0,(p.valueLocal||0)-(p.installmentRemaining||0)),0);
+ const cars=(S.cars||[]).filter(p=>!base?.carIds?.includes(p.id)).reduce((n,p)=>n+Math.max(0,(p.valueLocal||0)-(S.money.loans||[]).filter(l=>l.carId===p.id).reduce((a,l)=>a+(l.balance||0),0)),0);
+ const liquid=Math.max(0,S.money.cash+S.money.savings-(base?convertCurrency(base.liquid,base.country,S.country,S.year):0));
+ return Math.ceil((homes+cars+liquid)*.5)+eraLocalCost(getCountry(S.country).monthlyBasket2026.rentModest,S.country,S.year);
 }

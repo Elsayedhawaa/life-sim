@@ -1287,7 +1287,7 @@ if (typeof document !== 'undefined') {
 
     if (action === 'divorce') {
       uiState.activeTab='life';
-      handleActionResult(initiateDivorce(S, null, btn.dataset.mode));
+      handleActionResult(initiateDivorce(S, null, btn.dataset.mode,{assetMode:btn.dataset.assets||'sell'}));
       return;
     }
 
