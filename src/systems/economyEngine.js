@@ -1,3 +1,4 @@
+import{settleUSRetirement}from './usRetirement.js';
 import {RURAL_CABIN} from '../data/ruralCabin.js';
 import {settleChildSupportMonth} from './divorceModel.js';
 import { monthlyUniversityTuition,settleFamilyUniversityMonth } from './educationFunding.js';
@@ -806,6 +807,7 @@ export function settleHouseholdMonth(S) {
   }
 
   /* 4. RETIREMENT PENSION */
+  settleUSRetirement(S);
   if (S.career.retired && S.career.monthlyPension > 0) {
     netDelta += addIncome(S.career.monthlyPension, 'Retirement pension');
   }
@@ -1764,7 +1766,7 @@ export function convertFinancesOnCountryMove(S, fromCountry, toCountry) {
   const pension=S.career.market?.pension;
   if(pension){
     for(const key of ['pot','employeeTotal','employerTotal','growthTotal'])pension[key]=Math.max(0,Math.round(convertCurrency(pension[key]||0,fromCountry,toCountry,S.year)));
-    if(pension.paidOut)for(const key of ['pot','monthlyTopUp'])pension.paidOut[key]=Math.max(0,Math.round(convertCurrency(pension.paidOut[key]||0,fromCountry,toCountry,S.year)));
+    if(pension.paidOut)for(const key of ['pot','monthlyTopUp','remaining'])pension.paidOut[key]=Math.max(0,Math.round(convertCurrency(pension.paidOut[key]||0,fromCountry,toCountry,S.year)));
     for(const row of pension.history||[])for(const key of ['employee','employer','growth','pot'])if(Number.isFinite(row[key]))row[key]=Math.round(convertCurrency(row[key],fromCountry,toCountry,S.year));
   }
 

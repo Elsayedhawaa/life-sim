@@ -1,3 +1,4 @@
+import{usStatePension}from './usRetirement.js';
 import {hasCurrentLanguage} from '../data/languageQualifications.js';
 import {annualUniversityBudget,universityBudgetRange} from '../data/universityCosts.js';
 import {degreeProgramFor,programsForCountry} from '../data/degreePrograms.js';
@@ -1635,7 +1636,7 @@ export function projectedPension(S) {
   const lastGross = S.career.job?.monthlyGross || eraSalary(getCountry(S.country).annualSalaryTiers2026.entry / 12, S.country, S.year);
   const expFactor = Math.min(0.68, 0.22 + (S.career.yearsExperience || 0) * 0.015);
   const citizen = S.legal.citizenships.includes(S.country) || S.legal.residency.kind === 'permanent_resident';
-  const statePension=citizen&&(S.career.yearsExperience||0)>0?Math.round(lastGross*expFactor):0;
+  const statePension=S.country==='usa'?usStatePension(S).monthly:citizen&&(S.career.yearsExperience||0)>0?Math.round(lastGross*expFactor):0;
   const potTopUp=S.career.market?.pension?.paidOut?.monthlyTopUp||0;
   return { monthly: statePension+potTopUp, citizen, expFactor };
 }
@@ -2330,6 +2331,7 @@ export function retireFromCareer(S) {
   S.career.employed = false;
   S.career.job = null;
   S.career.retired = true;
+  S.career.retirementCountry=S.country;
   S.career.monthlyPension = proj.monthly;
   syncEmployerBenefits(S);
   S.player.vitals.stress = clamp(S.player.vitals.stress - 25);

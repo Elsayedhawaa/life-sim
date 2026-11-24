@@ -1,3 +1,5 @@
+import{eraLocalCost}from '../data/economy.js';
+import{recordUSCoveredEarnings}from './usRetirement.js';
 /* ============================================================================
    World Life 2.0 — v2.15 Worker 2: Career — a market, not a ladder.
    The payslip is real (v2.8). The market around it is built here:
@@ -182,10 +184,11 @@ export function pensionSlipFor(gross, countryId, year, isCit) {
   let voluntaryEmployee = 0;
   let voluntaryEmployer = 0;
   if (countryId === 'usa') {
-    const k401 = Math.round(g * 0.06);
-    const match = Math.round(g * 0.03);
-    employee += k401;
-    employer += match;
+    const limitFactor=eraLocalCost(10000,'usa',year)/10000;
+    const k401 = Math.round(Math.min(g * 0.06,24500*limitFactor/12));
+    const match = Math.round(Math.min(g * 0.03,360000*limitFactor*.03/12));
+    employee = k401;
+    employer = match;
     cashOut = k401;
     voluntaryEmployee = k401;
     voluntaryEmployer = match;
@@ -236,6 +239,7 @@ export function pensionMonthPreview(S) {
 export function accruePensionMonth(S, amounts) {
   const job = S?.career?.job;
   if (!job || !amounts) return { ok: false, employee: 0, employer: 0 };
+  recordUSCoveredEarnings(S,amounts.gross);
   const pen = ensurePension(S);
   let employee = Math.max(0, Math.round(amounts.employee || 0));
   let employer = Math.max(0, Math.round(amounts.employer || 0));
@@ -295,14 +299,14 @@ export function optOutPension(S) {
   recordJournal(
     S,
     S.country === 'usa'
-      ? `You opted out of the 401(k). You keep ${formatMoney(preview.cashOut, S.country)}/month in your pocket, your employer stops matching, and your Social Security share still goes into your pot. The ${formatMoney(pen.pot, S.country)} already in your pot stays yours.`
+      ? `You opted out of the 401(k). You keep ${formatMoney(preview.cashOut, S.country)}/month in your pocket, your employer stops matching, and Social Security remains a separate state-benefit record, not private savings. The ${formatMoney(pen.pot, S.country)} already in your pot stays yours.`
       : `You opted out of the workplace pension. Your employer stops paying ${formatMoney(preview.employer, S.country)}/month into your pot and you stop paying ${formatMoney(preview.employee, S.country)}/month. The ${formatMoney(pen.pot, S.country)} already in your pot stays yours.`,
     'money'
   );
   return {
     ok: true,
     msg: S.country === 'usa'
-      ? `Opted out of the 401(k) — you keep the 6% in your pocket, your employer stops matching 3%, and your Social Security share still goes in. What is already in your pot stays yours.`
+      ? `Opted out of the 401(k) — you keep the 6% in your pocket, your employer stops matching 3%, and your Social Security remains separate from private savings. What is already in your pot stays yours.`
       : `Opted out — your employer stops paying ${formatMoney(preview.employer, S.country)}/month and you stop paying ${formatMoney(preview.employee, S.country)}/month. What is already in your pot stays yours, and it keeps earning investment growth.`
   };
 }
@@ -331,8 +335,9 @@ export function payOutPensionPot(S) {
   const pot = pen.pot;
   const monthlyTopUp = Math.max(1, Math.round(pot / PENSION_PAYOUT_MONTHS));
   pen.paidOut = { pot:pot+(pen.paidOut?.pot||0), monthlyTopUp:monthlyTopUp+(pen.paidOut?.monthlyTopUp||0), year: S.year, month: S.month };
+  pen.paidOut.remaining=(pen.paidOut.remaining||0)+pot;
   pen.pot = 0;
-  recordJournal(S, `Your pension pot of ${formatMoney(pot, S.country)} now pays you ${formatMoney(monthlyTopUp, S.country)} a month on top of your state pension, for as long as you live.`, 'money');
+  recordJournal(S, `Your pension pot of ${formatMoney(pot, S.country)} now pays you ${formatMoney(monthlyTopUp, S.country)} a month on top of your state pension, as a finite drawdown over approximately 20 years, not guaranteed income for life.`, 'money');
   return { monthlyTopUp, pot };
 }
 

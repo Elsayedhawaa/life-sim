@@ -2190,7 +2190,7 @@ export function renderWorkTabHtml(S, uiState = {}) {
     ${withheldHtml}
     ${renderSecondLossNoteHtml(S)}
     ${currentJobHtml}
-    ${!S.career.job&&S.player.age>=58?`<div class="card"><strong>${S.career.retired?'Retired':'Retirement'}</strong><p>${S.career.retired?'Current pension: '+esc(formatMoney(S.career.monthlyPension||0,S.country))+'/month.':'You can retire while between jobs. The game pension estimate may be lower without a current salary.'}</p>${!S.career.retired?'<button class="btn" data-action="retire">Retire</button>':''}</div>`:''}
+    ${!S.career.job&&S.player.age>=58?`<div class="card"><strong>${S.career.retired?'Retired':'Retirement'}</strong><p>${S.career.retired?'Current pension: '+esc(formatMoney(S.career.monthlyPension||0,S.country))+'/month.':'You can stop working. US state benefits require age 62 and 40 recorded credits; missing legacy earnings are not invented. Private savings draw down from a finite balance. Other countries remain simplified estimates.'}</p>${!S.career.retired?'<button class="btn" data-action="retire">Retire</button>':''}</div>`:''}
     <div class="card">
       <div class="section-head">
         <h3>Local Job Market — ${esc(cObj.name)} (${filteredJobs.length}/${allJobs.length})</h3>
