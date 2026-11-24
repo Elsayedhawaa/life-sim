@@ -1,3 +1,5 @@
+import {investInMarketAsset} from '../systems/completeLifeSystems.js';
+import {GLOBAL_MARKET_ASSETS} from './megaFinanceAndMarkets.js';
 import {buyBankCertificate} from '../systems/economyEngine.js';
 import {recordCivilLoss} from '../systems/civilClaims.js';
 /* ============================================================================
@@ -1525,24 +1527,27 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
       const A = eraLocalCost(5000, S.country, S.year);
       const B = eraLocalCost(1000, S.country, S.year);
+      const asset=GLOBAL_MARKET_ASSETS.filter(x=>x.availableFrom<=S.year&&x.kind==='etf').sort((a,b)=>b.volatility-a.volatility)[0];
       return {
         key: 'ev_money_investment_tip',
         category: 'money',
-        title: "$fr Has a \"Certain\" Investment Tip",
-        text: `${frName} corners you with a tip: a stock that "cannot lose", and ${formatMoney(A, S.country)} to get in now before it moves. ${frName} has already put money in, and shows you the chart on a phone like it is proof.`,
+        title: `${frName} Has a "Certain" Investment Tip`,
+        text: `${frName} corners you with a tip: ${asset?.name||'a market fund'} that "cannot lose", and ${formatMoney(A, S.country)} to get in now before it moves. ${frName} has already put money in, and shows you the chart on a phone like it is proof. It is not a guarantee. Buying creates a real holding with annual gains/losses and a sell action in Finance.`,
         choices: [
           {
-            label: "Invest the money",
+            label: `Buy ${asset?.name||'holding'}`,
+            available: st=>!!asset&&st.money.cash>=A,
             effect: (st) => {
-              walletMove(st, -A, 'Invest the money', 'money');
+              if(!asset||!investInMarketAsset(st,asset.id,A).ok)return;
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
               recordJournal(st, `You put ${formatMoney(A, S.country)} into ${frName}’s "certain" stock tip. Now you check the price every morning.`, 'money');
             },
           },
           {
-            label: "Invest a small test amount",
+            label: "Buy a small test position",
+            available: st=>!!asset&&st.money.cash>=B,
             effect: (st) => {
-              walletMove(st, -B, 'Invest a small test amount', 'money');
+              if(!asset||!investInMarketAsset(st,asset.id,B).ok)return;
               if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+3));
               recordJournal(st, `You put a small test amount, ${formatMoney(B, S.country)}, into the tip — enough to learn, not enough to hurt.`, 'money');
             },

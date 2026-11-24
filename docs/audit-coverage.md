@@ -429,3 +429,6 @@ Current enterprise array counts as modeled home ties, ghost employed flags do no
 
 ### W15 event certificate actual asset
 Certificate scene calls the bank product action, pays from cash, creates principal/rate/maturity and leaves savings unchanged. Insufficient cash disables investment rather than deleting balances into nothing.145focused files pass, including asset/networth conservation.390px scene fixture buys actual certificate and reload preserves it. Pixels inspected. Existing certificate monthly coupons/maturity use the same product record.
+
+### W16 real stock-tip position
+Investment-tip scene now names an era-available modeled ETF and buys a real investment record through the existing market action. Cash becomes cost basis/value, annual return risk and Finance sell route remain available, insufficient cash locks choice. Fixed literal participant placeholder in title.146focused files pass, focused test verifies networth conservation and liquidation.390px final ETF scene fixture buys position/reloads, inspected final pixels.
