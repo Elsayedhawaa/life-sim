@@ -838,9 +838,22 @@ export function tickNpcAutonomyYearly(S) {
     /* NPC Mortality for elderly relatives (realistic actuarial curve, never sudden young wipeouts unless severe illness) */
     if (person.age >= 58) {
       person.vitals.health = clamp(person.vitals.health - randInt(S, 1, person.age >= 76 ? 5 : 3));
+      /* A recorded illness gives the eventual death a real cause. It starts
+         only once health has actually declined, and stays on the person. */
+      if (!person.illness && person.vitals.health < 55 && chance(S, 0.22)) {
+        const pool = person.age < 70
+          ? [['heart disease', 3], ['cancer', 3], ['a stroke', 1.5], ['lung disease', 1]]
+          : [['heart disease', 3], ['dementia', 2.5], ['cancer', 2], ['a stroke', 2], ['pneumonia', 1.5], ['lung disease', 1]];
+        const total = pool.reduce((n, x) => n + x[1], 0);
+        let r = randInt(S, 0, 999) / 1000 * total, kind = pool[0][0];
+        for (const [k, w] of pool) { if (r < w) { kind = k; break; } r -= w; }
+        person.illness = { kind, sinceYear: S.year };
+        person.rel.promises = person.rel.promises || [];
+      }
       const baseMort = person.age < 68 ? 0.012 : person.age < 78 ? 0.042 : person.age < 86 ? 0.11 : 0.24;
       const lowHpBoost = person.vitals.health < 28 ? 0.14 : 0;
-      if (chance(S, baseMort + lowHpBoost)) {
+      const illBoost = person.illness ? 0.05 : 0;
+      if (chance(S, baseMort + lowHpBoost + illBoost)) {
         handleNpcDeath(S, person);
       }
     }
@@ -890,12 +903,27 @@ export function closeMarriageWithoutCouple(S, spouse, endedReason) {
   return couple;
 }
 
+/* The cause comes from what the person actually had: a recorded illness, or
+   failing health, or very old age. A death with no recorded illness and good
+   health is sudden, and only possible below 80. */
+export function npcDeathCause(S, person) {
+  const ill = person.illness;
+  if (ill) {
+    const yrs = S.year - (ill.sinceYear ?? S.year);
+    return yrs >= 2 ? `${ill.kind}, first diagnosed ${yrs} years earlier` : ill.kind;
+  }
+  if (person.age >= 85) return 'old age';
+  if ((person.vitals?.health ?? 100) < 28) return 'organ failure after years of failing health';
+  if (person.age < 80) return chance(S, 0.2) ? 'an accident' : chance(S, 0.5) ? 'a sudden heart attack' : 'a sudden illness';
+  return 'old age';
+}
+
 export function handleNpcDeath(S, person) {
   if (!person || !person.alive) return;
   inheritNpcCompanies(S,person);
   person.alive = false;
   person.deathYear = S.year;
-  person.deathCause = person.age >= 75 ? 'natural causes' : 'cardiac complications';
+  person.deathCause = npcDeathCause(S, person);
 
   const abroad = person.residenceCountry !== S.country;
   S.player.vitals.happiness = clamp(S.player.vitals.happiness - (person.role === 'father' || person.role === 'mother' || person.role === 'spouse' || person.role === 'child' ? 24 : 12));

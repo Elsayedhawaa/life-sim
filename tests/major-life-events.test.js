@@ -57,3 +57,8 @@ console.log('Major life announcements derive from actual state changes, persist,
  s.career.employed=true;s.career.job={employer:'Acme',title:'Analyst'};const b=snapshotMajor(s);s.career.employed=false;s.career.job=null;s.career.jobLoss={lastJob:{employer:'Acme',title:'Analyst',year:s.year,month:s.month,reason:'redundancy'}};announceMajorChanges(s,b);s.month+=2;assert(P(f,s),'fires after real redundancy while jobless');
  const sc=f.build(s,{});assert(/Acme/.test(sc.text)||/someone at Acme/.test(sc.text)||true);
  const d=setup();const dad=d.people[d.relations.fatherId];const r=G('ev_family_dad_retires');dad.age=64;assert(!P(r,d),'age alone does not make a retirement');dad.career=dad.career||{};dad.career.retiredYear=d.year-3;assert(!P(r,d),'old retirement');dad.career.retiredYear=d.year;assert(P(r,d),'recorded retirement transition'); console.log('W123 job-aftermath and retirement gated on real facts');}
+{const {handleNpcDeath}=await import('../src/systems/soulEngine.js');
+ let s=setup();let m=s.people[s.relations.motherId];m.age=70;m.illness={kind:'cancer',sinceYear:s.year-3};handleNpcDeath(s,m);assert(/cancer/.test(m.deathCause)&&/3 years/.test(m.deathCause));
+ s=setup();m=s.people[s.relations.motherId];m.age=88;m.vitals.health=60;handleNpcDeath(s,m);assert.equal(m.deathCause,'old age');
+ s=setup();m=s.people[s.relations.motherId];m.age=62;m.vitals.health=80;handleNpcDeath(s,m);assert(!/old age|natural|cardiac complications/.test(m.deathCause),'young healthy parent never dies of old age: '+m.deathCause);
+ console.log('NPC death causes come from recorded illness, health and age');}
