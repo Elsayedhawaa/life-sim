@@ -598,9 +598,9 @@ export function leavePreview(S) {
     balance: bal,
     vacation5: `Needs your manager’s approval. Approved: ${bal.left} → ${Math.max(0, bal.left - 5)} days left, stress −5, happiness +5. Refused: nothing spent, but your manager remembers you asked.`,
     vacation10: `Needs your manager’s approval and ${bal.left >= 10 ? 'you have the days' : 'you do NOT have 10 days left — it will be refused'}. Approved: stress −10, happiness +10.`,
-    sick: `Paid, 3 days, no vacation days spent. Performance −1 (you were away), stress −4, health +2.`,
-    parental: `30 days at half pay — about ${formatMoney(Math.round(net * 0.5), S.country)} less in your pocket. Only if your partner is pregnant or your baby is under one. Performance −2, happiness +4.`,
-    unpaid: `5 days with no pay — about ${formatMoney(dailyNet * 5, S.country)} less. Performance −2, stress −3. Your manager can say no.`
+    sick: `Paid, 3 days, once per month in this game, no vacation days spent. Performance −1 (you were away), stress −4, health +2.`,
+    parental: `30 days at half pay — about ${formatMoney(Math.round(net * 0.5), S.country)} less in your pocket. Once per 12 months in this game, only during pregnancy or with a baby under one. Performance −2, happiness +4.`,
+    unpaid: `One 5-day block per month in this game with no pay, about ${formatMoney(dailyNet * 5, S.country)} less. Performance −2, stress −3. Your manager can say no.`
   };
 }
 
@@ -610,6 +610,10 @@ export function requestLeave(S, kindKey) {
   if (!def) return { ok: false, msg: 'Unknown leave.' };
   const job = S.career.job;
   const st = ensureJobActionState(S);
+  const period=S.year*12+S.month;
+  if(def.kind==='sick'&&st.sickLeavePeriod===period)return {ok:false,msg:'You already took the modeled sick-leave allowance this month.'};
+  if(def.kind==='unpaid'&&st.unpaidLeavePeriod===period)return {ok:false,msg:'You already took this unpaid-leave block this month.'};
+  if(def.kind==='parental'&&st.parentalLeavePeriod!=null&&period-st.parentalLeavePeriod<12)return {ok:false,msg:'You already took parental leave within the last 12 months.'};
   const { boss, bossRespect, score } = bossScore(S);
   const bossName = boss ? boss.firstName : 'Management';
   const log = (approved, reason) => {
@@ -644,6 +648,7 @@ export function requestLeave(S, kindKey) {
   }
 
   if (def.kind === 'sick') {
+    st.sickLeavePeriod=period;
     job.performance = clamp(job.performance - 1, 0, 100);
     S.player.vitals.stress = clamp(S.player.vitals.stress - 4);
     S.player.vitals.health = clamp(S.player.vitals.health + 2);
@@ -658,6 +663,7 @@ export function requestLeave(S, kindKey) {
     if (!hasBaby) {
       return { ok: false, msg: 'Parental leave is for a new baby — your partner is not pregnant and you have no baby under one.' };
     }
+    st.parentalLeavePeriod=period;
     const net = computeMonthlyNetPay(job.monthlyGross, S.country, S.year, true).net;
     const deduction = Math.round(net * 0.5);
     walletMove(S, -deduction, 'Parental leave — 30 days at half pay', 'career');
@@ -675,6 +681,7 @@ export function requestLeave(S, kindKey) {
     recordJournal(S, `Asked ${bossName} for 5 days’ unpaid leave — refused, because ${reason}.`, 'career');
     return { ok: false, msg: `Unpaid leave refused — ${reason}.` };
   }
+  st.unpaidLeavePeriod=period;
   const net = computeMonthlyNetPay(job.monthlyGross, S.country, S.year, true).net;
   const deduction = Math.round((net / 30) * def.days);
   walletMove(S, -deduction, `Unpaid leave — ${def.days} days without pay`, 'career');
