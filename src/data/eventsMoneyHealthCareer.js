@@ -1,3 +1,4 @@
+import{payRecordedDebt}from'../systems/recordedDebtPayments.js';
 import{lendPersonalMoney,settlePersonalReceivable,givePersonalMoney}from'../systems/personalReceivables.js';
 import{eraDepositRates}from'./economy.js';
 import{worldEventEffects}from'../systems/worldEvents.js';
@@ -554,50 +555,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     cooldownYears: 2,
     gates: {"minAge": 22, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(3200, S.country, S.year);
-      const B = eraLocalCost(320, S.country, S.year);
-      return {
-        key: 'ev_money_card_minimum',
-        category: 'money',
-        title: "The Credit Card Minimum Trap",
-        text: `The credit card statement arrives: you owe ${formatMoney(A, S.country)}, and the bank will accept ${formatMoney(B, S.country)} as a minimum payment. The small print says the rest keeps growing at high interest while you pay the minimum.`,
-        choices: [
-          {
-            label: "Pay the full balance",
-            effect: (st) => {
-              walletMove(st, -A, 'Pay the full balance', 'money');
-              st.money.creditScore = clamp(st.money.creditScore + (+8), 300, 900);
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-3));
-              recordJournal(st, `You paid the full credit card balance of ${formatMoney(A, S.country)} and closed the month clean.`, 'money');
-            },
-          },
-          {
-            label: "Pay only the minimum",
-            effect: (st) => {
-              walletMove(st, -B, 'Pay only the minimum', 'money');
-              st.money.creditScore = clamp(st.money.creditScore + (-6), 300, 900);
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              recordJournal(st, `You paid only the ${formatMoney(B, S.country)} minimum on the card. The rest keeps growing, quietly.`, 'money');
-            },
-          },
-          {
-            label: "Pay half and stop using the card",
-            effect: (st) => {
-              walletMove(st, -B, 'Pay half and stop using the card', 'money');
-              st.money.creditScore = clamp(st.money.creditScore + (+2), 300, 900);
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+2));
-              recordJournal(st, `You paid half the card balance and put the card in a drawer until it is cleared.`, 'money');
-            },
-          },
-        ],
-      };
+      const d=S.creditCards.find(x=>x.balance>0);if(!d)return null;
+      return{key:'ev_money_card_minimum',category:'money',title:'Your Actual Card Statement',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${false?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',effect:st=>payRecordedDebt(st,'card',d.id)},{label:'Pay half the recorded balance',effect:st=>payRecordedDebt(st,'card',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
     },
   },
   {
@@ -656,48 +615,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 22, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(4500, S.country, S.year);
-      const B = eraLocalCost(900, S.country, S.year);
-      return {
-        key: 'ev_money_collector_call',
-        category: 'money',
-        title: "The Debt Collector Calls",
-        text: `A firm voice on the phone says you owe ${formatMoney(A, S.country)} on an old instalment plan, and the amount grows every month you ignore it. He wants a payment today, or the file goes to the next stage.`,
-        choices: [
-          {
-            label: "Pay what you can now",
-            effect: (st) => {
-              walletMove(st, -B, 'Pay what you can now', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-2));
-              st.money.creditScore = clamp(st.money.creditScore + (+3), 300, 900);
-              recordJournal(st, `You paid ${formatMoney(B, S.country)} toward the old debt and agreed a date for the rest.`, 'money');
-            },
-          },
-          {
-            label: "Ask for a written statement first",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
-              if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+3));
-              recordJournal(st, `You refused to pay on the phone and demanded a written statement of the ${formatMoney(A, S.country)} debt.`, 'money');
-            },
-          },
-          {
-            label: "Hang up and ignore it",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+7));
-              st.money.creditScore = clamp(st.money.creditScore + (-10), 300, 900);
-              recordJournal(st, `You hung up on the debt collector. The calls kept coming, twice a day.`, 'money');
-            },
-          },
-        ],
-      };
+      const d=S.money.loans.find(x=>x.inCollections&&x.balance>0);if(!d)return null;
+      return{key:'ev_money_collector_call',category:'money',title:'Your Recorded Collections Balance',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${true?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the recorded balance',effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
     },
   },
   {
@@ -11993,48 +11912,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 22, "afterEvent": "ev_money_collector_call", "afterEventMinTurns": 6},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(4500, S.country, S.year);
-      const B = eraLocalCost(900, S.country, S.year);
-      return {
-        key: 'ev_back_collector_returns',
-        category: 'money',
-        title: "The Debt Collector Returns",
-        text: `The collector is back — the same voice, the same file, and now the amount is ${formatMoney(A, S.country)}, grown with interest and fees. He says this is the last chance before the file goes further.`,
-        choices: [
-          {
-            label: "Pay it off in full now",
-            effect: (st) => {
-              walletMove(st, -A, 'Pay it off in full now', 'money');
-              st.money.creditScore = clamp(st.money.creditScore + (+6), 300, 900);
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-5));
-              recordJournal(st, `You paid off the old debt in full, ${formatMoney(A, S.country)}, and the collector closed the file.`, 'money');
-            },
-          },
-          {
-            label: "Agree a final payment plan",
-            effect: (st) => {
-              walletMove(st, -B, 'Agree a final payment plan', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              recordJournal(st, `You agreed a final payment plan for the debt, ${formatMoney(B, S.country)} now and the rest monthly.`, 'money');
-            },
-          },
-          {
-            label: "Refuse to deal with him",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+8));
-              st.money.creditScore = clamp(st.money.creditScore + (-8), 300, 900);
-              recordJournal(st, `You refused to deal with the debt collector again. The file went further.`, 'money');
-            },
-          },
-        ],
-      };
+      const d=S.money.loans.find(x=>x.inCollections&&x.balance>0);if(!d)return null;
+      return{key:'ev_back_collector_returns',category:'money',title:'Your Recorded Collections Balance',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${true?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the recorded balance',effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
     },
   },
   {
@@ -12610,40 +12489,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 22, "afterEvent": "ev_back_collector_returns", "afterEventMinTurns": 6},
     build: (S, ctx) => {
-      const A = eraLocalCost(5200, S.country, S.year);
-      return {
-        key: 'ev_back_collector_returns_l2',
-        category: 'money',
-        title: "A Letter About the Debt",
-        text: `A letter arrives about the old debt: the file has gone further, and the amount is now ${formatMoney(A, S.country)} with the fees on top. The letter names a date. After that date, it is no longer a phone call — it is a court.`,
-        choices: [
-          {
-            label: "Settle it before the date",
-            effect: (st) => {
-              walletMove(st, -A, 'Settle it before the date', 'money');
-              st.money.creditScore = clamp(st.money.creditScore + (+8), 300, 900);
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-6));
-              recordJournal(st, `You settled the old debt in full, ${formatMoney(A, S.country)}, before the date in the letter.`, 'money');
-            },
-          },
-          {
-            label: "Fight it — the fees are not fair",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+8));
-              st.money.creditScore = clamp(st.money.creditScore + (-4), 300, 900);
-              recordJournal(st, `You decided to fight the old debt, arguing the fees were not fair. The fight will take months.`, 'money');
-            },
-          },
-          {
-            label: "Ignore the letter",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+8));
-              st.money.creditScore = clamp(st.money.creditScore + (-10), 300, 900);
-              recordJournal(st, `You ignored the letter about the old debt. The date in it passed.`, 'money');
-            },
-          },
-        ],
-      };
+      const d=S.money.loans.find(x=>x.inCollections&&x.balance>0);if(!d)return null;
+      return{key:'ev_back_collector_returns_l2',category:'money',title:'Your Recorded Collections Balance',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${true?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the recorded balance',effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
     },
   },
   {

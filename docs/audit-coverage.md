@@ -489,3 +489,6 @@ Fresh hosted German/Swedish starting-life action/reload passes returned clean bu
 
 ### W35 salary review quote
 Salary-review scene now quotes actual current gross, exact4/7%raise amounts/new gross, applies same snapshot once and honors active pay freeze both on scene creation and choice.164focused files pass.390px actual7%raise3000to3210USDgross, no instant cash, reload passed and pixels inspected. W36/37/38new event-cash provenance findings queued, not assumed fixed.
+
+### W36 recorded card/collections event chain
+Card statement and collector root/followups now require actual card balance or in-collections loan, never invent old liabilities/fees. Full/half payment deducts cash and reduces that same actual balance, respects funds, creditor-person transfer and narrative settlement history.165focused files pass.390px actual1600USDhalf payment reduces3200card to1600, reload passed and pixels inspected. No duplicate payment after cleared debt.
