@@ -161,9 +161,10 @@ const crashInjury = {
       title: 'After the Crash Injury',
       text: `You were hurt in the ${c.severity || ''} crash${c.carName ? ` in your ${c.carName}` : ''}. ${checked ? 'You have had a medical checkup since.' : 'You have not had a medical checkup since.'}`.replace('  ', ' '),
       choices: [
-        { label: checked ? 'Book a follow-up at a public clinic' : 'Have it checked at a public clinic', effect: (st) => {
+        { label: checked ? 'Book a follow-up at a public clinic' : 'Have it checked at a public clinic', available: (st) => st.medical?.lastCheckupPeriod !== st.year * 12 + st.month, effect: (st) => {
             const r = visitHospitalCheckup(st, 'public');
-            if (!r.ok) recordJournal(st, `You wanted the crash injury checked, but could not: ${r.msg}`, 'health');
+            if (!r.ok) { recordJournal(st, `You wanted the crash injury checked, but it did not happen: ${r.msg}`, 'health'); return { ok: false, msg: `Not checked: ${r.msg}` }; }
+            return r;
         } },
         { label: 'Rest and wait for it to settle', effect: (st) => { recordJournal(st, 'You chose to rest rather than have the crash injury checked.', 'health'); } },
       ],
