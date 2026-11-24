@@ -913,7 +913,6 @@ export function npcDeathCause(S, person) {
     return yrs >= 2 ? `${ill.kind}, first diagnosed ${yrs} years earlier` : ill.kind;
   }
   if (person.age >= 85) return 'old age';
-  if ((person.vitals?.health ?? 100) < 28) return 'organ failure after years of failing health';
   /* Nothing recorded explains this death, so none is invented. */
   return null;
 }
