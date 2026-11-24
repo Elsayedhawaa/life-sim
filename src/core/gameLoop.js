@@ -1,4 +1,3 @@
-import {checkFamilyBuffer,restoreFamilyBufferScene} from '../systems/soulEngine.js';
 import {restoreCourtshipScene,courtshipSceneCurrent} from '../systems/courtshipLife.js';
 import{restoreBusinessFateScene}from'../systems/businessFate.js';
 import{restoreLandlordScene}from'../systems/propertyLandlord.js';
@@ -55,8 +54,8 @@ import { tickCareerMarketMonth } from '../systems/careerMarket.js';
 const PERSIST_KEY = 'world_life_2_save_v1';
 
 function discardOutdatedRandomScenes(S) {
-  S.sceneQueue = (S.sceneQueue || []).filter(scene => isRandomLifeSceneCurrent(scene, S)&&courtshipSceneCurrent(S,scene));
-  if (S.activeScene && (!isRandomLifeSceneCurrent(S.activeScene, S)||!courtshipSceneCurrent(S,S.activeScene))) {
+  S.sceneQueue = (S.sceneQueue || []).filter(scene => !scene.familyBufferId&&isRandomLifeSceneCurrent(scene, S)&&courtshipSceneCurrent(S,scene));
+  if (S.activeScene && (S.activeScene.familyBufferId||!isRandomLifeSceneCurrent(S.activeScene, S)||!courtshipSceneCurrent(S,S.activeScene))) {
     S.activeScene = null;
     recordJournal(S, 'Circumstances changed before that decision could be made. The old situation no longer applies.', 'life');
   }
@@ -84,10 +83,10 @@ export function loadGameFromStorage() {
     if (parsed && parsed.version && parsed.player) {
       ensureExtendedState(parsed);
       const restore = scene => {
-        if (!scene) return null;
+        if (!scene || scene.familyBufferId) return null;
         if(!scene.eventId&&scene.key==='formal_bankruptcy_filing')return parsed.money.cash<0&&parsed.year>parsed.money.bankruptUntilYear?buildInsolvencyScene(parsed):null;
         if (!scene.eventId&&scene.key==='st_upstairs_pipe_leak')return buildWaterDamageScene(parsed);
-        if (!scene.eventId) return restoreFamilyBufferScene(parsed,scene) || restoreCourtshipScene(parsed,scene) || restoreBusinessFateScene(parsed,scene) || restoreLandlordScene(parsed,scene) || restoreInformationScene(parsed,scene) || restoreHealthcareGraduateScene(parsed,scene) || restoreRelocationBusinessScene(parsed,scene) || restoreMonthlyResidencyScene(parsed,scene) || restoreDebtWarningScene(parsed,scene) || restoreCareerMobilityScene(parsed,scene) || restoreDiagnosisScene(parsed,scene) || restoreJobLossReactionScene(parsed,scene) || restoreRedundancyScene(parsed,scene) || restorePromiseConfrontationScene(parsed,scene) || restoreNpcFamilyTransitionScene(parsed,scene) || restoreNpcBirthScene(parsed,scene) || restoreGrownChildGiftScene(parsed,scene) || restoreParentCareSupportScene(parsed,scene) || restoreBereavementScene(parsed,scene) || restoreCareerWarningScene(parsed,scene) || restoreCareerReviewScene(parsed,scene) || restoreFamilyBackingScene(parsed,scene) || restoreCriticalAdmissionScene(parsed,scene) || restoreBurnoutScene(parsed,scene) || restoreCrisisWarningScene(parsed,scene) || restoreNpcWeddingScene(parsed,scene) || restoreRecruitmentScene(parsed,scene) || restoreWorldNewsScene(parsed,scene) || restoreCuratedLifeScene(parsed,scene) || restoreDivorceDecision(parsed,scene) || restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
+        if (!scene.eventId) return restoreCourtshipScene(parsed,scene) || restoreBusinessFateScene(parsed,scene) || restoreLandlordScene(parsed,scene) || restoreInformationScene(parsed,scene) || restoreHealthcareGraduateScene(parsed,scene) || restoreRelocationBusinessScene(parsed,scene) || restoreMonthlyResidencyScene(parsed,scene) || restoreDebtWarningScene(parsed,scene) || restoreCareerMobilityScene(parsed,scene) || restoreDiagnosisScene(parsed,scene) || restoreJobLossReactionScene(parsed,scene) || restoreRedundancyScene(parsed,scene) || restorePromiseConfrontationScene(parsed,scene) || restoreNpcFamilyTransitionScene(parsed,scene) || restoreNpcBirthScene(parsed,scene) || restoreGrownChildGiftScene(parsed,scene) || restoreParentCareSupportScene(parsed,scene) || restoreBereavementScene(parsed,scene) || restoreCareerWarningScene(parsed,scene) || restoreCareerReviewScene(parsed,scene) || restoreFamilyBackingScene(parsed,scene) || restoreCriticalAdmissionScene(parsed,scene) || restoreBurnoutScene(parsed,scene) || restoreCrisisWarningScene(parsed,scene) || restoreNpcWeddingScene(parsed,scene) || restoreRecruitmentScene(parsed,scene) || restoreWorldNewsScene(parsed,scene) || restoreCuratedLifeScene(parsed,scene) || restoreDivorceDecision(parsed,scene) || restoreEducationDecision(parsed, scene) || restoreDriftNoticeScene(parsed, scene) || restorePeopleDecision(parsed, scene) || (scene.choices?.every(choice => typeof choice.effect === 'function') ? scene : null);
         return restoreRandomLifeScene(parsed, scene);
       };
       const pending = parsed.activeScene;
@@ -334,7 +333,6 @@ export function advanceSingleTurn(S) {
       checkCareerConsequences(S); /* v2.18 W2 §3 — job loss reaches the mortgage, spouse, children and visa; crisis years warn, freeze pay and risk redundancy */
       tickMegaSystemsMonthly(S);
       tickMarriageAndFamilyMonthly(S);
-      checkFamilyBuffer(S);
       tickPeopleAutonomy(S);
     }
     /* v2.18 W3 — the new year's net-worth snapshot is recorded here, at
