@@ -4720,6 +4720,7 @@ function renderMedicalAndSurgeriesSubtabHtml(S) {
         if (!isSeriousCondition(cd.id)) {
           return `<div class="muted" style="margin-bottom:6px">• <strong>${esc(cd.label)}</strong> (since ${cd.sinceYear}) — ${cd.managed ? 'Managed' : 'Untreated'}</div>`;
         }
+        const courseLock=cd.treatmentStatus==='treated'?'Condition controlled, ongoing care continues.':cd.lastTreatmentPeriod===S.year*12+S.month?'Course already recorded this month. Review next month.':'';
         const opts = treatmentOptions(S, cd);
         const priv = opts.find(o => o.care === 'private');
         const pub = opts.find(o => o.care === 'public');
@@ -4731,9 +4732,11 @@ function renderMedicalAndSurgeriesSubtabHtml(S) {
           <div>• <strong>${esc(cd.label)}</strong>${cd.stage ? ` — stage ${esc(String(cd.stage))}` : ''} (since ${cd.sinceYear}) — <strong>${status}</strong></div>
           <div class="muted" style="font-size:0.78rem;margin:4px 0 6px">Private specialist: ${oddsInWords(priv.successProb)} (${esc(formatMoney(priv.cost, S.country))}). Public hospital: ${oddsInWords(pub.successProb)} (${esc(formatMoney(pub.cost, S.country))}).${cd.id === 'dementia' ? ' There is no cure for dementia — treatment slows the decline.' : ''}</div>
           <div style="display:flex;flex-wrap:wrap;gap:6px">
-            <button class="btn btn-primary btn-sm" data-action="treat-condition" data-id="${esc(cd.id)}" data-care="private" ${S.money.cash >= priv.cost ? '' : 'disabled'}>Treat (Private) — ${esc(formatMoney(priv.cost, S.country))}</button>
+            <button class="btn btn-primary btn-sm" data-action="treat-condition" data-id="${esc(cd.id)}" data-care="private" ${S.money.cash >= priv.cost && !courseLock ? '' : 'disabled'}>Treat (Private) — ${esc(formatMoney(priv.cost, S.country))}</button>
+            ${courseLock?lockReason(courseLock):''}
             ${S.money.cash < priv.cost ? lockReason('Not enough cash for private treatment', `Need ${esc(formatMoney(Math.round(priv.cost - S.money.cash), S.country))} more`) : ''}
-            <button class="btn btn-sm" data-action="treat-condition" data-id="${esc(cd.id)}" data-care="public" ${S.money.cash >= pub.cost ? '' : 'disabled'}>Treat (Public) — ${esc(formatMoney(pub.cost, S.country))}</button>
+            <button class="btn btn-sm" data-action="treat-condition" data-id="${esc(cd.id)}" data-care="public" ${S.money.cash >= pub.cost && !courseLock ? '' : 'disabled'}>Treat (Public) — ${esc(formatMoney(pub.cost, S.country))}</button>
+            ${courseLock?lockReason(courseLock):''}
             ${S.money.cash < pub.cost ? lockReason('Not enough cash for public treatment', `Need ${esc(formatMoney(Math.round(pub.cost - S.money.cash), S.country))} more`) : ''}
           </div>
         </div>`;

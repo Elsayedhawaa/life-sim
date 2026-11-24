@@ -378,6 +378,9 @@ export function runDiseaseTreatment(S, condId, care, opts = {}) {
   const cond = (S.medical?.conditions || []).find(c => c.id === condId);
   if (!cond) return { ok: false, msg: 'That condition is no longer active.' };
   if (!isSeriousCondition(cond.id)) return { ok: false, msg: 'That condition does not need a specialist course.' };
+  if(!['private','public'].includes(care))return {ok:false,msg:'Choose public hospital or private specialist care.'};
+  if(cond.treatmentStatus==='treated')return {ok:false,msg:'This condition is controlled. Continue the ongoing care, no repeat course needed now.'};
+  if(cond.lastTreatmentPeriod===S.year*12+S.month)return {ok:false,msg:'This treatment course is already recorded this month. Review another course next month.'};
   const cost = opts.free ? 0 : treatmentCostLocal(S, cond, care);
   if (cost > 0 && S.money.cash < cost) {
     return { ok: false, msg: `Need ${formatMoney(cost, S.country)} for this treatment.` };
@@ -385,6 +388,7 @@ export function runDiseaseTreatment(S, condId, care, opts = {}) {
   if (cost > 0) {
     walletMove(S, -cost, `${care === 'private' ? 'Private specialist' : 'Public hospital'} treatment: ${cond.label}`, 'medical');
   }
+  cond.lastTreatmentPeriod=S.year*12+S.month;
   const p = treatmentSuccessProb(S, cond, care);
   const label = cond.label;
   const stageTxt = cond.stage ? ` (stage ${cond.stage})` : '';
