@@ -4,7 +4,7 @@ import {convertCurrency} from '../data/economy.js';
 // Only an actual recorded loss can become a claim. One case per loss.
 export function recordCivilLoss(S,kind,amount,source,opts={}){
  if(!Number.isSafeInteger(amount)||amount<=0)return null;S.legal.civilLosses??=[];
- const loss={id:nextId(S,'loss'),kind,amount,country:S.country,source,at:S.year*12+S.month,evidence:'transaction',status:'open'};if(opts.traceable&&chance(S,.45)){loss.defendant={name:String(opts.defendantName||source),frozenLocal:Math.floor(amount*randInt(S,25,75)/100),country:S.country};}S.legal.civilLosses.push(loss);return loss;
+ const loss={id:nextId(S,'loss'),kind,amount,country:S.country,source,at:S.year*12+S.month,evidence:'transaction',status:'open'};if(Number.isSafeInteger(opts.frozenLocal)&&opts.frozenLocal>0)loss.defendant={name:String(opts.defendantName||source),frozenLocal:Math.min(amount,opts.frozenLocal),country:S.country};else if(opts.traceable&&chance(S,.45)){loss.defendant={name:String(opts.defendantName||source),frozenLocal:Math.floor(amount*randInt(S,25,75)/100),country:S.country};}S.legal.civilLosses.push(loss);return loss;
 }
 export function civilClaimQuote(S,suitId){
  const kind={sue_scam_broker:'broker_fraud',sue_employer_wages:'unpaid_wages',sue_wrongful_dismissal:'wrongful_dismissal',sue_landlord_deposit:'deposit'}[suitId];

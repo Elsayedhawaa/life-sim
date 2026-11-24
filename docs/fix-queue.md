@@ -68,5 +68,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W7 Prevent live long-term tenants/deposits from silently turning into holiday lets; lease changes require tenancy/deposit settlement first.
 
 - [x] W8 Courts: disclose before retainer payment that current no-asset records cannot yield recovery; do not imply a collectible suit.
-- [ ] W9 Traced broker funds: identify/freeze a capped share at actual scam loss, delayed hearing and exactly-once cash recovery, no invented legacy recovery.
-- [ ] W10 Employer/deposit dispute generators and their counterpart records; other civil categories remain unavailable without a recorded loss.
+- [x] W9 Traced broker funds: identify/freeze a capped share at actual scam loss, delayed hearing and exactly-once cash recovery, no invented legacy recovery.
+- [ ] W10 Redundancy event: every choice ends the actual job; package uses current monthly gross, optional unpaid-package dispute reserves only promised employer funds for a separate claim.
+- [ ] W11 Deposit event invents a past rental deposit and refund without a recorded payment; restrict to actual dispute records before narrative or refund.
+- [ ] W12 Wrongful-dismissal and other civil categories need evidence-specific generators, distinct from unpaid package claims.

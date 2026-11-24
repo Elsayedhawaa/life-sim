@@ -417,3 +417,6 @@ No-asset recorded claims now disclose the absence of collectible recovery before
 
 ### W9 traced broker funds
 New broker-loss records may carry an identified, frozen partial fund (simulation, not real legal data). Quote names frozen cap before separate counsel fee; delayed hearing releases no more than actual documented loss/frozen balance once. No-asset legacy losses never gain invented recovery.141focused files pass, including delayed/exactly-once ledger tests.390px traced-loss fixture files after actual fee and reload, mobile pixels inspected. UI fixture seeds counterparty funds; focused system test exercises new-loss generation. W10queued for other dispute generators.
+
+### W10 redundancy decisions and promised pay
+Every redundancy choice now ends the actual current job rather than preserving salary after the narrative says it ended. Package uses that job's current monthly gross, paid once. Choosing a pay dispute leaves the package unpaid, records employer/promised funds, then separate counsel fee and3-month claim apply. Not a statutory wrongful-dismissal award.142focused files pass;390px real scene fixture chooses dispute, verifies dismissal/unpaid cash/reload, then actual850USDclaim retainer. Scene pixels inspected. W11phantomdeposit and W12wrongful-dismissal generators remain queued.

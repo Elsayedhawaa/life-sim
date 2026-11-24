@@ -1,3 +1,4 @@
+import {recordCivilLoss} from '../systems/civilClaims.js';
 /* ============================================================================
    World Life 2.5 — Money / Health / Career / School / University / Gulf events
    Worker B. Every event declares honest gates; every choice moves a real
@@ -7381,37 +7382,41 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(15000, S.country, S.year);
+      const A = Math.max(0,Math.round(Number(S.career.job?.monthlyGross)||0));
+      const employer = S.career.job?.employer || S.career.job?.company || 'former employer';
+      const jobId = S.career.job?.id;
+      const depart=(st,claim=false)=>{if(!st.career.employed||!st.career.job||st.career.job.id!==jobId)return false;st.career.job=null;st.career.employed=false;st.career.unemployedMonths=0;if(claim)recordCivilLoss(st,'unpaid_wages',A,employer,{frozenLocal:A,defendantName:employer});else walletMove(st,A,'Redundancy package','career');return true;};
       return {
         key: 'ev_career_fired',
         category: 'career',
         title: "You Are Let Go",
-        text: `${bossName} asks you to sit down, and the words come slowly: the company is cutting costs, and your role is gone. You have a month’s pay of ${formatMoney(A, S.country)}, a reference, and a desk to clear by Friday.`,
+        text: `${bossName} asks you to sit down, and the words come slowly: the company is cutting costs, and your role is gone. You have a month’s pay of ${formatMoney(A, S.country)}, a reference, and a desk to clear by Friday. Simulation: take the package now, or dispute withheld pay through a separate paid claim; either way this job ends.`,
         choices: [
           {
             label: "Take the package and start again",
             effect: (st) => {
-              walletMove(st, +A, 'Take the package and start again', 'career');
-              st.career.job = null; st.career.employed = false; st.career.unemployedMonths = 0;
+              if(!depart(st))return;
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+8));
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-5));
               recordJournal(st, `You were let go, took the ${formatMoney(A, S.country)} package, and started again.`, 'career');
             },
           },
           {
-            label: "Ask for a different role",
+            label: "Ask about another role, then take the package",
             effect: (st) => {
+              if(!depart(st))return;
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+6));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+2));
-              recordJournal(st, `You asked for a different role after being let go. There was none to give.`, 'career');
+              recordJournal(st, `You asked for a different role after being let go. There was none to give. You left with the promised package.`, 'career');
             },
           },
           {
-            label: "Fight it \u2014 the decision was unfair",
+            label: "Dispute the unpaid package in court",
             effect: (st) => {
+              if(!depart(st,true))return;
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+9));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (-2));
-              recordJournal(st, `You fought the dismissal, arguing it was unfair. The fight took months.`, 'career');
+              recordJournal(st, `You left the job and recorded the unpaid package. The employer reserved the promised funds. A court claim still needs a retainer and three months; no instant compensation.`, 'career');
             },
           },
         ],
