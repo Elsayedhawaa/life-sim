@@ -15,7 +15,7 @@ import { familyCoversUniversity,chargeFamilyEducation } from './educationFunding
 import { rand, randInt, pick, chance, clamp } from '../core/rng.js';
 import { nextId, recordJournal, walletMove, moveBalance, queueScene, ensureExtendedState } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
-import { eraSalary, eraLocalCost, convertCurrency, computePayslip, contractRuleFor, vacationEntitlementDays, noticeAndSeveranceFor, eraDepositRates } from '../data/economy.js';
+import { eraSalary, statutoryMinMonthlyGross, eraLocalCost, convertCurrency, computePayslip, contractRuleFor, vacationEntitlementDays, noticeAndSeveranceFor, eraDepositRates } from '../data/economy.js';
 import {
   MAJORS,
   CAREER_TRACKS,
@@ -1338,7 +1338,7 @@ export function listAvailableJobs(S) {
     const licBoost = matchingLicensePayBoost(S,track.reqDegrees);
     const pgList = S.postgrad?.completed || [];
     const pgBoost = pgList.some(p => p.tier === 'fellowship_phd') ? 1.42 : pgList.length > 0 ? 1.26 : 1.0;
-    const monthlyGross = Math.round((baseAnnual / 12) * track.payMult * bestRung.mult * licBoost * pgBoost);
+    const monthlyGross = Math.max(Math.round((baseAnnual / 12) * track.payMult * bestRung.mult * licBoost * pgBoost), statutoryMinMonthlyGross(S.country, S.year));
     const missingBoard = qualifiedByDegree ? getRequiredForeignBoardForJob(S, trackId, track.reqDegrees) : null;
 
     jobs.push({
@@ -1565,7 +1565,7 @@ export function getLadderForJob(S) {
   const pgBoost = pgList.some(p => p.tier === 'fellowship_phd') ? 1.42 : pgList.length > 0 ? 1.26 : 1.0;
   const board = getRequiredForeignBoardForJob(S, job.track, track.reqDegrees || []);
   const rungs = track.rungs.map(r => {
-    const pay = Math.round((baseAnnual / 12) * track.payMult * r.mult * licBoost * pgBoost * jobEmploymentFraction(job));
+    const pay = Math.max(Math.round((baseAnnual / 12) * track.payMult * r.mult * licBoost * pgBoost * jobEmploymentFraction(job)), Math.round(statutoryMinMonthlyGross(S.country, S.year) * jobEmploymentFraction(job)));
     const reqs = [
       { label: `${r.minExp} year${r.minExp === 1 ? '' : 's'} in this track`, met: trackExp >= r.minExp, detail: `you have ${trackExp}` }
     ];
@@ -1971,7 +1971,7 @@ export function describeJobOffer(S, job) {
   const licBoost = matchingLicensePayBoost(S,track.reqDegrees||[]);
   const pgList = S.postgrad?.completed || [];
   const pgBoost = pgList.some(p => p.tier === 'fellowship_phd') ? 1.42 : pgList.length > 0 ? 1.26 : 1.0;
-  const nextGross = nextRung ? Math.round((baseAnnual / 12) * (track.payMult || 1) * nextRung.mult * licBoost * pgBoost) : null;
+  const nextGross = nextRung ? Math.max(Math.round((baseAnnual / 12) * (track.payMult || 1) * nextRung.mult * licBoost * pgBoost), statutoryMinMonthlyGross(S.country, S.year)) : null;
   const isCit = S.legal.citizenships.includes(S.country) || S.legal.residency.kind === 'permanent_resident';
   /* W1's payslip (landed after this round started): the market reads the
      same function as the job card — one source of truth, not two. */
