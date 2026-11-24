@@ -43,7 +43,7 @@ export function settleGameDivorce(S,spouse,couple,{custody='shared',contested=fa
   const protectedLiquid=baseline?convertCurrency(baseline.liquid,baseline.country,S.country,S.year):0;
   const divisible=prenup?0:Math.max(0,S.money.cash+S.money.savings-protectedLiquid);
   const spouseAward=Math.round(divisible*.5);payCost(S,spouseAward,`Divorce asset award to ${spouse.firstName}`);
-  if(spouse.career)spouse.career.savingsLocal=(spouse.career.savingsLocal||0)+spouseAward;
+  if(spouse.career)spouse.career.savingsLocal=(spouse.career.savingsLocal||0)+convertCurrency(spouseAward,S.country,spouse.residenceCountry||S.country,S.year);
   const children=divorceChildren(S,spouse.id);
   let result=custody;
   if(contested){
@@ -51,7 +51,7 @@ export function settleGameDivorce(S,spouse,couple,{custody='shared',contested=fa
     result=Math.abs(score(S.player)-score(spouse))<25?'shared':score(S.player)>score(spouse)?'player':'spouse';
   }
   const playerIncome=Math.max(0,S.career.job?.monthlyGross||S.career.monthlyPension||0);
-  const spouseIncome=Math.max(0,spouse.career?.monthlyIncomeLocal||0);
+  const spouseIncome=Math.max(0,convertCurrency(spouse.career?.monthlyIncomeLocal||0,spouse.residenceCountry||S.country,S.country,S.year));
   const payer=result==='player'?'spouse':result==='spouse'?'player':playerIncome>=spouseIncome?'player':'spouse';
   const monthly=children.length?Math.round((payer==='player'?playerIncome:spouseIncome)*Math.min(.4,(result==='shared'?.10:.20)+Math.max(0,children.length-1)*.05)):0;
   const order={id:nextId(S,'divorce'),spouseId:spouse.id,year:S.year,month:S.month,country:S.country,legalFees:fee,spouseAward,soldAssets:sold,custody:result,childIds:children.map(c=>c.id),payer,monthlySupport:monthly,arrears:0,contested,baselineKnown:!!baseline};
@@ -62,6 +62,7 @@ export function settleGameDivorce(S,spouse,couple,{custody='shared',contested=fa
   return order;
 }
 export function settleChildSupportMonth(S,available){
+  completeSupportReviews(S);
   let outgoing=0,incoming=0;
   for(const order of S.marriage.divorceOrders||[]){
     const alive=order.childIds.filter(id=>S.people[id]?.alive&&S.people[id].age<18);
@@ -71,14 +72,42 @@ export function settleChildSupportMonth(S,available){
     if(order.payer==='player'){
       const due=amount+Math.round(convertCurrency(order.arrears||0,order.country,S.country,S.year));
       const paid=Math.min(due,Math.max(0,available-outgoing));outgoing+=paid;
+      const ex=S.people[order.spouseId];if(ex){ex.career??={};ex.career.savingsLocal=(ex.career.savingsLocal||0)+convertCurrency(paid,S.country,ex.residenceCountry||S.country,S.year);}
       order.arrears=convertCurrency(due-paid,S.country,order.country,S.year);order.lastPaid=paid;
     }else if(S.people[order.spouseId]?.alive){
       const ex=S.people[order.spouseId];ex.career??={};
-      const savings=Math.max(0,Number(ex.career.savingsLocal)||0);
+      const exCountry=ex.residenceCountry||S.country;
+      const savings=convertCurrency(Math.max(0,Number(ex.career.savingsLocal)||0),exCountry,S.country,S.year);
       const due=amount+Math.round(convertCurrency(order.arrears||0,order.country,S.country,S.year));
-      const paid=Math.min(due,savings);ex.career.savingsLocal=savings-paid;incoming+=paid;order.lastPaid=paid;
+      const paid=Math.min(due,savings);ex.career.savingsLocal=Math.max(0,(Number(ex.career.savingsLocal)||0)-convertCurrency(paid,S.country,exCountry,S.year));incoming+=paid;order.lastPaid=paid;
       order.arrears=convertCurrency(due-paid,S.country,order.country,S.year);
     }
   }
   return{outgoing,incoming};
+}
+
+/* Review is requested, not an automatic self-declared income cut. Pending
+   review leaves the current obligation and arrears intact until next month.
+   Process reference: https://acf.gov/css/parents . Formula remains game-only. */
+export function requestSupportReview(S,orderId){
+ const o=(S.marriage.divorceOrders||[]).find(x=>x.id===orderId);
+ if(!o||!o.childIds.some(id=>S.people[id]?.alive&&S.people[id].age<18))return{ok:false,msg:'No active minor-child support order.'};
+ if(o.reviewPending)return{ok:false,msg:'A support review is already pending.'};
+ const now=S.year*12+S.month;if(o.lastReviewAt!=null&&now-o.lastReviewAt<6)return{ok:false,msg:'The game allows another review after six months.'};
+ o.reviewPending={filedAt:now,dueAt:now+1};recordJournal(S,'Requested support review. Existing monthly support and arrears remain due while current income and parenting arrangements are reviewed. Game review takes one month; this is not a local court timetable.','family');return{ok:true,msg:'Support review filed. Current order stays due pending review.'};
+}
+export function completeSupportReviews(S){
+ const now=S.year*12+S.month;
+ for(const o of S.marriage.divorceOrders||[]){if(!o.reviewPending||now<o.reviewPending.dueAt)continue;
+  const count=o.childIds.filter(id=>S.people[id]?.alive&&S.people[id].age<18).length;
+  const player=Math.max(0,S.career.retired?S.career.monthlyPension||0:S.career.job?.monthlyGross||0);
+  const ex=S.people[o.spouseId];const exIncome=Math.max(0,convertCurrency(Number(ex?.career?.monthlyIncomeLocal)||0,ex?.residenceCountry||S.country,S.country,S.year));
+  const payer=o.custody==='player'?'spouse':o.custody==='spouse'?'player':player>=exIncome?'player':'spouse';
+  if(payer!==o.payer&&o.arrears>0){o.reviewPending=null;o.lastReviewAt=now;recordJournal(S,'Support review requires a separate arrears settlement before changing payer in this game model. Existing arrears and order preserved.','family');continue;}
+  const income=payer==='player'?player:exIncome;const rate=Math.min(.4,(o.custody==='shared'?.1:.2)+Math.max(0,count-1)*.05);
+  const monthly=count?Math.round(convertCurrency(income*rate,S.country,o.country,S.year)):0;
+  const old=o.monthlySupport;o.monthlySupport=monthly*(o.childIds.length/Math.max(1,count));o.payer=payer;o.lastReviewAt=now;o.reviewPending=null;
+  o.reviews??=[];o.reviews.push({at:now,oldMonthly:old,newMonthly:o.monthlySupport,arrearsPreserved:o.arrears||0});
+  recordJournal(S,`Support review completed: prospective game order ${formatMoney(monthly,o.country)}/month from ${payer}. Prior arrears are unchanged. This simplified income-percentage calculation is not a state guideline.`,'family');
+ }
 }
