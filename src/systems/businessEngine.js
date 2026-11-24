@@ -945,7 +945,7 @@ export function sellBusiness(S, bizRef) {
   ensureExtendedState(S);
   const biz = resolveBusiness(S, bizRef);
   if (!biz || biz.dead || !(S.career.businesses || []).includes(biz)) return { ok: false, msg: 'No active owned business.' };
-  if((biz.growth?.locations||[]).some(l=>l.site))return{ok:false,msg:'Merge separate site records before selling the company.'};if((biz.familyCoOwners||[]).some(c=>c.equityPercent>0))return{ok:false,msg:'Resolve family stakes before selling. Buy back their shares in Money.'};
+  if((biz.contracts?.orders||[]).some(o=>['backlog','working','late'].includes(o.status)))return{ok:false,msg:'Deliver or cancel customer contracts before selling.'};if((biz.growth?.locations||[]).some(l=>l.site))return{ok:false,msg:'Merge separate site records before selling the company.'};if((biz.familyCoOwners||[]).some(c=>c.equityPercent>0))return{ok:false,msg:'Resolve family stakes before selling. Buy back their shares in Money.'};
   if((S.companyEstateReviews||[]).some(r=>r.companyId===biz.id&&r.dispute==='open'))return{ok:false,msg:'Resolve the estate dispute in Finance before selling.'};
   const valuation = businessValuation(biz);
   const exit = settleBusinessExitDebt(S, biz, valuation,businessValuation({...biz,equityOwned:100}));
@@ -974,6 +974,8 @@ export function closeBusiness(S, biz, reason, opts = {}) {
      — the record is removed from the portfolio below, but the flags
      and the journal line stay on the object, so fate can read them). */
   if(!opts.viaSettlement&&(target.growth?.locations||[]).some(l=>l.site))return{ok:false,msg:'Merge separate site records before voluntary closure.',salvage:0};if(opts.viaSettlement){for(const l of target.growth?.locations||[]){if(!l.site)continue;equipmentLeaseClose(l.site,S.year*12+S.month);target.debtLocal=(target.debtLocal||0)+(l.site.debtLocal||0);l.site.debtLocal=0;target.staff.push(...l.site.staff);if(l.site.manager)target.staff.push({...l.site.manager.employee,wageLocal:l.site.manager.wage});target.retainedCash=(target.retainedCash||0)+((l.site.enterprise||l.site.tech).reserve||0);l.site.dead=true;}target.siteClosureArchive=structuredClone(target.growth?.locations?.filter(l=>l.site)||[]);}if(!opts.viaSettlement&&(target.familyCoOwners||[]).length)return{ok:false,msg:'Resolve family stakes before voluntary closure. Buy back shares in Money.',salvage:0};
+  if(!opts.viaSettlement&&(target.contracts?.orders||[]).some(o=>['backlog','working','late'].includes(o.status)))return{ok:false,msg:'Deliver or cancel customer contracts before closing.',salvage:0};
+  for(const order of target.contracts?.orders||[]){if(!['backlog','working','late'].includes(order.status))continue;order.refunded=order.escrow;order.escrow=0;order.status='canceled_closure';target.debtLocal=(target.debtLocal||0)+order.penalty;}
   equipmentLeaseClose(target,S.year*12+S.month);
   target.dead = true;
   target.deathCause = reason;
