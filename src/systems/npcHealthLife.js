@@ -23,7 +23,7 @@
    back-filled for old saves. The rates are game-design numbers, not
    actuarial data. */
 import { hashSeed, clamp } from '../core/rng.js';
-import { recordJournal } from '../core/schema.js';
+import { recordJournal, queueScene } from '../core/schema.js';
 
 export const NPC_HEALTH_MIN_AGE = 18;
 export const NPC_HEALTH_MAX_AGE = 57;
@@ -65,6 +65,25 @@ const ROLE_WORD = { mother: 'your mother', father: 'your father', spouse: 'your 
 const who = (p, role) => `${ROLE_WORD[role]}, ${p.firstName}`;
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
+
+/* A card for a relative's diagnosis, serious injury or recovery. It is built
+   from the record just written and only for that event, so it appears once
+   and never again (an injury card stops at recovery, which is its own card).
+   The saved record in S.majorEvents lets later scenes gate on it, and the
+   `major` flag lets a saved card be restored after reload with its words. */
+function healthCard(S, person, role, kind, title, text, facts) {
+  S.majorEvents ??= [];
+  S.majorEvents.push({ kind, year: S.year, month: S.month, turn: S.turn, personId: person.id, facts: { role, ...facts } });
+  if (S.majorEvents.length > 120) S.majorEvents.splice(0, S.majorEvents.length - 120);
+  const key = `major_${kind}_${S.year}_${S.month}_${person.id}`;
+  const queued = queueScene(S, {
+    key, baseId: key, category: 'milestone', title, text, urgent: true, major: true, majorKind: kind, maxPerLife: 99,
+    choices: [{ label: 'Continue', effect: (st) => { recordJournal(st, text, 'family'); } }],
+  }, true);
+  /* A card that cannot be queued (an identical one is still unanswered) falls back to the journal. */
+  if (!queued) recordJournal(S, text, 'family');
+}
+
 function pickIllness(S, person) {
   const pool = YOUNG_ILLNESSES.filter((k) => person.age >= k.minAge);
   const total = pool.reduce((n, k) => n + k.weight, 0);
@@ -88,7 +107,7 @@ export function tickNpcHealthLife(S, { die } = {}) {
     /* An earlier non-fatal injury is recorded as healed once a later year arrives. */
     if (person.accident && person.accident.severity !== 'fatal' && !person.accident.recoveredYear && person.accident.year < y) {
       person.accident.recoveredYear = y;
-      if (person.accident.severity === 'moderate') recordJournal(S, `${cap(who(person, role))}, has recovered from the accident.`, 'family');
+      if (person.accident.severity === 'moderate') healthCard(S, person, role, 'relative_injury_recovered', `${person.firstName} Has Recovered`, `${cap(who(person, role))}, has recovered from the accident.`, {});
     }
     /* 1. A sudden accident. */
     if (!elderly && roll(S, person, y, 'accident') < ACCIDENT_YEARLY) {
@@ -101,7 +120,8 @@ export function tickNpcHealthLife(S, { die } = {}) {
         continue;
       }
       person.vitals.health = clamp(person.vitals.health - (sev === 'moderate' ? 15 : 5));
-      recordJournal(S, sev === 'minor' ? `${cap(who(person, role))}, had a minor accident.` : `${cap(who(person, role))}, was hurt in an accident.`, 'family');
+      if (sev === 'minor') recordJournal(S, `${cap(who(person, role))}, had a minor accident.`, 'family');
+      else healthCard(S, person, role, 'relative_injury', `${person.firstName} Was Hurt`, `${cap(who(person, role))}, was hurt in an accident.`, { severity: sev });
       events.push({ kind: 'accident_injury', id: person.id, role, severity: sev });
     }
     /* 2. An existing illness runs its course. */
@@ -118,7 +138,7 @@ export function tickNpcHealthLife(S, { die } = {}) {
           (person.pastIllnesses ??= []).push({ kind: ill.kind, sinceYear: ill.sinceYear, resolvedYear: y });
           person.illness = null;
           person.vitals.health = clamp(person.vitals.health + 10);
-          recordJournal(S, `${cap(who(person, role))}, has recovered from ${ill.kind}.`, 'family');
+          healthCard(S, person, role, 'relative_illness_recovered', `${person.firstName} Has Recovered`, `${cap(who(person, role))}, has recovered from ${ill.kind}.`, { illness: ill.kind });
           events.push({ kind: 'illness_recovered', id: person.id, role });
         }
       }
@@ -129,7 +149,7 @@ export function tickNpcHealthLife(S, { die } = {}) {
       const def = pickIllness(S, person);
       person.illness = { kind: def.kind, sinceYear: y, src: 'young' };
       person.vitals.health = clamp(person.vitals.health - 15);
-      recordJournal(S, `${cap(who(person, role))}, has been diagnosed with ${def.kind}.`, 'family');
+      healthCard(S, person, role, 'relative_illness', `${person.firstName} Has Been Diagnosed`, `${cap(who(person, role))}, has been diagnosed with ${def.kind}.`, { illness: def.kind });
       events.push({ kind: 'illness_onset', id: person.id, role, illness: def.kind });
     }
   }
