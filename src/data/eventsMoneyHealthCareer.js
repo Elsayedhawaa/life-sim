@@ -5,7 +5,7 @@ import{eraDepositRates}from'./economy.js';
 import{worldEventEffects}from'../systems/worldEvents.js';
 import{bookNarrativeLoan,narrativeLoanQuote,payNarrativeLoan}from'../systems/narrativeLoans.js';
 import {topUpPrivatePension} from '../systems/careerMarket.js';
-import {computeZakatDueLocal,payAnnualZakat,investInMarketAsset,sendInternationalRemittance,remittanceQuote} from '../systems/completeLifeSystems.js';
+import {computeZakatDueLocal,payAnnualZakat,investInMarketAsset,sendInternationalRemittance,remittanceQuote,householdStaffQuote,hireHouseholdStaff} from '../systems/completeLifeSystems.js';
 import {GLOBAL_MARKET_ASSETS} from './megaFinanceAndMarkets.js';
 import {depositToSavings,withdrawFromSavings,personalLoanGates,takePersonalLoan,sellGold21k,buyBankCertificate} from '../systems/economyEngine.js';
 import {recordCivilLoss} from '../systems/civilClaims.js';
@@ -11197,49 +11197,11 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'money',
     repeatable: false,
     gates: {"minAge": 28, "hasJob": true, "abroad": true, "countries": ["sau", "uae"]},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(5000, S.country, S.year);
-      const B = eraLocalCost(2500, S.country, S.year);
-      return {
-        key: 'ev_gulf_driver_maid',
-        category: 'money',
-        title: "Hiring a Driver and a Maid",
-        text: `Everyone here has a driver and a maid, and the agencies are full of them. A driver costs ${formatMoney(A, S.country)} a month, a maid ${formatMoney(B, S.country)} — and your life would change completely. Your salary says maybe; your pride says no.`,
-        choices: [
-          {
-            label: "Hire both",
-            effect: (st) => {
-              walletMove(st, -A, 'Hire both', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-5));
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+4));
-              recordJournal(st, `You hired a driver and a maid in the Gulf, ${formatMoney(A, S.country)} a month together, and your life changed.`, 'money');
-            },
-          },
-          {
-            label: "Hire the maid only",
-            effect: (st) => {
-              walletMove(st, -B, 'Hire the maid only', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-3));
-              recordJournal(st, `You hired a maid only, for ${formatMoney(B, S.country)} a month, and kept driving yourself.`, 'money');
-            },
-          },
-          {
-            label: "Do everything yourself",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+2));
-              st.player.vitals.health = clamp(st.player.vitals.health + (+1));
-              recordJournal(st, `You did everything yourself in the Gulf — no driver, no maid — and kept the money.`, 'money');
-            },
-          },
-        ],
-      };
+    build:(S,ctx)=>{
+      const driver=householdStaffQuote(S,'driver'),maid=householdStaffQuote(S,'maid');if(!driver.ok||!maid.ok)return null;
+      const missing=['driver','maid'].filter(role=>!S.housing.staff.some(x=>x.roleKey===role));if(!missing.length)return null;
+      const added=missing.reduce((sum,role)=>sum+householdStaffQuote(S,role).monthlyLocal,0);
+      return{key:'ev_gulf_driver_maid',category:'money',title:'Household Help',text:`Driver: ${formatMoney(driver.monthlyLocal,S.country)}/month. Housekeeping: ${formatMoney(maid.monthlyLocal,S.country)}/month. Adding missing roles costs ${formatMoney(added,S.country)}/month at the next household settlement, not today. Cash must cover one month. Dismiss roles under Real Estate > Staff.`,choices:[{label:`Hire missing roles · ${formatMoney(added,S.country)}/month`,effect:st=>hireHouseholdStaff(st,missing)},{label:`Hire housekeeping only · ${formatMoney(maid.monthlyLocal,S.country)}/month`,effect:st=>hireHouseholdStaff(st,['maid'])},{label:'Keep current household help',effect:st=>{}}]};
     },
   },
   {

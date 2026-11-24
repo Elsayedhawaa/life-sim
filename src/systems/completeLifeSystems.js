@@ -661,26 +661,27 @@ export function installPropertyUpgrade(S, propId, upgKey) {
   return { ok: true, msg: `Installed ${spec.label}!` };
 }
 
-export function toggleHouseholdStaff(S, roleKey) {
-  ensureExtendedState(S);
-  const existingIdx = S.housing.staff.findIndex(s => s.roleKey === roleKey);
-  if (existingIdx >= 0) {
-    const [removed] = S.housing.staff.splice(existingIdx, 1);
-    recordJournal(S, `Ended household employment for ${removed.name}.`, 'money');
-    return { ok: true, msg: `Dismissed ${removed.name}.` };
-  }
-
-  const cat = HOUSEHOLD_STAFF_CATALOG[roleKey];
-  const variant = cat?.variants?.[0];
-  const label = variant?.name || cat?.label || roleKey;
-  const baseUsd = roleKey === 'driver' ? 420 : roleKey === 'nanny' ? 480 : roleKey === 'chef' ? 650 : 280;
-  const monthlyLocal = eraLocalCost(Math.round(convertCurrency(baseUsd, 'usa', S.country, 2026)), S.country, S.year);
-
-  if (S.money.cash < monthlyLocal) return { ok: false, msg: `Need ${formatMoney(monthlyLocal, S.country)} to hire ${label}.` };
-  S.housing.staff.push({ id: nextId(S, 'stf'), roleKey, name: label, monthlyCostLocal: monthlyLocal });
-  S.player.vitals.stress = clamp(S.player.vitals.stress - 6);
-  recordJournal(S, `Hired household staff: ${label} (${formatMoney(monthlyLocal, S.country)}/mo).`, 'life');
-  return { ok: true, msg: `Hired ${label}!` };
+export function householdStaffQuote(S,roleKey){
+ roleKey=roleKey==='chauffeur'?'driver':roleKey;const cat=HOUSEHOLD_STAFF_CATALOG[roleKey==='driver'?'chauffeur':roleKey];if(!cat)return{ok:false,msg:'Unknown household role.'};
+ const baseUsd=roleKey==='driver'?420:roleKey==='nanny'?480:roleKey==='chef'?650:280;
+ const monthlyLocal=eraLocalCost(Math.round(convertCurrency(baseUsd,'usa',S.country,2026)),S.country,S.year);
+ return{ok:true,roleKey,label:cat.variants?.[0]?.name||cat.label,monthlyLocal};
+}
+export function hireHouseholdStaff(S,roles){
+ ensureExtendedState(S);const unique=[...new Set(roles.map(role=>role==='chauffeur'?'driver':role))];if(!unique.length)return{ok:false};
+ const quotes=unique.filter(role=>!S.housing.staff.some(x=>x.roleKey===role)).map(role=>householdStaffQuote(S,role));
+ if(quotes.some(q=>!q.ok))return{ok:false,msg:'Unknown household role.'};
+ const total=quotes.reduce((sum,q)=>sum+q.monthlyLocal,0);
+ if(S.money.cash<total)return{ok:false,msg:'Not enough cash to cover one month of the added wages.'};
+ for(const q of quotes)S.housing.staff.push({id:nextId(S,'stf'),roleKey:q.roleKey,name:q.label,monthlyCostLocal:q.monthlyLocal});
+ if(quotes.length){S.player.vitals.stress=clamp(S.player.vitals.stress-6);recordJournal(S,'Hired household help. Wages join the monthly household bill; dismiss roles under Real Estate > Staff.','life');}
+ return{ok:true,totalMonthlyAdded:total,msg:quotes.length?'Household roles hired; monthly wages start at next settlement.':'Already hired.'};
+}
+export function toggleHouseholdStaff(S,roleKey){
+ ensureExtendedState(S);roleKey=roleKey==='chauffeur'?'driver':roleKey;if(!householdStaffQuote(S,roleKey).ok)return{ok:false,msg:'Unknown household role.'};
+ const idx=S.housing.staff.findIndex(x=>x.roleKey===roleKey);
+ if(idx>=0){const[removed]=S.housing.staff.splice(idx,1);recordJournal(S,'Ended household employment for '+removed.name+'.','money');return{ok:true,msg:'Household role dismissed.'};}
+ return hireHouseholdStaff(S,[roleKey]);
 }
 
 /* Buy Land Plot & Custom-Build Your Own Villa / Apartment Block Month-by-Month! */
