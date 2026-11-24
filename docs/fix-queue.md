@@ -19,7 +19,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] L5 Input auto-restock with reorder policy, reserve budget and delivery limits.
 - [x] L6 Editable quantities, compatible substitutions and batch yields with cost/price tradeoffs.
 - [x] L7 More sector incidents with stock/morale/WIP/demand consequences.
-- [ ] L8 Distinct operational activity effects rather than shared generic bonuses.
+- [x] L8 Distinct sector activity effects on staff, stock, gear, WIP, spoilage, resources and churn.
 - [ ] L9 Branch-specific accounts, staff and stock instead of shared parent pools.
 - [ ] L10 Per-record server data loss, backup coverage and recovery.
 - [ ] L11 General equipment failure/repair/replacement queue beyond wear.
@@ -46,4 +46,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-22 distinct open packages after L7. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+21 distinct open packages after L8. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.

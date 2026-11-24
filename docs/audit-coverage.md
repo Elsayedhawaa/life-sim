@@ -314,3 +314,6 @@ Per-line input amounts, compatible substitutions and1/2/4 batch yield. Original 
 
 ## Distinct operating incidents
 20 new sector events,40 total.80 event/response combinations. Actual response cash, stock/value write-offs, relief morale, original-price WIP delay, bounded demand/capacity effects and duplicate guards. Catalog and noncatalog delay paths checked.107 focused files,12,152renders and phone fatigue response/history/trading/reload pass. Custom specialties stayL22.
+
+## Sector-specific management work
+30 distinct activities use role training/morale, recorded-count recovery, owned gear condition, WIP resequencing, spoilage, new resource consumption, software retention and per-user cloud/workload use. No equipment book value or sold-quantity grant. Existing founder time/pay/expiry gates.108 focused files,12,152renders and phone actual barista skill/spoilage-plan/trading/reload pass.
