@@ -2201,7 +2201,10 @@ export function tickCareerMonthly(S) {
     const mentorBoost = S.career.market?.mentor ? 6 : 0;
     const rivalRec = S.career.market?.rival;
     const rivalBlocks = !!rivalRec && (rivalRec.performance ?? 0) > job.performance;
-    const wouldPromote = nextRung && trackExp >= nextRung.minExp && job.performance + mentorBoost >= 72 && !payFrozen;
+    const check=job.actionState?.licence||{};
+    const overdue=(check.medicalDueYear!=null&&check.medicalDueYear<S.year)||(check.simDueYear!=null&&check.simDueYear<S.year)||PROFESSIONAL_LICENSES.some(l=>(track?.reqDegrees||[]).includes(l.reqDegree)&&(S.credentials.licenses||[]).includes(l.id)&&(S.credentials.licenceRenewals?.[l.id]?.validUntilYear??Infinity)<S.year);
+    const wouldPromote = nextRung && trackExp >= nextRung.minExp && job.performance + mentorBoost >= 72 && !payFrozen && !overdue;
+    if(overdue&&nextRung&&trackExp>=nextRung.minExp)recordJournal(S,'Automatic promotion paused: renew the overdue career medical, simulator or board check under Train & Licences.','career');
     if (wouldPromote && !rivalBlocks) {
       const ratio = nextRung.mult / (track.rungs[job.level]?.mult || 1);
       job.level = nextRung.level;
