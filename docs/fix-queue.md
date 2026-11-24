@@ -38,7 +38,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] G1 Cash/net30/net60 invoices, delayed collections/late payment/write-offs, cash-basis model tax and company-cash factoring.
 - [x] G2 Persistent named rivals, deterministic price/quality/reach moves, paid responses and actual demand/price/cost effects.
 - [x] G3 Branch accounts/stock/staff. Shares implementation with L9; count once in totals.
-- [ ] G4 Lot quality, recalls and refunds.
+- [x] G4 Supplier input lots, quality sales effects, FIFO/expiry, quarantine/inspected release and paid recall refunds.
 - [ ] G5 Contracts, backlog, deposits and deadlines.
 - [ ] G6 Compliance and insurance with modeled costs/risks, not legal assurances.
 - [ ] G7 Marketing attribution, reviews and customer retention.
@@ -46,4 +46,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-5 distinct open packages after G2. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+4 distinct open packages after G4. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
