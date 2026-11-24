@@ -1468,6 +1468,8 @@ export function syncEmployerBenefits(S) {
    current job. Backfills old saves (jobs hired before v2.8 have none of
    this) and resets the leave year when the year turns. Called by the
    monthly tick and by the Career tab render — both read the same object. */
+var _promotionEligibility; // var: set during a circular module load, before this line runs
+export function registerPromotionEligibility(fn) { _promotionEligibility = fn; }
 export const SENIOR_RUNG_LEVEL = 3; // game design: rungs at or above this level need an application
 
 export function jobEmploymentFraction(job) {
@@ -2151,17 +2153,24 @@ export function tickCareerMonthly(S) {
        chance the company has frozen that grade). Lower rungs stay automatic. */
     const needsApplication = !!nextRung && nextRung.level >= SENIOR_RUNG_LEVEL;
     if (wouldPromote && !rivalBlocks && needsApplication) {
-      recordJournal(S, `You now meet the bar for ${nextRung.title} at ${job.employer}. This rung is not automatic: apply for it under Career, or look for the title at another employer.`, 'career');
-      /* Shown once per rung, as a scene, so a player who never opens Career
-         still learns the rung now waits for them. */
-      if (job.seniorPromptLevel !== nextRung.level) {
-        job.seniorPromptLevel = nextRung.level;
-        queueScene(S, {
-          key: `senior_rung_ready_${job.track}_${nextRung.level}_${S.year}`, baseId: 'senior_rung_ready', category: 'career', urgent: true, maxPerLife: 99,
-          title: `You Are Eligible for ${nextRung.title}`,
-          text: `You meet the experience and performance bar for ${nextRung.title} at ${job.employer}. This step is not automatic: open the Career tab and choose Apply, which opens an interview with your manager. You can also look for the title at another employer.`,
-          choices: [{ label: 'Understood', effect: () => {} }],
-        }, true);
+      /* The prompt must match what the Apply button will accept, so it asks the
+         one promotion eligibility rule (careerActions registers it; that module
+         imports this one, so it cannot be imported here). When Apply would
+         refuse, the reason is journalled instead of promising a promotion. */
+      const elig = _promotionEligibility ? _promotionEligibility(S) : null;
+      if (elig && !elig.eligible) {
+        recordJournal(S, `You meet the experience and performance bar for ${nextRung.title} at ${job.employer}, but cannot apply yet: ${elig.missing.join('; ')}.`, 'career');
+      } else if (elig) {
+        recordJournal(S, `You now meet the bar for ${nextRung.title} at ${job.employer}. This rung is not automatic: apply for it under Career, or look for the title at another employer.`, 'career');
+        if (job.seniorPromptLevel !== nextRung.level) {
+          job.seniorPromptLevel = nextRung.level;
+          queueScene(S, {
+            key: `senior_rung_ready_${job.track}_${nextRung.level}_${S.year}`, baseId: 'senior_rung_ready', category: 'career', urgent: true, maxPerLife: 99,
+            title: `You Are Eligible for ${nextRung.title}`,
+            text: `You meet the requirements for ${nextRung.title} at ${job.employer}. This step is not automatic: open the Career tab and choose Apply, which opens an interview with your manager. You can also look for the title at another employer.`,
+            choices: [{ label: 'Understood', effect: () => {} }],
+          }, true);
+        }
       }
     }
     if (wouldPromote && !rivalBlocks && !needsApplication) {

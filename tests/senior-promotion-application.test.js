@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createNewLifeState, ensureExtendedState } from '../src/core/schema.js';
 import { tickCareerMonthly } from '../src/systems/careerEducationEngine.js';
+import '../src/systems/careerActions.js';
 function run(years) {
   const s = createNewLifeState({ country: 'gbr', seed: 7 }); ensureExtendedState(s);
   s.year = 2030; s.month = 1; s.player.age = 22; s.career.employed = true; s.career.trackExperience = { software: 0 };

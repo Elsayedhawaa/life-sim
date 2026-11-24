@@ -27,6 +27,7 @@ import {
 } from '../data/economy.js';
 import {
   getMergedCareerTracks,
+  registerPromotionEligibility,
   getRequiredForeignBoardForJob,
   getJobContract,
   jobEmploymentFraction,
@@ -725,6 +726,7 @@ export function promotionEligibility(S) {
   return { nextRung, missing, eligible: missing.length === 0 };
 }
 
+registerPromotionEligibility(promotionEligibility);
 export function applyPromotion(S) {
   if (!S.career.employed || !S.career.job) return { ok: false, msg: 'You are not currently employed.' };
   const job = S.career.job;
