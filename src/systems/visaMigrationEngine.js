@@ -1,3 +1,4 @@
+import {endTenancy} from './propertyLandlord.js';
 import{recordCivilLoss}from './civilClaims.js';
 import {studyAbroadQuote,studyAwardKey,abroadLanguageReady} from './studyAbroadPlanning.js';
 import {chargeFamilyEducation} from './educationFunding.js';
@@ -198,6 +199,7 @@ export function executeCountryRelocation(S, destCountry, residencyObj, moveHouse
   /* Set initial rented apartment in new country (unless citizen returning to family/owned property) */
   const ownedThere = S.housing.properties.find(p => p.country === destCountry);
   if (ownedThere) {
+    if(ownedThere.landlord?.tenant)endTenancy(S,ownedThere,'owner returned from abroad');
     ownedThere.rentedOut = false;
     S.housing.mode = 'owned';
     S.housing.currentHomeId = ownedThere.id;

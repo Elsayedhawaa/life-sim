@@ -78,4 +78,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W14 Consular modeled home ties use actual current enterprises/employment/property/living resident spouse; mobility exemption requires valid held passport, not expired citizenship record alone.
 
 - [x] W15 Bank-certificate event must create actual rate/principal/maturity record, not delete savings without an asset.
-- [ ] W16 Stock-tip event removes cash without creating a position or resolving the risk.
+- [x] W16 Stock-tip event removes cash without creating a position or resolving the risk.
+
+- [ ] W17 Relocation into an owned home must settle its existing tenant/deposit rather than silently occupying it while tenant still lives/pays there.

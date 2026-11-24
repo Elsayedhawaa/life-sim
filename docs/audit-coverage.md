@@ -432,3 +432,6 @@ Certificate scene calls the bank product action, pays from cash, creates princip
 
 ### W16 real stock-tip position
 Investment-tip scene now names an era-available modeled ETF and buys a real investment record through the existing market action. Cash becomes cost basis/value, annual return risk and Finance sell route remain available, insufficient cash locks choice. Fixed literal participant placeholder in title.146focused files pass, focused test verifies networth conservation and liquidation.390px final ETF scene fixture buys position/reloads, inspected final pixels.
+
+### W17 repatriation and occupied property
+Moving country into an owned rental now ends its existing tenancy through the landlord system before occupation. Intact deposit returns; actual damage keeps the existing settlement decision rather than silently confiscating or auto-deciding it.147focused files pass for intact/damaged cases.390px repatriation fixture returns to owned home, existing tenant cleared/deposit returned, reload retained; inspected home pixels. No claim that this models jurisdiction-specific owner-occupation notice rules.
