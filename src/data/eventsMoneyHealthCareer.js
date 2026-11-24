@@ -487,7 +487,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const p=ctx.sib;if(!p?.alive)return null;
       if((S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='open'))return null;
       const A=eraLocalCost(1200,S.country,S.year),B=eraLocalCost(600,S.country,S.year);
-      return{key:'ev_money_sibling_loan',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
+      return{key:'ev_money_sibling_loan',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,available:st=>st.money.cash>=A,lockReason:`You have less than ${formatMoney(A,S.country)} in cash.`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,available:st=>st.money.cash>=B,lockReason:`You have less than ${formatMoney(B,S.country)} in cash.`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
     },
   },
   {
@@ -512,7 +512,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const p=ctx.friend;if(!p?.alive)return null;
       if((S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='open'))return null;
       const A=eraLocalCost(2000,S.country,S.year),B=eraLocalCost(800,S.country,S.year);
-      return{key:'ev_money_friend_loan',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
+      return{key:'ev_money_friend_loan',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,available:st=>st.money.cash>=A,lockReason:`You have less than ${formatMoney(A,S.country)} in cash.`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,available:st=>st.money.cash>=B,lockReason:`You have less than ${formatMoney(B,S.country)} in cash.`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
     },
   },
   {
@@ -11783,7 +11783,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const p=ctx.friend;if(!p?.alive)return null;if(!(S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='settled'))return null;
       if((S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='open'))return null;
       const A=eraLocalCost(1500,S.country,S.year),B=eraLocalCost(800,S.country,S.year);
-      return{key:'ev_back_friend_repays_l2',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
+      return{key:'ev_back_friend_repays_l2',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,available:st=>st.money.cash>=A,lockReason:`You have less than ${formatMoney(A,S.country)} in cash.`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,available:st=>st.money.cash>=B,lockReason:`You have less than ${formatMoney(B,S.country)} in cash.`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
     },
   },
   {
@@ -11795,7 +11795,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const p=ctx.sib;if(!p?.alive)return null;if(!(S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='settled'))return null;
       if((S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='open'))return null;
       const A=eraLocalCost(2500,S.country,S.year),B=eraLocalCost(1200,S.country,S.year);
-      return{key:'ev_back_sibling_repays_l2',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
+      return{key:'ev_back_sibling_repays_l2',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,available:st=>st.money.cash>=A,lockReason:`You have less than ${formatMoney(A,S.country)} in cash.`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,available:st=>st.money.cash>=B,lockReason:`You have less than ${formatMoney(B,S.country)} in cash.`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
     },
   },
   {
