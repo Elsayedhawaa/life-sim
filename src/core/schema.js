@@ -1406,7 +1406,9 @@ export function queueScene(S, scene, urgent = false) {
 
   if (!S.sceneCounts) S.sceneCounts = {};
   if (!S.titleCounts) S.titleCounts = {}; // v2.6: title -> times queued (D3 anti-spam)
-  if ((S.sceneCounts[baseSig] || 0) >= maxPerLife) return false;
+  /* scene.navigation: a pure browse/back/re-entry menu with no reward, charge or journal line of its own. It is exempt from the per-life and per-title caps so the way forward can never be capped away; the active/queue duplicate guard below still applies. */
+  const navigation = scene.navigation === true;
+  if (!navigation && (S.sceneCounts[baseSig] || 0) >= maxPerLife) return false;
 
   /* v2.6 anti-spam invariant (the coherence suite's D3 rule): no single
      TITLE may be queued 4+ times in one life, however many repeatable
@@ -1415,7 +1417,7 @@ export function queueScene(S, scene, urgent = false) {
      Cold", "A Festival in Your Street", "Headhunter & Network Job Leads")
      can legitimately repeat past the defect threshold once lives routinely
      survive to 52+. Urgent life/death milestones are exempt. */
-  if (!urgent) {
+  if (!urgent && !navigation) {
     if (!S.titleCounts) S.titleCounts = {};
     if ((S.titleCounts[scene.title] || 0) >= 3) return false;
   }
@@ -1427,8 +1429,8 @@ export function queueScene(S, scene, urgent = false) {
   /* Respect cooldowns unless urgent life/death milestone */
   if (!urgent && S.cooldowns[key] && S.turn < S.cooldowns[key]) return false;
 
-  S.sceneCounts[baseSig] = (S.sceneCounts[baseSig] || 0) + 1;
-  if (!urgent) {
+  if (!navigation) S.sceneCounts[baseSig] = (S.sceneCounts[baseSig] || 0) + 1;
+  if (!urgent && !navigation) {
     if (!S.titleCounts) S.titleCounts = {};
     S.titleCounts[scene.title] = (S.titleCounts[scene.title] || 0) + 1;
   }

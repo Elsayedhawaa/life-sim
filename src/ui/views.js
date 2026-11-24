@@ -1143,8 +1143,12 @@ function renderActiveSceneHtml(S) {
           `;
           };
           if (sc.choices.length <= 6) return sc.choices.map(choiceHtml).join('');
-          return sc.choices.slice(0, 5).map(choiceHtml).join('') +
-            `<details class="scene-more-choices"><summary>All other options (${sc.choices.length - 5})</summary>${sc.choices.slice(5).map((ch, idx) => choiceHtml(ch, idx + 5)).join('')}</details>`;
+          /* Exit/navigation choices (ch.exit) always stay visible so the way out is never hidden inside the fold. */
+          const idxAll = sc.choices.map((ch, i) => i), idxExit = idxAll.filter(i => sc.choices[i].exit), idxRest = idxAll.filter(i => !sc.choices[i].exit);
+          const shown = idxRest.slice(0, 5), folded = idxRest.slice(5);
+          return shown.map(i => choiceHtml(sc.choices[i], i)).join('') +
+            (folded.length ? `<details class="scene-more-choices"><summary>All other options (${folded.length})</summary>${folded.map(i => choiceHtml(sc.choices[i], i)).join('')}</details>` : '') +
+            idxExit.map(i => choiceHtml(sc.choices[i], i)).join('');
         })()}
       </div>
     </section>

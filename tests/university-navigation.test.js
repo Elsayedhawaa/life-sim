@@ -4,7 +4,7 @@ import { presentPostHighSchoolCrossroads } from '../src/systems/careerEducationE
 import { resolveActiveSceneChoice } from '../src/core/gameLoop.js';
 const S = createNewLifeState({ country: 'ind', seed: 5, birthYear: 1979 }); ensureExtendedState(S);
 S.year = 1997; S.month = 9; S.player.age = 18; S.money.cash = 0; S.money.savings = 0; S.education.highSchoolScore = 85;
-for (let i = 0; i < 8; i++) {
+for (let i = 0; i < 12; i++) {
   presentPostHighSchoolCrossroads(S);
   if (!S.activeScene && S.sceneQueue.length) S.activeScene = S.sceneQueue.shift();
   assert.ok(S.activeScene, `crossroads must reappear on browse ${i}`);
@@ -22,3 +22,7 @@ const sk = S.activeScene.choices.findIndex(c => /Skip university/.test(c.label))
 assert.ok(resolveActiveSceneChoice(S, sk).ok);
 assert.equal(S.education.stage, 'completed'); assert.equal(S.money.cash, cash, 'no charge');
 console.log('university navigation ok');
+/* exempt navigation must not grant rewards, charges or counted scenes */
+assert.equal(S.sceneCounts?.post_highschool_choice || 0, 0, 'navigation is not counted');
+
+console.log('navigation exemption ok');
