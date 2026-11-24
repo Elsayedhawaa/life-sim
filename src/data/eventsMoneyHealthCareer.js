@@ -4605,7 +4605,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_health_cholesterol',
         category: 'health',
         title: "High Cholesterol at the Check-Up",
-        text: `The cholesterol number on the lab report is circled in red. The doctor talks about fried food, about walking, about statins — and about your father, who had his first heart problem at your age.`,
+        text: `The cholesterol number on the lab report is circled in red. The doctor talks about fried food, about walking, about statins${ctx.dad && ctx.dad.illness ? ` — and about ${dadName}, who is living with an illness` : ''}.`,
         choices: [
           {
             label: "Take statins and eat better",
