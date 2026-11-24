@@ -42,6 +42,7 @@
 
 import { clamp } from '../core/rng.js';
 import { recordJournal, walletMove } from '../core/schema.js';
+import {convertCurrency} from '../data/economy.js';
 import { formatMoney } from '../data/countries.js';
 import {
   ensureStaffArray, staffRolesForType, roleWageLocal
@@ -318,17 +319,17 @@ export function trainBusinessEmployee(S, biz, staffId) {
   if ((Number(emp.skill) || 0) >= TRAIN_MAX_SKILL) {
     return { ok: false, msg: `${emp.name} is already as good as training can make them (skill ${Math.round(emp.skill)}).` };
   }
-  const cost = trainingCostFor(emp);
+  const cost = Math.round(convertCurrency(trainingCostFor(emp),biz.figuresCurrency||biz.country||S.country,S.country,S.year));
   if ((Number(S.money.cash) || 0) < cost) {
-    return { ok: false, msg: `Training ${emp.name} costs ${formatMoney(cost, biz.country || S.country)} — not enough cash.` };
+    return { ok: false, msg: `Training ${emp.name} costs ${formatMoney(cost,S.country)} — not enough cash.` };
   }
   const before = Math.round(Number(emp.skill) || 0);
   walletMove(S, -cost, `Training — ${emp.name} (${emp.role})`, 'business');
   emp.skill = clamp((Number(emp.skill) || 0) + TRAIN_SKILL_GAIN, 0, TRAIN_MAX_SKILL);
   const after = Math.round(emp.skill);
-  recordJournal(S, `Sent ${emp.name} (${emp.role}) on a training course at ${biz.name} for ${formatMoney(cost, biz.country || S.country)}. Skill ${before} → ${after}.`, 'career');
+  recordJournal(S, `Sent ${emp.name} (${emp.role}) on a training course at ${biz.name} for ${formatMoney(cost,S.country)}. Skill ${before} → ${after}.`, 'career');
   stampMonthEffects(S, biz);
-  return { ok: true, msg: `Trained ${emp.name}: skill ${before} → ${after} (+${TRAIN_SKILL_GAIN}) for ${formatMoney(cost, biz.country || S.country)}.`, cost, skillGain: TRAIN_SKILL_GAIN, newSkill: after, employee: emp };
+  return { ok: true, msg: `Trained ${emp.name}: skill ${before} → ${after} (+${TRAIN_SKILL_GAIN}) for ${formatMoney(cost,S.country)}.`, cost, skillGain: TRAIN_SKILL_GAIN, newSkill: after, employee: emp };
 }
 
 /* ------------------------------------------------------------------ */
@@ -373,14 +374,14 @@ export function promoteBusinessEmployee(S, biz, staffId, newRole) {
   }
   const oldRole = emp.role;
   const oldWage = Number(emp.wageLocal) || 0;
-  const newWage = roleWageLocal(S, newRole, biz.country || S.country);
+  const newWage = Math.round(convertCurrency(roleWageLocal(S,newRole,biz.country||S.country),biz.country||S.country,biz.figuresCurrency||biz.country||S.country,S.year));
   emp.role = newRole;
   emp.wageLocal = newWage;
   emp.morale = clamp((Number(emp.morale) || 0) + PROMOTION_MORALE_GAIN, 0, 100);
   emp.promotedFrom = oldRole;
-  recordJournal(S, `Promoted ${emp.name} from ${oldRole} to ${newRole} at ${biz.name}. Wage ${formatMoney(oldWage, biz.country || S.country)} → ${formatMoney(newWage, biz.country || S.country)}/month; they are proud of it (morale +${PROMOTION_MORALE_GAIN}).`, 'career');
+  recordJournal(S, `Promoted ${emp.name} from ${oldRole} to ${newRole} at ${biz.name}. Wage ${formatMoney(oldWage,biz.figuresCurrency||biz.country||S.country)} → ${formatMoney(newWage,biz.figuresCurrency||biz.country||S.country)}/month; they are proud of it (morale +${PROMOTION_MORALE_GAIN}).`, 'career');
   stampMonthEffects(S, biz);
-  return { ok: true, msg: `Promoted ${emp.name}: ${oldRole} → ${newRole}, wage ${formatMoney(newWage, biz.country || S.country)}/month.`, oldRole, newRole, newWage, employee: emp };
+  return { ok: true, msg: `Promoted ${emp.name}: ${oldRole} → ${newRole}, wage ${formatMoney(newWage,biz.figuresCurrency||biz.country||S.country)}/month.`, oldRole, newRole, newWage, employee: emp };
 }
 
 /* ------------------------------------------------------------------ */
@@ -409,7 +410,7 @@ export function renderStaffListHtml(S, biz) {
   if (!biz) return '';
   const staff = ensureStaffArray(S, biz);
   const roles = staffRolesForType(biz.typeId);
-  const countryId = biz.country || S.country;
+  const countryId = biz.figuresCurrency||biz.country || S.country;
   const wages = staff.reduce((sum, e) => sum + (Number(e.wageLocal) || 0), 0);
   const avgMorale = staff.length ? staff.reduce((s, e) => s + (Number(e.morale) || 0), 0) / staff.length : null;
   const avgSkill = staff.length ? staff.reduce((s, e) => s + (Number(e.skill) || 0), 0) / staff.length : null;
@@ -445,7 +446,7 @@ export function renderStaffListHtml(S, biz) {
         const canPromote = targets.length > 0 && (Number(emp.skill) || 0) >= PROMOTION_MIN_SKILL;
         const trainCost = trainingCostFor(emp);
         const promoteBtns = targets.map(t => {
-          const wage = roleWageLocal(S, t, countryId);
+          const wage = Math.round(convertCurrency(roleWageLocal(S,t,biz.country||S.country),biz.country||S.country,countryId,S.year));
           const disabled = (Number(emp.skill) || 0) < PROMOTION_MIN_SKILL;
           return `<button class="btn btn-sm" data-action="biz-promote" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}" data-role="${escHtml(t)}" ${disabled ? 'disabled' : ''} title="${disabled ? `Needs skill ${PROMOTION_MIN_SKILL} (now ${Math.round(emp.skill)})` : `Promote to ${escHtml(t)} — wage ${formatMoney(wage, countryId)}/month, bigger effect`}">${disabled ? `Promote to ${escHtml(t)} (needs skill ${PROMOTION_MIN_SKILL})` : `Promote to ${escHtml(t)} (${formatMoney(wage, countryId)}/mo)`}</button>`;
         }).join(' ');
@@ -470,7 +471,7 @@ export function renderStaffListHtml(S, biz) {
      onboarding cost is stated once, in the rules line below — not
      repeated in every button's tooltip. */
   const hireBtns = roles.filter(role => String(role).toLowerCase() !== 'manager').map(role => {
-    const wage = roleWageLocal(S, role, countryId);
+    const wage = Math.round(convertCurrency(roleWageLocal(S,role,biz.country||S.country),biz.country||S.country,countryId,S.year));
     return `<button class="btn btn-sm" data-action="biz-hire" data-biz="${escHtml(biz.id)}" data-role="${escHtml(role)}" title="${escHtml(roleHireBlurb(role))}">Hire ${escHtml(roleLabel(role))} (${formatMoney(wage, countryId)}/mo) — ${escHtml(roleEffectSpec(role).verb)}</button>`;
   }).join(' ');
   return `
@@ -480,6 +481,6 @@ export function renderStaffListHtml(S, biz) {
     ${effectSummary ? `<div class="muted" style="margin-bottom:6px;">${escHtml(effectSummary)}</div>` : ''}
     ${rows}
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${hireBtns}</div>
-    <div class="muted" style="font-size:12px;margin-top:4px;">Hiring costs one month's wage to onboard. Firing costs severance under ${escHtml(countryId)} law, paid from your own cash — and shakes the team (morale −8). Unhappy staff (morale under 25) may quit on their own. A bad hire hurts: low skill loses customers and sales, and a dishonest cashier steals from the till.</div>
+    <div class="muted" style="font-size:12px;margin-top:4px;">Hiring costs one month's wage to onboard. Firing costs severance under ${escHtml(biz.country||S.country)} law, paid from your own cash — and shakes the team (morale −8). Unhappy staff (morale under 25) may quit on their own. A bad hire hurts: low skill loses customers and sales, and a dishonest cashier steals from the till.</div>
   </div>`;
 }

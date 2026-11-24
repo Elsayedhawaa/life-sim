@@ -44,7 +44,7 @@
 import { rand, randInt, clamp } from '../core/rng.js';
 import { nextId, recordJournal, walletMove, queueScene } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
-import { eraSalary, noticeAndSeveranceFor } from '../data/economy.js';
+import { eraSalary, noticeAndSeveranceFor, convertCurrency } from '../data/economy.js';
 import { pickFirstName, pickFamilyName } from '../data/names.js';
 import { BUSINESS_TYPES } from '../data/institutions.js';
 import { EXTRA_BUSINESSES, V1_BUSINESS_TYPES } from '../data/megaCareerEduMedical.js';
@@ -371,17 +371,20 @@ export function hireBusinessEmployee(S, biz, roleId) {
   if (staff.length >= MAX_STAFF_PER_BUSINESS) {
     return { ok: false, msg: `${biz.name} already has the maximum ${MAX_STAFF_PER_BUSINESS} employees.` };
   }
-  const wage = roleWageLocal(S, roleId, biz.country || S.country);
-  if ((Number(S.money.cash) || 0) < wage) {
-    return { ok: false, msg: `Onboarding costs one month's wage (${formatMoney(wage, biz.country || S.country)}) — not enough cash.` };
+  const bookCountry=biz.figuresCurrency||biz.country||S.country;
+  const wage = Math.round(convertCurrency(roleWageLocal(S,roleId,biz.country||S.country),biz.country||S.country,bookCountry,S.year));
+  const charge=Math.round(convertCurrency(wage,bookCountry,S.country,S.year));
+  if ((Number(S.money.cash) || 0) < charge) {
+    return { ok: false, msg: `Onboarding costs one month's wage (${formatMoney(wage, bookCountry)}) — not enough cash.` };
   }
   const emp = makeEmployee(S, biz, roleId);
+  emp.wageLocal=wage;emp.hiredYear=S.year;emp.hiredMonth=S.month;
   staff.push(emp);
   biz.employees = staff.length;
-  walletMove(S, -wage, `Onboarding — ${emp.name} (${roleId})`, 'business');
-  recordJournal(S, `Hired ${emp.name} as ${roleId} at ${biz.name} (${formatMoney(wage, biz.country || S.country)}/month).`, 'career');
+  walletMove(S, -charge, `Onboarding — ${emp.name} (${roleId})`, 'business');
+  recordJournal(S, `Hired ${emp.name} as ${roleId} at ${biz.name} (${formatMoney(wage, bookCountry)}/month).`, 'career');
   stampMonthEffects(S, biz);
-  return { ok: true, msg: `Hired ${emp.name} (${roleId}) for ${formatMoney(wage, biz.country || S.country)}/month. ${roleHireBlurb(roleId)} — skill ${Math.round(emp.skill)}.`, employee: emp };
+  return { ok: true, msg: `Hired ${emp.name} (${roleId}) for ${formatMoney(wage, bookCountry)}/month. ${roleHireBlurb(roleId)} — skill ${Math.round(emp.skill)}.`, employee: emp };
 }
 
 /* Years of service from the hire date, fractional. */
@@ -407,18 +410,19 @@ export function fireBusinessEmployee(S, biz, staffId) {
   if (idx < 0) return { ok: false, msg: 'That employee no longer works here.' };
   const emp = staff[idx];
   const sev = severanceFor(S, biz, emp);
-  if ((Number(S.money.cash) || 0) < sev.amount) {
-    return { ok: false, msg: `Severance for ${emp.name} is ${formatMoney(sev.amount, biz.country || S.country)} (${sev.months} month${sev.months === 1 ? '' : 's'} under ${getCountry(biz.country || S.country).name || ''} law) — not enough cash to let them go properly.` };
+  const charge=Math.round(convertCurrency(sev.amount,biz.figuresCurrency||biz.country||S.country,S.country,S.year));
+  if ((Number(S.money.cash) || 0) < charge) {
+    return { ok: false, msg: `Severance for ${emp.name} is ${formatMoney(charge,S.country)} (${sev.months} month${sev.months === 1 ? '' : 's'} under ${getCountry(biz.country || S.country).name || ''} law) — not enough cash to let them go properly.` };
   }
   staff.splice(idx, 1);
   biz.employees = staff.length;
   /* Verdant finding: severance comes out of PERSONAL cash as its own
      ledger line — never buried inside the business P&L. */
-  walletMove(S, -sev.amount, `Severance — ${emp.name}`, 'business');
+  walletMove(S, -charge, `Severance — ${emp.name}`, 'business');
   for (const other of staff) other.morale = clamp((Number(other.morale) || 0) - 8, 5, 100);
-  recordJournal(S, `Let ${emp.name} (${emp.role}) go from ${biz.name}. Severance ${formatMoney(sev.amount, biz.country || S.country)} came out of your own pocket; the remaining team is shaken (morale −8).`, 'career');
+  recordJournal(S, `Let ${emp.name} (${emp.role}) go from ${biz.name}. Severance ${formatMoney(charge,S.country)} came out of your own pocket; the remaining team is shaken (morale −8).`, 'career');
   stampMonthEffects(S, biz);
-  return { ok: true, msg: `Fired ${emp.name}. Severance ${formatMoney(sev.amount, biz.country || S.country)} paid from your cash.`, severance: sev.amount, severanceMonths: sev.months };
+  return { ok: true, msg: `Fired ${emp.name}. Severance ${formatMoney(charge,S.country)} paid from your cash.`, severance: charge, severanceMonths: sev.months };
 }
 
 /* Close-down helper (W4 / failure chain): every employee is let go with
@@ -432,7 +436,8 @@ export function fireAllStaff(S, biz, reason = 'closed') {
   let unpaid = 0;
   for (const emp of leaving) {
     const sev = severanceFor(S, biz, emp);
-    const cash = Number(S.money.cash) || 0;
+    sev.amount=Math.round(convertCurrency(sev.amount,biz.figuresCurrency||biz.country||S.country,S.country,S.year));
+    const cash = Math.max(0,Number(S.money.cash) || 0);
     const paid = Math.min(cash, sev.amount);
     if (paid > 0) walletMove(S, -paid, `Severance — ${emp.name}`, 'business');
     if (paid < sev.amount) unpaid += sev.amount - paid;
@@ -441,7 +446,7 @@ export function fireAllStaff(S, biz, reason = 'closed') {
   biz.staff = [];
   biz.employees = 0;
   stampMonthEffects(S, biz);
-  recordJournal(S, `${biz.name} ${reason} — ${leaving.length} employee${leaving.length === 1 ? '' : 's'} lost ${leaving.length === 1 ? 'their' : 'their'} job${leaving.length === 1 ? '' : 's'}. Severance paid ${formatMoney(totalSeverance - unpaid, biz.country || S.country)}${unpaid > 0 ? `; ${formatMoney(unpaid, biz.country || S.country)} of severance could not be paid and is still owed` : ''}.`, 'career');
+  recordJournal(S, `${biz.name} ${reason} — ${leaving.length} employee${leaving.length === 1 ? '' : 's'} lost ${leaving.length === 1 ? 'their' : 'their'} job${leaving.length === 1 ? '' : 's'}. Severance paid ${formatMoney(totalSeverance - unpaid,S.country)}${unpaid > 0 ? `; ${formatMoney(unpaid,S.country)} of severance could not be paid and is still owed` : ''}.`, 'career');
   return { ok: true, fired: leaving.length, totalSeverance, unpaid };
 }
 
@@ -507,7 +512,7 @@ export function renderBusinessStaffSection(S, biz) {
   if (!biz) return '';
   const staff = ensureStaffArray(S, biz);
   const roles = staffRolesForType(biz.typeId);
-  const countryId = biz.country || S.country;
+  const countryId = biz.figuresCurrency||biz.country || S.country;
   const wages = totalStaffWages(biz);
   const avg = averageMorale(biz);
   const factor = teamMoraleFactor(biz);
@@ -523,7 +528,7 @@ export function renderBusinessStaffSection(S, biz) {
         <button class="btn btn-sm" data-action="biz-fire" data-biz="${escHtml(biz.id)}" data-staff="${escHtml(emp.id)}">Fire</button>
       </div>`).join('');
   const hireBtns = roles.map(role => {
-    const wage = roleWageLocal(S, role, countryId);
+    const wage = Math.round(convertCurrency(roleWageLocal(S,role,biz.country||S.country),biz.country||S.country,countryId,S.year));
     return `<button class="btn btn-sm" data-action="biz-hire" data-biz="${escHtml(biz.id)}" data-role="${escHtml(role)}" title="${escHtml(roleHireBlurb(role))} — onboarding costs one month's wage">Hire ${escHtml(role)} (${formatMoney(wage, countryId)}/mo) — ${escHtml(roleHireBlurb(role).split(' — ')[1] || '')}</button>`;
   }).join(' ');
   return `
