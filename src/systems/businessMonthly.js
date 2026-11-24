@@ -1,3 +1,4 @@
+import{applyReceivables}from'./companyReceivables.js';
 import{computeCompanyMonth}from './companyLifecycle.js';
 import{computeTechMonth}from './techStartup.js';
 import{tickBusinessSafety}from './businessSafety.js';
@@ -106,7 +107,7 @@ import {
   LOSING_MONTH_MORALE_DROP
 } from './businessGrowth.js';
 
-export function computeBusinessMonthFull(S, biz, opts = {}) {
+function computeBusinessMonthOperating(S, biz, opts = {}) {
   if (!biz) return null;
   const monthIdx = businessMonthIndex(S);
   const alreadyFoldedThisMonth = biz._monthlyFoldMonth === monthIdx;
@@ -419,3 +420,5 @@ export function computeBusinessMonthFull(S, biz, opts = {}) {
   }
   return pl;
 }
+
+export function computeBusinessMonthFull(S,biz,opts={}){if(biz?.receivables?.lastMonth===S.year*12+S.month&&biz.lastPL?.receivables)return biz.lastPL;const pl=computeBusinessMonthOperating(S,biz,opts);return pl?applyReceivables(S,biz,pl,computeBusinessTax):pl;}
