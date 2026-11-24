@@ -1866,17 +1866,17 @@ function renderJobActionsHtml(S, job) {
 
     <div style="margin-top:12px"><strong>Train &amp; licences</strong> <span class="muted"></span></div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
-      ${act.train.map(t => `<button class="btn btn-sm" data-action="job-train" data-kind="${t.kind}" ${t.id ? `data-id="${esc(t.id)}"` : ''}>${esc(t.label)}</button>`).join('')}
+      ${act.train.map(t => `<button class="btn btn-sm" data-action="job-train" data-kind="${t.kind}" ${t.locked ? 'disabled title="'+esc(t.locked)+'"' : ''} ${t.id ? `data-id="${esc(t.id)}"` : ''}>${esc(t.label)}${t.locked ? ' · current' : ''}</button>`).join('')}
     </div>
-    <div class="muted" style="margin-top:4px">${act.train.map(t => `• <strong>${esc(t.label)}:</strong> ${esc(t.preview)}`).join('<br>')}</div>
+    <div class="muted" style="margin-top:4px">${act.train.map(t => `• <strong>${esc(t.label)}:</strong> ${esc(t.locked||t.preview)}`).join('<br>')}</div>
 
     <div style="margin-top:12px"><strong>Ask for more</strong> <span class="muted">— a refusal always says why</span></div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
       <button class="btn btn-primary btn-sm" data-action="ask-raise">Negotiate Raise</button>
       ${act.ask.map(a => `<button class="btn btn-sm" data-action="job-ask" data-kind="${a.kind}">${esc(a.label)}</button>`).join('')}
-      <button class="btn btn-sm" data-action="job-transfer">Ask for a Transfer Abroad</button>
+      <button class="btn btn-sm" data-action="job-transfer">Look for Sponsored Work Abroad</button>
     </div>
-    <div class="muted" style="margin-top:4px">${act.ask.map(a => `• <strong>${esc(a.label)}:</strong> ${esc(a.preview)}`).join('<br>')}• <strong>Transfer abroad:</strong> a new sponsored role in that country through the visa system — your spouse leaves their job and the children change schools. Your spouse can refuse.</div>
+    <div class="muted" style="margin-top:4px">${act.ask.map(a => `• <strong>${esc(a.label)}:</strong> ${esc(a.preview)}`).join('<br>')}• <strong>Work abroad:</strong> a new-employer search through Passport, not an internal company transfer. Household consent, business decisions, eligibility and costs apply.</div>
 
     <div style="margin-top:12px"><strong>Take leave</strong> <span class="muted">— vacation: ${bal.left} of ${bal.entitlement} days left this year${bal.rule && bal.rule.source === 'modelled' ? ' (modelled — no statutory minimum here)' : ' (statutory)'}</span></div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">

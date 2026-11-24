@@ -173,3 +173,9 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W74 Diagnosis scene assumes free family/university care without funded policy record; remove implicit coverage and stop defer choice from undoing existing care.
 
 - [x] W75 Shared specialist price falls back to8500USD when active condition lacks catalog cost; resolve by matching condition catalog so scene/tab/action use actual configured price.
+
+- [x] W76 Career short course/simulator can be repeated instantly for performance/manager farming; paid licence/medical renewal also lacks current-period guard. Add explicit completion cadence and visible locks.
+- [x] W77 Career transfer conversation disappears on reload, promises same-company transfer but uses new-sponsor route, and treats deferred relocation as complete. Snapshot original employer, honest sponsored-work wording and guard changed jobs/deferred outcome.
+
+- [ ] W78 USA software training screenshot offers Saudi SCE credential because course chooses first matching degree without country/track relevance; constrain local board selection.
+- [ ] W79 Step-up actions can be clicked repeatedly without time cost, farming performance/manager relations; add per-month choice gate and UI locks.

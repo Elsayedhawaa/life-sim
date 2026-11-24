@@ -327,7 +327,7 @@ export function trainOptions(S) {
   opts.push({
     kind: 'course', id: null,
     label: 'Short professional course',
-    preview: `Costs ${formatMoney(courseFee, S.country)} and a month of evenings. +3 performance, +2 manager respect. Counts toward your next rung.`
+    preview: `Costs ${formatMoney(courseFee, S.country)} and a month of evenings. One course per game month. +3 performance, +2 manager respect. Counts toward your next rung.`
   });
   const track = (getMergedCareerTracks(S.year)[job.track] || {});
   const cert = (PROFESSIONAL_LICENSES || []).find(l => (track.reqDegrees || []).includes(l.reqDegree));
@@ -368,7 +368,16 @@ export function trainOptions(S) {
       preview: `Costs ${formatMoney(fee, S.country)}. Your simulator check is due ${ls.simOverdue ? 'NOW — it is overdue, and promotion and overtime are blocked until you renew it' : `in ${ls.simDue}`}. Renewing keeps you cleared to fly for another year.`
     });
   }
-  return opts;
+  return opts.map(o=>({...o,locked:trainingLock(S,o.kind,o.id)}));
+}
+
+export function trainingLock(S,kind,id=null){
+ const st=ensureJobActionState(S);if(!st)return 'No job.';
+ if(kind==='course'&&(st.training||[]).some(t=>t.kind==='course'&&t.year===S.year&&t.month===S.month))return 'One short course per game month.';
+ if(kind==='medical'&&st.licence.medicalDueYear>S.year)return 'Fitness check current until '+st.licence.medicalDueYear+'.';
+ if(kind==='sim'&&st.licence.simDueYear>S.year)return 'Simulator check current until '+st.licence.simDueYear+'.';
+ if(kind==='certification'&&id&&S.credentials.licenses.includes(id)&&licenceRenewals(S)[id]?.validUntilYear>S.year)return 'Licence current until '+licenceRenewals(S)[id].validUntilYear+'.';
+ return null;
 }
 
 export function trainQualify(S, kind, licId = null) {
@@ -377,13 +386,14 @@ export function trainQualify(S, kind, licId = null) {
   const st = ensureJobActionState(S);
   const boss = bossOf(S);
 
+  const lock=trainingLock(S,kind,licId);if(lock)return {ok:false,msg:lock};
   if (kind === 'course') {
     const fee = Math.round(convertCurrency(400, 'usa', S.country, S.year));
     if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} for the course fee.` };
     walletMove(S, -fee, 'Professional short course', 'career');
     job.performance = clamp(job.performance + 3, 0, 100);
     S.player.vitals.stress = clamp(S.player.vitals.stress + 2);
-    st.training.push({ kind, label: 'Short professional course', year: S.year, cost: fee });
+    st.training.push({ kind, label: 'Short professional course', year: S.year, month:S.month, cost: fee });
     if (boss) rememberDeed(S, boss, 'stepped_up', 'You paid for a professional course in your own time.', { respect: 2 });
     recordJournal(S, `Completed a short professional course (${formatMoney(fee, S.country)}) — new skills for the next rung.`, 'career');
     return { ok: true, msg: 'Course completed — performance +3, manager respect +2.' };
@@ -530,24 +540,19 @@ export const TRANSFER_DESTINATIONS = ['gbr', 'usa', 'deu', 'can', 'aus', 'sau', 
 
 export function requestTransfer(S) {
   if (!S.career.employed || !S.career.job) return { ok: false, msg: 'You are not currently employed.' };
-  const dests = TRANSFER_DESTINATIONS.filter(d => d !== S.country);
-  const queued = queueScene(S, {
-    key: `transfer_${S.year}`,
-    baseId: 'job_transfer',
-    title: 'Ask for a transfer abroad',
-    category: 'career',
-    text: `You ask ${S.career.job.employer} about moving to another country. Be clear-eyed about what this means: a transfer abroad is not the same desk in a new city. It means a new sponsored role in that country, a visa application, and your whole household moving — your spouse leaves their job and the children change schools. Where do you want to go?`,
-    choices: dests.map(d => ({
-      label: getCountry(d).name,
-      effect: (st) => doTransfer(st, d)
-    })).concat([{
-      label: 'Stay where I am',
-      effect: (st) => recordJournal(st, 'Decided against a transfer abroad for now — home is where the life is.', 'career')
-    }])
-  });
+  const queued=queueScene(S,buildCareerMobilityScene(S));
   if (!queued) return { ok: false, msg: 'A transfer conversation is already open.' };
   return { ok: true, msg: 'Transfer request opened — pick a destination.' };
 }
+
+export function buildCareerMobilityScene(S,snapshot){
+ const job=S.career.job;if(!job||!S.career.employed)return null;
+ const q=snapshot||{employer:job.employer,title:job.title,track:job.track,country:S.country,year:S.year};
+ const valid=st=>st.career.employed&&st.career.job?.employer===q.employer&&st.career.job?.title===q.title&&st.career.job?.track===q.track&&st.country===q.country;
+ if(!valid(S))return null;
+ return{key:'transfer_'+q.year,baseId:'job_transfer',category:'career',careerMobilitySnapshot:q,title:'Look for Sponsored Work Abroad',text:'A new-employer search, not an internal transfer from '+q.employer+'. Passport eligibility, fees and relocation checks apply. A match may require a household and business move decision.',choices:TRANSFER_DESTINATIONS.filter(d=>d!==q.country).map(d=>({label:getCountry(d).name+' · search',available:valid,effect:st=>{if(valid(st))doTransfer(st,d);}})).concat([{label:'Stay where I am',effect:st=>recordJournal(st,'Kept the current job and location.','career')}])};
+}
+export function restoreCareerMobilityScene(S,saved){return saved?.careerMobilitySnapshot?buildCareerMobilityScene(S,saved.careerMobilitySnapshot):null;}
 
 function doTransfer(S, destCountry) {
   const job = S.career.job;
@@ -566,6 +571,7 @@ function doTransfer(S, destCountry) {
     recordJournal(S, `Your transfer to ${destName} fell through: ${res.msg}`, 'career');
     return;
   }
+  if(res.deferred){recordJournal(S,'Sponsored-work match awaits the separate business and relocation decision. No completed move is claimed.','career');return;}
   /* The visa system moved the household. The spouse's old job does not
      survive the move — that is a real consequence, on their own record. */
   if (spouse && spouse.alive && spouse.career && spouse.career.employer) {
@@ -578,7 +584,7 @@ function doTransfer(S, destCountry) {
   if (children.length) {
     recordJournal(S, `The children (${children.map(c => c.firstName).join(', ')}) will need new schools in ${destName}.`, 'career');
   }
-  recordJournal(S, `Transferred abroad to ${destName} through a new sponsored role — the visa, the move and the family all went through the real systems.`, 'career');
+  recordJournal(S, `Moved to ${destName} through a new sponsored role. Review Passport and household records for the new status.`, 'career');
 }
 
 /* ------------------------------------------------------------------ */
