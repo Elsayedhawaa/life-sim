@@ -1,3 +1,4 @@
+import {topUpPrivatePension} from '../systems/careerMarket.js';
 import {investInMarketAsset} from '../systems/completeLifeSystems.js';
 import {GLOBAL_MARKET_ASSETS} from './megaFinanceAndMarkets.js';
 import {buyBankCertificate} from '../systems/economyEngine.js';
@@ -6962,15 +6963,16 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_career_retirement_plan',
         category: 'career',
         title: "Planning for Retirement",
-        text: `The company pension adviser sits you down with the numbers: if you keep saving at this rate, you retire at 62 with ${formatMoney(A, S.country)} a month. If you save more, sooner. The numbers are not comforting.`,
+        text: `The pension adviser suggests a one-off ${formatMoney(A,S.country)} transfer from savings to your private pot. It stays invested until retirement. This does not change state-pension eligibility or promise an income.`,
         choices: [
           {
-            label: "Increase your pension savings",
+            label: "Transfer one-off savings top-up to private pension",
+            available: st=>st.money.savings>=A&&!st.career.retired,
             effect: (st) => {
-              moveBalance(st, 'savings', -A, 'Increase your pension savings', 'career');
+              if(!topUpPrivatePension(st,A).ok)return;
               st.player.vitals.stress = clamp(st.player.vitals.stress + (-3));
               if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+3));
-              recordJournal(st, `You increased your pension savings by ${formatMoney(A, S.country)} a month, for the retirement you want.`, 'career');
+              recordJournal(st, `You moved ${formatMoney(A,S.country)} from savings into your private pension once. No monthly contribution changed.`, 'career');
             },
           },
           {
@@ -8095,12 +8097,13 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         text: `The pension statement arrives, and the gap is plain: at this rate, retirement will be tight. You have fifteen years to close it — or to accept a smaller life later.`,
         choices: [
           {
-            label: "Raise your contributions now",
+            label: "Transfer one-off savings top-up to private pension",
+            available: st=>st.money.savings>=A&&!st.career.retired,
             effect: (st) => {
-              moveBalance(st, 'savings', -A, 'Raise your contributions now', 'career');
+              if(!topUpPrivatePension(st,A).ok)return;
               st.player.vitals.stress = clamp(st.player.vitals.stress + (-2));
               if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+3));
-              recordJournal(st, `You raised your pension contributions by ${formatMoney(A, S.country)} a month to close the gap.`, 'career');
+              recordJournal(st, `You moved ${formatMoney(A,S.country)} from savings into your private pension once. No monthly contribution changed.`, 'career');
             },
           },
           {

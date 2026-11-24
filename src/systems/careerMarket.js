@@ -31,7 +31,7 @@ import{recordUSCoveredEarnings}from './usRetirement.js';
    ========================================================================== */
 
 import { randInt, clamp, hashSeed } from '../core/rng.js';
-import { recordJournal, walletMove, ensureExtendedState, createPerson } from '../core/schema.js';
+import { recordJournal, walletMove, moveBalance, ensureExtendedState, createPerson } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { computeMonthlyNetPay, pensionShareFor, EMPLOYER_PENSION_PCT } from '../data/economy.js';
 import { getEmployersFor } from '../data/institutions.js';
@@ -169,6 +169,12 @@ function trimPensionHistory(pen) {
    employer match. voluntaryEmployee / voluntaryEmployer is the part an
    opt-out stops: the whole thing in the UK, the 401(k) only in the USA
    (Social Security keeps going in — the law says so). */
+export function topUpPrivatePension(S,amount){
+ const amt=Number(amount);if(!Number.isSafeInteger(amt)||amt<=0||S.money.savings<amt)return{ok:false,msg:'Not enough savings for this one-off pension top-up.'};
+ if(S.career.retired)return{ok:false,msg:'Already drawing retirement funds.'};
+ const pen=ensurePension(S);moveBalance(S,'savings',-amt,'One-off private pension top-up','money');pen.pot+=amt;pen.employeeTotal+=amt;pen.voluntaryTopUps=(pen.voluntaryTopUps||0)+amt;pen.history.push({year:S.year,month:S.month,employee:amt,employer:0,growth:0,pot:pen.pot,kind:'one-off top-up'});trimPensionHistory(pen);recordJournal(S,'One-off savings transfer to private pension. No monthly contribution rate changed and no employer match.','money');return{ok:true,msg:'Private pension top-up added.'};
+}
+
 export function pensionSlipFor(gross, countryId, year, isCit) {
   const g = Math.max(0, Math.round(Number(gross) || 0));
   const pay = computeMonthlyNetPay(g, countryId, year, isCit);

@@ -441,3 +441,6 @@ New explicit leases disclose and charge setup fee plus a separate refundable one
 
 ### W19 roof repair and future rent
 Rental-only roof scene now records actual paid repair as home/country-scoped future rent credit. Settlement applies at most rent due, retains unused balance, clears credit on unrelated home/country. Explicitly a game credit, not legal withholding guidance.149focused files pass; comparison settlement verifies actual1500rent difference and non-transferability.390px scene fixture pays repair, stores scoped credit/reloads; inspected scene pixels.
+
+### W20 pension scene asset conservation
+Two legacy pension scenes now move a finite one-off savings amount into actual private pension principal/history, no imaginary ongoing contribution or guaranteed age62income. Insufficient savings/retired state block action, no fabricated employer match. Private pot/finite remaining drawdown included in networth.150focused files pass, conservation and payout transfer checked.390px scene fixture transfers actual savings/pot and reload, inspected pixels.
