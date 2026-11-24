@@ -1,3 +1,4 @@
+import {EVENTS_EMPLOYMENT_DISPUTE} from '../data/eventsEmploymentDispute.js';
 /* ============================================================================
    World Life 2.0 — v2.5 Random Events Engine (eventEngine.js)
    Gate evaluator + candidate collector + picker for the ~500 new random
@@ -72,7 +73,7 @@ import {
 } from '../systems/threadResolution.js';
 import { findPeopleWithMemory } from '../systems/npcMemory.js';
 
-export const ALL_RANDOM_LIFE_EVENTS = [...EVENTS_EVERYDAY_FAMILY, ...EVENTS_MONEY_HEALTH_CAREER, ...BUSINESS_EVENTS, ...EVENTS_MEMORY, ...EVENTS_LIVED_LIFE];
+export const ALL_RANDOM_LIFE_EVENTS = [...EVENTS_EMPLOYMENT_DISPUTE,...EVENTS_EVERYDAY_FAMILY, ...EVENTS_MONEY_HEALTH_CAREER, ...BUSINESS_EVENTS, ...EVENTS_MEMORY, ...EVENTS_LIVED_LIFE];
 
 /* v2.15 W5 — the chain graph for the whole pool: event id -> root id,
    and root id -> { members, terminals }. A resolved chain refuses every
