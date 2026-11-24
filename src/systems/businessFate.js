@@ -47,6 +47,7 @@
    businessLoanTerms (businessLoans.js).
    ========================================================================== */
 
+import{checkJobApplication,hireIntoJob}from'./careerEducationEngine.js';
 import { clamp } from '../core/rng.js';
 import { recordJournal, walletMove, queueScene, ensureExtendedState } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
@@ -156,7 +157,7 @@ function monthIndex(S) {
    FAILING — F1: the bank calls about the loan (or the unpaid debt).
    ========================================================================== */
 
-export function buildBankCallScene(S, biz) {
+function rawBankCallScene(S, biz) {
   const loan = getBusinessLoan(S, biz);
   const debt = Math.round(Number(biz.debtLocal) || 0);
   const deadNote = biz.dead === true
@@ -251,7 +252,7 @@ export function buildBankCallScene(S, biz) {
    FAILING — F2: the spouse reacts to the lost income.
    ========================================================================== */
 
-export function buildSpouseReactionScene(S, biz, spouse) {
+function rawSpouseReactionScene(S, biz, spouse) {
   const name = personName(spouse, 'Your spouse');
   const first = name.split(' ')[0];
   const affection = Number(spouse?.rel?.affection) || 50;
@@ -359,8 +360,8 @@ export function friendJobOffer(S, friend) {
   };
 }
 
-export function buildFriendJobScene(S, biz, friend) {
-  const offer = friendJobOffer(S, friend);
+function rawFriendJobScene(S, biz, friend, savedOffer=null) {
+  const offer = savedOffer||friendJobOffer(S, friend);
   const fname = personName(friend, 'A friend');
   const first = fname.split(' ')[0];
   const deadNote = biz.dead === true
@@ -372,26 +373,13 @@ export function buildFriendJobScene(S, biz, friend) {
     maxPerLife: 1,
     category: 'career',
     title: `${first} Offers You a Job`,
-    text: `${deadNote} ${first} calls: "Come and work with me at ${offer.employerLabel} — ${offer.title}, ${formatMoney(offer.monthlyGross, S.country)} a month. Steady pay, no risk. The offer stands until the end of the month."`,
+    text: `${deadNote} ${first} calls: "Come and work with me at ${offer.employerLabel} — ${offer.title}, ${formatMoney(offer.monthlyGross, S.country)} a month. Shared job qualification and work-permit checks apply. The offer stands until the end of the month."`,
     choices: [
       {
         label: `Take the job — ${offer.title}, ${formatMoney(offer.monthlyGross, S.country)}/mo`,
+        available:st=>checkJobApplication(st,{...offer,employer:offer.employer||offer.employerLabel,level:0}).ok,
         effect: (st) => {
-          st.career.employed = true;
-          st.career.unemployedMonths = 0;
-          st.career.retired = false;
-          st.career.job = {
-            employer: offer.employer || offer.employerLabel,
-            title: offer.title,
-            track: offer.track,
-            level: 1,
-            monthlyGross: offer.monthlyGross,
-            startYear: st.year,
-            monthsInRole: 0,
-            performance: 68,
-            workMode: 'normal',
-            bossId: null,
-          };
+          const application={...offer,employer:offer.employer||offer.employerLabel,level:0};const gate=checkJobApplication(st,application);if(!gate.ok)return {ok:false};hireIntoJob(st,application,gate.workAuth);
           shiftVitals(st, { stress: -6 });
           recordJournal(st, `Took the ${offer.title} job ${first} offered at ${offer.employerLabel} (${formatMoney(offer.monthlyGross, st.country)}/month) while ${biz.name} ${biz.dead === true ? 'is closed' : 'struggles'} — steady pay again, from next month's settlement.`, 'career');
         },
@@ -412,7 +400,7 @@ export function buildFriendJobScene(S, biz, friend) {
    BOOMING — B1: the spouse wants a bigger house.
    ========================================================================== */
 
-export function buildBiggerHouseScene(S, biz, spouse) {
+function rawBiggerHouseScene(S, biz, spouse) {
   const name = personName(spouse, 'Your spouse');
   const first = name.split(' ')[0];
   const profit = biz.lastPL && Number(biz.lastPL.net) > 0
@@ -467,7 +455,7 @@ export function biggerLoanOffer(S, biz) {
   return { amount, terms };
 }
 
-export function buildBiggerLoanScene(S, biz) {
+function rawBiggerLoanScene(S, biz) {
   const offer = biggerLoanOffer(S, biz);
   if (!offer) return null;
   const { amount, terms } = offer;
@@ -502,7 +490,7 @@ export function buildBiggerLoanScene(S, biz) {
    BOOMING — B3: a rival tries to copy you.
    ========================================================================== */
 
-export function buildRivalScene(S, biz) {
+function rawRivalScene(S, biz) {
   return {
     key: `fate_rival_${biz.id}`,
     baseId: `fate_rival_${biz.id}`,
@@ -612,3 +600,20 @@ export function checkBusinessFate(S) {
   }
   return report;
 }
+
+function fateFingerprint(S,biz){const loan=getBusinessLoan(S,biz);return JSON.stringify({country:S.country,loan:loan?{id:loan.id,balance:loan.balance,monthlyPayment:loan.monthlyPayment,remainingMonths:loan.remainingMonths}:null,debt:biz.debtLocal,rev:biz.monthlyRev,cost:biz.monthlyCost,repeat:biz.repeatRate,capital:biz.capitalInvested});}
+function durableFateScene(S,biz,person,kind,snapshot){
+ if(!biz)return null;const q=snapshot||{kind,bizId:biz.id,country:S.country,personId:person?.id,year:S.year,month:S.month,fingerprint:fateFingerprint(S,biz),offer:kind==='FriendJob'?friendJobOffer(S,person):null};
+ const raw={BankCall:rawBankCallScene,SpouseReaction:rawSpouseReactionScene,FriendJob:rawFriendJobScene,BiggerHouse:rawBiggerHouseScene,BiggerLoan:rawBiggerLoanScene,Rival:rawRivalScene}[kind];
+ const scene=kind==='FriendJob'?raw(S,biz,person,q.offer):raw(S,biz,person);if(!scene)return null;
+ scene.businessFateSnapshot=q;
+ const valid=st=>{const b=businessesOf(st).find(b=>b.id===q.bizId);if(!b||st.country!==q.country||fateFingerprint(st,b)!==q.fingerprint)return false;if(q.personId&&(!st.people[q.personId]?.alive))return false;if(['SpouseReaction','BiggerHouse'].includes(kind)&&spouseOf(st)?.id!==q.personId)return false;return true;};
+ scene.choices=scene.choices.map(c=>({...c,available:st=>valid(st)&&(!c.available||c.available(st))&&(kind!=='FriendJob'||st.year===q.year&&st.month===q.month),effect:st=>{if(!valid(st)||c.available&&!c.available(st)||kind==='FriendJob'&&(st.year!==q.year||st.month!==q.month))return;st.career.businessFateReplies??={};const key=kind+'_'+q.bizId;if(st.career.businessFateReplies[key])return;const r=c.effect?.(st);if(r?.ok===false)return r;st.career.businessFateReplies[key]=true;return r;}}));return scene;
+}
+export function buildBankCallScene(S,biz,person){return durableFateScene(S,biz,person,'BankCall');}
+export function buildSpouseReactionScene(S,biz,person){return durableFateScene(S,biz,person,'SpouseReaction');}
+export function buildFriendJobScene(S,biz,person){return durableFateScene(S,biz,person,'FriendJob');}
+export function buildBiggerHouseScene(S,biz,person){return durableFateScene(S,biz,person,'BiggerHouse');}
+export function buildBiggerLoanScene(S,biz,person){return durableFateScene(S,biz,person,'BiggerLoan');}
+export function buildRivalScene(S,biz,person){return durableFateScene(S,biz,person,'Rival');}
+export function restoreBusinessFateScene(S,saved){const q=saved?.businessFateSnapshot;if(!q)return null;const biz=businessesOf(S).find(b=>b.id===q.bizId);if(!biz||fateFingerprint(S,biz)!==q.fingerprint||S.country!==q.country)return null;const person=q.personId?S.people[q.personId]:null;if(q.personId&&!person?.alive)return null;return durableFateScene(S,biz,person,q.kind,q);}

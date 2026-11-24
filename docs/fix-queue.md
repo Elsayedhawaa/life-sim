@@ -196,6 +196,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W87 Egypt healthcare-graduate Ministry job choice loses decision on reload and lacks current job/degree/military reply guards; preserve exact offer and honest game registration.
 - [x] W88 Shop compare/advice, card limit and trip comparison informational cards lose dismissal on reload. Preserve only known one-button information snapshots, no generic executable scene deserialization.
 
-- [ ] W89 Business fate decisions(bank/family/job/rival) use closures without durable reload; snapshot exact enterprise/offer/people and guard eligibility before effects.
+- [x] W89 Business fate decisions(bank/family/job/rival) use closures without durable reload; snapshot exact enterprise/offer/people and guard eligibility before effects.
 - [x] W90 Landlord tenant-job/lease-end/damage/deposit decisions lose choices on reload; restore exact property/tenant/incident/settlement without replaying rent/damage.
 - [x] W91 Staff/manager quit notifications lose acknowledgment on reload; informational recovery only, no repeat departure.
