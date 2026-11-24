@@ -5907,23 +5907,26 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_adult_moves_out',
     category: 'children',
-    gates: { requiredPeople: ['child', 'adultChild'], minAge: 45, maxAge: 70, hasChildren: true },
+    gates: { requiredPeople: ['adultChild'], minAge: 45, maxAge: 70, hasChildren: true, adultChildHome:'home' },
     build: (S, ctx) => {
       const p = live(S, ctx);
-      const chName = nm(p.adultChild || p.child, 'your child');
+      const child=p.adultChild;
+      const chName = nm(child, 'your child');
       return {
         key: 'ev_child_adult_moves_out', category: 'children',
         title: `${chName} Moves Out`,
-        text: `The boxes are by the door, the room is suddenly empty, and ${chName} is standing in the hallway with their keys, ready to go. They are moving out — properly, this time, into a place of their own. The house will be quieter tonight.`,
+        text: `The boxes are by the door, the room is suddenly empty, and ${chName} is standing in the hallway with their keys, ready to go. They are moving to a separate household. This does not transfer or buy a property.`,
         choices: [
           { label: 'Help them carry the boxes and hug them at the door', effect: (st) => {
-              if (p.child) { p.child.rel.affection = clamp(p.child.rel.affection + 10); p.child.rel.trust = clamp(p.child.rel.trust + 8); }
+              if(child){child.leftHome=true;child.householdWith=child.id;}
+              if (child) { child.rel.affection = clamp(child.rel.affection + 10); child.rel.trust = clamp(child.rel.trust + 8); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
               st.player.vitals.stress = clamp(st.player.vitals.stress + 2);
               recordJournal(st, `${chName} moved out into a place of their own; you helped carry the boxes and hugged them at the door.`, 'children');
           } },
           { label: 'Let them go with a wave — do not make it a scene', effect: (st) => {
-              if (p.child) { p.child.rel.affection = clamp(p.child.rel.affection + 3); }
+              if(child){child.leftHome=true;child.householdWith=child.id;}
+              if (child) { child.rel.affection = clamp(child.rel.affection + 3); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness - 2);
               recordJournal(st, `${chName} moved out; you let them go with a wave, not wanting to make a scene.`, 'children');
           } },
@@ -5934,23 +5937,25 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_adult_moves_back',
     category: 'children',
-    gates: { requiredPeople: ['child', 'adultChild'], minAge: 48, maxAge: 72, hasChildren: true, hasHome: true },
+    gates: { requiredPeople: ['adultChild'], minAge: 48, maxAge: 72, hasChildren: true, hasHome: true, adultChildHome:'away' },
     build: (S, ctx) => {
       const p = live(S, ctx);
-      const chName = nm(p.adultChild || p.child, 'your child');
+      const child=p.adultChild;
+      const chName = nm(child, 'your child');
       return {
         key: 'ev_child_adult_moves_back', category: 'children',
         title: `${chName} Asks to Move Back Home`,
-        text: `${chName} is at the door with a suitcase: the flat did not work out, the job ended, the rent was too much — and they are asking if they can come home for a while. Just until they get back on their feet. Their old room is still there.`,
+        text: `${chName} is at the door with a suitcase: they ask whether they can stay with you for a while. They would join your household; no property title changes.`,
         choices: [
           { label: 'Welcome them back — home is always home', effect: (st) => {
-              if (p.child) { p.child.rel.affection = clamp(p.child.rel.affection + 11); p.child.rel.trust = clamp(p.child.rel.trust + 9); }
+              if(child){child.leftHome=false;child.householdWith='player';child.residenceCountry=st.country;child.city=st.city;}
+              if (child) { child.rel.affection = clamp(child.rel.affection + 11); child.rel.trust = clamp(child.rel.trust + 9); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 2);
               st.player.vitals.stress = clamp(st.player.vitals.stress + 2);
-              recordJournal(st, `${chName} asked to move back home after things fell apart; you welcomed them back.`, 'children');
+              recordJournal(st, `${chName} moved back into your household.`, 'children');
           } },
           { label: 'Say no — they need to stand on their own feet', effect: (st) => {
-              if (p.child) { p.child.rel.affection = clamp(p.child.rel.affection - 11); p.child.rel.trust = clamp(p.child.rel.trust - 9); p.child.rel.resentment = clamp(p.child.rel.resentment + 11); }
+              if (child) { child.rel.affection = clamp(child.rel.affection - 11); child.rel.trust = clamp(child.rel.trust - 9); child.rel.resentment = clamp(child.rel.resentment + 11); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness - 4);
               recordJournal(st, `${chName} asked to move back home and you said no — they need to stand on their own feet.`, 'children');
           } },
@@ -7985,10 +7990,11 @@ export const EVENTS_EVERYDAY_FAMILY = [
   {
     id: 'ev_child_adult_moves_out_l1',
     category: 'children',
-    gates: { requiredPeople: ['child'], minAge: 45, maxAge: 70, hasChildren: true, afterEvent: 'ev_child_adult_moves_out', afterEventMinTurns: 6 },
+    gates: { requiredPeople: ['adultChild'], minAge: 45, maxAge: 70, hasChildren: true, adultChildHome:'away', afterEvent: 'ev_child_adult_moves_out', afterEventMinTurns: 6 },
     build: (S, ctx) => {
       const p = live(S, ctx);
-      const chName = nm(p.child, 'your child');
+      const child=p.adultChild;
+      const chName = nm(child, 'your child');
       const dinner = cost(S, 300);
       return {
         key: 'ev_child_adult_moves_out_l1', category: 'children',
@@ -7996,15 +8002,15 @@ export const EVENTS_EVERYDAY_FAMILY = [
         text: `${chName} has moved out. Their old room is available. You could invite them over, call, or use the space differently.`,
         choices: [
           { label: `Invite them for dinner (${formatMoney(dinner, S.country)}) · 2 energy`, available:()=>S.money.cash>=dinner&&checkSocialEnergy(S,2).ok, effect: (st) => {
-              if(st.money.cash<dinner||!checkSocialEnergy(st,2).ok)return;spendSocialEnergy(st,2);if(p.child)noteSocialContact(st,p.child);
+              if(st.money.cash<dinner||!checkSocialEnergy(st,2).ok)return;spendSocialEnergy(st,2);if(child)noteSocialContact(st,child);
               walletMove(st, -dinner, `Dinner with ${chName}`, 'money');
-              if (p.child) { p.child.rel.affection = clamp(p.child.rel.affection + 10); p.child.rel.trust = clamp(p.child.rel.trust + 6); }
+              if (child) { child.rel.affection = clamp(child.rel.affection + 10); child.rel.trust = clamp(child.rel.trust + 6); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 4);
               recordJournal(st, `You invited ${chName} for dinner after the move. No recurring dinner or cost was scheduled.`, 'children');
           } },
           { label: 'Call to catch up · 1 energy', available:()=>checkSocialEnergy(S,1).ok, effect: (st) => {
-              if(!checkSocialEnergy(st,1).ok)return;spendSocialEnergy(st,1);if(p.child)noteSocialContact(st,p.child);
-              if (p.child) { p.child.rel.affection = clamp(p.child.rel.affection + 8); p.child.rel.trust = clamp(p.child.rel.trust + 6); }
+              if(!checkSocialEnergy(st,1).ok)return;spendSocialEnergy(st,1);if(child)noteSocialContact(st,child);
+              if (child) { child.rel.affection = clamp(child.rel.affection + 8); child.rel.trust = clamp(child.rel.trust + 6); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
               recordJournal(st, `You called ${chName} to catch up after the move.`, 'children');
           } },

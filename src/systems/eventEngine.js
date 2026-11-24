@@ -178,6 +178,7 @@ export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
   // Explicit cast requirements apply to roots and follow-ups alike.
   const cast = resolveEventCtx(S);
   if ((g.requiredPeople || []).some(role => !cast[role] || !cast[role].alive)) return false;
+  if(g.adultChildHome){const child=cast.adultChild;const away=!!child?.leftHome;if(!child||(g.adultChildHome==='away'?!away:away))return false;}
   if (g.hasLivingParent !== undefined) {
     if (!!(cast.mom || cast.dad) !== !!g.hasLivingParent) return false;
   }

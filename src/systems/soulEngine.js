@@ -667,6 +667,7 @@ function npcLeaveHome(S, person) {
   const cities = cObj.cities.filter(c => c !== person.city);
   person.city = spouse ? (spouse.city || person.city) : (cities.length ? npcPick(S, cities) : person.city);
   person.leftHome = true;
+  person.householdWith = person.id;
   if (reason === 'work' && person.age >= 22 && !(Number(person.career.monthlyIncomeLocal) > 0)) npcGiveJob(S, person);
   const kin = npcKinWord(person);
   const dest = `${person.city}, ${cObj.name}`;
