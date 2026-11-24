@@ -681,6 +681,7 @@ export function toggleHouseholdStaff(S, roleKey) {
 /* Buy Land Plot & Custom-Build Your Own Villa / Apartment Block Month-by-Month! */
 export function purchaseLandPlot(S, landId) {
   ensureExtendedState(S);
+  if(S.player.age<18)return {ok:false,msg:'Land ownership purchases unlock at age18.'};
   const plot = LAND_PLOTS.find(l => l.id === landId);
   if (!plot) return { ok: false, msg: 'Land plot unavailable.' };
 

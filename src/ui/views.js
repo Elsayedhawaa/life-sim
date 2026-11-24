@@ -1745,7 +1745,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
         <button type="button" class="btn btn-sm ${edu.studyEffort === 'hard' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="hard">Study Hard</button>
         <button type="button" class="btn btn-sm ${edu.studyEffort === 'normal' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="normal">Steady Routine</button>
         <button type="button" class="btn btn-sm ${edu.studyEffort === 'coasting' ? 'btn-navy' : ''}" data-action="set-effort" data-effort="coasting">Coast</button>
-        <button type="button" class="btn btn-sm ${edu.privateTutoring ? '' : 'btn-primary'}" data-action="hire-tutor" ${edu.privateTutoring || age<12 || age>17 || (!familyCoversUniversity(S,tutorFee)&&S.money.cash<tutorFee) ? 'disabled' : ''}>${edu.privateTutoring ? '✓ Tutor Hired' : `Hire a Tutor — ${esc(cObj.examSystem.tutoringLabel)} (${esc(formatMoney(tutorFee, S.country))} this school year)`}</button>
+        <button type="button" class="btn btn-sm ${edu.privateTutoring ? '' : 'btn-primary'}" data-action="hire-tutor" ${edu.privateTutoring || age<12 || age>17 || (!familyCoversUniversity(S,tutorFee)&&S.money.cash<tutorFee) ? 'disabled' : ''}>${edu.privateTutoring ? '✓ Tutor Hired' : `Hire a Tutor — ${esc(cObj.examSystem.tutoringLabel)} (${esc(formatMoney(tutorFee, S.country))} this school year)`}</button>${edu.privateTutoring?lockReason('Tutor already hired for this school year'):age<12||age>17?lockReason('Tutor coaching is available at ages12to17'):!familyCoversUniversity(S,tutorFee)&&S.money.cash<tutorFee?lockReason('Not enough family savings or player cash',`Need ${formatMoney(tutorFee,S.country)} for this school year`):''}
       </div>
     </details>`:''}
 
@@ -2259,7 +2259,7 @@ function renderEduAndLicensingHtml(S) {
             </button>
             <button class="btn btn-sm" data-action="enroll-postgrad" data-tier="fellowship_phd" ${S.postgrad?.completed?.some(p => p.tier === 'fellowship_phd') || S.education.university || !S.postgrad?.completed?.some(p=>p.tier==='masters_mba') || S.money.cash<Math.round(convertCurrency(8500,'usa',S.country,S.year)) ? 'disabled' : ''}>
               ${S.postgrad?.completed?.some(p => p.tier === 'fellowship_phd') ? '✓ Holds Fellowship/PhD' : `3-year doctorate · ${esc(formatMoney(Math.round(convertCurrency(8500,'usa',S.country,S.year)),S.country))} upfront`}
-            </button>
+            </button>${S.postgrad?.completed?.some(p=>p.tier==='fellowship_phd')?lockReason('Doctorate already completed'):S.education.university?lockReason('Finish or withdraw from the current course first'):!S.postgrad?.completed?.some(p=>p.tier==='masters_mba')?lockReason('Complete a master’s first'):S.money.cash<Math.round(convertCurrency(8500,'usa',S.country,S.year))?lockReason('Save the full doctorate tuition shown'):''}
           `}
           <p class="muted">One-off tuition. Doctorate requires a master’s. Save the fee shown to enrol. Completion gives a game pay bonus.</p>
         </div>
@@ -3366,7 +3366,7 @@ function renderLandAndBuildSubtabHtml(S, uiState) {
               <div class="item-row-main">
                 <strong>${esc(pl.name)} (${area} m²)</strong>
                 <span>Zoning: ${esc(pl.zoning || 'residential')} · Deed Price: <strong class="mono">${esc(formatMoney(costPlayer, S.country, true))}</strong></span>
-                <span>${esc(outdoorAreaSummary(selUnit))} · Outdoor upkeep ${esc(formatMoney(Math.round(convertCurrency(outdoorAnnualBudget(selUnit,eraLocalCost(dev.ppm2026,propMarket,S.year)),propMarket,S.country,S.year)),S.country))}/yr game budget</span>
+                <span>Plot area includes the entire deed. Garden and building areas are assigned when you build.</span>
                 ${saving ? `<span class="text-good">Saving for this — see Life Goals on the Timeline tab.</span>` : ''}
               </div>
             </div>
@@ -4764,7 +4764,7 @@ function renderMedicalAndSurgeriesSubtabHtml(S) {
       <div class="card" style="padding:10px">
         <strong>Fertility clinic</strong>
         <p class="muted">Game estimates, not medical advice. One consultation/cycle per month. Requires adult, living co-resident opposite-sex spouse, no current pregnancy and maternal age below46. Donor and surrogate routes are not modeled.</p>
-        ${V1_FERTILITY_TREATMENTS.map(ft=>`<div style="margin:8px 0"><button class="btn btn-sm" data-action="surgery-ivf" data-kind="ivf" data-id="${ft.id}" ${S.money.cash>=fertilityCostLocal(S,ft)?'':'disabled'}>${esc(ft.label)} · ${esc(formatMoney(fertilityCostLocal(S,ft),S.country))}</button><div class="muted">${ft.successPct>0?`${Math.round(ft.successPct*100)}% game conception chance per cycle; no guarantee.`:'Assessment only, no conception attempt.'}</div></div>`).join('')}
+        ${V1_FERTILITY_TREATMENTS.map(ft=>`<div style="margin:8px 0"><button class="btn btn-sm" data-action="surgery-ivf" data-kind="ivf" data-id="${ft.id}" ${S.money.cash>=fertilityCostLocal(S,ft)?'':'disabled'}>${esc(ft.label)} · ${esc(formatMoney(fertilityCostLocal(S,ft),S.country))}</button>${S.money.cash<fertilityCostLocal(S,ft)?lockReason("Not enough cash for this clinic option",`Need ${formatMoney(fertilityCostLocal(S,ft)-S.money.cash,S.country)} more`):""}<div class="muted">${ft.successPct>0?`${Math.round(ft.successPct*100)}% game conception chance per cycle; no guarantee.`:'Assessment only, no conception attempt.'}</div></div>`).join('')}
       </div>
       ${ALL_SURGERIES.slice(0, 14).map(sg => {
         const cost = eraLocalCost(Math.round(convertCurrency((sg.baseCostEGP || 35000) / 55.83, 'usa', S.country, 2026)), S.country, S.year);
@@ -4973,7 +4973,7 @@ function renderStudyAbroadHtml(S,uiState){
  <div style="background:#f7f3e7;padding:12px;border-radius:10px;font-size:.84rem;line-height:1.8">Tuition due now: ${esc(formatMoney(q.tuitionDest,dest))}<br>Maintenance escrow: ${esc(formatMoney(q.blockedDest,dest))}${q.blockedDest?' (released over12months)':''}<br>Modelled travel/permit budget: ${esc(formatMoney(q.costsDest,dest))}<br><strong>Debit now: ${esc(formatMoney(q.totalPlayer,S.country))}</strong><br>Required liquid funds incl. first-year living buffer: ${esc(formatMoney(Math.max(q.totalPlayer,q.proofPlayer),S.country))}<br>Selected source holds: ${esc(formatMoney(q.available,S.country))}</div>
  <p class="muted">Admission uses the game’s score index for bachelor study. Master’s requires a first degree; PhD requires a master’s. English qualification/fluent English is required unless your home country is an English-language country model. Modelled permit processing is deterministic after these checks, not an embassy decision.</p>
  ${!q.ok?`<p class="text-bad">${esc(q.reason)}</p>`:''}
- <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" data-action="apply-study-abroad" data-dest="${dest}" data-uni="${uniId||''}" data-major="${majorId}" data-level="${level}" data-funding="${funding}" ${q.ok?'':'disabled'}>Fund & relocate to study</button>
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" data-action="apply-study-abroad" data-dest="${dest}" data-uni="${uniId||''}" data-major="${majorId}" data-level="${level}" data-funding="${funding}" ${q.ok?'':'disabled'}>Fund & relocate to study</button>${q.ok?'':lockReason(q.reason)}
  <button class="btn btn-sm" data-action="apply-overseas-scholarship" data-dest="${dest}" data-level="${level}">Apply for game tuition award</button></div>
  <p class="muted">Award:85+secondary score,75+smarts, English qualification;35%game chance, one review per country/level/year. Pays tuition only after an actual win. No fee. Parents sponsor upfront from real savings; later undergraduate renewal needs available funds.</p></div>`;
 }

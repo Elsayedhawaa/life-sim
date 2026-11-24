@@ -20,7 +20,7 @@ Checkpoint: November24,2026. Prior shipped baseline: 85ea930. This checkpoint al
 - Long-horizon balancing, entertainment quality and every old-save combination.
 - The old coherence_suite.mjs remains unpassed: obsolete assumptions and runtime stalls. It is not included in passing totals.
 
-40 focused*.test.js files pass at this checkpoint. A render pass does not prove action outcomes; a local pass does not prove hosted delivery. No full-audit completion claim.
+41 focused*.test.js files pass at this checkpoint. A render pass does not prove action outcomes; a local pass does not prove hosted delivery. No full-audit completion claim.
 
 Travel follow-up: trips now deduct newly unpaid days using the existing leave-action net/30 game formula. Quoted travel cost and lost pay are shown separately. Plan papers use the actual negotiated leave allowance. Aviation staff quotes share the charged price. This is a game pay simplification, not local employment law.
 
@@ -29,3 +29,5 @@ Fertility follow-up: adult/living/co-resident partner and maternal-age game gate
 Minor activity funding: paid habits debit actual living parent savings, with currency conversion through the shared family payer. Refusal has no stat benefit. Free habits remain free.390px action/reload test:13GBP gym session reduced family savings20000to19987, player cash unchanged. Unknown crime IDs refuse rather than selecting the first crime.
 
 Career leave: sick leave once per game month, unpaid leave one5-day block per game month, parental leave once per12months. Explicit model limits, not employment-law claims. Repeated refused clicks cannot re-charge cash or heal/reward. Actual390px sick leave action/reload verified locally.
+
+Legacy-suite sweep: many historical*.mjs assertions are stale or still fail; they are not included in the focused passing count. Confirmed Land & Build render crash fixed (compound-only variable leaked into land rows),72country/stage/market land renders added, minor direct land purchase blocked, phone plot purchase/reload checked. Added missing visible lock explanations for tutor, study-abroad funding, fertility affordability and doctorate prerequisite. Historical social/business numeric expectations remain triage targets.
