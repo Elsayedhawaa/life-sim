@@ -12,7 +12,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] L1 Family manager appointments using existing identities, compensation, qualifications and job conflicts.
 - [x] L2 Family ownership transfer and payout council. Hosted-verified fdf031b.
-- [ ] L21 Ownership governance refinements: negotiated stake agreements and board/quorum/veto rules beyond fixed quotes and payout votes.
+- [x] L21 Negotiated cash stake agreements and board attendance/quorum/approval/veto rules, including rule changes and payout votes.
 - [x] L3 Part-time family employment/apprenticeship and rota. Hosted-verified eb321e6.
 - [x] L4 Legacy specialty/acquired-company migration into the full lifecycle. 55 profiles, explicit opt-in, preserved records.
 - [ ] L22 Independent specialty service capacity/space/equipment/input profiles beyond the shared conversion template.
@@ -46,4 +46,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-9 distinct open packages after L20. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+8 distinct open packages after L21. L22 added for independent specialty profiles. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.

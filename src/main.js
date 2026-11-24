@@ -1,3 +1,4 @@
+import{governanceAction,negotiateFamilyStake}from'./systems/companyGovernance.js';
 import{npcCompanyAction}from'./systems/companyNpcControls.js';
 import{estateReviewAction}from'./systems/companyEstateReview.js';
 import{trustPlanAction,trustTopup,replaceTrustee}from'./systems/companyTrust.js';
@@ -1950,7 +1951,9 @@ if (typeof document !== 'undefined') {
     if(action==='company-migrate'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(migrateCompanyModel(S,b));return;}
     if(action==='family-rota'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(changeFamilyRota(S,b,btn.dataset.employee,btn.dataset.hours));return;}
     if(action==='family-share'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(familyShareAction(S,b,btn.dataset.kind,btn.dataset.person,btn.dataset.pct,btn.dataset.amount));return;}
-    if(action==='family-council'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(familyCouncil(S,b,btn.dataset.kind));return;}
+    if(action==='family-stake-offer'){handleActionResult(negotiateFamilyStake(S,(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz),btn.dataset.person,btn.dataset.kind,Number(btn.dataset.pct),btn.dataset.offer,Number(btn.dataset.amount)));return;}
+    if(action==='company-governance'){handleActionResult(governanceAction(S,(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz),btn.dataset.kind,btn.dataset.value));return;}
+    if(action==='family-council'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(governanceAction(S,b,btn.dataset.kind));return;}
     if(action==='family-manager'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(hireFamilyManager(S,biz,btn.dataset.person,btn.dataset.switch==='yes'));return;}
     if(action==='family-hire'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(hireFamily(S,biz,btn.dataset.person,btn.dataset.role,btn.dataset.switch==='yes',Number(btn.dataset.hours||40)));return;}
     if(action==='equipment-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(equipmentAction(S,biz,btn.dataset.kind,btn.dataset.type,btn.dataset.tier,operatingBase(S,biz)));return;}
