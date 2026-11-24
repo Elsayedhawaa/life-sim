@@ -1,3 +1,4 @@
+import{careerHours}from'./careerSchedule.js';
 import{usStatePension}from './usRetirement.js';
 import {hasCurrentLanguage} from '../data/languageQualifications.js';
 import {annualUniversityBudget,universityBudgetRange} from '../data/universityCosts.js';
@@ -516,6 +517,11 @@ export function scholarshipLockReason(S, sch) {
 export function internshipLockReason(S, intn) {
   const edu = S.education;
   if (!edu.university) return 'Enrol at university first';
+  if(intn.country!==S.country)return 'Available in '+getCountry(intn.country).name+' only';
+  if((edu.internships||[]).some(x=>x.status==='active'))return 'Finish the active internship first';
+  const auth=canLegallyWorkInCurrentCountry(S);if(!auth.allowed)return 'Valid work authorization required';
+  if(auth.partTimeOnly&&careerHours(S)+20>20)return 'Modeled student20hcap already used by existing employment';
+  if(careerHours(S)+20>70)return 'Internship20h plus existing employment exceeds70h model limit';
   if (intn.requiresMajor.length && !intn.requiresMajor.includes(edu.university.majorId)) {
     return `For ${intn.requiresMajor.join('/').toUpperCase()} students — you study ${edu.university.majorLabel}`;
   }
@@ -852,16 +858,9 @@ export function applyInternship(S, intId) {
   const edu = ensureEduExtras(S);
   const intn = INTERNSHIPS.find(x => x.id === intId);
   if (!intn) return { ok: false, msg: 'That internship does not exist.' };
-  if (!edu.university) return { ok: false, msg: 'Internships open while you are enrolled at university.' };
-  if (edu.internships.some(a => a.id === intId && a.status === 'completed')) {
-    return { ok: false, msg: `You already completed the ${intn.label}.` };
-  }
-  if (edu.internships.some(a => a.id === intId && a.year === S.year)) {
-    return { ok: false, msg: `You already applied for the ${intn.label} this year.` };
-  }
-  if (intn.requiresMajor.length && !intn.requiresMajor.includes(edu.university.majorId)) {
-    return { ok: false, msg: `The ${intn.label} is for ${intn.requiresMajor.join('/').toUpperCase()} students — you study ${edu.university.majorLabel}.` };
-  }
+  if(edu.internships.some(a=>a.id===intId&&a.status==='completed'))return{ok:false,msg:'You already completed this internship.'};
+  if(edu.internships.some(a=>a.id===intId&&a.year===S.year))return{ok:false,msg:'Already applied for this internship this year.'};
+  const lock=internshipLockReason(S,intn);if(lock)return{ok:false,msg:lock};
   const winProb = Math.min(0.95, 0.45 + (edu.academicSkill || 55) / 200);
   const won = chance(S, winProb);
   if (!won) {
@@ -869,14 +868,9 @@ export function applyInternship(S, intId) {
     recordJournal(S, `Your application for the ${intn.label} was turned down.`, 'career');
     return { ok: false, msg: `The ${intn.label} went to another candidate.` };
   }
-  const monthlyLocal = Math.round(convertCurrency(intn.monthlyPayUsd2026, 'usa', S.country, S.year));
-  const total = monthlyLocal * intn.months;
-  if (total > 0) walletMove(S, total, `${intn.label} pay (${intn.months} months)`, 'career');
-  edu.internships.push({ id: intId, status: 'completed', year: S.year });
-  edu.academicSkill = clamp(edu.academicSkill + 2);
-  S.player.vitals.happiness = clamp(S.player.vitals.happiness + 4);
-  recordJournal(S, `You completed the ${intn.label} at ${intn.company}${total > 0 ? ` and earned ${formatMoney(total, S.country)}` : ''}.`, 'milestone');
-  return { ok: true, msg: total > 0 ? `Internship done at ${intn.company} — earned ${formatMoney(total, S.country)}!` : `Internship done at ${intn.company}!` };
+  edu.internships.push({id:intId,status:'active',year:S.year,started:S.year*12+S.month,lastMonth:S.year*12+S.month,completedMonths:0,paidTotal:0,payCountry:S.country,monthlyPay:Math.round(convertCurrency(intn.monthlyPayUsd2026,'usa',S.country,S.year)),hoursPerWeek:20});
+  recordJournal(S,'Accepted '+intn.label+'.20h/week; pay and completion arrive through monthly work, not upfront.','career');
+  return{ok:true,msg:'Internship accepted.20h/week, monthly pay after worked months. No upfront payment.'};
 }
 
 export function applyToUniversity(S, uniId, majorId,funding='auto') {
@@ -930,7 +924,9 @@ export function applyToUniversity(S, uniId, majorId,funding='auto') {
 }
 
 /* Progress University & Conscription Monthly when age 18+ */
+export function tickInternshipsMonthly(S){const edu=ensureEduExtras(S),now=S.year*12+S.month;for(const a of edu.internships){if(a.status!=='active'||a.lastMonth===now||now<=a.started)continue;const i=INTERNSHIPS.find(x=>x.id===a.id);a.lastMonth=now;if(!i)continue;if(S.country!==i.country){a.status='withdrawn';a.reason='Moved away from placement';continue;}const auth=canLegallyWorkInCurrentCountry(S);if(!auth.allowed||(auth.partTimeOnly&&careerHours(S)+20>20)||careerHours(S)+20>70){a.paused=true;continue;}a.paused=false;const pay=Math.round(convertCurrency(a.monthlyPay,a.payCountry,S.country,S.year));if(pay)walletMove(S,pay,i.label+' monthly worked pay','career');a.paidTotal+=a.monthlyPay;a.completedMonths++;S.player.vitals.stress=clamp(S.player.vitals.stress+2);if(a.completedMonths>=i.months){a.status='completed';edu.academicSkill=clamp((edu.academicSkill||55)+2);S.player.vitals.happiness=clamp(S.player.vitals.happiness+4);recordJournal(S,'Completed '+i.label+' after '+a.completedMonths+' worked months.','milestone');}}}
 export function tickUniversityAndConscriptionMonthly(S) {
+  tickInternshipsMonthly(S);
   /* 1. University Progression on September / academic year rollover */
   const overseas=S.education.university?.international;
   if(overseas){const u=S.education.university;u.elapsedMonths=(u.elapsedMonths||0)+1;u.yearInProgram=Math.min(u.totalYears,Math.floor(u.elapsedMonths/12)+1);}

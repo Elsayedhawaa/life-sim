@@ -1722,7 +1722,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
   }).join('');
 
   const internshipRows = INTERNSHIPS.map(intn => {
-    const app = (edu.internships || []).find(a => a.id === intn.id);
+    const app = (edu.internships || []).filter(a => a.id === intn.id).at(-1);
     const lock = internshipLockReason(S, intn);
     const payLocal = Math.round(convertCurrency(intn.monthlyPayUsd2026, 'usa', S.country, S.year));
     return `
@@ -1731,7 +1731,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
           <strong>${esc(intn.label)}${intn.modelled ? ' <span class="muted">(pay estimated)</span>' : ''}</strong>
           <span>${esc(intn.company)} · ${intn.months} months · ${intn.paid ? (payLocal > 0 ? `${esc(formatMoney(payLocal, S.country))}/mo` : 'Paid') : 'Unpaid'} · For: ${intn.requiresMajor.length ? esc(intn.requiresMajor.join('/').toUpperCase()) : 'Any major'}</span>
         </div>
-        ${app ? `<span class="hud-pill">${app.status === 'completed' ? '✓ Completed' : 'Turned down'} (${app.year})</span>` : lock ? `<span class="hud-pill">${esc(lock)}</span>` : `<button class="btn btn-sm btn-primary" data-action="apply-internship" data-id="${intn.id}">Apply</button>`}
+        ${app&&(app.status==='completed'||app.status==='active'||app.year===S.year) ? `<span class="hud-pill" style="white-space:normal">${app.status === 'active' ? (app.paused?'Paused':'Working')+' '+(app.completedMonths||0)+'/'+intn.months+' months' : esc(app.status)} (${app.year})</span>` : lock ? `<span class="hud-pill" style="white-space:normal">${esc(lock)}</span>` : `<button class="btn btn-sm btn-primary" data-action="apply-internship" data-id="${intn.id}">Apply</button>`}
       </div>
     `;
   }).join('');
@@ -1813,7 +1813,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
     </details>`:''}
 
     ${edu.university?`    <details class="card edu-section" ><summary>Internships</summary>
-      <p class="muted">Build work experience. Pay is credited to your game balance.</p>
+      <p class="muted">20h/week. Pay follows each worked month, never upfront. One active placement; country/work authorization required.</p>
       ${internshipRows}
     </details>`:''}
 

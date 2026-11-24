@@ -396,3 +396,6 @@ Shared country normal/extra-hours schedule for career pace previews and business
 
 ### W2 aggregate gig/employment hours
 Formal student gigs now add the actual existing job schedule before checking the modeled20hcap. Overwork risks and effects use actual part/full-time hours rather than assuming40for everyone. Long blocked-gig explanations wrap on phones.134focused files pass;390px seeded student with20hjob sees formal gigs blocked with aggregate warning and reload preserved. The20hcap is existing game policy, not a claim of current law across countries.
+
+### W3 timed internship placement
+Application no longer pays several months instantly or grants instant completion. One active20hplacement; local country, major and work-hour authorization gates are shared by UI/action. Each subsequent worked month pays once, progress completes after listed months; changed country withdraws, lost authorization/overloaded work pauses. Existing completed records stay completed.135focused files pass,390px seeded university application recordedWorking0/3 with unchanged cash and persisted on reload, pixels inspected. Three-month pay/progress is system-tested, not a full phone playthrough. Named placements/pay remain game estimates, not live openings.
