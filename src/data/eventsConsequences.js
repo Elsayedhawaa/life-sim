@@ -17,7 +17,7 @@ const promotionSpouse = {
     return {
       key: 'ev_conseq_promotion_spouse', category: 'family',
       title: `${n} Heard About the Promotion`,
-      text: `${n} knows you were promoted${q.newTitle ? ` to ${q.newTitle}` : ''}${q.employer ? ` at ${q.employer}` : ''}. The new role will take more of your time.`,
+      text: `Your spouse, ${n}, knows you were promoted${q.newTitle ? ` to ${q.newTitle}` : ''}${q.employer ? ` at ${q.employer}` : ''}. The new role will take more of your time.`,
       choices: [
         { label: 'Take an evening to celebrate together', effect: (st) => { noteSocialContact(st, p); rememberDeed(st, p, 'proud_moment', 'Celebrated the promotion together.', { affection: 6, trust: 3 }); stress(st, -2); recordJournal(st, `You spent an evening with ${n} marking your promotion.`, 'family'); } },
         { label: 'Say you will celebrate once things calm down', effect: (st) => { rememberDeed(st, p, 'neglected', 'Put off celebrating the promotion.', { affection: -2, resentment: 2 }); recordJournal(st, `You put off celebrating the promotion with ${n}.`, 'family'); } },
@@ -60,9 +60,9 @@ function childAfter(kind, id, title, text, minMonths, maxMonths) {
   };
 }
 const childAfterDivorce = childAfter('divorce_final', 'ev_conseq_child_after_divorce',
-  (n) => `${n} Asks What Changes`, (n, x) => `Now that the divorce from ${x} is final, ${n} asks where things go from here and how often they will see each of you.`, 1, 6);
+  (n) => `${n} Asks What Changes`, (n, x) => `Now that the divorce from your ex-spouse, ${x}, is final, your child, ${n}, asks where things go from here and how often they will see each of you.`, 1, 6);
 const childAfterSeparation = childAfter('separation', 'ev_conseq_child_after_separation',
-  (n) => `${n} Notices`, (n, x) => `${x} no longer lives with you. ${n} has noticed and asks whether this is for good.`, 0, 3);
+  (n) => `${n} Notices`, (n, x) => `Your spouse, ${x}, no longer lives with you. Your child, ${n}, has noticed and asks whether this is for good.`, 0, 3);
 
 function siblingAfterParentDeath(lost, word) {
   return {
@@ -72,8 +72,8 @@ function siblingAfterParentDeath(lost, word) {
       const p = ctx.sib, n = nameOf(p, 'your sibling');
       return {
         key: `ev_conseq_sibling_after_${lost}_death`, category: 'family',
-        title: `${n} Calls About ${word}`,
-        text: `${n} has been thinking about ${word} too. They ask whether you can talk, since the two of you are the ones who knew ${word} longest.`,
+        title: `${n} Wants to Talk`,
+        text: `Your sibling, ${n}, has been thinking about ${word} too. They ask whether you can talk, since the two of you are the ones who knew ${word} longest.`,
         choices: [
           { label: 'Talk for as long as they need', effect: (st) => { noteSocialContact(st, p); rememberDeed(st, p, 'supported_crisis', `Talked after ${word} died.`, { affection: 8, trust: 7 }); stress(st, -2); recordJournal(st, `You talked with ${n} about ${word}.`, 'family'); } },
           { label: 'Say you cannot talk about it yet', effect: (st) => { rememberDeed(st, p, 'neglected', `Could not talk after ${word} died.`, { trust: -3, resentment: 2 }); recordJournal(st, `You told ${n} you could not talk about ${word} yet.`, 'family'); } },
@@ -92,7 +92,7 @@ function parentAfterSiblingDeath(role) {
       return {
         key: `ev_conseq_${role}_after_sibling_death`, category: 'family',
         title: `${n} Is Grieving`,
-        text: `Losing a child has changed ${n}. ${role === 'mom' ? 'She' : 'He'} talks about it rarely, but you can tell.`,
+        text: `Losing a child has changed ${role === 'mom' ? 'your mother' : 'your father'}, ${n}. ${role === 'mom' ? 'She' : 'He'} talks about it rarely, but you can tell.`,
         choices: [
           { label: 'Visit and just be there', effect: (st) => { noteSocialContact(st, p); rememberDeed(st, p, 'supported_crisis', 'Stayed close after losing a child.', { affection: 10, trust: 8 }); recordJournal(st, `You spent time with ${n} while they grieved.`, 'family'); } },
           { label: 'Keep your distance, it is too painful', effect: (st) => { rememberDeed(st, p, 'neglected', 'Kept distance after losing a child.', { trust: -4, resentment: 3 }); recordJournal(st, `You kept your distance from ${n} after the loss.`, 'family'); } },
@@ -110,7 +110,7 @@ const friendAfterJobLoss = {
     return {
       key: 'ev_conseq_friend_after_job_loss', category: 'social',
       title: `${n} Checks In`,
-      text: `${n} heard you are out of work and offers to meet and help you go over your CV and applications.`,
+      text: `Your friend, ${n}, heard you are out of work and offers to meet and help you go over your CV and applications.`,
       choices: [
         { label: 'Meet up and accept the help', effect: (st) => { noteSocialContact(st, p); rememberDeed(st, p, 'supported_crisis', 'Accepted help after the job loss.', { affection: 5, trust: 5 }); stress(st, -2); recordJournal(st, `You met ${n} and went through your applications together.`, 'social'); } },
         { label: 'Thank them but say you are handling it', effect: (st) => { recordJournal(st, `You thanked ${n} and said you were handling the search yourself.`, 'social'); } },
