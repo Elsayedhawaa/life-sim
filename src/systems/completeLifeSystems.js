@@ -1132,38 +1132,33 @@ export function liquidateMarketAsset(S, assetId) {
   return { ok: true, msg: `Sold ${pos.name} for ${formatMoney(proceeds, S.country)}!` };
 }
 
-export function sendInternationalRemittance(S, channelId, amountLocal) {
-  const ch = REMITTANCE_CHANNELS.find(c => c.id === channelId) || REMITTANCE_CHANNELS[1];
-  const amt = Math.floor(Number(amountLocal) || 0);
-  if (amt <= 0 || S.money.cash < amt) return { ok: false, msg: 'Insufficient cash.' };
-
-  const dad = S.relations.fatherId ? S.people[S.relations.fatherId] : null;
-  const mom = S.relations.motherId ? S.people[S.relations.motherId] : null;
-  const recipient = (mom && mom.alive) ? mom : (dad && dad.alive ? dad : null);
-  if (!recipient) return { ok: false, msg: 'No living parent to wire remittance to.' };
-
-  walletMove(S, -amt, `Remittance via ${ch.label}`, 'family');
-  if (ch.scamRisk > 0 && chance(S, ch.scamRisk)) {
-    recordCivilLoss(S,'broker_fraud',amt,'remittance',{traceable:true,defendantName:ch.label});
-    S.player.vitals.stress = clamp(S.player.vitals.stress + 14);
-    recordJournal(S, `Disaster — the informal Hawala broker vanished mid-transfer! Your ${formatMoney(amt, S.country)} remittance never reached ${recipient.firstName}.`, 'money');
-    return { ok: false, msg: 'Hawala scam! Broker disappeared with the transfer!' };
+export function remittanceQuote(S,channelId,amountLocal){
+  const ch=REMITTANCE_CHANNELS.find(c=>c.id===channelId),amount=Number(amountLocal);
+  if(!ch||S.year<ch.availableFrom||!Number.isSafeInteger(amount)||amount<=0||S.money.cash<amount)return{ok:false,msg:'Transfer unavailable or insufficient cash.'};
+  const recipient=[S.people[S.relations.motherId],S.people[S.relations.fatherId]].find(p=>p?.alive);
+  if(!recipient)return{ok:false,msg:'No living parent to receive the transfer.'};
+  const recipientCountry=recipient.residenceCountry||S.country,fee=amount*ch.feePct;
+  const received=Math.round(convertCurrency((amount-fee)*(1+ch.fxBonusPct),S.country,recipientCountry,S.year));
+  return{ok:true,amount,fee,received,recipientId:recipient.id,recipientName:recipient.firstName,recipientCountry,channelId:ch.id};
+}
+export function sendInternationalRemittance(S,channelId,amountLocal){
+  const q=remittanceQuote(S,channelId,amountLocal);if(!q.ok)return q;
+  const ch=REMITTANCE_CHANNELS.find(c=>c.id===channelId),recipient=S.people[q.recipientId];
+  walletMove(S,-q.amount,'Remittance via '+ch.label,'family');
+  S.money.remittanceHistory??=[];
+  const receipt={...q,year:S.year,month:S.month,status:'delivered'};
+  if(ch.scamRisk>0&&chance(S,ch.scamRisk)){
+    receipt.status='lost';receipt.received=0;S.money.remittanceHistory.push(receipt);
+    recordCivilLoss(S,'broker_fraud',q.amount,'remittance',{traceable:true,defendantName:ch.label});
+    recordJournal(S,'The informal broker lost this transfer. No recipient balance was credited.','money');
+    return{ok:false,msg:'Broker disappeared with the transfer.'};
   }
-
-  const netSent = amt * (1 - ch.feePct) * (1 + ch.fxBonusPct);
-  const inHomeCurr = Math.round(convertCurrency(netSent, S.country, recipient.residenceCountry, S.year));
-  recipient.career.savingsLocal += inHomeCurr;
-  /* v2.16 W2 — Family Provider: the amount actually sent home, in EGP
-     at the send date through the game's own FX (never a guessed rate).
-     The Hawala scam above returns before this line, so money a broker
-     stole never counts as sent. */
-  S.money.remittedHomeEgpTotal = (Number(S.money.remittedHomeEgpTotal) || 0)
-    + Math.round(convertCurrency(amt, S.country, 'egy', S.year));
-  rememberDeed(S, recipient, 'helped_money', `Wired ${formatMoney(inHomeCurr, recipient.residenceCountry)} home.`, {
-    affection: 10, respect: 10, resentment: -12
-  });
-  recordJournal(S, `Sent ${formatMoney(inHomeCurr, recipient.residenceCountry)} home to ${recipient.fullName} via ${ch.label}.`, 'family');
-  return { ok: true, msg: `Delivered ${formatMoney(inHomeCurr, recipient.residenceCountry)} to ${recipient.firstName}!` };
+  recipient.career??={};recipient.career.savingsLocal=(Number(recipient.career.savingsLocal)||0)+q.received;
+  S.money.remittedHomeEgpTotal=(Number(S.money.remittedHomeEgpTotal)||0)+Math.round(convertCurrency(q.amount,S.country,'egy',S.year));
+  S.money.remittanceHistory.push(receipt);
+  rememberDeed(S,recipient,'helped_money','Received a family transfer.',{affection:10,respect:10,resentment:-12});
+  recordJournal(S,`Sent ${formatMoney(q.received,q.recipientCountry)} to ${q.recipientName} via ${ch.label}.`,'family');
+  return{ok:true,msg:'Transfer delivered.',receipt};
 }
 
 /* Authentic 2.5% Annual Zakat above 85g Gold Nisab */

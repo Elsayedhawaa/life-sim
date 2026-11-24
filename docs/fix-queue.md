@@ -105,5 +105,8 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W34 Early-retirement event promises pension but leaves player merely unemployed; negotiated package pays while retaining job. Make explicit employer-exit package with actual salary multiple, both payout choices end job, no unsupported pension promise or five-year instant narrative.
 - [x] W35 Salary-review scene advertises fixed monthly raise but applies4%/7%; ground quote/effects in actual gross and honor active pay freeze.
 - [x] W36 Card-minimum/collector chain invents liabilities and repayments without matching actual balance; use recorded card/collections debt, same-payment route and actual remaining balance.
-- [ ] W37 Overdraft/refund narrative needs actual fee/tax evidence; no retroactive invented bank withdrawal, refund, fake account switch or card-payment label that only adds cash.
+- [x] W37 Overdraft/refund narrative needs actual fee/tax evidence; no retroactive invented bank withdrawal, refund, fake account switch or card-payment label that only adds cash.
 - [ ] W38 Gulf remittance/end-service scenes require real transfer/job/entitlement evidence, not fixed arbitrary promised payments; review concrete path.
+
+- [ ] W39 End-of-service core uses one generic formula across Egypt/Saudi/UAE and strict-sponsor withholding lacks a recorded recoverable claim. Separate jurisdiction/game-rule labeling and actual withheld liability before promising statutory awards.
+- [ ] W40 Remaining Gulf scenes promise recurring driver/maid, car finance, visas or return-home effects without full linked systems; audit each concrete action rather than treat prose as implementation.

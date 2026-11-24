@@ -1,12 +1,13 @@
+import{computeEndOfService,resignCurrentJob}from'../systems/careerEducationEngine.js';
 import{payRecordedDebt}from'../systems/recordedDebtPayments.js';
 import{lendPersonalMoney,settlePersonalReceivable,givePersonalMoney}from'../systems/personalReceivables.js';
 import{eraDepositRates}from'./economy.js';
 import{worldEventEffects}from'../systems/worldEvents.js';
 import{bookNarrativeLoan,narrativeLoanQuote,payNarrativeLoan}from'../systems/narrativeLoans.js';
 import {topUpPrivatePension} from '../systems/careerMarket.js';
-import {computeZakatDueLocal,payAnnualZakat,investInMarketAsset} from '../systems/completeLifeSystems.js';
+import {computeZakatDueLocal,payAnnualZakat,investInMarketAsset,sendInternationalRemittance,remittanceQuote} from '../systems/completeLifeSystems.js';
 import {GLOBAL_MARKET_ASSETS} from './megaFinanceAndMarkets.js';
-import {withdrawFromSavings,personalLoanGates,takePersonalLoan,sellGold21k,buyBankCertificate} from '../systems/economyEngine.js';
+import {depositToSavings,withdrawFromSavings,personalLoanGates,takePersonalLoan,sellGold21k,buyBankCertificate} from '../systems/economyEngine.js';
 import {recordCivilLoss} from '../systems/civilClaims.js';
 /* ============================================================================
    World Life 2.5 — Money / Health / Career / School / University / Gulf events
@@ -11031,50 +11032,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: { requiredPeople: ['mom', 'dad'],"minAge": 22, "abroad": true, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(2000, S.country, S.year);
-      const B = eraLocalCost(1000, S.country, S.year);
-      return {
-        key: 'ev_gulf_remittance_pressure',
-        category: 'money',
-        title: "The Family Needs More Money Home",
-        text: `The family back home calls: prices have risen, the house needs repairs, and the monthly money you send — ${formatMoney(A, S.country)} — is not enough anymore. They need more, and they are too proud to say how much.`,
-        choices: [
-          {
-            label: "Send more money home",
-            effect: (st) => {
-              walletMove(st, -B, 'Send more money home', 'money');
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Send more money home', { affection: (+5) });
-              if (ctx.dad) rememberDeed(st, ctx.dad, 'event', 'Send more money home', { affection: (+4) });
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              recordJournal(st, `You sent ${formatMoney(B, S.country)} more home to the family, on top of the usual ${formatMoney(A, S.country)}.`, 'money');
-            },
-          },
-          {
-            label: "Send the same and explain why",
-            effect: (st) => {
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Send the same and explain why', { affection: (+1) });
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You sent the same money home and explained, honestly, why you could not send more.`, 'money');
-            },
-          },
-          {
-            label: "Cut your own spending to send more",
-            effect: (st) => {
-              walletMove(st, -B, 'Cut your own spending to send more', 'money');
-              st.player.vitals.health = clamp(st.player.vitals.health + (-1));
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Cut your own spending to send more', { affection: (+6) });
-              recordJournal(st, `You cut your own spending to send more money home, and lived on less for a month.`, 'money');
-            },
-          },
-        ],
-      };
+      const q=remittanceQuote(S,'swift_wire',eraLocalCost(1000,S.country,S.year));if(!q.ok)return null;
+      const send=st=>{const r=sendInternationalRemittance(st,'swift_wire',q.amount);if(r.ok)recordJournal(st,'Made a one-time family transfer. No recurring payment was started.','family');};
+      return{key:'ev_gulf_remittance_pressure',category:'money',title:'A Family Transfer',text:`Send ${formatMoney(q.amount,S.country)} once to ${q.recipientName}. Bank fee: ${formatMoney(q.fee,S.country)}. They receive ${formatMoney(q.received,q.recipientCountry)}. No monthly transfer is assumed.`,choices:[{label:`Send ${formatMoney(q.amount,S.country)} once`,effect:send},{label:'Keep the money for now',effect:st=>{}}]};
     },
   },
   {
@@ -11083,48 +11043,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 30, "hasJob": true, "abroad": true, "countries": ["sau", "uae"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(25000, S.country, S.year);
-      const B = eraLocalCost(18000, S.country, S.year);
-      return {
-        key: 'ev_gulf_end_service',
-        category: 'life',
-        title: "End of Service \u2014 The Gratuity",
-        text: `Your contract ends, and the end-of-service gratuity is due: ${formatMoney(A, S.country)}, calculated on your years here. It is the money that makes the whole Gulf years worth it — if it is paid in full, and on time.`,
-        choices: [
-          {
-            label: "Collect it in full",
-            effect: (st) => {
-              walletMove(st, +A, 'Collect it in full', 'life');
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+5));
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-3));
-              recordJournal(st, `You collected your end-of-service gratuity of ${formatMoney(A, S.country)} in full, on time.`, 'life');
-            },
-          },
-          {
-            label: "Fight for the full amount",
-            effect: (st) => {
-              walletMove(st, +B, 'Fight for the full amount', 'life');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+6));
-              recordJournal(st, `You fought for the full gratuity and got ${formatMoney(B, S.country)} — most of it, after a long argument.`, 'life');
-            },
-          },
-          {
-            label: "Accept what they offer",
-            effect: (st) => {
-              walletMove(st, +B, 'Accept what they offer', 'life');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+2));
-              recordJournal(st, `You accepted what the company offered for end of service, ${formatMoney(B, S.country)}, and moved on.`, 'life');
-            },
-          },
-        ],
-      };
+      const job=S.career.job,eos=computeEndOfService(S);if(!S.career.employed||!job||!eos.eligible)return null;
+      const id=job.id;
+      return{key:'ev_gulf_end_service',category:'life',title:'Leave This Job?',text:`${job.employer}: ${eos.yrsServed} completed years. Modeled end-of-service estimate: ${formatMoney(eos.amount,S.country)}. Leaving uses the Career resignation route, ends salary and can start visa grace. A strict sponsor may withhold the payment. This estimate is a game rule, not a country-specific legal entitlement.`,choices:[{label:'Resign using Career terms',effect:st=>{if(st.career.employed&&st.career.job?.id===id)resignCurrentJob(st);}},{label:'Keep this job',effect:st=>{}}]};
     },
   },
   {
@@ -11520,46 +11441,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: { requiredPeople: ['mom'],"minAge": 24, "abroad": true, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(3000, S.country, S.year);
-      return {
-        key: 'ev_gulf_currency_remit',
-        category: 'money',
-        title: "The Exchange Rate Moves",
-        text: `The exchange rate moves in your favour this month: the money you send home is suddenly worth ${formatMoney(A, S.country)} more. Your family back home feels rich — and you feel like the years abroad are finally paying.`,
-        choices: [
-          {
-            label: "Send extra home now",
-            effect: (st) => {
-              walletMove(st, -A, 'Send extra home now', 'money');
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Send extra home now', { affection: (+4) });
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+4));
-              recordJournal(st, `You sent extra money home while the exchange rate was good, ${formatMoney(A, S.country)} more than usual.`, 'money');
-            },
-          },
-          {
-            label: "Save the difference",
-            effect: (st) => {
-              moveBalance(st, 'savings', +A, 'Save the difference', 'money');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-2));
-              recordJournal(st, `You saved the ${formatMoney(A, S.country)} difference from the good exchange rate, for yourself.`, 'money');
-            },
-          },
-          {
-            label: "Send the usual amount",
-            effect: (st) => {
-              if (ctx.mom) rememberDeed(st, ctx.mom, 'event', 'Send the usual amount', { affection: (+1) });
-              recordJournal(st, `You sent the usual amount home, despite the good rate. The family understood.`, 'money');
-            },
-          },
-        ],
-      };
+      const amount=eraLocalCost(3000,S.country,S.year),q=remittanceQuote(S,'swift_wire',amount);if(!q.ok)return null;
+      return{key:'ev_gulf_currency_remit',category:'money',title:'Send or Save',text:`Your ${formatMoney(q.amount,S.country)} can go to ${q.recipientName} or your own savings. Bank fee: ${formatMoney(q.fee,S.country)}; family receives ${formatMoney(q.received,q.recipientCountry)}. This is the modeled rate, not an exchange-rate windfall.`,choices:[{label:`Send ${formatMoney(q.amount,S.country)} home`,effect:st=>sendInternationalRemittance(st,'swift_wire',q.amount)},{label:`Move ${formatMoney(q.amount,S.country)} to savings`,effect:st=>depositToSavings(st,q.amount)},{label:'Keep the cash',effect:st=>{}}]};
     },
   },
   {
