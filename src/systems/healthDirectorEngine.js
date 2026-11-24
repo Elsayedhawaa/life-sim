@@ -1,3 +1,4 @@
+import{registerEstateReview}from'./companyEstateReview.js';
 import{estateChargePlan,remapInheritedCompany}from './companyEstate.js';
 /* ============================================================================
    World Life 2.0 — Medical Care, Mortality, Legacy & Human Story Director
@@ -616,6 +617,7 @@ export function continueAsChild(S, childId) {
      child moves into their career.businesses with a journal line, so the
      heir actually runs it; any other heir is journalled so the child is
      told what happened; estate-sale businesses are journalled too. */
+  for(const entry of estate.named)entry.namedGift=entry.biz.heirId===childId||S.willPlan?.primaryHeirId===childId;
   deliverInheritedBusinesses(nextS, bizDeath, childId, S.player.gender);
   for(const b of nextS.career.businesses||[])remapInheritedCompany(b,remap);
   for(const p of Object.values(nextS.people))for(const b of p.ownedBusinesses||[])remapInheritedCompany(b,remap);
@@ -628,7 +630,7 @@ export function continueAsChild(S, childId) {
   for(const entry of estate.named){
     if(entry.trust)continue;
     const charge=Math.round(convertCurrency(entry.charge,S.country,entry.heir.id===childId?nextS.country:entry.heir.residenceCountry||S.country,S.year));
-    if(entry.heir.id===childId){const paid=Math.min(nextS.money.cash,charge);if(paid)walletMove(nextS,-paid,'Inherited company estate charge','inheritance');const left=charge-paid;if(left>0)nextS.money.loans.push({id:`estate_${entry.biz.id}_${S.year}`,label:`Estate charge: ${entry.biz.name}`,balance:left,monthlyPayment:Math.max(1,Math.ceil(left/24)),annualRate:0,remainingMonths:24,country:nextS.country,purpose:'estate_charge'});}
+    if(entry.heir.id===childId){registerEstateReview(nextS,entry.biz,entry,{country:S.country,tax:estate.tax,charity:estate.charity,explicit:entry.namedGift,claimantId:livingKids.find(p=>p.id!==childId&&(p.rel?.trust??50)<40)?.id||null});const paid=Math.min(nextS.money.cash,charge);if(paid)walletMove(nextS,-paid,'Inherited company estate charge','inheritance');const left=charge-paid;if(left>0)nextS.money.loans.push({id:`estate_${entry.biz.id}_${S.year}`,label:`Estate charge: ${entry.biz.name}`,balance:left,monthlyPayment:Math.max(1,Math.ceil(left/24)),annualRate:0,remainingMonths:24,country:nextS.country,purpose:'estate_charge',estateCompanyId:entry.biz.id});}
     else{const owner=nextS.people[entry.heir.id];if(owner){owner.career??={};const paid=Math.min(Math.max(0,owner.career.savingsLocal||0),charge);owner.career.savingsLocal=(owner.career.savingsLocal||0)-paid;owner.estateDebtLocal=(owner.estateDebtLocal||0)+charge-paid;}}
   }
   // A minor owns their inherited stake but cannot work it or draw operating profit.

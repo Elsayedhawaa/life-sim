@@ -946,6 +946,7 @@ export function sellBusiness(S, bizRef) {
   const biz = resolveBusiness(S, bizRef);
   if (!biz || biz.dead || !(S.career.businesses || []).includes(biz)) return { ok: false, msg: 'No active owned business.' };
   if((biz.growth?.locations||[]).some(l=>l.site))return{ok:false,msg:'Merge separate site records before selling the company.'};if((biz.familyCoOwners||[]).some(c=>c.equityPercent>0))return{ok:false,msg:'Resolve family stakes before selling. Buy back their shares in Money.'};
+  if((S.companyEstateReviews||[]).some(r=>r.companyId===biz.id&&r.dispute==='open'))return{ok:false,msg:'Resolve the estate dispute in Finance before selling.'};
   const valuation = businessValuation(biz);
   const exit = settleBusinessExitDebt(S, biz, valuation,businessValuation({...biz,equityOwned:100}));
   const bName = biz.name;
@@ -967,6 +968,7 @@ export function closeBusiness(S, biz, reason, opts = {}) {
   migrateBusinesses(S);
   const target = typeof biz === 'object' ? biz : (S.career.businesses || []).find(b => b.id === biz);
   if (!target || !(S.career.businesses||[]).includes(target)) return { ok: false, msg: 'No such owned business.', salvage: 0 };
+  if(!opts.viaSettlement&&(S.companyEstateReviews||[]).some(r=>r.companyId===target.id&&r.dispute==='open'))return{ok:false,msg:'Resolve the estate dispute in Finance before closing.',salvage:0};
   /* v2.17 W2 — the W5 contract: ANY closure marks the record dead
      with a plain-words cause (this is the miss-3 settlement path too
      — the record is removed from the portfolio below, but the flags

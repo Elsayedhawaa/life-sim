@@ -1,3 +1,4 @@
+import{estateReviewAction}from'./systems/companyEstateReview.js';
 import{trustPlanAction,trustTopup,replaceTrustee}from'./systems/companyTrust.js';
 import{companyAgreementAction}from'./systems/companyMarital.js';
 import{branchAction}from'./systems/companyBranches.js';
@@ -1937,6 +1938,7 @@ if (typeof document !== 'undefined') {
     if(action==='branch-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(branchAction(S,biz,btn.dataset.kind,btn.dataset.index,btn.dataset.value));return;}if(action==='growth-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(growthAction(S,biz,btn.dataset.kind,btn.dataset.value,operatingBase(S,biz)));return;}
     if(action==='operating-choice'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(operatingAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
     if(action==='company-action'){const biz=(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz);handleActionResult(companyAction(S,biz,btn.dataset.kind,btn.dataset.value));return;}
+    if(action==='estate-review'){handleActionResult(estateReviewAction(S,btn.dataset.review,btn.dataset.kind));return;}
     if(action==='company-trust-plan'){handleActionResult(trustPlanAction(S,(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz),btn.dataset.person));return;}
     if(action==='company-trust-replace'){handleActionResult(replaceTrustee(S,btn.dataset.trust,btn.dataset.person));return;}
     if(action==='company-trust-fund'){handleActionResult(trustTopup(S,btn.dataset.trust));return;}

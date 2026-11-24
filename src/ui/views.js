@@ -1,3 +1,4 @@
+import{renderEstateReviews}from'../systems/companyEstateReview.js';
 import{renderNpcCompanyEstates}from'../systems/companyEstate.js';
 import{renderCompanyTrusts}from'../systems/companyTrust.js';
 import{renderCompanyMarital}from'../systems/companyMarital.js';
@@ -3884,7 +3885,7 @@ export function renderFinanceTabHtml(S, uiState = {}) {
             <strong>Game estate rules, not legal advice:</strong> ${['egy', 'sau', 'uae', 'tur', 'mys'].includes(S.country) && S.player.religion === 'muslim'
               ? 'Sharia Al-Fara\'id (2:1 male/female statutory shares + 1/8th spouse) with up to 1/3 (33%) charitable Wasiyyah / Sadaqah Jariyah.'
               : S.country === 'gbr'
-              ? 'Simplified UK estate: 40% game tax above an era-scaled 325,000 GBP band, surviving spouse reserves 1/8, remaining child shares equal. No exemptions or detailed probate model.'
+              ? 'Simplified UK estate: 40% game tax above an era-scaled 325,000 GBP band, surviving spouse reserves 1/8, remaining child shares equal. Company relief/dispute choices use fictional game rules, not local probate law.'
               : 'Simplified estate: surviving spouse reserves 1/8, remaining child shares equal, after the chosen charity share. No detailed local succession model.'}
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:6px">
@@ -3894,7 +3895,7 @@ export function renderFinanceTabHtml(S, uiState = {}) {
               </button>
             `).join('')}
           </div>
-          ${renderWillHeirSection(S)}${renderEstateRecord(S)}${renderCompanyTrusts(S)}${renderNpcCompanyEstates(S)}
+          ${renderWillHeirSection(S)}${renderEstateRecord(S)}${renderCompanyTrusts(S)}${renderNpcCompanyEstates(S)}${renderEstateReviews(S)}
         </div>
       </div>
     ` : ''}
