@@ -1194,11 +1194,17 @@ export function payAnnualZakat(S) {
 
 export function sitExamOrLicensingBoard(S, kind, examId) {
   ensureExtendedState(S);
+  if(!['language','board'].includes(kind))return {ok:false,msg:'Exam type unavailable.'};
+  if(S.player.age<17)return {ok:false,msg:'Exams open at age17in this game.'};
+  const examPeriod=S.year*12+S.month;
+  const examKey=`${kind}_${examId}`;
+  if(S.credentials.examAttempts?.[examKey]===examPeriod)return {ok:false,msg:'Already sat this exam this game month.'};
   if (kind === 'language') {
     const ex = LANGUAGE_EXAMS.find(l => l.id === examId);
     if (!ex) return { ok: false, msg: 'Exam not found.' };
     const fee = Math.round(convertCurrency(ex.feeUsd, 'usa', S.country, S.year));
     if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} exam fee.` };
+    S.credentials.examAttempts={...S.credentials.examAttempts,[examKey]:examPeriod};
     walletMove(S, -fee, `Sat ${ex.label}`, 'career');
 
     const passed = S.player.vitals.smarts >= ex.minSmartsForBand7 || chance(S, 0.72);
@@ -1229,6 +1235,7 @@ export function sitExamOrLicensingBoard(S, kind, examId) {
   const fee = Math.round(convertCurrency(lic.feeUsd, 'usa', S.country, S.year));
   if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} for board & DataFlow fees.` };
 
+  S.credentials.examAttempts={...S.credentials.examAttempts,[examKey]:examPeriod};
   walletMove(S, -fee, `${lic.label} registration & exam`, 'career');
   const passProb = tier1Exempt ? 1.0 : Math.min(0.95, lic.passBase + (S.player.vitals.smarts - lic.minSmarts) * 0.01);
   if (!chance(S, passProb)) {

@@ -1,3 +1,4 @@
+import {hasCurrentLanguage} from '../data/languageQualifications.js';
 import {ABROAD_LEVELS,ABROAD_SUBJECTS,abroadUniversities,studyAbroadQuote} from '../systems/studyAbroadPlanning.js';
 import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget,outdoorAreaSummary} from '../data/propertyAreas.js';
 import {familyCoversUniversity} from '../systems/educationFunding.js';
@@ -533,11 +534,11 @@ export function renderNavTabsHtml(S, activeTab) {
   ];
 
   const navArt = {
-    life: pickDynamicBanner(S, 'life'),
+    life: 'life_stages_ink.jpg',
     education: 'uni_campus_courtyard_ink.jpg',
-    people: ['jpn','egy','sau','uae','gbr','usa','deu','can'].includes(S.country) ? pickDynamicBanner(S, 'people') : 'family_kinship_ink.jpg',
+    people: 'family_kinship_ink.jpg',
     work: 'career_enterprise_ink.jpg',
-    realestate: pickDynamicBanner(S, 'realestate'),
+    realestate: 'architecture_studio_ink.jpg',
     finance: 'finance_vault_ink.jpg',
     lifestyle: 'family_hearth_home_ink.jpg',
     world: 'passport_world_ink.jpg'
@@ -2274,10 +2275,11 @@ function renderEduAndLicensingHtml(S) {
         </div>
         ${LANGUAGE_EXAMS.map(ex => {
           const fee = Math.round(convertCurrency(ex.feeUsd, 'usa', S.country, S.year));
-          const held = S.education.languages.includes(ex.lang);
+          const held=hasCurrentLanguage(S,new RegExp(ex.lang.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+          const attempted=S.credentials.examAttempts?.[`language_${ex.id}`]===S.year*12+S.month;
           /* v2.7 — same rule as scholarships: no live button that leads to a
              refusal; a fee the player cannot pay says so. */
-          const lock = held ? null : (S.money.cash || 0) < fee ? `Needs ${formatMoney(fee, S.country)} — you hold ${formatMoney(S.money.cash || 0, S.country)}` : null;
+          const lock = held ? null : attempted?'Already sat this exam this game month':(S.money.cash || 0) < fee ? `Needs ${formatMoney(fee, S.country)} — you hold ${formatMoney(S.money.cash || 0, S.country)}` : null;
           return `
             <div class="item-row">
               <div class="item-row-main">
@@ -2303,7 +2305,8 @@ function renderEduAndLicensingHtml(S) {
              of offering a live button that refuses after the click. */
           const lock = held ? null
             : lic.reqDegree && !S.education.degrees.includes(lic.reqDegree) ? `Needs a ${lic.reqDegree.toUpperCase()} degree`
-            : lic.reqLang && !S.education.languages.includes(lic.reqLang) ? `Needs ${lic.reqLang}`
+            : lic.reqLang && !hasCurrentLanguage(S,new RegExp(lic.reqLang.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))) ? `Needs current ${lic.reqLang}`
+            : S.credentials.examAttempts?.[`board_${lic.id}`]===S.year*12+S.month?'Already sat this board this game month'
             : (S.money.cash || 0) < fee ? `Needs ${formatMoney(fee, S.country)} — you hold ${formatMoney(S.money.cash || 0, S.country)}`
             : null;
           return `
