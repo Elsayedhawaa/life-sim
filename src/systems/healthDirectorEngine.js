@@ -312,38 +312,7 @@ export function tickHealthAndMortalityYearly(S) {
         ? 'Loved Ones Stage a Quiet Intervention'
         : 'Turning Point After Prolonged Strain';
 
-      queueScene(S, {
-        key: stageId,
-        baseId: stageId,
-        maxPerLife: 1,
-        category: 'health',
-        title: stageTitle,
-        text: burnoutStage === 1
-          ? `Seeing how hollow and exhausted you have looked for months, family and close friends sit you down and refuse to leave until you accept real rest and practical support.`
-          : `Months of relentless pressure and low spirits finally catch up with your body. Doctors warn you must reset immediately.`,
-        choices: [
-          {
-            label: 'Accept support, reset your pace & rebuild step by step',
-            effect: (st) => {
-              if (st.career.job) st.career.job.workMode = 'normal';
-              st.player.vitals.stress = clamp(st.player.vitals.stress - 42);
-              st.player.vitals.happiness = Math.max(38, clamp(st.player.vitals.happiness + 34));
-              st.player.vitals.health = clamp(st.player.vitals.health + 8);
-              recordJournal(st, `After hitting rock bottom emotionally, you accepted help and began rebuilding your strength.`, 'health');
-            }
-          },
-          {
-            label: 'Check into outpatient counseling & medical rest',
-            effect: (st) => {
-              const fee = Math.min(Math.max(0, st.money.cash), eraLocalCost(cObj.healthcare.checkup2026 * 2, st.country, st.year));
-              if (fee > 0) walletMove(st, -fee, 'Outpatient recovery & counseling', 'medical');
-              st.player.vitals.stress = clamp(st.player.vitals.stress - 46);
-              st.player.vitals.happiness = Math.max(42, clamp(st.player.vitals.happiness + 38));
-              recordJournal(st, `Outpatient counseling and rest pulled you back from severe emotional exhaustion.`, 'health');
-            }
-          }
-        ]
-      }, true);
+      queueScene(S,buildBurnoutScene(S,{stageId,stageTitle}),true);
     } else if (S.player.vitals.happiness <= 5 || S.player.vitals.stress >= 95) {
       S.player.vitals.happiness = Math.max(28, S.player.vitals.happiness);
       S.player.vitals.stress = clamp(S.player.vitals.stress - 24);
@@ -356,27 +325,7 @@ export function tickHealthAndMortalityYearly(S) {
       recordJournal(S, `Emergency pediatric care brought you safely through a frightening health scare.`, 'health');
     } else {
       const admKey = `critical_admission_${S.year}`;
-      const queued = queueScene(S, {
-        key: admKey,
-        baseId: admKey,
-        maxPerLife: 1,
-        category: 'health',
-        title: `Emergency Hospital Admission (${S.year})`,
-        text: `Your health has plummeted to a critical ${S.player.vitals.health}/100. Doctors insist on immediate inpatient stabilization.`,
-        choices: [
-          {
-            label: 'Admit immediately to emergency care',
-            effect: (st) => {
-              const bill = Math.min(Math.max(0, st.money.cash), eraLocalCost(cObj.healthcare.checkup2026 * 3, st.country, st.year));
-              if (bill > 0) walletMove(st, -bill, 'Emergency hospital stabilization', 'medical');
-              st.player.vitals.health = Math.max(42, clamp(st.player.vitals.health + 38));
-              st.player.vitals.stress = clamp(st.player.vitals.stress - 15);
-              for (const c of st.medical.conditions) c.managed = true;
-              recordJournal(st, `Emergency doctors stabilized you after a close brush with death.`, 'health');
-            }
-          }
-        ]
-      }, true);
+      const queued=queueScene(S,buildCriticalAdmissionScene(S,{key:admKey,year:S.year}),true);
       if (!queued) {
         S.player.vitals.health = 38;
       }
@@ -1320,3 +1269,16 @@ export function restoreCuratedLifeScene(S,saved){
  const before=S.rngState;
  try{if(saved.curatedBuildRngState!==undefined)S.rngState=saved.curatedBuildRngState;const scene=pickCuratedLifeScene(S,saved.baseId);if(!scene)return null;for(const key of['urgent','createdTurn','createdYear'])if(saved[key]!==undefined)scene[key]=saved[key];return scene;}catch{return null;}finally{S.rngState=before;}
 }
+
+export function buildBurnoutScene(S,{stageId,stageTitle,fee:originalFee,country:originalCountry}={}){
+ if(!stageId||!stageTitle)return null;
+ const fee=originalFee??Math.round(eraLocalCost(getCountry(S.country).healthcare.checkup2026*2,S.country,S.year)),country=originalCountry||S.country;
+ return{key:stageId,baseId:stageId,maxPerLife:1,category:'health',title:stageTitle,burnoutSnapshot:{stageId,stageTitle,fee,country},text:'High strain. Reset your work pace or pay for a fictional counseling session. Game mood changes are not a medical outcome.',choices:[{label:'Reset pace · no fee',effect:st=>{if(st.career.job)st.career.job.workMode='normal';st.player.vitals.stress=clamp(st.player.vitals.stress-42);st.player.vitals.happiness=Math.max(38,clamp(st.player.vitals.happiness+34));recordJournal(st,'Reset work pace and accepted practical support.','health');}},{label:'Game counseling · '+formatMoney(fee,country),available:()=>S.country===country&&S.money.cash>=fee,effect:st=>{if(st.country!==country||st.money.cash<fee)return;walletMove(st,-fee,'Fictional counseling session','medical');st.health??={};st.health.counselingSessions??=[];st.health.counselingSessions.push({stageId,year:st.year,month:st.month,fee,country});st.player.vitals.stress=clamp(st.player.vitals.stress-46);st.player.vitals.happiness=Math.max(42,clamp(st.player.vitals.happiness+38));recordJournal(st,'Paid for a game counseling session. No cure or clinical outcome is claimed.','health');}}]};
+}
+export function restoreBurnoutScene(S,saved){return saved?.burnoutSnapshot?buildBurnoutScene(S,saved.burnoutSnapshot):null;}
+
+export function buildCriticalAdmissionScene(S,snapshot){
+ const q=snapshot||{key:'critical_admission_'+S.year,year:S.year};
+ return{key:q.key,baseId:q.key,maxPerLife:1,category:'health',title:'Game Emergency Aid ('+q.year+')',criticalAdmissionSnapshot:q,text:'Free fictional emergency aid restores a minimum health level. No cash is charged and existing conditions are not cured or marked managed.',choices:[{label:'Accept game emergency aid · free',effect:st=>{st.medical.emergencyAidHistory??=[];if(st.medical.emergencyAidHistory.some(r=>r.key===q.key))return;st.medical.emergencyAidHistory.push({key:q.key,year:st.year,month:st.month,cost:0});st.player.vitals.health=Math.max(42,st.player.vitals.health);st.player.vitals.stress=clamp(st.player.vitals.stress-15);recordJournal(st,'Received free fictional emergency aid. Existing medical conditions and treatment plans remain.','health');}}]};
+}
+export function restoreCriticalAdmissionScene(S,saved){return saved?.criticalAdmissionSnapshot?buildCriticalAdmissionScene(S,saved.criticalAdmissionSnapshot):null;}

@@ -1317,41 +1317,8 @@ export function settleHouseholdMonth(S) {
 
     /* Formal Bankruptcy Relief Card — ONLY if deeply insolvent AND not already in active 7-year bankruptcy! (Fixes D4/D5!) */
     const severeThreshold = -eraLocalCost(cObj.monthlyBasket2026.rentStandard * 4, S.country, S.year);
-    if (S.money.cash <= severeThreshold && S.year > S.money.bankruptUntilYear) {
-      queueScene(S, {
-        key: 'formal_bankruptcy_filing',
-        category: 'money',
-        title: 'Insolvency & Creditor Pressure',
-        text: `Your cash balance has fallen to ${formatMoney(S.money.cash, S.country)} with mounting bills. Creditors are threatening court enforcement.`,
-        choices: [
-          {
-            label: 'File for Formal Bankruptcy Restructuring (7-year credit record; seizes luxury vehicles)',
-            effect: (st) => {
-              st.money.bankruptUntilYear = st.year + 7;
-              st.money.creditScore = 410;
-              st.cars = st.cars.filter(car => car.valueLocal < eraLocalCost(12000, st.country, st.year));
-              st.money.loans = [];
-              st.money.cash = 0;
-              st.legal.travelBanInCountry = null;
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness - 10);
-              st.player.vitals.stress = clamp(st.player.vitals.stress - 12);
-              emitFact(st, 'FINANCIAL_CRISIS', { year: st.year });
-              recordJournal(
-                st,
-                `You entered formal court bankruptcy restructuring. Unsecured debts were discharged, your credit record is flagged until ${st.money.bankruptUntilYear}, and non-essential vehicles were liquidated.`,
-                'money'
-              );
-            }
-          },
-          {
-            label: 'Refuse bankruptcy — sell assets or ask family to dig out manually',
-            effect: (st) => {
-              st.cooldowns['formal_bankruptcy_filing'] = st.turn + 12;
-              recordJournal(st, `You held off filing bankruptcy, determined to sell assets or earn your way out of ${formatMoney(st.money.cash, st.country)}.`, 'money');
-            }
-          }
-        ]
-      });
+    if (S.money.cash <= severeThreshold && S.year > S.money.bankruptUntilYear && (S.cooldowns.formal_bankruptcy_filing||0)<=S.turn) {
+      queueScene(S, buildInsolvencyScene(S));
     }
   } else {
     S.money.missedRentMonths = 0;
@@ -1930,3 +1897,8 @@ export function buyRuralCabin(S){
   if(result.ok){result.prop.rentedOut=false;result.prop.ruralCabin=true;result.prop.styleId=RURAL_CABIN.id;result.prop.annualTaxNative=eraLocalCost(RURAL_CABIN.tax2026,'usa',S.year);result.prop.annualInsuranceNative=eraLocalCost(RURAL_CABIN.insurance2026,'usa',S.year);result.prop.maintenanceRate=.03;recordJournal(S,'Purchased a rural getaway, not a rental-income machine. Cabin property tax, insurance and maintenance are charged monthly. Prices and costs are game estimates, not a current quote.','housing');}
   return result;
 }
+
+export function buildInsolvencyScene(S){
+ return{key:'formal_bankruptcy_filing',category:'money',title:'Cash Shortfall Relief',text:`Cash: ${formatMoney(S.money.cash,S.country)}. Game relief covers only this negative cash balance, with a seven-year new-credit block. Existing loans, cards, property installments, assets and legal restrictions remain. This is not local bankruptcy law.`,choices:[{label:'Use game relief · seven-year credit block',available:()=>S.money.cash<0&&S.year>S.money.bankruptUntilYear,effect:st=>applyCashShortfallRelief(st)},{label:'Keep debts and sell assets or earn cash',effect:st=>{st.cooldowns.formal_bankruptcy_filing=st.turn+12;recordJournal(st,'Declined game cash relief. Existing obligations remain.','money');}}]};
+}
+export function applyCashShortfallRelief(S){if(S.money.cash>=0||S.year<=S.money.bankruptUntilYear)return{ok:false};const amount=-S.money.cash;S.money.bankruptUntilYear=S.year+7;S.money.creditScore=Math.min(S.money.creditScore,410);walletMove(S,amount,'Game cash shortfall relief, seven-year new-credit block','bank');S.money.reliefHistory??=[];const receipt={id:nextId(S,'relief'),amount,country:S.country,year:S.year,creditBlockedUntilYear:S.money.bankruptUntilYear};S.money.reliefHistory.push(receipt);recordJournal(S,'Game relief covered the negative cash balance. All existing debts, assets and legal restrictions remain.','money');return{ok:true,receipt};}

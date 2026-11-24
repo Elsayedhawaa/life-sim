@@ -123,7 +123,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W47 Fresh organic US audit reached a university failed-exam scene that invents failed module/fee/pass or never-fail promise without assessment record. Ground study support in actual university progress rather than fabricate results.
 - [x] W48 Fresh organic US audit ceiling-leak scene grants guaranteed full home-insurance restoration/neighbour payment without damage/claim evidence; model actual repair condition and covered claim rule.
 
-- [ ] W49 Organic audit end screenshot reached mother medicine scene: inspect real recipient transfer and half-payment promise record, not only wallet/vitals.
+- [x] W49 Organic audit end screenshot reached mother medicine scene: inspect real recipient transfer and half-payment promise record, not only wallet/vitals.
 
 - [x] W50 Recorded ceiling incident can remain open after deferral; add visible owner-home repair control and inspect existing property damage controls for cross-route consistency.
 
@@ -135,6 +135,14 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W54 NPC wedding invitations also disappear on reload; preserve named couple/gift/date and code-backed attendance without reroll.
 
-- [ ] W55 Broad all-scene mobile reload audit found crisis career warning disappears after reload; preserve crisis/employer/frozen-pay warning and valid choices.
+- [x] W55 Broad all-scene mobile reload audit found crisis career warning disappears after reload; preserve crisis/employer/frozen-pay warning and valid choices.
 
 - [ ] W56 Broad mobile reload audit found formal bankruptcy filing disappears on reload; restore insolvency response without applying filing twice.
+
+- [ ] W57 Insolvency review found blanket loan deletion/vehicle seizure/travel-ban clearing without secured-debt or legal evidence; replace with explicit game-scope relief and preserve unrelated obligations.
+
+- [ ] W58 Broad all-scene reload audit found burnout_stage_1 disappears; preserve health decision stage and code-backed choices.
+
+- [ ] W59 Critical admission scene has no reload builder and charges only remaining cash for full care; audit supported game-aid/fee/receipt and restore choices.
+
+- [ ] W60 Family financial-backing request disappears after reload; preserve named asker/amount/purpose and funded choices/promise record.

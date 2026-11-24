@@ -545,3 +545,9 @@ Recruitment stores exact offered job data/country and rebuilds acceptance with c
 - Medicine support sends real cash to named living mother's savings and stores a once-per-event receipt. Half is explicitly a one-off gift, with no fictional week promise, purchase or medical outcome. Low cash cannot transfer.
 - Crisis warning stores original employer/crisis/freeze-year metadata and rebuilds both code-backed choices without reapplying crisis freeze/warning side effects.
 - 182 focused test files pass. 390px fixtures reload/act/reload and check actual recipient/receipt and early job-search flag. All-scene fresh reload audit remains open at W56 bankruptcy.
+
+## W56-W59 durable relief and health choices
+- Insolvency decision rebuilds on reload. Explicit game relief covers only negative cash, stores an exact receipt and seven-year new-credit block. Existing loans including secured/student debts, cars, property installments, cards and legal restrictions remain. Defer cooldown is now honored.
+- Burnout exact stage/quoted fee persists; paid fictional counseling needs full funds and records a session, free pace reset remains. No medical cure is claimed.
+- Critical admission is explicit free fictional game aid, with receipt, and no longer marks all medical conditions managed. Reload does not apply aid or any choice automatically.
+- 185 focused files pass, targeted 390px reload/action/reload checks for relief, counseling and emergency aid; screenshots inspected. Broad fresh all-scene audit remains open at W60 family-backing request.
