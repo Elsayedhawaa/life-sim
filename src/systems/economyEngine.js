@@ -1,9 +1,10 @@
+import{childFoodEquivalent}from './custodyCosts.js';
 import{propertyMarketYear}from './propertyMarketRisk.js';
 import{flyingDutyStatus}from './dutyEligibility.js';
 import{settleUSRetirement}from './usRetirement.js';
 import {RURAL_CABIN} from '../data/ruralCabin.js';
 import {settleChildSupportMonth} from './divorceModel.js';
-import { monthlyUniversityTuition,settleFamilyUniversityMonth } from './educationFunding.js';
+import { monthlyUniversityTuition,settleFamilyUniversityMonth,settleChildCourses } from './educationFunding.js';
 /* ============================================================================
    World Life 2.0 — Household Economy, Banking, Gold, Real Estate & Cars Engine
    Exact monthly accounting, progressive taxes, inflation-linked CDs, physical
@@ -1046,7 +1047,7 @@ export function settleHouseholdMonth(S) {
     monthlyLiving = eraLocalCost((cObj.monthlyBasket2026.transport + cObj.monthlyBasket2026.phoneInternet) * lifeMult, S.country, S.year);
   } else {
     const adults = 1 + coResidentSpouses.length;
-    const baseFood = cObj.monthlyBasket2026.foodAdult * adults + cObj.monthlyBasket2026.foodChild * coResidentKids.length;
+    const baseFood = cObj.monthlyBasket2026.foodAdult * adults + cObj.monthlyBasket2026.foodChild * childFoodEquivalent(S);
     const baseUtil = S.housing.mode === 'parents' ? cObj.monthlyBasket2026.utilities * 0.5 : cObj.monthlyBasket2026.utilities;
     const baseTrans = S.cars.length > 0 ? 0 : cObj.monthlyBasket2026.transport;
     monthlyLiving = eraLocalCost((baseFood + baseUtil + baseTrans + cObj.monthlyBasket2026.phoneInternet) * lifeMult, S.country, S.year);
@@ -1059,6 +1060,7 @@ export function settleHouseholdMonth(S) {
   // The funding shown before enrollment is the funding used for billing.
   settleFamilyUniversityMonth(S);
   monthlyLiving += monthlyUniversityTuition(S);
+  monthlyLiving += settleChildCourses(S);
   monthlyLiving += (S.housing.properties||[]).reduce((n,p)=>n+Math.round(convertCurrency((p.outdoorAnnualNative||0)/12,p.country,S.country,S.year)),0);
 
   netDelta -= monthlyLiving;

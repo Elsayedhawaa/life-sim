@@ -1,3 +1,4 @@
+import{enrollChildCourse}from './systems/educationFunding.js';
 import{requestSupportReview}from './systems/divorceModel.js';
 import {buyRuralCabin} from './systems/economyEngine.js';
 import {supportChildAfterSeparation} from './systems/marriageFamilyEngine.js';
@@ -1562,6 +1563,7 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='child-course'){handleActionResult(enrollChildCourse(S,btn.dataset.cid));return;}
     if(action==='support-review'){handleActionResult(requestSupportReview(S,btn.dataset.id));return;}
     if(action==='buy-rural-cabin'){handleActionResult(buyRuralCabin(S));return;}
     if (action === 'buy-compound-unit') {

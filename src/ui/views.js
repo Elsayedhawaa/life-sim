@@ -3,7 +3,7 @@ import {RURAL_CABIN} from '../data/ruralCabin.js';
 import {hasCurrentLanguage} from '../data/languageQualifications.js';
 import {ABROAD_LEVELS,ABROAD_SUBJECTS,abroadUniversities,studyAbroadQuote} from '../systems/studyAbroadPlanning.js';
 import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget,outdoorAreaSummary} from '../data/propertyAreas.js';
-import {familyCoversUniversity} from '../systems/educationFunding.js';
+import {familyCoversUniversity,childCourseQuote} from '../systems/educationFunding.js';
 import {annualUniversityBudget,universityBudgetRange} from '../data/universityCosts.js';
 import {degreeProgramFor,programsForCountry} from '../data/degreePrograms.js';
 import {universitySectorLabel} from '../data/institutions.js';
@@ -812,7 +812,7 @@ export function renderLifeTabHtml(S, uiState = {}) {
       : (bizNet.perBusiness.length ? '<span>Businesses: no month settled yet.</span>' : '');
     return `
     <div class="card">
-      <div class="section-head"><h3>Last Month at a Glance</h3><span class="muted">The same numbers the Career and Finance tabs show</span></div>
+      <div class="section-head"><h3>Last Month at a Glance</h3><span class="muted"></span></div>
       <div class="muted" style="display:flex;flex-wrap:wrap;gap:14px">${salLine}${bizLine}</div>
     </div>`;
   })() : '';
@@ -871,7 +871,7 @@ function renderProgressPanelHtml(S) {
              goals card owns the reasons now; this panel keeps the live
              score in its header and points up, instead of repeating
              the whole list. */''}
-      <div class="muted" style="font-size:0.82rem;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line-soft)">Why the Legacy Score stands at ${score}/100: see Life Goals above — the same number, explained once.</div>
+      
       <div class="muted" style="font-size:0.76rem;margin-top:8px">Dates are when the game first noticed each milestone — milestones already earned before this panel existed are dated to then, not backdated.</div>
     </div>
   `;
@@ -1323,7 +1323,7 @@ function renderMarriageSubtabHtml(S) {
 }
 
 function divorceSummaryHtml(S){
-  return (S.marriage.divorceOrders||[]).map(o=>`<div class="card"><strong>Divorce and child-support order (simplified game model)</strong><p>${esc(S.people[o.spouseId]?.fullName||'Former spouse')} · ${o.year} · Custody: ${esc(o.custody)}. Minor children: ${o.childIds.filter(id=>S.people[id]?.alive&&S.people[id].age<18).length}. Support: ${esc(formatMoney(convertCurrency(o.monthlySupport,o.country,S.country,S.year),S.country))}/month from ${esc(o.payer)}, reduces as children reach 18; unpaid arrears remain owed. Arrears: ${esc(formatMoney(convertCurrency(o.arrears||0,o.country,S.country,S.year),S.country))}.</p><p>Legal fees: ${esc(formatMoney(convertCurrency(o.legalFees,o.country,S.country,S.year),S.country))}. Former spouse's asset award: ${esc(formatMoney(convertCurrency(o.spouseAward,o.country,S.country,S.year),S.country))}. Sold: ${o.soldAssets.map(p=>esc(p.name)+' ('+esc(getCountry(p.country||o.country).name)+')').join(', ')||'none'}. Remaining titles are yours. Kept through buyout: ${(o.keptAssets||[]).map(a=>esc(a.name)).join(', ')||'none'}. Financial transfers: ${(o.financialTransfers||[]).map(a=>esc(a.kind)+' '+(a.percent!=null?a.percent+'%':esc(formatMoney(a.value||0,o.country)))).join(', ')||'none'}. Premarital business equity, public-pension rights, commingled funds and detailed tax rules are not divided by this game agreement. Not a local court ruling.</p><p>Income or retirement changed? The old order does not change by itself. Review takes one game month, changes future payments only and preserves arrears. <a href="https://acf.gov/css/parents" target="_blank" rel="noopener">US process reference</a></p><button class="btn btn-sm" data-action="support-review" data-id="${o.id}" ${o.reviewPending?'disabled':''}>${o.reviewPending?'Support review pending':'Request support review'}</button></div>`).join('');
+  return (S.marriage.divorceOrders||[]).map(o=>{const kids=o.childIds.filter(id=>S.people[id]?.alive&&S.people[id].age<18).length;const money=x=>esc(formatMoney(convertCurrency(x||0,o.country,S.country,S.year),S.country));return `<div class="card"><strong>Family settlement</strong> <span title="Estimated game rules; local law varies." aria-label="Information">ⓘ</span><div class="muted">${esc(S.people[o.spouseId]?.fullName||'Former spouse')} · ${o.year}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0"><div>Support<br><strong>${money(o.monthlySupport*kids/Math.max(1,o.childIds.length))}/mo</strong></div><div>Arrears<br><strong>${money(o.arrears)}</strong></div><div>Custody<br><strong>${o.custody==='spouse'?'Other parent':o.custody==='player'?'With you':'Shared'} · ${kids} ${kids===1?'child':'children'}</strong></div><div>Paid by<br><strong>${o.payer==='player'?'You':'Other parent'}</strong></div></div><button class="btn btn-sm" data-action="support-review" data-id="${o.id}" ${o.reviewPending?'disabled':''}>${o.reviewPending?'Review pending':'Review support'}</button><details style="margin-top:10px"><summary>Settlement details</summary><p>Legal fees: ${money(o.legalFees)}<br>Asset award: ${money(o.spouseAward)}</p><div>Sold: ${(o.soldAssets||[]).map(p=>esc(p.name)).join(', ')||'None'}</div><div>Kept: ${(o.keptAssets||[]).map(p=>esc(p.name)).join(', ')||'None'}</div><div>Transfers: ${(o.financialTransfers||[]).map(a=>esc(a.kind)+' '+(a.percent!=null?a.percent+'%':money(a.value))).join(', ')||'None'}</div></details></div>`;}).join('');
 }
 
 function renderChildrenSubtabHtml(S) {
@@ -1350,6 +1350,7 @@ function renderChildrenSubtabHtml(S) {
               </div>
               <div class="muted">${ch.custody?`Custody: ${esc(ch.custody.arrangement)} · ${ch.custody.playerNightsPer14}/14 nights with you. `:''}Education fund: ${esc(formatMoney(convertCurrency(ch.educationFund?.balance||0,ch.educationFund?.country||S.country,S.country,S.year),S.country))}.</div>
               <div style="display:flex;flex-wrap:wrap;gap:6px"><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="visit">Visit / spend time</button><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="gift">Buy a gift</button><button class="btn btn-sm" data-action="child-support-action" data-cid="${ch.id}" data-kind="education">Add to education fund</button></div>
+              ${childCourseQuote(S,ch.id)?`<p>Course tuition: ${esc(formatMoney(childCourseQuote(S,ch.id).monthly,childCourseQuote(S,ch.id).country))}/mo · 48 months</p><button class="btn btn-sm" data-action="child-course" data-cid="${ch.id}" ${ch.parentFundedCourse?'disabled':''}>${ch.parentFundedCourse?(ch.parentFundedCourse.completed?'Course completed':ch.parentFundedCourse.paused?'Course paused, insufficient funds':ch.parentFundedCourse.monthsRemaining+' months remaining'):'Enroll and fund child course'}</button>`:''}
               <div class="muted">Smarts: <strong>${Math.round(ch.vitals.smarts)}%</strong> · Health: <strong>${Math.round(ch.vitals.health)}%</strong> · Happiness: <strong>${Math.round(ch.vitals.happiness)}%</strong></div>
               <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
                 ${ch.age <= 5 ? nurseries.map(n => `
@@ -1719,7 +1720,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
       </div>
     </div>
 
-    ${S.postgrad?.active?`<div class="card"><h3>Current postgraduate study</h3><p>${esc(S.postgrad.active.label)}</p><div class="edu-programme-top"><strong>${Math.max(0,S.postgrad.active.totalMonths-S.postgrad.active.monthsLeft)} / ${S.postgrad.active.totalMonths} months</strong><span>${Math.round(100*(1-S.postgrad.active.monthsLeft/S.postgrad.active.totalMonths))}%</span></div><progress max="${S.postgrad.active.totalMonths}" value="${S.postgrad.active.totalMonths-S.postgrad.active.monthsLeft}" style="width:100%;accent-color:#285b50;height:12px;margin:12px 0"></progress><p class="muted">Tuition paid upfront${S.postgrad.active.feePaid!=null?`: ${esc(formatMoney(S.postgrad.active.feePaid,S.country))}`:''}. No stipend. Each month adds study stress and moves you toward completion.</p><p class="muted">Outcome: ${S.postgrad.active.tier==='fellowship_phd'?'research credential, +9 smarts and a 42% game pay bonus':'master’s credential, +6 smarts and a 26% game pay bonus'}. Advance time to study.</p></div>`:''}
+    ${S.postgrad?.active?`<div class="card"><h3>Current postgraduate study</h3><p>${esc(S.postgrad.active.label)}</p><div class="edu-programme-top"><strong>${Math.max(0,S.postgrad.active.totalMonths-S.postgrad.active.monthsLeft)} / ${S.postgrad.active.totalMonths} months</strong><span>${Math.round(100*(1-S.postgrad.active.monthsLeft/S.postgrad.active.totalMonths))}%</span></div><progress max="${S.postgrad.active.totalMonths}" value="${S.postgrad.active.totalMonths-S.postgrad.active.monthsLeft}" style="width:100%;accent-color:#285b50;height:12px;margin:12px 0"></progress><p class="muted">Tuition paid upfront${S.postgrad.active.feePaid!=null?`: ${esc(formatMoney(S.postgrad.active.feePaid,S.country))}`:''}. No stipend.</p><p class="muted">Outcome: ${S.postgrad.active.tier==='fellowship_phd'?'research credential, +9 smarts and a 42% game pay bonus':'master’s credential, +6 smarts and a 26% game pay bonus'}.</p></div>`:''}
     ${edu.university?`<div class="card"><h3>Current degree</h3><p>${esc(edu.university.majorLabel)} at ${esc(edu.university.name)}</p><p>Year ${edu.university.yearInProgram} of ${edu.university.totalYears}</p><details><summary>Leave this degree</summary><p>All progress is lost. Paid tuition is not refunded. Applying again starts from year one.</p><button class="btn" data-action="education-withdraw-confirm">Confirm withdrawal</button></details></div>`:''}
     ${edu.university||edu.degrees.length>0?`<details class="card edu-section"><summary>Education history</summary><p>${esc(edu.schoolName||'Secondary school')} · Secondary complete${edu.highSchoolScore!=null?` · Game score ${edu.highSchoolScore}/100`:``}</p>${edu.degrees.map(id=>`<p>${esc(degreeProgramFor(S.country,id)?.label||id)} · Completed</p>`).join('')}${(edu.history||[]).map(h=>`<p>${esc(h.majorLabel)} at ${esc(h.name)} · Left in ${h.year}</p>`).join('')}${(S.postgrad?.completed||[]).map(p=>`<p>${esc(p.label)} · ${p.year}</p>`).join('')}</details>`:hasResult ? `
     <div class="card">
@@ -1767,7 +1768,7 @@ export function renderEducationTabHtml(S, uiState = {}) {
 
 
     ${!edu.degrees.length?`    <details class="card edu-section" ><summary>Scholarships</summary>
-      <p class="muted">Simulated awards inspired by real programmes, not their full rules. Game awards check results, language and stage, then draw an outcome. Tuition only. No living stipend or overseas admission is simulated.</p>
+      <p class="muted">Tuition awards <span title="Eligibility and outcomes are game estimates." aria-label="Information">ⓘ</span></p>
       ${scholarshipRows||'<p class="muted">No undergraduate scholarship route is modelled in this country yet. Postgraduate awards are not wired and are not offered.</p>'}
     </details>`:''}
 
@@ -1820,7 +1821,7 @@ function renderJobActionsHtml(S, job) {
     </div>
     <div class="muted" style="margin-top:4px">${act.takeOn.map(t => `• <strong>${esc(t.label)}:</strong> ${esc(t.preview)}`).join('<br>')}</div>
 
-    <div style="margin-top:12px"><strong>Train &amp; licences</strong> <span class="muted">— the same licences the Education tab shows; renewing here renews them there</span></div>
+    <div style="margin-top:12px"><strong>Train &amp; licences</strong> <span class="muted"></span></div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
       ${act.train.map(t => `<button class="btn btn-sm" data-action="job-train" data-kind="${t.kind}" ${t.id ? `data-id="${esc(t.id)}"` : ''}>${esc(t.label)}</button>`).join('')}
     </div>
@@ -1845,7 +1846,7 @@ function renderJobActionsHtml(S, job) {
     <div class="muted" style="margin-top:4px">• <strong>5 days’ vacation:</strong> ${esc(act.leave.vacation5)}<br>• <strong>10 days’ vacation:</strong> ${esc(act.leave.vacation10)}<br>• <strong>Sick leave:</strong> ${esc(act.leave.sick)}<br>• <strong>Parental leave:</strong> ${esc(act.leave.parental)}<br>• <strong>Unpaid leave:</strong> ${esc(act.leave.unpaid)}</div>
     ${act.leaveLog.length ? `<div class="muted" style="margin-top:4px">Recent leave: ${act.leaveLog.map(l => `${esc(l.kind)} ${l.days}d — ${l.approved ? 'approved' : 'refused'} (${esc(l.reason || '')})`).join(' · ')}</div>` : ''}
 
-    <div style="margin-top:12px"><strong>People at work</strong> <span class="muted">— praise, help, references and arguments move the same records the People tab shows</span></div>
+    <div style="margin-top:12px"><strong>People at work</strong> <span class="muted"></span></div>
     ${act.people.map(p => `
       <div style="margin-top:6px"><strong>${esc(p.name)}</strong> <span class="muted">(${esc(p.role)} — ${esc(p.rel)})</span>
         <span style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
@@ -1933,11 +1934,11 @@ function renderPayslipHtml(S, job, cObj, isCit) {
   return `
     <div style="margin-top:10px" data-salary-net="${slip.net}" data-salary-gross="${slip.gross}">
       <strong>Payslip — ${esc(cObj.name)} (${esc(cObj.currency)})</strong>
-      <span class="muted"> — the net below is exactly what lands in your account each month; the payslip and the ledger are the same number.</span>
+      <span class="muted"></span>
       <div style="margin-top:6px;font-size:0.86rem">
         ${slip.withheld ? `<div class="text-bad"><strong>No pay this month — withheld.</strong> <span class="muted">Your employer cannot legally pay you while your work authorisation in ${esc(cObj.name)} is not valid. Fix the visa and pay resumes; the Finance tab shows no salary line this month either.</span></div>` : ''}
         ${slip.payFrozen ? `<div class="text-gold" style="margin-top:4px"><strong>Pay frozen.</strong> <span class="muted">${esc(slip.freezeNote)}</span></div>` : ''}
-        ${!slip.withheld && slip.salaryMult !== 1 ? `<div class="muted" style="margin-top:4px">Pay is at ${Math.round(slip.salaryMult * 100)}% while ${esc((slip.salaryEventNames || []).join(', '))} lasts — the Finance tab's salary line shows the same reduced pay.</div>` : ''}
+        ${!slip.withheld && slip.salaryMult !== 1 ? `<div class="muted" style="margin-top:4px">Pay is at ${Math.round(slip.salaryMult * 100)}% while ${esc((slip.salaryEventNames || []).join(', '))} lasts </div>` : ''}
         <div>Base pay: <strong class="mono">${esc(formatMoney(slip.baseGross, S.country))}</strong>/mo</div>
         ${slip.overtimePay > 0 ? `<div>Overtime pay: <strong class="mono">+${esc(formatMoney(slip.overtimePay, S.country))}</strong>/mo <span class="muted">(20 extra hours at the overtime rate)</span></div>` : ''}
         <div>Gross paid: <strong class="mono">${esc(formatMoney(slip.gross, S.country))}</strong>/mo</div>
@@ -2030,7 +2031,7 @@ function renderJobBenefitsHtml(S, job, slip, cObj) {
       <strong>Benefits — beyond the pay</strong>
       <div style="margin-top:6px;font-size:0.86rem">
         <div>Medical insurance: <strong>${esc(cover.label)}</strong> <span class="muted">— ${esc(cover.detail)}</span></div>
-        <div class="muted">What it means for a bill: ${cover.covered ? 'Your employer plan cuts a private treatment bill by about 45% — the Medical tab\u2019s prices include that.' : 'Being employed on its own does not cut a private treatment bill — only a confirmed employer plan or a private policy does.'} ${S.insurance?.health ? 'You also hold a private policy, which cuts what you pay for private treatment to about a quarter.' : 'A private policy on top would cut what you pay for private treatment to about a quarter — buy one under Finance → Insurance Policies.'} ${privHosp ? `Private care near you: ${esc(privHosp)}.` : ''} ${!cover.covered && !S.insurance?.health ? 'With no cover at all, a serious illness can wipe out your savings — that is the standing rule.' : ''}</div>
+        <div class="muted">Private care: ${cover.covered?'Employer cover active':'No employer cover'} · ${S.insurance?.health?'Insured':'Uninsured'}</div>
         <div style="margin-top:4px">Perk: ${esc(perk)}</div>
       </div>
     </div>
@@ -2191,8 +2192,8 @@ export function renderWorkTabHtml(S, uiState = {}) {
     ${withheldHtml}
     ${renderSecondLossNoteHtml(S)}
     ${currentJobHtml}
-    ${flyingDutyStatus(S).grounded?'<div class="card"><strong>Flying duties suspended</strong><p>Renew overdue medical and simulator checks under Train & Licences. Temporary ground duty pays 50% of base salary, no flying overtime. This is a game employer policy, not a real airline contract.</p></div>':''}
-    ${!S.career.job&&S.player.age>=58?`<div class="card"><strong>${S.career.retired?'Retired':'Retirement'}</strong><p>${S.career.retired?'Current pension: '+esc(formatMoney(S.career.monthlyPension||0,S.country))+'/month.':'You can stop working. US state benefits require age 62 and 40 recorded credits; missing legacy earnings are not invented. Private savings draw down from a finite balance. Other countries remain simplified estimates.'}</p>${!S.career.retired?'<button class="btn" data-action="retire">Retire</button>':''}</div>`:''}
+    ${flyingDutyStatus(S).grounded?'<div class="card"><strong>Ground duty</strong> <span title="Employer pay estimate." aria-label="Information">ⓘ</span><p>Base pay 50% · Overtime unavailable</p><p>Renew medical & simulator checks</p></div>':''}
+    ${!S.career.job&&S.player.age>=58?`<div class="card"><strong>${S.career.retired?'Retired':'Retirement'}</strong><p>${S.career.retired?'Current pension: '+esc(formatMoney(S.career.monthlyPension||0,S.country))+'/month.':'Stop work · State pension from 62 with 40 credits (US)'}</p>${!S.career.retired?'<button class="btn" data-action="retire">Retire</button>':''}</div>`:''}
     <div class="card">
       <div class="section-head">
         <h3>Local Job Market — ${esc(cObj.name)} (${filteredJobs.length}/${allJobs.length})</h3>
@@ -2213,7 +2214,7 @@ export function renderWorkTabHtml(S, uiState = {}) {
         const mv = vacationRuleFor(S.country);
         const base = vacationEntitlementDays(S.country, 0);
         const rise = (mv.steps || []).length ? `, rising to ${mv.steps[mv.steps.length - 1][1]} days after ${mv.steps[mv.steps.length - 1][0]} years` : '';
-        return `<p class="muted" style="margin:8px 0 4px">What every job here comes with: medical insurance — ${esc(mc.note)} · Annual leave ${base} days a year (${mv.source === 'law' ? 'statutory' : 'typical employer grant — no statutory minimum here'}${rise}). · Sick leave ${mc.sickDaysPaid > 0 ? `${mc.sickDaysPaid} paid days a year` : 'no statutory paid sick days here'}.</p>`;
+        return `<p class="muted">Annual leave: ${base} days · Sick leave: ${mc.sickDaysPaid} paid days</p>`;
       })()}
       ${filteredJobs.slice(0, 35).map(j => renderMarketListingHtml(S, j)).join('')}
     </div>
@@ -2618,7 +2619,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       ${portfolioBusinesses.length ? `
       <div class="muted" style="margin-bottom:8px">Portfolio totals (last settled month): income <strong class="mono">${esc(formatMoney(totals.revenue, S.country))}</strong> · costs <strong class="mono">${esc(formatMoney(totals.costs, S.country))}</strong> · tax <strong class="mono">${esc(formatMoney(totals.tax, S.country))}</strong> · net <strong class="mono ${totals.net < 0 ? 'text-bad' : 'text-good'}">${esc(formatMoney(totals.net, S.country))}</strong></div>
       ${portfolioBusinesses.map(bizCard).join('')}` : `
-      <p class="muted">No business yet — register your first company below. There is no limit on how many you can own: a business you run yourself costs your hours (full-time ~40h/week, part-time ~18h/week), and a business with a manager costs the manager's salary and none of your hours. A business with neither goes unmanaged and slides.</p>`}
+      <p class="muted">No businesses</p>`}
     </div>
     ${renderForSaleHtml(S)}
     <div class="card">
@@ -2731,7 +2732,7 @@ function renderSideGigsSubtabHtml(S) {
         <h3>Part-Time Shifts & Student Gigs (${ptCount} in ${S.year})</h3>
         <span class="muted">One gig at a time, for the month · ${workedThisMonth ? 'You already worked a gig this month' : 'No gig worked yet this month'}</span>
       </div>
-      ${onStudentVisa ? `<p class="muted">Your student visa allows at most 20 hours of work a week. Gigs above that are locked — cash work is not covered by the visa at all, and getting caught can cost you the visa.</p>` : ''}
+      ${onStudentVisa ? `<p class="muted">Student work limit: 20 h/week · Cash gigs unavailable</p>` : ''}
       ${groupedRisksHtml(ptEvs)}
       ${ptEvs.map((ev) => gigRow(ev, 'parttime', ptShared)).join('')}
     </div>
@@ -2970,8 +2971,8 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
       </div>
       <p style="font-size:0.92rem;line-height:1.55;margin:6px 0">${whereLiveLine}</p>
       <p style="font-size:0.92rem;line-height:1.55;margin:6px 0">${whereOwnerLine} ${whereCostLine}</p>
-      <p class="muted" style="font-size:0.85rem;line-height:1.55">This home is not yours, so you can't furnish it, change it or sell it. When you buy a home of your own, its rooms and floor plan will show here — homes to buy are under <strong>Compounds &amp; Districts</strong> above.</p>
-      ${S.housing.properties.length ? `<p style="font-size:0.85rem;line-height:1.55">You do own ${S.housing.properties.length} other home${S.housing.properties.length > 1 ? 's' : ''} — see ${S.housing.properties.length > 1 ? 'them' : 'it'} under <strong>Owned Real Estate Portfolio</strong> below.</p>` : ''}
+      <p class="muted" style="font-size:0.85rem;line-height:1.55">Family-owned · Furnishing unavailable</p>
+      ${S.housing.properties.length ? `<p style="font-size:0.85rem;line-height:1.55">${S.housing.properties.length} properties owned</p>` : ''}
       `}
     </div>
 
@@ -3212,7 +3213,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
 
   return `
     ${renderEditorialBannerHtml(selUnit.shape === 'chalet' ? 'coastal_summer_chalet_ink.jpg' : pickDynamicBanner(S, 'realestate', 'compounds'), `${mktCountryObj.name} Real Estate, Gated Compounds & National Housing`)}
-    ${propMarket==='usa'?`<div class="card"><h3>Woodland Cabin, rural getaway</h3><p>Fictional 109 m², 2-bedroom rural Pennsylvania example. Cash price: ${esc(formatMoney(eraLocalCost(RURAL_CABIN.price2026,'usa',S.year),S.country))}. 2026 anchors: 90,000 USD asking price, 576 USD/year property tax, 420 USD/year estimated insurance. Maintenance budget: 3% of current value/year. Costs charged monthly; no automatic rental income. Not a live listing or national average.</p><p><a href="${RURAL_CABIN.priceSource}" target="_blank" rel="noopener">Price and tax example</a> · <a href="${RURAL_CABIN.maintenanceSource}" target="_blank" rel="noopener">Maintenance budget guidance</a></p><button class="btn" data-action="buy-rural-cabin" ${S.country==='usa'&&S.money.cash>=eraLocalCost(RURAL_CABIN.price2026,'usa',S.year)?'':'disabled'}>Buy rural cabin</button></div>`:''}
+    ${propMarket==='usa'?`<div class="card"><h3>Woodland Cabin <span title="Pennsylvania example; prices and costs are estimates." aria-label="Information">ⓘ</span></h3><p>109 m² · 2 bedrooms · Rural getaway</p><strong>${esc(formatMoney(eraLocalCost(RURAL_CABIN.price2026,'usa',S.year),S.country))}</strong><p>Tax 576 USD/yr · Insurance 420 USD/yr<br>Maintenance 3%/yr · Personal use</p><button class="btn" data-action="buy-rural-cabin" ${S.country==='usa'&&S.money.cash>=eraLocalCost(RURAL_CABIN.price2026,'usa',S.year)?'':'disabled'}>Buy cabin</button></div>`:''}
     <div class="card card-elevated">
       <div class="section-head">
         <h2>${icon('realestate', 18)} Real Compounds, Districts & National Housing (${esc(mktCountryObj.name)})</h2>
@@ -3224,7 +3225,7 @@ function renderCompoundsSubtabHtml(S, uiState) {
         ` : `<span class="hud-pill">${allDevs.length} Developments</span>`}
       </div>
 
-      ${LOCAL_PROPERTY_STYLES.some(p=>p.country===propMarket)?`<div class="local-property-styles" style="margin:12px 0"><h3>Homes by local style</h3><p class="muted" style="font-size:.83rem">Fictional examples, not a real address or a promise of exact construction. Choose a style to see its rooms and purchase options below.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px">${LOCAL_PROPERTY_STYLES.filter(p=>p.country===propMarket).map(p=>`<button type="button" class="btn" data-action="choose-property-style" data-unit="${p.id}" style="display:flex;flex-direction:column;align-items:stretch;text-align:left;white-space:normal;padding:8px;background:#faf5e9;border:${selUnit.id===p.id?'2px solid #9a523c':'1px solid #d4c7ae'}"><img src="assets/homes/${p.art}" alt="${esc(p.name)}" style="width:100%;height:145px;object-fit:contain"><strong style="font-size:.85rem">${esc(p.name)}</strong><span class="muted" style="font-size:.76rem">${p.area} m² indoor${outdoorAreaSummary(p)?` · ${outdoorAreaSummary(p)}`:''} · ${p.rooms===1?'Studio':`${p.rooms-1} bedroom${p.rooms>2?'s':''}`}</span></button>`).join('')}</div></div>`:''}
+      ${LOCAL_PROPERTY_STYLES.some(p=>p.country===propMarket)?`<div class="local-property-styles" style="margin:12px 0"><h3>Homes by local style</h3><p class="muted" style="font-size:.83rem">Choose a home style</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px">${LOCAL_PROPERTY_STYLES.filter(p=>p.country===propMarket).map(p=>`<button type="button" class="btn" data-action="choose-property-style" data-unit="${p.id}" style="display:flex;flex-direction:column;align-items:stretch;text-align:left;white-space:normal;padding:8px;background:#faf5e9;border:${selUnit.id===p.id?'2px solid #9a523c':'1px solid #d4c7ae'}"><img src="assets/homes/${p.art}" alt="${esc(p.name)}" style="width:100%;height:145px;object-fit:contain"><strong style="font-size:.85rem">${esc(p.name)}</strong><span class="muted" style="font-size:.76rem">${p.area} m² indoor${outdoorAreaSummary(p)?` · ${outdoorAreaSummary(p)}`:''} · ${p.rooms===1?'Studio':`${p.rooms-1} bedroom${p.rooms>2?'s':''}`}</span></button>`).join('')}</div></div>`:''}
       <div class="catalog-filter-bar">
         <select class="filter-select" data-filter="reUnitId" aria-label="Unit Type">
           ${getPropertyUnits(propMarket).map(u => `<option value="${u.id}" ${u.id === selUnit.id ? 'selected' : ''}>${esc(u.name)} (${u.area}m² · ${u.shape})</option>`).join('')}
@@ -3566,7 +3567,7 @@ function renderFinanceChartsHtml(S) {
   /* (a) Income vs expenses — from the real cash ledger lines. */
   let incomeHtml = '';
   if (ledgerCount < 2) {
-    incomeHtml = `<p class="muted">Not enough money history yet — only ${ledgerCount} transaction${ledgerCount === 1 ? '' : 's'} recorded. Earn or spend a little more and this chart will draw itself from your real ledger.</p>`;
+    incomeHtml = `<p class="muted">${ledgerCount} transactions · More history needed</p>`;
   } else {
     const { mode, buckets, truncated } = financeBuckets(cashEntries);
     const totalIn = buckets.reduce((s, b) => s + b.income, 0);
@@ -3585,7 +3586,7 @@ function renderFinanceChartsHtml(S) {
      cash-account lines are plotted). Labelled cash, never net worth. */
   let cashHtml = '';
   if (ledgerCount < 2 || cashEntries.length < 2) {
-    cashHtml = `<p class="muted">Not enough cash history yet — only ${cashEntries.length} cash transaction${cashEntries.length === 1 ? '' : 's'} recorded. The cash-balance line appears once there are at least two.</p>`;
+    cashHtml = `<p class="muted">${cashEntries.length} transactions · More history needed</p>`;
   } else {
     const chrono = [...cashEntries].reverse();
     const pts = chrono.map(e => ({
@@ -3685,7 +3686,7 @@ function renderLedgerHistoryHtml(S, uiState = {}) {
       ${shown.length === 0 ? `
         <p class="muted">No transactions ${filter === 'all' ? 'yet' : 'in this filter'} — every pound you earn or spend will appear here, with the balance it left behind.</p>
       ` : `
-        <div class="muted" style="font-size:0.8rem;margin-bottom:6px">Showing ${shown.length} of ${entries.length} recorded transactions (newest first). The running balance is your cash after that line — savings lines show the savings balance instead.</div>
+        <div class="muted">${shown.length} / ${entries.length} transactions</div>
         ${shown.map(e => {
           const d = Number(e.delta) || 0;
           const when = `${MONTH_NAMES[((e.month || 1) - 1) % 12].slice(0, 3)} ${e.year} · Age ${e.age}`;
@@ -3759,7 +3760,7 @@ export function renderFinanceTabHtml(S, uiState = {}) {
     ${finBanner}
     ${nav}
     ${divorceSummaryHtml(S)}
-    ${S.housing.mode==='parents'&&S.player.age>=24?`<div class="card"><strong>Adult family-home board</strong><p>${esc(formatMoney(eraLocalCost(cObj.monthlyBasket2026.rentModest*.35,S.country,S.year),S.country))}/month, 35% of the game modest-rent basket, contributes toward the household. Food/utilities are separate in living costs.</p></div>`:''}
+    ${S.housing.mode==='parents'&&S.player.age>=24?`<div class="card"><strong>Adult family-home board</strong><p>${esc(formatMoney(eraLocalCost(cObj.monthlyBasket2026.rentModest*.35,S.country,S.year),S.country))}/mo</p></div>`:''}
     <div class="card card-elevated">
       <div class="section-head">
         <h2>${icon('finance', 18)} Monthly Ledger & Inflation (${esc(cObj.name)})</h2>
@@ -3776,7 +3777,7 @@ export function renderFinanceTabHtml(S, uiState = {}) {
         const bizNet = businessesLastMonthNet(S);
         if (!bizNet.perBusiness.length) return '';
         if (!bizNet.settledCount) return `<div class="muted" style="margin-top:8px">Your businesses have no settled month yet — the first profit-and-loss lands at the end of this month.</div>`;
-        return `<div class="muted" style="margin-top:8px">Businesses last month: ${bizNet.perBusiness.filter(b => b.hasPL).map(b => `${esc(b.name)} net <strong class="mono" data-biz-net="${b.net}" data-biz-name="${esc(b.name)}">${esc(formatMoney(b.net, S.country))}</strong>`).join(' · ')} — the same net the business card and the Timeline show.</div>`;
+        return `<div class="muted" style="margin-top:8px">Businesses last month: ${bizNet.perBusiness.filter(b => b.hasPL).map(b => `${esc(b.name)} net <strong class="mono" data-biz-net="${b.net}" data-biz-name="${esc(b.name)}">${esc(formatMoney(b.net, S.country))}</strong>`).join(' · ')}</div>`;
       })()}
       ${S.player.age < 18 ? `
         <div class="muted" style="font-size:0.85rem;margin-top:8px">
@@ -3814,13 +3815,13 @@ export function renderFinanceTabHtml(S, uiState = {}) {
     ${S.player.age >= 18 ? `
       <div class="card">
         <div class="section-head">
-          <h3>Optional Zakat calculator (simplified game rule)</h3>
+          <h3>Zakat</h3>
           <span class="hud-pill mono">Nisab: ${esc(formatMoney(zakat.nisabLocal, S.country, true))}</span>
         </div>
         <div class="item-row">
           <div class="item-row-main">
             <strong>${S.credentials.zakatLastYearPaid === S.year ? `✓ Zakat Fulfilled for ${S.year}` : zakat.eligible ? `Suggested contribution: ${formatMoney(zakat.due, S.country)}` : 'Below 85g 24K Gold Nisab Threshold'}</strong>
-            <span>Optional giving. This game estimate uses cash, savings, gold and investments; it is not religious or financial advice.</span>
+            <span><span title="Estimate from cash, savings, gold and investments." aria-label="Information">ⓘ</span></span>
           </div>
           <button class="btn btn-primary btn-sm" data-action="pay-zakat" ${(zakat.eligible && S.credentials.zakatLastYearPaid !== S.year && S.money.cash >= zakat.due) ? '' : 'disabled'}>
             ${S.credentials.zakatLastYearPaid === S.year ? 'Paid' : 'Fulfill Zakat'}
@@ -4307,7 +4308,7 @@ function renderAppearanceStudioSubtabHtml(S) {
         <h3>Style &amp; Outfits — Dressing That Moves Numbers</h3>
         <span class="muted">${app.outfit ? `Wearing: ${esc(app.outfit.label)} (${app.outfit.year})` : 'No outfit bought yet'}</span>
       </div>
-      <p class="muted" style="margin-bottom:8px">Each outfit costs money and moves looks and charisma by the amounts shown — the same numbers job interviews and people read.</p>
+      <p class="muted" style="margin-bottom:8px"></p>
       ${OUTFIT_STYLES.map(os => {
         const fee = Math.round(convertCurrency(os.priceUsd, 'usa', S.country, S.year));
         const afford = S.money.cash >= fee;
@@ -4769,7 +4770,7 @@ function renderMedicalAndSurgeriesSubtabHtml(S) {
         <button class="btn btn-primary btn-sm" data-action="visit-hospital" data-sector="private" ${S.medical.lastCheckupPeriod===S.year*12+S.month?'disabled':''}>Private Specialist (${esc(hospitals.find(h => h.sector === 'private')?.name || 'Specialist')})</button>
       </div>
 
-      <p class="muted">${S.medical.lastCheckupPeriod===S.year*12+S.month?'Checkup completed this game month. ':''}Game care, not medical advice: one checkup and one of each screening/prescription per month. Screenings do not treat disease. Prescriptions below match recorded conditions and are single game courses. Benefits are simplified, not ongoing adherence or clinical risk.</p><details><summary>Diagnostic Lab Screenings (${V1_MED_TESTS.length} Tests) & Pharmacy (${V1_MED_MEDICATIONS.length} Meds):</summary>
+      <p>Checkups · Screenings · Prescriptions <span title="Estimated effects, not medical advice." aria-label="Information">ⓘ</span></p><details><summary>Diagnostic Lab Screenings (${V1_MED_TESTS.length} Tests) & Pharmacy (${V1_MED_MEDICATIONS.length} Meds):</summary>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${[...(V1_MED_TESTS||[]).map(x=>({...x,kind:'test'})),...(V1_MED_MEDICATIONS||[]).filter(m=>(S.medical.conditions||[]).some(c=>(m.treats||[]).includes(c.id))).map(x=>({...x,kind:'med'}))].map(x=>{
           const fee=S.player.age<18?0:Math.max(x.kind==='test'?8:5,Math.round(convertCurrency(((x.kind==='test'?x.costEGP:x.monthlyEGP)||450)/50,'usa',S.country,S.year)));
@@ -4787,7 +4788,7 @@ function renderMedicalAndSurgeriesSubtabHtml(S) {
       </div>
       <div class="card" style="padding:10px">
         <strong>Fertility clinic</strong>
-        <p class="muted">Game estimates, not medical advice. One consultation/cycle per month. Requires adult, living co-resident opposite-sex spouse, no current pregnancy and maternal age below46. Donor and surrogate routes are not modeled.</p>
+        <p class="muted">1 cycle/mo <span title="Requires an eligible co-resident couple; estimated outcome." aria-label="Information">ⓘ</span></p>
         ${V1_FERTILITY_TREATMENTS.map(ft=>`<div style="margin:8px 0"><button class="btn btn-sm" data-action="surgery-ivf" data-kind="ivf" data-id="${ft.id}" ${S.money.cash>=fertilityCostLocal(S,ft)?'':'disabled'}>${esc(ft.label)} · ${esc(formatMoney(fertilityCostLocal(S,ft),S.country))}</button>${S.money.cash<fertilityCostLocal(S,ft)?lockReason("Not enough cash for this clinic option",`Need ${formatMoney(fertilityCostLocal(S,ft)-S.money.cash,S.country)} more`):""}<div class="muted">${ft.successPct>0?`${Math.round(ft.successPct*100)}% game conception chance per cycle; no guarantee.`:'Assessment only, no conception attempt.'}</div></div>`).join('')}
       </div>
       ${ALL_SURGERIES.filter((sg,i,all)=>sg.id!=='ivf_icsi_cycle'&&all.findIndex(x=>x.id===sg.id)===i).map(sg => {
@@ -4987,21 +4988,21 @@ function renderStudyAbroadHtml(S,uiState){
  const level=uiState.studyLevel||'bachelor',majorId=uiState.studyMajor||'cs',funding=uiState.studyFunding||'self';
  const q=studyAbroadQuote(S,dest,{uniId,level,majorId,funding});
  const field=(title,key,value,options)=>`<label style="display:grid;gap:5px;font-size:.84rem">${title}<select class="filter-select" data-filter="${key}" style="width:100%;max-width:100%">${options.map(o=>`<option value="${esc(o.id)}" ${o.id===value?'selected':''}>${esc(o.label)}</option>`).join('')}</select></label>`;
- return `<div class="card"><h3>Study abroad</h3><p class="muted">Choose a country, university, level, subject and real funding source. These are English-taught game pathways and overseas budgets, not verified course offers or immigration advice. A student permit is temporary. No automatic permanent residency.</p>
+ return `<div class="card"><h3>Study abroad</h3><p class="muted"><span title="Estimated tuition and permit rules; no guaranteed admission or residency." aria-label="Information">ⓘ</span></p>
  <div style="display:grid;gap:10px;margin:14px 0">
  ${field('Country','studyDest',dest,COUNTRY_IDS.filter(c=>c!==S.country).map(c=>({id:c,label:getCountry(c).name})))}
  ${field('University','studyUni',uniId,unis.map(u=>({id:u.id,label:u.name})))}
  ${field('Level','studyLevel',level,ABROAD_LEVELS)}
  ${field('Subject','studyMajor',majorId,MAJORS.filter(m=>ABROAD_SUBJECTS.includes(m.id)).map(m=>({id:m.id,label:m.label})))}
  ${field('Funding','studyFunding',funding,[{id:'self',label:'My cash + savings'},{id:'parents',label:'Living parents’ actual savings'},{id:'scholarship',label:'Awarded game tuition scholarship'}])}</div>
- <p><strong>${q.years} years</strong> · ${esc(formatMoney(q.annualDest,dest))}/year · ${esc(q.feeStatus)}</p><p class="muted">${q.visaRequired?'Student permit required.':'You hold destination citizenship: no student visa or maintenance escrow.'} Citizenship affects the game fee category, not your academic score. Real fee eligibility can also depend on residence.</p>
- <p class="muted">${level==='bachelor'?'First year prepaid; later tuition billed monthly or renewed by parents.':'Full course tuition prepaid; no further monthly tuition.'} Living costs are separate and continue monthly. No stipend or free language fluency.</p>
+ <p><strong>${q.years} years</strong> · ${esc(formatMoney(q.annualDest,dest))}/year · ${esc(q.feeStatus)}</p><p class="muted">${q.visaRequired?'Student permit required.':'You hold destination citizenship: no student visa or maintenance escrow.'} </p>
+ <p class="muted">${level==='bachelor'?'First year prepaid; later tuition billed monthly or renewed by parents.':'Full course tuition prepaid; no further monthly tuition.'} Living costs billed monthly · No stipend</p>
  <div style="background:#f7f3e7;padding:12px;border-radius:10px;font-size:.84rem;line-height:1.8">Tuition due now: ${esc(formatMoney(q.tuitionDest,dest))}<br>Maintenance escrow: ${esc(formatMoney(q.blockedDest,dest))}${q.blockedDest?' (released over12months)':''}<br>Modelled travel/permit budget: ${esc(formatMoney(q.costsDest,dest))}<br><strong>Debit now: ${esc(formatMoney(q.totalPlayer,S.country))}</strong><br>Required liquid funds incl. first-year living buffer: ${esc(formatMoney(Math.max(q.totalPlayer,q.proofPlayer),S.country))}<br>Selected source holds: ${esc(formatMoney(q.available,S.country))}</div>
- <p class="muted">Admission uses the game’s score index for bachelor study. Master’s requires a first degree; PhD requires a master’s. English qualification/fluent English is required unless your home country is an English-language country model. Modelled permit processing is deterministic after these checks, not an embassy decision.</p>
+ 
  ${!q.ok?`<p class="text-bad">${esc(q.reason)}</p>`:''}
  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" data-action="apply-study-abroad" data-dest="${dest}" data-uni="${uniId||''}" data-major="${majorId}" data-level="${level}" data-funding="${funding}" ${q.ok?'':'disabled'}>Fund & relocate to study</button>${q.ok?'':lockReason(q.reason)}
  <button class="btn btn-sm" data-action="apply-overseas-scholarship" data-dest="${dest}" data-level="${level}">Apply for game tuition award</button></div>
- <p class="muted">Award:85+secondary score,75+smarts, English qualification;35%game chance, one review per country/level/year. Pays tuition only after an actual win. No fee. Parents sponsor upfront from real savings; later undergraduate renewal needs available funds.</p></div>`;
+ <p>Tuition award · Score 85+ · Smarts 75+ · English</p></div>`;
 }
 
 function renderGlobalMigrationSubtabHtml(S,uiState={}) {

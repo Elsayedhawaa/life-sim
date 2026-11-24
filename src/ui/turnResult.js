@@ -184,7 +184,7 @@ export function renderTurnResultCardHtml(S, uiState) {
       : 'No cash left. Paid activities need cash; free activities are still available.'}</div>`);
   }
   if (r.moneyLines.some(l => /Monthly (housing|living costs|debt payments|family support)/.test(l.label))) {
-    noteBits.push('<div class="trc-note muted">Housing, living costs and other bills above are already paid from your cash. They are not extra charges.</div>');
+    noteBits.push('<span title="Bills already deducted." aria-label="Information">ⓘ</span>');
   }
   if (r.sceneWaiting) noteBits.push(`<div class="trc-note">A decision is waiting for you below.</div>`);
   if (r.gameOver) noteBits.push(`<div class="trc-note">This life has ended.</div>`);
