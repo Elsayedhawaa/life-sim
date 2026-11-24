@@ -26,7 +26,8 @@ import {
   eraDepositRates,
   computeMonthlyNetPay,
   computeOvertimePay,
-  inflationRate
+  inflationRate,
+  statutoryMinMonthlyGross,
 } from '../data/economy.js';
 import { getHousingFor, getCarsForYear, getBanksFor } from '../data/institutions.js';
 import { SHOP_MEGA_CATALOG } from '../data/megaCarsAndShop.js';
@@ -628,6 +629,18 @@ export function settleHouseholdMonth(S) {
   if (legallyEmployed) S.money._salaryWithheldNoted = false;
   if (legallyEmployed && S.career.employed && S.career.job) {
     const job = S.career.job;
+    /* A dated statutory minimum wage (see STATUTORY_MIN_WAGE_ROWS) lifts any
+       saved job paid below it. Only dated legal rows trigger this; the
+       game-indexed extension past the last row does not rewrite saved jobs. */
+    {
+      const legalFloor = statutoryMinMonthlyGross(S.country, S.year, { datedOnly: true, month: S.month });
+      const frac = (job.employmentFraction === 0.45 || /^part-time/i.test(job.title || '')) ? 0.45 : 1;
+      const need = Math.round(legalFloor * frac);
+      if (need > 0 && Number(job.monthlyGross) < need) {
+        job.monthlyGross = need;
+        recordJournal(S, `The legal minimum wage now applies to your job, and your pay was raised to ${formatMoney(need, S.country)} a month.`, 'money');
+      }
+    }
     /* v2.8: overtime pays the REAL per-country overtime rate (20 extra hours
        at that country's multiplier on the hourly rate) — not a flat +15%
        for every job in every country. computeOvertimePay is the one source. */

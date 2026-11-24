@@ -468,24 +468,27 @@ export function eraLocalCost(amount2026Local, countryId, year) {
 
 /* Price a 2026-denominated local salary cleanly in historical or future year */
 /* Statutory private-sector minimum monthly GROSS wage, only where a source was
-   verified. Each row is nominal in its own effective year and is carried to
-   later years with the game's wage index (never applied before it took effect).
+   verified. Rows are dated (year + month) legal figures, never applied before
+   they took effect.
    EGY: 7,000 EGP from Mar 2025; 8,500 EGP from 1 Jan 2027 (National Council
    for Wages, 16 Nov 2026). TUR: 33,030 TRY gross from 1 Jan 2026.
    Countries not listed have no floor modeled. */
-const STATUTORY_MIN_WAGE = {
-  egy: [{ from: 2025, monthly: 7000 }, { from: 2027, monthly: 8500 }],
-  tur: [{ from: 2026, monthly: 33030 }],
+const STATUTORY_MIN_WAGE_ROWS = {
+  egy: [{ year: 2025, month: 3, monthly: 7000 }, { year: 2027, month: 1, monthly: 8500 }],
+  tur: [{ year: 2026, month: 1, monthly: 33030 }],
 };
-export function statutoryMinMonthlyGross(countryId, year) {
-  const rows = STATUTORY_MIN_WAGE[countryId];
+/* options.month (1-12) makes the effective date month-precise; options.datedOnly
+   returns only the last dated legal figure in force (never an indexed value).
+   Without datedOnly, periods after the last known row return a GAME-INDEXED
+   ASSUMPTION (that row moved with the wage index), which is not a law. */
+export function statutoryMinMonthlyGross(countryId, year, options = {}) {
+  const rows = STATUTORY_MIN_WAGE_ROWS[countryId];
   if (!rows) return 0;
-  const row = [...rows].reverse().find((r) => r.from <= year);
+  const period = year * 12 + (options.month || 12);
+  const row = [...rows].reverse().find((r) => r.year * 12 + r.month <= period);
   if (!row) return 0;
-  // Statutory rates are step changes: held nominal until the next known row.
-  // Past the last known row the floor follows the game's wage index (an assumption).
-  if (row !== rows[rows.length - 1]) return row.monthly;
-  const base = wageFactor(countryId, row.from) || 1;
+  if (options.datedOnly || row !== rows[rows.length - 1]) return row.monthly;
+  const base = wageFactor(countryId, row.year) || 1;
   return Math.round(row.monthly * (wageFactor(countryId, year) / base));
 }
 export function eraSalary(salary2026Local, countryId, year) {
