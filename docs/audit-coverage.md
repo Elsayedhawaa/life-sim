@@ -20,7 +20,7 @@ Checkpoint: November24,2026. Prior shipped baseline: 85ea930. This checkpoint al
 - Long-horizon balancing, entertainment quality and every old-save combination.
 - The old coherence_suite.mjs remains unpassed: obsolete assumptions and runtime stalls. It is not included in passing totals.
 
-44 focused*.test.js files pass at this checkpoint. A render pass does not prove action outcomes; a local pass does not prove hosted delivery. No full-audit completion claim.
+45 focused*.test.js files pass at this checkpoint. A render pass does not prove action outcomes; a local pass does not prove hosted delivery. No full-audit completion claim.
 
 Travel follow-up: trips now deduct newly unpaid days using the existing leave-action net/30 game formula. Quoted travel cost and lost pay are shown separately. Plan papers use the actual negotiated leave allowance. Aviation staff quotes share the charged price. This is a game pay simplification, not local employment law.
 
@@ -34,4 +34,6 @@ Legacy-suite sweep: many historical*.mjs assertions are stale or still fail; the
 
 Surgery: matching active diagnosis required for corrective surgery; partial-treatment conditions remain managed instead of erased, including game diabetes metabolic surgery. Recovery blocks another procedure; elective appearance surgery adult-only and once per year. Fertility uses its own route. All distinct operations, including LASIK, appear instead of silently slicing after14.42focused suites pass, plus actual phone appendectomy/recovery/reload check. Risks/complications and detailed clinical eligibility are not a medical simulation.
 
-Expanded render matrix:2070country/stage/subtab renders, including banks/markets, land, global/gulf and medical routes. This still is not full action coverage. Closed-business replay refuses an already-removed object before salvage; custom-construction draws track and cap the exact remaining total, including relocation currency conversion.44focused test files pass.
+Expanded render matrix:2070country/stage/subtab renders, including banks/markets, land, global/gulf and medical routes. This still is not full action coverage. Closed-business replay refuses an already-removed object before salvage; custom-construction draws track and cap the exact remaining total, including relocation currency conversion.45focused test files pass.
+
+Dynasty handoff: requires dead player and an actual living child, settles once, preserves month/vitals/recorded degree/appearance and minor school stage. No invented business degree for high intelligence. Phone adult engineering-child handoff and reload checked. Existing generated social-circle reconstruction and simplified inheritance tax/shares remain unverified model limitations, not a claim of family-tree/legal fidelity. Latest Netherlands/USA32-step hosted playthroughs reached18with choices retained, no page errors/overflow.

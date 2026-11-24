@@ -481,13 +481,14 @@ export function buildLegacySummary(S) {
 /* Generational Dynasty Handoff — Continue Playing as Any Living Child! */
 export function continueAsChild(S, childId) {
   const child = S.people[childId];
-  if (!child || !child.alive) return null;
+  if (!S.gameOver || S.player.alive!==false || !S.relations.childIds.includes(childId) || !child || !child.alive || S.legacyContinued) return null;
 
   /* v2.11 W4 — businesses are settled FIRST, before the estate is valued:
      a business with no living heir is sold at its real valuation and the
      proceeds land in the estate cash below; a business with a living
      named heir is taken out of this life and held in bizDeath.inherited
      for delivery into the continuing child's life further down. */
+  S.legacyContinued=true;
   const bizDeath = transferBusinessesOnDeath(S, childId);
 
   const livingKids = S.relations.childIds.map(id => S.people[id]).filter(c => c && c.alive);
@@ -547,8 +548,12 @@ export function continueAsChild(S, childId) {
   });
 
   /* Fast-set child's current real age, citizenships & status */
-  nextS.year = S.year;
+  nextS.year = S.year;nextS.month=S.month;
   nextS.player.age = child.age;
+  nextS.player.vitals={...nextS.player.vitals,...child.vitals};
+  nextS.player.religion=child.religion||nextS.player.religion;
+  if(child.appearance)nextS.player.appearance={...child.appearance};
+  nextS.education.stage=child.age<6?'infancy':child.age<12?'primary':child.age<15?'middle':child.age<18?'high':'completed';
   nextS.legal.citizenships = [...new Set([...child.citizenships])];
   nextS.legal.passports = nextS.legal.citizenships.map(cid => ({
     country: cid,
@@ -560,9 +565,7 @@ export function continueAsChild(S, childId) {
     nextS.pacing = 'monthly';
     nextS.education.stage = 'completed';
     nextS.education.highSchoolScore = clamp(child.vitals.smarts, 65, 95);
-    if (child.age >= 22 && child.vitals.smarts >= 68) {
-      nextS.education.degrees = ['business'];
-    }
+    nextS.education.degrees=child.education?.degree?[child.education.degree]:[];
     nextS.money.parentalAllowanceActive = false;
   }
 
