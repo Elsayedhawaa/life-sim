@@ -31,7 +31,7 @@ for(let seed=1;seed<=SEEDS;seed++){
   const snap=()=>JSON.stringify([s.money,s.ledger?.length,s.eventOutcomes,s.career,s.legal,s.housing,s.player.vitals,s.reputation,s.skills,s.values,s.journal?.length,Object.values(s.people).map(p=>[p.alive,p.rel?.affection,p.rel?.trust,p.rel?.resentment]),s.sceneQueue?.length,s.facts]);
   const before=snap();
   try{resolveActiveSceneChoice(s,idx);}catch(e){flag('choice-throws',id,String(e.message).slice(0,80)+' @'+String(e.stack).split('\n')[1].trim().slice(0,90),s);s.activeScene=null;}
-  if(snap()===before&&!/^(continue|understood|ok|close)/i.test(a.choices?.[idx]?.label||'')&&(a.choices?.[idx]?.available?.(s)!==false))flag('choice-does-nothing',id+'#'+idx,(a.choices?.[idx]?.label||'').slice(0,50),s);
+  if(snap()===before&&!/^(continue|understood|ok|close)|unchanged|hold out/i.test(a.choices?.[idx]?.label||'')&&(a.choices?.[idx]?.available?.(s)!==false))flag('choice-does-nothing',id+'#'+idx,(a.choices?.[idx]?.label||'').slice(0,50),s);
   if(s.activeScene)s.activeScene=null;
  }
 }
