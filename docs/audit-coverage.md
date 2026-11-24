@@ -414,3 +414,6 @@ Live tenants, held deposits and pending deposit settlements block lease-type con
 
 ### W8 court review fee transparency
 No-asset recorded claims now disclose the absence of collectible recovery before the counsel fee, with a Pay for review button rather than a promise of a suit result.140focused files pass.390px broker-loss fixture sees warning before fee, actual payment files one review, reload preserves it. Inspected mobile pixels. W9 queued for identified counterpart assets and actual outcomes, not claimed implemented by this disclosure.
+
+### W9 traced broker funds
+New broker-loss records may carry an identified, frozen partial fund (simulation, not real legal data). Quote names frozen cap before separate counsel fee; delayed hearing releases no more than actual documented loss/frozen balance once. No-asset legacy losses never gain invented recovery.141focused files pass, including delayed/exactly-once ledger tests.390px traced-loss fixture files after actual fee and reload, mobile pixels inspected. UI fixture seeds counterparty funds; focused system test exercises new-loss generation. W10queued for other dispute generators.

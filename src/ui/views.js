@@ -4834,7 +4834,7 @@ function renderCourtsAndCrimeSubtabHtml(S) {
         <h2>${icon('gavel', 18)} Civil & Labor Courts</h2>
         <span class="hud-pill">${S.legal.criminalRecord ? '⚠ Criminal Record on File' : 'Clean Record'}</span>
       </div>
-      ${(S.legal.civilLosses||[]).filter(x=>x.status!=='open').map(x=>`<p>Claim · ${x.status==='filed'?'Review pending · '+Math.max(0,x.dueAt-S.year*12-S.month)+' mo':'Reviewed · Collection unavailable'}</p>`).join('')}
+      ${(S.legal.civilLosses||[]).filter(x=>x.status!=='open').map(x=>`<p>Claim · ${x.status==='filed'?'Hearing pending · '+Math.max(0,x.dueAt-S.year*12-S.month)+' mo':x.status==='settled'?'Recovered '+esc(formatMoney(x.paidLocal,x.paidCountry)):'Reviewed · Collection unavailable'}</p>`).join('')}
       ${CIVIL_LAWSUITS.map(su => {
         const fee = Math.round(convertCurrency(su.lawyerFeeUsd, 'usa', S.country, S.year));
         const claim=civilClaimQuote(S,su.id);
@@ -4842,9 +4842,9 @@ function renderCourtsAndCrimeSubtabHtml(S) {
           <div class="item-row">
             <div class="item-row-main">
               <strong>${esc(su.label)}</strong>
-              <span>Counsel Retainer: <strong class="mono">${esc(formatMoney(fee, S.country))}</strong> · ${claim.available?'Review 3 mo · Loss '+esc(formatMoney(claim.amount,S.country)):'No recorded dispute'}</span>${claim.available?'<span class="text-bad">'+esc(claim.collectionNote)+'</span>':''}
+              <span>Counsel Retainer: <strong class="mono">${esc(formatMoney(fee, S.country))}</strong> · ${claim.available?'Review 3 mo · Loss '+esc(formatMoney(claim.amount,S.country)):'No recorded dispute'}</span>${claim.available?'<span style="display:block" class="text-bad">'+esc(claim.collectionNote)+(claim.collectionAvailable?' · Frozen '+esc(formatMoney(claim.recoverableLocal,S.country)):'')+'</span>':''}
             </div>
-            <button class="btn btn-primary btn-sm" data-action="file-lawsuit" data-id="${su.id}" ${S.money.cash >= fee&&claim.available ? '' : 'disabled'}>Pay for review</button>
+            <button class="btn btn-primary btn-sm" data-action="file-lawsuit" data-id="${su.id}" ${S.money.cash >= fee&&claim.available ? '' : 'disabled'}>${claim.collectionAvailable?'File traced-funds claim':'Pay for review'}</button>
             ${S.money.cash < fee ? lockReason('Not enough cash for the retainer', `Need ${esc(formatMoney(Math.round(fee - S.money.cash), S.country))} more`) : ''}
           </div>
         `;

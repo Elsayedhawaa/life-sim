@@ -1142,7 +1142,7 @@ export function sendInternationalRemittance(S, channelId, amountLocal) {
 
   walletMove(S, -amt, `Remittance via ${ch.label}`, 'family');
   if (ch.scamRisk > 0 && chance(S, ch.scamRisk)) {
-    recordCivilLoss(S,'broker_fraud',amt,'remittance');
+    recordCivilLoss(S,'broker_fraud',amt,'remittance',{traceable:true,defendantName:ch.label});
     S.player.vitals.stress = clamp(S.player.vitals.stress + 14);
     recordJournal(S, `Disaster — the informal Hawala broker vanished mid-transfer! Your ${formatMoney(amt, S.country)} remittance never reached ${recipient.firstName}.`, 'money');
     return { ok: false, msg: 'Hawala scam! Broker disappeared with the transfer!' };

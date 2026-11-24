@@ -67,5 +67,6 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W7 Prevent live long-term tenants/deposits from silently turning into holiday lets; lease changes require tenancy/deposit settlement first.
 
-- [ ] W8 Courts: disclose before retainer payment that current no-asset records cannot yield recovery; do not imply a collectible suit.
-- [ ] W9 Identified-defendant assets, hearing/outcome and actual recoveries beyond the current no-asset review-only court model.
+- [x] W8 Courts: disclose before retainer payment that current no-asset records cannot yield recovery; do not imply a collectible suit.
+- [ ] W9 Traced broker funds: identify/freeze a capped share at actual scam loss, delayed hearing and exactly-once cash recovery, no invented legacy recovery.
+- [ ] W10 Employer/deposit dispute generators and their counterpart records; other civil categories remain unavailable without a recorded loss.

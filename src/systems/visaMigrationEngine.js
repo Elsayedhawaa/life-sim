@@ -579,7 +579,7 @@ export function applyGulfWorkChannel(S, destCountry, channelId) {
 
   /* Agency / Free-Visa Broker Scam Realism! */
   if (ch.scamRisk > 0 && chance(S, ch.scamRisk)) {
-    recordCivilLoss(S,'broker_fraud',feeLocal,'visa broker');
+    recordCivilLoss(S,'broker_fraud',feeLocal,'visa broker',{traceable:true,defendantName:ch.label});
     S.player.vitals.stress = clamp(S.player.vitals.stress + 18);
     S.player.vitals.happiness = clamp(S.player.vitals.happiness - 14);
     recordJournal(
