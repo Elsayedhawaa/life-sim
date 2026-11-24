@@ -1,3 +1,4 @@
+import{shopCategoryIcon}from './shopVisuals.js';
 import{civilClaimQuote}from '../systems/civilClaims.js';
 import{retirementIncomePreview}from '../systems/usRetirement.js';
 import{PEOPLE_REQUESTS,peopleRequestAmount}from '../systems/peopleAutonomy.js';
@@ -4475,10 +4476,11 @@ function renderShoppingMallSubtabHtml(S, uiState) {
   return `
     <div class="card card-elevated">
       <div class="section-head">
-        <h2>Shopping Mall & Luxury Collectibles (${filtered.length} Available in ${S.year})</h2>
-        <span class="hud-pill">${esc(bnpl.name)} Available</span>
+        <h2>Shop</h2>
+        <span class="hud-pill">${filtered.length} items · ${S.year}</span>
       </div>
 
+      <div class="shop-balance">Cash <strong>${esc(formatMoney(S.money.cash,S.country))}</strong></div>
       ${S.inventory.length > 0 ? `
         <div style="margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line-soft)">
           <strong style="font-size:0.83rem;color:var(--brand-emerald)">Owned Possessions & Collectibles (${S.inventory.length}):</strong>
@@ -4495,12 +4497,13 @@ function renderShoppingMallSubtabHtml(S, uiState) {
       ` : ''}
 
       <div class="catalog-filter-bar">
-        <input type="search" class="filter-input" data-filter="shopQuery" placeholder="Search Rolex, iPhone, Patek, Chanel, MacBook, Sony..." value="${esc(uiState.shopQuery || '')}">
+        <input type="search" class="filter-input" data-filter="shopQuery" placeholder="Find an item or brand" value="${esc(uiState.shopQuery || '')}">
         <select class="filter-select" data-filter="shopCat" aria-label="Shop Category">
           ${cats.map(ct => `<option value="${ct}" ${ct === selCat ? 'selected' : ''}>${ct.toUpperCase()}</option>`).join('')}
         </select>
       </div>
 
+      <div class="shop-categories" aria-label="Categories">${cats.map(ct=>`<button class="shop-category ${ct===selCat?'selected':''}" data-action="shop-category" data-cat="${esc(ct)}">${shopCategoryIcon(ct,24)}<span>${esc(ct==='all'?'All':ct)}</span></button>`).join('')}</div>
       ${(S.shopWishlist || []).length > 0 ? `
         <div style="margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line-soft)">
           <strong style="font-size:0.83rem;color:var(--brand-emerald)">Saved For Later — Your Wishlist (${S.shopWishlist.length}):</strong>
@@ -4527,23 +4530,13 @@ function renderShoppingMallSubtabHtml(S, uiState) {
         const nextOther = filtered.find((f, j) => j !== idx && f.id !== it.id);
         const withRef = ownedSameCat ? `inv:${ownedSameCat.id}` : (nextOther ? nextOther.id : '');
         return `
-          <div class="item-row">
-            <div class="item-row-main">
-              <strong>${esc(it.brand)} ${esc(it.name)} ${it.appreciates ? '· ★ Collectible' : ''}</strong>
-              <span>Price: <strong class="mono">${esc(formatMoney(pLocal, S.country))}</strong> · +${it.hap} Mood${it.looks ? ` · +${it.looks} Looks` : ''}</span>
-            </div>
-            <div style="display:flex;gap:5px;align-items:flex-start">
-              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-                <button class="btn btn-sm btn-primary" data-action="buy-shop-item" data-id="${it.id}" data-pay="cash" ${affordCash ? '' : 'disabled'}>Cash</button>
-                ${affordCash ? '' : lockReason('Not enough cash to buy this', `Need ${formatMoney(pLocal - S.money.cash, S.country)} more`)}
-              </div>
-              ${S.creditCards.length > 0 ? `<button class="btn btn-sm" data-action="buy-shop-item" data-id="${it.id}" data-pay="card">Card</button>` : ''}
-              ${S.year >= bnpl.availableFrom ? `<button class="btn btn-sm" data-action="buy-shop-item" data-id="${it.id}" data-pay="bnpl">${esc(bnpl.name.split(' ')[0])}</button>` : ''}
-              <button class="btn btn-sm" data-action="compare-shop-item" data-id="${it.id}" ${withRef ? `data-with="${withRef}"` : ''}>Compare</button>
-              <button class="btn btn-sm" data-action="save-shop-item" data-id="${it.id}" ${wished ? 'disabled' : ''}>${wished ? '✓ Saved' : 'Save For Later'}</button>
-              <button class="btn btn-sm" data-action="ask-shop-item" data-id="${it.id}">Ask About It</button>
-            </div>
-          </div>
+          <article class="shop-product" data-shop-item="${esc(it.id)}">
+            <div class="shop-product-head"><div class="shop-item-art shop-tone-${esc(it.category)}">${shopCategoryIcon(it.category,62)}</div><div><div class="shop-brand">${esc(it.brand)} · ${esc(it.category)}</div><h3>${esc(it.name)}</h3><div class="shop-price">${esc(formatMoney(pLocal,S.country))}</div>${it.appreciates?'<span class="shop-collectible">Collectible</span>':''}</div></div>
+            <div class="shop-effects">+${it.hap} Mood${it.looks?` · +${it.looks} Looks`:''}</div>
+            <div class="shop-primary-actions"><button class="btn btn-primary" data-action="buy-shop-item" data-id="${it.id}" data-pay="cash" ${affordCash?'':'disabled'}>Buy · ${esc(formatMoney(pLocal,S.country))}</button><button class="btn shop-save" data-action="save-shop-item" data-id="${it.id}" ${wished?'disabled':''}>${wished?'✓ Saved':'♡ Save'}</button></div>
+            ${!affordCash?`<div class="muted">Need ${esc(formatMoney(pLocal-S.money.cash,S.country))} more</div>`:''}
+            <details class="shop-options"><summary>Compare &amp; payment options</summary><div class="shop-more-actions">${S.creditCards.length?`<button class="btn btn-sm" data-action="buy-shop-item" data-id="${it.id}" data-pay="card">Pay by card</button>`:''}${S.year>=bnpl.availableFrom?`<button class="btn btn-sm" data-action="buy-shop-item" data-id="${it.id}" data-pay="bnpl">${esc(bnpl.name.split(' ')[0])} installments</button>`:''}<button class="btn btn-sm" data-action="compare-shop-item" data-id="${it.id}" ${withRef?`data-with="${withRef}"`:''}>Compare</button><button class="btn btn-sm" data-action="ask-shop-item" data-id="${it.id}">Ask about it</button></div></details>
+          </article>
         `;
       }).join('')}
     </div>

@@ -1284,6 +1284,7 @@ export function findRealJobForPerson(S, person, countryId) {
     industry = track.industry || trackId;
   }
   const employer = pickRealCompanyForTrack(countryId, S.year, trackId === 'nursing' ? 'medicine' : trackId, industry);
+  if(!employer)return null;
   const baseEntry = eraSalary(getCountry(countryId).annualSalaryTiers2026.entry / 12, countryId, S.year);
   const monthlyGross = Math.round(baseEntry * payMult * mult);
   // NPCs keep the flat career shape (title/employer/track/monthlyIncomeLocal)
@@ -1303,30 +1304,26 @@ export function findRealJobForPerson(S, person, countryId) {
 
 const SLOP_COMPANY_RE = /Continental .* Partners|National Group|Global .* Corp|Generic /i;
 
-function pickRealCompanyForTrack(country, year, trackId, industry) {
-  const extraMatches = (EXTRA_REAL_COMPANIES || []).filter(
-    c => c.country === country && (!c.founded || c.founded <= year) && (c.industry === industry || c.industry === trackId)
-  );
-  const v1CountryPool = V1_COMPANIES_BY_COUNTRY?.[country]?.[industry] || V1_COMPANIES_BY_COUNTRY?.[country]?.[trackId] || [];
-  const rawInst = getEmployersFor(country, trackId);
-  const cFall = REAL_FALLBACK_COMPANIES[country] || {};
-  const sectorKey = /aviation|pilot/.test(trackId + industry) ? 'aviation'
-    : /med|surg|pediat|cardio|hosp|dent|nurs|pharm/.test(trackId + industry) ? 'hospitals'
-    : /soft|cyber|ai|data|cloud|tech|web/.test(trackId + industry) ? 'tech'
-    : /eng|arch|civil|oil/.test(trackId + industry) ? 'engineering'
-    : /bank|fin|inv|acc/.test(trackId + industry) ? 'banking'
-    : 'default';
-
-  const names = [
-    ...extraMatches.map(c => c.name),
-    ...v1CountryPool.map(c => c.name).filter(Boolean),
-    ...rawInst,
-    ...(cFall[sectorKey] || []),
-    ...(cFall.default || [])
-  ].filter(nm => nm && !SLOP_COMPANY_RE.test(nm));
-
-  const unique = [...new Set(names)];
-  return unique[(year + trackId.length * 3) % unique.length] || `${getCountry(country).cities[0]} Premier Group`;
+export const JOB_EMPLOYER_SECTORS={
+ software:'tech',medicine:'hospitals',engineering:'engineering',finance:'banking',pharma:'healthcare',law:'law',teaching:'schools',bpo:'telecom',trades:'retail',
+ business:'banking',accounting:'accounting',investment:'banking',marketing:'fmcg',sales:'retail',hr:'fmcg',consulting:'consulting',product:'tech',
+ surgery:'hospitals',pediatrics:'hospitals',cardiology:'hospitals',nursing:'hospitals',pharmacy:'hospitals',dentistry:'dental',psychology:'hospitals',veterinary:'veterinary',physiotherapy:'hospitals',prosecutor:'government',architect:'architecture',civil_eng:'engineering',
+ petroleum_energy:'oil_gas',renewable_solar:'emerging_renewables',islamic_finance:'banking',sovereign_pe:'banking',urban_masterplan:'architecture',aviation_pilot:'aviation',radiology_imaging:'hospitals',cardiology_surg:'hospitals',biotech_genomics:'healthcare',fintech_product:'tech',supply_chain_ports:'logistics',hospitality_luxury:'hotels',semiconductor_vlsi:'tech',robotics_automation:'manufacturing',quant_risk:'banking',international_arb:'law',diplomacy_policy:'government',media_film:'media',telecom_5g:'telecom',agritech_food:'manufacturing',real_estate_dev:'engineering',edtech_curriculum:'schools',clinical_psych:'hospitals',automotive_ev:'emerging_ev',mining_minerals:'mining',ecommerce_growth:'emerging_ecommerce',aerospace_sat:'engineering',sports_medicine:'hospitals'
+};
+export function employerCandidates(country,year,trackId,industry){
+ const sector=JOB_EMPLOYER_SECTORS[trackId]||industry||trackId;
+ const pool=V1_COMPANIES_BY_COUNTRY?.[country]?.[sector]||[];
+ // Exact catalog track is usable only when its occupation is the same.
+ const direct=Object.hasOwn(CAREER_TRACKS,trackId)?getEmployersFor(country,trackId):[];
+ const extra=(EXTRA_REAL_COMPANIES||[]).filter(c=>c.country===country&&(c.industry===sector||c.industry===trackId)&&(!c.founded||c.founded<=year)).map(c=>c.name);
+ let names=[...new Set([...direct,...pool.filter(c=>(!c.founded||c.founded<=year)&&(!c.availableFrom||c.availableFrom<=year)).map(c=>c.name),...extra])].filter(n=>n&&!SLOP_COMPANY_RE.test(n)&&!/^Frontier AI Lab/i.test(n));
+ if(['civil_eng','urban_masterplan','real_estate_dev'].includes(trackId))names=names.filter(n=>/construction|bechtel|contract|hassan|orascom|r[oö]nesans|en.?ka|roshn|vinci|bouygues|skanska|aec|arup|tata projects|larsen|obayashi|shimizu|taisei|hyundai.*construct|samsung.*c.?t/i.test(n));
+ if(trackId==='prosecutor')names=names.filter(n=>/prosecut|justice|attorney|court/i.test(n));
+ return names;
+}
+function pickRealCompanyForTrack(country,year,trackId,industry){
+ const names=employerCandidates(country,year,trackId,industry);
+ return names.length?names[(year+trackId.length*3)%names.length]:null;
 }
 
 export function getRequiredForeignBoardForJob(S, trackId, reqDegrees = []) {
@@ -1379,6 +1376,7 @@ export function listAvailableJobs(S) {
     }
 
     const employer = pickRealCompanyForTrack(S.country, S.year, trackId, track.industry);
+    if(!employer)continue;
     const baseAnnual = eraSalary(cObj.annualSalaryTiers2026.entry, S.country, S.year);
     const licBoost = matchingLicensePayBoost(S,track.reqDegrees);
     const pgList = S.postgrad?.completed || [];

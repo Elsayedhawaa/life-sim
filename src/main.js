@@ -1898,6 +1898,7 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='shop-category'){uiState.shopCat=btn.dataset.cat;renderApp();return;}
     if (action === 'buy-shop-item') {
       handleActionResult(purchaseShopCatalogItem(S, btn.dataset.id, btn.dataset.pay || 'cash'));
       return;
