@@ -411,3 +411,6 @@ Reject non-finite/unsafe purchase totals, a card object not actually in the wall
 
 ### W7 lease integrity
 Live tenants, held deposits and pending deposit settlements block lease-type conversion before any rent/occupancy mutation. End the tenancy and settle its actual deposit first; empty settled homes may switch.139focused files pass;390px occupied-rental fixture attempts holiday conversion, receives clear refusal, tenant/deposit/cash retained and reload passed. Refusal pixels inspected.
+
+### W8 court review fee transparency
+No-asset recorded claims now disclose the absence of collectible recovery before the counsel fee, with a Pay for review button rather than a promise of a suit result.140focused files pass.390px broker-loss fixture sees warning before fee, actual payment files one review, reload preserves it. Inspected mobile pixels. W9 queued for identified counterpart assets and actual outcomes, not claimed implemented by this disclosure.

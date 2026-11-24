@@ -8,7 +8,7 @@ export function recordCivilLoss(S,kind,amount,source){
 export function civilClaimQuote(S,suitId){
  const kind={sue_scam_broker:'broker_fraud',sue_employer_wages:'unpaid_wages',sue_wrongful_dismissal:'wrongful_dismissal',sue_landlord_deposit:'deposit'}[suitId];
  const loss=(S.legal.civilLosses||[]).find(x=>x.kind===kind&&x.status==='open');
- return{loss,available:!!loss,reason:loss?'Documented loss':'No recorded dispute',amount:loss?Math.round(convertCurrency(loss.amount,loss.country,S.country,S.year)):0};
+ return{loss,available:!!loss,reason:loss?'Documented loss':'No recorded dispute',collectionAvailable:false,collectionNote:'No identified defendant assets in this record. Paid review cannot recover cash in the current model.',amount:loss?Math.round(convertCurrency(loss.amount,loss.country,S.country,S.year)):0};
 }
 export function fileCivilClaim(S,suit){
  const q=civilClaimQuote(S,suit.id);if(!q.available)return{ok:false,msg:'No recorded dispute. Nothing charged.'};

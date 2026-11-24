@@ -65,4 +65,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W6 Payment/term integrity: reject non-finite purchases, outside-wallet cards, invalid installment and certificate terms without changing balances.
 
-- [ ] W7 Prevent live long-term tenants/deposits from silently turning into holiday lets; lease changes require tenancy/deposit settlement first.
+- [x] W7 Prevent live long-term tenants/deposits from silently turning into holiday lets; lease changes require tenancy/deposit settlement first.
+
+- [ ] W8 Courts: disclose before retainer payment that current no-asset records cannot yield recovery; do not imply a collectible suit.
+- [ ] W9 Identified-defendant assets, hearing/outcome and actual recoveries beyond the current no-asset review-only court model.
