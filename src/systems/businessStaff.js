@@ -500,6 +500,7 @@ export function monthlyStaffTick(S, biz) {
       recordJournal(S, `${emp.name} (${emp.role}) quit ${biz.name} — morale had sunk to ${Math.round(emp.morale)} and they walked out.`, 'career');
       queueScene(S, {
         key: `biz_quit_${emp.id}_${S.year}_${S.month}`,
+        baseId:'business_quit_notice',
         category: 'career',
         title: `${emp.name} quit`,
         text: `${emp.name}, your ${emp.role} at ${biz.name}, has handed in their notice. Three months of unresolved low morale. Hire a replacement or reduce work.`,

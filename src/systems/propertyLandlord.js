@@ -363,7 +363,7 @@ export function tickLandlordMonth(S, prop) {
     const person = S.people?.[t.personId];
     if (person) person.career.monthlyIncomeLocal = 0;
     recordJournal(S, `${t.name}, your tenant at ${prop.name}, lost their job at ${t.employer}. They cannot pay the full rent now — give them time to find work, or start an eviction.`, 'money');
-    queueScene(S, {
+    queueScene(S, decorateLandlordScene(S, {
       key: `tenant_job_${prop.id}_${S.year}_${S.month}`,
       category: 'money',
       title: `Your tenant lost their job — ${prop.name}`,
@@ -372,7 +372,7 @@ export function tickLandlordMonth(S, prop) {
         { label: 'Give them 3 months to find work (they pay what they can; you cover the shortfall)', effect: () => giveTenantTime(S, prop.id) },
         { label: `Start eviction (${formatMoney(Math.round(effectiveMonthlyRentLocal(S, prop) * evictionLawFor(prop.country || S.country).costRentMonths), S.country)}, ${evictionLawFor(prop.country || S.country).noticeMonths + evictionLawFor(prop.country || S.country).courtMonths} months, no rent while it runs)`, effect: () => startEviction(S, prop.id) }
       ]
-    });
+    },{kind:'job',propId:prop.id,tenantId:t.personId}));
   }
 
   /* --- Grace: a tenant given time may find new work. --- */
@@ -408,7 +408,7 @@ export function tickLandlordMonth(S, prop) {
     L.lease.renewalOffered = true;
     const rentLocal = effectiveMonthlyRentLocal(S, prop);
     const raiseLocal = Math.round(rentLocal * 1.05);
-    queueScene(S, {
+    queueScene(S, decorateLandlordScene(S, {
       key: `lease_renew_${prop.id}_${L.lease.count}`,
       category: 'money',
       title: `Lease ending — ${prop.name}`,
@@ -418,7 +418,7 @@ export function tickLandlordMonth(S, prop) {
         { label: `Raise the rent 5% to ${formatMoney(raiseLocal, S.country)}/month (they may refuse)`, effect: () => renewLease(S, prop.id, 'raise', 5) },
         { label: 'Sell the flat with the tenant in place (about 10% less)', effect: () => renewLease(S, prop.id, 'sell') }
       ]
-    });
+    },{kind:'lease',propId:prop.id,tenantId:t.personId,leaseCount:L.lease.count}));
   }
 
   /* --- Damage: something breaks. --- */
@@ -440,7 +440,7 @@ export function tickLandlordMonth(S, prop) {
     L.damage.push(dmg);
     prop.conditionPct = Math.max(25, (prop.conditionPct ?? 100) - spec.condHit);
     recordJournal(S, `Something broke at ${prop.name}: ${spec.label.toLowerCase()}. A proper fix costs ${formatMoney(costLocal, S.country)} — fix it now, fix it cheaply and risk it breaking again, or ignore it and risk losing ${t.name}.`, 'housing');
-    queueScene(S, {
+    queueScene(S, decorateLandlordScene(S, {
       key: `damage_${prop.id}_${dmg.id}`,
       category: 'money',
       title: `Something broke — ${prop.name}`,
@@ -450,7 +450,7 @@ export function tickLandlordMonth(S, prop) {
         { label: `Fix it cheaply (${formatMoney(Math.round(costLocal * 0.4), S.country)} — may break again)`, effect: () => fixDamage(S, prop.id, dmg.id, 'cheap') },
         { label: 'Ignore it for now (condition falls, tenant unhappy)', effect: () => fixDamage(S, prop.id, dmg.id, 'ignore') }
       ]
-    });
+    },{kind:'damage',propId:prop.id,tenantId:t.personId,damageId:dmg.id}));
   }
 }
 
@@ -610,11 +610,11 @@ export function endTenancy(S, prop, reason = 'left') {
     status: 'pending'
   };
   recordJournal(S, `${name} left ${prop.name} (${reason}). Damage found: ${deductions.map(d => `${d.label.toLowerCase()} (${formatMoney(d.costLocal, S.country)})`).join(', ')} — ${formatMoney(total, S.country)} against a ${formatMoney(depositLocal, S.country)} deposit. Decide what to do with it.`, 'money');
-  queueScene(S, {
+  queueScene(S, decorateLandlordScene(S, {
     key:`deposit_${prop.id}_${S.year}_${S.month}`,category:'money',title:`Deposit · ${prop.name}`,
     text:`Damage ${formatMoney(total,S.country)} · Deposit ${formatMoney(depositLocal,S.country)} · Uncovered ${formatMoney(Math.max(0,total-deductible),S.country)}.`,
     choices:[{label:`Deduct ${formatMoney(deductible,S.country)} · Return ${formatMoney(remainder,S.country)}`,effect:()=>settleDeposit(S,prop.id,'keep')},{label:`Return full ${formatMoney(depositLocal,S.country)}`,effect:()=>settleDeposit(S,prop.id,'return')}]
-  });
+  },{kind:'deposit',propId:prop.id,settlement:L.depositSettlement}));
   return { ok: true, msg: `${name} left. Damage of ${formatMoney(total, S.country)} — decide what happens to the deposit.`, deductions, totalLocal: total, remainderLocal: remainder };
 }
 
@@ -856,4 +856,18 @@ export function landlordSummary(S, prop) {
     market,
     law: evictionLawFor(prop.country || S.country)
   };
+}
+
+function decorateLandlordScene(S,scene,q){scene.landlordSnapshot={...JSON.parse(JSON.stringify(q)),key:scene.key,title:scene.title,text:scene.text,labels:scene.choices.map(c=>c.label)};return restoreLandlordScene(S,scene);}
+export function restoreLandlordScene(S,saved){
+ const q=saved?.landlordSnapshot;if(!q)return null;const prop=S.housing.properties.find(p=>p.id===q.propId);if(!prop)return null;const L=normalizeLandlordState(S,prop),t=L.tenant;
+ const valid=st=>{const p=st.housing.properties.find(p=>p.id===q.propId);if(!p)return false;const l=p.landlord;
+ if(q.kind==='deposit')return l?.depositSettlement?.status==='pending'&&l.depositSettlement.tenantName===q.settlement.tenantName&&l.depositSettlement.depositLocal===q.settlement.depositLocal;
+ if(!l?.tenant||l.tenant.personId!==q.tenantId)return false;
+ if(q.kind==='job')return l.tenant.jobLost&&!l.tenant.eviction;
+ if(q.kind==='lease')return l.lease.count===q.leaseCount&&l.lease.monthsLeft<=0;
+ return l.damage.some(d=>d.id===q.damageId&&d.status==='open');};
+ if(!valid(S))return null;
+ const actions=q.kind==='job'?[st=>giveTenantTime(st,q.propId),st=>startEviction(st,q.propId)]:q.kind==='lease'?[st=>renewLease(st,q.propId,'same'),st=>renewLease(st,q.propId,'raise',5),st=>renewLease(st,q.propId,'sell')]:q.kind==='damage'?['full','cheap','ignore'].map(mode=>st=>fixDamage(st,q.propId,q.damageId,mode)):['keep','return'].map(mode=>st=>settleDeposit(st,q.propId,mode));
+ return{key:q.key,category:'money',title:q.title,text:q.text,landlordSnapshot:q,choices:actions.map((act,i)=>({label:q.labels[i],available:valid,effect:st=>{if(!valid(st))return;st.housing.landlordSceneReplies??={};if(st.housing.landlordSceneReplies[q.key])return;const r=act(st);if(r?.ok)st.housing.landlordSceneReplies[q.key]=true;return r;}}))};
 }

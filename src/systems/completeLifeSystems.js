@@ -2898,7 +2898,7 @@ export function tickMegaSystemsMonthly(S) {
 }
 
 export function restoreInformationScene(S,saved){
- const labels={shop_compare:'Done comparing',shop_ask:'Thanks, close advice',card_limit:'Done',trip_compare:'Done comparing'};
+ const labels={business_quit_notice:'Acknowledge',shop_compare:'Done comparing',shop_ask:'Thanks, close advice',card_limit:'Done',trip_compare:'Done comparing'};
  if(!Object.hasOwn(labels,saved?.baseId)||typeof saved.title!=='string'||typeof saved.text!=='string')return null;
  return{...saved,choices:[{label:labels[saved.baseId],effect:()=>{}}]};
 }

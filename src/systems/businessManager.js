@@ -675,6 +675,7 @@ export function managerQuits(S, biz, reason = 'low loyalty') {
   recordJournal(S, `${mgr.name} quit as manager of ${biz.name} (${reason}; loyalty had fallen to ${mgr.loyalty}). ${biz.name} is unmanaged now — hire a new manager or run it yourself, or revenue and morale will slide.`, 'career');
   queueScene(S, {
     key: `biz_mgr_quit_${biz.id}_${S.year}_${S.month}`,
+        baseId:'business_quit_notice',
     category: 'career',
     title: `${mgr.name} quit`,
     text: `${mgr.name} has left ${biz.name} (${reason}). The business is unmanaged until you hire a new manager or take it over yourself.`,
