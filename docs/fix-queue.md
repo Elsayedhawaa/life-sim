@@ -11,7 +11,7 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 ## Disclosed limits: 20 open packages after pending L2 closes
 
 - [x] L1 Family manager appointments using existing identities, compensation, qualifications and job conflicts.
-- [ ] L2 Family ownership transfer and payout council. Local implementation validated, awaiting hosted verification.
+- [x] L2 Family ownership transfer and payout council. Hosted-verified fdf031b.
 - [ ] L21 Ownership governance refinements: negotiated stake agreements and board/quorum/veto rules beyond fixed quotes and payout votes.
 - [ ] L3 Part-time family employment/apprenticeship and rota.
 - [ ] L4 Legacy specialty/acquired-company migration into the full lifecycle.
@@ -45,4 +45,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 ## Current count
 
-27 distinct open packages before L2 hosted closeout, then 26: 19 limits + 7 additional gaps. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.
+26 distinct open packages: 19 limits + 7 additional gaps. L21 is a new refinement found while implementing L2. G3 duplicates L9 and is not double-counted. I1 is closed after hosted verification. Country-law verification is not implied by model feature completion. All final tranche reports must state the current count and any additions/removals.

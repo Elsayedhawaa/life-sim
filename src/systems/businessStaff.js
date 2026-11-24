@@ -1,3 +1,4 @@
+import{tickFamilyApprentices}from './companyRota.js';
 import{STAFF_TIERS,SECTOR_STAFF}from './companyWorkforce.js';
 import{catalogFor}from './companyCatalogData.js';
 import{COMPANY_SECTORS}from './companyLifecycle.js';
@@ -488,6 +489,7 @@ export function applyUnpaidWagesMorale(biz) {
 export function monthlyStaffTick(S, biz) {
   if (!biz) return [];
   const staff = ensureStaffArray(S, biz);
+  tickFamilyApprentices(S,biz);
   const quitters = [];
   for (const emp of [...staff]) {
     if(emp.personId&&S.people[emp.personId]?.alive===false){staff.splice(staff.indexOf(emp),1);recordJournal(S,`${emp.name} died. Their position at ${biz.name} is vacant.`,'career');continue;}

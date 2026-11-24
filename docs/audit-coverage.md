@@ -292,3 +292,13 @@ Joint-owner safeguards: voluntary sale, management buyout, IPO and closure requi
 Validation: 102 focused files, 12,152 renders, real household dividend/retention identities, relative cash/FX/affordability, buyback, founder minimum, stale quote, minor gate, joint cash/exit protections and succession identity checks. Phone gifts 10%, votes retention, buys it back with real cash and reloads. Hosted checks follow publication.
 
 Remaining L2 limits: fixed quote sizes rather than negotiated shareholder agreements; simple retain/distribute voting rather than board elections/veto/quorum; full joint exit and debt allocation are L15. Record these as refinements to the ownership package, not a claim of real company law. No local legal or tax treatment is promised.
+
+## Adult family part-time work and apprenticeship rota
+
+Existing adult relatives can join at 20 hours/week or as 10-hour apprentices, with proportional actual wages, onboarding and role capacity. A young full-time student can work at most 20 hours; qualification/country/other-company gates remain. The explicit job-switch choice replaces other employment rather than creating two jobs. The Team rota updates the existing person's pay, once per month. A current pay rise/cut survives later hour changes without rounding drift.
+
+Workforce role coverage and software development/support/sales effects use fractional hours, not full employee headcount. Workstations still reserve a place per employee, a conservative overlapping-hours layout. An adult apprentice gains skill only with a same-role skill60+ mentor working at least20h; no mentor means no free skill gain. Protected roles still require qualifications. This is not underage employment.
+
+Validation:103 focused files and12,152renders. Dedicated proportional onboarding/pay/FTE, student/full-time gate, rota monthly guard, pay preservation and mentor/replay tests. Phone20h hire,10h apprentice change, actual wage mirror and reload pass. Hosted checks follow publication.
+
+Finer weekday shift coverage and general non-family hiring pipeline remain G8, already queued. Family rota does not mark G8 complete. No new distinct package added. L3 remains open until hosted verification, current queue26.
