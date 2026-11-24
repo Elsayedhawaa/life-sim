@@ -191,4 +191,4 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 
 - [x] W85 Business relocation decision loses scene on reload while pending move remains. Restore exact pending business/destination choice without restarting or recharging relocation.
 
-- [ ] W86 Business relocation card is a long essay on390px despite outcome buttons showing same numbers. Shorten main text, keep costs/consequences in compact details. Low-impact UI.
+- [x] W86 Business relocation card is a long essay on390px despite outcome buttons showing same numbers. Shorten main text, keep costs/consequences in compact details. Low-impact UI.

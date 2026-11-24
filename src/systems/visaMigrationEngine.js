@@ -321,7 +321,7 @@ function buildRelocationBusinessScene(S, choice) {
     maxPerLife: 99,
     category: 'visa',
     title: `Your business before you move: ${choice.name}`,
-    text: `You are moving to ${destObj.name}, but ${choice.name} (${originObj.name}) stays behind. ${profitLine} Decide what happens to it before you go — the move does not happen until you have decided for ${remaining === total ? `all ${total}` : `${remaining} more`} ${total === 1 ? 'business' : 'businesses'}.\n\nKEEP it and manage it from abroad: revenue runs at 70% under remote management, a local manager costs ${formatMoney(choice.remoteManagerWage, choice.currency)} a month, and its reputation slips while you are away. You can still sell or close it later.\nSELL it now for about ${formatMoney(choice.valuation, choice.currency)} (its real valuation — capital plus profits).\nCLOSE it for good: ${formatMoney(choice.salvage, choice.currency)} salvage from equipment and stock, and ${choice.staffCount > 0 ? `${choice.staffCount} ${choice.staffCount === 1 ? 'employee loses' : 'employees lose'} their job${choice.staffCount === 1 ? '' : 's'}` : 'nobody loses a job — it has no staff'}.`,
+    text: `${destObj.name} move waits for ${remaining}/${total} business ${remaining===1?'decision':'decisions'}. ${choice.name} stays in ${originObj.name}. ${profitLine} Keep: 70% revenue, manager ${formatMoney(choice.remoteManagerWage,choice.currency)}/month, reputation slips. Sell or close ends ownership${choice.staffCount>0?`; ${choice.staffCount} staff lose their jobs on closure`:''}.`,
     choices: [
       {
         label: `Keep ${choice.name} — manage it from abroad (70% revenue, ${formatMoney(choice.remoteManagerWage, choice.currency)}/mo manager)`,
