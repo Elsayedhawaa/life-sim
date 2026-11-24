@@ -632,7 +632,17 @@ const TAX_PROFILES = {
       [190000, 0.15], [400000, 0.20], [1500000, 0.27], [5300000, 0.35], [Infinity, 0.40]
     ], // 2026 Turkish income-tax tariff
     citizenSocialPct: 0.15,    // SGK employee share + unemployment insurance
-    expatSocialPct: 0.15
+    expatSocialPct: 0.15,
+    /* Law 7349 (Art. 23/18 Income Tax Law): every wage earner's income
+       tax is reduced by the tax on the minimum-wage base, so a minimum
+       wage earner pays only the 15% social share and no income tax.
+       2026 minimum wage: TRY 33,030 gross / 28,075.50 net per month
+       (Resmi Gazete 26 Dec 2025). The real base is the net minimum wage
+       (social contributions are deductible there); this game taxes gross
+       salary, so the equivalent exempt base here is the gross annual
+       minimum wage — a minimum-wage earner's tax zeroes out exactly and
+       net pay lands on the statutory 28,075.50. */
+    minWageTaxBase2026: 396360
   }
 };
 
@@ -779,6 +789,22 @@ export function computeMonthlyNetPay(monthlyGross, countryId, year = REFERENCE_Y
     }
     prevTop = topScaled;
     if (annualGross <= topScaled) break;
+  }
+
+  /* Minimum-wage income-tax exemption (Türkiye, Law 7349): the tax on the
+     era-scaled minimum-wage base is subtracted from the computed tax, so a
+     minimum-wage earner pays no income tax and higher earners pay tax only
+     on the excess. */
+  if (prof.minWageTaxBase2026 && annualTax > 0) {
+    const baseAnnual = prof.minWageTaxBase2026 * scale;
+    let baseTax = 0, basePrev = 0;
+    for (const [top2026, rate] of prof.incomeTaxBrackets2026) {
+      const topScaled = top2026 === Infinity ? Infinity : top2026 * scale;
+      if (baseAnnual > basePrev) baseTax += (Math.min(baseAnnual, topScaled) - basePrev) * rate;
+      basePrev = topScaled;
+      if (baseAnnual <= topScaled) break;
+    }
+    annualTax = Math.max(0, annualTax - baseTax);
   }
 
   const socialPct = isCitizenOrPR ? prof.citizenSocialPct : prof.expatSocialPct;
