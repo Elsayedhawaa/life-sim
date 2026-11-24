@@ -443,6 +443,9 @@ export function fireAllStaff(S, biz, reason = 'closed') {
     if (paid < sev.amount) unpaid += sev.amount - paid;
     totalSeverance += sev.amount;
   }
+  if(unpaid>0){
+    S.money.loans.push({id:nextId(S,'loan'),label:`Unpaid employee severance: ${biz.name}`,balance:unpaid,monthlyPayment:Math.max(1,Math.ceil(unpaid/12)),annualRate:0,flatMarkup:true,remainingMonths:12,country:S.country,missedMonths:0,purpose:'employee_severance'});
+  }
   biz.staff = [];
   biz.employees = 0;
   stampMonthEffects(S, biz);
