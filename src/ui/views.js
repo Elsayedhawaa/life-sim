@@ -3830,6 +3830,7 @@ export function renderFinanceTabHtml(S, uiState = {}) {
       ` : ''}
     </div>
 
+    ${(S.money.personalReceivables||[]).some(l=>l.status==='open')?'<div class="card"><h3>Personal Loans You Funded</h3>'+(S.money.personalReceivables||[]).filter(l=>l.status==='open').map(l=>'<div class="item-row"><span>'+esc(S.people[l.personId]?.firstName||'Borrower')+' · Owed '+esc(formatMoney(l.balance,l.country))+' · Due '+Math.floor((l.dueAt-1)/12)+'/'+((l.dueAt-1)%12+1)+' · Actual available savings limit collection.</span><button class="btn btn-sm" data-action="collect-personal-loan" data-id="'+esc(l.id)+'">Request repayment</button></div>').join('')+'</div>':''}
     ${renderBlockedAccountHtml(S)}
     ${renderFinanceChartsHtml(S)}
     ${/* v2.15 W4 — the world & markets panel: market state, rates, history. */ renderWorldMarketPanelHtml(S)}

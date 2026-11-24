@@ -1,3 +1,4 @@
+import{settlePersonalReceivable}from'./systems/personalReceivables.js';
 import {repairPlayerRentalDamage,payPlayerRentArrears} from './systems/playerTenancy.js';
 import{hiringAction}from'./systems/companyHiring.js';
 import{customerAction}from'./systems/companyCustomers.js';
@@ -1770,6 +1771,7 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if(action==='collect-personal-loan'){handleActionResult(settlePersonalReceivable(S,btn.dataset.id));return;}
     if(action==='pay-player-rent-arrears'){handleActionResult(payPlayerRentArrears(S));return;}
     if(action==='repair-player-rental'){handleActionResult(repairPlayerRentalDamage(S,btn.dataset.id));return;}
     if (action === 'rent-home') {

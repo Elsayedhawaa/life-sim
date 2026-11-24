@@ -761,6 +761,7 @@ export function computeNetWorthLocal(S) {
   if (!S) return 0;
   let total = playerDepositValue(S)+(Number(S.money.cash) || 0) + (Number(S.money.savings) || 0);
   total-=Math.max(0,Number(S.housing?.playerLease?.rentArrears)||0);
+  for(const r of S.money.personalReceivables||[])if(r.status==='open')total+=convertCurrency(r.balance,r.country,S.country,S.year);
   const circle=S.gamiya;if(circle?.active&&Number.isFinite(circle.paidTotal))total+=circle.receivedPot?-(Math.max(0,circle.totalMonths-circle.currentMonth)*circle.monthlyContribution+(circle.arrears||0)):circle.paidTotal;
   const pen=S.career?.market?.pension;if(pen)total+=Math.max(0,Number(pen.pot)||0)+Math.max(0,Number(pen.paidOut?.remaining)||0);
   for (const cd of S.money.certificates) {

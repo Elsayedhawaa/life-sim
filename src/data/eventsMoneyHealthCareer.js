@@ -1,3 +1,4 @@
+import{lendPersonalMoney,settlePersonalReceivable,givePersonalMoney}from'../systems/personalReceivables.js';
 import{eraDepositRates}from'./economy.js';
 import{worldEventEffects}from'../systems/worldEvents.js';
 import{bookNarrativeLoan,narrativeLoanQuote,payNarrativeLoan}from'../systems/narrativeLoans.js';
@@ -477,49 +478,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: { requiredPeople: ['sib'],"minAge": 20, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(1200, S.country, S.year);
-      const B = eraLocalCost(600, S.country, S.year);
-      return {
-        key: 'ev_money_sibling_loan',
-        category: 'money',
-        title: `${sibName} Asks for a Loan`,
-        text: `${sibName} calls, embarrassed. The rent is due, the salary is late, and ${formatMoney(A, S.country)} would get through the month. ${sibName} promises to pay it back by the end of next month — and means it, you think.`,
-        choices: [
-          {
-            label: "Lend the money",
-            effect: (st) => {
-              walletMove(st, -A, 'Lend the money', 'money');
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Lend the money', { affection: (+6) });
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Lend the money', { trust: (+5) });
-              recordJournal(st, `You lent ${sibName} ${formatMoney(A, S.country)} to cover the rent. ${sibName} promised to pay it back next month.`, 'money');
-            },
-          },
-          {
-            label: "Lend half",
-            effect: (st) => {
-              walletMove(st, -B, 'Lend half', 'money');
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Lend half', { affection: (+2) });
-              recordJournal(st, `You lent ${sibName} ${formatMoney(B, S.country)} — half of what was asked — and said that was all you could spare.`, 'money');
-            },
-          },
-          {
-            label: "Say no, you cannot afford it",
-            effect: (st) => {
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Say no, you cannot afford it', { affection: (-8) });
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Say no, you cannot afford it', { trust: (-5) });
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You told ${sibName} you could not lend the money. ${sibName} went quiet and hung up.`, 'money');
-            },
-          },
-        ],
-      };
+      const p=ctx.sib;if(!p?.alive)return null;
+      if((S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='open'))return null;
+      const A=eraLocalCost(1200,S.country,S.year),B=eraLocalCost(600,S.country,S.year);
+      return{key:'ev_money_sibling_loan',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
     },
   },
   {
@@ -579,48 +541,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: { requiredPeople: ['friend'],"minAge": 18, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(2000, S.country, S.year);
-      const B = eraLocalCost(800, S.country, S.year);
-      return {
-        key: 'ev_money_friend_loan',
-        category: 'money',
-        title: "$fr Asks to Borrow Money",
-        text: `${frName} meets you for coffee and, after ten minutes of small talk, asks for ${formatMoney(A, S.country)}. A debt is chasing ${frName}, and this would stop the calls. ${frName} swears it will be repaid in three weeks.`,
-        choices: [
-          {
-            label: "Lend it",
-            effect: (st) => {
-              walletMove(st, -A, 'Lend it', 'money');
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Lend it', { affection: (+5) });
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Lend it', { trust: (+4) });
-              recordJournal(st, `You lent ${frName} ${formatMoney(A, S.country)} to stop the debt collectors calling. ${frName} swore it would be back in three weeks.`, 'money');
-            },
-          },
-          {
-            label: "Lend a smaller amount",
-            effect: (st) => {
-              walletMove(st, -B, 'Lend a smaller amount', 'money');
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Lend a smaller amount', { affection: (+1) });
-              recordJournal(st, `You lent ${frName} ${formatMoney(B, S.country)} and said honestly that it was the most you could risk.`, 'money');
-            },
-          },
-          {
-            label: "Refuse \u2014 you need it yourself",
-            effect: (st) => {
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Refuse — you need it yourself', { affection: (-7) });
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Refuse — you need it yourself', { trust: (-4) });
-              recordJournal(st, `You told ${frName} you could not lend the money. The coffee went cold after that.`, 'money');
-            },
-          },
-        ],
-      };
+      const p=ctx.friend;if(!p?.alive)return null;
+      if((S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='open'))return null;
+      const A=eraLocalCost(2000,S.country,S.year),B=eraLocalCost(800,S.country,S.year);
+      return{key:'ev_money_friend_loan',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
     },
   },
   {
@@ -988,17 +912,17 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             },
           },
           {
-            label: "Spend it on the house",
+            label: "Keep it for the household budget",
             effect: (st) => {
-              walletMove(st, +A, 'Spend it on the house', 'money');
+              walletMove(st, +A, 'Keep it for the household budget', 'money');
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+4));
-              recordJournal(st, `You spent the ${formatMoney(A, S.country)} wedding gift on something the house needed.`, 'money');
+              recordJournal(st, `You kept the ${formatMoney(A, S.country)} wedding gift as cash for the household budget.`, 'money');
             },
           },
           {
             label: `Give half to ${momName}`,
             effect: (st) => {
-              walletMove(st, +A, `Give half to ${momName}`, 'money');
+              walletMove(st,A,'Received wedding gift','money');givePersonalMoney(st,ctx.mom?.id,Math.floor(A/2));
               if (ctx.mom) rememberDeed(st, ctx.mom, 'event', `Give half to ${momName}`, { affection: (+5) });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+3));
               recordJournal(st, `You gave half the wedding gift money to ${momName}. She tried to refuse, then kept it.`, 'money');
@@ -12164,48 +12088,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: { requiredPeople: ['friend'],"minAge": 20, "afterEvent": "ev_money_friend_loan", "afterEventMinTurns": 6},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(2000, S.country, S.year);
-      return {
-        key: 'ev_back_friend_repays',
-        category: 'money',
-        title: "$fr Pays You Back",
-        text: `Three months later than promised, ${frName} arrives with the money — all of it, counted out, with an apology and a meal. The debt is closed, and the friendship is intact.`,
-        choices: [
-          {
-            label: "Accept it graciously",
-            effect: (st) => {
-              walletMove(st, +A, 'Accept it graciously', 'money');
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Accept it graciously', { affection: (+5) });
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Accept it graciously', { trust: (+6) });
-              recordJournal(st, `${frName} paid you back the loan, late but in full, with a meal and an apology.`, 'money');
-            },
-          },
-          {
-            label: "Accept it, but say it was too late",
-            effect: (st) => {
-              walletMove(st, +A, 'Accept it, but say it was too late', 'money');
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Accept it, but say it was too late', { affection: (+1) });
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Accept it, but say it was too late', { trust: (+2) });
-              recordJournal(st, `You accepted ${frName}’s late repayment, and said plainly that it had been too late.`, 'money');
-            },
-          },
-          {
-            label: "Tell $fr to keep it as a gift",
-            effect: (st) => {
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Tell $fr to keep it as a gift', { affection: (+7) });
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+3));
-              recordJournal(st, `You told ${frName} to keep the repaid money as a gift. ${frName} refused, then accepted.`, 'money');
-            },
-          },
-        ],
-      };
+      const l=(S.money.personalReceivables||[]).find(x=>x.personId===ctx.friend?.id&&x.status==='open');if(!l)return null;
+      const p=S.people[l.personId];return{key:'ev_back_friend_repays',category:'money',title:p.firstName+' and the Recorded Loan',text:`Actual unpaid principal: ${formatMoney(l.balance,l.country)}. Repayment comes only from ${p.firstName}'s available savings, capped at that balance. Any unpaid remainder stays owed unless you forgive it.`,choices:[{label:'Request the full recorded balance',effect:st=>settlePersonalReceivable(st,l.id)},{label:'Request half, forgive the remainder',effect:st=>settlePersonalReceivable(st,l.id,.5,true)},{label:'Forgive the balance as a gift',effect:st=>settlePersonalReceivable(st,l.id,0,true)}]};
     },
   },
   {
@@ -12214,48 +12098,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: { requiredPeople: ['sib'],"minAge": 20, "afterEvent": "ev_money_sibling_loan", "afterEventMinTurns": 6},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(1200, S.country, S.year);
-      const B = eraLocalCost(600, S.country, S.year);
-      return {
-        key: 'ev_back_sibling_repays',
-        category: 'money',
-        title: `${sibName} Pays You Back`,
-        text: `${sibName} turns up with an envelope: the loan, repaid in full, a month late but complete. ${sibName} is proud — and a little embarrassed that it took this long.`,
-        choices: [
-          {
-            label: "Accept it and say nothing",
-            effect: (st) => {
-              walletMove(st, +A, 'Accept it and say nothing', 'money');
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Accept it and say nothing', { affection: (+5) });
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Accept it and say nothing', { trust: (+5) });
-              recordJournal(st, `${sibName} paid you back the loan in full, a month late. You said nothing, and it was enough.`, 'money');
-            },
-          },
-          {
-            label: "Accept half and forgive the rest",
-            effect: (st) => {
-              walletMove(st, +B, 'Accept half and forgive the rest', 'money');
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Accept half and forgive the rest', { affection: (+7) });
-              recordJournal(st, `You accepted half the repayment from ${sibName} and forgave the rest. Family is family.`, 'money');
-            },
-          },
-          {
-            label: "Refuse it \u2014 keep it for yourself",
-            effect: (st) => {
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Refuse it — keep it for yourself', { affection: (+6) });
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+2));
-              recordJournal(st, `You refused ${sibName}’s repayment and told them to keep it. ${sibName} hugged you.`, 'money');
-            },
-          },
-        ],
-      };
+      const l=(S.money.personalReceivables||[]).find(x=>x.personId===ctx.sib?.id&&x.status==='open');if(!l)return null;
+      const p=S.people[l.personId];return{key:'ev_back_sibling_repays',category:'money',title:p.firstName+' and the Recorded Loan',text:`Actual unpaid principal: ${formatMoney(l.balance,l.country)}. Repayment comes only from ${p.firstName}'s available savings, capped at that balance. Any unpaid remainder stays owed unless you forgive it.`,choices:[{label:'Request the full recorded balance',effect:st=>settlePersonalReceivable(st,l.id)},{label:'Request half, forgive the remainder',effect:st=>settlePersonalReceivable(st,l.id,.5,true)},{label:'Forgive the balance as a gift',effect:st=>settlePersonalReceivable(st,l.id,0,true)}]};
     },
   },
   {
@@ -12857,44 +12701,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: { requiredPeople: ['friend'],"minAge": 20, "afterEvent": "ev_back_friend_repays", "afterEventMinTurns": 6},
     build: (S, ctx) => {
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const A = eraLocalCost(1500, S.country, S.year);
-      const B = eraLocalCost(800, S.country, S.year);
-      return {
-        key: 'ev_back_friend_repays_l2',
-        category: 'money',
-        title: `${frName} Has a Small Idea`,
-        text: `${frName} has a small idea — a market stall, a delivery round, something of their own — and they want you in for a little money. They paid you back once, on time and in full, and they are counting on that counting for something.`,
-        choices: [
-          {
-            label: "Put in a little and back the idea",
-            effect: (st) => {
-              walletMove(st, -A, 'Back the friend’s small idea', 'money');
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Back the friend’s small idea', { affection: (+8) });
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Back the friend’s small idea', { trust: (+6) });
-              recordJournal(st, `You put money into ${frName}’s small idea — a market stall, a delivery round, something of their own.`, 'money');
-            },
-          },
-          {
-            label: "Lend a smaller sum, with a date",
-            effect: (st) => {
-              walletMove(st, -B, 'Lend a smaller sum, with a date', 'money');
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Lend a smaller sum, with a date', { affection: (+4) });
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Lend a smaller sum, with a date', { trust: (+4) });
-              recordJournal(st, `You lent ${frName} a smaller sum for their idea, with a repayment date written down.`, 'money');
-            },
-          },
-          {
-            label: "Say no — the last loan was the last",
-            effect: (st) => {
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Say no — the last loan was the last', { affection: (-6) });
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Say no — the last loan was the last', { trust: (-4) });
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-2));
-              recordJournal(st, `You said no to ${frName}’s idea — the last loan was the last, you told them.`, 'money');
-            },
-          },
-        ],
-      };
+      const p=ctx.friend;if(!p?.alive)return null;if(!(S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='settled'))return null;
+      if((S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='open'))return null;
+      const A=eraLocalCost(1500,S.country,S.year),B=eraLocalCost(800,S.country,S.year);
+      return{key:'ev_back_friend_repays_l2',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
     },
   },
   {
@@ -12903,44 +12713,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: { requiredPeople: ['sib'],"minAge": 20, "afterEvent": "ev_back_sibling_repays", "afterEventMinTurns": 6},
     build: (S, ctx) => {
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const A = eraLocalCost(2500, S.country, S.year);
-      const B = eraLocalCost(1200, S.country, S.year);
-      return {
-        key: 'ev_back_sibling_repays_l2',
-        category: 'money',
-        title: `${sibName} Proved It — And Asks for More`,
-        text: `${sibName} paid the last loan back in full, and now they are asking for a bigger one: a course deposit, the thing that could change what they earn. They know what they are asking. They paid last time, and they are asking you to remember that.`,
-        choices: [
-          {
-            label: "Lend the full amount for the course",
-            effect: (st) => {
-              walletMove(st, -A, 'Lend the full amount for the course', 'money');
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Lend the full amount for the course', { affection: (+10) });
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Lend the full amount for the course', { trust: (+8) });
-              recordJournal(st, `You lent ${sibName} the full course deposit — they paid the last loan back, and you remembered it.`, 'money');
-            },
-          },
-          {
-            label: "Lend half and ask them to save the rest",
-            effect: (st) => {
-              walletMove(st, -B, 'Lend half and ask them to save the rest', 'money');
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Lend half and ask them to save the rest', { affection: (+6) });
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Lend half and ask them to save the rest', { trust: (+5) });
-              recordJournal(st, `You lent ${sibName} half the course deposit and asked them to save the rest.`, 'money');
-            },
-          },
-          {
-            label: "Say the last loan was the last",
-            effect: (st) => {
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Say the last loan was the last', { affection: (-8) });
-              if (ctx.sib) rememberDeed(st, ctx.sib, 'event', 'Say the last loan was the last', { trust: (-5) });
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-3));
-              recordJournal(st, `You told ${sibName} the last loan was the last, even though they had paid it back.`, 'money');
-            },
-          },
-        ],
-      };
+      const p=ctx.sib;if(!p?.alive)return null;if(!(S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='settled'))return null;
+      if((S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='open'))return null;
+      const A=eraLocalCost(2500,S.country,S.year),B=eraLocalCost(1200,S.country,S.year);
+      return{key:'ev_back_sibling_repays_l2',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
     },
   },
   {
