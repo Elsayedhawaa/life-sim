@@ -38,3 +38,11 @@ console.log('linked consequence follow-ups gated on recorded events and real peo
   const s2 = setup(); s2.homeCountry = 'gbr'; s2.housing.mode = 'parents'; const b2 = snapshotMajor(s2); s2.housing.lastEviction = { year: s2.year, month: s2.month, from: 'F' }; announceMajorChanges(s2, b2); s2.month += 2; assert(!P(ev, s2), 'at home, the parent scene applies instead');
   const s3 = setup(); s3.homeCountry = 'gbr'; s3.country = 'uae'; s3.housing.mode = 'rent'; s3.housing.monthlyRent = 900; s3.housing.currentHomeName = 'Flat 9'; const b3 = snapshotMajor(s3); s3.housing.lastEviction = { year: s3.year, month: s3.month, from: 'F' }; announceMajorChanges(s3, b3); s3.month += 2; const t3 = ev.build(s3, {}); assert.equal(t3.choices.length, 1, 'no liability, no payment choice'); assert(!/shared room/.test(t3.text), 'moved on: no shared-room claim'); }
 console.log('eviction abroad follow-up pass');
+// crash injury: only after an actual injury; checkup really treats
+{ const ev = G('ev_conseq_crash_injury');
+  const mk = (injury) => { const s = setup(); s.cars = [{ id: 'c1', name: 'Test Car', valueLocal: 10000, condition: 80 }]; const b = snapshotMajor(s); s.carCrashes = [{ carId: 'c1', carName: 'Test Car', year: s.year, month: s.month, severity: 'moderate', repair: 500, paid: 500, owed: 0, insured: false, injury }]; announceMajorChanges(s, b); s.month += 2; return s; };
+  assert(!P(ev, mk(false)), 'no injury, no scene'); const s = mk(true); assert(P(ev, s)); assert(/moderate crash in your Test Car/.test(ev.build(s, {}).text));
+  assert(/not had a medical checkup/.test(ev.build(s, {}).text)); s.medical.lastCheckupPeriod = s.year * 12 + s.month + 1; assert(/had a medical checkup since/.test(ev.build(s, {}).text)); s.medical.lastCheckupPeriod = 0;
+  s.money.cash = 100000; s.player.vitals.health = 50; play(s, 'ev_conseq_crash_injury', 0); assert(s.player.vitals.health > 50, 'checkup treated'); assert(s.money.cash <= 100000);
+  const s2 = mk(true); s2.month += 6; assert(!P(ev, s2), 'window expired'); }
+console.log('crash injury follow-up pass');

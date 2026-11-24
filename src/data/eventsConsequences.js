@@ -4,6 +4,7 @@
 import { clamp } from '../core/rng.js';
 import { recordJournal, walletMove } from '../core/schema.js';
 import { formatMoney } from './countries.js';
+import { visitHospitalCheckup } from '../systems/healthDirectorEngine.js';
 import { rememberDeed } from '../systems/soulEngine.js';
 import { noteSocialContact } from '../systems/socialEnergy.js';
 
@@ -149,6 +150,27 @@ const evictionAbroad = {
   },
 };
 
-export const EVENTS_CONSEQUENCES = [evictionAbroad, promotionSpouse, promotionWorkload, childAfterDivorce, childAfterSeparation,
+const crashInjury = {
+  id: 'ev_conseq_crash_injury', category: 'health',
+  gates: { afterMajor: { kind: 'car_crash', facts: { injury: true }, minMonths: 1, maxMonths: 4 } },
+  build: (S) => {
+    const c = [...(S.carCrashes || [])].reverse().find((x) => x.injury) || {};
+    const checked = (Number(S.medical?.lastCheckupPeriod) || 0) > (c.year * 12 + c.month);
+    return {
+      key: 'ev_conseq_crash_injury', category: 'health',
+      title: 'After the Crash Injury',
+      text: `You were hurt in the ${c.severity || ''} crash${c.carName ? ` in your ${c.carName}` : ''}. ${checked ? 'You have had a medical checkup since.' : 'You have not had a medical checkup since.'}`.replace('  ', ' '),
+      choices: [
+        { label: checked ? 'Book a follow-up at a public clinic' : 'Have it checked at a public clinic', effect: (st) => {
+            const r = visitHospitalCheckup(st, 'public');
+            if (!r.ok) recordJournal(st, `You wanted the crash injury checked, but could not: ${r.msg}`, 'health');
+        } },
+        { label: 'Rest and wait for it to settle', effect: (st) => { recordJournal(st, 'You chose to rest rather than have the crash injury checked.', 'health'); } },
+      ],
+    };
+  },
+};
+
+export const EVENTS_CONSEQUENCES = [crashInjury, evictionAbroad, promotionSpouse, promotionWorkload, childAfterDivorce, childAfterSeparation,
   siblingAfterParentDeath('mother', 'your mother'), siblingAfterParentDeath('father', 'your father'),
   parentAfterSiblingDeath('mom'), parentAfterSiblingDeath('dad'), friendAfterJobLoss];
