@@ -28,6 +28,22 @@ export function settleUSRetirement(S){
  const us=(S.career.retirementCountry||S.country)==='usa';
  if(us&&!S.career.usRetirementMigrationNoted){S.career.usRetirementMigrationNoted=true;recordJournal(S,'US retirement model: state benefit starts at62with40recorded credits. Missing history is not invented. Private savings use a finite balance. Simplified game estimate.','money');}
  const state=us?usStatePension(S):null;if(state?.eligible&&S.career.usSocialSecurity.claimAge==null)S.career.usSocialSecurity.claimAge=state.claimAge;
+ /* Non-US state pension keeps pace with prices: like rent and family
+    board, it is indexed once each January by the game price basket.
+    Without this a pension fixed at retirement silently halves in real
+    value over a long retirement while every cost around it rises. The
+    US benefit already rescales through eraLocalCost in usStatePension. */
+ if(!us&&S.career.statePensionMonthly>0){
+  /* Baseline year first: a pension set in year Y (or an old save with no
+     record) indexes from the NEXT January, never in its own year. */
+  if(S.career.pensionIndexedYear==null)S.career.pensionIndexedYear=S.year;
+  else if(S.month===1&&S.career.pensionIndexedYear<S.year){
+   const prevYear=S.career.pensionIndexedYear;
+   const ratio=eraLocalCost(10000,S.country,S.year)/eraLocalCost(10000,S.country,prevYear);
+   S.career.statePensionMonthly=Math.round(S.career.statePensionMonthly*ratio);
+   S.career.pensionIndexedYear=S.year;
+  }
+ }
  const paid=S.career.market?.pension?.paidOut;
  let draw=0;
  if(paid){if(paid.remaining==null){const elapsed=Math.max(0,(S.year-paid.year)*12+(S.month-paid.month));paid.remaining=Math.max(0,(paid.pot||0)-elapsed*(paid.monthlyTopUp||0));}draw=Math.min(paid.remaining,paid.monthlyTopUp||0);paid.remaining-=draw;}

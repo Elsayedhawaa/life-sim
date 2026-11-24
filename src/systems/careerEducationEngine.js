@@ -2327,6 +2327,7 @@ export function retireFromCareer(S) {
   S.career.retirementCountry=S.country;
   S.career.monthlyPension = proj.monthly;
   S.career.statePensionMonthly=Math.max(0,proj.monthly-(S.career.market?.pension?.paidOut?.monthlyTopUp||0));
+  S.career.pensionIndexedYear=S.year; // indexation starts the next January, never in the retirement year
   syncEmployerBenefits(S);
   S.player.vitals.stress = clamp(S.player.vitals.stress - 25);
   recordJournal(
