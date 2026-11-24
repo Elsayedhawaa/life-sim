@@ -937,6 +937,9 @@ export function returnToHomeCountry(S) {
   const ticket = Math.round(convertCurrency(450, 'usa', S.country, S.year));
   if (S.money.cash >= ticket) {
     walletMove(S, -ticket, `Return flight to ${getCountry(S.homeCountry).name}`, 'visa');
+  } else {
+    S.legal.returnTravelAid={year:S.year,month:S.month,country:S.country,amount:ticket,kind:'game emergency repatriation grant'};
+    recordJournal(S,'Emergency repatriation travel covered by a game aid grant. No ticket was charged.','visa');
   }
   /* v2.11 W4: the homecoming greeting below runs only once the move
      completes (inline now, or from the 'return_home' continuation). */
@@ -958,6 +961,39 @@ function evaluateReturnHomeGreeting(S) {
   if (S.legal.military.applicable && ['deferred_minor', 'deferred_student'].includes(S.legal.military.status) && S.player.age < 30) {
     S.education.stage = 'completed';
   }
+}
+
+export function permitRenewalQuote(S){
+ const r=S.legal.residency,kind=r.kind;
+ const due=r.expiresYear!=null&&(S.year>r.expiresYear||(S.year===r.expiresYear&&S.month>=(r.expiresMonth||12)));
+ if(!['work_visa','student_visa','gulf_iqama','golden_visa'].includes(kind)||!due)return{ok:false,msg:'No eligible permit renewal due.'};
+ return{ok:true,kind,permitName:r.permitName,fee:Math.round(convertCurrency(250,'usa',S.country,S.year))};
+}
+export function renewCurrentPermit(st){
+ const q=permitRenewalQuote(st);if(!q.ok)return q;if(st.money.cash<q.fee)return{ok:false,msg:'Not enough cash for renewal.'};
+  const r2 = st.legal.residency;
+  walletMove(st, -q.fee, `Renewed ${q.permitName}`, 'visa');
+  if (q.kind === 'gulf_iqama' && r2.sponsorArchetype) {
+    const arch = GULF_SPONSOR_ARCHETYPES[r2.sponsorArchetype];
+    if (arch && !chance(st, arch.renewsPermitChance)) {
+      recordJournal(st, `Your sponsor ${r2.sponsorName || ''} refused to renew your Iqama — you fall into the 60-day grace period.`, 'visa');
+      transitionResidency(st, 'grace_period', { permitName: `${q.permitName} — Sponsor Refused Renewal (60-Day Grace)`, graceMonthsLeft: 2 });
+      return {ok:false,refused:true};
+    }
+  }
+  if (q.kind === 'student_visa' && st.education.stage !== 'university' && !st.postgrad?.active?.international) {
+    recordJournal(st, `Student visa renewal refused — you are no longer enrolled at a university in ${getCountry(st.country).name}.`, 'visa');
+    transitionResidency(st, 'grace_period', { permitName: `${q.permitName} Expired (60-Day Grace)`, graceMonthsLeft: 2 });
+    return {ok:false,refused:true};
+  }
+  if (['work_visa','gulf_iqama'].includes(q.kind) && !st.career.employed) {
+    recordJournal(st, `Work visa renewal refused — you have no employer sponsoring you in ${getCountry(st.country).name}.`, 'visa');
+    transitionResidency(st, 'grace_period', { permitName: `${q.permitName} Expired (60-Day Grace)`, graceMonthsLeft: 2 });
+    return {ok:false,refused:true};
+  }
+  transitionResidency(st, q.kind, { permitName: q.permitName, sponsorName: r2.sponsorName, sponsorArchetype: r2.sponsorArchetype, expiresYear: st.year + 2, expiresMonth: st.month, familySponsored: r2.familySponsored, force: true });
+  recordJournal(st, `Renewed your ${q.permitName} for two more years in ${getCountry(st.country).name}.`, 'visa');
+ return{ok:true,msg:'Permit renewed.'};
 }
 
 /* Monthly Residency, Grace Period, PR & Citizenship Progression */
@@ -1052,28 +1088,7 @@ export function tickVisaAndLegalMonthly(S) {
               label: `Renew for ${formatMoney(renewFee, S.country)}`,
               available: () => S.money.cash >= renewFee,
               effect: (st) => {
-                const r2 = st.legal.residency;
-                walletMove(st, -renewFee, `Renewed ${permitNow}`, 'visa');
-                if (kindNow === 'gulf_iqama' && r2.sponsorArchetype) {
-                  const arch = GULF_SPONSOR_ARCHETYPES[r2.sponsorArchetype];
-                  if (arch && !chance(st, arch.renewsPermitChance)) {
-                    recordJournal(st, `Your sponsor ${r2.sponsorName || ''} refused to renew your Iqama — you fall into the 60-day grace period.`, 'visa');
-                    transitionResidency(st, 'grace_period', { permitName: `${permitNow} — Sponsor Refused Renewal (60-Day Grace)`, graceMonthsLeft: 2 });
-                    return;
-                  }
-                }
-                if (kindNow === 'student_visa' && st.education.stage !== 'university' && !st.postgrad?.active?.international) {
-                  recordJournal(st, `Student visa renewal refused — you are no longer enrolled at a university in ${getCountry(st.country).name}.`, 'visa');
-                  transitionResidency(st, 'grace_period', { permitName: `${permitNow} Expired (60-Day Grace)`, graceMonthsLeft: 2 });
-                  return;
-                }
-                if (kindNow === 'work_visa' && !st.career.employed) {
-                  recordJournal(st, `Work visa renewal refused — you have no employer sponsoring you in ${getCountry(st.country).name}.`, 'visa');
-                  transitionResidency(st, 'grace_period', { permitName: `${permitNow} Expired (60-Day Grace)`, graceMonthsLeft: 2 });
-                  return;
-                }
-                transitionResidency(st, kindNow, { permitName: permitNow, sponsorName: r2.sponsorName, sponsorArchetype: r2.sponsorArchetype, expiresYear: st.year + 2, expiresMonth: st.month, familySponsored: r2.familySponsored, force: true });
-                recordJournal(st, `Renewed your ${permitNow} for two more years in ${getCountry(st.country).name}.`, 'visa');
+                renewCurrentPermit(st);
               }
             },
             {

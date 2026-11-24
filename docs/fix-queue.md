@@ -111,6 +111,8 @@ Order: finish inheritance tranche, then disclosed limits, then eight business ga
 - [x] W39 End-of-service core uses one generic formula across Egypt/Saudi/UAE and strict-sponsor withholding lacks a recorded recoverable claim. Separate jurisdiction/game-rule labeling and actual withheld liability before promising statutory awards.
 - [x] W40 Gulf driver/maid scene needs real household roles, combined wage and monthly settlement, not one-off cash debit with no staff.
 
-- [ ] W41 Gulf car scene needs real vehicle/finance or honest catalog route; current cash/downpayment buys no asset or debt.
-- [ ] W42 Gulf visa/golden/job-loss scenes need actual legal-state eligibility/renewal/relocation rather than narrative-only promises.
+- [x] W41 Gulf car scene needs real vehicle/finance or honest catalog route; current cash/downpayment buys no asset or debt.
+- [ ] W42 Gulf renewal/job-loss scenes need recorded expiry/grace and shared renewal/return-home effects.
 - [ ] W43 Gulf school/trip/newcomer/deported scenes need real enrollment/travel/loan/recipient evidence.
+
+- [ ] W44 Gulf golden-visa/sponsor scenes need real eligibility/evidence rather than invented salary qualification/signatures.

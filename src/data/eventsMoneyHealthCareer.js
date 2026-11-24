@@ -1,3 +1,4 @@
+import{permitRenewalQuote,renewCurrentPermit,returnToHomeCountry}from'../systems/visaMigrationEngine.js';
 import{CARS_MEGA_CATALOG}from'./megaCarsAndShop.js';
 import{computeEndOfService,resignCurrentJob}from'../systems/careerEducationEngine.js';
 import{payRecordedDebt}from'../systems/recordedDebtPayments.js';
@@ -10841,45 +10842,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'life',
     repeatable: false,
     gates: {"minAge": 22, "abroad": true, "countries": ["sau", "uae"]},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(1500, S.country, S.year);
-      return {
-        key: 'ev_gulf_iqama_renewal',
-        category: 'life',
-        title: "Iqama Renewal Time",
-        text: `Your Iqama expires next month, and the renewal needs your sponsor’s signature, a medical check, and a fee of ${formatMoney(A, S.country)}. Without it, you cannot work, bank, or legally stay.`,
-        choices: [
-          {
-            label: "Renew it at once",
-            effect: (st) => {
-              walletMove(st, -A, 'Renew it at once', 'life');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-3));
-              recordJournal(st, `You renewed your Iqama at once for ${formatMoney(A, S.country)}, with the medical check and your sponsor’s signature.`, 'life');
-            },
-          },
-          {
-            label: "Ask your sponsor to pay the fee",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You asked your sponsor to pay the ${formatMoney(A, S.country)} Iqama renewal fee. It took two weeks of asking.`, 'life');
-            },
-          },
-          {
-            label: "Delay it a week",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+6));
-              recordJournal(st, `You delayed the Iqama renewal by a week. The deadline did not move.`, 'life');
-            },
-          },
-        ],
-      };
+    build:(S,ctx)=>{
+      const q=permitRenewalQuote(S);if(!q.ok)return null;
+      return{key:'ev_gulf_iqama_renewal',category:'life',title:'Permit Renewal Due',text:`${q.permitName}: recorded expiry reached. Game renewal fee ${formatMoney(q.fee,S.country)} for two more years. Sponsor, employment and enrollment checks still apply; a refusal can start grace.`,choices:[{label:`Renew for ${formatMoney(q.fee,S.country)}`,effect:st=>renewCurrentPermit(st)},{label:'Leave renewal pending',effect:st=>{}}]};
     },
   },
   {
@@ -11210,48 +11175,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'life',
     repeatable: false,
     gates: {"minAge": 24, "abroad": true},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(1200, S.country, S.year);
-      const B = eraLocalCost(2500, S.country, S.year);
-      return {
-        key: 'ev_gulf_visa_renewal_abroad',
-        category: 'life',
-        title: "The Visa Renewal Queue",
-        text: `Your visa renewal means a morning at the government office: a queue that does not move, forms in triplicate, and a fee of ${formatMoney(A, S.country)}. Everyone in the queue has the same tired look.`,
-        choices: [
-          {
-            label: "Pay the fee and renew",
-            effect: (st) => {
-              walletMove(st, -A, 'Pay the fee and renew', 'life');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-2));
-              recordJournal(st, `You paid the ${formatMoney(A, S.country)} visa renewal fee and queued all morning to renew it.`, 'life');
-            },
-          },
-          {
-            label: "Pay an agent to do it",
-            effect: (st) => {
-              walletMove(st, -B, 'Pay an agent to do it', 'life');
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (-4));
-              recordJournal(st, `You paid an agent ${formatMoney(B, S.country)} to handle the visa renewal. It was done in a day.`, 'life');
-            },
-          },
-          {
-            label: "Let it lapse a week",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+7));
-              st.money.creditScore = clamp(st.money.creditScore + (-5), 300, 900);
-              recordJournal(st, `You let the visa lapse a week. The fine and the fear were worse than the queue.`, 'life');
-            },
-          },
-        ],
-      };
+    build:(S,ctx)=>{
+      const q=permitRenewalQuote(S);if(!q.ok)return null;
+      return{key:'ev_gulf_visa_renewal_abroad',category:'life',title:'Permit Renewal Due',text:`${q.permitName}: recorded expiry reached. Game renewal fee ${formatMoney(q.fee,S.country)} for two more years. Sponsor, employment and enrollment checks still apply; a refusal can start grace.`,choices:[{label:`Renew for ${formatMoney(q.fee,S.country)}`,effect:st=>renewCurrentPermit(st)},{label:'Leave renewal pending',effect:st=>{}}]};
     },
   },
   {
@@ -11356,46 +11282,10 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'life',
     repeatable: false,
     gates: {"minAge": 26, "abroad": true, "countries": ["sau", "uae"]},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      return {
-        key: 'ev_gulf_job_loss_grace',
-        category: 'life',
-        title: "Losing the Job Abroad",
-        text: `The company lets you go, and the clock starts: a short grace period to find a new sponsor, or leave the country. Your whole life here — the flat, the car, the children’s school — hangs on weeks.`,
-        choices: [
-          {
-            label: "Find a new sponsor fast",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+8));
-              st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+2));
-              recordJournal(st, `You found a new sponsor within weeks of losing the job, and stayed.`, 'life');
-            },
-          },
-          {
-            label: "Go home and start again",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+6));
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-3));
-              recordJournal(st, `You went home after losing the Gulf job, and started again from nothing.`, 'life');
-            },
-          },
-          {
-            label: "Stay and look for work illegally",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+9));
-              st.player.vitals.health = clamp(st.player.vitals.health + (-2));
-              recordJournal(st, `You stayed after losing the job and looked for work without a sponsor. Every knock on the door frightened you.`, 'life');
-            },
-          },
-        ],
-      };
+    build:(S,ctx)=>{
+      const r=S.legal.residency;if(S.career.employed||!['grace_period','overstay'].includes(r.kind))return null;
+      const fee=Math.round(convertCurrency(450,'usa',S.country,S.year));
+      return{key:'ev_gulf_job_loss_grace',category:'life',title:'Your Recorded Grace Period',text:`Status: ${r.kind}. Grace remaining: ${r.graceMonthsLeft||0} month(s). No job or sponsor is created by this scene. Returning home uses the Passport relocation route: ${formatMoney(fee,S.country)} flight if affordable, otherwise explicit game repatriation aid. Travel bans still apply.`,choices:[{label:'Return home through Passport route',effect:st=>returnToHomeCountry(st)},{label:'Stay and handle work/permit in Passport',effect:st=>{}}]};
     },
   },
   {
