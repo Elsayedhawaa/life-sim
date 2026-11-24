@@ -11229,47 +11229,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'life',
     repeatable: false,
     gates: { requiredPeople: ['friend'],"minAge": 26, "abroad": true, "countries": ["sau", "uae"]},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(2000, S.country, S.year);
-      return {
-        key: 'ev_gulf_friend_deported',
-        category: 'life',
-        title: "A Friend Is Deported",
-        text: `A friend you have known for years is deported — a paperwork mistake, a sponsor who vanished, a flight home with one bag. The whole expat community goes quiet, because it could have been any of you.`,
-        choices: [
-          {
-            label: "Help them pack and say goodbye",
-            effect: (st) => {
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Help them pack and say goodbye', { affection: (+5) });
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You helped your deported friend pack, and said goodbye at the airport.`, 'life');
-            },
-          },
-          {
-            label: "Send money to help them start again",
-            effect: (st) => {
-              walletMove(st, -A, 'Send money to help them start again', 'life');
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Send money to help them start again', { affection: (+6) });
-              recordJournal(st, `You sent ${formatMoney(A, S.country)} to your deported friend, to help them start again back home.`, 'life');
-            },
-          },
-          {
-            label: "Check your own papers that night",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+6));
-              if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+2));
-              recordJournal(st, `You checked your own papers the night your friend was deported, twice, and then once more.`, 'life');
-            },
-          },
-        ],
-      };
+    build:(S,ctx)=>{
+      const friend=ctx.friend;if(!friend?.alive)return null;const amount=eraLocalCost(2000,S.country,S.year);
+      return{key:'ev_gulf_friend_deported',category:'life',title:'Support a Friend Abroad',text:`${friend.firstName} could use ${formatMoney(amount,S.country)}. Giving transfers your cash to their recorded savings in ${getCountry(friend.residenceCountry||S.country).name}. No deportation or relocation is claimed without a legal record.`,choices:[{label:`Give ${formatMoney(amount,S.country)}`,effect:st=>givePersonalMoney(st,friend.id,amount)},{label:'Keep your cash',effect:st=>{}}]};
     },
   },
   {
@@ -11277,48 +11239,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     category: 'life',
     repeatable: false,
     gates: { requiredPeople: ['friend'],"minAge": 28, "abroad": true},
-    build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(2500, S.country, S.year);
-      return {
-        key: 'ev_gulf_newcomer_help',
-        category: 'life',
-        title: "A Newcomer Arrives from Home",
-        text: `A young man from your hometown arrives in the Gulf with one bag, no job, and your phone number. Someone helped you when you arrived. Now it is your turn — or is it?`,
-        choices: [
-          {
-            label: "Help him find work",
-            effect: (st) => {
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Help him find work', { affection: (+5) });
-              st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+3));
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+3));
-              recordJournal(st, `You helped the newcomer from home find work in the Gulf, the way someone once helped you.`, 'life');
-            },
-          },
-          {
-            label: "Lend him money for a month",
-            effect: (st) => {
-              walletMove(st, -A, 'Lend him money for a month', 'life');
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Lend him money for a month', { affection: (+4) });
-              recordJournal(st, `You lent the newcomer ${formatMoney(A, S.country)} for his first month in the Gulf.`, 'life');
-            },
-          },
-          {
-            label: "Wish him luck and move on",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+1));
-              st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (-2));
-              recordJournal(st, `You wished the newcomer luck and moved on. Your own life was full enough.`, 'life');
-            },
-          },
-        ],
-      };
+    build:(S,ctx)=>{
+      const friend=ctx.friend;if(!friend?.alive)return null;const amount=eraLocalCost(2500,S.country,S.year);
+      return{key:'ev_gulf_newcomer_help',category:'life',title:'Help a Friend Settle In',text:`${friend.firstName} needs ${formatMoney(amount,S.country)}. A loan transfers your cash to their savings, records principal and is due next month. Repayment depends on their actual funds. No job or immigration status is invented.`,choices:[{label:`Lend ${formatMoney(amount,S.country)} for one month`,effect:st=>lendPersonalMoney(st,friend.id,amount)},{label:`Give ${formatMoney(amount,S.country)} without repayment`,effect:st=>givePersonalMoney(st,friend.id,amount)},{label:'Keep your cash',effect:st=>{}}]};
     },
   },
   {

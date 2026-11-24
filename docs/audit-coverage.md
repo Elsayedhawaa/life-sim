@@ -513,3 +513,6 @@ Iqama/general renewal scenes now require actual eligible permit expiry and use o
 
 ### W44 actual premium residency qualification
 Golden-visa scene uses shared Passport game quote/action: fee, liquid capital remaining after fee, actual residency status and sponsor removal. No invented salary qualification/employer funding. Already-held status refuses re-charge; unsupported tiers rejected. Sponsor-trouble scene reviews actual named sponsor/expiry record instead of inventing missing signatures/approved complaints.172focused files pass including Saudi/UAE balance/status/duplicate branches.390px actual UAE fee/status/reload and inspected pixels pass. This wires existing game rules, not a live immigration-policy audit.
+
+### W43 funded friend help
+Newcomer/friend scenes now use actual named living friend and shared funded personal loan/gift route. Borrower receives converted savings, loan principal and next-month due date recorded, duplicate open-loan guard. No invented job placement/deportation/relocation.173focused files pass;390px actual2500AEDloan/principal/reload and inspected pixels pass. Fixture creates an explicit friend link to reach scene, not organic full playthrough. School/trip portions splitW45/W46.
