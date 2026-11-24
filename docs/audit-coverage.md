@@ -471,3 +471,6 @@ Plans now block early departures. Trips use actual days per current calendar mon
 
 ### W28 savings-circle cash and liabilities
 New circles retain dated paid/unpaid shares. Missed shares survive10-month completion as zero-interest debt instead of disappearing; no credit reward for default. Net worth records known contribution asset before payout and remaining contribution obligation after early payout. FX converts active contribution balances. Old random circle-payout narrative cannot manufacture money: requires actual paid pot record, acknowledgment only or real cash-to-savings transfer once. Legacy missing payment history is not backfilled.158focused files pass, including actual10monthlysettlements and no double event payout.390px actual join pays first share/stores ledger/reload passed; pixels inspected.
+
+### W29 event gold sale integrity
+Gold scene requires actual positive whole-gram holdings, quotes all/half quantities from that holding, and calls market sale with real dealer spread instead of fiat constants and fixed deductions.159focused files pass.390px actual1g sale from3g changes cash and holdings, reload passes; pixels inspected, spacing revised for final hosted check. W30narrative debt and W31family transfer provenance remain queued, not hidden by this fix.

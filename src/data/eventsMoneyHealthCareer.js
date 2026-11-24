@@ -1,7 +1,7 @@
 import {topUpPrivatePension} from '../systems/careerMarket.js';
 import {investInMarketAsset} from '../systems/completeLifeSystems.js';
 import {GLOBAL_MARKET_ASSETS} from './megaFinanceAndMarkets.js';
-import {buyBankCertificate} from '../systems/economyEngine.js';
+import {sellGold21k,buyBankCertificate} from '../systems/economyEngine.js';
 import {recordCivilLoss} from '../systems/civilClaims.js';
 /* ============================================================================
    World Life 2.5 — Money / Health / Career / School / University / Gulf events
@@ -951,41 +951,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraLocalCost(8000, S.country, S.year);
-      const B = eraLocalCost(4000, S.country, S.year);
-      return {
-        key: 'ev_money_gold_rise',
-        category: 'money',
-        title: "Gold Prices Jump",
-        text: `Gold has jumped this month, and the jeweller in ${S.city} offers a good price for the grams you have been holding. Selling now would put ${formatMoney(A, S.country)} in your hand.`,
-        choices: [
-          {
-            label: "Sell the gold",
-            effect: (st) => {
-              walletMove(st, +A, 'Sell the gold', 'money');
-              st.money.goldGrams21k = Math.max(0, (st.money.goldGrams21k || 0) + (-5));
-              if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+3));
-              recordJournal(st, `You sold some gold while the price was high and took ${formatMoney(A, S.country)} in cash.`, 'money');
-            },
-          },
-          {
-            label: "Hold on \u2014 it may go higher",
-            effect: (st) => {
-              st.player.vitals.stress = clamp(st.player.vitals.stress + (+2));
-              if (st.skills) st.skills.financialIq = clamp(st.skills.financialIq + (+2));
-              recordJournal(st, `You held the gold, betting the price would climb further.`, 'money');
-            },
-          },
-          {
-            label: "Sell half",
-            effect: (st) => {
-              walletMove(st, +B, 'Sell half', 'money');
-              st.money.goldGrams21k = Math.max(0, (st.money.goldGrams21k || 0) + (-2));
-              recordJournal(st, `You sold half the gold for ${formatMoney(B, S.country)} and kept the rest for a harder day.`, 'money');
-            },
-          },
-        ],
-      };
+      const grams=Math.floor(S.money.goldGrams21k||0);if(grams<1)return null;
+      const half=Math.max(1,Math.floor(grams/2));
+      return{key:'ev_money_gold_rise',category:'money',title:'Check Your Gold Sale Quote',text:`You hold ${grams}g of 21K gold. Sell through the current market quote with the 1.5% dealer spread, or keep holding. No extra price jump is invented by this scene.`,choices:[{label:`Sell ${grams}g at market`,effect:st=>sellGold21k(st,grams)},{label:'Keep the gold',effect:st=>{}},{label:`Sell ${half}g at market`,effect:st=>sellGold21k(st,half)}]};
     },
   },
   {
