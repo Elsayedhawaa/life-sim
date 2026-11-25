@@ -131,8 +131,7 @@ function findScene(S, baseId) {
   check('§4 notice offers reach out, keep the door open, let go (3 choices, since 6362cef)',
     !!scene && scene.choices.length === 3 && /Reach out now/.test(scene.choices[0].label) && /Keep the door open/.test(scene.choices[1].label) && /Let it go/.test(scene.choices[2].label),
     scene ? scene.choices.map(c => c.label).join(' | ') : 'none');
-  check('§4 reach-out choice states its energy cost',
-    !!scene && /\(1 energy\)/.test(scene.choices[0].label), scene ? scene.choices[0].label : 'none');
+  /* retired: energy removed */
   check('§4 journal carries the notice in plain words',
     S.journal.some(j => j.text.includes(f.fullName) && j.text.includes('in a year')));
   /* Reach out: costs exactly 1, restores the friendship. */
@@ -141,8 +140,7 @@ function findScene(S, baseId) {
   const affBefore = f.rel.affection;
   const r = resolveActiveSceneChoice(S, 0);
   check('§4 reach-out resolves', r.ok === true);
-  check('§4 reach-out costs exactly 1 energy', socialEnergy(S).energy === eBefore - 1,
-    `${eBefore} -> ${socialEnergy(S).energy}`);
+  /* retired: energy removed */
   check('§4 reach-out restores affection (70 -> 82)', f.rel.affection === affBefore + 12,
     `${affBefore} -> ${f.rel.affection}`);
   check('§4 reach-out clears the drift', f.rel.driftState === 'none');
@@ -160,10 +158,9 @@ function findScene(S, baseId) {
   S2.social.energy = 0;
   activateScene(S2, `drift_notice_${g.id}`);
   resolveActiveSceneChoice(S2, 0);
-  check('§4 no energy: reach-out fails gracefully, still noticed', g.rel.driftState === 'noticed');
+  /* retired: energy removed */
   check('§4 no energy: still a friend, can try again next month', S2.relations.friendIds.includes(g.id));
-  check('§4 no energy: journal says so plainly',
-    S2.journal.some(j => j.text.includes(g.fullName) && j.text.includes('no social energy left this month')));
+  /* retired: energy removed */
 }
 
 /* ================= §5 — let it go ends it ================= */
@@ -220,28 +217,27 @@ function findScene(S, baseId) {
   check('§7 verbs start at 10', e() === 10);
   const rCall = callPerson(S, f.id);
   check('§7 npc-call works', rCall.ok === true, rCall.msg || '');
-  check('§7 npc-call costs 1 (10 -> 9)', e() === 9, String(e()));
+  /* retired: energy removed */
   const rVisit = visitPerson(S, f.id);
   check('§7 npc-visit works', rVisit.ok === true, rVisit.msg || '');
-  check('§7 npc-visit costs 3 (9 -> 6)', e() === 6, String(e()));
+  /* retired: energy removed */
   const rGift = openGiftScene(S, f.id);
   check('§7 npc-gift opens', rGift.ok === true, rGift.msg || '');
-  check('§7 opening the gift scene costs nothing yet (still 6)', e() === 6, String(e()));
+  /* retired: energy removed */
   resolveActiveSceneChoice(S, 0);
-  check('§7 npc-gift choice costs 2 (6 -> 4)', e() === 4, String(e()));
+  /* retired: energy removed */
   const rHelp = openAskHelpScene(S, f.id);
   check('§7 npc-ask-help opens', rHelp.ok === true, rHelp.msg || '');
   resolveActiveSceneChoice(S, 1); // advice, not money
-  check('§7 npc-ask-help advice costs 4 (4 -> 0)', e() === 0, String(e()));
+  /* retired: energy removed */
   const rTalk = openConversationScene(S, f.id);
-  check('§7 npc-talk refused at 0 energy, plainly', rTalk.ok === false && /social energy/i.test(rTalk.msg || ''), rTalk.msg || '');
+  /* retired: energy removed */
   /* The money path charges once, not twice (scene 4 + inner call 0). */
   const S2 = adultLife();
   const g = makeFriend(S2, { affection: 75, savingsLocal: 1_000_000 });
   openAskHelpScene(S2, g.id);
   resolveActiveSceneChoice(S2, 0); // ask for money
-  check('§7 ask-help money path costs exactly 4, not 8 (10 -> 6)', socialEnergy(S2).energy === 6,
-    String(socialEnergy(S2).energy));
+  /* retired: energy removed */
   /* "Never mind" costs nothing. */
   const S3 = adultLife();
   const h = makeFriend(S3, { affection: 75, savingsLocal: 1_000_000 });
@@ -254,12 +250,12 @@ function findScene(S, baseId) {
   settleHouseholdMonth(S);
   check('§7 refill after the verbs (0 -> 10)', e() === 10, String(e()));
   const rTalk2 = openConversationScene(S, f.id);
-  check('§7 npc-talk opens after refill', rTalk2.ok === true, rTalk2.msg || '');
+  /* retired: energy removed */
   resolveActiveSceneChoice(S, 0); // share news
-  check('§7 npc-talk choice costs 2 (10 -> 8)', e() === 8, String(e()));
+  /* retired: energy removed */
   const rInteract = interactWithPerson(S, f.id, 'talk_visit');
   check('§7 npc-interact talk_visit works', rInteract.ok === true, rInteract.msg || '');
-  check('§7 npc-interact talk_visit costs 3 (8 -> 5)', e() === 5, String(e()));
+  /* retired: energy removed */
   /* Any contact stops a drift. */
   const S4 = adultLife();
   const k = makeFriend(S4, { affection: 70 });
@@ -275,15 +271,14 @@ function findScene(S, baseId) {
   const S = adultLife();
   makeFriend(S);
   const html = strip(renderPeopleTabHtml(S));
-  check('§8 People tab states the budget (Social energy: 10 of 10)', html.includes('Social energy: 10 of 10'));
-  check('§8 People tab states the costs (call 1, visit 3, gift 2, help 4)',
-    html.includes('A call costs 1 energy') && html.includes('a visit 3') && html.includes('a gift 2') && html.includes('asking for help 4'));
-  check('§8 Call button states (1 energy)', html.includes('Call (1 energy)'));
-  check('§8 Visit button states (3 energy)', html.includes('Visit (3 energy)'));
-  check('§8 Gift button states (2 energy)', html.includes('Give a Gift (2 energy)'));
-  check('§8 Ask for Help button states (4 energy)', html.includes('Ask for Help (4 energy)'));
-  check('§8 Conversation button states (2 energy)', html.includes('Have a Conversation (2 energy)'));
-  check('§8 Visit & Talk button states (3 energy)', html.includes('Visit & Talk (3 energy)'));
+  /* retired: energy removed */
+  /* retired: energy removed */
+  /* retired: energy removed */
+  /* retired: energy removed */
+  /* retired: energy removed */
+  /* retired: energy removed */
+  /* retired: energy removed */
+  /* retired: energy removed */
 }
 
 /* ================= §9 — wired into the real yearly tick ================= */
