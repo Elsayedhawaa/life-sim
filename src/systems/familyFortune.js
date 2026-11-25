@@ -623,7 +623,7 @@ export function offerDepositHelp(S) {
   const pct = 0.2 + hash01(S, 83) * 0.2;
   const amount = Math.min(Math.round(entry * 0.2 * pct), Math.round(f.fundLocal * 0.25), Math.round(giftRoom(f, S)));
   if (amount <= 0) return null;
-  f.depositOffer = { amount, entryPrice: entry, pct: Math.round(pct * 100), year: S.year };
+  f.depositOffer = { amount, entryPrice: entry, pct: Math.round(amount / (entry * 0.2) * 100), year: S.year }; /* shown share is the real amount over the real deposit, even when the fund caps it */
   queueScene(S, buildDepositScene(S), true);
   return f.depositOffer;
 }
