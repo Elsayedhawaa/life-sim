@@ -1096,7 +1096,7 @@ export function siblingEmployerLine(S, id) {
 export function siblingStakeLine(S, id) {
   const f = S.familyFortune; const pct = f?.own?.siblings?.[id] || 0;
   if (!f?.company || f.company.sold || pct <= 0) return '';
-  return `Owns ${pct}% of ${f.company.name}, about ${formatMoney(Math.round(companyValue(f) * pct / 100), S.country)} of its value.`;
+  return `Owns ${Math.round(pct * 100) / 100}% of ${f.company.name}, about ${formatMoney(Math.round(companyValue(f) * pct / 100), S.country)} of its value.`;
 }
 
 /* --- The connected internship (17-23): a paid summer at a partner company -------------------
