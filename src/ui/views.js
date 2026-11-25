@@ -657,8 +657,9 @@ export function renderLifeTabHtml(S, uiState = {}) {
 
   /* Quick Daily Routine & Spiritual / Zakat Strip */
   const zakat = S.player.age >= 18 && ['muslim', 'islam'].includes(String(S.player.religion || '').toLowerCase()) ? computeZakatDueLocal(S) : { eligible: false, due: 0 };
-  const quickActs = (V1_ACTIVITIES || []).slice(0, 5);
-  const routineHtml = !S.gameOver ? `
+  /* Habits the character is too young for are not listed at all (no "Needs age N" chips). Underlying data is untouched; they appear when the age is reached. */
+  const quickActs = (V1_ACTIVITIES || []).slice(0, 5).filter(a => activityAvailability(S, a).locked !== 'age');
+  const routineHtml = (!S.gameOver && (quickActs.length > 0 || S.player.age >= 12 || zakat.eligible)) ? `
     <div class="card">
       <div class="section-head">
         <h3>${icon('heart', 17)} Daily Routines & Habits</h3>
@@ -680,10 +681,10 @@ export function renderLifeTabHtml(S, uiState = {}) {
       </div>
       <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line-soft);display:flex;flex-wrap:wrap;gap:6px;align-items:center">
         <span class="hud-pill">Charisma <strong>${Math.round(S.skills?.charisma || 30)}</strong></span>
-        <span class="hud-pill">Financial IQ <strong>${Math.round(S.skills?.financialIq || 25)}</strong></span>
+        ${S.player.age >= 12 ? `<span class="hud-pill">Financial IQ <strong>${Math.round(S.skills?.financialIq || 25)}</strong></span>`: ''}
         <span class="hud-pill">Fitness <strong>${Math.round(S.skills?.fitness || 45)}</strong></span>
         <span class="hud-pill">Creativity <strong>${Math.round(S.skills?.creativity || 30)}</strong></span>
-        <span class="hud-pill">Network <strong>${Math.round(S.skills?.wasta || 15)}</strong></span>
+        ${S.player.age >= 12 ? `<span class="hud-pill">Network <strong>${Math.round(S.skills?.wasta || 15)}</strong></span>`: ''}
         <span class="muted" style="font-size:0.75rem;margin-left:auto">Values — Integrity: <strong>${Math.round(S.values?.integrity || 60)}</strong> · Family: <strong>${Math.round(S.values?.familyDevotion || 65)}</strong> · Ambition: <strong>${Math.round(S.values?.ambitionDrive || 55)}</strong></span>
       </div>
 
@@ -867,7 +868,7 @@ export function renderLifeTabHtml(S, uiState = {}) {
    milestone: achievements already true on an old save are dated to when
    they were first noticed, never backdated. */
 function renderProgressPanelHtml(S) {
-  if (S.gameOver) return '';
+  if (S.gameOver || (S.player?.age ?? 0) < ADULT_PANEL_MIN_AGE) return '';
   /* v2.13 coordinator fix — renders must be READ-ONLY. evaluateProgress()
      used to run here, and granting an achievement writes a journal line,
      which consumes S.seq; every person created after that render then got
@@ -920,6 +921,7 @@ function renderProgressPanelHtml(S) {
 function renderStakesDashboardHtml(S) {
   if (S.gameOver) return '';
   const stakes = computeStakes(S);
+  if (stakes.length === 0) return ''; /* an empty "nothing at risk" card is boilerplate */
   const order = ['Money', 'Relationships', 'Health', 'Business'];
   return `
     <div class="card card-elevated">
@@ -1046,8 +1048,11 @@ export function goalStageProgress(S, g) {
   return stages;
 }
 
+/* Adult life goals, the Legacy Score and the milestone ladder (first job, first home) are not shown to a child. Data keeps accruing underneath. */
+const ADULT_PANEL_MIN_AGE = 16;
+
 function renderGoalsCardHtml(S) {
-  if (S.gameOver || !Array.isArray(S.goals) || S.goals.length === 0) return '';
+  if (S.gameOver || !Array.isArray(S.goals) || S.goals.length === 0 || (S.player?.age ?? 0) < ADULT_PANEL_MIN_AGE) return '';
   const doneCount = S.goals.filter(g => g.done).length;
   const score = computeLiveLegacyScore(S);
   const reasons = legacyScoreReasons(S);

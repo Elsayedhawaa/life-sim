@@ -354,10 +354,12 @@ if (typeof document !== 'undefined') document.addEventListener('error', event =>
 }, true);
 
 let S = loadGameFromStorage();
-const firstSession = !S;
+/* Recovery: the old build saved a placeholder life (fixed seed 20261118, never advanced) on first visit. Real lives use a random seed, so that exact seed at age 0 is only ever the placeholder: show the setup screen again instead of treating it as the player's life. */
+const PLACEHOLDER_SEED = 20261118;
+const firstSession = !S || (S.seed === PLACEHOLDER_SEED && (S.player?.age ?? 0) === 0);
 if (!S) {
   S = createNewLifeState({
-    seed: 20261118,
+    seed: PLACEHOLDER_SEED,
     country: 'egy',
     birthYear: 1998,
     familyTier: 'middle',
