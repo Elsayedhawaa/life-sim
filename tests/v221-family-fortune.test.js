@@ -225,3 +225,5 @@ console.log('upkeep OK');
   assert.equal(F.settleSuccession(L), null, 'nothing while a parent lives');
 }
 console.log('company link OK');
+{ for (const tier of ['wealthy', 'very_wealthy']) { const T = life(tier, 'usa', 1990, 8); run(T, 12 * 40); const f = T.familyFortune; assert.ok(f.fundLocal <= f.netWorthLocal * F.FORTUNE_DIALS.fundMaxShareOfNetWorth + 1, tier + ': cash fund stays inside net worth'); } }
+console.log('fund within estate OK');

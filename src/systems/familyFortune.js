@@ -38,6 +38,7 @@ const DIALS = {
   /* Birthday car target price (2026 USD): upper_middle is a modest first car, wealthy a German-class car, very_wealthy a dream-garage car. */
   carTargetUsd: { upper_middle: 9000, wealthy: 65000, very_wealthy: 250000 },
   carGiftAge: 18,
+  fundMaxShareOfNetWorth: 0.35, /* cash the family holds is part of its net worth; anything above this share is reinvested (already inside net worth) */
   /* Company link (wealthy, very_wealthy): the family company is worth this share of net worth; the player gets service shares from the children's pool. */
   companyShareOfNetWorth: { wealthy: 0.55, very_wealthy: 0.7 },
   sharesGrantAge: 21, sharesPctRange: [0.5, 1.0], dividendYield: 0.03, dividendCapPctOfInflow: 0.10,
@@ -167,6 +168,7 @@ export function tickFamilyFortuneYearly(S) {
   f.yearlyInflowLocal = Math.max(Math.round(f.baseInflowLocal * 0.3), Math.round(f.baseInflowLocal * (1 + swing)));
   const dep = eraDepositRates(S.country, S.year).savings || 0;
   f.fundLocal = Math.max(0, Math.round(f.fundLocal * (1 + dep) + f.yearlyInflowLocal * DIALS.fundRetention - 0));
+  f.fundLocal = Math.min(f.fundLocal, Math.round(f.netWorthLocal * DIALS.fundMaxShareOfNetWorth));
   f.lastYearSwing = swing;
   if (f.giftYear !== S.year) { f.yearGifts = 0; f.yearEducation = 0; f.yearUpkeep = 0; f.yearDividend = 0; f.giftYear = S.year; } /* already rolled by an earlier charge this year */
   f.lastTickYear = S.year;
