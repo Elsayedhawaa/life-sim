@@ -194,8 +194,8 @@ function findScene(S, baseId) {
   const S = adultLife();
   const f = makeFriend(S, { affection: 70 });
   recordJournal(S, `You called ${f.fullName} to catch up properly.`, 'relationship');
-  S.journal[0].turn = S.turn - 13; // the journal says the call was 13 months ago
-  delete f.rel.lastContactTurn; // an old record with no last-contact field
+  S.journal[0].turn = S.turn - 13; delete S.journal[0].year; delete S.journal[0].month; // the journal says the call was 13 months ago
+  delete f.rel.lastContactTurn; delete f.rel.lastContactYear; delete f.rel.lastContactMonth; // an old record with no last-contact field
   tickFriendshipDrift(S);
   check('§6 backfill uses the journal turn, not an invented one (13 months ago)',
     f.rel.lastContactTurn === S.turn - 13, String(f.rel.lastContactTurn));
@@ -205,7 +205,7 @@ function findScene(S, baseId) {
   /* No journal evidence at all: never drift on a guess. */
   const S2 = adultLife();
   const g = makeFriend(S2, { affection: 70 });
-  delete g.rel.lastContactTurn;
+  delete g.rel.lastContactTurn; delete g.rel.lastContactYear; delete g.rel.lastContactMonth;
   const res2 = tickFriendshipDrift(S2);
   check('§6 no evidence: marked unknown, never drifted', g.rel.lastContactUnknown === true && g.rel.driftState !== 'noticed' && g.rel.driftState !== 'drifting',
     JSON.stringify({ unknown: g.rel.lastContactUnknown, state: g.rel.driftState }));
@@ -263,7 +263,7 @@ function findScene(S, baseId) {
   /* Any contact stops a drift. */
   const S4 = adultLife();
   const k = makeFriend(S4, { affection: 70 });
-  k.rel.lastContactTurn = S4.turn - 7;
+  k.rel.lastContactTurn = S4.turn - 7; delete k.rel.lastContactYear; delete k.rel.lastContactMonth;
   tickFriendshipDrift(S4);
   check('§7 contact test: drifting first', k.rel.driftState === 'drifting');
   callPerson(S4, k.id);
