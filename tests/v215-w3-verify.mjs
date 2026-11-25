@@ -125,11 +125,11 @@ function findScene(S, baseId) {
   check('§4 state is noticed, still alive', f.rel.driftState === 'noticed' && f.alive === true);
   const scene = findScene(S, `drift_notice_${f.id}`);
   check('§4 notice scene exists', !!scene);
-  check('§4 notice title: "You have not spoken to X in a year"',
-    !!scene && scene.title === `You have not spoken to ${f.firstName} in a year`, scene ? scene.title : 'none');
+  check('§4 notice title names the friend (current wording: It has been a while)',
+    !!scene && scene.title === `It has been a while: ${f.firstName}`, scene ? scene.title : 'none');
   check('§4 notice text names them in full', !!scene && scene.text.includes(f.fullName), scene ? scene.text : 'none');
-  check('§4 notice offers reach out + let go (2 choices)',
-    !!scene && scene.choices.length === 2 && /Reach out now/.test(scene.choices[0].label) && /Let it go/.test(scene.choices[1].label),
+  check('§4 notice offers reach out, keep the door open, let go (3 choices, since 6362cef)',
+    !!scene && scene.choices.length === 3 && /Reach out now/.test(scene.choices[0].label) && /Keep the door open/.test(scene.choices[1].label) && /Let it go/.test(scene.choices[2].label),
     scene ? scene.choices.map(c => c.label).join(' | ') : 'none');
   check('§4 reach-out choice states its energy cost',
     !!scene && /\(1 energy\)/.test(scene.choices[0].label), scene ? scene.choices[0].label : 'none');
@@ -174,7 +174,7 @@ function findScene(S, baseId) {
   tickFriendshipDrift(S); // warning first (v2.18 W3)
   tickFriendshipDrift(S); // then the notice
   activateScene(S, `drift_notice_${f.id}`);
-  const r = resolveActiveSceneChoice(S, 1); // Let it go
+  const r = resolveActiveSceneChoice(S, 2); // Let it go (third choice since 6362cef)
   check('§5 let-go resolves', r.ok === true);
   check('§5 let-go removes them from the circle', !S.relations.friendIds.includes(f.id));
   check('§5 let-go changes the record (drifted, driftedAway, year)',
