@@ -17,6 +17,7 @@ import { propertyMarketYear } from './propertyMarketRisk.js';
 import { getHousingFor } from '../data/institutions.js';
 import { finalizePropertyPurchase } from './economyEngine.js';
 import { showroomCarQuote } from './completeLifeSystems.js';
+import { hireIntoJob } from './careerEducationEngine.js';
 
 export const FORTUNE_TIERS = ['upper_middle', 'wealthy', 'very_wealthy'];
 
@@ -268,7 +269,10 @@ export function grantServiceShares(S) {
   f.shareYear = S.year;
   const [lo, hi] = DIALS.sharesPctRange;
   const heirs = [];
-  if ((S.player?.age ?? 0) >= DIALS.sharesGrantAge && S.career?.employed && S.career?.job) heirs.push({ id: 'player', salt: 61 });
+  /* The player earns shares only for real work in the family company: a full-time post there (hired through "A place at the table"), or, before 21, summer stints (half rate). */
+  { const w = f.work || {}, age = S.player?.age ?? 0;
+    if (age >= DIALS.sharesGrantAge && w.fullSince && S.career?.employed && S.career?.job?.employer === f.company.name) heirs.push({ id: 'player', salt: 61, rate: 1 });
+    else if (age >= 16 && age < DIALS.sharesGrantAge && w.stint) heirs.push({ id: 'player', salt: 61, rate: 0.5 }); }
   for (const id of aliveSiblings(S)) {
     const p = S.people[id];
     if ((p.age ?? 0) >= DIALS.sharesGrantAge && hash01(S, S.year * 13 + id.length * 7 + (p.age | 0) * 3 + 5) < 0.7) heirs.push({ id, salt: 71 });
@@ -278,7 +282,7 @@ export function grantServiceShares(S) {
     const held = h.id === 'player' ? f.own.player : (f.own.siblings[h.id] || 0);
     const room = DIALS.sharesPerChildCapPct - held;
     const want = room > 0 ? Math.min(room, Math.round((lo + hash01(S, S.year * 17 + h.salt + h.id.length) * (hi - lo)) * 100) / 100) : 0;
-    return { id: h.id, want, each: 0, short: 0 };
+    return { id: h.id, want: Math.round(want * (h.rate || 1) * 100) / 100, each: 0, short: 0 };
   }).filter(r => r.want > 0);
   const totalWant = rows.reduce((a, r) => a + r.want, 0);
   const pool = Math.floor(f.own.pool * 100) / 100;
@@ -420,9 +424,71 @@ export function buildHomeScene(S) {
   };
 }
 export function restoreHomeScene(S, saved) {
+  if (saved && saved.key === 'family_place' && S.familyFortune?.placeOffer) return buildPlaceScene(S);
   if (saved && saved.key === 'family_seed' && S.familyFortune?.seedOffer) return buildSeedScene(S);
   if (saved && saved.key === 'family_deposit' && S.familyFortune?.depositOffer) return buildDepositScene(S);
   return saved && saved.key === 'family_home' && S.familyFortune?.homeOffer ? buildHomeScene(S) : null;
+}
+
+/* --- A place at the table: the family company as real work --------------
+   16-20: spend summers there (a small early stake, less free time). 21+: a full-time post in the family company when the player has no job. Shares only follow actual work there. Declining costs nothing and the door stays open. */
+function companyPost(S, f) {
+  const usd = f.tier === 'very_wealthy' ? 110e3 : 65e3;
+  const gross = Math.round(eraLocalCost(usd, S.country, S.year) / 12);
+  return { employer: f.company.name, title: f.tier === 'very_wealthy' ? 'Associate, Group Strategy' : 'Management Trainee', track: 'business', level: 1, monthlyGross: gross, id: 'family_company_post' };
+}
+export function offerPlaceAtTable(S) {
+  const f = ensureFamilyFortune(S);
+  if (!f || !f.company || f.inherited || f.placeOffer) return null;
+  if (S.activeScene || (S.sceneQueue || []).length) return null;
+  f.work = f.work || { stint: false, fullSince: null, askedStint: false, askedFull: 0 };
+  const age = S.player?.age ?? 0;
+  let kind = null;
+  if (age >= 16 && age < 21 && !f.work.askedStint) kind = 'stint';
+  else if (age >= 21 && age <= 35 && !f.work.fullSince && f.work.askedFull < 2 && !(S.career?.employed && S.career?.job) && !S.education?.university && (f.work.lastAskYear == null || S.year - f.work.lastAskYear >= 4)) kind = 'full';
+  if (!kind) return null;
+  f.placeOffer = { kind, year: S.year };
+  queueScene(S, buildPlaceScene(S), true);
+  return f.placeOffer;
+}
+export function buildPlaceScene(S) {
+  const f = S.familyFortune, o = f?.placeOffer;
+  if (!o) return null;
+  const co = f.company.name;
+  if (o.kind === 'stint') return {
+    key: 'family_place', category: 'family', title: 'A place at the table',
+    text: `Your parents invite you to spend your summers learning ${co}: the warehouse, the books, the people. It means less free time, and you would earn a small early stake in the company for the work. You can say no without any cost. The door stays open.`,
+    choices: [
+      { label: 'Spend the summers at the company', effect: st => resolvePlace(st, true) },
+      { label: 'Not now', effect: st => resolvePlace(st, false) }
+    ]
+  };
+  const post = companyPost(S, f);
+  return {
+    key: 'family_place', category: 'family', title: 'A place at the table',
+    text: `Your family offers you a real job at ${co}: ${post.title}, ${formatMoney(post.monthlyGross, S.country)} a month gross. You would earn service shares for every year you work there. It is your choice, and saying no costs nothing between you.`,
+    choices: [
+      { label: `Join ${co} as ${post.title}`, effect: st => resolvePlace(st, true) },
+      { label: 'Keep building my own path', effect: st => resolvePlace(st, false) }
+    ]
+  };
+}
+export function resolvePlace(S, yes) {
+  const f = S.familyFortune, o = f?.placeOffer;
+  if (!o) return null;
+  f.placeOffer = null; f.work = f.work || { stint: false, fullSince: null, askedStint: false, askedFull: 0 };
+  if (o.kind === 'stint') {
+    f.work.askedStint = true; f.work.stint = !!yes;
+    recordJournal(S, yes ? `You will spend your summers at ${f.company.name}. Each year of it earns a small early stake. There is less free time.` : `You told your parents not now. The door at ${f.company.name} stays open.`, 'family');
+    return { ok: true, taken: !!yes };
+  }
+  f.work.askedFull += 1; f.work.lastAskYear = S.year;
+  if (!yes) { recordJournal(S, `You chose your own path. The door at ${f.company.name} stays open.`, 'family'); return { ok: true, taken: false }; }
+  if (S.career?.employed && S.career?.job) { recordJournal(S, 'You took another job first, so the family post is not taken. The door stays open.', 'family'); return { ok: false, taken: false }; }
+  hireIntoJob(S, companyPost(S, f), { partTimeOnly: false }, {});
+  f.work.fullSince = S.year; f.work.stint = false;
+  recordJournal(S, `You joined ${f.company.name} full time. Every year you work there earns service shares.`, 'career');
+  return { ok: true, taken: true };
 }
 
 /* --- Your own door: a seed gift when the player starts their own company (wealthy tiers) ---
@@ -621,7 +687,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  offerSeedGift(S); offerDepositHelp(S);
+  offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;
