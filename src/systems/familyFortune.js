@@ -935,7 +935,7 @@ export function buildIntroScene(S) {
   const total = o.qty * item.price;
   return {
     key: 'family_intro', category: 'family', title: 'A door opens',
-    text: `A friend of your family at ${o.customer} hears about ${b.name} and offers to be your first big customer: ${o.qty} x ${item.name} at your normal price, ${formatMoney(total, b.figuresCurrency || b.country || S.country)} in all. They pay a 30% deposit up front. It is a normal customer contract, with a deadline and a penalty if you cannot deliver. Your family adds nothing but the introduction.`,
+    text: `A friend of your family at ${o.customer} hears about ${b.name} and offers to be your first customer: ${o.qty} x ${item.name} at your normal price, ${formatMoney(total, b.figuresCurrency || b.country || S.country)} in all. They pay a 30% deposit up front. It is a normal customer contract, with a deadline and a penalty if you cannot deliver. Your family adds nothing but the introduction.`,
     choices: [
       { label: 'Take the order', effect: st => resolveIntroduction(st, true) },
       { label: 'Thank them and find customers yourself', effect: st => resolveIntroduction(st, false) }
