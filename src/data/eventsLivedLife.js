@@ -53,7 +53,7 @@ export const EVENTS_LIVED_LIFE = [
     ], {category:'home'}),
   story('ev_can_neighbour_help', 'The Heavy Bag', {minAge:16,countries:['can']},
     S => `A neighbour outside your building in ${S.city} pauses beside a heavy grocery bag. You are heading the same way, but do not know whether they want help.`, [
-      ['Ask if they would like a hand', 'You asked before helping with the bag. A brief neighbourly conversation did not require becoming instant best friends.', {'skills.charisma':2,'vitals.happiness':2}],
+      ['Ask if they would like a hand', 'You asked before helping with the bag. It stayed a short, friendly exchange between neighbours.', {'skills.charisma':2,'vitals.happiness':2}],
       ['Hold the door and leave them room to pass', 'You held the door and made space without taking over. It was a small useful gesture.', {'vitals.happiness':2}],
     ], {category:'life'}),
 
@@ -98,7 +98,7 @@ export const EVENTS_LIVED_LIFE = [
   story('ev_uae_rental_terms', 'The Rent Is Not the Whole Move', {minAge:18,countries:['uae'],housingModes:['rent']},
     S => `Looking around your rented home in ${S.city}, you start a list for the next move: transport, utility setup, the payment schedule and the money that must remain available afterward. The monthly figure alone is not the whole plan.`, [
       ['Write down the full cash timing before house-hunting', 'You wrote down when money would be due and what needed to stay in reserve. This planning step did not sign a lease or charge a fee.', {'vitals.smarts':2,'vitals.stress':-2}],
-      ['Ask for written terms before comparing listings', 'You asked for written terms rather than assuming all rental listings use the same payment schedule. No new lease was signed.', {'skills.charisma':2}],
+      ['Ask for written terms before comparing listings', 'You asked for the payment terms in writing before comparing listings, since rentals do not all use the same schedule.', {'skills.charisma':2}],
     ], {category:'money'}),
 
   story('ev_sau_offer_details', 'The Offer Has More Than One Number', {minAge:18,countries:['sau'],hasJob:false},
@@ -121,7 +121,7 @@ export const EVENTS_LIVED_LIFE = [
   story('ev_egy_rental_inventory', 'Before the Keys Change Hands', {minAge:18,countries:['egy'],housingModes:['rent']},
     S => `In your rented home in ${S.city}, a loose cupboard hinge and an old water stain catch your eye. You cannot tell from memory whether they were mentioned when you moved in.`, [
       ['Write down the condition and ask the landlord to acknowledge it', 'You made a clear condition list and asked the landlord to acknowledge the existing damage. It was a record, not a promise that a dispute could never happen.', {'vitals.stress':-3}],
-      ['Ask which repairs are yours before agreeing to pay', 'You asked who was responsible for the hinge and water stain before agreeing to a repair bill. No money changed hands.', {'skills.charisma':2}],
+      ['Ask which repairs are yours before agreeing to pay', 'You asked who was responsible for the hinge and water stain before agreeing to a repair bill. You paid nothing until that was clear.', {'skills.charisma':2}],
     ], {category:'money'}),
   story('ev_egy_family_job_advice', 'A Relative Knows Someone', {minAge:20,countries:['egy'],hasJob:false,requiredPeople:['mom']},
     (S,name) => `${name} mentions someone who might know about work in ${S.city}. She means well, but the role, hours and salary are still unclear. A friendly introduction is not an offer.`, [
@@ -158,7 +158,7 @@ export const EVENTS_LIVED_LIFE = [
     ], { category: 'friends', person: 'friend' }),
   story('ev_lived_mom_tea', 'No Advice This Time', { ...adult, requiredPeople: ['mom'] },
     (S, name) => `${name} finds you sitting quietly at home in ${S.city}. Instead of asking for an update, she asks whether you want a cup of tea and some company.`, [
-      ['Sit together without turning it into a progress report', 'You shared a quiet cup with your mother. For once, being together did not require good news.', { 'vitals.stress': -5, 'vitals.happiness': 3 }, { affection: 6, trust: 3 }],
+      ['Sit together without turning it into a progress report', 'You shared a quiet cup with your mother. Nobody had good news to report, and that was fine.', { 'vitals.stress': -5, 'vitals.happiness': 3 }, { affection: 6, trust: 3 }],
       ['Tell her what has been weighing on you', 'You told your mother what had been weighing on you and asked her to listen before offering advice.', { 'vitals.stress': -4 }, { trust: 6 }],
     ], { category: 'family', person: 'mom' }),
   story('ev_lived_dad_skill', 'The Thing He Never Mentioned', { minAge: 14, requiredPeople: ['dad'] },
@@ -228,7 +228,7 @@ export const EVENTS_LIVED_LIFE = [
   story('ev_lived_repair_table', 'The Repair Table', { minAge: 16 },
     S => `A free community repair session in ${S.city} has a table covered with loose screws and handwritten labels. A volunteer invites you to help sort the parts. Nobody expects you to be an expert.`, [
       ['Ask to learn one simple repair', 'At a free repair session, you learned one simple fix and left with more confidence in your hands.', { 'skills.creativity': 4 }],
-      ['Help organise the parts so other people can work', 'You sorted parts at a community repair table. Being useful did not require being the most skilled person there.', { 'vitals.happiness': 4, 'skills.charisma': 2 }],
+      ['Help organise the parts so other people can work', 'You sorted parts at a community repair table, and being useful was enough.', { 'vitals.happiness': 4, 'skills.charisma': 2 }],
     ]),
   story('ev_lived_future_letter', 'A Letter to a Later You', { minAge: 14 },
     'You find an old page where you described what you thought life would be like by now. Some of it is funny. One line still matters more than you expected.', [
