@@ -1311,6 +1311,15 @@ export function interactWithPerson(S, personId, action, opts = {}) {
 
 /* Once-per-turn guard: returns true if this verb was already used on this
    person this turn (and marks it used otherwise). */
+/* A second talk in the same month still counts, but only a little: one short catch-up (+1 affection) per person per month, then nothing more. Gifts and favours stay once-a-month because they cost money or favours. */
+function repeatTalkReward(S, p) {
+  if (!S.cooldowns) S.cooldowns = {};
+  const k = `talk_repeat_${p.id}`;
+  if ((S.cooldowns[k] || 0) > S.turn) { recordJournal(S, `You and ${p.firstName} have talked plenty this month. Nothing more to add until next month.`, 'relationship'); return; }
+  S.cooldowns[k] = S.turn + 1;
+  rememberDeed(S, p, 'visited', `A short catch-up, on top of this month's long talk.`, { affection: 1 });
+  recordJournal(S, `You caught up with ${p.fullName} again, briefly. It helped a little (+1 closeness, the cap for this month).`, 'relationship');
+}
 function oncePerTurn(S, key) {
   if (!S.cooldowns) S.cooldowns = {};
   if ((S.cooldowns[key] || 0) > S.turn) return true;
@@ -1578,7 +1587,7 @@ export function openConversationScene(S, personId, rebuild = false) {
         available: () => (p.career?.monthlyIncomeLocal || 0) > 0,
         effect: (st) => {
           /* v2.15 W3 — the conversation costs 2 social energy and is a real contact. */
-          if (oncePerTurn(st, `talk_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
+          if (oncePerTurn(st, `talk_${p.id}`)) { repeatTalkReward(st, p); return; }
           noteSocialContact(st, p);
           rememberDeed(st, p, 'visited', `A long talk about work and where life is heading.`, { affection: 5, trust: 3 });
           recordJournal(st, `You talked properly with ${p.fullName} about work — the pressures, the plans, what comes next.${ctxTail(st, p)}`, 'relationship');
@@ -1589,7 +1598,7 @@ export function openConversationScene(S, personId, rebuild = false) {
         available: () => isFamily,
         effect: (st) => {
           /* v2.15 W3 — the conversation costs 2 social energy and is a real contact. */
-          if (oncePerTurn(st, `talk_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
+          if (oncePerTurn(st, `talk_${p.id}`)) { repeatTalkReward(st, p); return; }
           noteSocialContact(st, p);
           rememberDeed(st, p, 'visited', `A long family talk.`, { affection: 5, respect: 2 });
           recordJournal(st, `You and ${p.fullName} talked family — who needs help, who is proud of whom, what home means now.`, 'relationship');
@@ -1600,7 +1609,7 @@ export function openConversationScene(S, personId, rebuild = false) {
         available: () => p.rel.resentment > 10,
         effect: (st) => {
           /* v2.15 W3 — the conversation costs 2 social energy and is a real contact. */
-          if (oncePerTurn(st, `talk_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
+          if (oncePerTurn(st, `talk_${p.id}`)) { repeatTalkReward(st, p); return; }
           noteSocialContact(st, p);
           p.rel.resentment = clamp(p.rel.resentment - 15);
           p.rel.trust = clamp(p.rel.trust + 5);
@@ -1612,7 +1621,7 @@ export function openConversationScene(S, personId, rebuild = false) {
         label: 'Share your own news',
         effect: (st) => {
           /* v2.15 W3 — the conversation costs 2 social energy and is a real contact. */
-          if (oncePerTurn(st, `talk_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
+          if (oncePerTurn(st, `talk_${p.id}`)) { repeatTalkReward(st, p); return; }
           noteSocialContact(st, p);
           rememberDeed(st, p, 'visited', `Shared real news about your life.`, { affection: 4, trust: 3 });
           st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
@@ -1623,7 +1632,7 @@ export function openConversationScene(S, personId, rebuild = false) {
         label: 'Ask for their honest advice',
         effect: (st) => {
           /* v2.15 W3 — the conversation costs 2 social energy and is a real contact. */
-          if (oncePerTurn(st, `talk_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
+          if (oncePerTurn(st, `talk_${p.id}`)) { repeatTalkReward(st, p); return; }
           noteSocialContact(st, p);
           st.player.vitals.smarts = clamp(st.player.vitals.smarts + 2);
           p.rel.trust = clamp(p.rel.trust + 3);
