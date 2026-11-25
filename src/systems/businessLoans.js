@@ -235,7 +235,7 @@ export function renderBusinessLoanSection(S, biz) {
   <div class="biz-loan-section" style="margin-top:10px;">
     <h4>Business loan</h4>
     <div class="muted">${escHtml(terms.source)}${terms.maxAmount > 0 ? ` · ${formatMoney(terms.minAmount, countryId)}–${formatMoney(terms.maxAmount, countryId)} · up to ${terms.termYears} years` : ''}</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${buttons || '<span class="muted">No loan amounts available.</span>'}${!canBorrow ? lockReason(S.money.creditScore < terms.reqScore ? `Credit score ${S.money.creditScore} is below the ${terms.reqScore} this loan requires` : 'You already have the maximum 2 active loans', S.money.creditScore < terms.reqScore ? 'Raise your credit score first' : 'Pay a loan off first') : ''}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${buttons || '<span class="muted">No loan amounts available.</span>'}${!canBorrow ? lockReason(lenderCreditScore(S) < terms.reqScore ? `Credit score ${S.money.creditScore}${lenderCreditScore(S) > S.money.creditScore ? ` (${lenderCreditScore(S)} to lenders with your family name)` : ''} is below the ${terms.reqScore} this loan requires` : 'You already have the maximum 2 active loans', lenderCreditScore(S) < terms.reqScore ? 'Raise your credit score first' : 'Pay a loan off first') : ''}</div>
     <div class="muted" style="font-size:12px;margin-top:4px;">Payments run through your normal debts: miss one and there is a fee, miss two and you get a warning, miss three and it goes to collections. If the business closes, the loan stays — you still owe it.</div>
   </div>`;
 }

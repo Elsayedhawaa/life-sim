@@ -1,3 +1,4 @@
+import{lenderCreditScore}from'./familyName.js';
 import{convertCurrency}from'../data/economy.js';
 /* ============================================================================
    World Life 2.0 — Business Fate (v2.17 W5, §6)
@@ -478,7 +479,7 @@ export function biggerLoanOffer(S, biz) {
   if (terms0.maxAmount > 0) amount = Math.min(amount, terms0.maxAmount);
   if (amount <= 0) return null;
   const terms = businessLoanTerms(S, amount, { typeId: biz.typeId });
-  if ((Number(S.money?.creditScore) || 0) < terms.reqScore) return null;
+  if (lenderCreditScore(S) < terms.reqScore) return null;
   if ((S.money?.loans || []).length >= 2) return null;
   return { amount, terms };
 }

@@ -21,3 +21,9 @@ assert.equal(N.familyNameCreditPoints(mk('middle')), 0, 'no tier, no lift');
 { const pick = (tier) => { const S = mk(tier, 'usa', 9); S.education.degrees = ['business']; return E.scoreJobInterview(S, { employer: 'X', title: 'Y' }).score; };
   const mid = pick('middle'), rich = pick('very_wealthy'); assert.ok(Math.abs(rich - mid - 6) < 1e-6, 'six interview points for the highest tier, nothing more: ' + (rich - mid)); }
 console.log('family name OK');
+// the proactive bigger-loan offer and the direct loan gate use the same lifted score
+{ const BF = await import('../src/systems/businessFate.js'); const mkb = (tier) => { const S = mk(tier); S.money.creditScore = 680; S.money.loans = []; return S; };
+  const biz = { typeId: null, capitalInvested: 100000 };
+  const B = await import('../src/systems/businessLoans.js');
+  for (const tier of ['middle', 'very_wealthy']) { const S = mkb(tier); const t = B.businessLoanTerms(S, Math.round(biz.capitalInvested * 0.5), {}); const offer = BF.biggerLoanOffer(S, biz); assert.equal(!!offer, N.lenderCreditScore(S) >= t.reqScore, tier); assert.equal(!!offer, tier === 'very_wealthy', 'only the lifted score clears 700'); } }
+console.log('same-product gates OK');
