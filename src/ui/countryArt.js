@@ -2,6 +2,7 @@
    Only pictures of an identifiable place are tagged; interiors, objects and generic scenes carry no tag and fit everywhere.
    When a banner does not fit the country, the country's own scene replaces it, else a neutral picture for that section. No new art is introduced. */
 export const BANNER_PLACES = {
+  'era_vintage_street_ink.jpg': ['gbr', 'fra', 'ita', 'deu', 'che', 'nld', 'swe'],
   'city_europe_west.jpg': ['gbr'],
   'autumn_park_boulevard_ink.jpg': ['fra'],
   'europe_old_town_ink.jpg': ['ita', 'fra'],
@@ -28,8 +29,10 @@ export function bannerFitsCountry(file, country) {
   const places = BANNER_PLACES[file];
   return !places || places.includes(String(country || '').toLowerCase());
 }
-export function fitBannerToCountry(file, country, section, ownScene, rot = 0) {
+export function fitBannerToCountry(file, country, section, ownScene, rot = 0, opts = {}) {
+  if (file === 'pilgrimage_travel.jpg' && !opts.muslim) return 'airport_departure_terminal_ink.jpg';
   if (bannerFitsCountry(file, country)) return file;
+  if (file === 'era_vintage_street_ink.jpg') return opts.anyEraScene || 'career_enterprise_ink.jpg';
   if (ownScene && bannerFitsCountry(ownScene, country)) return ownScene;
   const pool = NEUTRAL[section] || NEUTRAL.life;
   return pool[Math.abs(rot) % pool.length];

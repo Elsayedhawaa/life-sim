@@ -477,7 +477,8 @@ export function pickDynamicBanner(S, section = 'life', sub = '') {
   const c = String(S?.country || 'egy').toLowerCase();
   const sc = COUNTRY_SCENES[c];
   const own = sc && Number(S?.year || 2000) >= sc.since ? sc.scene : null;
-  return fitBannerToCountry(raw, c, section, own, Number(S?.turn || 0) + Number(S?.month || 0));
+  const muslim = ['muslim', 'islam'].includes(String(S?.player?.religion || '').toLowerCase());
+  return fitBannerToCountry(raw, c, section, own, Number(S?.turn || 0) + Number(S?.month || 0), { muslim });
 }
 
 /* Counts computed from the live data, never hand-typed: merged career tracks
@@ -3874,14 +3875,14 @@ export function renderFinanceTabHtml(S, uiState = {}) {
   recordFinanceHistorySnapshot(S); // v2.13 W4: one net-worth snapshot per year, recorded on render
   const sub = uiState.finSub || 'cashflow';
   const nav = renderSubtabs('finance', [
-    { id: 'cashflow', label: 'Cashflow & Zakat' },
+    { id: 'cashflow', label: ['muslim', 'islam'].includes(String(S.player?.religion || '').toLowerCase()) ? 'Cashflow & Zakat' : 'Cashflow' },
     { id: 'banks', label: 'Banks, CDs & Loans' },
     { id: 'cards', label: `Credit Cards & BNPL (${S.creditCards.length})` },
     { id: 'markets', label: 'Gold Vault, Stocks & Hawala' }
   ], sub);
 
   const cObj = getCountry(S.country);
-  const finBanner = renderEditorialBannerHtml(pickDynamicBanner(S, 'finance', sub), `${cObj.name} Banking, Gold Bullion Reserves, Global Markets & Zakat Ledger`);
+  const finBanner = renderEditorialBannerHtml(pickDynamicBanner(S, 'finance', sub), `${cObj.name} Banking, Savings, Loans & Markets${['muslim', 'islam'].includes(String(S.player?.religion || '').toLowerCase()) ? ' & Zakat' : ''}`);
   if (sub === 'banks') return finBanner + nav + renderBanksSubtabHtml(S, cObj);
   if (sub === 'cards') return finBanner + nav + renderCardsAndBnplSubtabHtml(S, cObj);
   if (sub === 'markets') return finBanner + nav + renderMarketsAndGoldSubtabHtml(S, cObj);
@@ -4761,7 +4762,7 @@ function renderTravelAndHajjSubtabHtml(S, uiState) {
   const destImgHtml = (v) => `<img src="assets/banners/${destImgFor(v)}" alt="${esc(v.name)}" loading="lazy" style="width:72px;height:54px;object-fit:cover;border-radius:8px;flex-shrink:0">`;
 
   return `
-    ${renderEditorialBannerHtml(pickDynamicBanner(S, 'lifestyle', 'travel'), 'Sacred Nusuk Pilgrimages, Airport Departures & World Destinations')}
+    ${renderEditorialBannerHtml(pickDynamicBanner(S, 'lifestyle', 'travel'), (['muslim', 'islam'].includes(String(S.player?.religion || '').toLowerCase()) ? 'Pilgrimages, Airport Departures & World Destinations' : 'Airport Departures & World Destinations'))}
     ${(S.tripPlans || []).length > 0 ? `
     <div class="card card-elevated">
       <div class="section-head">

@@ -15,4 +15,12 @@ assert.ok(n > 5000, 'exercised the pickers');
 /* The reported case: a US career screen must not show the London picture. */
 assert.deepEqual(BANNER_PLACES['city_europe_west.jpg'], ['gbr']);
 for (let turn = 0; turn < 200; turn++) assert.notEqual(pickDynamicBanner({ country: 'usa', turn, month: 1 + turn % 12, year: 2026, seed: turn, player: { age: 30 }, education: {}, career: {} }, 'work', ''), 'city_europe_west.jpg');
+/* pilgrimage picture only for a Muslim player; vintage European street never for a non-European country */
+const base = (c, religion, year, turn) => ({ country: c, turn, month: 1 + turn % 12, year, seed: turn, player: { age: 30, religion }, education: {}, career: {}, housing: {} });
+for (let turn = 0; turn < 120; turn++) {
+  assert.notEqual(pickDynamicBanner(base('sau', 'christian', 2020, turn), 'lifestyle', 'travel'), 'pilgrimage_travel.jpg');
+  for (const c of ['usa', 'jpn', 'ind', 'bra', 'aus', 'egy', 'sgp', 'tur', 'can']) for (const sec of ['life', 'people']) assert.notEqual(pickDynamicBanner(base(c, 'none', 1955, turn), sec, ''), 'era_vintage_street_ink.jpg', c + ' 1955');
+}
+let sawPilg = false; for (let turn = 0; turn < 120; turn++) if (pickDynamicBanner(base('sau', 'muslim', 2020, turn), 'lifestyle', 'travel') === 'pilgrimage_travel.jpg') sawPilg = true;
+assert.ok(sawPilg, 'a Muslim player still gets it');
 console.log('country art OK', n);
