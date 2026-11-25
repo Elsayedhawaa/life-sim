@@ -93,7 +93,7 @@ function addSpouse(S, affection = 72) {
   return S.people['sp1'];
 }
 function addFriend(S, affection = 68) {
-  S.people['fr1'] = { id: 'fr1', fullName: 'Omar Adel', alive: true, age: 34, employer: 'Orascom Construction', jobTitle: 'Site Engineer', track: 'construction', rel: { affection, trust: 60, respect: 60 } };
+  S.people['fr1'] = { id: 'fr1', fullName: 'Omar Adel', alive: true, age: 34, employer: 'Orascom Construction', jobTitle: 'Site Engineer', track: 'construction', career: { monthlyIncomeLocal: 20000, employer: 'Orascom Construction', title: 'Site Engineer', track: 'civil_eng' }, rel: { affection, trust: 60, respect: 60 } };
   S.relations.friendIds = ['fr1'];
   return S.people['fr1'];
 }
@@ -495,7 +495,7 @@ section('7. Fate reaches the life');
     /* 7c — friend offers a job; taking it is a real job. */
     {
       const S = adultLife(810);
-      addSpouse(S); const friend = addFriend(S);
+      addSpouse(S); const friend = addFriend(S); S.education.degrees = ['engineering'];
       const biz = handBiz({ dead: true, deathCause: 'three months of losses ate the capital', monthsLosing: 3, lastPL: { revenue: 10000, costs: 20000, tax: 0, net: -10000 } });
       S.career.businesses = [biz];
       /* Burn the spouse scene first (month 6), so month 7 fires the friend. */
