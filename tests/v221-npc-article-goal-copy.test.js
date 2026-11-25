@@ -9,6 +9,6 @@ const S = createNewLifeState({ seed: 3, country: 'tur', birthYear: 2001 }); ensu
 S.player.age = 18; S.year = 2019; S.education.highSchoolScore = 87; S.education.stage = 'university'; S.education.university = { name: 'Test University', elapsedMonths: 0 };
 const strip = (h) => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 const html = strip(renderLifeTabHtml(S));
-assert.ok(/studying at Test University; this goal counts as done at 19/.test(html), 'enrolled player sees the real status');
-assert.ok(!/qualification lands at 19/.test(html), 'no pending-qualification wording once enrolled');
+assert.ok(/passed, and you are studying at Test University/.test(html), 'enrolled player sees the real status (no age-19 wait)');
+assert.ok(!/qualification lands at 19|done at 19/.test(html), 'no pending-qualification wording once enrolled');
 console.log('article + goal copy OK');

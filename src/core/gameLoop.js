@@ -153,7 +153,7 @@ export function refreshGoalsProgress(S) {
 
   for (const g of S.goals) {
     if (g.done) continue;
-    if (g.id === 'g_grad' && (S.education.degrees.length > 0 || (S.education.highSchoolScore != null && S.player.age >= 19))) {
+    if (g.id === 'g_grad' && (S.education.degrees.length > 0 || (S.education.highSchoolScore != null && S.education.stage !== 'high'))) { /* the recorded exam result and the recorded stage change (graduated_high) are what complete school, not an age */
       g.done = true;
     }
     if (g.id === 'g_income' && ((S.career.employed && (S.career.job?.monthlyGross || 0) > 0) || S.career.business)) {
