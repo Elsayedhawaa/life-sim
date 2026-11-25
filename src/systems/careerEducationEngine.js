@@ -1,4 +1,4 @@
-import { familyNameInterviewPoints } from './familyName.js';
+import { familyNameInterviewPoints, internshipReferencePoints } from './familyName.js';
 import{recordCivilLoss}from'./civilClaims.js';
 import{careerHours}from'./careerSchedule.js';
 import{usStatePension}from './usRetirement.js';
@@ -1674,7 +1674,7 @@ export function scoreJobInterview(S, jobOffer) {
   const referenceBonus = S.career.job?.actionState?.reference
     ? Math.min(10, S.career.job.actionState.reference.strength / 10)
     : 0;
-  const score = smarts * 0.55 + Math.min(30, expYears * 4) + charismaBonus + wastaBonus + attireBonus + referenceBonus + familyNameInterviewPoints(S) + randInt(S, 5, 32);
+  const score = smarts * 0.55 + Math.min(30, expYears * 4) + charismaBonus + wastaBonus + attireBonus + referenceBonus + familyNameInterviewPoints(S) + internshipReferencePoints(S) + randInt(S, 5, 32);
   const parts = [
     { key: 'knowledge', value: smarts },
     { key: 'experience', value: Math.min(100, expYears * 12) },

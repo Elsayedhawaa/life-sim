@@ -9,3 +9,7 @@ export function familyNameCreditPoints(S) { return familyNameKnown(S) ? NAME_CRE
 export function familyNameInterviewPoints(S) { return familyNameKnown(S) ? NAME_INTERVIEW_POINTS[S.familyTier] : 0; }
 /* The score a lender reads: your own score plus the name, capped at the scale's top. */
 export function lenderCreditScore(S) { return Math.min(900, (S.money?.creditScore ?? 0) + familyNameCreditPoints(S)); }
+
+/* A reference from a finished connected internship: a real employer record that adds a few points to a job interview, once earned, anywhere. */
+export const REFERENCE_INTERVIEW_POINTS = 4;
+export function internshipReferencePoints(S) { return S?.familyFortune?.reference ? REFERENCE_INTERVIEW_POINTS : 0; }

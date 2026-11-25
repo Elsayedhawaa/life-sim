@@ -498,6 +498,8 @@ export function restoreHomeScene(S, saved) {
   if (saved && saved.key === 'family_bigask' && S.familyFortune?.bigAskOffer) return buildBigAskScene(S);
   if (saved && saved.key === 'family_venture' && S.familyFortune?.ventureOffer) return buildVentureScene(S);
   if (saved && saved.key === 'family_succession' && S.familyFortune?.successionTalk) return buildSuccessionScene(S);
+  if (saved && saved.key === 'family_intern' && S.familyFortune?.internOffer) return buildInternScene(S);
+  if (saved && saved.key === 'family_intern_offer' && S.familyFortune?.internConvert) return buildInternConvertScene(S);
   return saved && saved.key === 'family_home' && S.familyFortune?.homeOffer ? buildHomeScene(S) : null;
 }
 
@@ -857,6 +859,83 @@ export function resolveSuccessionTalk(S, how) {
   recordJournal(S, `${name} was sold. After ${Math.round(SALE_COST * 100)}% in fees your part was ${formatMoney(mine, S.country)}. The company, and any job there, is gone.`, 'family');
   return { ok: true, how: 'sell', sold: true, mine };
 }
+
+/* --- The connected internship (17-23): a paid summer at a partner company -------------------
+   The family's connections open a three-month paid internship at a partner firm (a real employer record, paid monthly through the summer,
+   less free time). At the end you earn a reference (a few interview points) and, if you are free to work, may convert it into a first job there. Declining costs nothing. */
+const PARTNERS = ['Halden & Rowe Partners', 'Northgate Capital', 'Meridian Group', 'Alder Freight', 'Corvale Holdings', 'Tolland Advisory'];
+const INTERN_MONTHS = 3;
+function internPay(S, f) { return Math.round(eraLocalCost(f.tier === 'very_wealthy' ? 3000 : 1800, S.country, S.year)); }
+export function offerConnectedInternship(S) {
+  const f = ensureFamilyFortune(S);
+  if (!f || f.tier === 'upper_middle' || f.internDone || f.internOffer || f.intern || S.month !== 6) return null;
+  const age = S.player?.age ?? 0;
+  if (age < 17 || age > 23 || S.country !== S.homeCountry) return null;
+  if (S.activeScene || (S.sceneQueue || []).length) return null;
+  if (f.work?.stint && f.work.stintAbs != null) return null; /* already spending summers at the family company */
+  f.internOffer = { employer: PARTNERS[Math.floor(hash01(S, 311) * PARTNERS.length)], pay: internPay(S, f), year: S.year };
+  queueScene(S, buildInternScene(S), true);
+  return f.internOffer;
+}
+export function buildInternScene(S) {
+  const f = S.familyFortune, o = f?.internOffer;
+  if (!o) return null;
+  return {
+    key: 'family_intern', category: 'family', title: 'A connected internship',
+    text: `A friend of the family runs ${o.employer}. Through that connection you are offered a paid summer internship there: ${formatMoney(o.pay, S.country)} a month for ${INTERN_MONTHS} months. It takes your summer, so there is less free time. At the end you leave with a reference, and a job offer if you are free to take one.`,
+    choices: [
+      { label: `Take the internship at ${o.employer}`, effect: st => resolveIntern(st, true) },
+      { label: 'Thank them, not this summer', effect: st => resolveIntern(st, false) }
+    ]
+  };
+}
+export function resolveIntern(S, yes) {
+  const f = S.familyFortune, o = f?.internOffer;
+  if (!o) return null;
+  f.internOffer = null;
+  if (!yes) { f.internDone = true; recordJournal(S, `You thanked the family friend at ${o.employer} and skipped the internship.`, 'family'); return { ok: true, taken: false }; }
+  f.intern = { employer: o.employer, pay: o.pay, startAbs: S.year * 12 + S.month, months: 0, paid: 0 };
+  recordJournal(S, `You started a summer internship at ${o.employer}, paid ${formatMoney(o.pay, S.country)} a month.`, 'career');
+  return { ok: true, taken: true };
+}
+export function tickConnectedInternship(S, f) {
+  const it = f?.intern;
+  if (!it) return null;
+  const now = S.year * 12 + S.month;
+  if (now <= it.startAbs + it.months) return null; /* one month's work each tick, never twice in a month */
+  it.months++;
+  walletMove(S, it.pay, `${it.employer} internship pay`, 'career'); it.paid += it.pay;
+  S.player.vitals.happiness = Math.max(0, S.player.vitals.happiness - 1);
+  if (it.months < INTERN_MONTHS) return null;
+  f.intern = null; f.internDone = true; f.reference = { employer: it.employer, year: S.year };
+  const free = !(S.career?.employed && S.career?.job) && !S.education?.university && (S.player?.age ?? 0) >= 19;
+  recordJournal(S, `You finished your summer at ${it.employer}, earned ${formatMoney(it.paid, S.country)} and a reference from them.`, 'career');
+  if (free) { f.internConvert = { employer: it.employer, year: S.year }; queueScene(S, buildInternConvertScene(S), true); }
+  return { done: true, convert: free };
+}
+export function buildInternConvertScene(S) {
+  const f = S.familyFortune, o = f?.internConvert;
+  if (!o) return null;
+  return {
+    key: 'family_intern_offer', category: 'career', title: `${o.employer} wants you`,
+    text: `Your internship at ${o.employer} went well and they offer you a first job there as an analyst. Or you can walk away with your reference and look elsewhere.`,
+    choices: [
+      { label: `Take the job at ${o.employer}`, effect: st => resolveInternConvert(st, true) },
+      { label: 'Keep the reference and look elsewhere', effect: st => resolveInternConvert(st, false) }
+    ]
+  };
+}
+export function resolveInternConvert(S, yes) {
+  const f = S.familyFortune, o = f?.internConvert;
+  if (!o) return null;
+  f.internConvert = null;
+  if (!yes) { recordJournal(S, `You kept the reference from ${o.employer} and went looking elsewhere.`, 'career'); return { ok: true, taken: false }; }
+  if (S.career?.employed && S.career?.job) { recordJournal(S, `You already have a job, so the offer from ${o.employer} could not be taken.`, 'career'); return { ok: false, taken: false }; }
+  const usd = f.tier === 'very_wealthy' ? 80e3 : 55e3;
+  hireIntoJob(S, { employer: o.employer, title: 'Analyst', track: 'business', level: 1, monthlyGross: Math.round(eraLocalCost(usd, S.country, S.year) / 12), id: 'family_intern_convert' }, { partTimeOnly: false }, {});
+  recordJournal(S, `You joined ${o.employer} as an analyst.`, 'career');
+  return { ok: true, taken: true };
+}
 export function resolveHome(S, how) {
   const f = S.familyFortune, o = f?.homeOffer;
   if (!o) return null;
@@ -959,7 +1038,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f);
+  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;
