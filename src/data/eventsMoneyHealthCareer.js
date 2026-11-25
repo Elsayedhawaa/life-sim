@@ -297,7 +297,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_money_phone_screen',
         category: 'money',
         title: "The Phone Screen Shatters",
-        text: `The phone slips out of your hand on the pavement in your city and lands face down. The screen is a spiderweb of cracks. A proper repair costs ${formatMoney(A, S.country)}; a cheap shop will do it for ${formatMoney(B, S.country)}.`,
+        text: `The phone slips out of your hand on the pavement and lands face down. The screen is a spiderweb of cracks. A proper repair costs ${formatMoney(A, S.country)}; a cheap shop will do it for ${formatMoney(B, S.country)}.`,
         choices: [
           {
             label: "Repair it properly",
@@ -960,7 +960,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_money_ac_bill',
         category: 'money',
         title: "The Summer Air Conditioning Bill",
-        text: `August in your city is brutal, and the air conditioning has run day and night. The bill is ${formatMoney(A, S.country)} — the biggest of the year — and there are still three hot weeks left.`,
+        text: `August is brutal, and the air conditioning has run day and night. The bill is ${formatMoney(A, S.country)} — the biggest of the year — and there are still three hot weeks left.`,
         choices: [
           {
             label: "Pay it and keep cool",
@@ -1058,7 +1058,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_money_stolen_wallet',
         category: 'money',
         title: "Your Wallet Is Stolen",
-        text: `On a crowded bus in your city, your pocket feels suddenly light. Your wallet is gone — ${formatMoney(A, S.country)} in cash, your ID, and every card. The police station takes a report and shrugs.`,
+        text: `On a crowded bus, your pocket feels suddenly light. Your wallet is gone — ${formatMoney(A, S.country)} in cash, your ID, and every card. The police station takes a report and shrugs.`,
         choices: [
           {
             label: "Cancel everything and replace the ID",
@@ -6100,7 +6100,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               if (st.career.job) st.career.job.monthlyGross = Math.round(st.career.job.monthlyGross * (1 + (+6) / 100));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+3));
-              recordJournal(st, `You negotiated to stay in your city and take the bigger role from here.`, 'career');
+              recordJournal(st, `You negotiated to stay and take the bigger role from here.`, 'career');
             },
           },
           {

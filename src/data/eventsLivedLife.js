@@ -47,7 +47,7 @@ const localPlace = S => ({
 
 export const EVENTS_LIVED_LIFE = [
   story('ev_can_winter_entry', 'A Place for Wet Boots', {minAge:18,countries:['can']},
-    S => `A cold wet evening in your city leaves boots and coats crowded around your entrance. Tomorrow will be easier if the things you need have somewhere to dry.`, [
+    S => `A cold wet evening leaves boots and coats crowded around your entrance. Tomorrow will be easier if the things you need have somewhere to dry.`, [
       ['Clear a drying spot with what you already own', 'You cleared a place for damp boots and coats using what you already had. No new furniture or equipment was bought.', {'vitals.stress':-2}],
       ['Prepare tomorrows clothes before resting', 'You set out dry clothes for tomorrow, then left the rest of the sorting for another day.', {'vitals.stress':-1}],
     ], {category:'home'}),
@@ -157,7 +157,7 @@ export const EVENTS_LIVED_LIFE = [
       ['Send a warm congratulations and take some space', 'You sent a sincere congratulations and gave yourself a quiet evening rather than forcing a celebration.', { 'vitals.stress': -3 }, { affection: 2 }],
     ], { category: 'friends', person: 'friend' }),
   story('ev_lived_mom_tea', 'No Advice This Time', { ...adult, requiredPeople: ['mom'] },
-    (S, name) => `${name} finds you sitting quietly at home in your city. Instead of asking for an update, she asks whether you want a cup of tea and some company.`, [
+    (S, name) => `${name} finds you sitting quietly at home. Instead of asking for an update, she asks whether you want a cup of tea and some company.`, [
       ['Sit together without turning it into a progress report', 'You shared a quiet cup with your mother. Nobody had good news to report, and that was fine.', { 'vitals.stress': -5, 'vitals.happiness': 3 }, { affection: 6, trust: 3 }],
       ['Tell her what has been weighing on you', 'You told your mother what had been weighing on you and asked her to listen before offering advice.', { 'vitals.stress': -4 }, { trust: 6 }],
     ], { category: 'family', person: 'mom' }),
