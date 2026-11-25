@@ -67,7 +67,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_found_wallet', category: 'life',
         title: 'A Wallet on the Pavement',
-        text: `Walking home through ${S.city}, you spot a worn leather wallet on the pavement. Inside is ${formatMoney(found, S.country)} in cash and an ID card with a photo of an older man. No one nearby is looking for it.`,
+        text: `Walking home through your city, you spot a worn leather wallet on the pavement. Inside is ${formatMoney(found, S.country)} in cash and an ID card with a photo of an older man. No one nearby is looking for it.`,
         choices: [
           { label: 'Hand it in at the nearest police station', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 4);
@@ -103,7 +103,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_stray_cat', category: 'life',
         title: 'The Cat at the Door',
-        text: `A thin ginger cat has started waiting outside your door in ${S.city} every evening, meowing hopefully. It is clearly hungry, and it flinches when you move too fast.`,
+        text: `A thin ginger cat has started waiting outside your door in your city every evening, meowing hopefully. It is clearly hungry, and it flinches when you move too fast.`,
         choices: [
           { label: `Leave out food (${money(S, 25)})`, effect: (st) => {
               walletMove(st, -food, 'Food for a stray cat', 'money');
@@ -129,7 +129,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_power_cut', category: 'life',
         title: 'The Lights Go Out',
-        text: `Halfway through dinner the whole street in ${S.city} goes dark. The fridge hums to a stop, the television dies mid-sentence, and through the window you can see neighbours stepping onto their balconies with candles.`,
+        text: `Halfway through dinner the whole street in your city goes dark. The fridge hums to a stop, the television dies mid-sentence, and through the window you can see neighbours stepping onto their balconies with candles.`,
         choices: [
           { label: 'Light candles and make an evening of it', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 4);
@@ -190,7 +190,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_broken_kettle', category: 'life',
         title: 'The Kettle Gives Up',
-        text: `Your kettle clicks, sputters, and dies halfway through boiling. No morning tea or coffee until it is replaced, and the shops in ${S.city} sell a ${kettle ? `${kettle.brand} ${kettle.name}` : 'decent kettle'} for ${formatMoney(price, S.country)}.`,
+        text: `Your kettle clicks, sputters, and dies halfway through boiling. No morning tea or coffee until it is replaced, and the shops in your city sell a ${kettle ? `${kettle.brand} ${kettle.name}` : 'decent kettle'} for ${formatMoney(price, S.country)}.`,
         choices: [
           { label: `Buy a new kettle (${formatMoney(price, S.country)})`, available: (st) => st.money.cash >= price, effect: (st) => {
               const res = kettle
@@ -222,7 +222,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_puncture', category: 'life',
         title: 'A Flat Tyre on the Way Home',
-        text: `Halfway home across ${S.city} your bicycle tyre goes soft, then flat. You are still a long walk from home, and a repair stand by the roadside will patch it for ${formatMoney(fix, S.country)}.`,
+        text: `Halfway home across your city your bicycle tyre goes soft, then flat. You are still a long walk from home, and a repair stand by the roadside will patch it for ${formatMoney(fix, S.country)}.`,
         choices: [
           { label: `Pay for the patch (${formatMoney(fix, S.country)})`, effect: (st) => {
               walletMove(st, -fix, 'Bicycle puncture repair', 'money');
@@ -248,7 +248,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_rain_soaked', category: 'life',
         title: 'Caught in the Rain',
-        text: `The sky over ${S.city} opens without warning on your way to work. By the time you reach the office your shirt is soaked through, your shoes squelch, and your hair is plastered to your forehead.`,
+        text: `The sky over your city opens without warning on your way to work. By the time you reach the office your shirt is soaked through, your shoes squelch, and your hair is plastered to your forehead.`,
         choices: [
           { label: 'Laugh it off and dry out at your desk', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
@@ -275,7 +275,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_cracked_phone', category: 'life',
         title: 'The Phone Hits the Pavement',
-        text: `Your phone slips out of your hand on a busy street in ${S.city} and lands face-down. When you pick it up, a spiderweb of cracks runs across the screen. It still works, but every swipe catches your thumb. A repair shop quotes ${formatMoney(repair, S.country)}.`,
+        text: `Your phone slips out of your hand on a busy street in your city and lands face-down. When you pick it up, a spiderweb of cracks runs across the screen. It still works, but every swipe catches your thumb. A repair shop quotes ${formatMoney(repair, S.country)}.`,
         choices: [
           { label: `Pay for the screen repair (${formatMoney(repair, S.country)})`, effect: (st) => {
               walletMove(st, -repair, 'Phone screen repair', 'money');
@@ -302,7 +302,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_lost_keys', category: 'life',
         title: 'Locked Out',
-        text: `You reach your front door in ${S.city} and pat your pockets. Nothing. Your keys are gone — left at work, or dropped somewhere on the way home. A locksmith can open the door for ${formatMoney(locksmith, S.country)}, or you could wait until someone else gets home.`,
+        text: `You reach your front door in your city and pat your pockets. Nothing. Your keys are gone — left at work, or dropped somewhere on the way home. A locksmith can open the door for ${formatMoney(locksmith, S.country)}, or you could wait until someone else gets home.`,
         choices: [
           { label: `Call the locksmith (${formatMoney(locksmith, S.country)})`, effect: (st) => {
               walletMove(st, -locksmith, 'Locksmith call-out', 'money');
@@ -328,7 +328,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_washing_flood', category: 'life',
         title: 'Water Across the Kitchen Floor',
-        text: `The washing machine hose has come loose and water is spreading across your kitchen floor in ${S.city}. Towels are already soaked through and the water is heading for the hallway. A repairman can fix the hose and pump for ${formatMoney(repair, S.country)}.`,
+        text: `The washing machine hose has come loose and water is spreading across your kitchen floor in your city. Towels are already soaked through and the water is heading for the hallway. A repairman can fix the hose and pump for ${formatMoney(repair, S.country)}.`,
         choices: [
           { label: `Call the repairman (${formatMoney(repair, S.country)})`, effect: (st) => {
               walletMove(st, -repair, 'Washing machine repair', 'money');
@@ -355,7 +355,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_fridge_breaks', category: 'life',
         title: 'The Fridge Goes Warm',
-        text: `You open the fridge and the air inside is warm. The motor has died overnight, and a week's worth of food in ${S.city} is already starting to turn. A repairman quotes ${formatMoney(repair, S.country)} — or the fridge is old enough that a new one makes more sense.`,
+        text: `You open the fridge and the air inside is warm. The motor has died overnight, and a week's worth of food in your city is already starting to turn. A repairman quotes ${formatMoney(repair, S.country)} — or the fridge is old enough that a new one makes more sense.`,
         choices: [
           { label: `Pay for the repair (${formatMoney(repair, S.country)})`, effect: (st) => {
               walletMove(st, -repair, 'Fridge repair', 'money');
@@ -382,7 +382,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_leaky_tap', category: 'life',
         title: 'Drip, Drip, All Night',
-        text: `The bathroom tap in your home in ${S.city} has started dripping — one drop every few seconds, loud enough to hear from bed. It has been going on for a week, and the water bill will notice. A plumber will fix it for ${formatMoney(plumber, S.country)}.`,
+        text: `The bathroom tap in your home in your city has started dripping — one drop every few seconds, loud enough to hear from bed. It has been going on for a week, and the water bill will notice. A plumber will fix it for ${formatMoney(plumber, S.country)}.`,
         choices: [
           { label: `Call the plumber (${formatMoney(plumber, S.country)})`, effect: (st) => {
               walletMove(st, -plumber, 'Plumber — leaking tap', 'money');
@@ -434,7 +434,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_old_photos', category: 'life',
         title: 'A Box of Old Photographs',
-        text: `While clearing a cupboard you find a box of old photographs — your parents young and laughing, a street in ${S.city} that looks nothing like it does now, yourself as a small child holding a toy you had forgotten. You sit on the floor for an hour, going through them one by one.`,
+        text: `While clearing a cupboard you find a box of old photographs — your parents young and laughing, a street in your city that looks nothing like it does now, yourself as a small child holding a toy you had forgotten. You sit on the floor for an hour, going through them one by one.`,
         choices: [
           { label: 'Show them to your family over tea', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 6);
@@ -461,7 +461,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_bad_haircut', category: 'life',
         title: 'The Haircut That Went Wrong',
-        text: `You asked for a trim at a new barber in ${S.city}. What you got is uneven on one side and far shorter than you asked for on the other. You stare at the mirror, unsure whether to say something.`,
+        text: `You asked for a trim at a new barber in your city. What you got is uneven on one side and far shorter than you asked for on the other. You stare at the mirror, unsure whether to say something.`,
         choices: [
           { label: 'Say so, and ask them to fix it', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 2);
@@ -491,7 +491,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_new_shoes_blister', category: 'life',
         title: 'New Shoes, Raw Heels',
-        text: `Your new shoes looked perfect in the shop. By midday walking around ${S.city} they have rubbed both heels raw, and every step stings. You still have hours of walking ahead of you.`,
+        text: `Your new shoes looked perfect in the shop. By midday walking around your city they have rubbed both heels raw, and every step stings. You still have hours of walking ahead of you.`,
         choices: [
           { label: 'Buy plasters and push through', effect: (st) => {
               walletMove(st, -cost(st, 15), 'Plasters for blistered heels', 'money');
@@ -519,7 +519,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_fake_watch', category: 'life',
         title: 'A Watch That Is Too Cheap to Be Real',
-        text: `A street vendor in ${S.city} holds up a gleaming watch and whispers a price far below the shop price — ${formatMoney(price, S.country)}. He swears it is genuine, but the weight feels wrong in your hand and the second hand ticks too loudly.`,
+        text: `A street vendor in your city holds up a gleaming watch and whispers a price far below the shop price — ${formatMoney(price, S.country)}. He swears it is genuine, but the weight feels wrong in your hand and the second hand ticks too loudly.`,
         choices: [
           { label: `Buy it — a bargain is a bargain (${formatMoney(price, S.country)})`, effect: (st) => {
               walletMove(st, -price, 'Street watch that turned out fake', 'money');
@@ -545,7 +545,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_taxi_overcharge', category: 'life',
         title: 'The Meter That Runs Too Fast',
-        text: `Your taxi across ${S.city} takes a strange, long route, and the fare comes to far more than the trip usually costs. The driver shrugs and says traffic was bad. You know the shortcut he skipped.`,
+        text: `Your taxi across your city takes a strange, long route, and the fare comes to far more than the trip usually costs. The driver shrugs and says traffic was bad. You know the shortcut he skipped.`,
         choices: [
           { label: 'Argue the fare down', effect: (st) => {
               st.player.vitals.stress = clamp(st.player.vitals.stress + 3);
@@ -571,7 +571,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_bus_breakdown', category: 'life',
         title: 'The Bus Gives Up Halfway',
-        text: `The bus you take every day across ${S.city} shudders, coughs out a cloud of smoke, and stops dead in traffic. The driver opens the doors and waves everyone off. You are still miles from where you need to be.`,
+        text: `The bus you take every day across your city shudders, coughs out a cloud of smoke, and stops dead in traffic. The driver opens the doors and waves everyone off. You are still miles from where you need to be.`,
         choices: [
           { label: 'Walk the rest of the way', effect: (st) => {
               st.player.vitals.health = clamp(st.player.vitals.health + 3);
@@ -597,7 +597,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_queue_jumper', category: 'life',
         title: 'Someone Pushes In',
-        text: `You have been queuing at the bakery in ${S.city} for ten minutes when a man walks straight to the front and starts ordering as if the queue does not exist. Everyone behind him exchanges looks.`,
+        text: `You have been queuing at the bakery in your city for ten minutes when a man walks straight to the front and starts ordering as if the queue does not exist. Everyone behind him exchanges looks.`,
         choices: [
           { label: 'Speak up — the queue starts back here', effect: (st) => {
               st.player.vitals.stress = clamp(st.player.vitals.stress + 2);
@@ -624,7 +624,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_stranger_directions', category: 'life',
         title: 'A Stranger Asks the Way',
-        text: `A lost-looking visitor stops you on a street in ${S.city}, holding a crumpled map. They are looking for the old market square and their phone has no signal. You know the shortcut.`,
+        text: `A lost-looking visitor stops you on a street in your city, holding a crumpled map. They are looking for the old market square and their phone has no signal. You know the shortcut.`,
         choices: [
           { label: 'Walk them there yourself', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 4);
@@ -650,7 +650,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_beggar_asks', category: 'life',
         title: 'A Hand Held Out',
-        text: `Outside the market in ${S.city}, an elderly man with tired eyes holds out his hand and asks quietly for help. His clothes are thin and his shoes are coming apart. People walk past without looking.`,
+        text: `Outside the market in your city, an elderly man with tired eyes holds out his hand and asks quietly for help. His clothes are thin and his shoes are coming apart. People walk past without looking.`,
         choices: [
           { label: `Give him ${formatMoney(give, S.country)}`, effect: (st) => {
               walletMove(st, -give, 'Given to a man begging outside the market', 'money');
@@ -708,7 +708,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_new_cafe', category: 'life',
         title: 'A New Place Opens',
-        text: `A new café has opened on your street in ${S.city}, all fresh paint and the smell of baking bread. A chalkboard outside promises the best coffee in the neighbourhood. It is busy already.`,
+        text: `A new café has opened on your street in your city, all fresh paint and the smell of baking bread. A chalkboard outside promises the best coffee in the neighbourhood. It is busy already.`,
         choices: [
           { label: `Try it — coffee and a pastry (${formatMoney(coffee, S.country)})`, effect: (st) => {
               walletMove(st, -coffee, 'Coffee at a new café', 'money');
@@ -735,7 +735,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_gym_offer', category: 'life',
         title: 'A Gym Membership Offer',
-        text: `A gym near your work in ${S.city} is offering a founding-member rate: ${formatMoney(month, S.country)} a month, no joining fee, if you sign up this week. You have been meaning to get fitter for a year.`,
+        text: `A gym near your work in your city is offering a founding-member rate: ${formatMoney(month, S.country)} a month, no joining fee, if you sign up this week. You have been meaning to get fitter for a year.`,
         choices: [
           { label: `Join the gym (${formatMoney(month, S.country)}/month)`, effect: (st) => {
               walletMove(st, -month, 'First gym membership payment', 'money');
@@ -762,7 +762,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_twisted_ankle', category: 'life',
         title: 'A Misstep on the Morning Run',
-        text: `Out for a morning run in ${S.city}, your foot catches on an uneven paving stone and your ankle twists hard. You can still walk, but every step sends a sharp pain up your leg.`,
+        text: `Out for a morning run in your city, your foot catches on an uneven paving stone and your ankle twists hard. You can still walk, but every step sends a sharp pain up your leg.`,
         choices: [
           { label: 'Rest it properly for a week', effect: (st) => {
               st.player.vitals.health = clamp(st.player.vitals.health - 2);
@@ -820,7 +820,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_cooking_win', category: 'life',
         title: 'The Dish That Actually Worked',
-        text: `Tonight everything in the kitchen went right. The dish you have been practising for months came out exactly as you imagined it — the smell alone fills the whole flat in ${S.city}, and the first bite makes you close your eyes.`,
+        text: `Tonight everything in the kitchen went right. The dish you have been practising for months came out exactly as you imagined it — the smell alone fills the whole flat in your city, and the first bite makes you close your eyes.`,
         choices: [
           { label: 'Write the recipe down before you forget it', effect: (st) => {
               st.skills.creativity = clamp(st.skills.creativity + 5);
@@ -847,7 +847,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_dying_plant', category: 'life',
         title: 'The Plant on the Windowsill',
-        text: `The plant on your windowsill in ${S.city} is drooping badly, its leaves yellow at the edges. You have been forgetting to water it for weeks, and it is clearly giving up.`,
+        text: `The plant on your windowsill in your city is drooping badly, its leaves yellow at the edges. You have been forgetting to water it for weeks, and it is clearly giving up.`,
         choices: [
           { label: 'Nurse it back — water, light, patience', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
@@ -872,7 +872,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_wrong_parcel', category: 'life',
         title: 'A Parcel for the Wrong Flat',
-        text: `The courier leaves a parcel at your door in ${S.city} — but the name on it is your neighbour's, two floors up. Inside, by the weight of it, is something they have clearly been waiting for.`,
+        text: `The courier leaves a parcel at your door in your city — but the name on it is your neighbour's, two floors up. Inside, by the weight of it, is something they have clearly been waiting for.`,
         choices: [
           { label: 'Carry it up to them', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
@@ -957,7 +957,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_card_swallowed', category: 'life',
         title: 'The ATM Keeps Your Card',
-        text: `You type your PIN wrong three times at an ATM in ${S.city} and the machine swallows your bank card with a final clunk. Your money is inside the bank, but your card is inside the machine, and the branch is already closed.`,
+        text: `You type your PIN wrong three times at an ATM in your city and the machine swallows your bank card with a final clunk. Your money is inside the bank, but your card is inside the machine, and the branch is already closed.`,
         choices: [
           { label: 'Go into the branch tomorrow and get a replacement', effect: (st) => {
               st.player.vitals.stress = clamp(st.player.vitals.stress + 3);
@@ -983,7 +983,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_wallet_stolen', category: 'life',
         title: 'Your Pocket Feels Light',
-        text: `On a crowded street in ${S.city} you reach for your wallet — and it is gone. Your pocket was picked clean in the crowd. Inside was about ${formatMoney(lost, S.country)} in cash, your ID, and your bank cards.`,
+        text: `On a crowded street in your city you reach for your wallet — and it is gone. Your pocket was picked clean in the crowd. Inside was about ${formatMoney(lost, S.country)} in cash, your ID, and your bank cards.`,
         choices: [
           { label: 'Report it to the police and cancel everything', effect: (st) => {
               walletMove(st, -lost, 'Cash stolen by a pickpocket', 'money');
@@ -1009,7 +1009,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_pickpocket_caught', category: 'life',
         title: 'A Hand in Your Pocket',
-        text: `On a packed bus in ${S.city} you feel a hand slide into your coat pocket. You turn and catch a young man with his fingers on your wallet, frozen mid-theft, eyes wide.`,
+        text: `On a packed bus in your city you feel a hand slide into your coat pocket. You turn and catch a young man with his fingers on your wallet, frozen mid-theft, eyes wide.`,
         choices: [
           { label: 'Grab his wrist and shout for the driver', effect: (st) => {
               st.player.vitals.stress = clamp(st.player.vitals.stress + 6);
@@ -1036,7 +1036,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_heatwave_ac', category: 'life',
         title: 'The Hottest Week, No Cooling',
-        text: `A heatwave has settled over ${S.city} and your air conditioning has chosen this exact week to die. Inside the flat it is hotter than outside, the fan just pushes warm air around, and sleep is impossible. A technician can come for ${formatMoney(repair, S.country)}.`,
+        text: `A heatwave has settled over your city and your air conditioning has chosen this exact week to die. Inside the flat it is hotter than outside, the fan just pushes warm air around, and sleep is impossible. A technician can come for ${formatMoney(repair, S.country)}.`,
         choices: [
           { label: `Get the AC fixed now (${formatMoney(repair, S.country)})`, effect: (st) => {
               walletMove(st, -repair, 'Air conditioning repair in a heatwave', 'money');
@@ -1063,7 +1063,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_cold_snap_heater', category: 'life',
         title: 'The Heater Quits in the Cold',
-        text: `A cold snap has hit ${S.city} and your heater has stopped working. You can see your breath in the living room, the pipes are at risk, and every blanket in the house is already on the bed. A repairman can come for ${formatMoney(repair, S.country)}.`,
+        text: `A cold snap has hit your city and your heater has stopped working. You can see your breath in the living room, the pipes are at risk, and every blanket in the house is already on the bed. A repairman can come for ${formatMoney(repair, S.country)}.`,
         choices: [
           { label: `Call the repairman (${formatMoney(repair, S.country)})`, effect: (st) => {
               walletMove(st, -repair, 'Heater repair in a cold snap', 'money');
@@ -1090,7 +1090,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_mosquito_night', category: 'life',
         title: 'One Mosquito, All Night',
-        text: `A single mosquito has got into your bedroom in ${S.city}. It whines past your ear, you swat at the dark, it comes back. By 3 a.m. you have three bites on your arm and no sleep.`,
+        text: `A single mosquito has got into your bedroom in your city. It whines past your ear, you swat at the dark, it comes back. By 3 a.m. you have three bites on your arm and no sleep.`,
         choices: [
           { label: 'Get up, hunt it down, and win', effect: (st) => {
               st.player.vitals.health = clamp(st.player.vitals.health + 1);
@@ -1116,7 +1116,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_toothache', category: 'life',
         title: 'A Tooth That Will Not Let You Sleep',
-        text: `A back tooth has started throbbing, sharp and deep, and it is worse at night. Cold water makes it sing. A dentist in ${S.city} can see you tomorrow for ${formatMoney(dentist, S.country)} — or you could wait and hope it settles.`,
+        text: `A back tooth has started throbbing, sharp and deep, and it is worse at night. Cold water makes it sing. A dentist in your city can see you tomorrow for ${formatMoney(dentist, S.country)} — or you could wait and hope it settles.`,
         choices: [
           { label: `See the dentist tomorrow (${formatMoney(dentist, S.country)})`, effect: (st) => {
               walletMove(st, -dentist, 'Dentist — aching tooth', 'money');
@@ -1144,7 +1144,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_headache_pharmacy', category: 'life',
         title: 'A Headache That Will Not Shift',
-        text: `A dull headache has been sitting behind your eyes since lunchtime in ${S.city}. Screens make it worse, light makes it worse, and you still have things to do today.`,
+        text: `A dull headache has been sitting behind your eyes since lunchtime in your city. Screens make it worse, light makes it worse, and you still have things to do today.`,
         choices: [
           { label: 'Take painkillers and a proper rest', effect: (st) => {
               walletMove(st, -cost(st, 20), 'Painkillers', 'money');
@@ -1224,7 +1224,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_oversleep_weekend', category: 'life',
         title: 'Sleeping Until Noon',
-        text: `You wake up on a Saturday to find it is already noon. The whole morning is gone — the market is closing, the sun is high, and you have slept through the best part of the day in ${S.city}.`,
+        text: `You wake up on a Saturday to find it is already noon. The whole morning is gone — the market is closing, the sun is high, and you have slept through the best part of the day in your city.`,
         choices: [
           { label: 'Enjoy it — you clearly needed the sleep', effect: (st) => {
               st.player.vitals.health = clamp(st.player.vitals.health + 3);
@@ -1250,7 +1250,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_dream_home', category: 'life',
         title: 'A Dream About the Old House',
-        text: `Last night you dreamt you were a child again, walking through the rooms of your childhood home in ${S.city}. You woke up with the smell of your mother's cooking in your nose and a strange ache in your chest.`,
+        text: `Last night you dreamt you were a child again, walking through the rooms of your childhood home in your city. You woke up with the smell of your mother's cooking in your nose and a strange ache in your chest.`,
         choices: [
           { label: 'Call your mother and tell her about it', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 4);
@@ -1277,7 +1277,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_old_song', category: 'life',
         title: 'A Song From Years Ago',
-        text: `A song comes on the radio in ${S.city} that you have not heard in years — one from when you were young, tied to a summer and people you barely think about any more. For a moment you are right back there.`,
+        text: `A song comes on the radio in your city that you have not heard in years — one from when you were young, tied to a summer and people you barely think about any more. For a moment you are right back there.`,
         choices: [
           { label: 'Turn it up and let the memory sit', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 5);
@@ -1303,7 +1303,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_lottery_win_small', category: 'life',
         title: 'A Small Win',
-        text: `On a whim you buy a lottery ticket at a kiosk in ${S.city} for ${formatMoney(ticket, S.country)}. That evening you check the numbers — and you have actually won something: ${formatMoney(win, S.country)}. Not life-changing, but real.`,
+        text: `On a whim you buy a lottery ticket at a kiosk in your city for ${formatMoney(ticket, S.country)}. That evening you check the numbers — and you have actually won something: ${formatMoney(win, S.country)}. Not life-changing, but real.`,
         choices: [
           { label: 'Pocket the win and buy another ticket', effect: (st) => {
               walletMove(st, win - ticket, 'Small lottery win, minus a new ticket', 'money');
@@ -1331,7 +1331,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_lottery_nothing', category: 'life',
         title: 'Numbers That Mean Nothing',
-        text: `You buy a lottery ticket in ${S.city} for ${formatMoney(ticket, S.country)} and spend the evening half-dreaming about what you would do with a fortune. The draw comes: not a single number matches.`,
+        text: `You buy a lottery ticket in your city for ${formatMoney(ticket, S.country)} and spend the evening half-dreaming about what you would do with a fortune. The draw comes: not a single number matches.`,
         choices: [
           { label: 'Laugh it off — it was only a ticket', effect: (st) => {
               walletMove(st, -ticket, 'Lottery ticket', 'money');
@@ -1358,7 +1358,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_charity_door', category: 'life',
         title: 'A Collector at the Door',
-        text: `A young volunteer knocks on your door in ${S.city}, collecting for a children's hospital. She is polite, tired, and clearly on her fiftieth door of the day. She asks if you can spare anything at all.`,
+        text: `A young volunteer knocks on your door in your city, collecting for a children's hospital. She is polite, tired, and clearly on her fiftieth door of the day. She asks if you can spare anything at all.`,
         choices: [
           { label: `Give ${formatMoney(give, S.country)}`, effect: (st) => {
               walletMove(st, -give, 'Donation to a children\'s hospital collection', 'money');
@@ -1384,7 +1384,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_blood_donation', category: 'life',
         title: 'The Blood Donation Van',
-        text: `A blood donation van is parked outside the community centre in ${S.city}, with a small queue and a nurse calling for donors. The hospital is short this month, she says, and one donation can help three people.`,
+        text: `A blood donation van is parked outside the community centre in your city, with a small queue and a nurse calling for donors. The hospital is short this month, she says, and one donation can help three people.`,
         choices: [
           { label: 'Roll up your sleeve and donate', effect: (st) => {
               st.player.vitals.health = clamp(st.player.vitals.health - 1);
@@ -1411,7 +1411,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_voting_day', category: 'life',
         title: 'Election Day',
-        text: `It is election day in ${getCountry(S.country).name}. Posters cover every wall in ${S.city}, and the polling station at the school has a steady queue. Your name is on the roll, and the ballot is waiting.`,
+        text: `It is election day in ${getCountry(S.country).name}. Posters cover every wall in your city, and the polling station at the school has a steady queue. Your name is on the roll, and the ballot is waiting.`,
         choices: [
           { label: 'Go and vote', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
@@ -1439,7 +1439,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_local_match', category: 'life',
         title: 'The Neighbourhood Match',
-        text: `Your local team is playing a derby at the ground near your home in ${S.city}, and the whole street is buzzing. Tickets at the gate are ${formatMoney(ticket, S.country)}, and the crowd is already singing.`,
+        text: `Your local team is playing a derby at the ground near your home in your city, and the whole street is buzzing. Tickets at the gate are ${formatMoney(ticket, S.country)}, and the crowd is already singing.`,
         choices: [
           { label: `Go and cheer them on (${formatMoney(ticket, S.country)})`, effect: (st) => {
               walletMove(st, -ticket, 'Ticket to the local football match', 'money');
@@ -1467,7 +1467,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_street_festival', category: 'life',
         title: 'A Festival in Your Street',
-        text: `Your street in ${S.city} is closed to cars today for a festival — stalls selling food, children running between tables, music from a speaker tied to a lamppost. The smell of grilling meat drifts through the whole neighbourhood.`,
+        text: `Your street in your city is closed to cars today for a festival — stalls selling food, children running between tables, music from a speaker tied to a lamppost. The smell of grilling meat drifts through the whole neighbourhood.`,
         choices: [
           { label: `Spend the afternoon there (${formatMoney(spend, S.country)})`, effect: (st) => {
               walletMove(st, -spend, 'Street festival food and stalls', 'money');
@@ -1521,7 +1521,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_birthday_surprise', category: 'life',
         title: 'A Birthday Surprise',
-        text: `You walk through your front door in ${S.city} and the lights are off — then they snap on, and a room full of people shouts your name. There is a cake, there are balloons, and ${p.mom ? nm(p.mom, 'your mother') : 'your mother'} is already filming.`,
+        text: `You walk through your front door in your city and the lights are off — then they snap on, and a room full of people shouts your name. There is a cake, there are balloons, and ${p.mom ? nm(p.mom, 'your mother') : 'your mother'} is already filming.`,
         choices: [
           { label: 'Laugh, hug everyone, and enjoy it', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 8);
@@ -1573,7 +1573,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_reading_glasses', category: 'life',
         title: 'The Print Keeps Getting Smaller',
-        text: `You have started holding menus and newspapers at arm's length to read them, and it is not working any more. The optician in ${S.city} says you need reading glasses — ${formatMoney(glasses, S.country)} for a decent pair.`,
+        text: `You have started holding menus and newspapers at arm's length to read them, and it is not working any more. The optician in your city says you need reading glasses — ${formatMoney(glasses, S.country)} for a decent pair.`,
         choices: [
           { label: `Buy the reading glasses (${formatMoney(glasses, S.country)})`, effect: (st) => {
               walletMove(st, -glasses, 'Reading glasses', 'money');
@@ -1603,7 +1603,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_bad_mattress', category: 'life',
         title: 'Waking Up With a Bad Back',
-        text: `You have woken up with a stiff, aching back three mornings in a row. Your mattress in ${S.city} has a dip in the middle you can feel with your hand, and it is older than you want to admit. A decent replacement — a ${mattressItem ? `${mattressItem.brand} ${mattressItem.name}` : 'new mattress'} from the shop — costs ${formatMoney(mattress, S.country)}.`,
+        text: `You have woken up with a stiff, aching back three mornings in a row. Your mattress in your city has a dip in the middle you can feel with your hand, and it is older than you want to admit. A decent replacement — a ${mattressItem ? `${mattressItem.brand} ${mattressItem.name}` : 'new mattress'} from the shop — costs ${formatMoney(mattress, S.country)}.`,
         choices: [
           { label: `Buy a new mattress (${formatMoney(mattress, S.country)})`, available: (st) => st.money.cash >= mattress, effect: (st) => {
               const res = mattressItem
@@ -1662,7 +1662,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_lift_stuck', category: 'life',
         title: 'Stuck Between Floors',
-        text: `The lift in your building in ${S.city} jerks, groans, and stops between floors. The lights flicker but stay on. You are alone in the small metal box, and the emergency button is right there.`,
+        text: `The lift in your building in your city jerks, groans, and stops between floors. The lights flicker but stay on. You are alone in the small metal box, and the emergency button is right there.`,
         choices: [
           { label: 'Press the alarm and wait calmly', effect: (st) => {
               st.player.vitals.stress = clamp(st.player.vitals.stress + 3);
@@ -1713,7 +1713,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_street_works', category: 'life',
         title: 'The Street Is Torn Up',
-        text: `Roadworks have torn up your whole street in ${S.city} — jackhammers from 7 a.m., dust on every windowsill, and the pavement closed off. The sign says three weeks. It has already been two.`,
+        text: `Roadworks have torn up your whole street in your city — jackhammers from 7 a.m., dust on every windowsill, and the pavement closed off. The sign says three weeks. It has already been two.`,
         choices: [
           { label: 'Complain to the council office', effect: (st) => {
               st.player.vitals.stress = clamp(st.player.vitals.stress + 2);
@@ -1764,7 +1764,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_new_year_resolution', category: 'life',
         title: 'A Resolution for the New Year',
-        text: `The new year has begun in ${S.city}, and everyone is talking about resolutions. Yours has been the same for three years running — and you have never kept it past February. This year feels different. Or does it?`,
+        text: `The new year has begun in your city, and everyone is talking about resolutions. Yours has been the same for three years running — and you have never kept it past February. This year feels different. Or does it?`,
         choices: [
           { label: 'Commit properly this time — daily walks and less spending', effect: (st) => {
               st.player.vitals.health = clamp(st.player.vitals.health + 3);
@@ -1791,7 +1791,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_winter_holiday_lights', category: 'life',
         title: 'Lights in the Winter Dark',
-        text: `The high street in ${S.city} has put up its winter lights, and the shop windows are full of decorations. Families are out in coats and scarves, and the smell of roasted chestnuts drifts from a stall on the corner.`,
+        text: `The high street in your city has put up its winter lights, and the shop windows are full of decorations. Families are out in coats and scarves, and the smell of roasted chestnuts drifts from a stall on the corner.`,
         choices: [
           { label: 'Walk the lit street and take it in', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 5);
@@ -1817,7 +1817,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_life_ramadan_prep', category: 'life',
         title: 'Lanterns Before Ramadan',
-        text: `Ramadan is days away in ${S.city}, and the streets are filling with lanterns and lights. Your mother is already planning the first iftar, and the shops are packed with dates, drinks, and decorations.`,
+        text: `Ramadan is days away in your city, and the streets are filling with lanterns and lights. Your mother is already planning the first iftar, and the shops are packed with dates, drinks, and decorations.`,
         choices: [
           { label: 'Help your mother prepare the first iftar', effect: (st) => {
               walletMove(st, -cost(st, 200), 'Food for the first iftar', 'money');
@@ -2565,7 +2565,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_dad_teaches_drive', category: 'family',
         title: `${dadName} Teaches You to Drive`,
-        text: `${dadName} takes you to an empty stretch of road on the edge of ${S.city}, slides over, and says, "Your turn." His hands hover near the wheel the whole time, and he brakes with his feet on the floor every time you get close to anything.`,
+        text: `${dadName} takes you to an empty stretch of road on the edge of your city, slides over, and says, "Your turn." His hands hover near the wheel the whole time, and he brakes with his feet on the floor every time you get close to anything.`,
         choices: [
           { label: 'Listen carefully and drive slowly', effect: (st) => {
               st.skills.charisma = clamp(st.skills.charisma + 2);
@@ -3057,7 +3057,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_eid_gathering', category: 'family',
         title: 'Eid at the Family Home',
-        text: `It is Eid, and the whole family is gathering at your parents' home in ${S.city}. ${momName} has been cooking since dawn, the house is full of cousins and noise, and the elders are handing out money to the children. Your place at the table is waiting.`,
+        text: `It is Eid, and the whole family is gathering at your parents' home in your city. ${momName} has been cooking since dawn, the house is full of cousins and noise, and the elders are handing out money to the children. Your place at the table is waiting.`,
         choices: [
           { label: 'Go and stay the whole day', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 8);
@@ -3092,7 +3092,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_christmas_gathering', category: 'family',
         title: 'Christmas at the Family Home',
-        text: `It is Christmas, and the family is gathering at your parents' home in ${S.city}. The tree is up, ${momName} has been cooking since morning, and the house smells of roast and pine. Your place at the table is waiting.`,
+        text: `It is Christmas, and the family is gathering at your parents' home in your city. The tree is up, ${momName} has been cooking since morning, and the house smells of roast and pine. Your place at the table is waiting.`,
         choices: [
           { label: 'Go and stay the whole day', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 8);
@@ -3178,7 +3178,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_cousin_stay', category: 'family',
         title: 'A Cousin Needs a Place to Stay',
-        text: `A cousin from another city calls: they have a job interview in ${S.city} next week and nowhere to stay. Could they sleep on your sofa for a few nights? They promise to be no trouble — cousins always promise that.`,
+        text: `A cousin from another city calls: they have a job interview in your city next week and nowhere to stay. Could they sleep on your sofa for a few nights? They promise to be no trouble — cousins always promise that.`,
         choices: [
           { label: 'Offer the sofa for the week', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 2);
@@ -3921,7 +3921,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_marriage_gift_for_spouse', category: 'marriage',
         title: 'A Gift for No Reason',
-        text: `You pass a shop in ${S.city} and see something that is so clearly ${spName} that you stop walking. It costs ${formatMoney(gift, S.country)}, and there is no occasion at all — which is exactly the point.`,
+        text: `You pass a shop in your city and see something that is so clearly ${spName} that you stop walking. It costs ${formatMoney(gift, S.country)}, and there is no occasion at all — which is exactly the point.`,
         choices: [
           { label: `Buy it and surprise them tonight (${formatMoney(gift, S.country)})`, effect: (st) => {
               walletMove(st, -gift, `Surprise gift for ${spName}`, 'money');
@@ -4992,7 +4992,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_marriage_spouse_driving', category: 'marriage',
         title: `${spName} Wants Driving Lessons`,
-        text: `${spName} has decided it is time to learn to drive. Lessons in ${S.city} are not cheap, and they are nervous — but they are tired of depending on buses and on you for every trip across town.`,
+        text: `${spName} has decided it is time to learn to drive. Lessons in your city are not cheap, and they are nervous — but they are tired of depending on buses and on you for every trip across town.`,
         choices: [
           { label: 'Pay for the lessons and encourage them', effect: (st) => {
               walletMove(st, -cost(st, 600), `Driving lessons for ${spName}`, 'money');
@@ -5075,7 +5075,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_child_first_school_day', category: 'children',
         title: `${chName}'s First Day of School`,
-        text: `This morning ${chName} puts on a school uniform for the first time, backpack bigger than their back, lunchbox clutched tight. At the school gate in ${S.city} they look back at you once — brave, terrified, and very small.`,
+        text: `This morning ${chName} puts on a school uniform for the first time, backpack bigger than their back, lunchbox clutched tight. At the school gate in your city they look back at you once — brave, terrified, and very small.`,
         choices: [
           { label: 'Walk them in and stay until they settle', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 5);
@@ -5807,7 +5807,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_child_teen_first_job', category: 'children',
         title: `${chName}'s First Weekend Job`,
-        text: `${chName} has got their first job — weekends at a shop in ${S.city}, small pay, real hours. They come home from the first shift exhausted and proud, already talking about what they will buy with their first wages.`,
+        text: `${chName} has got their first job — weekends at a shop in your city, small pay, real hours. They come home from the first shift exhausted and proud, already talking about what they will buy with their first wages.`,
         choices: [
           { label: 'Celebrate it — their first real pay', effect: (st) => {
               if (p.child) { p.child.rel.affection = clamp(p.child.rel.affection + 8); p.child.vitals.happiness = clamp(p.child.vitals.happiness + 7); }
@@ -5860,7 +5860,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_child_teen_driving_lessons', category: 'children',
         title: `${chName} Wants Driving Lessons`,
-        text: `${chName} has reached the age for driving lessons and is asking — carefully, because they know what it costs — whether you will pay. Lessons in ${S.city} run about ${formatMoney(lessons, S.country)} for a course, and all their friends are already learning.`,
+        text: `${chName} has reached the age for driving lessons and is asking — carefully, because they know what it costs — whether you will pay. Lessons in your city run about ${formatMoney(lessons, S.country)} for a course, and all their friends are already learning.`,
         choices: [
           { label: `Pay for the lessons (${formatMoney(lessons, S.country)})`, effect: (st) => {
               walletMove(st, -lessons, `Driving lessons for ${chName}`, 'money');
@@ -7290,7 +7290,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_friend_new_restaurant', category: 'friends',
         title: `${frName} Found a New Restaurant`,
-        text: `${frName} is raving about a new restaurant in ${S.city} — small, crowded, no booking, and the best food they have had in years. They want to take you there this weekend, before everyone else discovers it.`,
+        text: `${frName} is raving about a new restaurant in your city — small, crowded, no booking, and the best food they have had in years. They want to take you there this weekend, before everyone else discovers it.`,
         choices: [
           { label: `Go — dinner on you this time (${formatMoney(meal, S.country)})`, effect: (st) => {
               walletMove(st, -meal, 'Dinner at a new restaurant with a friend', 'money');

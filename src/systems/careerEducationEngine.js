@@ -1837,7 +1837,7 @@ export function buildJobInterviewScene(S, jobOffer) {
     maxPerLife: 99,
     category: 'career',
     title: `Job Interview — ${jobOffer.title}, ${jobOffer.employer} (${S.year})`,
-    text: `The hiring manager at ${jobOffer.employer} in ${S.city} interviews you for ${jobOffer.title}. ${detail.involves ? `${detail.involves} ` : ''}They ask about your experience, and why they should pick you over every other candidate. How do you answer?`,
+    text: `The hiring manager at ${jobOffer.employer} in your city interviews you for ${jobOffer.title}. ${detail.involves ? `${detail.involves} ` : ''}They ask about your experience, and why they should pick you over every other candidate. How do you answer?`,
     choices: [
       {
         label: 'Lead with your experience — walk them through what you have actually done',
@@ -2075,8 +2075,8 @@ export function presentGraduateOrJobSearchOffers(S, customTitle = null, snapshot
     baseId: `job_offers_${Math.floor(S.player.age / 4)}`,
     maxPerLife: 2,
     category: 'career',
-    title: customTitle || `Headhunter & Network Job Leads (${S.city})`,
-    text: `Recruiters and industry contacts in ${S.city} come back with concrete openings matching your background.`,
+    title: customTitle || `Headhunter & Network Job Leads`,
+    text: `Recruiters and industry contacts in your city come back with concrete openings matching your background.`,
     choices
   };
   if(snapshot)return offerScene;

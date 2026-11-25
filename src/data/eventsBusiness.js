@@ -104,7 +104,7 @@ export const BUSINESS_EVENTS = [
       return {
         key: 'ev_biz_big_client', category: 'business',
         title: `A Big Client Comes to ${biz.name}`,
-        text: `A large customer in ${S.city} has been watching ${biz.name} for months. Now they want a standing order — worth about ${formatMoney(fee, S.country)} a month, every month, if you can handle the volume. They are also talking to two other firms.`,
+        text: `A large customer in your city has been watching ${biz.name} for months. Now they want a standing order — worth about ${formatMoney(fee, S.country)} a month, every month, if you can handle the volume. They are also talking to two other firms.`,
         choices: [
           {
             label: 'Sign them — take the volume',
@@ -510,7 +510,7 @@ export const BUSINESS_EVENTS = [
       return {
         key: 'ev_biz_loyal_advocate', category: 'business',
         title: `A Regular Becomes ${biz.name}'s Loudest Fan`,
-        text: `One of your regulars has started bringing friends — then friends of friends. They post about ${biz.name}, defend it in arguments, and tell everyone it is the best in ${S.city}. Word of mouth like this cannot be bought.`,
+        text: `One of your regulars has started bringing friends — then friends of friends. They post about ${biz.name}, defend it in arguments, and tell everyone it is the best in your city. Word of mouth like this cannot be bought.`,
         choices: [
           {
             label: 'Thank them publicly — make them the face of the place',
@@ -554,7 +554,7 @@ export const BUSINESS_EVENTS = [
       return {
         key: 'ev_biz_bad_review', category: 'business',
         title: `A Bad Review of ${biz.name} Is Going Around`,
-        text: `A furious customer has posted a long, detailed bad review of ${biz.name} — and it is being shared. Some of it is unfair, some of it is not. People in ${S.city} are reading it before they decide to come.`,
+        text: `A furious customer has posted a long, detailed bad review of ${biz.name} — and it is being shared. Some of it is unfair, some of it is not. People in your city are reading it before they decide to come.`,
         choices: [
           {
             label: 'Reply publicly, calmly, and own the fair part',
@@ -717,8 +717,8 @@ export const BUSINESS_EVENTS = [
       const tempCost = Math.round(revOf(biz) * 0.5);
       return {
         key: 'ev_biz_festival_rush', category: 'business',
-        title: `A Festival Is Bringing a Rush to ${S.city}`,
-        text: `A big local festival is coming to ${S.city} this week — crowds, visitors, and money to be made, right past the door of ${biz.name}. Everyone else on the street is staying open late. The question is whether you can handle the rush.`,
+        title: `A Festival Is Bringing a Rush to your city`,
+        text: `A big local festival is coming to your city this week — crowds, visitors, and money to be made, right past the door of ${biz.name}. Everyone else on the street is staying open late. The question is whether you can handle the rush.`,
         choices: [
           {
             label: `Open extra hours and take the rush — about ${formatMoney(takings, S.country)} extra`,
@@ -835,7 +835,7 @@ export const BUSINESS_EVENTS = [
       return {
         key: 'ev_biz_new_regulation', category: 'business',
         title: `A New Regulation Hits ${biz.name}`,
-        text: `A new regulation has come in — new licences, new safety checks, new paperwork — and every business like ${biz.name} in ${S.city} has to comply. The cost lands this month, and the inspectors will be checking.`,
+        text: `A new regulation has come in — new licences, new safety checks, new paperwork — and every business like ${biz.name} in your city has to comply. The cost lands this month, and the inspectors will be checking.`,
         choices: [
           {
             label: `Comply properly — ${formatMoney(comply, S.country)} now, costs up 8%`,

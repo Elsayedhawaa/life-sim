@@ -47,62 +47,62 @@ const localPlace = S => ({
 
 export const EVENTS_LIVED_LIFE = [
   story('ev_can_winter_entry', 'A Place for Wet Boots', {minAge:18,countries:['can']},
-    S => `A cold wet evening in ${S.city} leaves boots and coats crowded around your entrance. Tomorrow will be easier if the things you need have somewhere to dry.`, [
+    S => `A cold wet evening in your city leaves boots and coats crowded around your entrance. Tomorrow will be easier if the things you need have somewhere to dry.`, [
       ['Clear a drying spot with what you already own', 'You cleared a place for damp boots and coats using what you already had. No new furniture or equipment was bought.', {'vitals.stress':-2}],
       ['Prepare tomorrows clothes before resting', 'You set out dry clothes for tomorrow, then left the rest of the sorting for another day.', {'vitals.stress':-1}],
     ], {category:'home'}),
   story('ev_can_neighbour_help', 'The Heavy Bag', {minAge:16,countries:['can']},
-    S => `A neighbour outside your building in ${S.city} pauses beside a heavy grocery bag. You are heading the same way, but do not know whether they want help.`, [
+    S => `A neighbour outside your building in your city pauses beside a heavy grocery bag. You are heading the same way, but do not know whether they want help.`, [
       ['Ask if they would like a hand', 'You asked before helping with the bag. It stayed a short, friendly exchange between neighbours.', {'skills.charisma':2,'vitals.happiness':2}],
       ['Hold the door and leave them room to pass', 'You held the door and made space without taking over. It was a small useful gesture.', {'vitals.happiness':2}],
     ], {category:'life'}),
 
   story('ev_deu_stairwell', 'The Note in the Stairwell', {minAge:18,countries:['deu'],housingModes:['rent']},
-    S => `A handwritten notice in your building in ${S.city} asks residents to keep the shared stairwell clear. You had left a box there while sorting your home.`, [
+    S => `A handwritten notice in your building in your city asks residents to keep the shared stairwell clear. You had left a box there while sorting your home.`, [
       ['Bring the box inside and make room for it properly', 'You brought your box inside so the shared route stayed clear. A small household task was finally finished.', {'vitals.stress':-2}],
       ['Ask the building contact where bulky items can go', 'You asked where bulky items could be stored instead of assuming the stairwell was available. You moved your box out of the way.', {'skills.charisma':2}],
     ], {category:'home'}),
   story('ev_deu_first_meeting', 'Before the First Meeting', {minAge:18,countries:['deu'],hasJob:true},
-    S => `Before a meeting at work in ${S.city}, a colleague sends a short agenda. One item is unfamiliar, but there is enough time to ask about it before everyone sits down.`, [
+    S => `Before a meeting at work in your city, a colleague sends a short agenda. One item is unfamiliar, but there is enough time to ask about it before everyone sits down.`, [
       ['Ask the colleague what needs deciding', 'You asked what decision the unfamiliar item needed and arrived better prepared, without pretending expertise you did not have.', {'skills.charisma':2,'vitals.smarts':1}],
       ['Write down a clear question to raise in the meeting', 'You prepared a clear question instead of silently guessing what the agenda meant.', {'vitals.smarts':2}],
     ], {category:'career'}),
 
   story('ev_usa_offer_commute', 'An Offer and a Journey', {minAge:18,countries:['usa'],hasJob:false},
-    S => `A possible job in ${S.city} sounds appealing until you map the journey. The pay is only one part of the choice; the time getting there would become part of every workday.`, [
+    S => `A possible job in your city sounds appealing until you map the journey. The pay is only one part of the choice; the time getting there would become part of every workday.`, [
       ['Ask about the actual schedule before deciding', 'You asked for the schedule and work location in writing. You had not accepted the offer or received any pay.', {'skills.charisma':2}],
       ['Compare travel time with the hours you want at home', 'You compared the commute with your own priorities instead of assuming the highest headline pay was always best. The job remained only a possibility.', {'vitals.smarts':2,'vitals.stress':-1}],
     ], {category:'career'}),
   story('ev_usa_shared_laundry', 'The Last Load', {minAge:18,countries:['usa'],housingModes:['rent']},
-    S => `You reach the shared laundry in your rented building in ${S.city} and find the machine still full. You have enough time for one load before bed, if the other resident comes back soon.`, [
+    S => `You reach the shared laundry in your rented building in your city and find the machine still full. You have enough time for one load before bed, if the other resident comes back soon.`, [
       ['Wait a little and leave a polite note', 'You waited briefly and left a polite note without moving another resident’s clothes. The laundry could wait until tomorrow if needed.', {'vitals.stress':-1}],
       ['Choose tomorrow and use the evening for something else', 'You moved laundry to tomorrow rather than turning a small delay into the whole evening.', {'vitals.stress':-2}],
     ], {category:'home'}),
 
   story('ev_gbr_damp_report', 'The Patch by the Window', {minAge:18,countries:['gbr'],housingModes:['rent']},
-    S => `After a wet week in ${S.city}, you notice a damp patch beside the window in your rented home. Wiping it away does not tell you why it keeps returning.`, [
+    S => `After a wet week in your city, you notice a damp patch beside the window in your rented home. Wiping it away does not tell you why it keeps returning.`, [
       ['Photograph it and ask the landlord for an inspection', 'You recorded the damp patch and asked for its cause to be checked. You kept the report instead of assuming a repair had happened.', {'vitals.smarts':2,'vitals.stress':-1}],
       ['Record when it appears and keep the room aired', 'You noted when the patch appeared, aired the room where practical and kept the issue on your repair list. It was not magically fixed.', {'vitals.smarts':1}],
     ], {category:'home'}),
   story('ev_gbr_commute_options', 'The Earlier Train', {minAge:18,countries:['gbr'],hasJob:true},
-    S => `Checking tomorrow's journey to work in ${S.city}, you notice that the route you usually take leaves little room for delays. There is an earlier option, but it would cost you sleep.`, [
+    S => `Checking tomorrow's journey to work in your city, you notice that the route you usually take leaves little room for delays. There is an earlier option, but it would cost you sleep.`, [
       ['Prepare tonight and keep the usual departure', 'You packed what you needed and checked the route before bed. You kept your usual departure without pretending delays were impossible.', {'vitals.stress':-2}],
       ['Try the earlier journey once and judge the trade-off', 'You planned one earlier commute as an experiment, rather than committing every morning to less sleep.', {'vitals.smarts':1,'vitals.stress':-1}],
     ], {category:'career'}),
 
   story('ev_uae_offer_allowances', 'What the Package Actually Includes', {minAge:18,countries:['uae'],hasJob:false},
-    S => `A recruiter in ${S.city} describes an attractive package. The message combines basic pay and allowances, but it does not explain when each amount is paid or what happens if the role ends.`, [
+    S => `A recruiter in your city describes an attractive package. The message combines basic pay and allowances, but it does not explain when each amount is paid or what happens if the role ends.`, [
       ['Ask for the written breakdown and start date', 'You asked for the basic salary, allowances, pay dates and start date in writing. You did not accept a contract or count uncertain pay as cash.', {'skills.charisma':2,'vitals.smarts':1}],
       ['Compare the package with your actual housing and travel costs', 'You compared the proposed package with your own housing and travel needs instead of relying on the headline amount. The offer was still unconfirmed.', {'vitals.stress':-2}],
     ], {category:'career'}),
   story('ev_uae_rental_terms', 'The Rent Is Not the Whole Move', {minAge:18,countries:['uae'],housingModes:['rent']},
-    S => `Looking around your rented home in ${S.city}, you start a list for the next move: transport, utility setup, the payment schedule and the money that must remain available afterward. The monthly figure alone is not the whole plan.`, [
+    S => `Looking around your rented home in your city, you start a list for the next move: transport, utility setup, the payment schedule and the money that must remain available afterward. The monthly figure alone is not the whole plan.`, [
       ['Write down the full cash timing before house-hunting', 'You wrote down when money would be due and what needed to stay in reserve. This planning step did not sign a lease or charge a fee.', {'vitals.smarts':2,'vitals.stress':-2}],
       ['Ask for written terms before comparing listings', 'You asked for the payment terms in writing before comparing listings, since rentals do not all use the same schedule.', {'skills.charisma':2}],
     ], {category:'money'}),
 
   story('ev_sau_offer_details', 'The Offer Has More Than One Number', {minAge:18,countries:['sau'],hasJob:false},
-    S => `A possible role in ${S.city} comes with a headline salary, but the message says little about the working hours, transport or housing. You have not accepted anything.`, [
+    S => `A possible role in your city comes with a headline salary, but the message says little about the working hours, transport or housing. You have not accepted anything.`, [
       ['Ask for the written breakdown before deciding', 'You asked for the basic pay, any allowances, hours and start date in writing. The role was still only a possibility, not income already in your account.', {'skills.charisma':2,'vitals.stress':-2}],
       ['Compare the commute and rent against the offered amount', 'You compared likely living costs with the offer rather than treating the largest number as take-home pay. No contract was accepted and no money changed hands.', {'vitals.smarts':2}],
     ], {category:'career'}),
@@ -113,24 +113,24 @@ export const EVENTS_LIVED_LIFE = [
     ], {category:'friends',person:'friend'}),
 
   story('ev_egy_commute_tradeoff', 'The Route Before the Interview', {minAge:18,countries:['egy'],hasJob:false},
-    S => `An interview in ${S.city} is far enough away that the journey needs planning. A cheap route has two changes; the direct ride would leave less money for the rest of the week. The invitation gives you a contact number.`, [
+    S => `An interview in your city is far enough away that the journey needs planning. A cheap route has two changes; the direct ride would leave less money for the rest of the week. The invitation gives you a contact number.`, [
       ['Confirm the address and plan the cheaper route with extra time', 'You confirmed the interview address and wrote down the changes before setting out. Planning did not guarantee the job, but the route was no longer a guess.', {'vitals.stress':-3,'vitals.smarts':1}],
       ['Ask whether a first phone conversation is possible', 'You asked whether the first conversation could happen by phone. The employer had not agreed yet; you had made a clear request rather than spending money you could not spare.', {'skills.charisma':2}],
       ['Check a backup route and keep the invitation number handy', 'You kept a backup route and the interview contact number. A delay would not have to become a silent missed appointment.', {'vitals.stress':-2}]
     ], {category:'career'}),
   story('ev_egy_rental_inventory', 'Before the Keys Change Hands', {minAge:18,countries:['egy'],housingModes:['rent']},
-    S => `In your rented home in ${S.city}, a loose cupboard hinge and an old water stain catch your eye. You cannot tell from memory whether they were mentioned when you moved in.`, [
+    S => `In your rented home in your city, a loose cupboard hinge and an old water stain catch your eye. You cannot tell from memory whether they were mentioned when you moved in.`, [
       ['Write down the condition and ask the landlord to acknowledge it', 'You made a clear condition list and asked the landlord to acknowledge the existing damage. It was a record, not a promise that a dispute could never happen.', {'vitals.stress':-3}],
       ['Ask which repairs are yours before agreeing to pay', 'You asked who was responsible for the hinge and water stain before agreeing to a repair bill. You paid nothing until that was clear.', {'skills.charisma':2}],
     ], {category:'money'}),
   story('ev_egy_family_job_advice', 'A Relative Knows Someone', {minAge:20,countries:['egy'],hasJob:false,requiredPeople:['mom']},
-    (S,name) => `${name} mentions someone who might know about work in ${S.city}. She means well, but the role, hours and salary are still unclear. A friendly introduction is not an offer.`, [
+    (S,name) => `${name} mentions someone who might know about work in your city. She means well, but the role, hours and salary are still unclear. A friendly introduction is not an offer.`, [
       ['Thank her and ask for the actual job details', 'You thanked your mother and asked for the role, hours and salary range before deciding. The introduction remained a possibility, not a job you already had.', {'skills.charisma':2}, {trust:3}],
       ['Keep applying elsewhere while you wait', 'You kept applying elsewhere while the family introduction was uncertain. You did not stake the whole search on a favour.', {'vitals.stress':-2}],
     ], {category:'family',person:'mom'}),
 
   story('ev_lived_inbox_silence', 'The Inbox Is Still Quiet', techHunt,
-    S => `Three applications. Two automatic replies. No interview. It is almost noon in ${S.city}, and the same job has appeared under a third recruiter. You have enough patience left for one more thing.`, [
+    S => `Three applications. Two automatic replies. No interview. It is almost noon in your city, and the same job has appeared under a third recruiter. You have enough patience left for one more thing.`, [
       ['Drop the duplicate listing and check the other two', 'You spotted a duplicate vacancy and stopped wasting applications on it. The other two still had no answer.', { 'vitals.stress': -5 }],
       ['Spend the hour fixing a weak work sample', 'You fixed the confusing part of your work sample. Nobody had hired you by lunchtime.', { 'skills.creativity': 3, 'vitals.smarts': 2 }],
       ['Keep refreshing until late', 'You kept checking for replies late into the night. Nothing new arrived, and you went to bed tense.', { 'vitals.stress': 5 }],
@@ -157,7 +157,7 @@ export const EVENTS_LIVED_LIFE = [
       ['Send a warm congratulations and take some space', 'You sent a sincere congratulations and gave yourself a quiet evening rather than forcing a celebration.', { 'vitals.stress': -3 }, { affection: 2 }],
     ], { category: 'friends', person: 'friend' }),
   story('ev_lived_mom_tea', 'No Advice This Time', { ...adult, requiredPeople: ['mom'] },
-    (S, name) => `${name} finds you sitting quietly at home in ${S.city}. Instead of asking for an update, she asks whether you want a cup of tea and some company.`, [
+    (S, name) => `${name} finds you sitting quietly at home in your city. Instead of asking for an update, she asks whether you want a cup of tea and some company.`, [
       ['Sit together without turning it into a progress report', 'You shared a quiet cup with your mother. Nobody had good news to report, and that was fine.', { 'vitals.stress': -5, 'vitals.happiness': 3 }, { affection: 6, trust: 3 }],
       ['Tell her what has been weighing on you', 'You told your mother what had been weighing on you and asked her to listen before offering advice.', { 'vitals.stress': -4 }, { trust: 6 }],
     ], { category: 'family', person: 'mom' }),
@@ -169,7 +169,7 @@ export const EVENTS_LIVED_LIFE = [
   ...['dad', 'mom'].map(role => story(`ev_lived_grief_${role}`, 'The Habit of Telling Them',
     { minAge: 14, deceasedParent: role }, S => {
       const person = S.people[S.relations[role === 'dad' ? 'fatherId' : 'motherId']];
-      return `Something small happens in ${S.city}, and for a second you want to tell ${person?.firstName || (role === 'dad' ? 'your father' : 'your mother')}. Then you remember they have died. Grief has interrupted an ordinary day, not waited for an anniversary.`;
+      return `Something small happens in your city, and for a second you want to tell ${person?.firstName || (role === 'dad' ? 'your father' : 'your mother')}. Then you remember they have died. Grief has interrupted an ordinary day, not waited for an anniversary.`;
     }, [
       ['Write down what you wanted to tell them', 'You wrote down the small thing you had wanted to share with your late parent. The loss remained, but the memory had somewhere to go.', { 'vitals.stress': -3 }],
       ['Make room for a quiet day', 'You gave yourself a quieter day after a reminder of your late parent. You did not demand that grief follow a timetable.', { 'vitals.stress': -4 }],
@@ -180,7 +180,7 @@ export const EVENTS_LIVED_LIFE = [
       ['Trade the funny parts rather than settle the argument', 'You and your sibling traded the funny parts of an old memory and left the argument unfinished.', { 'vitals.happiness': 4 }, { affection: 4 }],
     ], { category: 'family', person: 'sib' }),
   story('ev_lived_cafe_notebook', 'A Table by the Window', adult,
-    S => `Passing ${localPlace(S)} in ${S.city}, you stop outside the window. You do not need to buy anything today. A loose idea has been following you around, and there is a bench nearby where you could finally write it down.`, [
+    S => `Passing ${localPlace(S)} in your city, you stop outside the window. You do not need to buy anything today. A loose idea has been following you around, and there is a bench nearby where you could finally write it down.`, [
       ['Sketch the smallest version you could actually finish', 'You turned a vague idea into a small, finishable plan on a scrap of paper.', { 'skills.creativity': 4 }],
       ['Enjoy the walk without making it productive', 'You let a walk be a walk. Nothing was earned or fixed, and the afternoon still counted.', { 'vitals.stress': -5, 'vitals.health': 1 }],
     ]),
@@ -206,12 +206,12 @@ export const EVENTS_LIVED_LIFE = [
       ['Skip the notes and attempt the first question', 'You returned from a short break and worked through one question rather than staring at the page.', { 'vitals.stress': -3, 'vitals.smarts': 2 }],
     ], { category: 'school' }),
   story('ev_lived_abroad_home', 'Two Places Feel Like Home', { minAge: 18, abroad: true },
-    S => `In ${S.city}, you catch yourself using a local expression without thinking. Then a familiar smell reminds you of ${S.homeCity || 'where you grew up'}. Belonging here has not stopped you missing there.`, [
+    S => `In your city, you catch yourself using a local expression without thinking. Then a familiar smell reminds you of ${S.homeCity || 'where you grew up'}. Belonging here has not stopped you missing there.`, [
       ['Keep a small ritual from home and try a new local one', 'You made room for a familiar ritual and a new local habit without choosing which place mattered more.', { 'vitals.happiness': 4, 'vitals.stress': -2 }],
       ['Write about what each place has taught you', 'You wrote about the different parts of yourself that each place had brought out.', { 'skills.creativity': 3, 'vitals.stress': -2 }],
     ]),
   story('ev_lived_friend_walk', 'Company Without an Occasion', friend,
-    (S, name) => `${name} asks if you want to walk around ${S.city} with no booking, no celebration and no reason to spend money. Just an hour outside together.`, [
+    (S, name) => `${name} asks if you want to walk around your city with no booking, no celebration and no reason to spend money. Just an hour outside together.`, [
       ['Go, and put the updates aside for a while', 'You took a free walk with your friend and talked about things that were not progress reports.', { 'vitals.happiness': 4, 'vitals.stress': -4 }, { affection: 5 }],
       ['Say you need quiet, and suggest another day', 'You told your friend honestly that you needed quiet instead of disappearing without a reply.', { 'vitals.stress': -3 }, { trust: 3 }],
     ], { category: 'friends', person: 'friend' }),
@@ -221,12 +221,12 @@ export const EVENTS_LIVED_LIFE = [
       ['Ask what they need before explaining your own plan', 'You listened to what your partner needed before defending the future you had imagined.', { 'skills.charisma': 2 }, { trust: 5 }],
     ], { category: 'relationship', person: 'spouse' }),
   story('ev_lived_rooftop_sky', 'The City Looks Up', { minAge: 10 },
-    S => `A clear night over ${S.city} turns a patch of sky between buildings into a small spectacle. Someone points out a bright planet; you realise you have walked under it all week without noticing.`, [
+    S => `A clear night over your city turns a patch of sky between buildings into a small spectacle. Someone points out a bright planet; you realise you have walked under it all week without noticing.`, [
       ['Learn how to find it again tomorrow', 'You learned to recognise one bright planet above your city. The walk home had a new landmark.', { 'vitals.smarts': 2, 'vitals.happiness': 4 }],
       ['Stay a little longer without naming everything', 'You stayed outside watching the sky, with no need to turn the moment into an achievement.', { 'vitals.stress': -5 }],
     ]),
   story('ev_lived_repair_table', 'The Repair Table', { minAge: 16 },
-    S => `A free community repair session in ${S.city} has a table covered with loose screws and handwritten labels. A volunteer invites you to help sort the parts. Nobody expects you to be an expert.`, [
+    S => `A free community repair session in your city has a table covered with loose screws and handwritten labels. A volunteer invites you to help sort the parts. Nobody expects you to be an expert.`, [
       ['Ask to learn one simple repair', 'At a free repair session, you learned one simple fix and left with more confidence in your hands.', { 'skills.creativity': 4 }],
       ['Help organise the parts so other people can work', 'You sorted parts at a community repair table, and being useful was enough.', { 'vitals.happiness': 4, 'skills.charisma': 2 }],
     ]),

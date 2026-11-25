@@ -58,7 +58,7 @@ export const EVENTS_MEMORY = [
       return {
         key: 'ev_memory_ask_for_help', category: 'friends',
         title: 'Asking for Help',
-        text: `Money is tight this month in ${S.city}, and you need ${formatMoney(amount, S.country)} to get through it. ${memoryLine}`,
+        text: `Money is tight this month in your city, and you need ${formatMoney(amount, S.country)} to get through it. ${memoryLine}`,
         choices: [
           { label: `Ask ${name} for ${formatMoney(amount, S.country)}`, effect: (st) => {
             const fr = st.people[friend.id];
@@ -103,7 +103,7 @@ export const EVENTS_MEMORY = [
       return {
         key: 'ev_memory_favour_returns', category: 'friends',
         title: 'A Favour Comes Back',
-        text: `${name} turns up at your door in ${S.city} with an envelope. "You helped me when I needed it," they say. "${favour ? favour.summary : 'You stood by me.'} I have not forgotten. Take this — and if you ever need a hand again, you only have to ask." Inside is ${formatMoney(amount, S.country)}.`,
+        text: `${name} turns up at your door in your city with an envelope. "You helped me when I needed it," they say. "${favour ? favour.summary : 'You stood by me.'} I have not forgotten. Take this — and if you ever need a hand again, you only have to ask." Inside is ${formatMoney(amount, S.country)}.`,
         choices: [
           { label: `Accept the ${formatMoney(amount, S.country)} and thank them`, effect: (st) => {
             const p = st.people[person.id];

@@ -87,7 +87,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       };
       return {
         key: 'ev_money_rent_rise', category: 'money', title: 'The Renewal Offer',
-        text: `The renewal offer for your home in ${S.city} raises monthly rent from ${formatMoney(oldRent, S.country)} to ${formatMoney(requested, S.country)}. There is room to discuss it before the next bill.`,
+        text: `The renewal offer for your home in your city raises monthly rent from ${formatMoney(oldRent, S.country)} to ${formatMoney(requested, S.country)}. There is room to discuss it before the next bill.`,
         choices: [
           { label: `Accept ${formatMoney(requested, S.country)} per month`, effect: st => applyRent(st, requested, 'You accepted the renewal offer.') },
           { label: 'Push for a smaller increase', effect: st => {
@@ -297,7 +297,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_money_phone_screen',
         category: 'money',
         title: "The Phone Screen Shatters",
-        text: `The phone slips out of your hand on the pavement in ${S.city} and lands face down. The screen is a spiderweb of cracks. A proper repair costs ${formatMoney(A, S.country)}; a cheap shop will do it for ${formatMoney(B, S.country)}.`,
+        text: `The phone slips out of your hand on the pavement in your city and lands face down. The screen is a spiderweb of cracks. A proper repair costs ${formatMoney(A, S.country)}; a cheap shop will do it for ${formatMoney(B, S.country)}.`,
         choices: [
           {
             label: "Repair it properly",
@@ -472,7 +472,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+8));
               if (ctx.child) rememberDeed(st, ctx.child, 'event', `Move ${childName} to a cheaper school`, { affection: (-6) });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-4));
-              recordJournal(st, `You could not pay the fees, so you moved ${childName} to a cheaper school across ${S.city}.`, 'money');
+              recordJournal(st, `You could not pay the fees, so you moved ${childName} to a cheaper school across your city.`, 'money');
             },
           },
         ],
@@ -712,7 +712,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_money_wedding_gift_cash',
         category: 'money',
         title: "A Wedding Gift of Cash",
-        text: `At a cousin’s wedding in ${S.city}, an uncle presses an envelope into your hand: ${formatMoney(A, S.country)}, "for the young ones". It is more than you expected, and it is given with real warmth.`,
+        text: `At a cousin’s wedding in your city, an uncle presses an envelope into your hand: ${formatMoney(A, S.country)}, "for the young ones". It is more than you expected, and it is given with real warmth.`,
         choices: [
           {
             label: "Save it",
@@ -960,7 +960,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_money_ac_bill',
         category: 'money',
         title: "The Summer Air Conditioning Bill",
-        text: `August in ${S.city} is brutal, and the air conditioning has run day and night. The bill is ${formatMoney(A, S.country)} — the biggest of the year — and there are still three hot weeks left.`,
+        text: `August in your city is brutal, and the air conditioning has run day and night. The bill is ${formatMoney(A, S.country)} — the biggest of the year — and there are still three hot weeks left.`,
         choices: [
           {
             label: "Pay it and keep cool",
@@ -1058,7 +1058,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_money_stolen_wallet',
         category: 'money',
         title: "Your Wallet Is Stolen",
-        text: `On a crowded bus in ${S.city}, your pocket feels suddenly light. Your wallet is gone — ${formatMoney(A, S.country)} in cash, your ID, and every card. The police station takes a report and shrugs.`,
+        text: `On a crowded bus in your city, your pocket feels suddenly light. Your wallet is gone — ${formatMoney(A, S.country)} in cash, your ID, and every card. The police station takes a report and shrugs.`,
         choices: [
           {
             label: "Cancel everything and replace the ID",
@@ -1329,7 +1329,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_money_moving_costs',
         category: 'money',
         title: "Moving Day Costs More Than Planned",
-        text: `The movers, the van, the new locks, the cleaning of the old flat — moving day in ${S.city} adds up to ${formatMoney(A, S.country)}, and the van driver wants cash before he unloads a single box.`,
+        text: `The movers, the van, the new locks, the cleaning of the old flat — moving day in your city adds up to ${formatMoney(A, S.country)}, and the van driver wants cash before he unloads a single box.`,
         choices: [
           {
             label: "Pay it all and get it done",
@@ -2108,7 +2108,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: { minAge: 20, wealth: ['poor', 'middle'] },
     build: (S) => ({
       key: 'ev_money_rent_deposit_new', category: 'money', title: 'Before You Sign',
-      text: `A rental advert in ${S.city} looks affordable until you add the up-front costs. You have not chosen a home or signed anything yet.`,
+      text: `A rental advert in your city looks affordable until you add the up-front costs. You have not chosen a home or signed anything yet.`,
       choices: [
         { label: 'Work out a move-in budget before booking a viewing', effect: st => {
           st.skills.financialIq = clamp(st.skills.financialIq + 2);
@@ -6100,7 +6100,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               if (st.career.job) st.career.job.monthlyGross = Math.round(st.career.job.monthlyGross * (1 + (+6) / 100));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+3));
-              recordJournal(st, `You negotiated to stay in ${S.city} and take the bigger role from here.`, 'career');
+              recordJournal(st, `You negotiated to stay in your city and take the bigger role from here.`, 'career');
             },
           },
           {

@@ -474,7 +474,7 @@ export function collectExtendedLifeScenes(S, addOnce) {
         key: 'st_gulf_nationalization_wave',
         category: 'visa',
         title: S.country === 'sau' ? 'Nitaqat Localization Quota Review' : 'Emiratisation Workforce Target Review',
-        text: `Ministry labor localization quotas tighten across ${S.city}. HR reviews every expat role to verify specialized skills that justify visa renewal.`,
+        text: `Ministry labor localization quotas tighten across ${getCountry(S.country).name}. HR reviews every expat role to verify specialized skills that justify visa renewal.`,
         choices: [
           {
             label: 'Lead internal training for young national hires & position yourself as indispensable (+Performance, +Wasta)',

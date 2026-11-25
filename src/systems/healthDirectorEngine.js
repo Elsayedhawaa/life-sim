@@ -841,7 +841,7 @@ export function pickCuratedLifeScene(S, restoreBaseId=null) {
           key: 'ad_headhunter_poach',
           category: 'career',
           title: 'Quiet Rival Poaching Call',
-          text: `A rival firm in ${S.city} quietly approaches you with a 24% jump (${formatMoney(rivalGross, S.country)}/mo), provided you move before next month’s product launch.`,
+          text: `A rival firm in your city quietly approaches you with a 24% jump (${formatMoney(rivalGross, S.country)}/mo), provided you move before next month’s product launch.`,
           choices: [
             {
               label: `Jump to the rival for ${formatMoney(rivalGross, S.country)}/mo`,
@@ -873,7 +873,7 @@ export function pickCuratedLifeScene(S, restoreBaseId=null) {
         key: 'ad_gold_hedge',
         category: 'money',
         title: 'Everyone Is Talking About Prices & Gold',
-        text: `Grocery bills and property prices keep climbing across ${S.city}. Over dinner, everyone argues whether leaving cash idle is foolish when 10g of 21K gold costs ${formatMoney(tenGramsCost, S.country)}.`,
+        text: `Grocery bills and property prices keep climbing across your city. Over dinner, everyone argues whether leaving cash idle is foolish when 10g of 21K gold costs ${formatMoney(tenGramsCost, S.country)}.`,
         choices: [
           {
             label: `Buy 10g of physical 21K gold bullion (${formatMoney(tenGramsCost, S.country)})`,
@@ -938,7 +938,7 @@ export function pickCuratedLifeScene(S, restoreBaseId=null) {
           key: 'ad_expat_ramadan_holiday',
           category: 'family',
           title: 'The Empty Chair at the Holiday Table',
-          text: `Your first major holiday season abroad in ${S.city} arrives. Photos from the family group chat in ${getCountry(S.homeCountry).name} show everyone crowded around the table without you.`,
+          text: `Your first major holiday season abroad in ${getCountry(S.country).name} arrives. Photos from the family group chat in ${getCountry(S.homeCountry).name} show everyone crowded around the table without you.`,
           choices: [
             {
               label: `Book a surprise 5-day flight home (${formatMoney(flightBack, S.country)})`,
