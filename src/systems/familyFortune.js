@@ -231,7 +231,7 @@ export function tickFamilyFortuneYearly(S) {
       if (f.yearState.outcome === 'allowance') recordJournal(S, 'Because of the record year the family allowance is higher this year.', 'money');
     } else if (swing < -0.15) {
       f.yearState = { year: S.year, kind: 'tight' };
-      recordJournal(S, `${f.company.name} had a tight year. This year the allowance is cut, big asks are turned down and planned gifts wait until it recovers.`, 'money');
+      recordJournal(S, `${f.company.name} had a tight year. This year the allowance is cut, asks are capped at half the usual amount and planned gifts wait until it recovers.`, 'money');
     }
   }
   payDividends(S, swing);
@@ -279,13 +279,39 @@ export function ownershipView(S) {
   return { own: f.own, sum: ownSum(f), company: companyValue(f), stakeValue: pct => Math.round(companyValue(f) * (pct || 0) / 100) };
 }
 /* Service shares, yearly. Each living child who is of age and working that year earns 0.5-1% of the company from the children's pool, at most 10% per child. A child's own age counts, so later-born siblings start later. If the pool cannot cover a year, the shortfall is paid as a cash bonus. The player works when they hold a job; a sibling works by a fixed per-sibling-year draw. STAND-IN: this is not yet tied to a job inside the family company itself. */
+/* Summer stints are real time: in June, July and August the stint takes the free time, a small bounded happiness cost each month (-1, at most -3 a summer), the price of the early stake. */
+export function stintSummerCost(S, f) {
+  const w = f?.work, age = S.player?.age ?? 0;
+  if (!w || !w.stint || age < 16 || age >= DIALS.sharesGrantAge || ![6, 7, 8].includes(S.month)) return 0;
+  const key = S.year * 12 + S.month;
+  if (w.costAbs === key) return 0;
+  w.costAbs = key;
+  if (S.player?.vitals) S.player.vitals.happiness = Math.max(0, Math.min(100, S.player.vitals.happiness - 1));
+  if (S.month === 6) recordJournal(S, `Your summer at ${f.company.name} begins. It takes your free time until the end of August.`, 'family');
+  return 1;
+}
 export function checkWorkQuit(S, f) {
   const w = f?.work;
   if (!w || !w.fullSince) return;
   const atCompany = !!(S.career?.employed && S.career?.job?.employer === f.company?.name);
   if (atCompany) return;
+  /* Accrued service is owed and vests once, now, for the months actually worked up to the month before leaving. No future grants. */
+  const nowAbs = S.year * 12 + (S.month || 1);
+  const from = Math.max(w.hiredAbs ?? nowAbs, (w.vestedThroughAbs ?? ((w.hiredAbs ?? nowAbs) - 1)) + 1);
+  const months = Math.max(0, nowAbs - 1 - from + 1);
+  let vested = 0;
+  if (months > 0 && f.own && !f.inherited && (S.player?.age ?? 0) >= DIALS.sharesGrantAge) {
+    const [lo, hi] = DIALS.sharesPctRange;
+    const held = f.own.player;
+    const want = Math.min(Math.max(0, DIALS.sharesPerChildCapPct - held), Math.round((lo + hash01(S, S.year * 19 + 3) * (hi - lo)) * (months / 12) * 100) / 100);
+    const each = Math.min(want, Math.floor(f.own.pool * 100) / 100);
+    if (each > 0) { f.own.pool = r6(f.own.pool - each); f.own.player = r6(f.own.player + each); addGrant(f, S, 'shares', Math.round(companyValue(f) * each / 100), `${each}% of ${f.company.name}, service up to leaving`); vested = each; f.shares = { pct: f.own.player, since: f.shares?.since || S.year }; }
+    const short = Math.round((want - each) * 100) / 100;
+    if (short > 0 && f.fundLocal > 0) { const bonus = Math.min(Math.round(short * companyValue(f) / 100), Math.round(f.fundLocal)); if (bonus > 0) { spend(f, bonus); walletMove(S, bonus, `Cash bonus from ${f.company.name}`, 'family'); addGrant(f, S, 'bonus', bonus, 'the share pool was used up'); } }
+  }
+  w.vestedThroughAbs = nowAbs - 1;
   w.fullSince = null; w.hiredAbs = null; w.quitYear = S.year; w.askedFull = Math.min(w.askedFull || 0, 1); w.lastAskYear = S.year;
-  recordJournal(S, `You left ${f.company.name}. Service shares stop, and the door stays open: your family may offer a place again.`, 'family');
+  recordJournal(S, `You left ${f.company.name}.${vested > 0 ? ` The service you had completed was vested once: ${vested}% of the company.` : ''} Service shares stop from here, and the door stays open: your family may offer a place again.`, 'family');
 }
 const r6 = x => Math.round(x * 1e6) / 1e6;
 export function grantServiceShares(S) {
@@ -303,10 +329,13 @@ export function grantServiceShares(S) {
     checkWorkQuit(S, f);
     const lastYearStart = (S.year - 1) * 12 + 1, lastYearEnd = (S.year - 1) * 12 + 12;
     if (age >= DIALS.sharesGrantAge && w.fullSince && atCompany && w.hiredAbs != null) {
-      const n = Math.max(0, Math.min(12, lastYearEnd - Math.max(w.hiredAbs, lastYearStart) + 1));
-      if (n > 0) heirs.push({ id: 'player', salt: 61, rate: n / 12, months: n });
-    } else if (age >= 16 && age < DIALS.sharesGrantAge && w.stint && w.stintAbs != null && w.stintAbs <= lastYearStart + 5) {
-      heirs.push({ id: 'player', salt: 61, rate: 0.5, months: 12 }); /* brief event 2: summer stints earn small early shares, at half rate */
+      /* months of completed service not yet vested, up to the end of last year */
+      const from = Math.max(w.hiredAbs, (w.vestedThroughAbs ?? (w.hiredAbs - 1)) + 1);
+      const n = Math.max(0, lastYearEnd - from + 1);
+      if (n > 0) heirs.push({ id: 'player', salt: 61, rate: n / 12, months: n, vestMonths: n });
+    } else if (age >= 16 && age < DIALS.sharesGrantAge && w.stint && w.stintAbs != null && w.stintAbs <= lastYearStart + 5 && (w.stintVestedYear ?? 0) < S.year - 1) {
+      /* the summer of last year was worked and is complete: brief event 2, small early shares at half rate */
+      heirs.push({ id: 'player', salt: 61, rate: 0.5, months: 12, stintSummer: S.year - 1 });
     } }
   for (const id of aliveSiblings(S)) {
     const p = S.people[id];
@@ -330,6 +359,9 @@ export function grantServiceShares(S) {
       if (r.id === 'player') f.own.player = r6(f.own.player + r.each); else f.own.siblings[r.id] = r6((f.own.siblings[r.id] || 0) + r.each);
     }
     if (r.id === 'player') {
+      const hr = heirs.find(h => h.id === 'player');
+      if (hr?.vestMonths) f.work.vestedThroughAbs = Math.max(f.work.vestedThroughAbs ?? 0, (S.year - 1) * 12 + 12);
+      if (hr?.stintSummer) f.work.stintVestedYear = hr.stintSummer;
       f.workYears = (f.workYears || 0) + 1;
       if (r.each > 0) { addGrant(f, S, 'shares', Math.round(companyValue(f) * r.each / 100), `${r.each}% of ${f.company.name}`); recordJournal(S, `A year of work earned you ${r.each}% of ${f.company.name}. The family gives service shares to children who work, up to ${DIALS.sharesPerChildCapPct}% each.`, 'family'); granted = f.own.player; }
     }
@@ -722,7 +754,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  checkWorkQuit(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S);
+  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;

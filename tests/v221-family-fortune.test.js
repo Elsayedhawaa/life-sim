@@ -260,7 +260,7 @@ console.log('company link OK');
   /* dead siblings are not counted */
   const K = life('wealthy', 'usa', 2000, 11); const kf = F.ensureFamilyFortune(K); K.relations.siblingIds = K.relations.siblingIds || [];
   K.people.sibA = { id: 'sibA', alive: true, age: 25 }; K.people.sibB = { id: 'sibB', alive: false, age: 25 }; K.people.sibC = { id: 'sibC', alive: true, age: 14 }; K.relations.siblingIds.push('sibA', 'sibB', 'sibC');
-  K.player.age = 22; K.career.employed = true; K.career.job = { title: 'Management Trainee', employer: kf.company.name }; kf.work = { stint: false, fullSince: K.year - 2, hiredAbs: (K.year - 2) * 12 + 1, askedStint: true, askedFull: 1 };
+  K.player.age = 22; K.career.employed = true; K.career.job = { title: 'Management Trainee', employer: kf.company.name }; kf.work = { stint: false, fullSince: K.year - 1, hiredAbs: (K.year - 1) * 12 + 1, askedStint: true, askedFull: 1 };
   const sy = K.year; let pl = 0;
   for (let i = 0; i < 40; i++) { K.year = sy + i; K.player.age = 22 + i; K.people.sibA.age = 25 + i; K.people.sibC.age = 14 + i; const b4 = kf.own.player; F.grantServiceShares(K); pl = Math.max(pl, kf.own.player - b4); if (i === 3) assert.equal(kf.own.siblings.sibC || 0, 0, 'a sibling under 21 earns nothing'); assert.ok(kf.own.player <= 10.0001 && (kf.own.siblings.sibA || 0) <= 10.0001, 'at most 10% per child'); assert.equal(F.ownershipView(K).sum, 100, 'owners sum to 100 every year'); }
   assert.ok(pl > 0 && pl <= 1.0001, 'a working year earns 0.5-1%');
@@ -305,7 +305,7 @@ console.log('seed gift and deposit help OK');
 { /* equal treatment of qualifying children; one profit stream for dividends */
   const mkK = () => { const K = life('wealthy', 'usa', 2000, 21); const kf = F.ensureFamilyFortune(K); K.relations.siblingIds = K.relations.siblingIds || [];
     K.people.sA = { id: 'sA', alive: true, age: 30, fullName: 'A', career: { savingsLocal: 0 } }; K.people.sB = { id: 'sB', alive: true, age: 30, fullName: 'B', career: { savingsLocal: 0 } };
-    K.relations.siblingIds = ['sA', 'sB']; K.player.age = 30; K.career.employed = true; K.career.job = { title: 'x', employer: kf.company.name }; kf.work = { stint: false, fullSince: K.year - 2, hiredAbs: (K.year - 2) * 12 + 1, askedStint: true, askedFull: 1 }; K.activeScene = null; return [K, kf]; };
+    K.relations.siblingIds = ['sA', 'sB']; K.player.age = 30; K.career.employed = true; K.career.job = { title: 'x', employer: kf.company.name }; kf.work = { stint: false, fullSince: K.year - 1, hiredAbs: (K.year - 1) * 12 + 1, askedStint: true, askedFull: 1 }; K.activeScene = null; return [K, kf]; };
   { const [K, kf] = mkK(); kf.own = { parents: 99.1, pool: 0.9, player: 0, siblings: {}, heirs: 0 }; kf.fundLocal = Math.max(kf.fundLocal, 1e6); F.ensureFamilyFortune(K);
     const sv0 = K.people.sA.career.savingsLocal; let found = false;
     for (let y = 0; y < 10 && !found; y++) { K.year += 1; const fund0 = kf.fundLocal, cash0 = K.money.cash, p0 = kf.own.pool, wy = kf.workYears || 0; F.grantServiceShares(K);
@@ -394,3 +394,26 @@ console.log('place at the table OK');
     f.yearState = { year: T.year + 1, kind: 'tight' }; assert.ok(!F.isTightYear(f, T), 'recovery: the next year it no longer applies'); }
 }
 console.log('record and tight year OK');
+{ /* stint timing, free-time cost, and accrued service that vests once after leaving */
+  const mk = (seed) => { const T = life('wealthy', 'usa', 2000, seed); const f = F.ensureFamilyFortune(T); T.player.age = 18; T.activeScene = null; T.sceneQueue = []; f.work = { stint: true, askedStint: true, fullSince: null, askedFull: 0 }; return [T, f]; };
+  { /* accepted before June of year Y: first grant January Y+1; accepted July-December: nothing until the following January (after a real summer) */
+    for (const [month, expect] of [[4, true], [6, true], [7, false], [11, false]]) {
+      const [T, f] = mk(60 + month); const Y = T.year; f.work.stintAbs = Y * 12 + month; T.year = Y + 1; T.month = 1; const b = f.own.player; F.grantServiceShares(T);
+      assert.equal(f.own.player > b, expect, `stint accepted in month ${month}: first January grant ${expect ? 'yes' : 'no'}`);
+      if (!expect) { f.shareYear = null; T.year = Y + 2; const b2 = f.own.player; F.grantServiceShares(T); assert.ok(f.own.player > b2, `month ${month}: then the January after a worked summer pays`); }
+      assert.equal(f.work.stintVestedYear === Y || !expect, true, 'summer marked as vested');
+    }
+  }
+  { const [T, f] = mk(70); const h0 = T.player.vitals.happiness; T.month = 5; assert.equal(F.stintSummerCost(T, f), 0, 'no cost outside summer');
+    T.month = 6; assert.equal(F.stintSummerCost(T, f), 1); assert.equal(F.stintSummerCost(T, f), 0, 'once a month'); T.month = 7; F.stintSummerCost(T, f); T.month = 8; F.stintSummerCost(T, f); T.month = 9; F.stintSummerCost(T, f);
+    assert.equal(T.player.vitals.happiness, h0 - 3, 'bounded: -1 for each of June, July, August');
+    f.work.stint = false; T.year += 1; T.month = 6; assert.equal(F.stintSummerCost(T, f), 0, 'no stint, no cost'); }
+  { const T = life('wealthy', 'usa', 2000, 80); const f = F.ensureFamilyFortune(T); T.player.age = 24; T.activeScene = null; T.sceneQueue = []; T.career.employed = true; T.career.job = { title: 'MT', employer: f.company.name };
+    f.work = { stint: false, askedStint: true, fullSince: 2020, hiredAbs: 2020 * 12 + 1, askedFull: 1 }; T.year = 2022; T.month = 5; f.shareYear = null;
+    const p0 = f.own.player; T.career.job = null; T.career.employed = false; F.checkWorkQuit(T, f);
+    const got = f.own.player - p0; assert.ok(got > 0 && got <= 1.0001 * 28 / 12 + 0.011, 'service completed before leaving vests once: ' + got);
+    assert.ok(!f.work.fullSince && f.work.vestedThroughAbs === 2022 * 12 + 4, 'accrual closed through the month before leaving');
+    T.year = 2023; T.month = 1; f.shareYear = null; const p1 = f.own.player; F.grantServiceShares(T); assert.equal(f.own.player, p1, 'no later grants'); F.checkWorkQuit(T, f); assert.equal(f.own.player, p1, 'nothing vests twice');
+    assert.equal(F.ownershipView(T).sum, 100, 'owners still sum to 100'); }
+}
+console.log('stint timing, cost and quit vesting OK');
