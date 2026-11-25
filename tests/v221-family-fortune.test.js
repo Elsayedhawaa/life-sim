@@ -59,7 +59,7 @@ assert.ok(E.familyFortune.trust.released.at21 && E.familyFortune.trust.released.
 // 5. The ledger card renders for a rich family and not for a middle one.
 const { renderPeopleTabHtml } = await import('../src/ui/views.js');
 const html = renderPeopleTabHtml(S, {}); 
-assert.ok(/Family fortune/.test(html) && /In 2026 money/.test(html), 'rich family sees the ledger with nominal and 2026 money');
+assert.ok(/Family fortune/.test(html) && !/2026 money/.test(html), 'rich family sees the ledger in the money of the year played, with no 2026 conversion column');
 assert.ok(!/Family fortune/.test(renderPeopleTabHtml(life('middle'), {})), 'middle family has no fortune card');
 console.log('family fortune OK');
 {

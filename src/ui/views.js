@@ -1281,13 +1281,13 @@ function askLabelSuffix(S, p) {
   return ` (about ${formatMoney(pr.low, S.country, true)} to ${formatMoney(pr.high, S.country, true)})`;
 }
 
-/* Family ledger: the fortune behind the family, nominal and in 2026 money side by side. */
+/* Family ledger: the fortune behind the family, in the money of the year being played. Era scaling is done inside the simulation, not shown as a conversion. */
 function renderFamilyLedgerCardHtml(S) {
   const lv = familyLedgerView(S);
   if (!lv) return '';
-  const { f, real } = lv;
+  const { f } = lv;
   const m = (n) => esc(formatMoney(Math.round(n), S.country, true));
-  const row = (label, n) => `<tr><td>${label}</td><td class="mono">${m(n)}</td><td class="mono muted">${m(real(n))}</td></tr>`;
+  const row = (label, n) => `<tr><td>${label}</td><td class="mono">${m(n)}</td></tr>`;
   const age = S.player.age;
   const tr = f.trust, rel = tr.released;
   const schedule = [[18, 'at18', 0.25], [21, 'at21', 0.25], [25, 'at25', 0.5]].map(([a, k, sh]) => `${a}: ${rel[k] ? 'paid' : 'due'}`).join(' · ');
@@ -1295,11 +1295,11 @@ function renderFamilyLedgerCardHtml(S) {
   return `<div class="card" id="family-ledger">
     <div class="section-head"><h3>Family fortune</h3><span class="muted mono">${esc(FAMILY_TIERS[f.tier]?.label || '')}</span></div>
     ${f.company ? `<div class="muted" style="font-size:0.88rem">The family company: ${esc(f.company.name)}, ${esc(f.company.sector)}${f.company.sites.length > 1 ? `, ${f.company.sites.length} sites in ${[...new Set(f.company.sites.map(s => getCountry(s.country).name))].join(', ')}` : ''}.</div>` : ''}
-    <table style="width:100%;margin:8px 0;font-size:0.9rem"><thead><tr><th></th><th align="left">Nominal</th><th align="left">In 2026 money</th></tr></thead><tbody>
-      ${row('Family net worth', f.netWorthLocal)}${row('Cash fund', f.fundLocal)}${row('Yearly inflow', f.yearlyInflowLocal)}${row('Gifts to you this year (cash help, car)', Math.max(0, f.yearGifts - (f.yearEducation || 0)))}${(() => { const h = (f.grants || []).filter(g => g.kind === 'home' && g.year === S.year).reduce((a, g) => a + g.amountLocal, 0); return h > 0 ? row('Home put in your name (from the estate)', h) : ''; })()}${(() => { const t = (f.grants || []).filter(g => g.kind === 'trust' && g.year === S.year).reduce((a, g) => a + g.amountLocal, 0); return t > 0 ? row('Trust released to you this year', t) : ''; })()}${(f.yearEducation || 0) > 0 ? row('Fees the family paid this year', f.yearEducation) : ''}${f.shares ? `<tr><td>Your shares in ${esc(f.company.name)}</td><td class="mono" colspan="2">${f.shares.pct}%${(f.yearDividend || 0) > 0 ? ' · dividend this year ' + m(f.yearDividend) : ''}</td></tr>` : ''}${(f.yearUpkeep || 0) > 0 ? row('Car running costs the family paid', f.yearUpkeep) : ''}
+    <table style="width:100%;margin:8px 0;font-size:0.9rem"><tbody>
+      ${row('Family net worth', f.netWorthLocal)}${row('Cash fund', f.fundLocal)}${row('Yearly inflow', f.yearlyInflowLocal)}${row('Gifts to you this year (cash help, car)', Math.max(0, f.yearGifts - (f.yearEducation || 0)))}${(() => { const h = (f.grants || []).filter(g => g.kind === 'home' && g.year === S.year).reduce((a, g) => a + g.amountLocal, 0); return h > 0 ? row('Home put in your name (from the estate)', h) : ''; })()}${(() => { const t = (f.grants || []).filter(g => g.kind === 'trust' && g.year === S.year).reduce((a, g) => a + g.amountLocal, 0); return t > 0 ? row('Trust released to you this year', t) : ''; })()}${(f.yearEducation || 0) > 0 ? row('Fees the family paid this year', f.yearEducation) : ''}${f.shares ? `<tr><td>Your shares in ${esc(f.company.name)}</td><td class="mono" colspan="1">${f.shares.pct}%${(f.yearDividend || 0) > 0 ? ' · dividend this year ' + m(f.yearDividend) : ''}</td></tr>` : ''}${(f.yearUpkeep || 0) > 0 ? row('Car running costs the family paid', f.yearUpkeep) : ''}
     </tbody></table>
     ${f.inherited ? `<div class="muted" style="font-size:0.88rem;margin-bottom:6px">Your parents' estate has been settled. Family allowance, asks, car and home gifts have ended: what you inherited replaces them. ${f.company ? esc(f.company.name) + ' still pays dividends from its own profit to the children who own shares.' : ''}</div>` : ''}
-    <div class="muted" style="font-size:0.88rem">Trust for you: ${m(tr.fundedLocal)} set aside. Releases at ${esc(schedule)}.${age < 18 ? ' Allowance: ' + m(lv.allowance) + ' a month.' : ''}</div>
+    <div class="muted" style="font-size:0.88rem">Your trust fund: ${m(tr.fundedLocal)} still set aside for you. Releases at ${esc(schedule)}.${age < 18 ? ' Allowance: ' + m(lv.allowance) + ' a month.' : ''}</div>
     ${recent ? `<div style="margin-top:6px"><strong style="font-size:0.85rem">Recent gifts and help</strong>${recent}</div>` : ''}
   </div>`;
 }
