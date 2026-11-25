@@ -563,7 +563,7 @@ export function renderNavTabsHtml(S, activeTab) {
     0
   );
   const expiredPass = S.legal.passports.every(p => p.expiresYear <= S.year);
-  const visaAlert = expiredPass || ['grace_period', 'undocumented'].includes(S.legal.residency.kind);
+  const visaAlert = (S.player?.age ?? 0) >= 18 && (expiredPass || ['grace_period', 'undocumented'].includes(S.legal.residency.kind));
   const buildActive = (S.housing.lands || []).some(l => !!l.buildProject);
 
   const tabs = [
@@ -571,7 +571,7 @@ export function renderNavTabsHtml(S, activeTab) {
     { id: 'education',  label: 'Education',   iconName: 'graduation', badge: '' },
     { id: 'people',     label: 'People',      iconName: 'people',     badge: openPromises > 0 ? String(openPromises) : '' },
     { id: 'work',       label: 'Career',      iconName: 'work',       badge: '' },
-    { id: 'realestate', label: 'Real Estate', iconName: 'realestate', badge: buildActive ? '3D' : '' },
+    { id: 'realestate', label: (S.player?.age ?? 0) < 18 ? 'Home' : 'Real Estate', iconName: 'realestate', badge: buildActive ? '3D' : '' },
     { id: 'finance',    label: 'Finance',     iconName: 'finance',    badge: S.money.cash < 0 ? '!' : '' },
     { id: 'lifestyle',  label: 'Lifestyle',   iconName: 'lifestyle',  badge: '' },
     { id: 'world',      label: 'Passport',    iconName: 'world',      badge: visaAlert ? '!' : '' }
@@ -979,7 +979,7 @@ function goalProgressDetail(S, g) {
     if (S.education.degrees.length > 0) return { pct: 100, text: 'Degree earned' };
     if (S.education.highSchoolScore != null) return { pct: Math.round(S.education.highSchoolScore), text: `Exam score ${S.education.highSchoolScore}% — qualification lands at 19` };
     /* Progress is the share of the school years (6 to 18) actually lived: nothing before school starts, never an invented flat figure. */
-    if (S.education.stage === 'infancy' || S.player.age < 6) return { pct: 0, text: 'Not in school yet — it starts at six' };
+    if (S.player.age < 6) return { pct: 0, text: 'Not in school yet — it starts at six' };
     return { pct: Math.max(0, Math.min(90, Math.round(((S.player.age - 6) / 12) * 100))), text: `Still in school (${S.education.stage.replace('_', ' ')}), age ${S.player.age} of 18` };
   }
   if (g.id === 'g_income') {
@@ -2796,10 +2796,11 @@ function renderSideGigsSubtabHtml(S) {
    ========================================================================== */
 export function renderRealEstateTabHtml(S, uiState = {}) {
   ensureExtendedState(S);
-  const sub = uiState.reSub || 'myhome';
+  const isMinor = (S.player?.age ?? 0) < 18; /* a child sees the family home only: no compounds, land or building */
+  const sub = isMinor ? 'myhome' : (uiState.reSub || 'myhome');
   const compoundsHere = (COMPOUNDS_BY_COUNTRY[S.country] || []).length + (NEIGHBORHOODS_BY_COUNTRY[S.country] || []).length;
 
-  const nav = renderSubtabs('realestate', [
+  const nav = isMinor ? '' : renderSubtabs('realestate', [
     { id: 'myhome', label: 'My Home 3D, Rooms & Staff' },
     { id: 'compounds', label: `Compounds & Districts (${compoundsHere}+)` },
     { id: 'lands', label: `Land & Custom Build (${LAND_PLOTS.length})` }
@@ -4921,8 +4922,9 @@ function renderCourtsAndCrimeSubtabHtml(S) {
    ========================================================================== */
 export function renderWorldTabHtml(S, uiState = {}) {
   ensureExtendedState(S);
-  const sub = uiState.worldSub || 'passports';
-  const nav = renderSubtabs('world', [
+  const isMinorW = (S.player?.age ?? 0) < 18; /* migration routes are adult decisions */
+  const sub = isMinorW ? 'passports' : (uiState.worldSub || 'passports');
+  const nav = isMinorW ? '' : renderSubtabs('world', [
     { id: 'passports', label: 'Passports & Legal Status' },
     { id: 'gulf', label: 'Gulf Kafala & Premium Residency' },
     { id: 'global', label: 'Chancenkarte (6-Pt), Study & Global Visas' }
