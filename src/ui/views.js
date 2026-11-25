@@ -1,5 +1,5 @@
 import { lenderCreditScore, familyNameCreditPoints, familyNameInterviewPoints } from '../systems/familyName.js';
-import { isFortuneParent, askPreview, familyLedgerView } from '../systems/familyFortune.js';
+import { isFortuneParent, askPreview, familyLedgerView, siblingStakeLine } from '../systems/familyFortune.js';
 import {courtshipMonthsApart} from '../systems/courtshipLife.js';
 import{personalLoanGates}from'../systems/economyEngine.js';
 import{renderHiring}from'../systems/companyHiring.js';
@@ -1525,6 +1525,7 @@ function renderNpcCardHtml(S, p) {
               ${(Number(p.career?.savingsLocal) || 0) > 0
                 ? `Holds about <strong>${esc(formatMoney(p.career.savingsLocal, p.residenceCountry || S.country))}</strong> in savings of their own.`
                 : 'No savings put aside of their own.'}
+              ${p.role === 'sibling' && siblingStakeLine(S, p.id) ? ` ${esc(siblingStakeLine(S, p.id))}` : ''}
             </div>
           ` : ''}
           ${quote ? `<div class="npc-quote">${esc(quote)}</div>` : ''}

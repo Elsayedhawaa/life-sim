@@ -205,7 +205,7 @@ console.log('upkeep OK');
     const sg = f.grants.find(g => g.kind === 'shares'); assert.ok(f.shares && sg, tier + ' holds service shares'); const gp = parseFloat(sg.note); assert.ok(gp >= 0.25 && gp <= 1.0, 'granted stake is a 0.25-0.5% summer stint or a 0.5-1% full year: ' + sg.note);
     assert.ok(f.grants.some(g => g.kind === 'dividend') || f.dividendsPaid >= 0, 'dividends are recorded');
     const fund = f.fundLocal, cash = T.money.cash; const paid = F.payDividends(T, 0.1);
-    assert.ok(paid > 0 && f.fundLocal === (f.inherited ? fund : fund - paid) && T.money.cash >= cash + paid - 1, 'dividend reaches the player; before the estate is settled it comes out of the fund, after it comes from company profit');
+    assert.ok(paid > 0 && f.fundLocal === (f.inherited ? fund : fund - f.lastDividend.total) && f.lastDividend.rows.find(r => r.id === 'player').amt === paid && T.money.cash >= cash + paid - 1, 'dividend reaches the player; before the estate is settled it comes out of the fund together with any sibling holder dividends (the whole payout leaves the fund once), after it comes from company profit');
     assert.ok(paid <= f.yearlyInflowLocal * F.FORTUNE_DIALS.dividendCapPctOfInflow + 1, 'dividend capped by inflow');
     assert.ok(F.payDividends(T, -0.5) < paid, 'a losing year pays less');
   }

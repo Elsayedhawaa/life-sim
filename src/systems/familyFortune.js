@@ -1008,6 +1008,41 @@ export function payWeddingHelp(S, venueCost, partnerId) {
   return amt;
 }
 
+/* --- Rich siblings as people (not just a bank balance) ------------------------------------------------------
+   An adult sibling of a fortune family now has a standing that follows the real company: if they are one of the siblings who work in it (decided once per sibling, at about the same 70% rate as the share draw) they hold a post there, with the family company as their employer; if they only hold
+   shares they are a shareholder and private investor; if the company was sold they are a private investor. The rank follows their age. No money is
+   created or moved here: pay and savings are untouched, this only gives the existing wealth a real description. Retired siblings are left alone. */
+export function siblingWorksInCompany(S, id) {
+  const p = S.people?.[id]; if (!p) return false;
+  p.career = p.career || {};
+  if (typeof p.career.familyWorks !== 'boolean') p.career.familyWorks = hash01(S, id.length * 31 + (p.birthYear | 0) * 3 + 5) < 0.7; /* decided once, so a title never flips year to year */
+  return p.career.familyWorks;
+}
+export function syncSiblingStanding(S, f) {
+  if (!f || !f.company) return 0;
+  let n = 0;
+  const live = !f.company.sold, co = f.company.name;
+  for (const id of aliveSiblings(S)) {
+    const p = S.people[id]; if (!p || (p.age ?? 0) < 22) continue;
+    p.career = p.career || {};
+    if (p.career.title === 'Retired') continue;
+    const stake = f.own.siblings?.[id] || 0;
+    const wasFamily = p.career.familyStanding === 'post' || p.career.familyStanding === 'holder';
+    let title = null, employer = null, mark = null;
+    if (live && siblingWorksInCompany(S, id)) { const age = p.age | 0; title = `${age < 30 ? 'Associate' : age < 45 ? 'Director' : 'Managing Director'} at ${co}`; employer = co; mark = 'post'; }
+    else if (live && stake > 0) { title = 'Shareholder and private investor'; mark = 'holder'; }
+    else if (!live && (wasFamily || stake > 0)) { title = 'Private investor'; mark = 'investor'; }
+    if (!title) continue;
+    if (p.career.title !== title || p.career.familyStanding !== mark) { p.career.title = title; p.career.familyStanding = mark; if (employer) p.career.employer = employer; else if (p.career.employer === co) p.career.employer = null; n++; }
+  }
+  return n;
+}
+export function siblingStakeLine(S, id) {
+  const f = S.familyFortune; const pct = f?.own?.siblings?.[id] || 0;
+  if (!f?.company || f.company.sold || pct <= 0) return '';
+  return `Owns ${pct}% of ${f.company.name}, about ${formatMoney(Math.round(companyValue(f) * pct / 100), S.country)} of its value.`;
+}
+
 /* --- The connected internship (17-23): a paid summer at a partner company -------------------
    The family's connections open a three-month paid internship at a partner firm (a real employer record, paid monthly through the summer,
    less free time). At the end you earn a reference (a few interview points) and, if you are free to work, may convert it into a first job there. Declining costs nothing. */
@@ -1187,7 +1222,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerIntroduction(S); offerWeddingHelp(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); deliverSuccessionTalk(S, f);
+  checkWorkQuit(S, f); syncSiblingStanding(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerIntroduction(S); offerWeddingHelp(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); deliverSuccessionTalk(S, f);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;
