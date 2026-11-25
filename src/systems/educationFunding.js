@@ -70,6 +70,18 @@ export function chargeFamilyEducation(S,amount){
  return left<=.01;
 }
 export const SCHOLARSHIP_RENEWAL_MIN_SKILL=60;
+export function buildScholarshipEndedScene(S){
+const u=S.education?.university;if(!u||u.fundingSource!=='scholarship_ended')return null;const el=Number(u.elapsedMonths)||0;
+ const annual=Math.round(convertCurrency(u.annualTuition,u.country||S.country,S.country,S.year));const yearsLeft=Math.max(1,(u.totalYears||Math.ceil(el/12)+1)-Math.floor(el/12));
+ const canFamily=familyCoversUniversity(S,annual,u.country||S.country);
+ const canLoan=!(S.money.loans||[]).some(l=>l.narrativeKind==='student')&&S.player.age>=18;
+ const choices=[];
+ if(canFamily)choices.push({label:`Ask your parents to pay the next year (${annual.toLocaleString('en-US')})`,effect:(st)=>{const x=st.education.university;if(x&&chargeFamilyEducation(st,annual)){x.fundingSource='family';x.familyMonthsRemaining=12;x.familyPaidTotal=(x.familyPaidTotal||0)+annual;recordJournal(st,'Your parents agreed to pay another year of tuition.','money');}else if(x){x.fundingSource='self';recordJournal(st,'Your parents could not cover it after all. You pay tuition monthly yourself.','money');}}});
+ if(canLoan)choices.push({label:`Game student loan for the remaining ${yearsLeft} year(s): ${(annual*yearsLeft).toLocaleString('en-US')} at 6%, 60 payments after you finish`,effect:(st)=>{const x=st.education.university;if(!x)return;const q=narrativeLoanQuote(st,'student',annual*yearsLeft);if(!q)return;st.money.loans.push({...q,id:nextId(st,'narrloan'),label:'Game student loan, 6% annual',country:st.country,narrativeKind:'student',missedMonths:0});x.fundingSource='loan';recordJournal(st,'You took a game student loan to cover the rest of your degree. Payments start after you finish.','money');}});
+ choices.push({label:`Pay tuition myself, ${Math.round(annual/12).toLocaleString('en-US')} a month`,effect:(st)=>{const x=st.education.university;if(x)x.fundingSource='self';}});
+return({key:`scholarship_lost_${u.name}_${el}`,category:'school',title:'Your scholarship has ended',text:`Your results stayed under the ${SCHOLARSHIP_RENEWAL_MIN_SKILL}% standing for two years running, so the award at ${u.name} ends. (Renewal on results is a game rule, not any real scheme's policy.) Tuition is ${annual.toLocaleString('en-US')} a year. How will you pay for the rest of the degree?`,choices});
+}
+export function restoreScholarshipEndedScene(S,saved){return saved&&/^scholarship_lost_/.test(saved.key||'')?buildScholarshipEndedScene(S):null;}
 /* A scholarship is renewed on results at each academic-year boundary: academic skill must stay at or above the standing. One miss is probation (funding kept, warned). A second miss in a row ends the award and tuition is paid by the student monthly. */
 export function reviewScholarshipRenewal(S){
  const u=S.education.university;if(!u||u.fundingSource!=='scholarship'||!(u.scholarshipPct>0))return;
@@ -79,14 +91,7 @@ export function reviewScholarshipRenewal(S){
  if(!u.probation){u.probation=true;recordJournal(S,`Scholarship probation at ${u.name}: your results (${skill}%) are under the ${SCHOLARSHIP_RENEWAL_MIN_SKILL}% standing. Funding continues for now. Another weak year ends it.`,'career');return;}
  u.fundingSource='scholarship_ended';u.scholarshipPct=0;u.scholarshipLost=true;u.probation=false;
  recordJournal(S,`Your scholarship at ${u.name} ended: results were under the ${SCHOLARSHIP_RENEWAL_MIN_SKILL}% standing two years running (${skill}% now). This is a game renewal rule. Choose how to pay the rest of the degree.`,'money');
- const annual=Math.round(convertCurrency(u.annualTuition,u.country||S.country,S.country,S.year));const yearsLeft=Math.max(1,(u.totalYears||Math.ceil(el/12)+1)-Math.floor(el/12));
- const canFamily=familyCoversUniversity(S,annual,u.country||S.country);
- const canLoan=!(S.money.loans||[]).some(l=>l.narrativeKind==='student')&&S.player.age>=18;
- const choices=[];
- if(canFamily)choices.push({label:`Ask your parents to pay the next year (${annual.toLocaleString('en-US')})`,effect:(st)=>{const x=st.education.university;if(x&&chargeFamilyEducation(st,annual)){x.fundingSource='family';x.familyMonthsRemaining=12;x.familyPaidTotal=(x.familyPaidTotal||0)+annual;recordJournal(st,'Your parents agreed to pay another year of tuition.','money');}else if(x){x.fundingSource='self';recordJournal(st,'Your parents could not cover it after all. You pay tuition monthly yourself.','money');}}});
- if(canLoan)choices.push({label:`Game student loan for the remaining ${yearsLeft} year(s): ${(annual*yearsLeft).toLocaleString('en-US')} at 6%, 60 payments after you finish`,effect:(st)=>{const x=st.education.university;if(!x)return;const q=narrativeLoanQuote(st,'student',annual*yearsLeft);if(!q)return;st.money.loans.push({...q,id:nextId(st,'narrloan'),label:'Game student loan, 6% annual',country:st.country,narrativeKind:'student',missedMonths:0});x.fundingSource='loan';recordJournal(st,'You took a game student loan to cover the rest of your degree. Payments start after you finish.','money');}});
- choices.push({label:`Pay tuition myself, ${Math.round(annual/12).toLocaleString('en-US')} a month`,effect:(st)=>{const x=st.education.university;if(x)x.fundingSource='self';}});
- queueScene(S,{key:`scholarship_lost_${u.name}_${el}`,category:'school',title:'Your scholarship has ended',text:`Your results stayed under the ${SCHOLARSHIP_RENEWAL_MIN_SKILL}% standing for two years running, so the award at ${u.name} ends. (Renewal on results is a game rule, not any real scheme's policy.) Tuition is ${annual.toLocaleString('en-US')} a year. How will you pay for the rest of the degree?`,choices},true);
+ const sc=buildScholarshipEndedScene(S);if(sc)queueScene(S,sc,true);
 }
 export function settleFamilyUniversityMonth(S){
  reviewScholarshipRenewal(S);
