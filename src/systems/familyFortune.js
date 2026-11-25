@@ -211,9 +211,28 @@ export function tickFamilyFortuneYearly(S) {
     f.trust.fundedLocal = Math.round(Math.min(cap, before + f.netWorthLocal * DIALS.trustYearlyPct));
     takeFromEstate(f, f.trust.fundedLocal - before); /* trust money is earmarked outside the estate when it is set aside */
   }
-  if (f.company && age < 40) {
-    if (swing > 0.2) recordJournal(S, `${f.company.name} had a record year. The family fund is fuller, which shows in what the family can give.`, 'money');
-    else if (swing < -0.15) recordJournal(S, `${f.company.name} had a tight year. The family is holding back on gifts until it recovers.`, 'money');
+  /* Record year / tight year: a real state that changes what the family gives, with the reason shown in the ledger. */
+  f.yearState = null;
+  if (f.company && !f.inherited && age >= 0) {
+    if (swing > 0.2) {
+      const roll = hash01(S, S.year * 5 + 9);
+      const kind = roll < 0.4 ? 'allowance' : roll < 0.75 ? 'gift' : 'property';
+      f.yearState = { year: S.year, kind: 'record', outcome: kind };
+      recordJournal(S, `${f.company.name} had a record year. The fund is fuller.`, 'money');
+      if (kind === 'gift' && age >= 18) {
+        const amt = Math.min(Math.round(f.fundLocal * 0.004), Math.round(giftRoom(f, S)));
+        if (amt > 0) { spend(f, amt); f.yearGifts += amt; walletMove(S, amt, 'Record-year gift from your family', 'family'); addGrant(f, S, 'gift', amt, `${f.company.name} record year`); recordJournal(S, `Because of the record year your family sent you a one-time gift of ${formatMoney(amt, S.country)}.`, 'money'); }
+        else f.yearState.outcome = 'allowance';
+      } else if (kind === 'gift') f.yearState.outcome = 'allowance';
+      if (kind === 'property') {
+        const buy = Math.round(f.fundLocal * 0.08); f.fundLocal -= buy; f.otherLocal += buy; sync(f);
+        recordJournal(S, `The family put ${formatMoney(buy, S.country)} of the record-year profit into property. It stays in the family estate.`, 'money');
+      }
+      if (f.yearState.outcome === 'allowance') recordJournal(S, 'Because of the record year the family allowance is higher this year.', 'money');
+    } else if (swing < -0.15) {
+      f.yearState = { year: S.year, kind: 'tight' };
+      recordJournal(S, `${f.company.name} had a tight year. This year the allowance is cut, big asks are turned down and planned gifts wait until it recovers.`, 'money');
+    }
   }
   payDividends(S, swing);
   /* Trust releases at 18 / 21 / 25 */
@@ -230,7 +249,7 @@ export function tickFamilyFortuneYearly(S) {
 /* The keys: a real owned car at the birthday, paid from the fund and counted in the annual gift share. */
 export function giftBirthdayCar(S) {
   const f = ensureFamilyFortune(S);
-  if (!f || f.carGifted) return null;
+  if (!f || f.carGifted || isTightYear(f, S)) return null; /* planned gifts wait out a tight year */
   const age = S.player?.age ?? 0;
   if (age < DIALS.carGiftAge || age > 25) return null;
   const pool = CARS_MEGA_CATALOG.filter(c => S.year >= c.yearFrom && S.year <= c.yearTo && !(f.tier !== 'very_wealthy' && c.priceUsd2026 > 120000));
@@ -260,6 +279,14 @@ export function ownershipView(S) {
   return { own: f.own, sum: ownSum(f), company: companyValue(f), stakeValue: pct => Math.round(companyValue(f) * (pct || 0) / 100) };
 }
 /* Service shares, yearly. Each living child who is of age and working that year earns 0.5-1% of the company from the children's pool, at most 10% per child. A child's own age counts, so later-born siblings start later. If the pool cannot cover a year, the shortfall is paid as a cash bonus. The player works when they hold a job; a sibling works by a fixed per-sibling-year draw. STAND-IN: this is not yet tied to a job inside the family company itself. */
+export function checkWorkQuit(S, f) {
+  const w = f?.work;
+  if (!w || !w.fullSince) return;
+  const atCompany = !!(S.career?.employed && S.career?.job?.employer === f.company?.name);
+  if (atCompany) return;
+  w.fullSince = null; w.hiredAbs = null; w.quitYear = S.year; w.askedFull = Math.min(w.askedFull || 0, 1); w.lastAskYear = S.year;
+  recordJournal(S, `You left ${f.company.name}. Service shares stop, and the door stays open: your family may offer a place again.`, 'family');
+}
 const r6 = x => Math.round(x * 1e6) / 1e6;
 export function grantServiceShares(S) {
   const f = ensureFamilyFortune(S);
@@ -270,9 +297,17 @@ export function grantServiceShares(S) {
   const [lo, hi] = DIALS.sharesPctRange;
   const heirs = [];
   /* The player earns shares only for real work in the family company: a full-time post there (hired through "A place at the table"), or, before 21, summer stints (half rate). */
-  { const w = f.work || {}, age = S.player?.age ?? 0;
-    if (age >= DIALS.sharesGrantAge && w.fullSince && S.career?.employed && S.career?.job?.employer === f.company.name) heirs.push({ id: 'player', salt: 61, rate: 1 });
-    else if (age >= 16 && age < DIALS.sharesGrantAge && w.stint) heirs.push({ id: 'player', salt: 61, rate: 0.5 }); }
+  /* Service years are paid for completed work: the grant for year Y covers the months actually worked in year Y-1, so a late-year hire gets a prorated slice, not a full year. Quitting ends the work and re-opens the door. */
+  { const w = f.work || (f.work = { stint: false, fullSince: null, askedStint: false, askedFull: 0 }), age = S.player?.age ?? 0;
+    const atCompany = !!(S.career?.employed && S.career?.job?.employer === f.company.name);
+    checkWorkQuit(S, f);
+    const lastYearStart = (S.year - 1) * 12 + 1, lastYearEnd = (S.year - 1) * 12 + 12;
+    if (age >= DIALS.sharesGrantAge && w.fullSince && atCompany && w.hiredAbs != null) {
+      const n = Math.max(0, Math.min(12, lastYearEnd - Math.max(w.hiredAbs, lastYearStart) + 1));
+      if (n > 0) heirs.push({ id: 'player', salt: 61, rate: n / 12, months: n });
+    } else if (age >= 16 && age < DIALS.sharesGrantAge && w.stint && w.stintAbs != null && w.stintAbs <= lastYearStart + 5) {
+      heirs.push({ id: 'player', salt: 61, rate: 0.5, months: 12 }); /* brief event 2: summer stints earn small early shares, at half rate */
+    } }
   for (const id of aliveSiblings(S)) {
     const p = S.people[id];
     if ((p.age ?? 0) >= DIALS.sharesGrantAge && hash01(S, S.year * 13 + id.length * 7 + (p.age | 0) * 3 + 5) < 0.7) heirs.push({ id, salt: 71 });
@@ -397,7 +432,7 @@ export function settleSuccession(S) {
 /* First home: offered at 22 to wealthy and very_wealthy families. The family hands over a finished asset from the estate. */
 export function offerFirstHome(S) {
   const f = ensureFamilyFortune(S);
-  if (!f || f.homeGifted || f.tier === 'upper_middle') return null;
+  if (!f || f.homeGifted || f.tier === 'upper_middle' || isTightYear(f, S)) return null;
   const age = S.player?.age ?? 0;
   if (age < DIALS.homeGiftAge || age > 30) return null;
   const ceiling = f.netWorthLocal * DIALS.homeCapPctOfNetWorth * DIALS.homeAimShare[f.tier];
@@ -478,16 +513,16 @@ export function resolvePlace(S, yes) {
   if (!o) return null;
   f.placeOffer = null; f.work = f.work || { stint: false, fullSince: null, askedStint: false, askedFull: 0 };
   if (o.kind === 'stint') {
-    f.work.askedStint = true; f.work.stint = !!yes;
-    recordJournal(S, yes ? `You will spend your summers at ${f.company.name}. Each year of it earns a small early stake. There is less free time.` : `You told your parents not now. The door at ${f.company.name} stays open.`, 'family');
+    f.work.askedStint = true; f.work.stint = !!yes; if (yes) f.work.stintAbs = S.year * 12 + (S.month || 1);
+    recordJournal(S, yes ? `You will spend your summers at ${f.company.name}. Each completed summer earns a small early stake. There is less free time.` : `You told your parents not now. The door at ${f.company.name} stays open.`, 'family');
     return { ok: true, taken: !!yes };
   }
   f.work.askedFull += 1; f.work.lastAskYear = S.year;
   if (!yes) { recordJournal(S, `You chose your own path. The door at ${f.company.name} stays open.`, 'family'); return { ok: true, taken: false }; }
   if (S.career?.employed && S.career?.job) { recordJournal(S, 'You took another job first, so the family post is not taken. The door stays open.', 'family'); return { ok: false, taken: false }; }
   hireIntoJob(S, companyPost(S, f), { partTimeOnly: false }, {});
-  f.work.fullSince = S.year; f.work.stint = false;
-  recordJournal(S, `You joined ${f.company.name} full time. Every year you work there earns service shares.`, 'career');
+  f.work.fullSince = S.year; f.work.hiredAbs = S.year * 12 + (S.month || 1); f.work.stint = false;
+  recordJournal(S, `You joined ${f.company.name} full time. Each completed year you work there earns service shares, prorated by the months worked.`, 'career');
   return { ok: true, taken: true };
 }
 
@@ -500,7 +535,7 @@ function seedAmount(S, f) {
 }
 export function offerSeedGift(S) {
   const f = ensureFamilyFortune(S);
-  if (!f || f.seedDone || f.seedOffer || (f.seedRetryYear && S.year < f.seedRetryYear)) return null;
+  if (!f || isTightYear(f, S) || f.seedDone || f.seedOffer || (f.seedRetryYear && S.year < f.seedRetryYear)) return null;
   if ((S.player?.age ?? 0) < 19 || !(S.career?.businesses || []).some(b => b && !b.dead)) return null;
   if (S.activeScene || (S.sceneQueue || []).length) return null; /* wait for a quiet month */
   const room = Math.round(f.fundLocal * 0.5);
@@ -543,7 +578,7 @@ export function resolveSeed(S, take) {
    20-40% of the deposit-size price of an entry home, one time, between 24 and 30 and only while the player owns no property. */
 export function offerDepositHelp(S) {
   const f = ensureFamilyFortune(S);
-  if (!f || f.tier !== 'upper_middle' || f.depositDone || f.depositOffer || (f.depositRetryYear && S.year < f.depositRetryYear)) return null;
+  if (!f || isTightYear(f, S) || f.tier !== 'upper_middle' || f.depositDone || f.depositOffer || (f.depositRetryYear && S.year < f.depositRetryYear)) return null;
   const age = S.player?.age ?? 0;
   if (age < 24 || age > 30) return null;
   if ((S.housing?.properties || []).length) { f.depositDone = true; return null; }
@@ -687,7 +722,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S);
+  checkWorkQuit(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;
@@ -740,7 +775,10 @@ export function familyAllowanceMonthly(S) {
 export function payFamilyAllowanceYear(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return null;
-  const monthly = familyAllowanceMonthly(S);
+  let monthly = familyAllowanceMonthly(S);
+  const ys = f.yearState && f.yearState.year === S.year ? f.yearState : null;
+  if (ys?.kind === 'record' && ys.outcome === 'allowance') monthly = Math.round(monthly * 1.25);
+  if (ys?.kind === 'tight') monthly = Math.round(monthly * 0.6);
   if (!(monthly > 0)) return 0;
   const room = giftRoom(f, S);
   const annual = Math.min(monthly * 12, f.fundLocal, room);
@@ -756,12 +794,14 @@ export function isFortuneParent(S, p) {
   return !!p && hasFortune(S) && (p.id === S.relations?.fatherId || p.id === S.relations?.motherId);
 }
 
+export function isTightYear(f, S) { return !!(f && f.yearState && f.yearState.kind === 'tight' && f.yearState.year === S.year); }
 export function askCeiling(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return 0;
   const d = DIALS.askCeiling[f.tier];
   const base = d.of === 'fund' ? f.fundLocal : monthlyInflow(f);
   let v = Math.round(base * d.pct);
+  if (isTightYear(f, S)) v = Math.round(v * 0.5); /* big asks are turned down in a tight year */
   /* Reconciled with main: upper_middle never gets less than the pre-wealth rule (1.5 x standard rent). */
   if (f.tier === 'upper_middle') {
     const c = getCountry(S.country);

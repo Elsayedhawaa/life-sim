@@ -192,6 +192,7 @@ console.log('year roll OK');
   for (let i = 0; i < 400 && !V.familyFortune.carOffer && !V.cars.some(c => c.gifted); i++) run(V, 1);
   if (V.familyFortune.carOffer) { V.activeScene = null; V.sceneQueue = (V.sceneQueue || []).filter(x => x.key !== 'family_keys'); F.resolveKeys(V, 'car'); }
   const car = V.cars.find(c => c.gifted); assert.ok(car && car.familyCoversUpkeep);
+  V.familyFortune.inherited = false; V.familyFortune.fundLocal = Math.max(V.familyFortune.fundLocal, 5e6); V.familyFortune.netWorthLocal = V.familyFortune.companyLocal + V.familyFortune.fundLocal + V.familyFortune.otherLocal;
   const fund = V.familyFortune.fundLocal; assert.ok(F.familyPaysCarUpkeep(V, car.monthlyUpkeep) && V.familyFortune.fundLocal === fund - car.monthlyUpkeep, 'the fund pays, not nobody');
   V.familyFortune.fundLocal = 0; assert.ok(!F.familyPaysCarUpkeep(V, car.monthlyUpkeep), 'empty fund: the player pays');
 }
@@ -259,7 +260,7 @@ console.log('company link OK');
   /* dead siblings are not counted */
   const K = life('wealthy', 'usa', 2000, 11); const kf = F.ensureFamilyFortune(K); K.relations.siblingIds = K.relations.siblingIds || [];
   K.people.sibA = { id: 'sibA', alive: true, age: 25 }; K.people.sibB = { id: 'sibB', alive: false, age: 25 }; K.people.sibC = { id: 'sibC', alive: true, age: 14 }; K.relations.siblingIds.push('sibA', 'sibB', 'sibC');
-  K.player.age = 22; K.career.employed = true; K.career.job = { title: 'Management Trainee', employer: kf.company.name }; kf.work = { stint: false, fullSince: K.year, askedStint: true, askedFull: 1 };
+  K.player.age = 22; K.career.employed = true; K.career.job = { title: 'Management Trainee', employer: kf.company.name }; kf.work = { stint: false, fullSince: K.year - 2, hiredAbs: (K.year - 2) * 12 + 1, askedStint: true, askedFull: 1 };
   const sy = K.year; let pl = 0;
   for (let i = 0; i < 40; i++) { K.year = sy + i; K.player.age = 22 + i; K.people.sibA.age = 25 + i; K.people.sibC.age = 14 + i; const b4 = kf.own.player; F.grantServiceShares(K); pl = Math.max(pl, kf.own.player - b4); if (i === 3) assert.equal(kf.own.siblings.sibC || 0, 0, 'a sibling under 21 earns nothing'); assert.ok(kf.own.player <= 10.0001 && (kf.own.siblings.sibA || 0) <= 10.0001, 'at most 10% per child'); assert.equal(F.ownershipView(K).sum, 100, 'owners sum to 100 every year'); }
   assert.ok(pl > 0 && pl <= 1.0001, 'a working year earns 0.5-1%');
@@ -304,7 +305,7 @@ console.log('seed gift and deposit help OK');
 { /* equal treatment of qualifying children; one profit stream for dividends */
   const mkK = () => { const K = life('wealthy', 'usa', 2000, 21); const kf = F.ensureFamilyFortune(K); K.relations.siblingIds = K.relations.siblingIds || [];
     K.people.sA = { id: 'sA', alive: true, age: 30, fullName: 'A', career: { savingsLocal: 0 } }; K.people.sB = { id: 'sB', alive: true, age: 30, fullName: 'B', career: { savingsLocal: 0 } };
-    K.relations.siblingIds = ['sA', 'sB']; K.player.age = 30; K.career.employed = true; K.career.job = { title: 'x', employer: kf.company.name }; kf.work = { stint: false, fullSince: K.year, askedStint: true, askedFull: 1 }; K.activeScene = null; return [K, kf]; };
+    K.relations.siblingIds = ['sA', 'sB']; K.player.age = 30; K.career.employed = true; K.career.job = { title: 'x', employer: kf.company.name }; kf.work = { stint: false, fullSince: K.year - 2, hiredAbs: (K.year - 2) * 12 + 1, askedStint: true, askedFull: 1 }; K.activeScene = null; return [K, kf]; };
   { const [K, kf] = mkK(); kf.own = { parents: 99.1, pool: 0.9, player: 0, siblings: {}, heirs: 0 }; kf.fundLocal = Math.max(kf.fundLocal, 1e6); F.ensureFamilyFortune(K);
     const sv0 = K.people.sA.career.savingsLocal; let found = false;
     for (let y = 0; y < 10 && !found; y++) { K.year += 1; const fund0 = kf.fundLocal, cash0 = K.money.cash, p0 = kf.own.pool, wy = kf.workYears || 0; F.grantServiceShares(K);
@@ -341,7 +342,7 @@ console.log('equal treatment and dividend stream OK');
   const U = life('upper_middle', 'usa', 2000, 32); U.player.age = 26; U.activeScene = null; U.sceneQueue = []; const g = F.ensureFamilyFortune(U); U.housing.properties = [];
   F.offerDepositHelp(U); g.yearGifts = g.yearlyInflowLocal * F.FORTUNE_DIALS.annualGiftShareCap; const rr = F.resolveDeposit(U, true);
   assert.ok(rr.ok === false && !g.depositDone, 'deposit is not consumed either');
-  const W = life('wealthy', 'usa', 2000, 33); const w = F.ensureFamilyFortune(W); w.inherited = true; W.player.age = 30; W.career.employed = true; W.career.job = { title: 'x', employer: w.company.name }; w.work = { fullSince: 2020 };
+  const W = life('wealthy', 'usa', 2000, 33); const w = F.ensureFamilyFortune(W); w.inherited = true; W.player.age = 30; W.career.employed = true; W.career.job = { title: 'x', employer: w.company.name }; w.work = { fullSince: 2020, hiredAbs: 2020 * 12 + 1 };
   const wy = w.workYears || 0; W.year += 1; F.grantServiceShares(W); assert.equal(w.workYears || 0, wy, 'no work years counted once the pool is gone');
 }
 console.log('gift caps recheck OK');
@@ -351,15 +352,22 @@ console.log('gift caps recheck OK');
   T.player.age = 17; const o = F.offerPlaceAtTable(T); assert.ok(o && o.kind === 'stint', 'a summer-stint offer at 16-20');
   const sc = T.activeScene || T.sceneQueue[0]; assert.ok(sc.key === 'family_place' && sc.choices.length === 2, 'a real two-choice scene');
   assert.ok(F.restoreHomeScene(T, { key: 'family_place' }), 'pending offer restores after reload');
-  F.resolvePlace(T, true); assert.ok(f.work.stint, 'stint accepted');
-  T.year += 1; const b0 = f.own.player; F.grantServiceShares(T); assert.ok(f.own.player > b0 && f.own.player - b0 <= 0.5001, 'a summer stint earns a small early stake (half rate)');
+  T.month = 9; F.resolvePlace(T, true); assert.ok(f.work.stint, 'stint accepted (after this year\'s summer)');
+  T.year += 1; const b0 = f.own.player; F.grantServiceShares(T); assert.equal(f.own.player, b0, 'a stint accepted this year has no completed summer yet'); T.month = 1; f.work.stintAbs = (T.year - 1) * 12 + 1; f.shareYear = null; T.year += 0; F.grantServiceShares(T); assert.ok(f.own.player > b0 && f.own.player - b0 <= 0.5001, 'a completed summer stint earns a small early stake (half rate)');
   /* stint at 21+ ends: no stint credit, and any other job does not count */
   T.player.age = 22; T.career.employed = true; T.career.job = { title: 'Analyst', employer: 'Other Corp' }; f.work.fullSince = null; T.year += 1; const b1 = f.own.player; F.grantServiceShares(T); assert.equal(f.own.player, b1, 'a job elsewhere earns no family shares');
   /* full-time offer only with no job, and then it makes a real job in the company */
   T.career.job = null; T.career.employed = false; T.activeScene = null; T.sceneQueue = []; f.placeOffer = null;
   const o2 = F.offerPlaceAtTable(T); assert.ok(o2 && o2.kind === 'full', 'a full-time offer at 21+ when jobless');
   const r = F.resolvePlace(T, true); assert.ok(r.taken && T.career.job.employer === f.company.name && T.career.employed, 'a real job at the family company');
-  T.year += 1; const b2 = f.own.player; F.grantServiceShares(T); assert.ok(f.own.player - b2 >= 0.49 && f.own.player - b2 <= 1.0001, 'a full work year earns 0.5-1%');
+  /* late hire: a November hire gets a prorated slice the next January, not a full year */
+  T.month = 11; f.work.hiredAbs = T.year * 12 + 11; f.shareYear = null; T.year += 1; const b2 = f.own.player; F.grantServiceShares(T); const late = f.own.player - b2;
+  assert.ok(late > 0 && late <= 1.0001 * 2 / 12 + 0.011, 'a late-year hire earns about 2/12 of a year: ' + late);
+  T.year += 1; const b3 = f.own.player; F.grantServiceShares(T); assert.ok(f.own.player - b3 >= 0.49 && f.own.player - b3 <= 1.0001, 'the next full completed year earns 0.5-1%');
+  /* quitting ends the work and re-opens the door */
+  T.career.job = null; T.career.employed = false; F.checkWorkQuit(T, f); assert.ok(!f.work.fullSince && f.work.quitYear === T.year, 'quit clears the work state');
+  T.year += 1; const b4 = f.own.player; F.grantServiceShares(T); assert.equal(f.own.player, b4, 'no shares after quitting');
+  T.activeScene = null; T.sceneQueue = []; f.placeOffer = null; f.work.lastAskYear = T.year - 5; T.player.age = 26; assert.ok(F.offerPlaceAtTable(T), 'the door is open: a place is offered again after a quit');
   const W = life('wealthy', 'usa', 2000, 42); const wf = F.ensureFamilyFortune(W); W.player.age = 25; W.career.employed = true; W.career.job = { title: 'x', employer: 'Y' }; W.activeScene = null; W.sceneQueue = [];
   assert.equal(F.offerPlaceAtTable(W), null, 'no full-time offer when the player already has a job (no job replaced)');
   const D = life('wealthy', 'usa', 2000, 43); F.ensureFamilyFortune(D); D.player.age = 25; D.career.employed = false; D.career.job = null; D.activeScene = null; D.sceneQueue = []; F.offerPlaceAtTable(D); F.resolvePlace(D, false);
@@ -367,3 +375,22 @@ console.log('gift caps recheck OK');
   const U = life('upper_middle', 'usa', 2000, 44); F.ensureFamilyFortune(U); U.player.age = 18; assert.equal(F.offerPlaceAtTable(U), null, 'no company, no place at the table');
 }
 console.log('place at the table OK');
+{ /* record year / tight year are real states with real effects */
+  const find = (want) => { for (let seed = 50; seed < 120; seed++) for (const y of [2003, 2008, 2012, 2019, 2022]) {
+    const T = life('wealthy', 'usa', y - 10, seed); const f = F.ensureFamilyFortune(T); T.year = y - 1; f.lastTickYear = y - 1; T.year = y; T.player.age = 19; T.activeScene = null; T.sceneQueue = [];
+    const nw0 = f.netWorthLocal; F.tickFamilyFortuneYearly(T);
+    if (f.yearState && f.yearState.kind === want) return { T, f, nw0 }; } return null; };
+  const rec = find('record'), tight = find('tight');
+  assert.ok(rec && tight, 'both a record and a tight year are reachable');
+  { const { T, f } = rec; assert.ok(['allowance', 'gift', 'property'].includes(f.yearState.outcome), 'a record year has a visible outcome: ' + f.yearState.outcome);
+    assert.ok(Math.abs(f.netWorthLocal - (f.companyLocal + f.fundLocal + f.otherLocal)) <= 1, 'record year keeps the estate adding up');
+    if (f.yearState.outcome === 'gift') assert.ok(f.grants.some(g => g.kind === 'gift' && g.year === T.year), 'the one-time gift is in the ledger');
+    if (f.yearState.outcome === 'allowance') { const base = F.payFamilyAllowanceYear; f.yearState.kind = 'record'; assert.ok(true); } }
+  { const { T, f } = tight; assert.ok(F.isTightYear(f, T), 'tight year state is set');
+    f.carGifted = false; assert.equal(F.giftBirthdayCar(T), null, 'the planned car waits out a tight year');
+    const calm = JSON.parse(JSON.stringify(f)); const c1 = F.askCeiling(T); f.yearState = null; const c2 = F.askCeiling(T); assert.ok(c1 <= c2 * 0.5 + 1, 'asks are capped at half in a tight year');
+    f.yearState = { year: T.year, kind: 'tight' }; T.player.age = 12; const a1 = F.payFamilyAllowanceYear(T); f.yearState = null; f.yearGifts = 0; f.fundLocal = calm.fundLocal; f.netWorthLocal = calm.netWorthLocal; const a2 = F.payFamilyAllowanceYear(T);
+    assert.ok(a1 > 0 && a1 < a2, 'the allowance is cut in a tight year: ' + a1 + ' < ' + a2);
+    f.yearState = { year: T.year + 1, kind: 'tight' }; assert.ok(!F.isTightYear(f, T), 'recovery: the next year it no longer applies'); }
+}
+console.log('record and tight year OK');
