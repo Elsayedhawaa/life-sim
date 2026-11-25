@@ -7,6 +7,7 @@ import {eraLocalCost,convertCurrency} from '../data/economy.js';
 import {STUDY_ABROAD_PIPELINES} from '../data/visasAndMarriage.js';
 import {uniSupportsMajor,tansikCutoffFor} from './careerEducationEngine.js';
 import {familyEducationFunds} from './educationFunding.js';
+import {hasFortune,fortuneEducationRoom} from './familyFortune.js';
 export const ABROAD_LEVELS=[{id:'bachelor',label:'Bachelor'},{id:'masters',label:"Master's"},{id:'phd',label:'PhD'}];
 export const ABROAD_SUBJECTS=['cs','engineering','business','psychology','law','media','architecture','education'];
 // USD-equivalent illustrative international tuition budgets, not fee quotes.
@@ -47,7 +48,9 @@ export function studyAbroadQuote(S,dest,opts={}){
  const totalDest=tuitionDest+blockedDest+costsDest;
  const totalPlayer=Math.round(convertCurrency(totalDest,dest,S.country,S.year));
  const proofPlayer=Math.round(convertCurrency(tuitionDest+livingDest+costsDest,dest,S.country,S.year));
- const available=funding==='parents'?familyEducationFunds(S):Math.max(0,S.money.cash)+Math.max(0,S.money.savings);
- if(!reason&&available<Math.max(totalPlayer,proofPlayer))reason=funding==='parents'?'Living parents do not have enough savings for sponsorship and the first-year living buffer.':'Cash and savings do not cover the upfront cost plus first-year living buffer.';
+ /* parents: the same two routes chargeFamilyEducation takes, the family fund's education room first, then living parents' savings and reserve; either one alone must cover it */
+ const fundRoom=funding==='parents'&&hasFortune(S)&&S.player.age>=17?fortuneEducationRoom(S):0;
+ const available=funding==='parents'?Math.max(fundRoom,familyEducationFunds(S)):Math.max(0,S.money.cash)+Math.max(0,S.money.savings);
+ if(!reason&&available<Math.max(totalPlayer,proofPlayer))reason=funding==='parents'?'Your family fund and living parents\' savings do not cover sponsorship and the first-year living buffer.':'Cash and savings do not cover the upfront cost plus first-year living buffer.';
  return {ok:!reason,reason,dest,uni,majorId,majorLabel:major?.label||majorId,level,funding,years,annualDest,livingDest,blockedDest,costsDest,tuitionDest,totalDest,totalPlayer,proofPlayer,available,scholarshipPct,citizen,feeStatus:citizen?'Citizen domestic game fee':'International game fee',visaRequired:!citizen,visaName:pipe?.visaName||'Modelled student residence permit'};
 }

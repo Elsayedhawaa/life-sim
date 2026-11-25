@@ -28,3 +28,12 @@ const go = (S, re) => { const p = pick(S, re); assert.ok(p.ok, `${re} available`
 { /* a university student or a postgrad is not offered it */
   const S = mk(5e9, true); S.education.stage = 'university'; S.education.university = { id: 'x' }; assert.equal((await import('../src/systems/studyAbroadScenes.js')).studyAbroadOpen(S), false); }
 console.log('study abroad entry OK');
+{ /* fund-rich, parent-savings-poor: the family fund is the route chargeFamilyEducation takes first, so the quote, the scene and the charge agree */
+  const S = mk(5e9, true); const F = await import('../src/systems/familyFortune.js'); F.ensureFamilyFortune(S); const f = S.familyFortune;
+  f.fundLocal = 4e8; for (const id of Object.keys(S.people)) { const p = S.people[id]; if (p.career) p.career.savingsLocal = 100; } S.education.parentSavingsAccrual = { through: S.year * 12 + S.month }; S.education.familyReserve = { local: 0, years: 0, setYear: S.year, country: S.homeCountry || S.country, eraIndexed: true };
+  const { studyAbroadQuote } = await import('../src/systems/studyAbroadPlanning.js'); const { familyEducationFunds } = await import('../src/systems/educationFunding.js');
+  const x = studyAbroadQuote(S, 'gbr', { funding: 'parents' }); assert.ok(F.fortuneEducationRoom(S) >= x.totalPlayer, 'fixture: fund room covers it'); assert.ok(familyEducationFunds(S) < x.totalPlayer, 'fixture: parent savings alone do not');
+  assert.equal(x.ok, true, x.reason);
+  const cash = S.money.cash, fund = f.fundLocal; open(S); go(S, /^Study abroad/); go(S, /^United Kingdom/); const u = S.activeScene.choices.find(c => !c.exit && c.available(S)); go(S, new RegExp('^' + u.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))); const m = S.activeScene.choices.find(c => !c.exit && c.available(S)); go(S, new RegExp('^' + m.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  const pf = pick(S, /^Ask your family/); assert.ok(pf.ok, 'family-funded route is offered'); assert.ok(!/personal|own savings only/i.test(pf.c.label)); go(S, /^Ask your family/);
+  assert.ok(S.education.university?.international); const { convertCurrency } = await import('../src/data/economy.js'); const moved = convertCurrency(cash, 'egy', S.country, S.year); assert.ok(Math.abs(S.money.cash - moved) / moved < 0.01, `your own cash is only converted to the new currency, not spent (${S.money.cash} vs ${moved})`); assert.ok(f.fundLocal < fund, 'the family fund paid, once'); }

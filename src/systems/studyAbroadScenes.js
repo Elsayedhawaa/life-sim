@@ -7,7 +7,7 @@ import { studyAbroadQuote, ABROAD_SUBJECTS, abroadUniversities } from './studyAb
 import { applyStudyAbroad, checkCanCrossBorder } from './visaMigrationEngine.js';
 import { presentPostHighSchoolCrossroads } from './careerEducationEngine.js';
 
-const FUNDING = [['self', 'Pay from your own cash and savings'], ['parents', "Ask your living parents' savings to cover it"]];
+const FUNDING = [['self', 'Pay from your own cash and savings'], ['parents', "Ask your family to cover it (family fund or your parents' savings)"]];
 const q = (S, dest, o) => studyAbroadQuote(S, dest, { level: 'bachelor', ...o });
 const border = S => checkCanCrossBorder(S);
 const anyOk = (S, dest, o = {}) => border(S).ok && abroadUniversities(S, dest).some(u => (o.uniId ? u.id === o.uniId : true) && ABROAD_SUBJECTS.some(m => (o.majorId ? m === o.majorId : true) && FUNDING.some(([f]) => q(S, dest, { uniId: u.id, majorId: m, funding: f }).ok)));
