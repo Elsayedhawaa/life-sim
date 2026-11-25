@@ -582,6 +582,13 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if (action === 'open-study-abroad') {
+      uiState.activeTab = 'world';
+      uiState.worldSub = 'global';
+      renderApp();
+      return;
+    }
+
     if (action === 'switch-subtab') {
       const tab = btn.dataset.tab;
       const sub = btn.dataset.sub;
