@@ -1443,7 +1443,7 @@ export function openGiftScene(S, personId, rebuild = false) {
         label: `Buy the ${item.brand} ${item.name} — ${formatMoney(item.priceLocal, S.country)}`,
         effect: (st) => {
           /* v2.15 W3 — the giving costs 2 social energy and is a real contact. */
-          if (oncePerTurn(st, `gift_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
+          if (oncePerTurn(st, `gift_${p.id}`)) { recordJournal(st, `You already gave ${p.firstName} a gift this month. Nothing was bought, and you were not charged.`, 'relationship'); return; }
           noteSocialContact(st, p);
           walletMove(st, -item.priceLocal, `Gift for ${p.fullName}: ${item.brand} ${item.name}`, 'family');
           rememberDeed(st, p, 'gift', `Gave a ${item.brand} ${item.name} (${formatMoney(item.priceLocal, S.country)}).`, {
@@ -1456,7 +1456,7 @@ export function openGiftScene(S, personId, rebuild = false) {
         label: `Give ${formatMoney(cashAmt, S.country)} in cash instead`,
         effect: (st) => {
           /* v2.15 W3 — the giving costs 2 social energy and is a real contact. */
-          if (oncePerTurn(st, `gift_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
+          if (oncePerTurn(st, `gift_${p.id}`)) { recordJournal(st, `You already gave ${p.firstName} a gift this month. Nothing was bought, and you were not charged.`, 'relationship'); return; }
           noteSocialContact(st, p);
           walletMove(st, -cashAmt, `Cash gift for ${p.fullName}`, 'family');
           p.career.savingsLocal += Math.round(convertCurrency(cashAmt, S.country, p.residenceCountry, S.year));
@@ -1470,7 +1470,7 @@ export function openGiftScene(S, personId, rebuild = false) {
         label: 'Just warm words — free, and honest',
         effect: (st) => {
           /* v2.15 W3 — warm words cost no money, but the evening still costs 2 social energy, and it is a real contact. */
-          if (oncePerTurn(st, `gift_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
+          if (oncePerTurn(st, `gift_${p.id}`)) { recordJournal(st, `You already gave ${p.firstName} a gift this month. Nothing was bought, and you were not charged.`, 'relationship'); return; }
           noteSocialContact(st, p);
           rememberDeed(st, p, 'gift', `Warm words, no money spent.`, { affection: 2, trust: 2 });
           recordJournal(st, `You told ${p.fullName} plainly what they mean to you. No gift — just the words.`, 'relationship');
@@ -1523,7 +1523,7 @@ export function openAskHelpScene(S, personId, rebuild = false) {
           /* v2.15 W3 — the asking costs 4 social energy and is a real
              contact; the inner call is already charged, so it must not
              charge again. */
-          if (oncePerTurn(st, `askHelp_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
+          if (oncePerTurn(st, `askHelp_${p.id}`)) { recordJournal(st, `You already asked ${p.firstName} for help this month, so asking again now changes nothing. Nothing was spent.`, 'relationship'); return; }
           noteSocialContact(st, p);
           const r = interactWithPerson(st, personId, 'ask_for_help', { energyCharged: true });
           if (!r.ok) recordJournal(st, `${p.firstName} could not help with money: ${r.msg}`, 'relationship');
@@ -1533,7 +1533,7 @@ export function openAskHelpScene(S, personId, rebuild = false) {
         label: 'Ask for advice, not money',
         effect: (st) => {
           /* v2.15 W3 — the asking costs 4 social energy and is a real contact. */
-          if (oncePerTurn(st, `askHelp_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
+          if (oncePerTurn(st, `askHelp_${p.id}`)) { recordJournal(st, `You already asked ${p.firstName} for help this month, so asking again now changes nothing. Nothing was spent.`, 'relationship'); return; }
           noteSocialContact(st, p);
           if (p.rel.resentment >= 60) {
             recordJournal(st, `You asked ${p.firstName} for advice, but they are too angry with you right now to help (resentment is high — clear the air first).`, 'relationship');
