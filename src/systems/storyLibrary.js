@@ -868,7 +868,6 @@ function chapterBeats(S, id) {
   if (id === 'childhood') {
     done(`Born in ${S.city || 'your home town'} — your family is your whole world`);
     open('Start school at six');
-    if (doneGoals.length) done(`${doneGoals.length} life goal${doneGoals.length === 1 ? '' : 's'} already finished`);
     return beats;
   }
   if (id === 'school') {
