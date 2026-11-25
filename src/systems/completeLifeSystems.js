@@ -2,7 +2,7 @@ import {closePlayerLease} from './playerTenancy.js';
 import{careerHours}from'./careerSchedule.js';
 import{recordCivilLoss,fileCivilClaim,tickCivilClaims}from './civilClaims.js';
 import{personMind}from './personMind.js';
-import {chargeFamilyEducation as chargeLivingParents} from './educationFunding.js';
+import {chargeFamilyEducation as chargeLivingParents,familyCoversUniversity as familyCoversTuition} from './educationFunding.js';
 import {hasCurrentLanguage} from '../data/languageQualifications.js';
 import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget} from '../data/propertyAreas.js';
 /* ============================================================================
@@ -2152,7 +2152,13 @@ export function registerProfessionalSyndicate(S) {
 }
 
 /* Postgraduate Degrees: 2-Yr MSc/MBA & 3-Yr Clinical Fellowship / PhD */
-export function enrollPostgraduateProgram(S, tier = 'masters_mba') {
+export function postgradFee(S, tier) { return Math.round(convertCurrency(tier === 'fellowship_phd' ? 8500 : 6200, 'usa', S.country, S.year)); }
+/* Parents may pay for postgraduate tuition only while the student is still young (30 or under), at home, and their finite family funds cover the fee. */
+export function postgradParentsCanPay(S, tier) {
+  if (!S?.player || S.player.age > 30) return false;
+  return familyCoversTuition(S, postgradFee(S, tier), S.country);
+}
+export function enrollPostgraduateProgram(S, tier = 'masters_mba', funding = 'cash') {
   ensureExtendedState(S);
   if(S.pendingRelocation)return {ok:false,msg:'Finish your pending move first.'};
   if (S.education.degrees.length === 0) return { ok: false, msg: 'Complete a bachelor’s degree before enrolling in postgraduate study.' };
@@ -2169,11 +2175,17 @@ export function enrollPostgraduateProgram(S, tier = 'masters_mba') {
   const totalMonths = isDoc ? 36 : 24;
   const usdFee = isDoc ? 8500 : 6200;
   const feeLocal = Math.round(convertCurrency(usdFee, 'usa', S.country, S.year));
-  if (S.money.cash < feeLocal) return { ok: false, msg: `Need ${formatMoney(feeLocal, S.country)} upfront game tuition for ${label}.` };
-
-  walletMove(S, -feeLocal, `Postgraduate enrollment: ${label}`, 'career');
-  S.postgrad.active = { tier, label, monthsLeft: totalMonths, totalMonths, feePaid:feeLocal, country:S.country };
-  recordJournal(S, `Enrolled in ${label} (${totalMonths / 12}-year evening/research track).`, 'career');
+  let paidBy = 'you';
+  if (funding === 'family') {
+    if (!postgradParentsCanPay(S, tier)) return { ok: false, msg: S.player.age > 30 ? 'Your parents no longer pay for study after age 30 in this game.' : 'Your parents cannot cover this tuition from their funds.' };
+    if (!chargeLivingParents(S, feeLocal)) return { ok: false, msg: 'Your parents cannot cover this tuition from their funds.' };
+    paidBy = 'your parents';
+  } else {
+    if (S.money.cash < feeLocal) return { ok: false, msg: `Need ${formatMoney(feeLocal, S.country)} upfront game tuition for ${label}.` };
+    walletMove(S, -feeLocal, `Postgraduate enrollment: ${label}`, 'career');
+  }
+  S.postgrad.active = { tier, label, monthsLeft: totalMonths, totalMonths, feePaid:feeLocal, country:S.country, paidBy };
+  recordJournal(S, `Enrolled in ${label} (${totalMonths / 12}-year evening/research track). Tuition ${formatMoney(feeLocal, S.country)} paid by ${paidBy}.`, 'career');
   return { ok: true, msg: `Enrolled in ${label}!` };
 }
 

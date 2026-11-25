@@ -1188,7 +1188,7 @@ if (typeof document !== 'undefined') {
     }
 
     if (action === 'enroll-postgrad') {
-      handleActionResult(enrollPostgraduateProgram(S, btn.dataset.tier || 'masters_mba'));
+      handleActionResult(enrollPostgraduateProgram(S, btn.dataset.tier || 'masters_mba', btn.dataset.funding || 'cash'));
       return;
     }
 

@@ -6,5 +6,6 @@ const id = 'f1'; s.people[id] = { id, alive: true, role: 'friend', age: 21, rel:
 s.relations.friendIds = [id];
 assert.equal(friendWithRealJob(s), null, 'a student friend with no employer cannot offer a job');
 s.people[id].career = { title: 'University Student', monthlyIncomeLocal: 500, employer: null }; assert.equal(friendWithRealJob(s), null, 'no employer, still no offer');
-s.people[id].career = { title: 'Accountant', monthlyIncomeLocal: 900, employer: 'Delta Audit' }; assert.equal(friendWithRealJob(s)?.id, id, 'real job with employer qualifies');
+s.people[id].career = { title: 'Accountant', monthlyIncomeLocal: 900, employer: 'Delta Audit', track: 'general' }; assert.equal(friendWithRealJob(s), null, 'no such career track, no ladder, no offer');
+s.people[id].career = { title: 'Accountant', monthlyIncomeLocal: 900, employer: 'Delta Audit', track: 'accounting' }; assert.equal(friendWithRealJob(s)?.id, id, 'real job with employer qualifies');
 console.log('friend-job-real OK');

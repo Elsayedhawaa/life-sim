@@ -133,6 +133,7 @@ export function friendWithRealJob(S) {
     const c = p?.career;
     if (!p || !p.alive || !c) continue;
     if (!(Number(c.monthlyIncomeLocal) > 0) || !c.employer || !c.title || NON_JOB_TITLES.test(String(c.title))) continue;
+    if (!getMergedCareerTracks(S.year)?.[c.track]) continue; /* the offer must sit on a real career track with a promotion ladder */
     if (!best || (Number(p.rel?.affection) || 0) > (Number(best.rel?.affection) || 0)) best = p;
   }
   return best;

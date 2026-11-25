@@ -176,7 +176,9 @@ import {
   CONSULAR_TOURIST_VISAS,
   FACADE_PALETTE_OPTIONS,
   ROOM_SPECIALTY_REMODELS,
-  furnishingOptions
+  furnishingOptions,
+  postgradFee,
+  postgradParentsCanPay
 } from '../systems/completeLifeSystems.js';
 import { icon } from './icons.js';
 /* v2.15 W4 — the world & markets panel on the Finance tab. */
@@ -2317,8 +2319,9 @@ function renderEduAndLicensingHtml(S) {
             <button class="btn btn-sm" data-action="enroll-postgrad" data-tier="fellowship_phd" ${S.postgrad?.completed?.some(p => p.tier === 'fellowship_phd') || S.education.university || !S.postgrad?.completed?.some(p=>p.tier==='masters_mba') || S.money.cash<Math.round(convertCurrency(8500,'usa',S.country,S.year)) ? 'disabled' : ''}>
               ${S.postgrad?.completed?.some(p => p.tier === 'fellowship_phd') ? '✓ Holds Fellowship/PhD' : `3-year doctorate · ${esc(formatMoney(Math.round(convertCurrency(8500,'usa',S.country,S.year)),S.country))} upfront`}
             </button>${S.postgrad?.completed?.some(p=>p.tier==='fellowship_phd')?lockReason('Doctorate already completed'):S.education.university?lockReason('Finish or withdraw from the current course first'):!S.postgrad?.completed?.some(p=>p.tier==='masters_mba')?lockReason('Complete a master’s first'):S.money.cash<Math.round(convertCurrency(8500,'usa',S.country,S.year))?lockReason('Save the full doctorate tuition shown'):''}
+          ${(!S.postgrad?.active&&!S.education.university)?['masters_mba','fellowship_phd'].filter(tr=>!S.postgrad?.completed?.some(p=>p.tier===tr)&&(tr==='masters_mba'||S.postgrad?.completed?.some(p=>p.tier==='masters_mba'))&&postgradParentsCanPay(S,tr)).map(tr=>`<button class="btn btn-sm" data-action="enroll-postgrad" data-tier="${tr}" data-funding="family">Parents pay: ${tr==='masters_mba'?'master’s':'doctorate'} · ${esc(formatMoney(postgradFee(S,tr),S.country))}</button>`).join(''):''}
           `}
-          <p class="muted">One-off tuition. Doctorate requires a master’s. Save the fee shown to enrol. Completion gives a game pay bonus.</p>
+          <p class="muted">Tuition is paid once, by you or (30 and under, if their funds cover it) your parents. Doctorate requires a master’s. Save the fee shown to enrol. Completion gives a game pay bonus.</p>
         </div>
       ` : ''}
     </div>
