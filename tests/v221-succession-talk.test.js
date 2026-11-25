@@ -71,11 +71,20 @@ function r6(x) { return Math.round(x * 1e6) / 1e6; }
   assert.ok(f.successionTalk && !f.successionTalkDone, 'still pending'); assert.ok(!(S.sceneQueue || []).some(x => x?.key === 'family_succession'));
   S.activeScene = null; S.sceneQueue = []; F.tickFamilyFortuneMonthly(S); assert.ok((S.sceneQueue || []).some(x => x?.key === 'family_succession') || S.activeScene?.key === 'family_succession', 'delivered in the next quiet month');
   const n = (S.sceneQueue || []).filter(x => x?.key === 'family_succession').length; F.tickFamilyFortuneMonthly(S); assert.ok((S.sceneQueue || []).filter(x => x?.key === 'family_succession').length <= n, 'never queued twice'); }
-// a sibling who dies before the talk: their stake stays with their family (not seized by you or the others) and a sale pays their family
-{ const S = mk(1, 90); F.settleSuccession(S); const f = S.familyFortune; const sibs = S.relations.siblingIds.filter(i => S.people[i]?.alive); S.people[sibs[0]].alive = false; const dead0 = f.own.siblings[sibs[0]], me0 = f.own.player, others0 = sibs.slice(1).map(i => f.own.siblings[i]);
-  assert.equal(F.redistributeDeadStakes(S, f), 0); assert.equal(f.own.siblings[sibs[0]], dead0, 'kept with their family'); assert.equal(f.own.player, me0); assert.equal(sum(f), 100);
-  assert.ok(F.deadHolderPct(S, f) === dead0); const sc = F.buildSuccessionScene(S); assert.ok(sc && !/equal parts/.test(sc.text) && /sibling who has died/.test(sc.text));
-  const cv = f.companyLocal; const r = F.resolveSuccessionTalk(S, 'sell'); assert.ok(r.sold); assert.ok(Math.abs(r.mine - Math.round(cv * 0.96 * me0 / 100)) <= 2, 'you get only your own share'); assert.equal(sum(f), 0, 'no ownership is left, and the late sibling\'s share was paid out to their family'); }
+// a sibling who dies: their living children inherit the stake as owners (dividends, buyout, sale reach them); with no children it passes to the other living owners; settling twice changes nothing
+{ const { createPerson } = await import('../src/core/schema.js');
+  const S = mk(1, 90); F.settleSuccession(S); const f = S.familyFortune; const sibs = S.relations.siblingIds.filter(i => S.people[i]?.alive); const dead = sibs[0]; const pct = f.own.siblings[dead];
+  const kid = createPerson(S, { role: 'nephew', age: 25, nationality: 'usa', residenceCountry: 'usa' }); kid.parentIds = [dead]; S.people[kid.id] = kid;
+  S.people[dead].alive = false; const me0 = f.own.player, other0 = f.own.siblings[sibs[1]];
+  assert.equal(F.redistributeDeadStakes(S, f), pct); assert.equal(f.own.siblings[dead], 0); assert.equal(f.own.siblings[kid.id], pct, 'the child holds the stake'); assert.equal(f.own.player, me0); assert.equal(f.own.siblings[sibs[1]], other0); assert.equal(sum(f), 100);
+  assert.equal(F.redistributeDeadStakes(S, f), 0, 'idempotent');
+  const sc = F.buildSuccessionScene(S); assert.ok(sc && /equal parts|you hold/.test(sc.text));
+  // the heir is paid dividends
+  const sv0 = kid.career?.savingsLocal || 0; f.yearlyInflowLocal = f.yearlyInflowLocal || 1e6; S.year += 1; F.payDividends(S, 0); assert.ok((kid.career.savingsLocal || 0) > sv0, 'the heir is paid dividends as an owner');
+  // and receives a sale share
+  const cv = f.companyLocal; const kc0 = kid.career.savingsLocal || 0; const r = F.resolveSuccessionTalk(S, 'sell'); assert.ok(r.sold); assert.ok((kid.career.savingsLocal || 0) - kc0 >= Math.round(cv * 0.96 * pct / 100) - 2, 'the heir gets their share of the proceeds'); assert.equal(sum(f), 0); }
+{ const S = mk(1, 90); F.settleSuccession(S); const f = S.familyFortune; const sibs = S.relations.siblingIds.filter(i => S.people[i]?.alive); S.people[sibs[0]].alive = false; const pct = f.own.siblings[sibs[0]], me0 = f.own.player;
+  assert.equal(F.redistributeDeadStakes(S, f), pct); assert.ok(f.own.player > me0, 'no children: it passes to the living owners'); assert.equal(sum(f), 100); assert.equal(F.deadHolderPct(S, f), 0); assert.equal(F.redistributeDeadStakes(S, f), 0); F.tickFamilyFortuneMonthly(S); assert.equal(sum(f), 100); }
 // keep wording follows real ownership
 { const S = mk(1, 90); F.settleSuccession(S); const f = S.familyFortune; f.own.player = r6(f.own.player + 5); const id = S.relations.siblingIds.find(i => (f.own.siblings[i] || 0) > 0); f.own.siblings[id] = r6(f.own.siblings[id] - 5); F.resolveSuccessionTalk(S, 'keep'); const all = JSON.stringify(S.journal || []); assert.ok(/together as it is: you hold/.test(all), 'unequal: states the real share'); assert.ok(!/together, in equal parts/.test(all)); }
 console.log('audit fixes OK');

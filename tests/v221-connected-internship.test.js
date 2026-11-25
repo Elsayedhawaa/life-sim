@@ -10,9 +10,10 @@ const months = (S, n) => { for (let i = 0; i < n; i++) { S.month++; if (S.month 
 // offered in June to 17-23 wealthy kids at home, not to others
 const S = mk('wealthy'); const o = F.offerConnectedInternship(S); assert.ok(o && o.employer && o.pay > 0, 'wealthy 20-year-old is offered one in June');
 assert.equal(F.restoreHomeScene(S, { key: 'family_intern' })?.key, 'family_intern', 'survives a reload');
-for (const [t, a, m] of [['middle', 20, 6], ['upper_middle', 20, 6], ['wealthy', 16, 6], ['wealthy', 25, 6], ['wealthy', 20, 3]]) { const T = mk(t, a); T.month = m; assert.equal(F.offerConnectedInternship(T), null, `${t}/${a}/${m}`); }
+for (const [t, a, m] of [['middle', 20, 6], ['wealthy', 16, 6], ['wealthy', 25, 6], ['wealthy', 20, 3]]) { const T = mk(t, a); T.month = m; assert.equal(F.offerConnectedInternship(T), null, `${t}/${a}/${m}`); }
 { const T = mk('wealthy'); T.country = 'deu'; assert.equal(F.offerConnectedInternship(T), null, 'only where the family is connected'); }
 { const T = mk('wealthy'); T.career.employed = true; T.career.job = { employer: 'Z', title: 'Y' }; assert.equal(F.offerConnectedInternship(T), null, 'not for someone already in a job'); }
+assert.ok(F.offerConnectedInternship(mk('upper_middle')), 'the brief gives the internship to every fortune tier, 17-23');
 // accept: nothing paid upfront, one month's pay each month, exactly three, then a reference and a conversion offer
 const cash0 = S.money.cash; assert.ok(F.resolveIntern(S, true).taken); assert.equal(S.money.cash, cash0, 'no upfront payment');
 months(S, 1); assert.equal(Math.round(S.money.cash - cash0), o.pay); months(S, 1); months(S, 1);

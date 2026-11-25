@@ -391,7 +391,7 @@ export function payDividends(S, swing) {
   if (!f?.own || !f.company) return 0;
   const holders = [];
   if (f.own.player > 0) holders.push({ id: 'player', pct: f.own.player });
-  for (const id of aliveSiblings(S)) if ((f.own.siblings[id] || 0) > 0) holders.push({ id, pct: f.own.siblings[id] });
+  for (const id of Object.keys(f.own.siblings || {})) if ((f.own.siblings[id] || 0) > 0 && S.people?.[id]?.alive) holders.push({ id, pct: f.own.siblings[id] });
   if (!holders.length) return 0;
   const good = swing >= 0 ? 1 : Math.max(0, 1 + swing * 2);
   const cap = Math.round(f.yearlyInflowLocal * DIALS.dividendCapPctOfInflow);
@@ -458,7 +458,7 @@ export function settleSuccession(S) {
   addGrant(f, S, 'inheritance', each + stakeValue, `split with ${sibs.length} sibling${sibs.length === 1 ? '' : 's'}`);
   f.lastSuccession = { before, after: { nw: f.netWorthLocal, company: f.companyLocal, own: ownSum(f) }, cashAssets, tax, payout: out, cashOut: out, toSiblings: per, n, stakeEach, remainder: payable - out };
   recordJournal(S, `Your parents' estate was settled between ${n === 1 ? 'you' : n + ' of you'}. Properties and investments were sold. Your part: ${formatMoney(each, S.country)} in cash${f.company ? ` and ${stakeEach}% of ${f.company.name}, worth ${formatMoney(stakeValue, S.country)}` : ''}.${tax > 0 ? ` Estate tax of ${formatMoney(tax, S.country)} was paid first (a simplified game rule).` : ''}`, 'family');
-  if (f.company && sibs.length && !f.successionTalkDone) { f.successionTalk = { year: S.year }; deliverSuccessionTalk(S, f); }
+  if (f.company && sibs.length && !f.successionTalkDone) { f.successionTalk = { year: S.year }; redistributeDeadStakes(S, f); deliverSuccessionTalk(S, f); }
   return { share: each + stakeValue, cash: each, stakePct: stakeEach };
 }
 
@@ -810,15 +810,38 @@ export function deliverSuccessionTalk(S, f) {
   queueScene(S, buildSuccessionScene(S), true);
   return true;
 }
-/* A sibling who has died is not a living owner: their stake stays with their own family, unpaid by you and not yours. Their family's children are not modelled, so the stake is never moved to you or the other siblings.
-   In a sale their family receives their share of the proceeds; in a buyout their stake is not for sale. */
+/* A holder who has died (a sibling) is settled once, in the monthly tick or whenever the talk is built, using the game's NPC heir rule (companyEstate.inheritNpcCompanies):
+   their living children (people whose parentIds include them) inherit the stake in equal parts and hold it as owners (dividends, buyout and sale all reach them). With no living child it passes to the other living owners in equal parts, as civil probate does for siblings. Idempotent: a settled holder has 0%. */
 export function deadHolderPct(S, f) {
-  const living = aliveSiblings(S);
-  return r6(Object.keys(f?.own?.siblings || {}).filter(id => !living.includes(id)).reduce((a, id) => a + (f.own.siblings[id] || 0), 0));
+  return r6(Object.keys(f?.own?.siblings || {}).filter(id => !S.people?.[id]?.alive).reduce((a, id) => a + (f.own.siblings[id] || 0), 0));
 }
-export function redistributeDeadStakes() { return 0; }
+export function redistributeDeadStakes(S, f) {
+  if (!f?.own || !f.company || f.company.sold) return 0;
+  let moved = 0;
+  for (const id of Object.keys(f.own.siblings)) {
+    const pct = f.own.siblings[id] || 0;
+    if (pct <= 0 || S.people?.[id]?.alive) continue;
+    const heirs = Object.values(S.people || {}).filter(q => q && q.alive && (q.parentIds || []).includes(id)).map(q => q.id);
+    f.own.siblings[id] = 0;
+    if (heirs.length) {
+      const each = r6(pct / heirs.length);
+      for (const h of heirs) f.own.siblings[h] = r6((f.own.siblings[h] || 0) + each);
+      f.own.siblings[heirs[0]] = r6(f.own.siblings[heirs[0]] + (pct - each * heirs.length));
+      recordJournal(S, `The ${pct}% of ${f.company.name} held by ${S.people[id]?.firstName || 'a sibling'} who has died passed to ${heirs.length === 1 ? 'their child' : 'their children'}.`, 'family');
+    } else {
+      const living = Object.keys(f.own.siblings).filter(k => S.people?.[k]?.alive);
+      const each = r6(pct / (1 + living.length));
+      f.own.player = r6(f.own.player + each + (pct - each * (1 + living.length)));
+      for (const l of living) f.own.siblings[l] = r6(f.own.siblings[l] + each);
+      recordJournal(S, `${S.people[id]?.firstName || 'A sibling'} left no children, so their ${pct}% of ${f.company.name} passed in equal parts to you and the other living owners.`, 'family');
+    }
+    moved += pct;
+  }
+  if (moved > 0) f.shares = { pct: f.own.player, since: f.shares?.since || S.year };
+  return moved;
+}
 function sibWilling(p) { const r = p.rel || {}; return (r.affection || 0) * 0.5 + (r.trust || 0) * 0.4 - (r.resentment || 0) * 0.6 >= 40; }
-function talkSibs(S, f) { return aliveSiblings(S).filter(id => (f.own.siblings?.[id] || 0) > 0); }
+function talkSibs(S, f) { return Object.keys(f.own.siblings || {}).filter(id => (f.own.siblings[id] || 0) > 0 && S.people?.[id]?.alive); }
 function equalParts(S, f) { const v = [f.own.player, ...talkSibs(S, f).map(id => f.own.siblings[id])]; return deadHolderPct(S, f) === 0 && Math.max(...v) - Math.min(...v) < 0.01; }
 export function buyoutCost(S) {
   const f = S.familyFortune; if (!f?.own) return 0;
@@ -873,7 +896,7 @@ export function resolveSuccessionTalk(S, how) {
   let lateFamily = 0;
   for (const id of Object.keys(f.own.siblings || {})) { if (sibIds.includes(id)) continue; lateFamily += Math.round(net * (f.own.siblings[id] || 0) / 100); f.own.siblings[id] = 0; }
   mine = Math.round(net * f.own.player / 100);
-  f.own.player = 0; f.own.pool = 0; f.own.parents = 0; f.own.heirs = 0; f.own.outside = 0; f.companyLocal = 0; f.company.sold = true; f.company.soldYear = S.year; f.yearlyInflowLocal = 0; f.baseInflowLocal = 0; f.yearDividend = 0; f.shares = { pct: 0, since: S.year }; sync(f);
+  f.own.player = 0; f.own.pool = 0; f.own.parents = 0; f.own.heirs = 0; f.own.outside = 0; f.companyLocal = 0; f.company.sold = true; f.company.soldYear = S.year; f.yearlyInflowLocal = 0; f.baseInflowLocal = 0; f.yearDividend = 0; f.yearState = null; f.shares = { pct: 0, since: S.year }; sync(f);
   if (mine > 0) walletMove(S, mine, `Your share of the sale of ${name}`, 'family');
   if (S.career?.employed && S.career?.job?.employer === name) { S.career.job = null; S.career.employed = false; }
   addGrant(f, S, 'sale', mine, `sale of ${name}`);
@@ -889,7 +912,7 @@ const INTERN_MONTHS = 3;
 function internPay(S, f) { return Math.round(eraLocalCost(f.tier === 'very_wealthy' ? 3000 : 1800, S.country, S.year)); }
 export function offerConnectedInternship(S) {
   const f = ensureFamilyFortune(S);
-  if (!f || f.tier === 'upper_middle' || f.internDone || f.internOffer || f.intern || S.month !== 6) return null;
+  if (!f || f.internDone || f.internOffer || f.intern || S.month !== 6) return null;
   const age = S.player?.age ?? 0;
   if (age < 17 || age > 23 || S.country !== S.homeCountry) return null;
   if (S.activeScene || (S.sceneQueue || []).length) return null;
