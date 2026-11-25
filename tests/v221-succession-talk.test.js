@@ -62,6 +62,19 @@ function r6(x) { return Math.round(x * 1e6) / 1e6; }
   const sav0 = rs.reduce((a, id) => a + R.people[id].career.savingsLocal, 0), rv = Math.round(rf.companyLocal * rf.own.player / 100), rc0 = R.money.cash; const rg = F.liquidateFamilyStakeOnDeath(R);
   const sav1 = rs.reduce((a, id) => a + R.people[id].career.savingsLocal, 0);
   assert.ok(Math.abs(rg - rv) <= 3 && Math.abs((sav0 - sav1) - rg) <= 3, 'siblings pay full value and their savings fall by exactly that'); assert.ok(!(rf.own.outside > 0)); assert.equal(sum(rf), 100);
+  // mixed currencies: a sibling living abroad is checked and debited in THEIR currency
+  { const { convertCurrency } = await import('../src/data/economy.js');
+    const M = mk(1, 90); F.settleSuccession(M); const mf = M.familyFortune; const ms = M.relations.siblingIds.filter(i => M.people[i]?.alive); const foreign = M.country === 'jpn' ? 'usa' : 'jpn';
+    for (const id of ms) { M.people[id].residenceCountry = foreign; M.people[id].career = { ...(M.people[id].career || {}), savingsLocal: 0 }; }
+    const mv = Math.round(mf.companyLocal * mf.own.player / 100), part = mv / ms.length;
+    /* the first sibling holds savings numerically equal to the price in the player's currency, which is NOT enough once converted */
+    const a = M.people[ms[0]]; a.career.savingsLocal = Math.round(part);
+    const own = convertCurrency(part, M.country, foreign, M.year); const worth = convertCurrency(a.career.savingsLocal, foreign, M.country, M.year);
+    const mc0 = M.money.cash; const mg = F.liquidateFamilyStakeOnDeath(M);
+    const expectPay = Math.min(part, worth);
+    assert.ok(Math.abs(mg - (expectPay + (mv - expectPay) * 0.9)) <= ms.length + 3, 'price is compared in one currency');
+    assert.ok(Math.abs(convertCurrency(a.career.savingsLocal, foreign, M.country, M.year) - (worth - expectPay)) <= 3, 'debit is in their own currency');
+    assert.equal(sum(mf), 100); }
   // continueAsChild: the dead player's net worth is paid out once
   const { continueAsChild } = await import('../src/systems/healthDirectorEngine.js');
   const D = mk(1, 90); F.settleSuccession(D); D.sceneQueue = []; D.activeScene = null; const { createPerson } = await import('../src/core/schema.js'); const ch = createPerson(D, { role: 'child', age: 25, nationality: 'usa', residenceCountry: 'usa' }); D.people[ch.id] = ch; D.relations.childIds = [ch.id]; const cid = ch.id;

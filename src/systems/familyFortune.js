@@ -893,14 +893,15 @@ export function resolveSuccessionTalk(S, how) {
   const value = companyValue(f), net = Math.round(value * (1 - SALE_COST));
   let mine = 0;
   for (const id of sibIds) { const q = S.people[id]; const amt = Math.round(net * f.own.siblings[id] / 100); q.career = q.career || {}; q.career.savingsLocal = (Number(q.career.savingsLocal) || 0) + Math.round(convertCurrency(amt, S.country, q.residenceCountry || S.country, S.year)); f.own.siblings[id] = 0; }
-  let lateFamily = 0;
-  for (const id of Object.keys(f.own.siblings || {})) { if (sibIds.includes(id)) continue; lateFamily += Math.round(net * (f.own.siblings[id] || 0) / 100); f.own.siblings[id] = 0; }
+  let stray = 0; /* safety: any holder left who is not alive (settlement normally clears them) goes to you, never deleted */
+  for (const id of Object.keys(f.own.siblings || {})) { if (sibIds.includes(id)) continue; stray += f.own.siblings[id] || 0; f.own.siblings[id] = 0; }
+  f.own.player = r6((f.own.player || 0) + stray);
   mine = Math.round(net * f.own.player / 100);
   f.own.player = 0; f.own.pool = 0; f.own.parents = 0; f.own.heirs = 0; f.own.outside = 0; f.companyLocal = 0; f.company.sold = true; f.company.soldYear = S.year; f.yearlyInflowLocal = 0; f.baseInflowLocal = 0; f.yearDividend = 0; f.yearState = null; f.shares = { pct: 0, since: S.year }; sync(f);
   if (mine > 0) walletMove(S, mine, `Your share of the sale of ${name}`, 'family');
   if (S.career?.employed && S.career?.job?.employer === name) { S.career.job = null; S.career.employed = false; }
   addGrant(f, S, 'sale', mine, `sale of ${name}`);
-  recordJournal(S, `${name} was sold. After ${Math.round(SALE_COST * 100)}% in fees your part was ${formatMoney(mine, S.country)}.${lateFamily > 0 ? ` The share of a sibling who has died, ${formatMoney(lateFamily, S.country)}, went to their family.` : ''} The company, and any job there, is gone.`, 'family');
+  recordJournal(S, `${name} was sold. After ${Math.round(SALE_COST * 100)}% in fees your part was ${formatMoney(mine, S.country)}. The company, and any job there, is gone.`, 'family');
   return { ok: true, how: 'sell', sold: true, mine };
 }
 
@@ -1242,11 +1243,13 @@ export function liquidateFamilyStakeOnDeath(S) {
   for (const id of living) {
     const cost = Math.round(value * part / 100); if (cost <= 0) continue;
     const q = S.people[id]; q.career = q.career || {};
-    const sav = Number(q.career.savingsLocal) || 0;
+    const cur = q.residenceCountry || S.country;
+    const savOwn = Number(q.career.savingsLocal) || 0;
+    const sav = convertCurrency(savOwn, cur, S.country, S.year); /* their savings in the player's currency, to compare with the price */
     const frac = Math.max(0, Math.min(1, sav / cost));
     if (frac <= 0) continue;
     const pct = r6(part * frac), pay = Math.round(cost * frac);
-    q.career.savingsLocal = sav - pay;
+    q.career.savingsLocal = Math.max(0, Math.round(savOwn - convertCurrency(pay, S.country, cur, S.year))); /* debited in their own currency */
     f.own.siblings[id] = r6((f.own.siblings[id] || 0) + pct); left = r6(left - pct); cash += pay; siblingPaid += pay;
   }
   if (left > 0) { const gross = Math.round(value * left / 100), net = Math.round(gross * (1 - OUTSIDE_DISCOUNT)); f.own.outside = r6((f.own.outside || 0) + left); cash += net; outsideCash = net; }
