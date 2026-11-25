@@ -86,6 +86,12 @@ function perChildTrustCapPct(S) {
   return Math.min(DIALS.trustPerChildCapPct, DIALS.trustAllChildrenCapPct / children);
 }
 
+/* A home out of the estate is capped per child AND across all children together, the same combined rule the brief sets for trusts (15% of net worth over every child), so a bigger family cannot hand each child the full single-child ceiling. */
+export function perChildHomeCapPct(S) {
+  const children = 1 + siblingCount(S);
+  return Math.min(DIALS.homeCapPctOfNetWorth, DIALS.trustAllChildrenCapPct / children);
+}
+
 /* A fortune saved before the estate split gets its parts derived once from the total, with owners summing to 100%. */
 function upgradeEstate(S, f) {
   if (f.companyLocal != null && f.own) return f;
@@ -469,7 +475,7 @@ export function offerFirstHome(S) {
   if (!f || f.homeGifted || f.tier === 'upper_middle' || isTightYear(f, S)) return null;
   const age = S.player?.age ?? 0;
   if (age < DIALS.homeGiftAge || age > 30) return null;
-  const ceiling = f.netWorthLocal * DIALS.homeCapPctOfNetWorth * DIALS.homeAimShare[f.tier];
+  const ceiling = f.netWorthLocal * perChildHomeCapPct(S) * DIALS.homeAimShare[f.tier];
   const list = getHousingFor(S.country, S.year);
   const priced = list.map(h => ({ h, price: Math.round(eraLocalCost(h.price2026, S.country, S.year)) })).filter(x => x.price > 0 && x.price <= ceiling).sort((a, b) => b.price - a.price);
   if (!priced.length) return null;

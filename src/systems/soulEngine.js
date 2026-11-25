@@ -1106,10 +1106,13 @@ export function generateContextualLine(S, person) {
   }
 
   if (person.residenceCountry !== S.country) {
+    /* Name the place they actually live in now: a city only if it belongs to their residence country, never a stale one. */
+    const home = getCountry(person.residenceCountry);
+    const here = home.cities.includes(person.city) ? `${person.city}, ${home.name}` : home.name;
     if (person.role === 'mother' || person.role === 'father') {
-      return `"The house in ${person.city} feels quieter with you in ${getCountry(S.country).name}. Take care of your health."`;
+      return `"The house in ${here} feels quieter with you in ${getCountry(S.country).name}. Take care of your health."`;
     }
-    return `"Life in ${getCountry(S.country).name} suits you — tell me when you’re visiting ${person.city} next."`;
+    return `"Life in ${getCountry(S.country).name} suits you — tell me when you’re visiting me in ${here} next."`;
   }
 
   if (person.rel.resentment >= 55) {

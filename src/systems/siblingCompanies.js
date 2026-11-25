@@ -40,7 +40,7 @@ export function foundSiblingCompany(S, id, typeId) {
   shadow.country = here; shadow.player.age = p.age; shadow.money.savings = 0; shadow.career.businesses = []; shadow.career.business = null; shadow.career.employed = true; shadow.career.job = { weeklyHours: 40, hoursPerWeek: 40, employer: c.employer || 'their employer' };
   shadow.player.familyName = p.lastName || p.familyName || shadow.player.familyName; shadow.education.degrees = [...(p.education?.degrees || [])];
   const bp = findVentureRow(shadow, typeId); if (!bp) return { ok: false, msg: 'No such business.' };
-  if (bp.reqMajor && !shadow.education.degrees.includes(bp.reqMajor)) shadow.education.degrees.push(bp.reqMajor); /* the job title that picked this field already implies the licence the venture asks for */
+  /* the venture's own licence rule stands: siblings carry no degree record, so a licensed field (accounting, law, medicine and so on) founds nothing until they have one, and it is never waived here */
   shadow.money.cash = 1e15; const ev = evaluateBusinessLaunch(shadow, bp); const cap = ev.capitalLocal || 0;
   if (!(cap > 0) || cap > savings * CAP || savings < (cap + (ev.managerWageEstimateLocal || 0)) * SAFETY) return { ok: false, msg: 'Savings do not support it.' };
   const start = Math.round(cap * 3) + (ev.managerWageEstimateLocal || 0) * 2; shadow.money.cash = start;
