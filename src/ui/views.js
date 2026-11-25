@@ -1,6 +1,6 @@
 import { lenderCreditScore, familyNameCreditPoints, familyNameInterviewPoints } from '../systems/familyName.js';
 import { siblingCompanyLine } from '../systems/siblingCompanies.js';
-import { isFortuneParent, askPreview, familyLedgerView, siblingStakeLine, siblingAssetsLine, siblingEmployerLine } from '../systems/familyFortune.js';
+import { isFortuneParent, askPreview, familyLedgerView, siblingStakeLine, siblingAssetsLine, parentAssetsLine, siblingEmployerLine } from '../systems/familyFortune.js';
 import {courtshipMonthsApart} from '../systems/courtshipLife.js';
 import{personalLoanGates}from'../systems/economyEngine.js';
 import{renderHiring}from'../systems/companyHiring.js';
@@ -1550,6 +1550,7 @@ function renderNpcCardHtml(S, p) {
               ${(Number(p.career?.savingsLocal) || 0) > 0
                 ? `Holds about <strong>${esc(formatMoney(p.career.savingsLocal, p.residenceCountry || S.country))}</strong> in savings of their own.`
                 : 'No savings put aside of their own.'}
+              ${(p.role === 'father' || p.role === 'mother') && parentAssetsLine(S, p.id) ? ` ${esc(parentAssetsLine(S, p.id))}` : ''}
               ${p.role === 'sibling' && (siblingStakeLine(S, p.id) || siblingAssetsLine(S, p.id) || siblingCompanyLine(S, p.id)) ? ` ${esc(siblingStakeLine(S, p.id))} ${esc(siblingAssetsLine(S, p.id))} ${esc(siblingCompanyLine(S, p.id))}` : ''}
             </div>
           ` : ''}

@@ -190,7 +190,7 @@ function giftRoom(f, S) {
 /* --- yearly tick (January) ---------------------------------------------- */
 export function tickFamilyFortuneYearly(S) {
   const f = ensureFamilyFortune(S);
-  if (!f) return;
+  if (!f) { revalueParentAssets(S); return; }
   if (f.lastTickYear === S.year) return;
   const infl = inflationRate(S.country, S.year) / 100;
   const mkt = propertyMarketYear(S, S.country).realChange;          /* the same country-year housing shock the player's own property feels */
@@ -199,6 +199,7 @@ export function tickFamilyFortuneYearly(S) {
   const swing = (hash01(S, S.year * 3 + 2) - 0.42) * 0.5 + mkt * 1.5; /* company year: own result plus the shared economy */
   f.companyLocal = Math.max(0, Math.round((f.companyLocal || 0) * (1 + infl + swingNW)));
   f.otherLocal = Math.max(0, Math.round((f.otherLocal || 0) * (1 + infl + mkt)));
+  revalueParentAssets(S);
   f.baseInflowLocal = Math.round(f.baseInflowLocal * (1 + infl));
   f.yearlyInflowLocal = f.company?.sold ? 0 : Math.max(Math.round(f.baseInflowLocal * 0.3), Math.round(f.baseInflowLocal * (1 + swing)));
   const dep = eraDepositRates(S.country, S.year).savings || 0;
@@ -1103,6 +1104,77 @@ export function siblingAssetsLine(S, id) {
   return `Owns ${bits.join(' and ')}.`;
 }
 
+/* Parents' home and car. A couple shares ONE household home (held by the living father, else the mother); each living parent has a car.
+   Rich tiers: the home and car are a recorded SUBSET of the estate's otherLocal (marked estate:true). Buying or replacing one moves value inside the estate,
+   so net worth and cash are unchanged, and the total of recorded assets never exceeds otherLocal. Other tiers pay from the parent's own savings and take the old one back at its recorded value.
+   Choices that are game rules, not instructed: a home costs at most 25% and a car at most 3% of the pool (otherLocal, or savings), only to something over twice what they hold (same as siblings);
+   each year a home is revalued with the country's inflation and housing market (the same factor as otherLocal) and a car loses 10% (taken out of otherLocal for estate cars).
+   When a parent dies the car, and the home if no parent survives, goes back to the estate (nothing to do, it was inside otherLocal) or to the parent's savings, BEFORE the existing settlement; a surviving parent takes over the home. */
+const CAR_DEPRECIATION = 0.10;
+const parentIds = S => [S.relations?.fatherId, S.relations?.motherId].filter(Boolean);
+const roleWord = p => p.role === 'mother' ? 'mother' : 'father';
+const homeKeeper = S => { const ids = parentIds(S).filter(id => S.people?.[id]?.alive); return ids.length ? ids.sort((a, b) => (S.people[a].role === 'father' ? 0 : 1) - (S.people[b].role === 'father' ? 0 : 1))[0] : null; };
+const estateAssetSum = (S, R) => parentIds(S).reduce((t, id) => { const a = S.people?.[id]?.assets; return t + [a?.home, a?.car].reduce((u, x) => u + (x && x.estate ? assetIn(x, R, S.year) : 0), 0); }, 0);
+export function foldParentAssets(S, p) {
+  const a = p?.assets; if (!a || (!a.home && !a.car)) return 0;
+  const R = p.residenceCountry || S.country; let n = 0;
+  const back = x => { if (x.estate) return; p.career = p.career || {}; p.career.savingsLocal = (Number(p.career.savingsLocal) || 0) + assetIn(x, R, S.year); };
+  if (a.car) { back(a.car); delete a.car; n++; }
+  if (a.home) {
+    const heir = parentIds(S).map(id => S.people?.[id]).find(q => q && q.alive && q.id !== p.id);
+    if (heir) { heir.assets = heir.assets || {}; if (!heir.assets.home) { heir.assets.home = a.home; delete a.home; n++; return n; } }
+    back(a.home); delete a.home; n++;
+  }
+  return n;
+}
+export function syncParentAssets(S) {
+  if (!S?.relations || !S.people) return 0;
+  const f = hasFortune(S) ? S.familyFortune : null; let n = 0;
+  const seeded = !!S.parentAssetsSeeded;
+  for (const id of parentIds(S)) { const p = S.people[id]; if (p && !p.alive && p.assets && (p.assets.home || p.assets.car)) n += foldParentAssets(S, p); }
+  const keeper = homeKeeper(S);
+  for (const id of parentIds(S)) {
+    const p = S.people[id]; if (!p?.alive || (p.age ?? 0) < 30) continue;
+    p.career = p.career || {}; p.assets = p.assets || {};
+    const R = p.residenceCountry || S.country, est = !!(f && !f.inherited && R === S.country);
+    const pool = () => est ? Number(f.otherLocal) || 0 : Number(p.career.savingsLocal) || 0;
+    const room = (price, held) => est ? estateAssetSum(S, R) - held + price <= f.otherLocal : true;
+    const word = `Your ${roleWord(p)}`;
+    if (id === keeper) {
+      const cur = assetIn(p.assets.home, R, S.year), base = pool() + (est ? 0 : cur);
+      const up = getHousingFor(R, S.year).map(h => ({ h, price: Math.round(eraLocalCost(h.price2026, R, S.year)) })).filter(x => x.price > cur * 2 && x.price > 0 && x.price <= base * 0.25 && (est || base >= x.price * 4) && room(x.price, cur)).sort((x, y) => y.price - x.price);
+      if (up.length) { const t = up[0]; if (!est) p.career.savingsLocal = base - t.price; const had = !!p.assets.home; p.assets.home = { id: t.h.id, kind: t.h.kind, tier: t.h.tier, price: t.price, country: R, year: S.year, estate: est };
+        n++; if (seeded) { const d = `${t.h.tier ? t.h.tier + ' ' : ''}${String(t.h.kind || 'home').replace(/_/g, ' ')}`; recordJournal(S, `${word} ${had ? 'moved the family into a better home' : 'bought a home'}: ${/^[aeiou]/i.test(d) ? 'an' : 'a'} ${d} worth ${formatMoney(t.price, R)}${est ? ' (part of the family estate, no cash paid out)' : ''}.`, 'family'); } }
+    }
+    const curC = assetIn(p.assets.car, R, S.year), baseC = pool() + (est ? 0 : curC);
+    const cars = getCarsForYear(S.year).map(c => ({ c, price: Math.round(convertCurrency(eraLocalCost(c.priceUsd2026, 'usa', S.year), 'usa', R, S.year)) })).filter(x => x.price > curC * 2 && x.price > 0 && x.price <= baseC * 0.03 && room(x.price, curC)).sort((x, y) => y.price - x.price);
+    if (cars.length) { const t = cars[0]; if (!est) p.career.savingsLocal = baseC - t.price; const had = !!p.assets.car; p.assets.car = { id: t.c.id, name: t.c.name, price: t.price, country: R, year: S.year, estate: est };
+      n++; if (seeded) recordJournal(S, `${word} ${had ? 'replaced his car with' : 'bought'} a ${t.c.name} (${formatMoney(t.price, R)}${est ? ', from the family estate' : ''}).`.replace('his car', p.role === 'mother' ? 'her car' : 'his car'), 'family'); }
+  }
+  if (!seeded) S.parentAssetsSeeded = true;
+  return n;
+}
+/* once a year: homes follow the housing market, cars lose value (estate cars come out of otherLocal, so the subset stays inside it) */
+export function revalueParentAssets(S) {
+  const f = hasFortune(S) ? S.familyFortune : null; let n = 0;
+  for (const id of parentIds(S)) {
+    const p = S.people?.[id]; const a = p?.assets; if (!p?.alive || !a || (!a.home && !a.car)) continue;
+    if (a.revalYear === S.year) continue; a.revalYear = S.year;
+    const R = p.residenceCountry || S.country, infl = inflationRate(R, S.year) / 100, mkt = propertyMarketYear(S, R).realChange;
+    if (a.home) { const old = a.home.price; a.home.price = Math.max(1, Math.round(old * (1 + infl + mkt))); n++; }
+    if (a.car) { const old = a.car.price, nv = Math.round(old * (1 - CAR_DEPRECIATION)); a.car.price = nv; if (a.car.estate && f) { f.otherLocal = Math.max(0, f.otherLocal - Math.round(convertCurrency(old - nv, a.car.country || R, S.country, S.year))); sync(f); } n++; }
+  }
+  return n;
+}
+export function parentAssetsLine(S, id) {
+  const p = S.people?.[id]; if (!p?.alive || (p.role !== 'father' && p.role !== 'mother')) return '';
+  const R = p.residenceCountry || S.country, a = p.assets || {}, bits = [];
+  if (a.home) { const d = `${a.home.tier ? a.home.tier + ' ' : ''}${String(a.home.kind || 'home').replace(/_/g, ' ')}`; bits.push(`the family home, ${/^[aeiou]/i.test(d) ? 'an' : 'a'} ${d} worth about ${formatMoney(assetIn(a.home, R, S.year), R)}`); }
+  else { const k = homeKeeper(S); const h = k && S.people[k]?.assets?.home; if (h && k !== id) bits.push('the family home they share'); }
+  if (a.car) bits.push(`drives a ${a.car.name}`);
+  return bits.length ? `Lives in ${bits.join(' and ')}.`.replace('Lives in drives', 'Drives').replace(/ and drives/, ', drives') : '';
+}
+
 export function siblingEmployerLine(S, id) {
   const c = S.people?.[id]?.career; return c && c.familyStanding === 'works' && c.employer ? ` at ${c.employer}` : '';
 }
@@ -1299,6 +1371,7 @@ export function resolveKeys(S, how) {
 
 /* The three releases are checked every year; this also covers a birthday that lands mid-year. */
 export function tickFamilyFortuneMonthly(S) {
+  syncParentAssets(S);
   const f = ensureFamilyFortune(S);
   if (!f) return;
   checkWorkQuit(S, f); syncSiblingStanding(S, f); syncSiblingAssets(S); syncSiblingCompanies(S); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerIntroduction(S); offerWeddingHelp(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); offerInternConvert(S); deliverSuccessionTalk(S, f);

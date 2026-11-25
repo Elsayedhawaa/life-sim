@@ -1,6 +1,6 @@
 /* "a" or "an" before a job title: "an accountant", "a nurse". */
 export function withArticle(word){const w=String(word||'');return(/^(?:[aeio]|u(?![sn]i))/i.test(w)?'an ':'a ')+w;}
-import{isFortuneParent,askFortuneParent}from'./familyFortune.js';
+import{isFortuneParent,askFortuneParent,foldParentAssets}from'./familyFortune.js';
 import{givePersonalMoney}from'./personalReceivables.js';
 import{inheritNpcCompanies}from './companyEstate.js';
 import{personMind,canContactPerson}from './personMind.js';
@@ -931,6 +931,7 @@ export function handleNpcDeath(S, person) {
   if (!person || !person.alive) return;
   inheritNpcCompanies(S,person);
   person.alive = false;
+  foldParentAssets(S, person);
   person.deathYear = S.year;
   person.deathCause = npcDeathCause(S, person);
 
