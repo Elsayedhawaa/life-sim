@@ -32,3 +32,17 @@ const sum = f => Math.round((f.own.parents + f.own.pool + f.own.player + f.own.h
 // sell is refused unless everyone agrees
 { const S = mk(1, 10); F.settleSuccession(S); const f = S.familyFortune, cv = f.companyLocal; const r = F.resolveSuccessionTalk(S, 'sell'); assert.ok(!r.sold); assert.equal(f.companyLocal, cv); assert.equal(sum(f), 100); }
 console.log('succession talk OK');
+// personal net worth counts your own stake in the family company, once; a buyout moves cash into stake without losing value, a sale turns stake into cash minus the fee
+{ const { computeNetWorthLocal } = await import('../src/core/schema.js');
+  const S = mk(1, 90); F.settleSuccession(S); const f = S.familyFortune; S.money.cash = 1e12;
+  const stake0 = Math.round(f.companyLocal * f.own.player / 100), nw0 = computeNetWorthLocal(S);
+  const cost = F.buyoutCost(S); F.resolveSuccessionTalk(S, 'lead'); const nw1 = computeNetWorthLocal(S);
+  assert.ok(Math.abs((nw1 - nw0)) <= 2, `buyout is cash for stake at full value, so net worth is unchanged (${nw0} -> ${nw1}, cost ${cost}, stake was ${stake0})`);
+  assert.ok(Math.round(f.companyLocal * f.own.player / 100) > stake0);
+  const T = mk(1, 90); F.settleSuccession(T); const g = T.familyFortune; const before = computeNetWorthLocal(T), cv = g.companyLocal; F.resolveSuccessionTalk(T, 'sell'); const after = computeNetWorthLocal(T);
+  const lostFee = Math.round(cv * 0.04 * ((100 - 0) / 100)); assert.ok(before - after > 0 && before - after <= lostFee + 2, 'a sale only loses its own share of the 4% fee');
+  // scene wording is truthful when ownership is unequal
+  const U = mk(1, 90); F.settleSuccession(U); const h = U.familyFortune; h.own.player = r6(h.own.player + 5); const id = U.relations.siblingIds.find(i => (h.own.siblings[i] || 0) > 0); h.own.siblings[id] = r6(h.own.siblings[id] - 5);
+  const sc = F.buildSuccessionScene(U); assert.ok(!/equal parts/.test(sc.text) && /you hold/.test(sc.text));
+  const V = mk(1, 90); F.settleSuccession(V); assert.ok(/equal parts/.test(F.buildSuccessionScene(V).text)); }
+function r6(x) { return Math.round(x * 1e6) / 1e6; }

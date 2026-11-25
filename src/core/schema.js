@@ -820,6 +820,8 @@ export function computeNetWorthLocal(S) {
   for (const loan of S.money.loans) {
     total -= Math.max(0, Number(loan.balance) || 0);
   }
+  /* The stake you own in the family company (service shares or inheritance) is yours; siblings' and parents' stakes are not, so nothing is counted twice. */
+  { const ff = S.familyFortune; if (ff && ff.own && ff.company && !ff.company.sold) total += Math.max(0, Math.round((Number(ff.companyLocal) || 0) * (Number(ff.own.player) || 0) / 100)); }
   const businesses = S.career?.businesses?.length ? S.career.businesses : S.career?.business ? [S.career.business] : [];
   const seenBusinesses = new Set();
   for (const biz of businesses) {

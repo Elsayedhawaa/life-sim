@@ -800,6 +800,7 @@ export function checkVentureMaturity(S, f) {
 const SALE_COST = 0.04;
 function sibWilling(p) { const r = p.rel || {}; return (r.affection || 0) * 0.5 + (r.trust || 0) * 0.4 - (r.resentment || 0) * 0.6 >= 40; }
 function talkSibs(S, f) { return aliveSiblings(S).filter(id => (f.own.siblings?.[id] || 0) > 0); }
+function equalParts(S, f) { const v = [f.own.player, ...talkSibs(S, f).map(id => f.own.siblings[id])]; return Math.max(...v) - Math.min(...v) < 0.01; }
 export function buyoutCost(S) {
   const f = S.familyFortune; if (!f?.own) return 0;
   return Math.round(talkSibs(S, f).reduce((a, id) => a + companyValue(f) * f.own.siblings[id] / 100, 0));
@@ -810,7 +811,7 @@ export function buildSuccessionScene(S) {
   const n = talkSibs(S, f).length;
   return {
     key: 'family_succession', category: 'family', title: `The future of ${f.company.name}`,
-    text: `With your parents gone, ${f.company.name} belongs to you and ${n === 1 ? 'your sibling' : 'your ' + n + ' siblings'} in equal parts. You sit down together to decide what comes next. Keeping it as it is changes nothing. Leading it alone means buying them out, about ${formatMoney(buyoutCost(S), S.country)} in cash if everyone agrees. Selling it and splitting the money costs ${Math.round(SALE_COST * 100)}% in fees and needs every one of you to agree.`,
+    text: `With your parents gone, ${f.company.name} belongs to you and ${n === 1 ? 'your sibling' : 'your ' + n + ' siblings'}${equalParts(S, f) ? ' in equal parts' : `: you hold ${f.own.player}% and your siblings hold ${r6(talkSibs(S, f).reduce((a, id) => a + f.own.siblings[id], 0))}% between them`}. You sit down together to decide what comes next. Keeping it as it is changes nothing. Leading it alone means buying them out, about ${formatMoney(buyoutCost(S), S.country)} in cash if everyone agrees. Selling it and splitting the money costs ${Math.round(SALE_COST * 100)}% in fees and needs every one of you to agree.`,
     choices: [
       { label: 'Keep it together as it is', effect: st => resolveSuccessionTalk(st, 'keep') },
       { label: `Offer to buy your siblings out (${formatMoney(buyoutCost(S), S.country)})`, effect: st => resolveSuccessionTalk(st, 'lead') },
