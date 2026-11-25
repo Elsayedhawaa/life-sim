@@ -727,24 +727,14 @@ export function promotionEligibility(S) {
 }
 
 registerPromotionEligibility(promotionEligibility);
-export function applyPromotion(S) {
-  if (!S.career.employed || !S.career.job) return { ok: false, msg: 'You are not currently employed.' };
+function buildPromotionInterviewScene(S, nextRung) {
   const job = S.career.job;
-  const { nextRung, missing, eligible } = promotionEligibility(S);
-  if (!eligible) {
-    return { ok: false, msg: `Not yet ready for ${nextRung ? nextRung.title : 'the next rung'}: ${missing.join('; ')}.` };
-  }
-  const st = ensureJobActionState(S);
-  if (st.promotion && st.promotion.stage === 'interview') {
-    return { ok: false, msg: 'Your promotion interview is already scheduled — check your scenes.' };
-  }
   const boss = bossOf(S);
   const bossName = boss ? boss.fullName : 'your manager';
   const track = getMergedCareerTracks(S.year)[job.track];
   const currentRung = track?.rungs?.[job.level];
-  st.promotion = { rungTitle: nextRung.title, stage: 'interview', appliedYear: S.year };
-
-  const queued = queueScene(S, {
+  const st = ensureJobActionState(S);
+  return {
     key: `promotion_${nextRung.title}_${S.year}`,
     baseId: 'promotion_interview',
     title: `Promotion interview — ${nextRung.title}`,
@@ -773,7 +763,40 @@ export function applyPromotion(S) {
         }
       }
     ]
-  });
+  };
+}
+
+/* A pending promotion interview is rebuilt from state after a reload. If it cannot be (job gone or changed), the stuck "interview scheduled" flag is cleared instead of blocking every later application. */
+export function restorePromotionInterviewScene(S, saved) {
+  if (!saved || !/^promotion_/.test(saved.key || '')) return null;
+  const st = ensureJobActionState(S);
+  const pend = st?.promotion;
+  const job = S.career?.job;
+  if (!pend || pend.stage !== 'interview' || !job) { if (pend && pend.stage === 'interview') st.promotion = null; return null; }
+  const track = getMergedCareerTracks(S.year)[job.track];
+  const nextRung = track?.rungs?.[job.level + 1];
+  if (!nextRung || nextRung.title !== pend.rungTitle) { st.promotion = null; return null; }
+  return { ...buildPromotionInterviewScene(S, nextRung), key: saved.key };
+}
+
+export function applyPromotion(S) {
+  if (!S.career.employed || !S.career.job) return { ok: false, msg: 'You are not currently employed.' };
+  const job = S.career.job;
+  const { nextRung, missing, eligible } = promotionEligibility(S);
+  if (!eligible) {
+    return { ok: false, msg: `Not yet ready for ${nextRung ? nextRung.title : 'the next rung'}: ${missing.join('; ')}.` };
+  }
+  const st = ensureJobActionState(S);
+  if (st.promotion && st.promotion.stage === 'interview') {
+    return { ok: false, msg: 'Your promotion interview is already scheduled — check your scenes.' };
+  }
+  const boss = bossOf(S);
+  const bossName = boss ? boss.fullName : 'your manager';
+  const track = getMergedCareerTracks(S.year)[job.track];
+  const currentRung = track?.rungs?.[job.level];
+  st.promotion = { rungTitle: nextRung.title, stage: 'interview', appliedYear: S.year };
+
+  const queued = queueScene(S, buildPromotionInterviewScene(S, nextRung));
   if (!queued) return { ok: false, msg: 'The interview could not be scheduled right now — another scene is waiting.' };
   return { ok: true, msg: `Promotion interview scheduled with ${bossName} — check the scene and answer it.` };
 }

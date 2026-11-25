@@ -850,6 +850,13 @@ const AGING_SIGNS = [
   }
 ];
 
+/* A pending aging-sign decision is rebuilt from its saved key, base id and text after a reload, so a saved game keeps the decision (the per-life count and cooldown were already spent when it was queued). */
+export function restoreAgingSignScene(S, saved) {
+  const sign = saved && /^aging_/.test(saved.baseId || '') ? AGING_SIGNS.find(x => x.id === saved.baseId) : null;
+  if (!sign || !S || S.gameOver || !saved.key) return null;
+  return { key: saved.key, baseId: sign.id, maxPerLife: 3, category: 'health', title: sign.title, text: saved.text || sign.text(S), choices: sign.choices() };
+}
+
 export function maybeQueueAgingSign(S, queueScene) {
   if (!S || S.gameOver) return false;
   const age = S.player.age;
