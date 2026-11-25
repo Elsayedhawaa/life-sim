@@ -78,7 +78,21 @@ function sync(f) { f.netWorthLocal = Math.max(0, Math.round((f.companyLocal || 0
 /* Cash leaves the estate (a gift, a fee, a dividend, an inheritance paid out). */
 function spend(f, amount) { f.fundLocal = Math.max(0, f.fundLocal - amount); sync(f); }
 /* Value earmarked or handed over comes from other assets first, then cash. */
-function takeFromEstate(f, amount) { const o = Math.min(f.otherLocal, amount); f.otherLocal -= o; const rest = amount - o; if (rest > 0) f.fundLocal = Math.max(0, f.fundLocal - rest); sync(f); return amount; }
+function takeFromEstate(f, amount, S) {
+  /* Money leaves the unallocated part of otherLocal first (otherLocal less the parents' recorded home and cars), then the liquid fund; only if both are empty are the parents' assets sold, scaled down together. */
+  const held = S ? estateAssetSum(S, S.country) : 0, free = Math.max(0, f.otherLocal - held);
+  const o = Math.min(free, amount); f.otherLocal -= o; let rest = amount - o;
+  if (rest > 0) { const fu = Math.min(f.fundLocal, rest); f.fundLocal -= fu; rest -= fu; }
+  if (rest > 0) f.otherLocal = Math.max(0, f.otherLocal - rest);
+  sync(f); if (S) protectParentAssets(S); return amount;
+}
+/* The recorded home and cars of the parents are a subset of otherLocal: if the estate shrinks below them (gifts, trust, a sale), they are scaled down to fit, i.e. sold, so the subset never exceeds the estate. */
+export function protectParentAssets(S) {
+  const f = S.familyFortune; if (!f) return 0; const sum = estateAssetSum(S, S.country); if (sum <= f.otherLocal || sum <= 0) return 0;
+  const k = Math.max(0, f.otherLocal) / sum;
+  for (const id of [S.relations?.fatherId, S.relations?.motherId]) { const a = S.people?.[id]?.assets; for (const x of [a?.home, a?.car]) if (x && x.estate) x.price = Math.floor(x.price * k); }
+  return 1;
+}
 function ownSum(f) { return Math.round(((f.own.outside || 0) + (f.own.parents || 0) + (f.own.pool || 0) + (f.own.player || 0) + (f.own.heirs || 0) + Object.values(f.own.siblings || {}).reduce((a, b) => a + b, 0)) * 1e6) / 1e6; }
 
 function perChildTrustCapPct(S) {
@@ -151,7 +165,7 @@ export function ensureFamilyFortune(S) {
     /* Pro-rated: the trust the family would have funded by 18, carved out of the estate once. Only the stages the player has already reached are paid. */
     const full = Math.round(f.netWorthLocal * perChildTrustCapPct(S) * 0.9);
     f.trust.fundedLocal = full;
-    takeFromEstate(f, full);
+    takeFromEstate(f, full, S);
     f.carGifted = true; f.homeGifted = true; f.inherited = (S.relations?.motherId ? !S.people?.[S.relations.motherId]?.alive : true) && (S.relations?.fatherId ? !S.people?.[S.relations.fatherId]?.alive : true); /* no retroactive gifts for an existing save */
     recordJournal(S, 'Your family fortune is now tracked in the game. Gifts are not backdated: no car, trust stage or allowance is added for years already lived, only the trust stages you have already reached are paid once.', 'money');
     for (const [releaseAge, share] of DIALS.trustRelease) {
@@ -217,7 +231,7 @@ export function tickFamilyFortuneYearly(S) {
     const cap = f.netWorthLocal * perChildTrustCapPct(S);
     const before = f.trust.fundedLocal;
     f.trust.fundedLocal = Math.round(Math.min(cap, before + f.netWorthLocal * DIALS.trustYearlyPct));
-    takeFromEstate(f, f.trust.fundedLocal - before); /* trust money is earmarked outside the estate when it is set aside */
+    takeFromEstate(f, f.trust.fundedLocal - before, S); /* trust money is earmarked outside the estate when it is set aside */
   }
   /* Record year / tight year: a real state that changes what the family gives, with the reason shown in the ledger. */
   f.yearState = null;
@@ -1117,6 +1131,7 @@ const homeKeeper = S => { const ids = parentIds(S).filter(id => S.people?.[id]?.
 const estateAssetSum = (S, R) => parentIds(S).reduce((t, id) => { const a = S.people?.[id]?.assets; return t + [a?.home, a?.car].reduce((u, x) => u + (x && x.estate ? assetIn(x, R, S.year) : 0), 0); }, 0);
 export function foldParentAssets(S, p) {
   const a = p?.assets; if (!a || (!a.home && !a.car)) return 0;
+  if (!parentIds(S).includes(p.id)) return 0; /* only the player's own parents: siblings keep their own asset flow */
   const R = p.residenceCountry || S.country; let n = 0;
   const back = x => { if (x.estate) return; p.career = p.career || {}; p.career.savingsLocal = (Number(p.career.savingsLocal) || 0) + assetIn(x, R, S.year); };
   if (a.car) { back(a.car); delete a.car; n++; }
@@ -1140,12 +1155,14 @@ export function syncParentAssets(S) {
     const pool = () => est ? Number(f.otherLocal) || 0 : Number(p.career.savingsLocal) || 0;
     const room = (price, held) => est ? estateAssetSum(S, R) - held + price <= f.otherLocal : true;
     const word = `Your ${roleWord(p)}`;
-    if (id === keeper) {
+    const mism = x => !!x && !!x.estate !== est; /* never replace an estate asset with a savings-funded one or the reverse: the trade-in would be credited to the wrong pool */
+    if (id === keeper && !mism(p.assets.home)) {
       const cur = assetIn(p.assets.home, R, S.year), base = pool() + (est ? 0 : cur);
       const up = getHousingFor(R, S.year).map(h => ({ h, price: Math.round(eraLocalCost(h.price2026, R, S.year)) })).filter(x => x.price > cur * 2 && x.price > 0 && x.price <= base * 0.25 && (est || base >= x.price * 4) && room(x.price, cur)).sort((x, y) => y.price - x.price);
       if (up.length) { const t = up[0]; if (!est) p.career.savingsLocal = base - t.price; const had = !!p.assets.home; p.assets.home = { id: t.h.id, kind: t.h.kind, tier: t.h.tier, price: t.price, country: R, year: S.year, estate: est };
         n++; if (seeded) { const d = `${t.h.tier ? t.h.tier + ' ' : ''}${String(t.h.kind || 'home').replace(/_/g, ' ')}`; recordJournal(S, `${word} ${had ? 'moved the family into a better home' : 'bought a home'}: ${/^[aeiou]/i.test(d) ? 'an' : 'a'} ${d} worth ${formatMoney(t.price, R)}${est ? ' (part of the family estate, no cash paid out)' : ''}.`, 'family'); } }
     }
+    if (mism(p.assets.car)) continue;
     const curC = assetIn(p.assets.car, R, S.year), baseC = pool() + (est ? 0 : curC);
     const cars = getCarsForYear(S.year).map(c => ({ c, price: Math.round(convertCurrency(eraLocalCost(c.priceUsd2026, 'usa', S.year), 'usa', R, S.year)) })).filter(x => x.price > curC * 2 && x.price > 0 && x.price <= baseC * 0.03 && room(x.price, curC)).sort((x, y) => y.price - x.price);
     if (cars.length) { const t = cars[0]; if (!est) p.career.savingsLocal = baseC - t.price; const had = !!p.assets.car; p.assets.car = { id: t.c.id, name: t.c.name, price: t.price, country: R, year: S.year, estate: est };
@@ -1277,7 +1294,7 @@ export function resolveHome(S, how) {
   const h = getHousingFor(S.country, S.year).find(x => x.id === o.catalogId);
   f.homeOffer = null;
   if (!h) return null;
-  takeFromEstate(f, o.price);
+  takeFromEstate(f, o.price, S);
   const res = finalizePropertyPurchase(S, {
     catalogId: h.id, name: h.name, country: S.country, city: h.city, tier: h.tier, rooms: h.rooms,
     nativeValue: o.price, nativeMonthlyRent: Math.round(eraLocalCost(h.monthlyRent2026 || 0, S.country, S.year)),
@@ -1371,6 +1388,7 @@ export function resolveKeys(S, how) {
 
 /* The three releases are checked every year; this also covers a birthday that lands mid-year. */
 export function tickFamilyFortuneMonthly(S) {
+  { const f0 = hasFortune(S) ? S.familyFortune : null; if (f0) protectParentAssets(S); }
   syncParentAssets(S);
   const f = ensureFamilyFortune(S);
   if (!f) return;
@@ -1547,3 +1565,4 @@ export function liquidateFamilyStakeOnDeath(S) {
   recordJournal(S, `Your stake in ${f.company.name} was sold for ${formatMoney(cash, S.country)}: your siblings bought what their savings allowed and outside investors bought the rest at full value.`, 'family');
   return cash;
 }
+export const __takeFromEstate = takeFromEstate;

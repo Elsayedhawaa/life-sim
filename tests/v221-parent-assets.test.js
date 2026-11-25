@@ -35,4 +35,19 @@ const par = S => [S.relations.fatherId, S.relations.motherId].map(i => S.people[
   const worth = a.career.savingsLocal + (a.assets.home?.price || 0) + (a.assets.car?.price || 0); handleNpcDeath(S, a);
   assert.ok(!a.assets.home && !a.assets.car);
   const back = (a.career.savingsLocal) + (b.assets?.home?.price || 0) + (b.assets?.car?.price || 0); assert.equal(back, worth, 'nothing erased: the car went back to savings, the home to the surviving parent'); }
+{ /* a gift or sale that drains the estate takes unallocated money first, then the fund, and only then sells the parents' assets: the subset never exceeds otherLocal */
+  const S = mk('very_wealthy'); const f = S.familyFortune; F.syncParentAssets(S); const held = () => par(S).reduce((t, p) => t + (p.assets?.home?.price || 0) + (p.assets?.car?.price || 0), 0);
+  const h0 = held(), free = f.otherLocal - h0; assert.ok(free > 0);
+  F.__takeFromEstate(f, Math.floor(free / 2), S); assert.equal(held(), h0, 'small draw leaves the parents assets alone');
+  F.__takeFromEstate(f, f.otherLocal - h0 + f.fundLocal + Math.floor(h0 / 2), S); assert.ok(held() <= f.otherLocal, 'subset protected'); assert.ok(held() < h0 && held() > 0, 'assets were sold down, not erased');
+  F.__takeFromEstate(f, 1e18, S); assert.equal(f.otherLocal, 0); assert.equal(held(), 0); }
+{ /* no free upgrades: with no unallocated pool left, the parents cannot upgrade */
+  const S = mk('very_wealthy'); const f = S.familyFortune; F.syncParentAssets(S); const c = par(S).find(p => p.assets?.car); c.assets.car.price = 1000;
+  const held = par(S).reduce((t, p) => t + (p.assets?.home?.price || 0) + (p.assets?.car?.price || 0), 0); f.otherLocal = held; f.netWorthLocal = f.companyLocal + f.fundLocal + f.otherLocal;
+  assert.equal(F.syncParentAssets(S), 0); assert.equal(c.assets.car.price, 1000, 'nothing is bought without unallocated pool to pay from'); }
+{ /* a dead sibling's savings-funded home is not touched by the parents' household transfer; a funding-pool mismatch blocks replacement */
+  const S = mk('very_wealthy'); const f = S.familyFortune; const sib = S.relations.siblingIds.map(i => S.people[i]).find(Boolean);
+  if (sib) { sib.alive = true; sib.assets = { home: { id: 'x', price: 5, country: 'usa', year: 2020 } }; const sv = sib.career?.savingsLocal; const [a] = par(S); a.assets = {}; handleNpcDeath(S, sib); assert.ok(!par(S).some(p => p.assets?.home), 'sibling home never moves to a parent'); assert.ok(sib.assets && sib.assets.home, 'sibling asset flow is untouched by the parent fold'); }
+  F.syncParentAssets(S); const c = par(S).find(p => p.assets?.car); c.assets.car.estate = false; c.assets.car.price = 1000; const sav = c.career?.savingsLocal || 0; F.syncParentAssets(S);
+  assert.equal(c.assets.car.price, 1000, 'no cross-pool replacement'); assert.equal(c.career?.savingsLocal || 0, sav, 'no estate trade-in credited to savings'); }
 console.log('PASS v221-parent-assets');
