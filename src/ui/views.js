@@ -5133,9 +5133,9 @@ export function renderBottomDockHtml(S) {
           <span>${blocked ? 'Answer Open Decision Above First' : mainLabel}</span>
         </button>
         ${(S.pacing === 'monthly' && !blocked) ? `
-          <button type="button" class="btn btn-navy" style="padding:13px 14px" data-action="fast-forward-year" title="Simulates month-by-month and pauses automatically if an event occurs">
+          <button type="button" class="btn btn-navy" style="padding:13px 14px" data-action="fast-forward-year" title="Runs up to 12 months, one at a time, and stops at the first event that needs you">
             ${icon('fastforward', 17)}
-            <span>Skip Quiet Year</span>
+            <span>Skip ahead (stops at events)</span>
           </button>
         ` : ''}
       </div>

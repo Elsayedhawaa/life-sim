@@ -1,4 +1,5 @@
 import {convertCurrency,eraLocalCost} from '../data/economy.js';
+import {indexNpcIncome} from './npcIncomeIndex.js';
 import {recordJournal,walletMove} from '../core/schema.js';
 
 export function educationFamilyPayers(S){
@@ -25,6 +26,7 @@ export function accrueParentalSavings(S){
  const acc=S.education.parentSavingsAccrual??(S.education.parentSavingsAccrual={through:null});
  const rate=PARENT_SAVE_RATE[S.familyTier]??.10;
  const payers=educationFamilyPayers(S);
+ for(const p of payers)indexNpcIncome(S,p);
  if(acc.through==null){
   /* one-time catch-up: each lived year at that year's price level */
   const lived=Math.min(18,Math.max(0,Math.floor(S.player.age||0)));
@@ -41,10 +43,12 @@ export function accrueParentalSavings(S){
 function reserveIn(S,local){const r=S.education.familyReserve;const c=r?.country||S.country;return c===S.country?local:convertCurrency(local,c,S.country,S.year);}
 function familyReserve(S){
  const e=S.education;
+ if(e.familyReserve&&!e.familyReserve.eraIndexed){const had=e.familyReserve;for(const p of educationFamilyPayers(S))indexNpcIncome(S,p);if(!had.drawn)e.familyReserve=null;else had.eraIndexed=true;}
  if(!e.familyReserve){
+  for(const p of educationFamilyPayers(S))indexNpcIncome(S,p);
   const income=educationFamilyPayers(S).reduce((n,p)=>n+Math.max(0,Number(p.career.monthlyIncomeLocal)||0)*12,0);
   const years=FAMILY_RESERVE_YEARS[S.familyTier]??0;
-  e.familyReserve={local:Math.round(income*years),years,setYear:S.year,country:S.homeCountry||S.country};
+  e.familyReserve={local:Math.round(income*years),years,setYear:S.year,country:S.homeCountry||S.country,eraIndexed:true};
  }
  return e.familyReserve;
 }
@@ -61,7 +65,7 @@ export function chargeFamilyEducation(S,amount){
   const country=p.residenceCountry||S.country;const available=convertCurrency(Math.max(0,Number(p.career.savingsLocal)||0),country,S.country,S.year);const debit=Math.min(left,available);
   p.career.savingsLocal=Math.max(0,(Number(p.career.savingsLocal)||0)-convertCurrency(debit,S.country,country,S.year));left-=debit;if(left<=.01)break;
  }
- if(left>.01&&educationFamilyPayers(S).length){const r=familyReserve(S);const have=reserveIn(S,r.local);const d=Math.min(left,have);r.local=Math.max(0,r.local-(have>0?r.local*(d/have):0));left-=d;}
+ if(left>.01&&educationFamilyPayers(S).length){const r=familyReserve(S);const have=reserveIn(S,r.local);const d=Math.min(left,have);r.local=Math.max(0,r.local-(have>0?r.local*(d/have):0));r.drawn=true;left-=d;}
  return left<=.01;
 }
 export function settleFamilyUniversityMonth(S){

@@ -12,6 +12,7 @@ import { createPerson, nextId, recordJournal, walletMove, queueScene, computeNet
 import { getCountry, formatMoney, COUNTRY_IDS } from '../data/countries.js';
 import { getMarriageProfile } from '../data/visasAndMarriage.js';
 import { SHOP_MEGA_CATALOG } from '../data/megaCarsAndShop.js';
+import { indexNpcIncome } from './npcIncomeIndex.js';
 import { eraSalary, eraLocalCost, convertCurrency, goldPricePerGram } from '../data/economy.js';
 /* v2.15 W3 — social energy + friendship decay (src/systems/socialEnergy.js).
    This file charges the energy and stamps the contact; the budget and the
@@ -399,7 +400,7 @@ function npcGiveJob(S, person) {
   const entryPay = eraSalary(pCountry.annualSalaryTiers2026.entry / 12, person.residenceCountry, S.year);
   const mult = 0.75 + (person.traits.ambition / 140);
   person.career.title = person.vitals.smarts >= 78 ? 'Graduate Specialist' : 'Operations Coordinator';
-  person.career.monthlyIncomeLocal = Math.round(entryPay * mult);
+  person.career.monthlyIncomeLocal = Math.round(entryPay * mult); person.career.incomeIndexYear = S.year;
   person.career.savingsLocal = Math.max(Number(person.career.savingsLocal) || 0, Math.round(person.career.monthlyIncomeLocal * 2));
 }
 
@@ -730,7 +731,7 @@ function npcJobChange(S, person) {
       const pCountry = getCountry(person.residenceCountry || S.country);
       const entryPay = eraSalary(pCountry.annualSalaryTiers2026.entry / 12, person.residenceCountry, S.year);
       person.career.title = next;
-      person.career.monthlyIncomeLocal = Math.round(entryPay * (0.75 + (person.traits.ambition / 140)));
+      person.career.monthlyIncomeLocal = Math.round(entryPay * (0.75 + (person.traits.ambition / 140))); person.career.incomeIndexYear = S.year;
       recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} changed careers and is now working as a ${next.toLowerCase()} in ${person.city}.`, 'career');
     }
   }
@@ -763,12 +764,13 @@ export function tickNpcAutonomyYearly(S) {
       const entryPay = eraSalary(pCountry.annualSalaryTiers2026.entry / 12, person.residenceCountry, S.year);
       const mult = 0.75 + (person.traits.ambition / 140);
       person.career.title = person.vitals.smarts >= 78 ? 'Graduate Specialist' : 'Operations Coordinator';
-      person.career.monthlyIncomeLocal = Math.round(entryPay * mult);
+      person.career.monthlyIncomeLocal = Math.round(entryPay * mult); person.career.incomeIndexYear = S.year;
       person.career.savingsLocal = Math.round(person.career.monthlyIncomeLocal * 2);
       if (person.role === 'child') {
         recordJournal(S, `Your ${person.gender === 'f' ? 'daughter' : 'son'} ${person.firstName} graduated and started working as a ${person.career.title.toLowerCase()} (${formatMoney(person.career.monthlyIncomeLocal, person.residenceCountry)}/mo).`, 'relationship');
       }
     } else if (person.age > 22 && person.age < 63 && person.career.monthlyIncomeLocal > 0) {
+      indexNpcIncome(S, person); /* era-index before the career raise: pay keeps pace with the price/wage level */
       const raiseMult = 1 + (person.traits.ambition > 68 ? 0.04 : 0.015);
       person.career.monthlyIncomeLocal = Math.round(person.career.monthlyIncomeLocal * raiseMult);
       const saveRate = person.traits.materialism > 70 ? 0.06 : 0.16;
