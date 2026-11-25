@@ -990,7 +990,7 @@ function goalProgressDetail(S, g) {
   if (g.id === 'g_home') {
     if (S.housing.properties.length > 0) return { pct: 100, text: `${S.housing.properties.length} ${S.housing.properties.length === 1 ? 'home' : 'homes'} owned` };
     if (S.housing.mode === 'rent') return { pct: 50, text: 'Renting a home of your own — buying would finish this goal' };
-    return { pct: 0, text: 'No home of your own yet — rent or buy on the Real Estate tab' };
+    return { pct: 0, text: ((S.player?.age ?? 0) < 18 ? 'No home of your own yet — you live with your family until you are 18' : 'No home of your own yet — rent or buy on the Real Estate tab') };
   }
   if (g.id === 'g_family') {
     const spouse = S.relations.spouseIds.length > 0;
@@ -1198,12 +1198,15 @@ function renderLegacyScreenHtml(S) {
    ========================================================================== */
 export function renderPeopleTabHtml(S, uiState = {}) {
   ensureExtendedState(S);
-  const sub = uiState.peopleSub || 'circle';
-  const nav = renderSubtabs('people', [
+  const ageP = S.player?.age ?? 0;
+  /* Marriage and nurseries are not offered to a young child; they appear from 16, or earlier if a child already exists. */
+  const peopleSubs = [
     { id: 'circle', label: 'Circle & Soul' },
-    { id: 'marriage', label: 'Relationships & Marriage' },
-    { id: 'children', label: `Children & Nurseries (${S.relations.childIds.length})` }
-  ], sub);
+    ...(ageP >= 16 || S.relations.spouseIds.length ? [{ id: 'marriage', label: 'Relationships & Marriage' }] : []),
+    ...(ageP >= 16 || S.relations.childIds.length ? [{ id: 'children', label: `Children & Nurseries (${S.relations.childIds.length})` }] : [])
+  ];
+  const sub = peopleSubs.some(s => s.id === uiState.peopleSub) ? uiState.peopleSub : 'circle';
+  const nav = peopleSubs.length > 1 ? renderSubtabs('people', peopleSubs, sub) : '';
 
   if (sub === 'marriage') {
     return renderEditorialBannerHtml(pickDynamicBanner(S, 'people', 'marriage'), 'Relationships & Marriage') + nav + renderMarriageSubtabHtml(S);
@@ -4946,7 +4949,7 @@ export function renderWorldTabHtml(S, uiState = {}) {
       <div style="padding:12px;margin-bottom:12px;background:#edf3ec;border-radius:10px;font-size:.86rem;line-height:1.8"><strong>Living in ${esc(getCountry(S.country).name)}</strong><br>Citizenship: ${esc(S.legal.citizenships.map(c=>getCountry(c).name).join(', '))}<br>Status: ${esc(S.legal.residency.kind.replace(/_/g,' '))}<br>${esc(S.legal.residency.permitName||'')}${S.legal.residency.expiresYear?` · expires ${S.legal.residency.expiresMonth||12}/${S.legal.residency.expiresYear}`:''}<br>Moving does not grant a new nationality or passport.${S.education.university?.international||S.postgrad?.active?.international?'<br><strong>Leaving this country ends your full-time study here. Paid tuition is not refunded.</strong>':''}</div>
       ${renderPassportDocumentHtml(S)}
       <div style="display:flex;flex-wrap:wrap;gap:8px">
-        <button class="btn btn-navy btn-sm" data-action="renew-passport">Renew Biometric Passport</button>
+        ${(S.player?.age ?? 0) < 18 ? '<span class="muted">Your parents handle your passport until you are 18.</span>' : '<button class="btn btn-navy btn-sm" data-action="renew-passport">Renew Biometric Passport</button>'}
         ${S.country !== S.homeCountry ? `<button class="btn btn-sm" data-action="return-home">Repatriate Permanently to ${esc(getCountry(S.homeCountry).name)}</button>` : ''}
       </div>
       ${(!S.legal.citizenships.includes(S.country)) ? `
