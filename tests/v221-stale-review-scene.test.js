@@ -1,0 +1,20 @@
+// A queued annual review for a job the player has since left must not stay on screen as a no-op decision.
+import assert from 'node:assert/strict';
+import { createNewLifeState, ensureExtendedState } from '../src/core/schema.js';
+import { getMergedCareerTracks } from '../src/systems/careerEducationEngine.js';
+import { buildCareerReviewScene } from '../src/systems/careerActions.js';
+import { resignCurrentJob } from '../src/systems/careerEducationEngine.js';
+import { advanceSingleTurn } from '../src/core/gameLoop.js';
+import { queueScene } from '../src/core/schema.js';
+const tracks = getMergedCareerTracks(2042); const id = Object.keys(tracks).find((k) => tracks[k].rungs?.length >= 3 && !(tracks[k].reqDegrees || []).length);
+const s = createNewLifeState({ country: 'egy', seed: 9 }); ensureExtendedState(s);
+s.year = 2042; s.month = 3; s.player.age = 40; s.career.employed = true;
+s.career.job = { id: 'job_x', employer: 'Acme', title: tracks[id].rungs[1].title, track: id, level: 1, monthlyGross: 5000, performance: 80, workMode: 'normal', monthsInRole: 11, startYear: 2030, employmentFraction: 1 };
+const boss = Object.values(s.people).find((p) => p.id !== 'player' && p.alive); 
+const sc = buildCareerReviewScene(s, { year: 2042, bossId: boss.id, bossName: boss.firstName, employer: 'Acme', jobId: 'job_x', perf: 80, band: 'strong', steppedUp: 0 });
+assert.ok(sc, 'review scene builds while employed'); assert.ok(queueScene(s, sc, true)); if (!s.activeScene) s.activeScene = s.sceneQueue.shift();
+assert.match(s.activeScene.title, /annual review/);
+resignCurrentJob(s); assert.equal(s.career.job, null);
+advanceSingleTurn(s);
+assert.ok(!s.activeScene || !/annual review/.test(s.activeScene.title), 'stale review for a job that no longer exists is dropped, not left blocking');
+console.log('stale review dropped OK');

@@ -57,9 +57,15 @@ import { snapshotMajor, announceMajorChanges, tickCarCrashes, restoreMajorScene 
 
 const PERSIST_KEY = 'world_life_2_save_v1';
 
+/* A career review or warning is about one job. Once that job is gone it is a no-op that would keep blocking the turn. */
+function careerSnapshotSceneStale(S,scene){
+  if(scene?.careerReviewSnapshot)return !restoreCareerReviewScene(S,scene);
+  if(scene?.careerWarningSnapshot)return !restoreCareerWarningScene(S,scene);
+  return false;
+}
 function discardOutdatedRandomScenes(S) {
-  S.sceneQueue = (S.sceneQueue || []).filter(scene => !scene.familyBufferId&&isRandomLifeSceneCurrent(scene, S)&&courtshipSceneCurrent(S,scene)&&spouseConversationCurrent(S,scene));
-  if (S.activeScene && (S.activeScene.familyBufferId||!isRandomLifeSceneCurrent(S.activeScene, S)||!courtshipSceneCurrent(S,S.activeScene)||!spouseConversationCurrent(S,S.activeScene))) {
+  S.sceneQueue = (S.sceneQueue || []).filter(scene => !careerSnapshotSceneStale(S,scene)&&!scene.familyBufferId&&isRandomLifeSceneCurrent(scene, S)&&courtshipSceneCurrent(S,scene)&&spouseConversationCurrent(S,scene));
+  if (S.activeScene && (careerSnapshotSceneStale(S,S.activeScene)||S.activeScene.familyBufferId||!isRandomLifeSceneCurrent(S.activeScene, S)||!courtshipSceneCurrent(S,S.activeScene)||!spouseConversationCurrent(S,S.activeScene))) {
     S.activeScene = null;
     recordJournal(S, 'Circumstances changed before that decision could be made. The old situation no longer applies.', 'life');
   }
