@@ -1,5 +1,5 @@
 import{reviewPersonalReceivables}from'./personalReceivables.js';
-import { hasFortune, payFamilyAllowanceYear } from './familyFortune.js';
+import { hasFortune, payFamilyAllowanceYear, familyPaysCarUpkeep } from './familyFortune.js';
 import {closePlayerLease,reconcilePlayerLease,recordPlayerRentDue,tickPlayerRentalDamage} from './playerTenancy.js';
 import{settleCompanyTrusts}from'./companyTrust.js';
 import{settleNpcCompanyHoldings}from './companyEstate.js';
@@ -1109,7 +1109,7 @@ export function settleHouseholdMonth(S) {
   }
 
   for (const car of S.cars) {
-    if (!car.familyCoversUpkeep) monthlyLiving += Math.round(car.monthlyUpkeep || 0);
+    { const up = Math.round(car.monthlyUpkeep || 0); if (!(car.familyCoversUpkeep && familyPaysCarUpkeep(S, up))) monthlyLiving += up; } /* family-covered upkeep comes out of the fund, never from nowhere */
   }
 
   // The funding shown before enrollment is the funding used for billing.

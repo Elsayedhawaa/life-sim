@@ -139,7 +139,9 @@ function releaseTrust(S, f, key, share) {
 
 export function monthlyInflow(f) { return f.yearlyInflowLocal / 12; }
 
-function giftRoom(f) {
+/* Gift totals are per calendar year, rolled by the year on the clock, so a charge made before the January tick lands in the right year. */
+function giftRoom(f, S) {
+  if (S && f.giftYear !== S.year) { f.yearGifts = 0; f.yearEducation = 0; f.yearUpkeep = 0; f.giftYear = S.year; }
   return Math.max(0, f.yearlyInflowLocal * DIALS.annualGiftShareCap - f.yearGifts);
 }
 
@@ -159,7 +161,7 @@ export function tickFamilyFortuneYearly(S) {
   const dep = eraDepositRates(S.country, S.year).savings || 0;
   f.fundLocal = Math.max(0, Math.round(f.fundLocal * (1 + dep) + f.yearlyInflowLocal * DIALS.fundRetention - 0));
   f.lastYearSwing = swing;
-  f.yearGifts = 0; f.yearEducation = 0;
+  if (f.giftYear !== S.year) { f.yearGifts = 0; f.yearEducation = 0; f.yearUpkeep = 0; f.giftYear = S.year; } /* already rolled by an earlier charge this year */
   f.lastTickYear = S.year;
   const age = S.player?.age ?? 0;
   /* Trust funding each childhood year, within the per-child cap. */
@@ -192,7 +194,7 @@ export function giftBirthdayCar(S) {
   if (!pool.length) return null;
   const target = DIALS.carTargetUsd[f.tier];
   const ranked = pool.map(c => ({ c, d: Math.abs(Math.log(c.priceUsd2026 / target)) + hash01(S, c.id.length * 31 + c.priceUsd2026 % 97) * 0.05 })).sort((a, b) => a.d - b.d);
-  const room = giftRoom(f);
+  const room = giftRoom(f, S);
   let pick = null, q = null;
   for (const { c } of ranked.slice(0, 40)) {
     const qq = showroomCarQuote(S, c.id, 'base');
@@ -325,13 +327,22 @@ export function tickFamilyFortuneMonthly(S) {
 export function fortuneEducationRoom(S) {
   const f = S.familyFortune?.schemaVersion === 1 ? S.familyFortune : null; /* never creates the fortune: the monthly tick does that, so a read can't pay out a trust */
   if (!f) return 0;
-  return Math.max(0, Math.min(f.fundLocal, giftRoom(f)));
+  return Math.max(0, Math.min(f.fundLocal, giftRoom(f, S)));
 }
 export function fortuneChargeEducation(S, amount) {
   const f = S.familyFortune?.schemaVersion === 1 ? S.familyFortune : null;
   if (!f || !(amount > 0) || fortuneEducationRoom(S) + 0.01 < amount) return false;
   f.fundLocal -= amount; f.yearGifts += amount; f.yearEducation = (f.yearEducation || 0) + amount;
   addGrant(f, S, 'education', amount, 'school or university fees');
+  return true;
+}
+
+/* Running costs of a gifted car at very_wealthy are paid out of the fund each month. If the fund is short, the player pays. */
+export function familyPaysCarUpkeep(S, amount) {
+  const f = S.familyFortune?.schemaVersion === 1 ? S.familyFortune : null;
+  if (!f || !(amount > 0) || f.fundLocal < amount) return false;
+  f.fundLocal -= amount;
+  f.yearUpkeep = (f.yearUpkeep || 0) + amount;
   return true;
 }
 
@@ -354,7 +365,7 @@ export function payFamilyAllowanceYear(S) {
   if (!f) return null;
   const monthly = familyAllowanceMonthly(S);
   if (!(monthly > 0)) return 0;
-  const room = giftRoom(f);
+  const room = giftRoom(f, S);
   const annual = Math.min(monthly * 12, f.fundLocal, room);
   if (annual <= 0) return 0;
   f.fundLocal -= annual; f.yearGifts += annual;
@@ -412,7 +423,7 @@ export function askFortuneParent(S, p) {
   const ceil = askCeiling(S);
   const frac = Math.max(0, Math.min(1, (willingness - 45) / 55));
   let amount = Math.round(ceil * (0.5 + 0.5 * frac));
-  const room = giftRoom(f);
+  const room = giftRoom(f, S);
   if (amount > f.fundLocal) amount = Math.round(f.fundLocal);
   if (amount > room) amount = Math.round(room);
   if (amount <= 0) {

@@ -159,3 +159,17 @@ console.log('education OK');
 console.log('home OK');
 { const R = life('wealthy', 'usa', 2000, 12); run(R, 12 * 12); const f = R.familyFortune; assert.ok(f.yearEducation <= f.yearGifts, 'fees are a part of the year total, shown on their own row'); }
 console.log('fee split OK');
+// Year accounting: a charge made before the January tick belongs to the new year and is not wiped by the tick.
+{ const R = life('wealthy', 'usa', 2000, 12); run(R, 12 * 17); const f = R.familyFortune; R.year += 1; const room0 = F.fortuneEducationRoom(R); assert.equal(f.giftYear, R.year, 'the year rolled on first use'); F.fortuneChargeEducation(R, 1000); F.tickFamilyFortuneYearly(R); assert.equal(f.yearEducation, 1000, 'the January tick keeps a charge already made this year'); }
+console.log('year roll OK');
+// Family-covered car upkeep comes from the fund, and falls back to the player when the fund is short.
+{
+  const { settleHouseholdMonth } = await import('../src/systems/economyEngine.js');
+  const V = life('very_wealthy', 'usa', 2003, 5); run(V, 12 * 17);
+  for (let i = 0; i < 400 && !V.familyFortune.carOffer && !V.cars.some(c => c.gifted); i++) run(V, 1);
+  if (V.familyFortune.carOffer) { V.activeScene = null; V.sceneQueue = (V.sceneQueue || []).filter(x => x.key !== 'family_keys'); F.resolveKeys(V, 'car'); }
+  const car = V.cars.find(c => c.gifted); assert.ok(car && car.familyCoversUpkeep);
+  const fund = V.familyFortune.fundLocal; assert.ok(F.familyPaysCarUpkeep(V, car.monthlyUpkeep) && V.familyFortune.fundLocal === fund - car.monthlyUpkeep, 'the fund pays, not nobody');
+  V.familyFortune.fundLocal = 0; assert.ok(!F.familyPaysCarUpkeep(V, car.monthlyUpkeep), 'empty fund: the player pays');
+}
+console.log('upkeep OK');
