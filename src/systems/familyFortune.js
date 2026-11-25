@@ -494,6 +494,7 @@ export function buildHomeScene(S) {
 export function restoreHomeScene(S, saved) {
   if (saved && saved.key === 'family_place' && S.familyFortune?.placeOffer) return buildPlaceScene(S);
   if (saved && saved.key === 'family_seed' && S.familyFortune?.seedOffer) return buildSeedScene(S);
+  if (saved && saved.key === 'family_intro' && S.familyFortune?.introOffer) return buildIntroScene(S);
   if (saved && saved.key === 'family_deposit' && S.familyFortune?.depositOffer) return buildDepositScene(S);
   if (saved && saved.key === 'family_bigask' && S.familyFortune?.bigAskOffer) return buildBigAskScene(S);
   if (saved && saved.key === 'family_venture' && S.familyFortune?.ventureOffer) return buildVentureScene(S);
@@ -905,6 +906,55 @@ export function resolveSuccessionTalk(S, how) {
   return { ok: true, how: 'sell', sold: true, mine };
 }
 
+
+/* --- Introductions (event 10, own-way path): the family opens a door to a first real customer ---------------
+   Once you own a product or service company with an active line, a family friend at a partner firm becomes a customer: a real signed order in your own contract book
+   (same shape, deposit and penalty as any customer contract, at the line's normal price). The family adds no money and no discount. Declining costs nothing. */
+function introTarget(S) {
+  for (const b of (S.career?.businesses || [])) {
+    if (!b || b.dead || !b.enterprise || !b.catalog || b.inputs?.metered) continue;
+    const item = (b.catalog.items || []).find(i => i.active); if (item) return { b, item };
+  }
+  return null;
+}
+export function offerIntroduction(S) {
+  const f = ensureFamilyFortune(S);
+  if (!f || f.introDone || f.introOffer || f.seedOffer || isTightYear(f, S)) return null;
+  if ((S.player?.age ?? 0) < 19 || S.activeScene || (S.sceneQueue || []).length) return null;
+  const t = introTarget(S); if (!t) return null;
+  const { b, item } = t;
+  const qty = Math.max(1, Math.floor(b.enterprise.capacity * 0.25 / Math.max(0.01, item.load)));
+  f.introOffer = { bizId: b.id, itemId: item.id, customer: PARTNERS[Math.floor(hash01(S, 412) * PARTNERS.length)], qty, year: S.year };
+  queueScene(S, buildIntroScene(S), true);
+  return f.introOffer;
+}
+export function buildIntroScene(S) {
+  const f = S.familyFortune, o = f?.introOffer; if (!o) return null;
+  const b = (S.career.businesses || []).find(x => x && x.id === o.bizId); const item = b?.catalog?.items?.find(i => i.id === o.itemId);
+  if (!b || !item) return null;
+  const total = o.qty * item.price;
+  return {
+    key: 'family_intro', category: 'family', title: 'A door opens',
+    text: `A friend of your family at ${o.customer} hears about ${b.name} and offers to be your first big customer: ${o.qty} x ${item.name} at your normal price, ${formatMoney(total, b.figuresCurrency || b.country || S.country)} in all. They pay a 30% deposit up front. It is a normal customer contract, with a deadline and a penalty if you cannot deliver. Your family adds nothing but the introduction.`,
+    choices: [
+      { label: 'Take the order', effect: st => resolveIntroduction(st, true) },
+      { label: 'Thank them and find customers yourself', effect: st => resolveIntroduction(st, false) }
+    ]
+  };
+}
+export function resolveIntroduction(S, yes) {
+  const f = S.familyFortune, o = f?.introOffer; if (!o) return null;
+  const b = (S.career.businesses || []).find(x => x && x.id === o.bizId); const item = b?.catalog?.items?.find(i => i.id === o.itemId);
+  f.introOffer = null; f.introDone = true;
+  if (!yes || !b || !item) { recordJournal(S, 'You thanked your family friend and chose to find customers yourself.', 'family'); return { ok: true, taken: false }; }
+  b.contracts ??= { orders: [], serial: 0, lastMonth: null };
+  const c = b.contracts, now = S.year * 12 + S.month, quantity = o.qty, price = item.price, total = quantity * price, deposit = Math.floor(total * 0.3);
+  c.serial++;
+  c.orders.push({ id: b.id + '_contract_' + c.serial, customer: o.customer, itemId: item.id, name: item.name, quantity, price, total, deposit, escrow: deposit, accepted: now, due: now + Math.max(2, (item.cycle || 1) + 1), load: item.load, months: Math.max(1, item.cycle || 1), progress: 0, materialReady: false, status: 'backlog', penalty: Math.ceil(total * 0.1), introduced: true });
+  recordJournal(S, `${o.customer} signed a contract with ${b.name} for ${quantity} x ${item.name}, through your family.`, 'business');
+  return { ok: true, taken: true, orderId: b.id + '_contract_' + c.serial };
+}
+
 /* --- The connected internship (17-23): a paid summer at a partner company -------------------
    The family's connections open a three-month paid internship at a partner firm (a real employer record, paid monthly through the summer,
    less free time). At the end you earn a reference (a few interview points) and, if you are free to work, may convert it into a first job there. Declining costs nothing. */
@@ -1084,7 +1134,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); deliverSuccessionTalk(S, f);
+  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerIntroduction(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); deliverSuccessionTalk(S, f);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;
@@ -1231,7 +1281,6 @@ export { DIALS as FORTUNE_DIALS };
    1. each living sibling may buy an equal part of it at full value, as far as their own savings go (their savings fall by exactly what they pay);
    2. whatever they cannot pay for is sold to outside investors at a 10% discount (a minority stake in a private company), and leaves the family.
    The company itself is untouched; ownership moves. Net worth falls only by the discount. */
-const OUTSIDE_DISCOUNT = 0.10;
 export function liquidateFamilyStakeOnDeath(S) {
   const f = S.familyFortune;
   if (!f?.own || !f.company || f.company.sold) return 0;
@@ -1252,9 +1301,9 @@ export function liquidateFamilyStakeOnDeath(S) {
     q.career.savingsLocal = Math.max(0, Math.round(savOwn - convertCurrency(pay, S.country, cur, S.year))); /* debited in their own currency */
     f.own.siblings[id] = r6((f.own.siblings[id] || 0) + pct); left = r6(left - pct); cash += pay; siblingPaid += pay;
   }
-  if (left > 0) { const gross = Math.round(value * left / 100), net = Math.round(gross * (1 - OUTSIDE_DISCOUNT)); f.own.outside = r6((f.own.outside || 0) + left); cash += net; outsideCash = net; }
+  if (left > 0) { const gross = Math.round(value * left / 100), net = gross; f.own.outside = r6((f.own.outside || 0) + left); cash += net; outsideCash = net; }
   f.own.player = 0; f.shares = { pct: 0, since: S.year }; sync(f);
   if (cash > 0) walletMove(S, cash, `Your stake in ${f.company.name} was sold (${formatMoney(siblingPaid, S.country)} from your siblings, ${formatMoney(outsideCash, S.country)} from outside investors)`, 'family');
-  recordJournal(S, `Your stake in ${f.company.name} was sold for ${formatMoney(cash, S.country)}: your siblings bought what their savings allowed and outside investors bought the rest at a ${Math.round(OUTSIDE_DISCOUNT * 100)}% discount.`, 'family');
+  recordJournal(S, `Your stake in ${f.company.name} was sold for ${formatMoney(cash, S.country)}: your siblings bought what their savings allowed and outside investors bought the rest at full value.`, 'family');
   return cash;
 }

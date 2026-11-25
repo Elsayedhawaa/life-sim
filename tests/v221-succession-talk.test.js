@@ -54,8 +54,8 @@ function r6(x) { return Math.round(x * 1e6) / 1e6; }
   const cv = f.companyLocal, pv = Math.round(cv * f.own.player / 100), cash0 = S.money.cash, nw0 = computeNetWorthLocal(S);
   const got = F.liquidateFamilyStakeOnDeath(S);
   assert.equal(Math.round(S.money.cash - cash0), got); assert.equal(f.own.player, 0); assert.equal(sum(f), 100); assert.equal(f.companyLocal, cv, 'the company is untouched');
-  assert.ok(Math.abs(got - Math.round(pv * 0.9)) <= 2, 'siblings with no savings pay nothing, so it all sells to outsiders at 10% off'); assert.ok(f.own.outside > 0);
-  assert.ok(Math.abs((nw0 - computeNetWorthLocal(S)) - (pv - got)) <= 3, 'net worth falls only by the discount');
+  assert.ok(Math.abs(got - pv) <= 2, 'siblings with no savings pay nothing, so it all sells to outsiders at full value'); assert.ok(f.own.outside > 0);
+  assert.ok(Math.abs(nw0 - computeNetWorthLocal(S)) <= 3, 'net worth is unchanged: the stake became cash');
   assert.equal(F.liquidateFamilyStakeOnDeath(S), 0, 'only once');
   // rich siblings really pay from savings
   const R = mk(1, 90); F.settleSuccession(R); const rf = R.familyFortune; const rs = R.relations.siblingIds.filter(i => R.people[i]?.alive); for (const id of rs) R.people[id].career = { ...(R.people[id].career || {}), savingsLocal: 1e12 };
@@ -72,7 +72,7 @@ function r6(x) { return Math.round(x * 1e6) / 1e6; }
     const own = convertCurrency(part, M.country, foreign, M.year); const worth = convertCurrency(a.career.savingsLocal, foreign, M.country, M.year);
     const mc0 = M.money.cash; const mg = F.liquidateFamilyStakeOnDeath(M);
     const expectPay = Math.min(part, worth);
-    assert.ok(Math.abs(mg - (expectPay + (mv - expectPay) * 0.9)) <= ms.length + 3, 'price is compared in one currency');
+    assert.ok(Math.abs(mg - (expectPay + (mv - expectPay))) <= ms.length + 3, 'price is compared in one currency');
     assert.ok(Math.abs(convertCurrency(a.career.savingsLocal, foreign, M.country, M.year) - (worth - expectPay)) <= 3, 'debit is in their own currency');
     assert.equal(sum(mf), 100); }
   // continueAsChild: the dead player's net worth is paid out once
