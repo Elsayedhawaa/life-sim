@@ -1085,7 +1085,7 @@ export function syncSiblingAssets(S) {
 export function siblingAssetsLine(S, id) {
   const p = S.people?.[id]; const a = p?.assets; if (!p?.alive || !a || (!a.home && !a.car)) return '';
   const R = p.residenceCountry || S.country; const bits = [];
-  if (a.home) bits.push(`a ${a.home.tier ? a.home.tier + ' ' : ''}${a.home.kind || 'home'} worth ${formatMoney(a.home.price, a.home.country || R)}`);
+  if (a.home) { const d = `${a.home.tier ? a.home.tier + ' ' : ''}${String(a.home.kind || 'home').replace(/_/g, ' ')}`; bits.push(`${/^[aeiou]/i.test(d) ? 'an' : 'a'} ${d} worth ${formatMoney(a.home.price, a.home.country || R)}`); }
   if (a.car) bits.push(`drives a ${a.car.name}`);
   return `Owns ${bits.join(' and ')}.`;
 }
