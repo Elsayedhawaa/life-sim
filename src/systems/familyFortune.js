@@ -40,7 +40,6 @@ const DIALS = {
   carGiftAge: 18,
   /* First home (wealthy, very_wealthy): an estate asset, so it leaves net worth, not the cash fund. At most this share of net worth, aimed at this share of that ceiling. */
   homeGiftAge: 22, homeCapPctOfNetWorth: 0.08, homeAimShare: { wealthy: 0.6, very_wealthy: 1.0 },
-  carCashShare: 0.35, /* cash instead of the car: a smaller amount, so the car is the better gift */
   trustYearlyPct: 0.0025,         /* of net worth, each childhood year */
   trustPerChildCapPct: 0.05,
   trustAllChildrenCapPct: 0.15,
@@ -265,48 +264,77 @@ export function buildKeysScene(S) {
   if (!o) return null;
   const pick = CARS_MEGA_CATALOG.find(c => c.id === o.catalogId);
   if (!pick) return null;
-  const cash = Math.round(o.fullPrice * DIALS.carCashShare);
   const name = `${pick.brandName} ${pick.model}`;
   const covered = f.tier === 'very_wealthy';
+  const choices = [{ label: `Take the ${name}`, effect: st => resolveKeys(st, 'car') }];
+  if (!o.asked) choices.push({ label: 'Ask for a better car', effect: st => resolveKeys(st, 'ask') });
   return {
     key: 'family_keys', category: 'family', title: 'The keys',
-    text: `For your ${o.age}th birthday your family has chosen a ${name} for you (${formatMoney(o.fullPrice, S.country)}). ${covered ? 'The family would also cover its running costs while you keep it.' : 'Running costs would be yours.'} You can take the car, or take a smaller cash gift of ${formatMoney(cash, S.country)} and choose your own transport.`,
-    choices: [
-      { label: `Take the ${name}`, effect: st => resolveKeys(st, 'car') },
-      { label: `Take ${formatMoney(cash, S.country)} cash instead`, effect: st => resolveKeys(st, 'cash') }
-    ]
+    text: `For your ${o.age}th birthday your family has chosen a ${name} for you (${formatMoney(o.fullPrice, S.country)}). ${covered ? 'The family would also cover its running costs while you keep it.' : 'Running costs would be yours.'} You can take it, or ask for a better one. They may agree or say no, and if they say no the ${name} stays on offer.`,
+    choices
   };
 }
 export function restoreKeysScene(S, saved) {
   return saved && saved.key === 'family_keys' && S.familyFortune?.carOffer ? buildKeysScene(S) : null;
 }
+
+/* Asking for more: a pricier car, granted or refused by what the family can spare and how close you are. One ask, no warmth cost either way. */
+function parentWarmth(S) {
+  let best = 0;
+  for (const id of [S.relations?.fatherId, S.relations?.motherId]) {
+    const p = id && S.people?.[id];
+    if (p && p.alive && p.rel) best = Math.max(best, ((p.rel.affection || 0) + (p.rel.trust || 0)) / 200);
+  }
+  return Math.min(1, Math.max(0, best));
+}
+function betterCarQuote(S, f, o) {
+  const pool = CARS_MEGA_CATALOG.filter(c => S.year >= c.yearFrom && S.year <= c.yearTo && !(f.tier !== 'very_wealthy' && c.priceUsd2026 > 160000));
+  const cur = CARS_MEGA_CATALOG.find(c => c.id === o.catalogId);
+  const target = (cur?.priceUsd2026 || DIALS.carTargetUsd[f.tier]) * 1.8;
+  const ranked = pool.filter(c => c.priceUsd2026 > (cur?.priceUsd2026 || 0) * 1.3).map(c => ({ c, d: Math.abs(Math.log(c.priceUsd2026 / target)) })).sort((a, b) => a.d - b.d);
+  for (const { c } of ranked.slice(0, 30)) {
+    const q = showroomCarQuote(S, c.id, 'base');
+    if (q.ok) return { car: c, q };
+  }
+  return null;
+}
 export function resolveKeys(S, how) {
   const f = S.familyFortune, o = f?.carOffer;
   if (!o) return null;
-  f.carOffer = null;
-  const pick = CARS_MEGA_CATALOG.find(c => c.id === o.catalogId);
-  if (how === 'cash') {
-    const amt = Math.min(Math.round(o.fullPrice * DIALS.carCashShare), Math.round(f.fundLocal));
-    f.fundLocal -= amt; f.yearGifts += amt;
-    walletMove(S, amt, 'Birthday gift from your family', 'family');
-    addGrant(f, S, 'cash_gift', amt, 'chose cash over the car');
-    recordJournal(S, `You took ${formatMoney(amt, S.country)} from your family instead of the car they picked. They noticed, and said it was your call.`, 'family');
-    return { how, amt };
+  let chosen = CARS_MEGA_CATALOG.find(c => c.id === o.catalogId);
+  let price = o.fullPrice, upkeep = o.monthlyUpkeep, trim = o.trimLabel;
+  if (how === 'ask' && !o.asked) {
+    const better = betterCarQuote(S, f, o);
+    const room = Math.min(giftRoom(f, S), f.fundLocal);
+    const warmth = parentWarmth(S);
+    const afford = better && better.q.fullPrice <= room;
+    const prob = afford ? Math.min(0.85, 0.25 + 0.6 * warmth) : 0;
+    const agreed = !!better && hash01(S, 77) < prob;
+    if (agreed) {
+      chosen = better.car; price = better.q.fullPrice; upkeep = better.q.monthlyUpkeep; trim = better.q.trim.label;
+      recordJournal(S, `You asked your family for something better than the car they picked. They agreed: a ${better.car.brandName} ${better.car.model}.`, 'family');
+    } else {
+      recordJournal(S, `You asked your family for something better than the car they picked. ${!better || !afford ? 'They said it was too much this year' : 'They said no'}, and the first car stays on offer. Asking did not change how they feel about you.`, 'family');
+      f.carOffer = { ...o, asked: true };
+      queueScene(S, buildKeysScene(S), true); /* the original offer comes back, one ask used */
+      return { how, agreed: false };
+    }
   }
-  const price = Math.min(o.fullPrice, Math.round(f.fundLocal));
+  f.carOffer = null;
+  price = Math.min(price, Math.round(f.fundLocal));
   f.fundLocal -= price; f.yearGifts += price;
   const color = CAR_COLORS[o.colorIdx % CAR_COLORS.length] || { name: 'Midnight Blue', hex: '#1D3557' };
   const covered = f.tier === 'very_wealthy';
   const owned = {
-    id: 'car_gift_' + S.year, catalogId: pick.id, name: `${pick.brandName} ${pick.model}`, tier: pick.tier, class: pick.class, body: pick.body,
-    colorHex: color.hex || '#1D3557', colorName: color.label || color.name || 'Metallic', trimLabel: o.trimLabel, mods: [],
-    boughtYear: S.year, valueLocal: Math.round(o.fullPrice * 0.88), monthlyUpkeep: o.monthlyUpkeep, condition: 100,
+    id: 'car_gift_' + S.year, catalogId: chosen.id, name: `${chosen.brandName} ${chosen.model}`, tier: chosen.tier, class: chosen.class, body: chosen.body,
+    colorHex: color.hex || '#1D3557', colorName: color.label || color.name || 'Metallic', trimLabel: trim, mods: [],
+    boughtYear: S.year, valueLocal: Math.round(price * 0.88), monthlyUpkeep: upkeep, condition: 100,
     gifted: true, familyCoversUpkeep: covered
   };
   S.cars.push(owned);
-  addGrant(f, S, 'car', o.fullPrice, owned.name);
-  recordJournal(S, `Your family gave you the keys to a ${owned.colorName} ${owned.name} (${formatMoney(o.fullPrice, S.country)}). ${covered ? 'The family also covers its running costs while you keep it.' : 'Running costs are yours.'}`, 'family');
-  return { how, owned };
+  addGrant(f, S, 'car', price, owned.name);
+  recordJournal(S, `Your family gave you the keys to a ${owned.colorName} ${owned.name} (${formatMoney(price, S.country)}). ${covered ? 'The family also covers its running costs while you keep it.' : 'Running costs are yours.'}`, 'family');
+  return { how, owned, agreed: how === 'ask' };
 }
 
 /* The three releases are checked every year; this also covers a birthday that lands mid-year. */

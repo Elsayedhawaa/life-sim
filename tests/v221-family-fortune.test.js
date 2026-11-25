@@ -95,8 +95,30 @@ console.log('family fortune OK');
     }
   }
   assert.ok(prices.upper_middle < prices.wealthy && prices.wealthy < prices.very_wealthy, 'car price rises with the tier: ' + JSON.stringify(prices));
-  const C = life('wealthy', 'usa', 2003, 5); toOffer(C);
-  if (C.familyFortune.carOffer) { clearKeys(C); const cash = C.money.cash, fund = C.familyFortune.fundLocal; F.resolveKeys(C, 'cash'); assert.ok(C.money.cash > cash && C.familyFortune.fundLocal < fund && !C.cars.some(c => c.gifted), 'cash choice pays less than the car, from the fund'); assert.ok(C.familyFortune.grants.find(g => g.kind === 'cash_gift').amountLocal < prices.wealthy); }
+  // Asking for a better car: the family agrees or refuses; refusal keeps the first offer; one ask only; no warmth cost.
+  let agreed = 0, refused = 0;
+  for (let seed = 1; seed <= 24 && (!agreed || !refused); seed++) {
+    const C = life('wealthy', 'usa', 2003, seed); toOffer(C);
+    if (!C.familyFortune.carOffer) continue;
+    C.activeScene = null; C.sceneQueue = (C.sceneQueue || []).filter(x => x.key !== 'family_keys');
+    const first = C.familyFortune.carOffer.catalogId, firstPrice = C.familyFortune.carOffer.fullPrice;
+    const before = JSON.stringify([C.people[C.relations.motherId]?.rel, C.people[C.relations.fatherId]?.rel]);
+    const r = F.resolveKeys(C, 'ask');
+    assert.equal(JSON.stringify([C.people[C.relations.motherId]?.rel, C.people[C.relations.fatherId]?.rel]), before, 'asking does not change warmth');
+    if (r.agreed) {
+      agreed++;
+      const car = C.cars.find(c => c.gifted);
+      assert.ok(car && car.catalogId !== first && car.valueLocal > firstPrice * 0.88, 'agreed: a pricier car');
+      assert.ok(C.familyFortune.yearGifts <= C.familyFortune.yearlyInflowLocal * F.FORTUNE_DIALS.annualGiftShareCap + 1, 'annual cap holds');
+    } else {
+      refused++;
+      assert.ok(C.familyFortune.carOffer && C.familyFortune.carOffer.asked && C.familyFortune.carOffer.catalogId === first, 'refused: the first car is still on offer');
+      assert.ok(C.activeScene?.key === 'family_keys' || (C.sceneQueue || []).some(x => x.key === 'family_keys'), 'the offer comes back');
+      assert.ok(!F.buildKeysScene(C).choices.some(c => /better/i.test(c.label)), 'no second ask');
+      F.resolveKeys(C, 'car'); assert.ok(C.cars.some(c => c.gifted && c.catalogId === first));
+    }
+  }
+  assert.ok(agreed && refused, 'both outcomes occur across lives: agreed ' + agreed + ', refused ' + refused);
   const X = life('wealthy', 'usa', 2003, 5); run(X, 12 * 30); X.familyFortune = null; X.cars = []; X.journal = [];
   F.ensureFamilyFortune(X); F.tickFamilyFortuneMonthly(X);
   assert.equal(X.cars.length, 0, 'no retroactive gift');
