@@ -279,7 +279,7 @@ function genericTemplate(S) {
     skillLabel: label + ' work',
     deadlineMonths: 2,
     variants: [
-      { title: `A ${label} job lands on your desk`, detail: `A real piece of ${label} work — the kind a ${job.title || 'person in this job'} does every week — with a deadline and a name attached to it. Do it well and it is noticed; let it slip and it is noticed too.`, achievement: `Delivered a difficult piece of ${label} work on time` },
+      { title: `${/^[aeiou]/i.test(label) ? 'An' : 'A'} ${label} job lands on your desk`, detail: `A real piece of ${label} work — the kind ${/^[aeiou]/i.test(job.title || 'person') ? 'an' : 'a'} ${job.title || 'person in this job'} does every week — with a deadline and a name attached to it. Do it well and it is noticed; let it slip and it is noticed too.`, achievement: `Delivered a difficult piece of ${label} work on time` },
       { title: `A client asks for your ${label} work by name`, detail: `A client has heard of you and wants you on their job, not just anyone in the team. It is a compliment — and a test, because the client will judge you on the result.`, achievement: `Won a client who asked for you by name` }
     ],
     hardLabel: 'Take the job yourself',
