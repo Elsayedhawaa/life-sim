@@ -458,6 +458,7 @@ export function settleSuccession(S) {
   addGrant(f, S, 'inheritance', each + stakeValue, `split with ${sibs.length} sibling${sibs.length === 1 ? '' : 's'}`);
   f.lastSuccession = { before, after: { nw: f.netWorthLocal, company: f.companyLocal, own: ownSum(f) }, cashAssets, tax, payout: out, cashOut: out, toSiblings: per, n, stakeEach, remainder: payable - out };
   recordJournal(S, `Your parents' estate was settled between ${n === 1 ? 'you' : n + ' of you'}. Properties and investments were sold. Your part: ${formatMoney(each, S.country)} in cash${f.company ? ` and ${stakeEach}% of ${f.company.name}, worth ${formatMoney(stakeValue, S.country)}` : ''}.${tax > 0 ? ` Estate tax of ${formatMoney(tax, S.country)} was paid first (a simplified game rule).` : ''}`, 'family');
+  if (f.company && sibs.length && !f.successionTalkDone && !S.activeScene) { f.successionTalk = { year: S.year }; queueScene(S, buildSuccessionScene(S), true); }
   return { share: each + stakeValue, cash: each, stakePct: stakeEach };
 }
 
@@ -496,6 +497,7 @@ export function restoreHomeScene(S, saved) {
   if (saved && saved.key === 'family_deposit' && S.familyFortune?.depositOffer) return buildDepositScene(S);
   if (saved && saved.key === 'family_bigask' && S.familyFortune?.bigAskOffer) return buildBigAskScene(S);
   if (saved && saved.key === 'family_venture' && S.familyFortune?.ventureOffer) return buildVentureScene(S);
+  if (saved && saved.key === 'family_succession' && S.familyFortune?.successionTalk) return buildSuccessionScene(S);
   return saved && saved.key === 'family_home' && S.familyFortune?.homeOffer ? buildHomeScene(S) : null;
 }
 
@@ -790,6 +792,69 @@ export function checkVentureMaturity(S, f) {
   if (sib) { sib.rel = sib.rel || {}; sib.rel.affection = Math.min(100, (sib.rel.affection || 0) + 4); sib.rel.trust = Math.min(100, (sib.rel.trust || 0) + 3); }
   recordJournal(S, `${sib ? sib.firstName + "'s" : 'The'} venture ran its three years. You got back ${formatMoney(back, S.country)} of the ${formatMoney(v.stake, S.country)} you put in (${mult < 1 ? 'a loss' : 'a gain'}). Working on it together brought you closer.`, 'family');
   return { back, mult };
+}
+
+/* --- The succession talk: after the estate is settled the company belongs to the children in equal parts. What happens next is a real family conversation.
+   Keep it together (nothing changes), buy your siblings out to lead it (each sibling must agree; you pay their stake in cash), or propose selling it and splitting
+   the proceeds (every sibling must agree; a sale costs 4%). A sibling who says no is not angry: they simply decline, but being pressed costs a little warmth. */
+const SALE_COST = 0.04;
+function sibWilling(p) { const r = p.rel || {}; return (r.affection || 0) * 0.5 + (r.trust || 0) * 0.4 - (r.resentment || 0) * 0.6 >= 40; }
+function talkSibs(S, f) { return aliveSiblings(S).filter(id => (f.own.siblings?.[id] || 0) > 0); }
+export function buyoutCost(S) {
+  const f = S.familyFortune; if (!f?.own) return 0;
+  return Math.round(talkSibs(S, f).reduce((a, id) => a + companyValue(f) * f.own.siblings[id] / 100, 0));
+}
+export function buildSuccessionScene(S) {
+  const f = S.familyFortune;
+  if (!f?.successionTalk || !f.company) return null;
+  const n = talkSibs(S, f).length;
+  return {
+    key: 'family_succession', category: 'family', title: `The future of ${f.company.name}`,
+    text: `With your parents gone, ${f.company.name} belongs to you and ${n === 1 ? 'your sibling' : 'your ' + n + ' siblings'} in equal parts. You sit down together to decide what comes next. Keeping it as it is changes nothing. Leading it alone means buying them out, about ${formatMoney(buyoutCost(S), S.country)} in cash if everyone agrees. Selling it and splitting the money costs ${Math.round(SALE_COST * 100)}% in fees and needs every one of you to agree.`,
+    choices: [
+      { label: 'Keep it together as it is', effect: st => resolveSuccessionTalk(st, 'keep') },
+      { label: `Offer to buy your siblings out (${formatMoney(buyoutCost(S), S.country)})`, effect: st => resolveSuccessionTalk(st, 'lead') },
+      { label: 'Propose selling it and splitting the money', effect: st => resolveSuccessionTalk(st, 'sell') }
+    ]
+  };
+}
+export function resolveSuccessionTalk(S, how) {
+  const f = S.familyFortune;
+  if (!f?.successionTalk) return null;
+  f.successionTalk = null; f.successionTalkDone = true;
+  const name = f.company?.name || 'the company';
+  const sibIds = talkSibs(S, f);
+  const press = (ids) => { for (const id of ids) { const q = S.people[id]; q.rel = q.rel || {}; q.rel.affection = Math.max(0, (q.rel.affection || 0) - 4); } };
+  if (how === 'keep' || !sibIds.length) { recordJournal(S, `You agreed with your siblings to keep ${name} together, in equal parts.`, 'family'); return { ok: true, how: 'keep' }; }
+  const no = sibIds.filter(id => !sibWilling(S.people[id]));
+  if (how === 'lead') {
+    const yes = sibIds.filter(id => !no.includes(id));
+    let bought = 0, paid = 0, stopped = false;
+    for (const id of yes) {
+      const pct = f.own.siblings[id]; const cost = Math.round(companyValue(f) * pct / 100);
+      if ((Number(S.money.cash) || 0) < cost) { stopped = true; continue; }
+      walletMove(S, -cost, `Bought out ${S.people[id].fullName}'s share of ${name}`, 'family');
+      const q = S.people[id]; q.career = q.career || {}; q.career.savingsLocal = (Number(q.career.savingsLocal) || 0) + Math.round(convertCurrency(cost, S.country, q.residenceCountry || S.country, S.year));
+      f.own.player = r6(f.own.player + pct); f.own.siblings[id] = 0; bought++; paid += cost;
+    }
+    f.shares = { pct: f.own.player, since: f.shares?.since || S.year };
+    press(no);
+    const ctl = f.own.player > 50;
+    recordJournal(S, `${bought ? `You bought out ${bought} sibling${bought > 1 ? 's' : ''} for ${formatMoney(paid, S.country)}. You now hold ${f.own.player}% of ${name}${ctl ? ' and lead it' : ', not enough for control'}.` : `Nobody sold you their share of ${name}.`}${no.length ? ` ${no.length} turned you down and it cost a little warmth.` : ''}${stopped ? ' You could not afford every share.' : ''}`, 'family');
+    return { ok: true, how: 'lead', bought, paid, control: ctl };
+  }
+  /* sell: everyone must agree */
+  if (no.length) { press(no); recordJournal(S, `You proposed selling ${name}. ${no.length === 1 ? 'One of your siblings' : 'Some of your siblings'} would not agree, so it stays in the family. It cost a little warmth.`, 'family'); return { ok: true, how: 'sell', sold: false }; }
+  const value = companyValue(f), net = Math.round(value * (1 - SALE_COST));
+  let mine = 0;
+  for (const id of sibIds) { const q = S.people[id]; const amt = Math.round(net * f.own.siblings[id] / 100); q.career = q.career || {}; q.career.savingsLocal = (Number(q.career.savingsLocal) || 0) + Math.round(convertCurrency(amt, S.country, q.residenceCountry || S.country, S.year)); f.own.siblings[id] = 0; }
+  mine = Math.round(net * f.own.player / 100);
+  f.own.player = 0; f.own.pool = 0; f.own.parents = 0; f.own.heirs = 0; f.companyLocal = 0; f.company.sold = true; f.shares = { pct: 0, since: S.year }; sync(f);
+  if (mine > 0) walletMove(S, mine, `Your share of the sale of ${name}`, 'family');
+  if (S.career?.employed && S.career?.job?.employer === name) { S.career.job = null; S.career.employed = false; }
+  addGrant(f, S, 'sale', mine, `sale of ${name}`);
+  recordJournal(S, `${name} was sold. After ${Math.round(SALE_COST * 100)}% in fees your part was ${formatMoney(mine, S.country)}. The company, and any job there, is gone.`, 'family');
+  return { ok: true, how: 'sell', sold: true, mine };
 }
 export function resolveHome(S, how) {
   const f = S.familyFortune, o = f?.homeOffer;
