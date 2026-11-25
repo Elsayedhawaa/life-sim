@@ -86,7 +86,7 @@ function perChildTrustCapPct(S) {
   return Math.min(DIALS.trustPerChildCapPct, DIALS.trustAllChildrenCapPct / children);
 }
 
-/* A home out of the estate is capped per child AND across all children together, the same combined rule the brief sets for trusts (15% of net worth over every child), so a bigger family cannot hand each child the full single-child ceiling. */
+/* The player's one-time first-home grant is scaled by the number of living children: min(8%, 15% / children) of net worth. This borrows the trust cap's 15% figure as provisional balance tuning (not a rule the user gave). It is NOT a lifetime all-children ledger: siblings receive no estate homes, and nothing tracks gifts across deaths or net-worth changes. */
 export function perChildHomeCapPct(S) {
   const children = 1 + siblingCount(S);
   return Math.min(DIALS.homeCapPctOfNetWorth, DIALS.trustAllChildrenCapPct / children);
