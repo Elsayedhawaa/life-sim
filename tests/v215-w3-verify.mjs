@@ -90,66 +90,13 @@ function findScene(S, baseId) {
   return (S.sceneQueue || []).find(q => q.baseId === baseId) || null;
 }
 
-/* ================= §1 — the budget is real ================= */
-{
-  const S = adultLife();
-  const f = makeFriend(S);
-  const e0 = socialEnergy(S);
-  check('§1 budget starts full (10 of 10)', e0.energy === 10 && e0.max === 10, JSON.stringify(e0));
-  check('§1 budget is a real record on the state', !!S.social && typeof S.social.energy === 'number' && typeof S.social.max === 'number');
-  const r1 = callPerson(S, f.id);
-  check('§1 call works', r1.ok === true, r1.msg || '');
-  check('§1 call costs exactly 1 energy (10 -> 9)', socialEnergy(S).energy === 9, String(socialEnergy(S).energy));
-  const r2 = visitPerson(S, f.id);
-  check('§1 visit works', r2.ok === true, r2.msg || '');
-  check('§1 visit costs exactly 3 energy (9 -> 6)', socialEnergy(S).energy === 6, String(socialEnergy(S).energy));
-  /* A failed attempt never costs energy: a gift you cannot afford. */
-  S.money.cash = 0;
-  const giftFail = interactWithPerson(S, f.id, 'gift');
-  check('§1 unaffordable gift is refused', giftFail.ok === false, giftFail.msg || '');
-  check('§1 failed gift costs no energy (still 6)', socialEnergy(S).energy === 6, String(socialEnergy(S).energy));
-  S.money.cash = 500_000;
-  /* Drain it, then the game refuses plainly. */
-  const drained = socialEnergy(S);
-  check('§1 drain helper reaches 0', (() => { while (socialEnergy(S).energy > 0) { const s = S.social; s.energy -= 1; } return socialEnergy(S).energy === 0; })(), String(drained.energy));
-  const r3 = callPerson(S, f.id);
-  check('§1 out of energy: the call is refused', r3.ok === false, r3.msg || '');
-  check('§1 refusal is plain words, names social energy + next month',
-    /out of social energy/i.test(r3.msg || '') && /next month/i.test(r3.msg || ''), r3.msg || '');
-  check('§1 refusal has no code in it', !/energyCost|undefined|NaN|\{\}|\[object/.test(r3.msg || ''), r3.msg || '');
-  /* The record survives a save/load round-trip. */
-  const roundTripped = JSON.parse(JSON.stringify(S));
-  check('§1 budget survives save/load (0 of 10 after round-trip)',
-    roundTripped.social && roundTripped.social.energy === 0 && roundTripped.social.max === 10,
-    JSON.stringify(roundTripped.social));
-}
-
-/* ================= §2 — monthly refill, measured ================= */
-{
-  const S = adultLife();
-  socialEnergy(S); // init: 10 of 10, no refill key yet
-  S.social.energy = 3;
-  settleHouseholdMonth(S); // month 1: first settlement refills
-  check('§2 settlement refills the budget (3 -> 10)', socialEnergy(S).energy === 10, String(socialEnergy(S).energy));
-  S.social.energy = 7;
-  settleHouseholdMonth(S); // same month again: refills nothing
-  check('§2 same month, second settlement refills nothing (stays 7)', socialEnergy(S).energy === 7, String(socialEnergy(S).energy));
-  S.month = 2;
-  settleHouseholdMonth(S); // new month: refills
-  check('§2 next month refills again (7 -> 10)', socialEnergy(S).energy === 10, String(socialEnergy(S).energy));
-  /* Childhood: no monthly settlement, the year-turn refills. */
-  const C = childLife();
-  socialEnergy(C);
-  C.social.energy = 0;
-  advanceSingleTurn(C);
-  check('§2 childhood year-turn refills the budget (0 -> 10)', socialEnergy(C).energy === 10, String(socialEnergy(C).energy));
-}
+/* §1 and §2 (social-energy budget and monthly refill) retired: the user removed energy from the game, so those assertions are stale. Repeat contact is now capped per person per month (tests/v221-repeat-talk.test.js). */
 
 /* ================= §3 — warned before it breaks ================= */
 {
   const S = adultLife();
   const f = makeFriend(S, { affection: 70 });
-  f.rel.lastContactTurn = S.turn - 7; // 7 months of silence, monthly pacing
+  f.rel.lastContactTurn = S.turn - 7; delete f.rel.lastContactYear; delete f.rel.lastContactMonth; // 7 months of silence, monthly pacing
   const res = tickFriendshipDrift(S);
   check('§3 7 months silent: drift tick warns (1 warned)', res.warned === 1 && res.noticed === 0, JSON.stringify(res));
   check('§3 friend is drifting, not yet noticed', f.rel.driftState === 'drifting');
@@ -166,7 +113,7 @@ function findScene(S, baseId) {
 {
   const S = adultLife();
   const f = makeFriend(S, { affection: 70 });
-  f.rel.lastContactTurn = S.turn - 13;
+  f.rel.lastContactTurn = S.turn - 13; delete f.rel.lastContactYear; delete f.rel.lastContactMonth;
   /* v2.18 W3 — the notice never fires on a friendship that was never
      warned: the first tick warns (a year of silence in one check), the
      next tick notices. */
@@ -223,7 +170,7 @@ function findScene(S, baseId) {
 {
   const S = adultLife();
   const f = makeFriend(S, { affection: 85 }); // a best friend
-  f.rel.lastContactTurn = S.turn - 14;
+  f.rel.lastContactTurn = S.turn - 14; delete f.rel.lastContactYear; delete f.rel.lastContactMonth;
   tickFriendshipDrift(S); // warning first (v2.18 W3)
   tickFriendshipDrift(S); // then the notice
   activateScene(S, `drift_notice_${f.id}`);
@@ -343,7 +290,7 @@ function findScene(S, baseId) {
 {
   const S = adultLife();
   const f = makeFriend(S, { affection: 70 });
-  f.rel.lastContactTurn = S.turn - 13;
+  f.rel.lastContactTurn = S.turn - 13; delete f.rel.lastContactYear; delete f.rel.lastContactMonth;
   tickNpcAutonomyYearly(S);
   check('§9 yearly NPC tick warns first (v2.18 W3), no notice yet', f.rel.driftState === 'drifting' && !findScene(S, `drift_notice_${f.id}`));
   tickNpcAutonomyYearly(S);
