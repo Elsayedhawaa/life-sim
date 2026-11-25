@@ -495,6 +495,7 @@ export function restoreHomeScene(S, saved) {
   if (saved && saved.key === 'family_seed' && S.familyFortune?.seedOffer) return buildSeedScene(S);
   if (saved && saved.key === 'family_deposit' && S.familyFortune?.depositOffer) return buildDepositScene(S);
   if (saved && saved.key === 'family_bigask' && S.familyFortune?.bigAskOffer) return buildBigAskScene(S);
+  if (saved && saved.key === 'family_venture' && S.familyFortune?.ventureOffer) return buildVentureScene(S);
   return saved && saved.key === 'family_home' && S.familyFortune?.homeOffer ? buildHomeScene(S) : null;
 }
 
@@ -727,6 +728,69 @@ export function resolveBigAsk(S, ask) {
   recordJournal(S, msg, 'family');
   return { ok: true, asked: true, amount: amt, full, msg };
 }
+
+/* --- The sibling venture (18+): a brother or sister invites you to co-invest ------------
+   Your own money goes in and is locked for three years. The outcome is shared and not promised (half back up to double, fixed when it matures).
+   Working it together makes you closer either way. Passing changes nothing. */
+const VENTURE_MONTHS = 36;
+function ventureStake(S, f) {
+  const cash = Number(S.money?.cash) || 0;
+  const cap = Math.round(eraLocalCost({ upper_middle: 8e3, wealthy: 40e3, very_wealthy: 250e3 }[f.tier] || 0, S.country, S.year));
+  return Math.min(Math.round(cash * 0.15), cap);
+}
+export function offerSiblingVenture(S) {
+  const f = ensureFamilyFortune(S);
+  if (!f || f.ventureOffer || f.venture) return null;
+  const age = S.player?.age ?? 0;
+  if (age < 20 || age > 45) return null;
+  if (f.ventureYear != null && S.year - f.ventureYear < 4) return null;
+  if (S.activeScene || (S.sceneQueue || []).length) return null;
+  const sibs = aliveSiblings(S).filter(id => { const q = S.people[id]; return (q.birthYear != null ? S.year - q.birthYear : (q.age ?? 99)) >= 18; });
+  if (!sibs.length || hash01(S, 233 + S.month) > 0.03) return null;
+  const sib = S.people[sibs[Math.floor(hash01(S, 239) * sibs.length)]];
+  const stake = ventureStake(S, f);
+  if (stake <= 0 || (Number(S.money?.cash) || 0) < stake * 3) return null; /* only offered when you can afford to lock it away */
+  f.ventureOffer = { sibId: sib.id, stake, year: S.year };
+  queueScene(S, buildVentureScene(S), true);
+  return f.ventureOffer;
+}
+export function buildVentureScene(S) {
+  const f = S.familyFortune, o = f?.ventureOffer;
+  const sib = o && S.people?.[o.sibId];
+  if (!sib) return null;
+  return {
+    key: 'family_venture', category: 'family', title: `${sib.firstName}'s venture`,
+    text: `${sib.firstName} is putting a venture together and asks you to put in ${formatMoney(o.stake, S.country)} of your own money. It would be locked for three years and the result is shared: you could get back as little as half or as much as double. Either way you would have worked on something together. If you pass, nothing changes between you.`,
+    choices: [
+      { label: `Put in ${formatMoney(o.stake, S.country)}`, effect: st => resolveVenture(st, true) },
+      { label: 'Pass, wish them well', effect: st => resolveVenture(st, false) }
+    ]
+  };
+}
+export function resolveVenture(S, join) {
+  const f = S.familyFortune, o = f?.ventureOffer;
+  if (!o) return null;
+  f.ventureOffer = null; f.ventureYear = S.year;
+  const sib = S.people?.[o.sibId];
+  if (!join || !sib) { recordJournal(S, `You passed on ${sib ? sib.firstName + "'s" : 'the'} venture. They understood.`, 'family'); return { ok: true, joined: false }; }
+  if ((Number(S.money?.cash) || 0) < o.stake) { recordJournal(S, `You could not put in the money for ${sib.firstName}'s venture after all. Nothing was paid.`, 'family'); return { ok: false, joined: false, reason: 'no cash' }; }
+  walletMove(S, -o.stake, `Co-invested in ${sib.fullName}'s venture`, 'family');
+  f.venture = { sibId: o.sibId, stake: o.stake, dueAbs: S.year * 12 + S.month + VENTURE_MONTHS };
+  recordJournal(S, `You put ${formatMoney(o.stake, S.country)} into ${sib.fullName}'s venture. It is locked for three years.`, 'family');
+  return { ok: true, joined: true };
+}
+export function checkVentureMaturity(S, f) {
+  const v = f?.venture;
+  if (!v || S.year * 12 + S.month < v.dueAbs) return null;
+  f.venture = null;
+  const sib = S.people?.[v.sibId];
+  const mult = Math.round((0.5 + hash01(S, 241 + v.dueAbs) * 1.5) * 100) / 100;
+  const back = Math.round(v.stake * mult);
+  walletMove(S, back, `Return from ${sib ? sib.fullName : 'the'} venture`, 'family');
+  if (sib) { sib.rel = sib.rel || {}; sib.rel.affection = Math.min(100, (sib.rel.affection || 0) + 4); sib.rel.trust = Math.min(100, (sib.rel.trust || 0) + 3); }
+  recordJournal(S, `${sib ? sib.firstName + "'s" : 'The'} venture ran its three years. You got back ${formatMoney(back, S.country)} of the ${formatMoney(v.stake, S.country)} you put in (${mult < 1 ? 'a loss' : 'a gain'}). Working on it together brought you closer.`, 'family');
+  return { back, mult };
+}
 export function resolveHome(S, how) {
   const f = S.familyFortune, o = f?.homeOffer;
   if (!o) return null;
@@ -829,7 +893,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S); offerBigAsk(S);
+  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;
