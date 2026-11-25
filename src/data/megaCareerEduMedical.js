@@ -19733,7 +19733,7 @@ export const V1_ACTIVITIES = [
       "happiness": 1
     },
     "looks": 1,
-    "line": "Up the stairs instead of the lift, and the walk home feels easier."
+    "line": "A run round the block, and your legs feel stronger."
   },
   {
     "id": "gym",
@@ -19778,7 +19778,7 @@ export const V1_ACTIVITIES = [
       "smarts": 2,
       "happiness": 1
     },
-    "line": "Ninety pages with tea. Some of it stays."
+    "line": "Ninety pages read. Some of it stays."
   },
   {
     "id": "course",

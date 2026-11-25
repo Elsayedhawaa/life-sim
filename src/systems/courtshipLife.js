@@ -38,7 +38,7 @@ export function courtshipAction(S,id,kind,serial=null){
     p.rel.affection=clamp(p.rel.affection+5);p.rel.trust=clamp(p.rel.trust+3);note(S,p,'made_time');
     recordMemory(S,p,'courtship_time','You kept time free to see each other.',{weight:1});
     recordJournal(S,`You kept an evening free for ${p.firstName}.`,'relationship');
-    return{ok:true,msg:'Made time together · 3 energy'};
+    return{ok:true,msg:'Made time together'};
   }
   if(kind==='end'){endCourtship(S,p,'player_ended');return{ok:true,msg:'Courtship ended'};}
   if(kind!=='later')return{ok:false,msg:'Choice unavailable.'};
@@ -56,7 +56,7 @@ export function buildCourtshipScene(S,id,serial){
   const months=courtshipMonthsApart(S,p),final=pending.kind==='boundary';
   return{key:`courtship_${id}_${serial}`,baseId:`courtship_${id}_${serial}`,courtshipDecision:{id,serial},category:'relationship',title:final?`${p.firstName}: Make a Plan`:`A Message from ${p.firstName}`,
     text:final?`${months} months without time together. ${p.firstName}: "I want a relationship where we actually see each other. If nothing changes, I am moving on."`:`${p.firstName}: "Are we going to see each other this month?" It has been ${months} months since you last made time.`,
-    choices:[{label:'Keep an evening free · 3 energy',available:()=>checkSocialEnergy(S,3).ok,effect:st=>courtshipAction(st,id,'time',serial)},
+    choices:[{label:'Keep an evening free',available:()=>checkSocialEnergy(S,3).ok,effect:st=>courtshipAction(st,id,'time',serial)},
       {label:S.career.employed&&S.career.job?'Take extra work · performance +2, stress +3':'Not ready to make plans',effect:st=>courtshipAction(st,id,'later',serial)},
       {label:'End the courtship',effect:st=>courtshipAction(st,id,'end',serial)}]};
 }
@@ -84,5 +84,5 @@ export function reconnectCourtship(S,id){
   }
   p.role='partner';p.relationLabel='Romantic Partner';r.lastTimeAt=now(S);r.warningAt=null;r.pending=null;r.deferrals=0;r.nextAskAt=now(S)+3;
   const c=newCoupleRecord(S,'player',id,{stage:'dating',country:S.country});S.marriage.couples.push(c);syncCoupleToLegacy(S,c);noteSocialContact(S,p);note(S,p,'reconnected');
-  recordJournal(S,`${p.firstName} agreed to meet again. You are seeing each other, not engaged.`,'relationship');return{ok:true,msg:'Agreed to meet again · 2 energy'};
+  recordJournal(S,`${p.firstName} agreed to meet again. You are seeing each other, not engaged.`,'relationship');return{ok:true,msg:'Agreed to meet again'};
 }

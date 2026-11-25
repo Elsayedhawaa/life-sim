@@ -12,16 +12,13 @@ const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').re
 
 /* The cost suffix for a relationship button: " (1 energy)" / " (3 energy)".
    Same cost table as the charge itself, so the button never lies. */
-export function socialEnergyCostLabel(S, p, verbKey) {
-  const cost = energyCostFor(verbKey, S, p);
-  return cost === 1 ? ' (1 energy)' : ` (${cost} energy)`;
+export function socialEnergyCostLabel() {
+  return ''; /* social energy was removed: buttons show no energy cost */
 }
 
 /* The budget, stated on the screen in the People tab header. */
-export function renderSocialEnergyHtml(S) {
-  const { energy, max } = socialEnergy(S);
-  const line = `Social energy: ${energy}/${max}`;
-  return `<div class="muted" style="font-size:0.85rem;margin:6px 0 2px">${esc(line)} <span title="Call 1 · Talk 2 · Visit 3 · Gift 2 · Ask for help 4" aria-label="Energy costs">ⓘ</span></div>`;
+export function renderSocialEnergyHtml() {
+  return ''; /* social energy was removed */
 }
 
 /* The drifting warning on a person card. Shown while the relationship is

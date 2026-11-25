@@ -72,8 +72,9 @@ export function ensureSocialEnergy(S) {
   if (!S) return null;
   if (!S.social || typeof S.social !== 'object') S.social = {};
   if (typeof S.social.max !== 'number' || S.social.max <= 0) S.social.max = SOCIAL_ENERGY_MAX;
-  if (typeof S.social.energy !== 'number') S.social.energy = S.social.max;
-  S.social.energy = clamp(S.social.energy, 0, S.social.max);
+  /* Social energy was removed: there is no monthly budget any more. The
+     field is kept only so old saves load; it is always full. */
+  S.social.energy = S.social.max;
   return S.social;
 }
 
@@ -105,6 +106,8 @@ export function socialEnergy(S) {
 
 /* Plain-words refusal. Never a bare false, never a code. */
 export function checkSocialEnergy(S, cost) {
+  return { ok: true }; /* no budget: relationship actions are never refused for "energy" */
+  // eslint-disable-next-line no-unreachable
   const soc = ensureSocialEnergy(S);
   if (soc.energy >= cost) return { ok: true };
   if (soc.energy <= 0) {
@@ -120,6 +123,8 @@ export function checkSocialEnergy(S, cost) {
 }
 
 export function spendSocialEnergy(S, cost) {
+  return true; /* no budget: nothing is spent */
+  // eslint-disable-next-line no-unreachable
   const soc = ensureSocialEnergy(S);
   if (soc.energy < cost) return false;
   soc.energy -= cost;
@@ -279,7 +284,7 @@ function buildDriftNoticeScene(S, p) {
     text: `You have not caught up with ${p.fullName} in ${monthsSinceContact(S, p)} months. ${close ? `${p.firstName} was one of your closest friends — the kind of friend you do not replace. ` : ''}You have both been busy. The friendship is fading, but it will not end unless you choose to let it go.`,
     choices: [
       {
-        label: `Reach out now — call ${p.firstName} (${DRIFT_REACH_OUT_COST} energy)`,
+        label: `Reach out now — call ${p.firstName}`,
         available: st => socialEnergy(st).energy >= DRIFT_REACH_OUT_COST,
         lockReason: 'Not enough social energy to call this month.',
         effect: (st) => { reachOutToDriftingFriend(st, p); }

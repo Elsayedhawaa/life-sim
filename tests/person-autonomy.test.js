@@ -14,7 +14,7 @@ function wait(s,fn,test){for(let i=0;i<120;i++){fn(s);if(test())return;s.month++
  request(s,p,'spending');let cash=s.money.cash;const cost=spouseRequestCost(s,'spending');assert.ok(answerSpouseDecision(s,p.id,true).ok);assert.equal(s.money.cash,cash-cost);assert.equal(answerSpouseDecision(s,p.id,true).ok,false);
  request(s,p,'budget');answerSpouseDecision(s,p.id,true);assert.equal(s.money.lifestyleMode,'frugal');
  request(s,p,'career');answerSpouseDecision(s,p.id,true);assert.equal(s.marriage.householdSplit,'proportional');
- request(s,p,'boundary');let energy=s.social.energy;answerSpouseDecision(s,p.id,true);assert.equal(s.social.energy,energy-3);
+ request(s,p,'boundary');let energy=s.social.energy;answerSpouseDecision(s,p.id,true);assert.equal(s.social.energy,energy);
  s.housing.properties.push({id:'second',country:'usa',name:'Second home'});m.moveTargetId='second';request(s,p,'move');assert.ok(answerSpouseDecision(s,p.id,true).ok);assert.equal(s.housing.currentHomeId,'second');
  p.relationshipProgress={stage:'separated'};request(s,p,'reconcile');assert.ok(answerSpouseDecision(s,p.id,true).ok);assert.equal(p.householdWith,'player');assert.equal(p.relationshipProgress.stage,'together');
  request(s,p,'spending');s.money.cash=0;assert.equal(answerSpouseDecision(s,p.id,true).ok,false);assert.ok(m.pending);

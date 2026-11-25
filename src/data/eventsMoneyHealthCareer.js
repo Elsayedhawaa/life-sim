@@ -25,6 +25,7 @@ import { recordJournal, walletMove, moveBalance, queueScene } from '../core/sche
 import { getCountry, formatMoney } from '../data/countries.js';
 import { eraLocalCost, eraSalary, convertCurrency } from '../data/economy.js';
 import { rememberDeed } from '../systems/soulEngine.js';
+import { noteSocialContact } from '../systems/socialEnergy.js';
 /* v2.11 W3 — the "real business plan" choice below CREATES a real
    business via Worker 1's createBusiness in businessEngine.js
    (contract: createBusiness(S, typeId, customName, opts) -> { ok, msg,
@@ -8798,43 +8799,55 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_school_friend_moves',
     category: 'school',
     repeatable: false,
-    gates: { requiredPeople: ['friend'],"minAge": 8, "maxAge": 17, "education": ["inSchool"]},
+    /* The actor is a real friend from the player's circle: close to the
+       player's own age, in the same country, and the closest of those by
+       affection. No such friend, no event. */
+    gates: { requiredPeople: ['friend'], people: { friend: { withinYearsOfPlayer: 4, sameCountry: true, minAffection: 50, byAffection: true } }, "minAge": 8, "maxAge": 17, "education": ["inSchool"]},
     build: (S, ctx) => {
-      const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
-      const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
-      const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
-      const sibName = ctx.sib ? ctx.sib.firstName : 'your sibling';
-      const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
-      const childName = ctx.child ? ctx.child.firstName : 'your child';
-      const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
+      const fr = ctx.friend;
+      if (!fr) return null;
+      const frId = fr.id;
+      const frName = fr.firstName;
+      const cities = (getCountry(S.country).cities || []).filter(c => c !== S.city && c !== fr.city);
+      const newCity = cities.length ? cities[(Number(String(frId).replace(/\D/g, '')) || 0) % cities.length] : null;
+      const moveFriend = (st) => {
+        const p = st.people[frId];
+        if (!p || !p.alive) return null;
+        if (newCity) { p.movedFrom = p.city; p.city = newCity; p.movedYear = st.year; }
+        return p;
+      };
+      const where = newCity ? ` to ${newCity}` : '';
       return {
         key: 'ev_school_friend_moves',
         category: 'school',
-        title: "Your Best Friend Moves Away",
-        text: `Your best friend’s family is moving — another city, another school, far away. The last day is Friday, and neither of you knows what to say about it.`,
+        title: `${frName} Is Moving Away`,
+        text: `${frName}, your friend from school, is moving${where}. ${frName}'s family leaves after Friday, and neither of you knows what to say about it.`,
         choices: [
           {
             label: "Promise to stay in touch",
             effect: (st) => {
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Promise to stay in touch', { affection: (+4) });
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+2));
-              recordJournal(st, `You promised your best friend you would stay in touch after the move, and meant it.`, 'school');
+              const p = moveFriend(st);
+              if (p) { rememberDeed(st, p, 'event', `Promised to stay in touch when ${frName} moved`, { affection: 4 }); noteSocialContact(st, p); }
+              st.player.vitals.happiness = clamp(st.player.vitals.happiness + 2);
+              recordJournal(st, `You promised ${frName} you would stay in touch after the move${where}. Calls and visits are now up to you.`, 'school');
             },
           },
           {
             label: "Spend the last week together",
             effect: (st) => {
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Spend the last week together', { affection: (+6) });
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (+3));
-              recordJournal(st, `You spent the last week together before your best friend moved away. It was not enough.`, 'school');
+              const p = moveFriend(st);
+              if (p) { rememberDeed(st, p, 'event', `Spent the last week together before ${frName} moved`, { affection: 6 }); noteSocialContact(st, p); }
+              st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
+              recordJournal(st, `You spent the last week with ${frName} before the move${where}. It was not enough.`, 'school');
             },
           },
           {
             label: "Pull away early \u2014 it hurts less",
             effect: (st) => {
-              if (ctx.friend) rememberDeed(st, ctx.friend, 'event', 'Pull away early — it hurts less', { affection: (-5) });
-              st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-4));
-              recordJournal(st, `You pulled away early from your best friend before the move. It hurt anyway.`, 'school');
+              const p = moveFriend(st);
+              if (p) rememberDeed(st, p, 'event', `You pulled away early when ${frName} moved`, { affection: -5, resentment: 3 });
+              st.player.vitals.happiness = clamp(st.player.vitals.happiness - 4);
+              recordJournal(st, `You pulled away from ${frName} before the move${where}. It hurt anyway, and you did not part well.`, 'school');
             },
           },
         ],
@@ -8842,7 +8855,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     },
   },
   {
-    id: 'ev_school_new_student',
+        id: 'ev_school_new_student',
     category: 'school',
     repeatable: true,
     cooldownYears: 3,

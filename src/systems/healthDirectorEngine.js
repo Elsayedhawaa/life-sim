@@ -203,7 +203,7 @@ export function tickHealthAndMortalityYearly(S) {
       /* Invariant D11: Minors NEVER receive adult cash/card/loan billing cards! Parents handle childhood care! */
       if (age < 18) {
         entry.managed = true;
-        recordJournal(S, `Diagnosed with ${picked.label.toLowerCase()} — your parents took you to the clinic and arranged medication.`, 'health');
+        recordJournal(S, `Diagnosed with ${picked.label.toLowerCase()} — your parents took you to the clinic and are handling your care.`, 'health');
       } else {
         queueScene(S,buildDiagnosisScene(S,{conditionId:entry.id,sinceYear:entry.sinceYear,year:S.year,country:S.country}));
       }

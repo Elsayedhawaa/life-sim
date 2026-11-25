@@ -1072,24 +1072,13 @@ export function maybePickDominoSoulScene(S) {
 
 /* Generate contextual, age-, role-, personality- and memory-aware dialogue for any NPC! */
 export function generateContextualLine(S, person) {
+  /* Only lines that come from a real record are returned: an open promise,
+     a recent memory, real resentment, or living in another country.
+     Generic personality or age filler ("Good to catch up", "Can we get ice
+     cream") was removed: it was not tied to anything that happened. When
+     nothing real applies the result is '' and the card shows no quote. */
   if (!person || !person.alive) return '';
-
-  /* 1. Strict Age Gating: Babies & Children NEVER speak like corporate adults! */
-  if (person.age < 4) {
-    return person.rel.affection >= 75
-      ? `*Reaches both arms up toward you and giggles happily.*`
-      : `*Playing quietly on the rug with wooden blocks.*`;
-  }
-  if (person.age < 12) {
-    return person.vitals.smarts >= 78
-      ? `"Look what I built at school today — the teacher put a gold star on it!"`
-      : `"Can we go out for ice cream and play in the park this weekend?"`;
-  }
-  if (person.age < 18) {
-    return person.role === 'child'
-      ? `"Exams are intense right now, ${S.player.gender === 'f' ? 'Mom' : 'Dad'} — I'm doing my best to make you proud."`
-      : `"Everyone at school is stressed about exam scores and what comes next."`;
-  }
+  if (person.age < 18) return '';
 
   const openProm = person.rel.promises.find(pr => pr.status === 'open');
   if (openProm) {
@@ -1121,20 +1110,13 @@ export function generateContextualLine(S, person) {
   if (person.rel.resentment >= 55) {
     return `"Let’s keep things polite and brief."`;
   }
-  if (person.traits.warmth >= 70) {
-    return `"Sit down — tell me honestly how work and life have been treating you."`;
-  }
-  if (person.traits.pride >= 72) {
-    return `"Hold your head high and make moves worth respecting."`;
-  }
-  if (person.traits.materialism >= 70) {
-    return `"Results and stability are what count in this economy."`;
-  }
-  if (person.traits.traditionalism >= 72) {
-    return `"A person who honors family duty never loses their footing."`;
-  }
-  return `"Good to catch up. Plenty going on lately."`;
+  return '';
 }
+
+/* The line plus a trailing space, or nothing: for sentences that used to end
+   with a generic quote. */
+function ctxLead(S, p) { const l = generateContextualLine(S, p); return l ? l + ' ' : ''; }
+function ctxTail(S, p) { const l = generateContextualLine(S, p); return l ? ' ' + l : ''; }
 
 /* Direct Player-Initiated Interactions from the People Screen */
 export function interactWithPerson(S, personId, action, opts = {}) {
@@ -1150,7 +1132,7 @@ export function interactWithPerson(S, personId, action, opts = {}) {
      passes energyCharged and is never charged twice. */
   const energyCost = energyCostFor(`interact:${action}`, S, p);
   let energySpent = !!opts.energyCharged;
-  const spendEnergy = () => { if (!energySpent) { spendSocialEnergy(S, energyCost); energySpent = true; } };
+  const spendEnergy = () => { if (repeatKey) { if (!S.cooldowns) S.cooldowns = {}; S.cooldowns[repeatKey] = S.turn + 1; } if (!energySpent) { spendSocialEnergy(S, energyCost); energySpent = true; } };
   if (!opts.energyCharged) {
     const e = checkSocialEnergy(S, energyCost);
     if (!e.ok) return e;
@@ -1159,6 +1141,14 @@ export function interactWithPerson(S, personId, action, opts = {}) {
   const cObj = getCountry(S.country);
   const sameCountry = p.residenceCountry === S.country;
   noteSocialContact(S, p); /* v2.15 W3 — this is a real contact: it stops any drift. */
+
+  /* No energy budget: time spent on one person is limited instead by a
+     real once-per-month record, so repeating it earns nothing extra. It is
+     marked only once the action really happens (see spendEnergy). */
+  const repeatKey = ['talk_visit', 'family_meal', 'gift'].includes(action) ? `interact_${action}_${p.id}` : null;
+  if (repeatKey && (S.cooldowns?.[repeatKey] || 0) > S.turn) {
+    return { ok: false, msg: `You already did that with ${p.firstName} this month.` };
+  }
 
   if (action === 'talk_visit') {
     spendEnergy(); /* v2.15 W3 */
@@ -1169,14 +1159,14 @@ export function interactWithPerson(S, personId, action, opts = {}) {
       S.player.vitals.happiness = clamp(S.player.vitals.happiness + 4);
       S.player.vitals.stress = clamp(S.player.vitals.stress - 4);
       const quote = generateContextualLine(S, p);
-      recordJournal(S, `You spent the afternoon with ${p.fullName} (${p.relationLabel}). ${quote}`, 'relationship');
-      return { ok: true, msg: quote };
+      recordJournal(S, `You spent the afternoon with ${p.fullName} (${p.relationLabel}).${quote ? ' ' + quote : ''}`, 'relationship');
+      return { ok: true, msg: quote || `You spent the afternoon with ${p.firstName}.` };
     } else {
       rememberDeed(S, p, 'visited', `Had a long international call.`, { affection: 5, trust: 2, resentment: -2 });
       S.player.vitals.happiness = clamp(S.player.vitals.happiness + 2);
       const quote = generateContextualLine(S, p);
-      recordJournal(S, `You called ${p.fullName} in ${getCountry(p.residenceCountry).name}. ${quote}`, 'relationship');
-      return { ok: true, msg: quote };
+      recordJournal(S, `You called ${p.fullName} in ${getCountry(p.residenceCountry).name}.${quote ? ' ' + quote : ''}`, 'relationship');
+      return { ok: true, msg: quote || `You called ${p.firstName}.` };
     }
   }
 
@@ -1350,8 +1340,8 @@ export function callPerson(S, personId) {
   S.player.vitals.happiness = clamp(S.player.vitals.happiness + 2);
   S.player.vitals.stress = clamp(S.player.vitals.stress - 1);
   const quote = generateContextualLine(S, p);
-  recordJournal(S, `You called ${p.fullName}${p.residenceCountry !== S.country ? ` in ${getCountry(p.residenceCountry).name}` : ''}. ${quote}`, 'relationship');
-  return { ok: true, msg: quote };
+  recordJournal(S, `You called ${p.fullName}${p.residenceCountry !== S.country ? ` in ${getCountry(p.residenceCountry).name}` : ''}.${quote ? ' ' + quote : ''}`, 'relationship');
+  return { ok: true, msg: quote || `You called ${p.firstName}.` };
 }
 
 /* An in-person visit: a bigger affection move than a call. Costs the trip
@@ -1379,8 +1369,8 @@ export function visitPerson(S, personId) {
   S.player.vitals.happiness = clamp(S.player.vitals.happiness + 5);
   S.player.vitals.stress = clamp(S.player.vitals.stress - 5);
   const quote = generateContextualLine(S, p);
-  recordJournal(S, `You visited ${p.fullName} in ${p.city}${trip.cost > 0 ? ` (${formatMoney(trip.cost, S.country)} for the trip)` : ''}. ${quote}`, 'relationship');
-  return { ok: true, msg: quote };
+  recordJournal(S, `You visited ${p.fullName} in ${p.city}${trip.cost > 0 ? ` (${formatMoney(trip.cost, S.country)} for the trip)` : ''}.${quote ? ' ' + quote : ''}`, 'relationship');
+  return { ok: true, msg: quote || `You visited ${p.firstName}.` };
 }
 
 /* Real shop items that make sensible gifts: era-correct, in the giftable
@@ -1428,13 +1418,13 @@ export function openGiftScene(S, personId, rebuild = false) {
     category: 'relationship',
     speakerId: p.id,
     title: `A gift for ${p.firstName} (${monthTag})`,
-    text: `You want to give ${p.fullName} something. ${generateContextualLine(S, p)} What do you choose?`,
+    text: `You want to give ${p.fullName} something. ${ctxLead(S, p)}What do you choose?`,
     choices: [
       ...spread.map(item => ({
         label: `Buy the ${item.brand} ${item.name} — ${formatMoney(item.priceLocal, S.country)}`,
         effect: (st) => {
           /* v2.15 W3 — the giving costs 2 social energy and is a real contact. */
-          if (!spendSocialEnergy(st, energyCostFor('gift', st, p))) { recordJournal(st, `You meant to give ${p.firstName} a gift, but you had no social energy left this month. It comes back at the start of next month.`, 'relationship'); return; }
+          if (oncePerTurn(st, `gift_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
           noteSocialContact(st, p);
           walletMove(st, -item.priceLocal, `Gift for ${p.fullName}: ${item.brand} ${item.name}`, 'family');
           rememberDeed(st, p, 'gift', `Gave a ${item.brand} ${item.name} (${formatMoney(item.priceLocal, S.country)}).`, {
@@ -1447,7 +1437,7 @@ export function openGiftScene(S, personId, rebuild = false) {
         label: `Give ${formatMoney(cashAmt, S.country)} in cash instead`,
         effect: (st) => {
           /* v2.15 W3 — the giving costs 2 social energy and is a real contact. */
-          if (!spendSocialEnergy(st, energyCostFor('gift', st, p))) { recordJournal(st, `You meant to give ${p.firstName} a gift, but you had no social energy left this month. It comes back at the start of next month.`, 'relationship'); return; }
+          if (oncePerTurn(st, `gift_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
           noteSocialContact(st, p);
           walletMove(st, -cashAmt, `Cash gift for ${p.fullName}`, 'family');
           p.career.savingsLocal += Math.round(convertCurrency(cashAmt, S.country, p.residenceCountry, S.year));
@@ -1461,7 +1451,7 @@ export function openGiftScene(S, personId, rebuild = false) {
         label: 'Just warm words — free, and honest',
         effect: (st) => {
           /* v2.15 W3 — warm words cost no money, but the evening still costs 2 social energy, and it is a real contact. */
-          if (!spendSocialEnergy(st, energyCostFor('gift', st, p))) { recordJournal(st, `You meant to tell ${p.firstName} what they mean to you, but you had no social energy left this month. It comes back at the start of next month.`, 'relationship'); return; }
+          if (oncePerTurn(st, `gift_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
           noteSocialContact(st, p);
           rememberDeed(st, p, 'gift', `Warm words, no money spent.`, { affection: 2, trust: 2 });
           recordJournal(st, `You told ${p.fullName} plainly what they mean to you. No gift — just the words.`, 'relationship');
@@ -1506,7 +1496,7 @@ export function openAskHelpScene(S, personId, rebuild = false) {
     category: 'relationship',
     speakerId: p.id,
     title: `Ask ${p.firstName} for help (${monthTag})`,
-    text: `You need ${p.firstName}'s help. ${generateContextualLine(S, p)} What do you ask for?`,
+    text: `You need ${p.firstName}'s help. ${ctxLead(S, p)}What do you ask for?`,
     choices: [
       {
         label: 'Ask for money from their savings',
@@ -1514,7 +1504,7 @@ export function openAskHelpScene(S, personId, rebuild = false) {
           /* v2.15 W3 — the asking costs 4 social energy and is a real
              contact; the inner call is already charged, so it must not
              charge again. */
-          if (!spendSocialEnergy(st, energyCostFor('askHelp', st, p))) { recordJournal(st, `You meant to ask ${p.firstName} for help, but you had no social energy left this month. It comes back at the start of next month.`, 'relationship'); return; }
+          if (oncePerTurn(st, `askHelp_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
           noteSocialContact(st, p);
           const r = interactWithPerson(st, personId, 'ask_for_help', { energyCharged: true });
           if (!r.ok) recordJournal(st, `${p.firstName} could not help with money: ${r.msg}`, 'relationship');
@@ -1524,7 +1514,7 @@ export function openAskHelpScene(S, personId, rebuild = false) {
         label: 'Ask for advice, not money',
         effect: (st) => {
           /* v2.15 W3 — the asking costs 4 social energy and is a real contact. */
-          if (!spendSocialEnergy(st, energyCostFor('askHelp', st, p))) { recordJournal(st, `You meant to ask ${p.firstName} for advice, but you had no social energy left this month. It comes back at the start of next month.`, 'relationship'); return; }
+          if (oncePerTurn(st, `askHelp_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
           noteSocialContact(st, p);
           if (p.rel.resentment >= 60) {
             recordJournal(st, `You asked ${p.firstName} for advice, but they are too angry with you right now to help (resentment is high — clear the air first).`, 'relationship');
@@ -1571,17 +1561,17 @@ export function openConversationScene(S, personId, rebuild = false) {
     category: 'relationship',
     speakerId: p.id,
     title: `A real conversation with ${p.firstName} (${monthTag})`,
-    text: `You sit down properly with ${p.fullName} — no small talk. ${generateContextualLine(S, p)} What do you talk about?`,
+    text: `You sit down properly with ${p.fullName} — no small talk. ${ctxLead(S, p)}What do you talk about?`,
     choices: [
       {
         label: 'Ask how work is going',
         available: () => (p.career?.monthlyIncomeLocal || 0) > 0,
         effect: (st) => {
           /* v2.15 W3 — the conversation costs 2 social energy and is a real contact. */
-          if (!spendSocialEnergy(st, energyCostFor('talk', st, p))) { recordJournal(st, `You meant to sit down properly with ${p.firstName}, but you had no social energy left this month. It comes back at the start of next month.`, 'relationship'); return; }
+          if (oncePerTurn(st, `talk_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
           noteSocialContact(st, p);
           rememberDeed(st, p, 'visited', `A long talk about work and where life is heading.`, { affection: 5, trust: 3 });
-          recordJournal(st, `You talked properly with ${p.fullName} about work — the pressures, the plans, what comes next. ${generateContextualLine(st, p)}`, 'relationship');
+          recordJournal(st, `You talked properly with ${p.fullName} about work — the pressures, the plans, what comes next.${ctxTail(st, p)}`, 'relationship');
         }
       },
       {
@@ -1589,7 +1579,7 @@ export function openConversationScene(S, personId, rebuild = false) {
         available: () => isFamily,
         effect: (st) => {
           /* v2.15 W3 — the conversation costs 2 social energy and is a real contact. */
-          if (!spendSocialEnergy(st, energyCostFor('talk', st, p))) { recordJournal(st, `You meant to sit down properly with ${p.firstName}, but you had no social energy left this month. It comes back at the start of next month.`, 'relationship'); return; }
+          if (oncePerTurn(st, `talk_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
           noteSocialContact(st, p);
           rememberDeed(st, p, 'visited', `A long family talk.`, { affection: 5, respect: 2 });
           recordJournal(st, `You and ${p.fullName} talked family — who needs help, who is proud of whom, what home means now.`, 'relationship');
@@ -1600,7 +1590,7 @@ export function openConversationScene(S, personId, rebuild = false) {
         available: () => p.rel.resentment > 10,
         effect: (st) => {
           /* v2.15 W3 — the conversation costs 2 social energy and is a real contact. */
-          if (!spendSocialEnergy(st, energyCostFor('talk', st, p))) { recordJournal(st, `You meant to apologise to ${p.firstName}, but you had no social energy left this month. It comes back at the start of next month.`, 'relationship'); return; }
+          if (oncePerTurn(st, `talk_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
           noteSocialContact(st, p);
           p.rel.resentment = clamp(p.rel.resentment - 15);
           p.rel.trust = clamp(p.rel.trust + 5);
@@ -1612,7 +1602,7 @@ export function openConversationScene(S, personId, rebuild = false) {
         label: 'Share your own news',
         effect: (st) => {
           /* v2.15 W3 — the conversation costs 2 social energy and is a real contact. */
-          if (!spendSocialEnergy(st, energyCostFor('talk', st, p))) { recordJournal(st, `You meant to tell ${p.firstName} your real news, but you had no social energy left this month. It comes back at the start of next month.`, 'relationship'); return; }
+          if (oncePerTurn(st, `talk_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
           noteSocialContact(st, p);
           rememberDeed(st, p, 'visited', `Shared real news about your life.`, { affection: 4, trust: 3 });
           st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
@@ -1623,11 +1613,11 @@ export function openConversationScene(S, personId, rebuild = false) {
         label: 'Ask for their honest advice',
         effect: (st) => {
           /* v2.15 W3 — the conversation costs 2 social energy and is a real contact. */
-          if (!spendSocialEnergy(st, energyCostFor('talk', st, p))) { recordJournal(st, `You meant to ask ${p.firstName} for honest advice, but you had no social energy left this month. It comes back at the start of next month.`, 'relationship'); return; }
+          if (oncePerTurn(st, `talk_${p.id}`)) { recordJournal(st, `You already spent that time with ${p.firstName} this month, so this one changes nothing more.`, 'relationship'); return; }
           noteSocialContact(st, p);
           st.player.vitals.smarts = clamp(st.player.vitals.smarts + 2);
           p.rel.trust = clamp(p.rel.trust + 3);
-          recordJournal(st, `You asked ${p.fullName} for honest advice, and took it seriously. ${generateContextualLine(st, p)}`, 'relationship');
+          recordJournal(st, `You asked ${p.fullName} for honest advice, and took it seriously.${ctxTail(st, p)}`, 'relationship');
         }
       }
     ]

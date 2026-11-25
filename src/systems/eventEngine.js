@@ -156,6 +156,8 @@ function personFitsEvent(S,p,rules={}){
  if(rules.minAge!==undefined&&p.age<rules.minAge)return false;
  if(rules.maxAge!==undefined&&p.age>rules.maxAge)return false;
  if(rules.sameCountry!==undefined&&(p.residenceCountry===S.country)!==rules.sameCountry)return false;
+ if(rules.withinYearsOfPlayer!==undefined&&Math.abs(p.age-S.player.age)>rules.withinYearsOfPlayer)return false;
+ if(rules.minAffection!==undefined&&(p.rel?.affection??0)<rules.minAffection)return false;
  if(rules.minMonthsApart!==undefined&&(p.rel?.lastContactUnknown||!Number.isFinite(p.rel?.lastContactYear)||!Number.isFinite(p.rel?.lastContactMonth)||monthsSinceContact(S,p)<rules.minMonthsApart))return false;
  if(rules.retiredWithinYears!==undefined&&!(Number.isFinite(p.career?.retiredYear)&&S.year-p.career.retiredYear>=0&&S.year-p.career.retiredYear<=rules.retiredWithinYears))return false;
  if(rules.maxHealth!==undefined&&(p.vitals?.health??100)>rules.maxHealth)return false;
@@ -181,7 +183,7 @@ export function resolveEventCtx(S, event=null) {
     boss: (S.career.job && S.career.job.bossId ? byId(S.career.job.bossId) : null),
   };
   const roleIds={spouse:[...(S.relations.spouseIds||[]),S.relations.partnerId],mom:[S.relations.motherId],dad:[S.relations.fatherId],sib:S.relations.siblingIds,friend:S.relations.friendIds,child:S.relations.childIds,youngChild:S.relations.childIds,teen:S.relations.childIds,adultChild:S.relations.childIds,boss:[S.career.job?.bossId]};
-  for(const [role,rules]of Object.entries(event?.gates?.people||{}))ctx[role]=(roleIds[role]||[]).map(byId).find(p=>personFitsEvent(S,p,rules))||null;
+  for(const [role,rules]of Object.entries(event?.gates?.people||{})){const fits=(roleIds[role]||[]).map(byId).filter(p=>personFitsEvent(S,p,rules));if(rules.byAffection)fits.sort((a,b)=>(b.rel?.affection??0)-(a.rel?.affection??0));ctx[role]=fits[0]||null;}
   const ri=event?.gates?.relativeIll;
   if(ri){const key={mother:'mom',father:'dad',spouse:'spouse',sibling:'sib',child:'child'}[ri.role];if(key)ctx[key]=illRelative(S,ri.role,{});}
   const major=event?.gates?.afterMajor;

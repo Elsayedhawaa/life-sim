@@ -8003,14 +8003,14 @@ export const EVENTS_EVERYDAY_FAMILY = [
         title: 'The Empty Room',
         text: `${chName} has moved out. Their old room is available. You could invite them over, call, or use the space differently.`,
         choices: [
-          { label: `Invite them for dinner (${formatMoney(dinner, S.country)}) · 2 energy`, available:()=>S.money.cash>=dinner&&checkSocialEnergy(S,2).ok, effect: (st) => {
+          { label: `Invite them for dinner (${formatMoney(dinner, S.country)})`, available:()=>S.money.cash>=dinner&&checkSocialEnergy(S,2).ok, effect: (st) => {
               if(st.money.cash<dinner||!checkSocialEnergy(st,2).ok)return;spendSocialEnergy(st,2);if(child)noteSocialContact(st,child);
               walletMove(st, -dinner, `Dinner with ${chName}`, 'money');
               if (child) { child.rel.affection = clamp(child.rel.affection + 10); child.rel.trust = clamp(child.rel.trust + 6); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 4);
               recordJournal(st, `You invited ${chName} for dinner after the move. No recurring dinner or cost was scheduled.`, 'children');
           } },
-          { label: 'Call to catch up · 1 energy', available:()=>checkSocialEnergy(S,1).ok, effect: (st) => {
+          { label: 'Call to catch up', available:()=>checkSocialEnergy(S,1).ok, effect: (st) => {
               if(!checkSocialEnergy(st,1).ok)return;spendSocialEnergy(st,1);if(child)noteSocialContact(st,child);
               if (child) { child.rel.affection = clamp(child.rel.affection + 8); child.rel.trust = clamp(child.rel.trust + 6); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
