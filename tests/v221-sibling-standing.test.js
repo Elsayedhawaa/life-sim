@@ -32,7 +32,13 @@ const mk = (tier, seed = 2) => { const S = createNewLifeState({ seed, country: '
   assert.ok(p.assets.home.price <= 50e6 * 0.25 && p.assets.car.price <= 50e6 * 0.03);
   const snap = JSON.stringify(p.assets); assert.equal(F.syncSiblingAssets(S), 0, 'bought once'); assert.equal(JSON.stringify(p.assets), snap);
   assert.match(F.siblingAssetsLine(S, id), /^Owns a .* worth .* and drives a /);
-  const worth = p.career.savingsLocal + p.assets.home.price + p.assets.car.price; p.alive = false; F.syncSiblingAssets(S); assert.equal(p.career.savingsLocal, worth, 'on death the assets return to savings at the same value'); assert.equal(F.siblingAssetsLine(S, id), ''); assert.equal(F.syncSiblingAssets(S), 0);
+  const worth = p.career.savingsLocal + p.assets.home.price + p.assets.car.price; const hp0 = p.assets.home.price; p.residenceCountry = 'jpn'; const { convertCurrency } = await import('../src/data/economy.js'); const worthJ = Math.round(p.career.savingsLocal + convertCurrency(p.assets.home.price, 'usa', 'jpn', S.year) + convertCurrency(p.assets.car.price, 'usa', 'jpn', S.year)); p.career.savingsLocal = Math.round(convertCurrency(p.career.savingsLocal, 'usa', 'jpn', S.year)); p.alive = false; F.syncSiblingAssets(S); assert.ok(Math.abs(p.career.savingsLocal - Math.round(convertCurrency(worth, 'usa', 'jpn', S.year))) <= 3, 'on death the assets return to savings at the same value, in the currency they live in'); assert.equal(F.siblingAssetsLine(S, id), ''); assert.equal(F.syncSiblingAssets(S), 0);
   const q = mk('very_wealthy'); const qid = q.relations.siblingIds.find(i => q.people[i]?.alive); if (qid) { q.people[qid].age = 40; q.people[qid].career = { ...(q.people[qid].career || {}), savingsLocal: 1000 }; F.syncSiblingAssets(q); assert.ok(!q.people[qid].assets?.home, 'modest savings buy no home'); }
   const m = mk('middle'); assert.equal(F.syncSiblingAssets(m), 0, 'ordinary family untouched'); }
+{ /* wealth grows: they upgrade, the old home is taken back at its recorded value, nothing is created */
+  let S = mk('very_wealthy'); for (let sd = 3; S.relations.siblingIds.filter(i => S.people[i]?.alive).length < 1 && sd < 200; sd++) S = mk('very_wealthy', sd);
+  const id = S.relations.siblingIds.find(i => S.people[i]?.alive), p = S.people[id]; p.age = 40; p.residenceCountry = 'usa'; p.career = { ...(p.career || {}), savingsLocal: 3e6 }; F.syncSiblingAssets(S);
+  const h0 = p.assets.home?.price || 0, c0 = p.assets.car?.price || 0; assert.ok(h0 > 0);
+  p.career.savingsLocal += 200e6; const total0 = p.career.savingsLocal + h0 + c0; F.syncSiblingAssets(S);
+  assert.ok(p.assets.home.price > h0 * 2, 'a richer sibling lives in a bigger home'); assert.equal(p.career.savingsLocal + p.assets.home.price + p.assets.car.price, total0, 'net worth unchanged by the move'); const snap = JSON.stringify(p.assets); assert.equal(F.syncSiblingAssets(S), 0); assert.equal(JSON.stringify(p.assets), snap); }
 console.log('sibling standing OK');

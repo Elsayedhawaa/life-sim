@@ -1054,28 +1054,30 @@ export function syncSiblingStanding(S, f) {
   }
   return n;
 }
-/* Sibling homes and cars (rich siblings as people). They are bought from the sibling's own savings, once each, in the currency they live in:
+/* Sibling homes and cars (rich siblings as people). They are bought from the sibling's own savings, and upgraded only to something more than twice the price of what they hold (the old one is taken back at its recorded value), in the currency they live in:
    the price leaves their savings and becomes an asset of the same value, so nothing is created. A home is the dearest property in their country
    that costs at most a quarter of their savings, only when savings are at least four times its price; a car is the dearest that costs at most 3% of savings.
    If the sibling dies, the assets go back into their savings at the same value before the existing estate handling runs, so nothing is stranded or lost. */
+const assetIn = (a, R, year) => a ? Math.round(convertCurrency(a.price, a.country || R, R, year)) : 0; /* an asset keeps the currency it was bought in; it is valued in the sibling's current currency */
 export function syncSiblingAssets(S) {
   const f = S.familyFortune; if (!f || !hasFortune(S)) return 0;
   let n = 0;
   for (const id of S.relations?.siblingIds || []) {
     const p = S.people?.[id]; if (!p) continue;
     p.career = p.career || {}; const a = p.assets;
-    if (!p.alive) { if (a && (a.home || a.car)) { p.career.savingsLocal = (Number(p.career.savingsLocal) || 0) + (a.home?.price || 0) + (a.car?.price || 0); p.assets = {}; n++; } continue; }
+    if (!p.alive) { if (a && (a.home || a.car)) { const R0 = p.residenceCountry || S.country; p.career.savingsLocal = (Number(p.career.savingsLocal) || 0) + assetIn(a.home, R0, S.year) + assetIn(a.car, R0, S.year); p.assets = {}; n++; } continue; }
     if ((p.age ?? 0) < 26) continue;
     const R = p.residenceCountry || S.country, sav = Number(p.career.savingsLocal) || 0;
     p.assets = p.assets || {};
-    if (!p.assets.home && sav > 0) {
-      const list = getHousingFor(R, S.year).map(h => ({ h, price: Math.round(eraLocalCost(h.price2026, R, S.year)) })).filter(x => x.price > 0 && x.price <= sav * 0.25 && sav >= x.price * 4).sort((x, y) => y.price - x.price);
-      if (list.length) { const t = list[0]; p.career.savingsLocal = sav - t.price; p.assets.home = { id: t.h.id, kind: t.h.kind, tier: t.h.tier, price: t.price, year: S.year }; n++; }
+    if (sav > 0) {
+      const curH = assetIn(p.assets.home, R, S.year), sa = sav + curH; /* upgrading sells the old one at its recorded value, so nothing is created */
+      const up = getHousingFor(R, S.year).map(h => ({ h, price: Math.round(eraLocalCost(h.price2026, R, S.year)) })).filter(x => x.price > curH * 2 && x.price > 0 && x.price <= sa * 0.25 && sa >= x.price * 4).sort((x, y) => y.price - x.price);
+      if (up.length) { const t = up[0]; p.career.savingsLocal = sa - t.price; p.assets.home = { id: t.h.id, kind: t.h.kind, tier: t.h.tier, price: t.price, country: R, year: S.year }; n++; }
     }
     const sav2 = Number(p.career.savingsLocal) || 0;
-    if (!p.assets.car && sav2 > 0) {
-      const cars = getCarsForYear(S.year).map(c => ({ c, price: Math.round(convertCurrency(eraLocalCost(c.priceUsd2026, 'usa', S.year), 'usa', R, S.year)) })).filter(x => x.price > 0 && x.price <= sav2 * 0.03).sort((x, y) => y.price - x.price);
-      if (cars.length) { const t = cars[0]; p.career.savingsLocal = sav2 - t.price; p.assets.car = { id: t.c.id, name: t.c.name, price: t.price, year: S.year }; n++; }
+    if (sav2 > 0) {
+      const cars = getCarsForYear(S.year).map(c => ({ c, price: Math.round(convertCurrency(eraLocalCost(c.priceUsd2026, 'usa', S.year), 'usa', R, S.year)) })).filter(x => x.price > assetIn(p.assets.car, R, S.year) * 2 && x.price > 0 && x.price <= (sav2 + assetIn(p.assets.car, R, S.year)) * 0.03).sort((x, y) => y.price - x.price);
+      if (cars.length) { const t = cars[0]; p.career.savingsLocal = sav2 + assetIn(p.assets.car, R, S.year) - t.price; p.assets.car = { id: t.c.id, name: t.c.name, price: t.price, country: R, year: S.year }; n++; }
     }
   }
   return n;
@@ -1083,7 +1085,7 @@ export function syncSiblingAssets(S) {
 export function siblingAssetsLine(S, id) {
   const p = S.people?.[id]; const a = p?.assets; if (!p?.alive || !a || (!a.home && !a.car)) return '';
   const R = p.residenceCountry || S.country; const bits = [];
-  if (a.home) bits.push(`a ${a.home.tier ? a.home.tier + ' ' : ''}${a.home.kind || 'home'} worth ${formatMoney(a.home.price, R)}`);
+  if (a.home) bits.push(`a ${a.home.tier ? a.home.tier + ' ' : ''}${a.home.kind || 'home'} worth ${formatMoney(a.home.price, a.home.country || R)}`);
   if (a.car) bits.push(`drives a ${a.car.name}`);
   return `Owns ${bits.join(' and ')}.`;
 }
