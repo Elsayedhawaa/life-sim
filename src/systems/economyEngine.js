@@ -799,11 +799,22 @@ export function settleHouseholdMonth(S) {
           recordLedgerEntry(S, fee, `Late fee on ${biz.name} unpaid costs (miss ${biz.misses})`, 'debt', 'loan', biz.debtLocal);
           S.money.creditScore = clamp(S.money.creditScore - 12, 300, 850);
           const catchUpActive = Number(biz.fate?.bankCatchUpUntil) >= S.year * 12 + S.month;
-          if (catchUpActive) {
-            recordJournal(S, `${biz.name} remains open under its catch-up agreement. Bills and late fees still add to the debt.`, 'money');
-          } else if (biz.misses === 2) {
+          /* One warning per missed-bill streak, whatever the bank's catch-up window says: the window pauses closure, it never removes the warning. The streak is identified by the month the debt began. */
+          const streak = `${biz.debtSinceYear}-${biz.debtSinceMonth}`;
+          biz.fate ??= {};
+          const warned = biz.fate.closureWarnedStreak === streak;
+          if (biz.misses === 2 && !warned) {
+            biz.fate.closureWarnedStreak = streak;
             debtMissedWarning(S, `missed_biz_${biz.id}`, `Second Missed Business Payment — ${biz.name}`,
-              `${biz.name} has missed two months of its bills (${formatMoney(biz.debtLocal, S.country)} now owed). One more missed month and the business will be closed and sold for salvage — inject cash, cut costs, or sell it now.`);
+              `${biz.name} has missed two months of its bills (${formatMoney(biz.debtLocal, S.country)} now owed). ${catchUpActive ? 'Your bank\'s catch-up window pauses closure for now, but it ends soon. ' : ''}One more missed month once the pause is over and the business will be closed and sold for salvage — inject cash, cut costs, or sell it now.`);
+          } else if (catchUpActive) {
+            recordJournal(S, `${biz.name} remains open under its catch-up agreement. Bills and late fees still add to the debt.`, 'money');
+          } else if (biz.misses >= 3 && !warned) {
+            /* The window ended with the streak never warned about: warn now and close only if the next month is missed too. */
+            biz.fate.closureWarnedStreak = streak;
+            biz.misses = 2;
+            debtMissedWarning(S, `missed_biz_${biz.id}_final_${S.year}_${S.month}`, `Final Warning — ${biz.name}`,
+              `The catch-up window for ${biz.name} has ended and ${formatMoney(biz.debtLocal, S.country)} is still owed. Miss one more month and the business will be closed and sold for salvage — inject cash, cut costs, or sell it now.`);
           } else if (biz.misses >= 3) {
             const closed = closeBusiness(S, biz, '3 missed monthly payments', { viaSettlement: true });
             if (closed.ok && closed.salvage > 0) {

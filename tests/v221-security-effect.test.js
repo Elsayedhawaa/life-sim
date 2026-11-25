@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { createNewLifeState, ensureExtendedState } from '../src/core/schema.js';
+import { personEffectText } from '../src/systems/businessRoles.js';
+import { tickBusinessSafety } from '../src/systems/businessSafety.js';
+const S = createNewLifeState({ seed: 5, country: 'egy', birthYear: 1990, familyTier: 'middle', gender: 'm' }); ensureExtendedState(S); S.year = 2024; S.month = 6;
+const mk = (staff) => ({ id: 'b', typeId: 'cafe', monthlyRev: 30000, staff, safetyMonth: null });
+const guard = { id: 'g', name: 'Karim', role: 'security', skill: 70, wage: 4000, morale: 70 };
+const txt = personEffectText(S, mk([guard]), guard);
+assert.ok(/robbery/i.test(txt) && /1\.7%/.test(txt) && /2\.1%/.test(txt), 'staff line states the real numbers: ' + txt);
+const noGuard = tickBusinessSafety(S, mk([]), { forceTheft: true });
+const withGuard = tickBusinessSafety(S, mk([guard]), { forceTheft: true });
+assert.ok(withGuard.cost < noGuard.cost, `guard lowers a robbery's cost: ${withGuard.cost} < ${noGuard.cost}`);
+const b1 = mk([guard]); tickBusinessSafety(S, b1, { forceTheft: false }); assert.ok(b1.safety > 45 + 40, 'safety score rises with guard skill: ' + b1.safety);
+console.log('security-effect OK');

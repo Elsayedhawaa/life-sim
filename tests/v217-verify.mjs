@@ -97,8 +97,12 @@ function addFriend(S, affection = 68) {
   S.relations.friendIds = ['fr1'];
   return S.people['fr1'];
 }
+/* Fixture: prefer a physical venture (cafe). businessEngine unshifts 'tech_founder' first, and tech/enterprise ventures take their own monthly path (computeTechMonth) that skips brand, group, distress and branch logic by design, so the generic-mechanics checks must not launch one. */
 function pickLaunchable(S) {
-  for (const v of listAllBusinessVentures(S)) {
+  const all = listAllBusinessVentures(S);
+  const cafe = all.find((v) => v.id === 'cafe');
+  if (cafe && evaluateBusinessLaunch(S, cafe).ok) return cafe;
+  for (const v of all) {
     const ev = evaluateBusinessLaunch(S, v);
     if (ev.ok) return v;
   }
@@ -112,14 +116,20 @@ function launchBiz(S, typeId = null) {
 }
 /* Advance n months, clicking through any scene that opens (choice 0),
    the way a player tapping through would. Returns months actually run. */
+/* Harness: resolve a scene with its first AVAILABLE choice. Choice 0 can be locked (for example "Clear the arrears" with no cash), and resolving it returns ok:false without advancing, so a loop would spin on the same scene forever. */
+function resolveFirstAvailable(S) {
+  const sc = S.activeScene; if (!sc) return;
+  const i = sc.choices.findIndex((c) => typeof c.available !== 'function' || c.available(S));
+  resolveActiveSceneChoice(S, i < 0 ? 0 : i);
+}
 function runMonths(S, n) {
   let ran = 0;
   for (let i = 0; i < n; i++) {
     if (S.gameOver) break;
-    if (S.activeScene) { resolveActiveSceneChoice(S, 0); continue; }
+    if (S.activeScene) { resolveFirstAvailable(S); continue; }
     advanceSingleTurn(S);
     ran++;
-    if (S.activeScene) resolveActiveSceneChoice(S, 0);
+    if (S.activeScene) resolveFirstAvailable(S);
   }
   return ran;
 }
@@ -349,7 +359,15 @@ section('5. Hiring in real positions');
         try {
           const a = businessRoles.roleEffects(S, base);
           const b = businessRoles.roleEffects(S, withRole);
-          if (JSON.stringify(a) !== JSON.stringify(b)) { moved++; movedRoles.push(role); }
+          if (JSON.stringify({ ...a, notes: 0 }) !== JSON.stringify({ ...b, notes: 0 })) { moved++; movedRoles.push(role); } /* numbers only: a note line is text, not a moved number */
+          else if (role === 'security') {
+            /* Security acts through businessSafety (robbery chance and loss), not roleEffects: count it when the safety module's robbery cost really drops with a guard and the staff line states it. */
+            const sf = await import('../src/systems/businessSafety.js');
+            const mk = (staff) => ({ ...handBiz({ staff }), safetyMonth: null });
+            const c0 = sf.tickBusinessSafety(S, mk([]), { forceTheft: true }).cost;
+            const c1 = sf.tickBusinessSafety(S, mk(withRole.staff), { forceTheft: true }).cost;
+            if (c1 < c0 && /robbery/i.test(businessRoles.personEffectText(S, withRole, withRole.staff[0]))) { moved++; movedRoles.push(role + '(via safety)'); }
+          }
         } catch (e) { /* a role that throws counts as not moving anything */ }
       }
       check('5b each role moves a real number', moved > 0 && moved === Math.min(roles.slice(0, 8).length, 8), `roles moving a number: ${movedRoles.join(', ') || 'none'}`, 'W3');
@@ -462,7 +480,7 @@ section('7. Fate reaches the life');
         lastPL: { revenue: 10000, costs: 20000, tax: 0, net: -10000 },
       });
       S.career.businesses = [biz];
-      S.money.loans = [{ id: 'loan1', label: 'Business Loan — Hawaa Cafe (5y)', balance: 200000, monthlyPayment: 5000, annualRate: 0.15, remainingMonths: 24, country: 'egy', missedMonths: 0, purpose: 'business', businessId: 'biz_hand1', assetKind: 'business' }];
+      S.money.loans = [{ id: 'loan1', label: 'Business Loan — Hawaa Cafe (5y)', balance: 200000, monthlyPayment: 9698, annualRate: 0.15, remainingMonths: 24, country: 'egy', missedMonths: 0, purpose: 'business', businessId: 'biz_hand1', assetKind: 'business' }];
       const rep = checkBusinessFate(S);
       const scene = activeScene(S);
       const isBank = scene && /Bank Calls/.test(scene.title);
@@ -593,7 +611,7 @@ section('7. Fate reaches the life');
       addSpouse(S); addFriend(S);
       const biz = handBiz({ dead: true, deathCause: 'three months of losses ate the capital', monthsLosing: 3, loanId: 'loan1', lastPL: { revenue: 10000, costs: 20000, tax: 0, net: -10000 } });
       S.career.businesses = [biz];
-      S.money.loans = [{ id: 'loan1', label: 'Business Loan — Hawaa Cafe (5y)', balance: 200000, monthlyPayment: 5000, annualRate: 0.15, remainingMonths: 24, country: 'egy', missedMonths: 0, purpose: 'business', businessId: 'biz_hand1', assetKind: 'business' }];
+      S.money.loans = [{ id: 'loan1', label: 'Business Loan — Hawaa Cafe (5y)', balance: 200000, monthlyPayment: 9698, annualRate: 0.15, remainingMonths: 24, country: 'egy', missedMonths: 0, purpose: 'business', businessId: 'biz_hand1', assetKind: 'business' }];
       const first = checkBusinessFate(S);
       const second = checkBusinessFate(S);
       check('7g no refire in the same month (one fate scene per business per month)', first.fired.length === 1 && second.fired.length === 0, `first=${first.fired.length}, second=${second.fired.length}`);
@@ -630,7 +648,7 @@ section('8. Branch hire-manager wart');
     check('8b no signpost button remains in the render', false, 'no branch to render');
     check('8c the row hire button hires a manager for the branch for real', false, 'no branch to hire for');
   } else {
-    const html = renderWorkTabHtml(S, { workSub: 'ventures' });
+    const html = renderWorkTabHtml(S, { workSub: 'ventures', bizTab: 'growth' }); /* branches now live under the Growth tab of the business desk */
     const rowHasRealHire = new RegExp(`data-action="biz-hire-manager"[^>]*data-biz="${branch.id}"`).test(html);
     const wageOnButton = /data-action="biz-hire-manager"[^>]*data-biz="[^"]*"[^>]*data-wage="[1-9][0-9]*"/.test(html)
       || /data-action="biz-hire-manager"[^>]*data-wage="[1-9][0-9]*"[^>]*data-biz="[^"]*"/.test(html);

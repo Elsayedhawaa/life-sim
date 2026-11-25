@@ -218,6 +218,11 @@ export function personEffectText(S, biz, emp, precomputed) {
   if (Math.abs(c.moraleDelta) >= 1) {
     parts.push(c.moraleDelta > 0 ? 'lifts the team' : 'drags the team down');
   }
+  if (emp?.role === 'security') {
+    /* Same formulas as tickBusinessSafety: robbery chance 4% x (1 - skill/120), loss 5% of monthly sales x (1 - skill/120). Random, so the guard shows up in the books only in a month a robbery happens. */
+    const k = 1 - Math.max(0, Math.min(100, Number(emp.skill) || 0)) / 120;
+    parts.push(`cuts robbery risk to about ${(4 * k).toFixed(1)}% a month (from 4%) and the loss to ${(5 * k).toFixed(1)}% of monthly sales (from 5%). It only shows in the books in a month a robbery happens`);
+  }
   if (c.dishonest) {
     parts.push('the till never adds up — money is going missing');
   }
