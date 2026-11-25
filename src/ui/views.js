@@ -1,5 +1,5 @@
 import { lenderCreditScore, familyNameCreditPoints, familyNameInterviewPoints } from '../systems/familyName.js';
-import { isFortuneParent, askPreview, familyLedgerView, siblingStakeLine } from '../systems/familyFortune.js';
+import { isFortuneParent, askPreview, familyLedgerView, siblingStakeLine, siblingAssetsLine, siblingEmployerLine } from '../systems/familyFortune.js';
 import {courtshipMonthsApart} from '../systems/courtshipLife.js';
 import{personalLoanGates}from'../systems/economyEngine.js';
 import{renderHiring}from'../systems/companyHiring.js';
@@ -1518,14 +1518,14 @@ function renderNpcCardHtml(S, p) {
             <span class="npc-role-badge">${esc(p.relationLabel)} · ${esc(pCountry.name)}</span>
           </div>
           <div class="muted" style="font-size:0.8rem">
-            ${esc(p.career.title)}${p.career.monthlyIncomeLocal > 0 ? ` (${esc(formatMoney(p.career.monthlyIncomeLocal, p.residenceCountry, true))}/mo)` : ''} · Traits: <strong>${esc(p.traitTags.join(', '))}</strong>
+            ${esc(p.career.title)}${p.role === 'sibling' ? esc(siblingEmployerLine(S, p.id)) : ''}${p.career.monthlyIncomeLocal > 0 ? ` (${esc(formatMoney(p.career.monthlyIncomeLocal, p.residenceCountry, true))}/mo)` : ''} · Traits: <strong>${esc(p.traitTags.join(', '))}</strong>
           </div>
           ${['father', 'mother', 'sibling', 'spouse', 'partner', 'child'].includes(p.role) ? `
             <div class="muted" style="font-size:0.8rem">
               ${(Number(p.career?.savingsLocal) || 0) > 0
                 ? `Holds about <strong>${esc(formatMoney(p.career.savingsLocal, p.residenceCountry || S.country))}</strong> in savings of their own.`
                 : 'No savings put aside of their own.'}
-              ${p.role === 'sibling' && siblingStakeLine(S, p.id) ? ` ${esc(siblingStakeLine(S, p.id))}` : ''}
+              ${p.role === 'sibling' && (siblingStakeLine(S, p.id) || siblingAssetsLine(S, p.id)) ? ` ${esc(siblingStakeLine(S, p.id))} ${esc(siblingAssetsLine(S, p.id))}` : ''}
             </div>
           ` : ''}
           ${quote ? `<div class="npc-quote">${esc(quote)}</div>` : ''}

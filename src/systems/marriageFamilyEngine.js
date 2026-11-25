@@ -18,7 +18,7 @@ import {
 } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { eraLocalCost, eraSalary, goldPricePerGram, convertCurrency } from '../data/economy.js';
-import { payWeddingHelp } from './familyFortune.js';
+import { payWeddingHelp, weddingHelpQuote } from './familyFortune.js';
 import { getMarriageProfile } from '../data/visasAndMarriage.js';
 import { V1_CHILD_NURSERIES, V1_CHILD_ACTIVITIES } from '../data/megaCareerEduMedical.js';
 import { rememberDeed, emitFact, closeMarriageWithoutCouple } from './soulEngine.js';
@@ -390,7 +390,8 @@ export function celebrateWedding(S, venueId = null, opts = {}) {
   const furnishCost = Math.max(0, rawFurnishNeed - gehazCredit);
 
   const totalDue = venueCost + mahrPromptDue + furnishCost;
-  if (S.money.cash < totalDue) {
+  const familyShare = weddingHelpQuote(S, venueCost, partner.id); /* the family portion settles at payment, so you need only the rest in cash */
+  if (S.money.cash < totalDue - familyShare) {
     /* Itemise the total so the parts visibly add up to it — each part is
        already inside the total, not extra on top of it. Zero parts are
        left out rather than printed as (0). */
@@ -399,10 +400,11 @@ export function celebrateWedding(S, venueId = null, opts = {}) {
     if (furnishCost > 0) parts.push(`Gehaz setup ${Math.round(furnishCost).toLocaleString('en-US')}`);
     return {
       ok: false,
-      msg: `Need ${formatMoney(totalDue, S.country)} in total: ${parts.join(' + ')}.`
+      msg: `Need ${formatMoney(totalDue - familyShare, S.country)} in total${familyShare > 0 ? ` after your family's ${formatMoney(familyShare, S.country)}` : ''}: ${parts.join(' + ')}.`
     };
   }
 
+  payWeddingHelp(S, venueCost, partner.id);
   // Charge each part on its own ledger line — the ledger can now tell mahr
   // from venue from furniture, and the prompt mahr is recorded as PAID.
   walletMove(S, -venueCost, `Wedding venue: ${venue.label}`, 'family');
@@ -412,8 +414,6 @@ export function celebrateWedding(S, venueId = null, opts = {}) {
   if (furnishCost > 0) {
     walletMove(S, -furnishCost, 'Marital home setup (Gehaz)', 'family');
   }
-
-  payWeddingHelp(S, venueCost, partner.id);
 
   /* Authentic Noqta / Wedding Cash Envelope Gifts from Family & Circle! */
   const warmCircle = Object.values(S.people).filter(p => p && p.alive && p.id !== 'player' && (p.rel?.affection || 0) >= 55).length;

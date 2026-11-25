@@ -16,4 +16,14 @@ const mk = (tier, seed = 4) => { const S = createNewLifeState({ seed, country: '
 { const { S } = mk('wealthy'); F.offerWeddingHelp(S); F.resolveWeddingHelp(S, false); assert.ok(!S.familyFortune.weddingPledge); const fund0 = S.familyFortune.fundLocal; M.celebrateWedding(S); assert.equal(S.familyFortune.fundLocal, fund0, 'declined: no help'); }
 { const { S } = mk('middle'); assert.equal(F.offerWeddingHelp(S), null, 'not a fortune family'); }
 { const { S } = mk('wealthy'); F.offerWeddingHelp(S); F.resolveWeddingHelp(S, true); const f = S.familyFortune; const other = createPerson(S, { role: 'partner', age: 26, gender: 'f' }); S.people[other.id] = other; S.marriage.engagement = { partnerId: other.id, mahrPrompt: 0 }; const fund0 = f.fundLocal; M.celebrateWedding(S); assert.equal(f.fundLocal, fund0, 'a pledge for someone else is not paid'); }
+{ /* direct settlement: with the pledge you need only the rest in cash; without it the same cash is refused */
+  const a = mk('wealthy'); F.offerWeddingHelp(a.S); F.resolveWeddingHelp(a.S, true); const b = mk('wealthy'); b.S.money.cash = 1e7; b.S.money.cash = 0;
+  const venue = (await import('../src/data/visasAndMarriage.js')).getMarriageProfile(a.S.country, a.S.year).venues2026[0]; const { eraLocalCost } = await import('../src/data/economy.js'); const vc = Math.round(eraLocalCost(venue.cost, a.S.country, a.S.year));
+  const quote = F.weddingHelpQuote(a.S, vc, a.p.id); assert.ok(quote > 0);
+  a.S.money.cash = vc - quote + 5; const ra = M.celebrateWedding(a.S); assert.ok(ra.ok !== false, 'enough with the family portion: ' + JSON.stringify(ra).slice(0, 160));
+  b.S.money.cash = vc - quote + 5; const rb = M.celebrateWedding(b.S); assert.equal(rb.ok, false, 'without a pledge the same cash is not enough'); }
+{ /* the fiance dies: the pledge lapses and a new engagement can be offered help */
+  const { S, p } = mk('wealthy'); F.offerWeddingHelp(S); F.resolveWeddingHelp(S, true); S.activeScene = null; S.sceneQueue = []; p.alive = false; S.marriage.engagement = null; assert.equal(F.offerWeddingHelp(S), null); assert.equal(S.familyFortune.weddingPledge, null, 'pledge lapsed');
+  const { createPerson } = await import('../src/core/schema.js'); const q = createPerson(S, { role: 'partner', age: 26, gender: 'f' }); S.people[q.id] = q; S.marriage.engagement = { partnerId: q.id, mahrPrompt: 0 };
+  assert.equal(F.offerWeddingHelp(S)?.partnerId, q.id, 'a new engagement is offered help'); }
 console.log('wedding help OK');

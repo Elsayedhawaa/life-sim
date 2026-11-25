@@ -14,7 +14,7 @@ import { estateChargePlan } from './companyEstate.js';
 import { formatMoney, getCountry } from '../data/countries.js';
 import { CARS_MEGA_CATALOG, CAR_COLORS } from '../data/megaCarsAndShop.js';
 import { propertyMarketYear } from './propertyMarketRisk.js';
-import { getHousingFor } from '../data/institutions.js';
+import { getHousingFor, getCarsForYear } from '../data/institutions.js';
 import { finalizePropertyPurchase } from './economyEngine.js';
 import { showroomCarQuote } from './completeLifeSystems.js';
 import { hireIntoJob } from './careerEducationEngine.js';
@@ -964,6 +964,11 @@ const WEDDING_SHARE = { upper_middle: 0.25, wealthy: 0.5, very_wealthy: 0.75 };
 export function offerWeddingHelp(S) {
   const f = ensureFamilyFortune(S);
   const eng = S.marriage?.engagement;
+  if (f) { /* a pledge or offer tied to someone you are no longer engaged to (broken off, or they died) lapses, so a new engagement can be offered help */
+    const stale = x => x && (!eng || eng.partnerId !== x.partnerId || !S.people?.[x.partnerId]?.alive);
+    if (stale(f.weddingPledge)) f.weddingPledge = null;
+    if (stale(f.weddingOffer)) { f.weddingOffer = null; if (S.activeScene?.key === 'family_wedding') S.activeScene = null; S.sceneQueue = (S.sceneQueue || []).filter(x => x?.key !== 'family_wedding'); }
+  }
   if (!f || !eng || f.weddingOffer || f.weddingPledge || isTightYear(f, S) || (f.weddingDoneFor && f.weddingDoneFor === eng.partnerId)) return null;
   if (S.activeScene || (S.sceneQueue || []).length) return null;
   const parentAlive = [S.relations?.fatherId, S.relations?.motherId].some(id => id && S.people?.[id]?.alive);
@@ -993,7 +998,12 @@ export function resolveWeddingHelp(S, yes) {
   recordJournal(S, `Your family will cover ${Math.round(o.share * 100)}% of the wedding venue.`, 'family');
   return { ok: true, taken: true };
 }
-/* Called by the wedding itself, after the venue is paid: returns what the family really paid. */
+/* What the family would pay right now for this venue, without paying it: the same cap and fund checks as the payment. */
+export function weddingHelpQuote(S, venueCost, partnerId) {
+  const f = S.familyFortune, pl = f?.weddingPledge; if (!pl || pl.partnerId !== partnerId) return 0;
+  return Math.max(0, Math.min(Math.round(venueCost * pl.share), Math.round(f.fundLocal), Math.round(giftRoom(f, S))));
+}
+/* Called by the wedding itself, before the venue is charged, so the family portion settles directly. Returns what the family really paid. */
 export function payWeddingHelp(S, venueCost, partnerId) {
   const f = S.familyFortune, pl = f?.weddingPledge; if (!pl) return 0;
   f.weddingPledge = null;
@@ -1009,9 +1019,11 @@ export function payWeddingHelp(S, venueCost, partnerId) {
 }
 
 /* --- Rich siblings as people (not just a bank balance) ------------------------------------------------------
-   An adult sibling of a fortune family now has a standing that follows the real company: if they are one of the siblings who work in it (decided once per sibling, at about the same 70% rate as the share draw) they hold a post there, with the family company as their employer; if they only hold
-   shares they are a shareholder and private investor; if the company was sold they are a private investor. The rank follows their age. No money is
-   created or moved here: pay and savings are untouched, this only gives the existing wealth a real description. Retired siblings are left alone. */
+   Whether an adult sibling works in the family company is decided once, at about the same 70% rate as the service-share draw. A sibling who has a job
+   and is in that group is moved into the family company ONCE: their employer becomes the company and their own title, pay and history are kept. After that the
+   ordinary NPC career machinery owns them: a lost job ends the post (title "Seeking Work", no pay, no employer, and they are not re-stamped), a promotion
+   changes the title as it always does, and retirement is left alone. Nothing here restores a title or pay. Siblings who only hold shares keep their real
+   occupation; their shareholding is shown on its own line. No money is created or moved. */
 export function siblingWorksInCompany(S, id) {
   const p = S.people?.[id]; if (!p) return false;
   p.career = p.career || {};
@@ -1025,17 +1037,59 @@ export function syncSiblingStanding(S, f) {
   for (const id of aliveSiblings(S)) {
     const p = S.people[id]; if (!p || (p.age ?? 0) < 22) continue;
     p.career = p.career || {};
-    if (p.career.title === 'Retired') continue;
-    const stake = f.own.siblings?.[id] || 0;
-    const wasFamily = p.career.familyStanding === 'post' || p.career.familyStanding === 'holder';
-    let title = null, employer = null, mark = null;
-    if (live && siblingWorksInCompany(S, id)) { const age = p.age | 0; title = `${age < 30 ? 'Associate' : age < 45 ? 'Director' : 'Managing Director'} at ${co}`; employer = co; mark = 'post'; }
-    else if (live && stake > 0) { title = 'Shareholder and private investor'; mark = 'holder'; }
-    else if (!live && (wasFamily || stake > 0)) { title = 'Private investor'; mark = 'investor'; }
-    if (!title) continue;
-    if (p.career.title !== title || p.career.familyStanding !== mark) { p.career.title = title; p.career.familyStanding = mark; if (employer) p.career.employer = employer; else if (p.career.employer === co) p.career.employer = null; n++; }
+    const c = p.career, income = Number(c.monthlyIncomeLocal) || 0;
+    /* titles stamped by the first version of this feature are put back to the plain starting role, once */
+    if (!c.familyMigrated && (c.familyPostSince || c.familyStanding === 'holder' || c.familyStanding === 'investor' || c.familyStanding === 'post')) {
+      c.familyMigrated = true; c.familyStanding = undefined; c.familyPostSince = undefined; if (c.employer === co) c.employer = null;
+      if (c.title !== 'Retired') c.title = income > 0 ? 'Operations Coordinator' : 'Seeking Work';
+      n++;
+    }
+    if (c.title === 'Retired') continue;
+    if (c.familyStanding === 'works') {
+      if (income <= 0 || c.title === 'Seeking Work' || c.title === 'Unemployed') { c.familyStanding = 'left'; if (c.employer === co) c.employer = null; n++; }
+      continue;
+    }
+    if (c.familyStanding === 'left') continue;
+    if (live && income > 0 && c.title !== 'Seeking Work' && c.title !== 'Unemployed' && siblingWorksInCompany(S, id)) { c.familyStanding = 'works'; c.employer = co; c.familyPostSince = S.year; c.familyMigrated = true; n++; }
   }
   return n;
+}
+/* Sibling homes and cars (rich siblings as people). They are bought from the sibling's own savings, once each, in the currency they live in:
+   the price leaves their savings and becomes an asset of the same value, so nothing is created. A home is the dearest property in their country
+   that costs at most a quarter of their savings, only when savings are at least four times its price; a car is the dearest that costs at most 3% of savings.
+   If the sibling dies, the assets go back into their savings at the same value before the existing estate handling runs, so nothing is stranded or lost. */
+export function syncSiblingAssets(S) {
+  const f = S.familyFortune; if (!f || !hasFortune(S)) return 0;
+  let n = 0;
+  for (const id of S.relations?.siblingIds || []) {
+    const p = S.people?.[id]; if (!p) continue;
+    p.career = p.career || {}; const a = p.assets;
+    if (!p.alive) { if (a && (a.home || a.car)) { p.career.savingsLocal = (Number(p.career.savingsLocal) || 0) + (a.home?.price || 0) + (a.car?.price || 0); p.assets = {}; n++; } continue; }
+    if ((p.age ?? 0) < 26) continue;
+    const R = p.residenceCountry || S.country, sav = Number(p.career.savingsLocal) || 0;
+    p.assets = p.assets || {};
+    if (!p.assets.home && sav > 0) {
+      const list = getHousingFor(R, S.year).map(h => ({ h, price: Math.round(eraLocalCost(h.price2026, R, S.year)) })).filter(x => x.price > 0 && x.price <= sav * 0.25 && sav >= x.price * 4).sort((x, y) => y.price - x.price);
+      if (list.length) { const t = list[0]; p.career.savingsLocal = sav - t.price; p.assets.home = { id: t.h.id, kind: t.h.kind, tier: t.h.tier, price: t.price, year: S.year }; n++; }
+    }
+    const sav2 = Number(p.career.savingsLocal) || 0;
+    if (!p.assets.car && sav2 > 0) {
+      const cars = getCarsForYear(S.year).map(c => ({ c, price: Math.round(convertCurrency(eraLocalCost(c.priceUsd2026, 'usa', S.year), 'usa', R, S.year)) })).filter(x => x.price > 0 && x.price <= sav2 * 0.03).sort((x, y) => y.price - x.price);
+      if (cars.length) { const t = cars[0]; p.career.savingsLocal = sav2 - t.price; p.assets.car = { id: t.c.id, name: t.c.name, price: t.price, year: S.year }; n++; }
+    }
+  }
+  return n;
+}
+export function siblingAssetsLine(S, id) {
+  const p = S.people?.[id]; const a = p?.assets; if (!p?.alive || !a || (!a.home && !a.car)) return '';
+  const R = p.residenceCountry || S.country; const bits = [];
+  if (a.home) bits.push(`a ${a.home.tier ? a.home.tier + ' ' : ''}${a.home.kind || 'home'} worth ${formatMoney(a.home.price, R)}`);
+  if (a.car) bits.push(`drives a ${a.car.name}`);
+  return `Owns ${bits.join(' and ')}.`;
+}
+
+export function siblingEmployerLine(S, id) {
+  const c = S.people?.[id]?.career; return c && c.familyStanding === 'works' && c.employer ? ` at ${c.employer}` : '';
 }
 export function siblingStakeLine(S, id) {
   const f = S.familyFortune; const pct = f?.own?.siblings?.[id] || 0;
@@ -1222,7 +1276,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  checkWorkQuit(S, f); syncSiblingStanding(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerIntroduction(S); offerWeddingHelp(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); deliverSuccessionTalk(S, f);
+  checkWorkQuit(S, f); syncSiblingStanding(S, f); syncSiblingAssets(S); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerIntroduction(S); offerWeddingHelp(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); deliverSuccessionTalk(S, f);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;
