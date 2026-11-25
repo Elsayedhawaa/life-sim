@@ -21,8 +21,18 @@ const html = renderTurnResultCardHtml(S, { turnResult: r }); assert.match(html, 
   const { executeCountryRelocation: move } = await import('../src/systems/visaMigrationEngine.js'); move(T, 'gbr', { kind: 'citizen', permitName: 'x', expiresYear: 2030, expiresMonth: 1 }); walletMove(T, -700, 'A cost in GBP', 'lifestyle');
   assert.ok(T.ledger.some(e => e.category === 'fx'), 'conversion is still in the ledger');
   const html = renderFinanceTabHtml(T, { finSub: 'cashflow' }); const out = Number(/data-total-out="(\d+)"/.exec(html)?.[1]), inn = Number(/data-total-in="(\d+)"/.exec(html)?.[1]);
-  assert.ok(out >= 2700 && out < 100000, `expenses are real costs only, not a 90M conversion: ${out}`); assert.ok(inn >= 5000 && inn < 100000, `income excludes the conversion: ${inn}`);
+  assert.ok(out >= 700 && out < 2700, `expenses are real costs only, not a 90M conversion: ${out}`); assert.ok(inn >= 300 && inn < 5000, `income excludes the conversion: ${inn}`);
   assert.match(html, /Currency conversion/); assert.match(html, /became/);
   const outHtml = renderFinanceTabHtml(T, { finSub: 'cashflow', ledgerFilter: 'out' }); assert.ok(!/Currency conversion, cash/.test(outHtml), 'not under Money Out');
 }
+{ /* a real cost paid before the move, in the same turn, is converted to today's currency, not shown at its old number */
+  const U = createNewLifeState({ seed: 6, country: 'egy', birthYear: 1990, gender: 'm' }); ensureExtendedState(U); U.year = 2016; U.player.age = 30; U.money.cash = 97e6;
+  const b = snapshotTurn(U); walletMove(U, -270841, 'Tuition', 'education');
+  executeCountryRelocation(U, 'gbr', { kind: 'citizen', permitName: 'x', expiresYear: 2030, expiresMonth: 1 });
+  const r3 = buildTurnResult(U, b, 'choice'); const line = r3.moneyLines.find(l => /^Tuition/.test(l.label)); const want = -Math.round(convertCurrency(270841, 'egy', 'gbr', 2016));
+  assert.ok(line, 'tuition line present'); assert.ok(Math.abs(line.delta - want) <= 2, `converted: ${line.delta} vs ${want}`); assert.match(line.label, /paid in EGP, shown in GBP/);
+  assert.ok(Math.abs(r3.cashDelta - want) / Math.abs(want) < 0.02, 'cash change is the real cost in the new currency');
+  const { renderFinanceTabHtml } = await import('../src/ui/views.js'); const h = renderFinanceTabHtml(U, { finSub: 'cashflow' }); const o = Number(/data-total-out="(\d+)"/.exec(h)?.[1]);
+  assert.ok(o < 100000, `expenses are in one currency (about ${-want} GBP), not 270,841 plus: ${o}`);
+  assert.equal(U.ledger.find(e => e.label === 'Tuition').delta, -270841, 'stored history untouched'); assert.equal(U.ledger.find(e => e.label === 'Tuition').currency, 'EGP'); }
 console.log('fx result card OK');

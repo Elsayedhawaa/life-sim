@@ -8,8 +8,9 @@
    ========================================================================== */
 
 import { MONTH_NAMES } from '../core/schema.js';
-import { formatMoney } from '../data/countries.js';
+import { formatMoney, getCountry } from '../data/countries.js';
 import { convertCurrency } from '../data/economy.js';
+import { entryDelta, entryCurrencyIsCurrent } from '../core/ledgerCurrency.js';
 import { esc } from './views.js';
 
 function num(v) {
@@ -93,7 +94,8 @@ export function buildTurnResult(S, before, kind, stepsRun = 1) {
     if (e.account !== 'cash' && e.account !== 'savings') continue;
     if (e.category === 'fx') continue; /* pure currency conversion is not spending or income */
     const key = (e.label || 'Payment').replace(e.category === 'monthly_settlement' ? / \(\d{1,2}\/\d{4}\)$/ : /$^/, '');
-    moves.set(key, Math.round(((moves.get(key) || 0) + num(e.delta)) * 100) / 100);
+    const k2 = entryCurrencyIsCurrent(S, e) ? key : `${key} (paid in ${e.currency}, shown in ${getCountry(S.country).currency})`;
+    moves.set(k2, Math.round(((moves.get(k2) || 0) + entryDelta(S, e)) * 100) / 100);
   }
   const moneyLines = [...moves.entries()]
     .map(([label, delta]) => ({ label, delta }))

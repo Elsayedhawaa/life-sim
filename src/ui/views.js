@@ -53,6 +53,7 @@ import {renderHomeTypeArt} from './homeTypeArt.js';
 
 import { MONTH_NAMES, FAMILY_TIERS, LIFE_AMBITIONS, computeNetWorthLocal, ensureExtendedState, liquidFundsLocal, JOURNAL_REACTIONS } from '../core/schema.js';
 import { COUNTRIES, COUNTRY_IDS, getCountry, formatMoney } from '../data/countries.js';
+import { entryDelta, entryCurrencyIsCurrent } from '../core/ledgerCurrency.js';
 import {
   eraLocalCost,
   eraSalary,
@@ -3603,7 +3604,7 @@ export { recordFinanceHistorySnapshot };
    The chart is labelled "cash in vs cash out" for exactly that reason. --- */
 function financeCashEntries(S) {
   const entries = Array.isArray(S.ledger) ? S.ledger : [];
-  return entries.filter(e => e && e.category !== 'fx' && (e.account === 'cash' || !e.account)); /* a pure currency conversion is not money in or out */
+  return entries.filter(e => e && e.category !== 'fx' && (e.account === 'cash' || !e.account)).map(e => entryCurrencyIsCurrent(S, e) ? e : { ...e, delta: entryDelta(S, e) }); /* a pure currency conversion is not money in or out */
 }
 
 function financeBuckets(entries) {
@@ -3819,8 +3820,8 @@ function renderLedgerHistoryHtml(S, uiState = {}) {
                 <span>${esc(when)} · ${esc(e.category || 'general')}${e.account && e.account !== 'cash' ? ` · ${esc(e.account)} account` : ''}</span>
               </div>
               <div style="text-align:right">
-                ${e.category === 'fx' ? `<div class="muted" style="font-weight:600">Currency conversion</div>` : `<div class="mono" style="color:${d >= 0 ? '#1B734E' : '#B42318'};font-weight:600">${d >= 0 ? '+' : '−'}${esc(formatMoney(Math.abs(d), S.country))}</div>`}
-                <div class="muted mono" style="font-size:0.75rem">Balance: ${esc(formatMoney(e.balanceAfter, S.country))}</div>
+                ${e.category === 'fx' ? `<div class="muted" style="font-weight:600">Currency conversion</div>` : `<div class="mono" style="color:${d >= 0 ? '#1B734E' : '#B42318'};font-weight:600">${d >= 0 ? '+' : '−'}${esc(formatMoney(Math.abs(d), e.currency || S.country))}</div>`}
+                <div class="muted mono" style="font-size:0.75rem">Balance: ${esc(formatMoney(e.balanceAfter, e.currency || S.country))}</div>
               </div>
             </div>
           `;
