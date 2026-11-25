@@ -299,6 +299,11 @@ export function countryLevelNarrative(text,S){
   if(S.city&&!entries.some(([city])=>city===S.city))entries.push([S.city,getCountry(S.country).name]);
   entries.sort((a,b)=>b[0].length-a[0].length);
   for(const [city,country] of entries)out=out.split(city).join(country);
+  /* "Istanbul, Turkey" became "Turkey, Turkey": keep one country name when the stored text already named it after the city. */
+  for(const country of new Set(entries.map(e=>e[1]))){
+    const esc=country.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    out=out.replace(new RegExp(`(${esc}),\\s*${esc}(?![\\p{L}])`,'gu'),'$1');
+  }
   return out;
 }
 

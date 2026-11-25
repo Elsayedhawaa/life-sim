@@ -2017,10 +2017,17 @@ export function describeJobOffer(S, job) {
 }
 
 
+/* 1 when the job needs a degree the player holds, else 0. */
+function recruitFit(S, job) {
+  const req = job.reqDegrees || [];
+  return req.length > 0 && req.some(d => (S.education?.degrees || []).includes(d)) ? 1 : 0;
+}
+
 export function presentGraduateOrJobSearchOffers(S, customTitle = null, snapshot=null) {
   const eligible = snapshot?.offers || listAvailableJobs(S)
     .filter(j => j.qualifiedByDegree && !j.missingBoard && checkJobApplication(S,j).ok)
-    .sort((a, b) => b.monthlyGross - a.monthlyGross);
+    /* A recruiter leads with the roles your own degree opens, then the open-entry roles, each by pay. Pay alone put a pilot cadetship above a medical or law graduate's own field. */
+    .sort((a, b) => (recruitFit(S, b) - recruitFit(S, a)) || (b.monthlyGross - a.monthlyGross));
   if (!eligible.length) return;
 
   const topOffer = eligible[0];
