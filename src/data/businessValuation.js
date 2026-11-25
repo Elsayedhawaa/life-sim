@@ -7,7 +7,8 @@ export function businessValuation(biz) {
   if (!biz || biz.dead) return 0;
   const wages = (biz.staff || []).reduce((sum, st) => sum + (Number(st.wageLocal) || 0), 0);
   const rent = Number(biz.premises?.monthlyRentLocal) || 0;
-  const lastNet = (biz.tech||biz.enterprise)&&!biz.lastPL?0:biz.lastPL ? Number(biz.lastPL.net) || 0 : (Number(biz.monthlyRev) || 0) - (Number(biz.monthlyCost) || 0) - wages - rent;
+  /* Earnings count only after a month has actually traded: a business that has not yet closed a month (lastPL empty) is worth its assets, not a projection, or launch-then-sell would print money. */
+  const lastNet = !biz.lastPL?0:biz.lastPL ? Number(biz.lastPL.net) || 0 : (Number(biz.monthlyRev) || 0) - (Number(biz.monthlyCost) || 0) - wages - rent;
   const equity = Math.max(0, Math.min(1, (biz.equityOwned ?? 100) / 100));
   return Math.round((Math.max(0, Number(biz.capitalInvested) || 0) * .7 + Math.max(0, lastNet) * 12 * 2.8 + Math.max(0, Number(biz.retainedCash) || 0)+serverAssetValue(biz)+equipmentAssetValue(biz)+receivableValue(biz)) * equity);
 }

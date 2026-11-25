@@ -390,7 +390,8 @@ function scanBusinessSales(S, progress) {
     if (entry.category !== 'business' || !label.startsWith('Exited & sold ')) continue;
     progress._salesSeen.push(entry.id);
     const name = label.slice('Exited & sold '.length).trim();
-    const seen = Object.values(progress._bizCapital).find(v => v && v.name === name);
+    /* The sale line may carry a suffix such as ", after unpaid bills": match the business by its name at the start of the line. */
+    const seen = Object.values(progress._bizCapital).find(v => v && v.name && (name === v.name || name.startsWith(v.name + ',')));
     const capital = seen ? Number(seen.capital) || 0 : null;
     const price = Number(entry.delta) || 0;
     if (capital != null && price > capital) grant(S, progress, 'business_sold_profit');
