@@ -15,4 +15,14 @@ assert.ok(r.moneyLines.every(l => !/Currency conversion/.test(l.label)), 'conver
 assert.ok(r.fxLines.length >= 1 && /became/.test(r.fxLines[0]));
 const html = renderTurnResultCardHtml(S, { turnResult: r }); assert.match(html, /Currency conversion \(not a cost\)/); assert.ok(!/−9\d\.\dM GBP/.test(html));
 { const b2 = snapshotTurn(S); walletMove(S, -1000, 'A real cost', 'lifestyle'); const r2 = buildTurnResult(S, b2, 'choice'); assert.equal(r2.cashDelta, -1000); assert.deepEqual(r2.fxLines, []); }
+{ /* Finance tab: the income/expense chart totals and the Money In/Out filters leave pure conversion out; the audit row stays and shows no signed amount */
+  const { renderFinanceTabHtml } = await import('../src/ui/views.js'); const T = createNewLifeState({ seed: 5, country: 'egy', birthYear: 1990, gender: 'm' }); ensureExtendedState(T); T.year = 2016; T.player.age = 30; T.money.cash = 97e6;
+  walletMove(T, 5000, 'A real wage', 'career'); walletMove(T, -2000, 'A real cost', 'lifestyle'); T.country = 'egy';
+  const { executeCountryRelocation: move } = await import('../src/systems/visaMigrationEngine.js'); move(T, 'gbr', { kind: 'citizen', permitName: 'x', expiresYear: 2030, expiresMonth: 1 }); walletMove(T, -700, 'A cost in GBP', 'lifestyle');
+  assert.ok(T.ledger.some(e => e.category === 'fx'), 'conversion is still in the ledger');
+  const html = renderFinanceTabHtml(T, { finSub: 'cashflow' }); const out = Number(/data-total-out="(\d+)"/.exec(html)?.[1]), inn = Number(/data-total-in="(\d+)"/.exec(html)?.[1]);
+  assert.ok(out >= 2700 && out < 100000, `expenses are real costs only, not a 90M conversion: ${out}`); assert.ok(inn >= 5000 && inn < 100000, `income excludes the conversion: ${inn}`);
+  assert.match(html, /Currency conversion/); assert.match(html, /became/);
+  const outHtml = renderFinanceTabHtml(T, { finSub: 'cashflow', ledgerFilter: 'out' }); assert.ok(!/Currency conversion, cash/.test(outHtml), 'not under Money Out');
+}
 console.log('fx result card OK');
