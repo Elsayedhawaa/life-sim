@@ -59,7 +59,7 @@ export function ensureJobActionState(S) {
       reviewLastYear: null,
       licence: {
         medicalDueYear: regulated ? (job.startYear || S.year) + 1 : null,
-        simDueYear: /pilot/i.test(title) ? (job.startYear || S.year) + 1 : null,
+        simDueYear: (/pilot|first officer/i.test(title) || (job.track === 'aviation' && /^captain$/i.test(title.trim()))) ? (job.startYear || S.year) + 1 : null,
         lapsed: false,
         lapsedNoted: false
       },

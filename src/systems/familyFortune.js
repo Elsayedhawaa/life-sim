@@ -254,9 +254,10 @@ export function tickFamilyFortuneYearly(S) {
 }
 
 /* The keys: a real owned car at the birthday, paid from the fund and counted in the annual gift share. */
+function quietMonth(S) { return !S.activeScene && !(S.sceneQueue || []).length; }
 export function giftBirthdayCar(S) {
   const f = ensureFamilyFortune(S);
-  if (!f || f.carGifted || isTightYear(f, S)) return null; /* planned gifts wait out a tight year */
+  if (!f || f.carGifted || isTightYear(f, S) || !quietMonth(S)) return null; /* one decision at a time: wait for a quiet month */ /* planned gifts wait out a tight year */
   const age = S.player?.age ?? 0;
   if (age < DIALS.carGiftAge || age > 25) return null;
   const pool = CARS_MEGA_CATALOG.filter(c => S.year >= c.yearFrom && S.year <= c.yearTo && !(f.tier !== 'very_wealthy' && c.priceUsd2026 > 120000));
@@ -472,7 +473,7 @@ export function settleSuccession(S) {
 /* First home: offered at 22 to wealthy and very_wealthy families. The family hands over a finished asset from the estate. */
 export function offerFirstHome(S) {
   const f = ensureFamilyFortune(S);
-  if (!f || f.homeGifted || f.tier === 'upper_middle' || isTightYear(f, S)) return null;
+  if (!f || f.homeGifted || f.tier === 'upper_middle' || isTightYear(f, S) || !quietMonth(S)) return null;
   const age = S.player?.age ?? 0;
   if (age < DIALS.homeGiftAge || age > 30) return null;
   const ceiling = f.netWorthLocal * perChildHomeCapPct(S) * DIALS.homeAimShare[f.tier];
@@ -1162,8 +1163,18 @@ export function tickConnectedInternship(S, f) {
   f.intern = null; f.internDone = true; f.reference = { employer: it.employer, year: S.year };
   const free = !(S.career?.employed && S.career?.job) && !S.education?.university && (S.player?.age ?? 0) >= 19;
   recordJournal(S, `You finished your summer at ${it.employer}, earned ${formatMoney(it.paid, S.country)} and a reference from them.`, 'career');
-  if (free) { f.internConvert = { employer: it.employer, year: S.year }; queueScene(S, buildInternConvertScene(S), true); }
+  /* The offer is recorded now and shown in the first quiet month (offerInternConvert), never on top of another decision. */
+  if (free) f.internConvert = { employer: it.employer, year: S.year, shown: false };
   return { done: true, convert: free };
+}
+export function offerInternConvert(S) {
+  const f = S.familyFortune, o = f?.internConvert;
+  if (!o || o.shown || !quietMonth(S)) return null;
+  const free = !(S.career?.employed && S.career?.job) && !S.education?.university;
+  if (!free) { f.internConvert = null; return null; } /* they found work meanwhile: the offer lapses, the reference stays */
+  o.shown = true;
+  queueScene(S, buildInternConvertScene(S), true);
+  return o;
 }
 export function buildInternConvertScene(S) {
   const f = S.familyFortune, o = f?.internConvert;
@@ -1290,7 +1301,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  checkWorkQuit(S, f); syncSiblingStanding(S, f); syncSiblingAssets(S); syncSiblingCompanies(S); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerIntroduction(S); offerWeddingHelp(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); deliverSuccessionTalk(S, f);
+  checkWorkQuit(S, f); syncSiblingStanding(S, f); syncSiblingAssets(S); syncSiblingCompanies(S); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerIntroduction(S); offerWeddingHelp(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); offerInternConvert(S); deliverSuccessionTalk(S, f);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;

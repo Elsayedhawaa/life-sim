@@ -1,3 +1,4 @@
+import { isSeriousCondition } from './mortalityModel.js';
 import { familyNameInterviewPoints, internshipReferencePoints } from './familyName.js';
 import{recordCivilLoss}from'./civilClaims.js';
 import{careerHours}from'./careerSchedule.js';
@@ -1114,15 +1115,20 @@ export function getMergedCareerTracks(year = 2026) {
       reqDegrees: et.reqDegrees || [],
       payMult: et.payMult || 1.35,
       visaDemand: et.visaDemand || 0.75,
-      rungs: [
-        { level: 0, title: `Junior ${et.label.split(' ')[0]} Specialist`, minExp: 0, mult: 1.0 },
-        { level: 1, title: `${et.label.split('&')[0].trim()} Lead`, minExp: 2, mult: 1.55 },
-        { level: 2, title: `Senior ${et.label.split('&')[0].trim()} Principal`, minExp: 5, mult: 2.25 },
-        { level: 3, title: `Director of ${et.label.split('&')[0].trim()}`, minExp: 9, mult: 3.3 }
-      ]
+      rungs: extraTrackTitles(et).map((title, level) => ({ level, title, minExp: [0, 2, 5, 9][level], mult: [1.0, 1.55, 2.25, 3.3][level] }))
     };
   }
   return map;
+}
+
+/* Titles for the researched modern tracks. A track's field is the label up to its first "&" or comma ("Real Estate Development", not "Real"); a field is never turned into a job by gluing a rank onto it.
+   Tracks that name an occupation rather than a field use that occupation's own ranks. */
+const EXTRA_TRACK_RANKS = { aviation_pilot: ['Cadet Pilot', 'First Officer', 'Senior First Officer', 'Captain'] };
+export function extraTrackField(label) { return String(label || '').split('&')[0].split(',')[0].trim(); }
+export function extraTrackTitles(et) {
+  if (EXTRA_TRACK_RANKS[et.id]) return EXTRA_TRACK_RANKS[et.id];
+  const f = extraTrackField(et.label);
+  return [`Junior ${f} Specialist`, `${f} Lead`, `Principal ${f} Specialist`, `Director of ${f}`];
 }
 
 const REAL_FALLBACK_COMPANIES = {
@@ -1655,6 +1661,12 @@ export function checkJobApplication(S, jobOffer) {
   }
   if (!jobOffer.qualifiedByDegree) {
     return { ok: false, msg: `Requires a degree in ${(jobOffer.reqDegrees||[]).join(' or ').toUpperCase()}.` };
+  }
+  /* A flying post needs a current medical certificate (the same rule dutyEligibility.js cites). Game rule: while one of the game's serious conditions is active, no airline will hire you to fly. Not a statement of aviation law. */
+  const flying = jobOffer.track === 'aviation' && /pilot|first officer|captain/i.test(jobOffer.title || '');
+  const grounding = flying && (S.medical?.conditions || []).find(c => isSeriousCondition(c.id));
+  if (grounding) {
+    return { ok: false, msg: `${jobOffer.employer} cannot hire you to fly while you are being treated for ${String(grounding.label || grounding.name || grounding.id).replace(/_/g, ' ')}: a pilot needs a current medical certificate.` };
   }
   const missingBoard = getRequiredForeignBoardForJob(S, jobOffer.track, jobOffer.reqDegrees || []);
   if (missingBoard) {
