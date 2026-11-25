@@ -263,6 +263,7 @@ const r6 = x => Math.round(x * 1e6) / 1e6;
 export function grantServiceShares(S) {
   const f = ensureFamilyFortune(S);
   if (!f || !f.company || !f.own) return null;
+  if (f.inherited) return null; /* the pool was shared out at succession: no grant path, so no work year is counted */
   if (f.shareYear === S.year) return null;
   f.shareYear = S.year;
   const [lo, hi] = DIALS.sharesPctRange;
@@ -433,7 +434,7 @@ function seedAmount(S, f) {
 }
 export function offerSeedGift(S) {
   const f = ensureFamilyFortune(S);
-  if (!f || f.seedDone || f.seedOffer) return null;
+  if (!f || f.seedDone || f.seedOffer || (f.seedRetryYear && S.year < f.seedRetryYear)) return null;
   if ((S.player?.age ?? 0) < 19 || !(S.career?.businesses || []).some(b => b && !b.dead)) return null;
   if (S.activeScene || (S.sceneQueue || []).length) return null; /* wait for a quiet month */
   const room = Math.round(f.fundLocal * 0.5);
@@ -458,11 +459,14 @@ export function buildSeedScene(S) {
 export function resolveSeed(S, take) {
   const f = S.familyFortune, o = f?.seedOffer;
   if (!o) return null;
-  f.seedOffer = null; f.seedDone = true;
-  if (!take) { recordJournal(S, 'You thanked your family for the offer and are building your company on your own. They are proud, and the door stays open.', 'family'); return { ok: true, taken: false }; }
-  const amt = Math.min(o.amount, Math.round(f.fundLocal));
-  if (amt <= 0) return { ok: false };
-  giftRoom(f, S); spend(f, amt); f.yearGifts += amt;
+  f.seedOffer = null;
+  if (!take) { f.seedDone = true; recordJournal(S, 'You thanked your family for the offer and are building your company on your own. They are proud, and the door stays open.', 'family'); return { ok: true, taken: false }; }
+  /* Re-check both limits at the moment of acceptance: the fund and this year's gift room, so pending choices cannot stack past the cap. */
+  const amt = Math.min(o.amount, Math.round(f.fundLocal), Math.round(giftRoom(f, S)));
+  if (amt <= 0) { f.seedRetryYear = S.year + 1; recordJournal(S, 'Your family wanted to back your company, but they cannot give it this year: the fund is committed to other gifts or is too low. Nothing was paid. They will raise it again later.', 'family'); return { ok: false, taken: false, reason: 'no room' }; }
+  if (amt < o.amount) recordJournal(S, `The family can give only part of what it offered this year: ${formatMoney(amt, S.country)} instead of ${formatMoney(o.amount, S.country)}.`, 'family');
+  f.seedDone = true;
+  spend(f, amt); f.yearGifts += amt;
   walletMove(S, amt, 'Seed gift from your family', 'family');
   addGrant(f, S, 'seed', amt, 'seed money for your own company');
   recordJournal(S, `Your family put ${formatMoney(amt, S.country)} behind your own company. It is a gift, not a loan.`, 'family');
@@ -473,7 +477,7 @@ export function resolveSeed(S, take) {
    20-40% of the deposit-size price of an entry home, one time, between 24 and 30 and only while the player owns no property. */
 export function offerDepositHelp(S) {
   const f = ensureFamilyFortune(S);
-  if (!f || f.tier !== 'upper_middle' || f.depositDone || f.depositOffer) return null;
+  if (!f || f.tier !== 'upper_middle' || f.depositDone || f.depositOffer || (f.depositRetryYear && S.year < f.depositRetryYear)) return null;
   const age = S.player?.age ?? 0;
   if (age < 24 || age > 30) return null;
   if ((S.housing?.properties || []).length) { f.depositDone = true; return null; }
@@ -503,11 +507,13 @@ export function buildDepositScene(S) {
 export function resolveDeposit(S, take) {
   const f = S.familyFortune, o = f?.depositOffer;
   if (!o) return null;
-  f.depositOffer = null; f.depositDone = true;
-  if (!take) { recordJournal(S, 'You thanked your parents and said you will save for the deposit yourself.', 'family'); return { ok: true, taken: false }; }
-  const amt = Math.min(o.amount, Math.round(f.fundLocal));
-  if (amt <= 0) return { ok: false };
-  giftRoom(f, S); spend(f, amt); f.yearGifts += amt;
+  f.depositOffer = null;
+  if (!take) { f.depositDone = true; recordJournal(S, 'You thanked your parents and said you will save for the deposit yourself.', 'family'); return { ok: true, taken: false }; }
+  const amt = Math.min(o.amount, Math.round(f.fundLocal), Math.round(giftRoom(f, S)));
+  if (amt <= 0) { f.depositRetryYear = S.year + 1; recordJournal(S, 'Your parents wanted to help with a deposit, but they cannot this year: the family money is committed to other gifts or is too low. Nothing was paid. They will offer again if they can.', 'family'); return { ok: false, taken: false, reason: 'no room' }; }
+  if (amt < o.amount) recordJournal(S, `Your parents can give only part of what they offered this year: ${formatMoney(amt, S.country)} instead of ${formatMoney(o.amount, S.country)}.`, 'family');
+  f.depositDone = true;
+  spend(f, amt); f.yearGifts += amt;
   walletMove(S, amt, 'Family help with a home deposit', 'family');
   addGrant(f, S, 'deposit', amt, 'toward a first home deposit');
   recordJournal(S, `Your parents gave you ${formatMoney(amt, S.country)} toward a home deposit.`, 'family');

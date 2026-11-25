@@ -329,3 +329,19 @@ console.log('seed gift and deposit help OK');
   }
 }
 console.log('equal treatment and dividend stream OK');
+{ /* stacked pending choices cannot bypass the annual cap; a refused gift is explained, not consumed; no work years after succession */
+  const T = life('wealthy', 'usa', 2000, 31); T.player.age = 25; T.activeScene = null; T.sceneQueue = []; const f = F.ensureFamilyFortune(T); T.career.businesses = [{ id: 'b', dead: false }];
+  F.offerSeedGift(T); assert.ok(f.seedOffer, 'seed pending');
+  f.yearGifts = f.yearlyInflowLocal * F.FORTUNE_DIALS.annualGiftShareCap; /* cap used up by other gifts */
+  const cash0 = T.money.cash, fund0 = f.fundLocal, j0 = T.journal?.length ?? 0;
+  const r = F.resolveSeed(T, true);
+  assert.ok(r.ok === false && r.reason === 'no room' && T.money.cash === cash0 && f.fundLocal === fund0, 'nothing is paid when the annual room is gone');
+  assert.ok(!f.seedDone && f.seedRetryYear === T.year + 1, 'the one-time gift is not consumed, it is retried next year');
+  assert.equal(F.offerSeedGift(T), null, 'not re-offered this year');
+  const U = life('upper_middle', 'usa', 2000, 32); U.player.age = 26; U.activeScene = null; U.sceneQueue = []; const g = F.ensureFamilyFortune(U); U.housing.properties = [];
+  F.offerDepositHelp(U); g.yearGifts = g.yearlyInflowLocal * F.FORTUNE_DIALS.annualGiftShareCap; const rr = F.resolveDeposit(U, true);
+  assert.ok(rr.ok === false && !g.depositDone, 'deposit is not consumed either');
+  const W = life('wealthy', 'usa', 2000, 33); const w = F.ensureFamilyFortune(W); w.inherited = true; W.player.age = 30; W.career.employed = true; W.career.job = { title: 'x' };
+  const wy = w.workYears || 0; W.year += 1; F.grantServiceShares(W); assert.equal(w.workYears || 0, wy, 'no work years counted once the pool is gone');
+}
+console.log('gift caps recheck OK');
