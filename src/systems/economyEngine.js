@@ -1816,6 +1816,7 @@ export function convertFinancesOnCountryMove(S, fromCountry, toCountry) {
     if (d === 0) return;
     if (account === 'cash') walletMove(S, d, label, 'fx');
     else moveBalance(S, 'savings', d, label, 'fx');
+    if (S.ledger?.[0]?.category === 'fx') S.ledger[0].currency = getCountry(toCountry).currency; /* the balance after a conversion is in the new currency, and the line says so */
   };
   { const o = S.money.cash, n = convertCurrency(o, fromCountry, toCountry, S.year); fxMove('cash', o, n, `Currency conversion, cash: ${formatMoney(o, fromCountry)} became ${formatMoney(n, toCountry)} (a change of currency, not a cost)`); }
   { const o = S.money.savings, n = convertCurrency(o, fromCountry, toCountry, S.year); fxMove('savings', o, n, `Currency conversion, savings: ${formatMoney(o, fromCountry)} became ${formatMoney(n, toCountry)} (a change of currency, not a cost)`); }

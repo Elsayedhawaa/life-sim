@@ -35,4 +35,6 @@ const html = renderTurnResultCardHtml(S, { turnResult: r }); assert.match(html, 
   const { renderFinanceTabHtml } = await import('../src/ui/views.js'); const h = renderFinanceTabHtml(U, { finSub: 'cashflow' }); const o = Number(/data-total-out="(\d+)"/.exec(h)?.[1]);
   assert.ok(o < 100000, `expenses are in one currency (about ${-want} GBP), not 270,841 plus: ${o}`);
   assert.equal(U.ledger.find(e => e.label === 'Tuition').delta, -270841, 'stored history untouched'); assert.equal(U.ledger.find(e => e.label === 'Tuition').currency, 'EGP'); }
+{ const W = createNewLifeState({ seed: 7, country: 'egy', birthYear: 1990, gender: 'm' }); ensureExtendedState(W); W.year = 2016; W.player.age = 30; W.money.cash = 5e6; W.money.savings = 1e6;
+  executeCountryRelocation(W, 'gbr', { kind: 'citizen', permitName: 'x', expiresYear: 2030, expiresMonth: 1 }); const fx = W.ledger.filter(e => e.category === 'fx'); assert.ok(fx.length >= 1); assert.ok(fx.every(e => e.currency === 'GBP'), 'conversion balance is in the new currency'); }
 console.log('fx result card OK');
