@@ -21,6 +21,7 @@ import {propertyAreas,pricedPropertyArea,outdoorAnnualBudget} from '../data/prop
    ========================================================================== */
 
 import { rand, randInt, chance, clamp, pick } from '../core/rng.js';
+import { narrativeLoanQuote } from './narrativeLoans.js';
 import { nextId, recordJournal, walletMove, moveBalance, ensureExtendedState, computeNetWorthLocal, queueScene } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { eraLocalCost, eraSalary, convertCurrency, goldPricePerGram, inflationRate, vacationEntitlementDays,computeMonthlyNetPay } from '../data/economy.js';
@@ -2180,6 +2181,14 @@ export function enrollPostgraduateProgram(S, tier = 'masters_mba', funding = 'ca
     if (!postgradParentsCanPay(S, tier)) return { ok: false, msg: S.player.age > 30 ? 'Your parents no longer pay for study after age 30 in this game.' : 'Your parents cannot cover this tuition from their funds.' };
     if (!chargeLivingParents(S, feeLocal)) return { ok: false, msg: 'Your parents cannot cover this tuition from their funds.' };
     paidBy = 'your parents';
+  } else if (funding === 'loan') {
+    if (S.player.age < 18) return { ok: false, msg: 'Loans open at 18.' };
+    if (S.money.loans.some(l => l.narrativeKind === 'student')) return { ok: false, msg: 'Clear your existing student loan before taking another.' };
+    const q = narrativeLoanQuote(S, 'student', feeLocal);
+    if (!q) return { ok: false, msg: 'No loan quote for this fee.' };
+    S.money.loans.push({ ...q, id: nextId(S, 'narrloan'), label: `Game postgraduate loan, 6% annual`, country: S.country, narrativeKind: 'student', missedMonths: 0, deferredPostgrad: true, deferredEducation: true });
+    /* The loan is paid straight to the university: the money never touches the player's cash. */
+    paidBy = 'a student loan';
   } else {
     if (S.money.cash < feeLocal) return { ok: false, msg: `Need ${formatMoney(feeLocal, S.country)} upfront game tuition for ${label}.` };
     walletMove(S, -feeLocal, `Postgraduate enrollment: ${label}`, 'career');

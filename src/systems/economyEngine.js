@@ -1153,7 +1153,7 @@ export function settleHouseholdMonth(S) {
      markup) accrues NO further interest; a rate loan accrues monthly. */
   const remainingLoans = [];
   for (const loan of S.money.loans) {
-    if(loan.deferredEducation&&S.education.university){remainingLoans.push(loan);continue;}
+    if(loan.deferredEducation&&(S.education.university||(loan.deferredPostgrad&&S.postgrad?.active))){remainingLoans.push(loan);continue;}
     const scheduledInterest=loan.flatMarkup||loan.inCollections?0:Math.round(loan.balance*((loan.annualRate||0)/12));
     const payAmt = Math.min(loan.balance+scheduledInterest,loan.amortizedTerm&&loan.remainingMonths===1?loan.balance+scheduledInterest:loan.monthlyPayment);
     if (loan.inCollections) {
