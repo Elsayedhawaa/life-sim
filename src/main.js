@@ -328,7 +328,7 @@ import {
   renderLifestyleTabHtml,
   renderWorldTabHtml,
   renderBottomDockHtml,
-  renderNewLifeModalHtml, renderNewLifePreviewInnerHtml,
+  renderNewLifeModalHtml, renderNewLifePreviewInnerHtml, tabVisibleForAge,
   eraClassForYear,
   recordFinanceHistorySnapshot,
   /* v2.16 W1 — light/dark theme: the saved theme is the source of truth. */
@@ -459,6 +459,7 @@ export function renderApp(preserveFilterKey = null, caretPos = null) {
   document.documentElement.classList.toggle('nl-open', !!uiState.showNewLifeModal);
   recordFinanceHistorySnapshot(S); // v2.13 W4: one net-worth snapshot per year
 
+  if (!tabVisibleForAge(uiState.activeTab, S.player?.age)) uiState.activeTab = 'life';
   let tabContent = '';
   if (uiState.activeTab === 'life') tabContent = renderLifeTabHtml(S, uiState);
   else if (uiState.activeTab === 'education') tabContent = renderEducationTabHtml(S, uiState);

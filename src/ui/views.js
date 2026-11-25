@@ -522,9 +522,11 @@ export function renderHudHtml(S, flashKeys) {
         </div>
 
         <div class="hud-wealth-box">
+          ${(S.player.age >= 16 || S.money.cash !== 0 || netWorth !== 0) ? `
           <div class="hud-wealth-label">Liquid Cash / Net Worth</div>
           <div class="hud-wealth-val mono ${S.money.cash < 0 ? 'text-bad' : 'text-good'}">${esc(formatMoney(S.money.cash, S.country, true))}</div>
           <div class="muted mono" style="font-size:0.76rem">Estate: ${esc(formatMoney(netWorth, S.country, true))}</div>
+          ` : ''}
           <button class="btn btn-sm" style="margin-top:6px" data-action="open-new-life">${icon('refresh', 13)} New Life</button>
         </div>
       </div>
@@ -549,6 +551,11 @@ function vitalBarHtml(label, val, color, flash) {
   `;
 }
 
+/* Age-appropriate surface: a young child is not shown the job market, banking, car showroom, shop or courts. Nothing is deleted; each appears at its age. */
+const TAB_MIN_AGE = { work: 14, finance: 14 };
+const LIFESTYLE_SUB_MIN_AGE = { cars: 18, shop: 14, legal: 16 };
+export function tabVisibleForAge(tabId, age) { return (age ?? 0) >= (TAB_MIN_AGE[tabId] || 0); }
+
 export function renderNavTabsHtml(S, activeTab) {
   ensureExtendedState(S);
   const openPromises = Object.values(S.people).reduce(
@@ -568,7 +575,7 @@ export function renderNavTabsHtml(S, activeTab) {
     { id: 'finance',    label: 'Finance',     iconName: 'finance',    badge: S.money.cash < 0 ? '!' : '' },
     { id: 'lifestyle',  label: 'Lifestyle',   iconName: 'lifestyle',  badge: '' },
     { id: 'world',      label: 'Passport',    iconName: 'world',      badge: visaAlert ? '!' : '' }
-  ];
+  ].filter(tb => tabVisibleForAge(tb.id, S.player?.age));
 
   const navArt = {
     life: 'life_stages_ink.jpg',
@@ -669,7 +676,7 @@ export function renderLifeTabHtml(S, uiState = {}) {
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${quickActs.map(a => `
           <button type="button" class="btn btn-sm habit-btn" data-action="do-activity" data-id="${esc(a.id)}" ${activityAvailability(S, a).ok ? '' : 'disabled'}>
-            ${esc(a.label || a.name)}${activityAvailability(S, a).ok ? '' : lockReason(activityAvailability(S, a).reason, '')}
+            ${esc(a.id === 'jog' && S.player.age < 10 ? 'Play outside' : (a.label || a.name))}${activityAvailability(S, a).ok ? '' : lockReason(activityAvailability(S, a).reason, '')}
             <span class="muted"> · ${S.player.age < 18 && activityCostLocal(S,a)>0 ? `${esc(formatMoney(activityCostLocal(S,a),S.country))} from living parents’ savings` : activityCostLocal(S, a) > 0 ? esc(formatMoney(activityCostLocal(S, a), S.country)) : 'Free'}</span>
           </button>
         `).join('')}
@@ -685,7 +692,7 @@ export function renderLifeTabHtml(S, uiState = {}) {
         <span class="hud-pill">Fitness <strong>${Math.round(S.skills?.fitness || 45)}</strong></span>
         <span class="hud-pill">Creativity <strong>${Math.round(S.skills?.creativity || 30)}</strong></span>
         ${S.player.age >= 12 ? `<span class="hud-pill">Network <strong>${Math.round(S.skills?.wasta || 15)}</strong></span>`: ''}
-        <span class="muted" style="font-size:0.75rem;margin-left:auto">Values — Integrity: <strong>${Math.round(S.values?.integrity || 60)}</strong> · Family: <strong>${Math.round(S.values?.familyDevotion || 65)}</strong> · Ambition: <strong>${Math.round(S.values?.ambitionDrive || 55)}</strong></span>
+        ${S.player.age >= 12 ? `<span class="muted" style="font-size:0.75rem;margin-left:auto">Values — Integrity: <strong>${Math.round(S.values?.integrity || 60)}</strong> · Family: <strong>${Math.round(S.values?.familyDevotion || 65)}</strong> · Ambition: <strong>${Math.round(S.values?.ambitionDrive || 55)}</strong></span>` : ''}
       </div>
 
       ${S.player.age >= 16 ? `
@@ -971,7 +978,9 @@ function goalProgressDetail(S, g) {
   if (g.id === 'g_grad') {
     if (S.education.degrees.length > 0) return { pct: 100, text: 'Degree earned' };
     if (S.education.highSchoolScore != null) return { pct: Math.round(S.education.highSchoolScore), text: `Exam score ${S.education.highSchoolScore}% — qualification lands at 19` };
-    return { pct: S.player.age >= 16 ? 50 : 25, text: `Still in school (${S.education.stage.replace('_', ' ')})` };
+    /* Progress is the share of the school years (6 to 18) actually lived: nothing before school starts, never an invented flat figure. */
+    if (S.education.stage === 'infancy' || S.player.age < 6) return { pct: 0, text: 'Not in school yet — it starts at six' };
+    return { pct: Math.max(0, Math.min(90, Math.round(((S.player.age - 6) / 12) * 100))), text: `Still in school (${S.education.stage.replace('_', ' ')}), age ${S.player.age} of 18` };
   }
   if (g.id === 'g_income') {
     const gross = S.career.job?.monthlyGross || 0;
@@ -4195,8 +4204,8 @@ function renderMarketsAndGoldSubtabHtml(S, cObj) {
    ========================================================================== */
 export function renderLifestyleTabHtml(S, uiState = {}) {
   ensureExtendedState(S);
-  const sub = uiState.lifeSub || 'cars';
-  const nav = renderSubtabs('lifestyle', [
+  const ageNow = S.player?.age ?? 0;
+  const allSubs = [
     { id: 'cars', label: `3D Cars (${CARS_MEGA_CATALOG.length})` },
     { id: 'appearance', label: 'Face & Tailor Studio' },
     { id: 'shop', label: `Shopping (${SHOP_MEGA_CATALOG.length})` },
@@ -4204,7 +4213,9 @@ export function renderLifestyleTabHtml(S, uiState = {}) {
     { id: 'travel', label: `Trips, Hajj & Umrah (${ALL_VACATIONS.length})` },
     { id: 'medical', label: 'Hospitals, LASIK & IVF' },
     { id: 'legal', label: 'Courts & Crime' }
-  ], sub);
+  ].filter(s => ageNow >= (LIFESTYLE_SUB_MIN_AGE[s.id] || 0));
+  const sub = allSubs.some(s => s.id === uiState.lifeSub) ? uiState.lifeSub : allSubs[0].id;
+  const nav = renderSubtabs('lifestyle', allSubs, sub);
 
   if (sub === 'appearance') return renderEditorialBannerHtml(pickDynamicBanner(S, 'lifestyle', 'appearance'), 'Editorial Ink Portrait Plates, Character Anatomy & Bespoke Tailoring') + nav + renderAppearanceStudioSubtabHtml(S);
   if (sub === 'shop') return renderEditorialBannerHtml(pickDynamicBanner(S, 'lifestyle', 'shop'), 'Boutique Acquisitions, Horology & Appreciating Collectibles') + nav + renderShoppingMallSubtabHtml(S, uiState);
