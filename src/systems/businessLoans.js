@@ -35,6 +35,7 @@
      biz, loanId) once the business exists.
    ========================================================================== */
 
+import { lenderCreditScore } from './familyName.js';
 import { clamp } from '../core/rng.js';
 import { nextId, recordJournal, walletMove } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
@@ -113,7 +114,7 @@ export function takeBusinessLoan(S, biz, amountLocal, opts = {}) {
   const amt = Math.round(Number(amountLocal) || 0);
   if (!Number.isFinite(amt) || amt <= 0) return { ok: false, msg: 'Invalid loan amount.' };
   const terms = businessLoanTerms(S, amt, { typeId, years: opts.years });
-  if (S.money.creditScore < terms.reqScore) {
+  if (lenderCreditScore(S) < terms.reqScore) {
     return { ok: false, msg: `Credit score (${S.money.creditScore}) is below the ${terms.reqScore} this business loan requires.` };
   }
   if (terms.minAmount > 0 && amt < terms.minAmount) {
@@ -222,7 +223,7 @@ export function renderBusinessLoanSection(S, biz) {
   const sample = terms.maxAmount > 0
     ? [terms.minAmount, Math.round((terms.minAmount + terms.maxAmount) / 2), terms.maxAmount]
     : [];
-  const canBorrow = S.money.creditScore >= terms.reqScore && (S.money.loans || []).length < MAX_ACTIVE_LOANS;
+  const canBorrow = lenderCreditScore(S) >= terms.reqScore && (S.money.loans || []).length < MAX_ACTIVE_LOANS;
   const buttons = sample.map(amt => {
     const t = businessLoanTerms(S, amt, { typeId: biz?.typeId || null });
     return `<button class="btn btn-sm" data-action="biz-loan-take" data-biz="${biz ? escHtml(biz.id) : ''}" data-type="${biz ? escHtml(biz.typeId) : ''}" data-amount="${amt}" ${canBorrow ? '' : 'disabled'}>Borrow ${formatMoney(amt, countryId)} (${formatMoney(t.monthlyPayment, countryId)}/mo)</button>`;

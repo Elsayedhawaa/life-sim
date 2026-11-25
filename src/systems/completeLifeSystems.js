@@ -1,3 +1,4 @@
+import { lenderCreditScore } from './familyName.js';
 import {closePlayerLease} from './playerTenancy.js';
 import{careerHours}from'./careerSchedule.js';
 import{recordCivilLoss,fileCivilClaim,tickCivilClaims}from './civilClaims.js';
@@ -1010,7 +1011,7 @@ export function openCreditCard(S, cardId) {
   const spec = cardsHere.find(c => c.id === cardId) || cardsHere[0];
   if (!spec) return { ok: false, msg: 'Card product unavailable.' };
   if (S.creditCards.some(c => c.catalogId === spec.id)) return { ok: false, msg: 'You already hold this card.' };
-  if (S.money.creditScore < (spec.reqScore || 580)) {
+  if (lenderCreditScore(S) < (spec.reqScore || 580)) {
     return { ok: false, msg: `Requires ${spec.reqScore} credit score (yours: ${S.money.creditScore}).` };
   }
 

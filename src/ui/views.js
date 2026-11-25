@@ -1,3 +1,4 @@
+import { lenderCreditScore, familyNameCreditPoints, familyNameInterviewPoints } from '../systems/familyName.js';
 import { isFortuneParent, askPreview, familyLedgerView } from '../systems/familyFortune.js';
 import {courtshipMonthsApart} from '../systems/courtshipLife.js';
 import{personalLoanGates}from'../systems/economyEngine.js';
@@ -1300,6 +1301,7 @@ function renderFamilyLedgerCardHtml(S) {
     </tbody></table>
     ${f.yearState && f.yearState.year === S.year ? `<div class="muted" style="font-size:0.88rem;margin-bottom:6px">${f.yearState.kind === 'record' ? esc(f.company.name) + ' had a record year: ' + (f.yearState.outcome === 'allowance' ? 'the allowance is higher.' : f.yearState.outcome === 'gift' ? 'a one-time gift was sent.' : 'profit went into family property.') : esc(f.company.name) + ' had a tight year: allowance cut, asks capped at half, planned gifts waiting.'}</div>` : ''}
     ${f.inherited ? `<div class="muted" style="font-size:0.88rem;margin-bottom:6px">Your parents' estate has been settled. Family allowance, asks, car and home gifts have ended: what you inherited replaces them. ${f.company ? esc(f.company.name) + ' still pays dividends from its own profit to the children who own shares.' : ''}</div>` : ''}
+    ${familyNameCreditPoints(S) > 0 ? `<div class="muted" style="font-size:0.88rem;margin-bottom:6px">Your family name is known here: lenders read your credit score ${familyNameCreditPoints(S)} points higher and employers add ${familyNameInterviewPoints(S)} to your interview score. It does not help abroad.</div>` : ''}
     <div class="muted" style="font-size:0.88rem">Your trust fund: ${m(tr.fundedLocal)} still set aside for you. Releases at ${esc(schedule)}.${age < 18 ? ' Allowance: ' + m(lv.allowance) + ' a month.' : ''}</div>
     ${recent ? `<div style="margin-top:6px"><strong style="font-size:0.85rem">Recent gifts and help</strong>${recent}</div>` : ''}
   </div>`;
@@ -3151,7 +3153,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
 export function loanCapacityLocal(S) {
   if (!S || !S.money) return 0;
   if ((S.player?.age || 0) < 21) return 0;
-  if ((S.money.creditScore ?? 0) < 560) return 0;
+  if (lenderCreditScore(S) < 560) return 0;
   if (S.year <= (S.money.bankruptUntilYear || 0)) return 0;
   if ((S.money.loans || []).length >= 2) return 0;
   const cObj = getCountry(S.country);

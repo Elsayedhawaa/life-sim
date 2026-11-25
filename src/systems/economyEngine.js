@@ -1,3 +1,4 @@
+import { lenderCreditScore } from './familyName.js';
 import{reviewPersonalReceivables}from'./personalReceivables.js';
 import { hasFortune, payFamilyAllowanceYear, familyPaysCarUpkeep } from './familyFortune.js';
 import {closePlayerLease,reconcilePlayerLease,recordPlayerRentDue,tickPlayerRentalDamage} from './playerTenancy.js';
@@ -1529,7 +1530,7 @@ export function personalLoanGates(S) {
   if (S.player.age < 21) return 'Must be at least 21 for bank credit.';
   if (!hasValidResidenceForBanking(S)) return 'New bank credit requires a valid residence status — regularise your visa first.';
   if (S.year <= S.money.bankruptUntilYear) return `Bankruptcy flag blocks new credit until ${S.money.bankruptUntilYear}.`;
-  if (S.money.creditScore < 560) return `Credit score (${S.money.creditScore}) is too low for approval.`;
+  if (lenderCreditScore(S) < 560) return `Credit score (${S.money.creditScore}) is too low for approval.`;
   if (S.money.loans.length >= 2) return 'Maximum active personal loans reached.';
   return null;
 }
