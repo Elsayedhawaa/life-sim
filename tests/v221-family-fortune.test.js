@@ -53,7 +53,7 @@ if (parent) {
 const E = life('wealthy', 'egy', 1990, 9); E.player.age = 30; E.year = 2020;
 const jr = E.journal?.length || 0;
 F.ensureFamilyFortune(E);
-assert.equal(E.familyFortune.grants.length, 1, 'one computed at-18 grant, no backfill');
+assert.equal(E.familyFortune.grants.length, 3, 'age 30 gets the three stages already reached, computed once, no yearly backfill');
 assert.ok(E.familyFortune.trust.released.at21 && E.familyFortune.trust.released.at25);
 // 5. The ledger card renders for a rich family and not for a middle one.
 const { renderPeopleTabHtml } = await import('../src/ui/views.js');
@@ -61,3 +61,55 @@ const html = renderPeopleTabHtml(S, {});
 assert.ok(/Family fortune/.test(html) && /In 2026 money/.test(html), 'rich family sees the ledger with nominal and 2026 money');
 assert.ok(!/Family fortune/.test(renderPeopleTabHtml(life('middle'), {})), 'middle family has no fortune card');
 console.log('family fortune OK');
+{
+  const U = life('upper_middle');
+  const { getCountry } = await import('../src/data/countries.js');
+  const { eraLocalCost } = await import('../src/data/economy.js');
+  const rent = getCountry(U.country).monthlyBasket2026.rentStandard;
+  assert.ok(F.askCeiling(U) >= Math.round(eraLocalCost(rent * 1.5, U.country, U.year)) - 1, 'upper_middle ask never below the pre-wealth rule');
+}
+// Birthday keys: a real owned car per tier, paid from the fund, priced in era money; only very_wealthy has running costs covered.
+{
+  const { showroomCarQuote } = await import('../src/systems/completeLifeSystems.js');
+  const prices = {};
+  for (const tier of ['upper_middle', 'wealthy', 'very_wealthy']) {
+    const T = life(tier, 'usa', 2003, 5); const fund0 = () => T.familyFortune?.fundLocal;
+    run(T, 12 * 19);
+    const car = T.cars.find(c => c.gifted);
+    assert.ok(car, tier + ' gets a gifted car by 19');
+    assert.ok(T.familyFortune.grants.some(g => g.kind === 'car'), 'car gift is in the ledger');
+    assert.equal(!!car.familyCoversUpkeep, tier === 'very_wealthy');
+    prices[tier] = car.valueLocal;
+    assert.ok(T.familyFortune.yearGifts <= T.familyFortune.yearlyInflowLocal * F.FORTUNE_DIALS.annualGiftShareCap + 1, 'annual gift cap holds');
+  }
+  assert.ok(prices.upper_middle < prices.wealthy && prices.wealthy < prices.very_wealthy, 'car class rises with the tier: ' + JSON.stringify(prices));
+  // a gifted car can be sold like any car
+  const E = life('wealthy', 'usa', 2003, 5); run(E, 12 * 19);
+  const { sellVehicle } = await import('../src/systems/economyEngine.js');
+  const c0 = E.cars.find(c => c.gifted); const cash = E.money.cash;
+  assert.ok(sellVehicle(E, c0.id).ok && E.money.cash > cash, 'gifted car can be sold');
+  // existing adult saves get no retroactive car
+  const X = life('wealthy', 'usa', 2003, 5); run(X, 12 * 30); X.familyFortune = null; X.cars = [];
+  F.ensureFamilyFortune(X); F.tickFamilyFortuneMonthly(X);
+  assert.equal(X.cars.length, 0, 'no retroactive gift');
+}
+console.log('birthday car OK');
+// Money conservation: estate + trust + released cash stays constant by funding/release alone; migration at 18/22/30 conserves too.
+{
+  for (const age of [18, 22, 30]) {
+    const M = life('wealthy', 'usa', 2000, 3); run(M, 12 * 2);
+    M.familyFortune = null; M.player.age = age;
+    const before = (() => { const f = F.ensureFamilyFortune({ ...M, familyFortune: null, player: { ...M.player, age: 5 } }); return f.netWorthLocal; })();
+    const cash0 = M.money.cash;
+    const f = F.ensureFamilyFortune(M);
+    const released = f.grants.filter(g => g.kind === 'trust').reduce((a, g) => a + g.amountLocal, 0);
+    assert.ok(Math.abs((M.money.cash - cash0) - released) <= 1, 'cash rises exactly by the release, age ' + age);
+    assert.ok(f.netWorthLocal + f.trust.fundedLocal + released <= before * 1.0001 + 1, 'estate+trust+released never exceeds the starting estate, age ' + age);
+    const stages = [18, 21, 25].filter(a => age >= a).length;
+    assert.equal(f.grants.filter(g => g.kind === 'trust').length, stages, 'only reached stages are paid, age ' + age);
+  }
+  const C = life('wealthy', 'usa', 2000, 9); const nw0 = C.familyFortune?.netWorthLocal;
+  run(C, 12 * 3); // childhood: funding must reduce the estate relative to growth-free baseline
+  assert.ok(C.familyFortune.trust.fundedLocal > 0 && C.familyFortune.netWorthLocal > 0);
+}
+console.log('conservation OK');

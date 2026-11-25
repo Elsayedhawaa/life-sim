@@ -10,7 +10,10 @@
    ========================================================================== */
 import { recordJournal, walletMove } from '../core/schema.js';
 import { eraLocalCost, usdRate, inflationRate, eraDepositRates } from '../data/economy.js';
-import { formatMoney } from '../data/countries.js';
+import { formatMoney, getCountry } from '../data/countries.js';
+import { CARS_MEGA_CATALOG, CAR_COLORS } from '../data/megaCarsAndShop.js';
+import { propertyMarketYear } from './propertyMarketRisk.js';
+import { showroomCarQuote } from './completeLifeSystems.js';
 
 export const FORTUNE_TIERS = ['upper_middle', 'wealthy', 'very_wealthy'];
 
@@ -30,6 +33,9 @@ const DIALS = {
     very_wealthy: { of: 'fund', pct: 0.02 }
   },
   askCooldownMonths: 3,
+  /* Birthday car target price (2026 USD): upper_middle is a modest first car, wealthy a German-class car, very_wealthy a dream-garage car. */
+  carTargetUsd: { upper_middle: 9000, wealthy: 65000, very_wealthy: 250000 },
+  carGiftAge: 18,
   trustYearlyPct: 0.0025,         /* of net worth, each childhood year */
   trustPerChildCapPct: 0.05,
   trustAllChildrenCapPct: 0.15,
@@ -88,15 +94,20 @@ export function ensureFamilyFortune(S) {
     yearGifts: 0,
     lastAskIndex: null,
     lastTickYear: year,
-    lastYearSwing: 0
+    lastYearSwing: 0,
+    carGifted: false
   };
   /* An existing life gets the one computed at-18 release, not backfilled years. */
   const age = S.player?.age ?? 0;
   if (age >= 18) {
+    /* Pro-rated: the trust the family would have funded by 18, carved out of the estate once. Only the stages the player has already reached are paid. */
     const full = Math.round(f.netWorthLocal * perChildTrustCapPct(S) * 0.9);
     f.trust.fundedLocal = full;
-    f.trust.released.at21 = true; f.trust.released.at25 = true;
-    releaseTrust(S, f, 'at18', 0.25);
+    f.netWorthLocal = Math.max(0, f.netWorthLocal - full);
+    f.carGifted = true; /* no retroactive gifts for an existing save */
+    for (const [releaseAge, share] of DIALS.trustRelease) {
+      if (age >= releaseAge) releaseTrust(S, f, 'at' + releaseAge, share);
+    }
   }
   return f;
 }
@@ -131,10 +142,11 @@ export function tickFamilyFortuneYearly(S) {
   if (!f) return;
   if (f.lastTickYear === S.year) return;
   const infl = inflationRate(S.country, S.year) / 100;
-  const swingNW = (hash01(S, S.year * 3 + 1) - 0.45) * 0.14;      /* market swing: about -6% to +8% */
+  const mkt = propertyMarketYear(S, S.country).realChange;          /* the same country-year housing shock the player's own property feels */
+  const swingNW = (hash01(S, S.year * 3 + 1) - 0.45) * 0.07 + mkt * 0.6;
   f.netWorthLocal = Math.max(0, Math.round(f.netWorthLocal * (1 + infl + swingNW)));
   /* Company result: a business year moves the inflow around its inflation-adjusted base. */
-  const swing = (hash01(S, S.year * 3 + 2) - 0.42) * 0.7;          /* about -29% to +41% */
+  const swing = (hash01(S, S.year * 3 + 2) - 0.42) * 0.5 + mkt * 1.5; /* company year: own result plus the shared economy */
   f.baseInflowLocal = Math.round(f.baseInflowLocal * (1 + infl));
   f.yearlyInflowLocal = Math.max(Math.round(f.baseInflowLocal * 0.3), Math.round(f.baseInflowLocal * (1 + swing)));
   const dep = eraDepositRates(S.country, S.year).savings || 0;
@@ -146,8 +158,9 @@ export function tickFamilyFortuneYearly(S) {
   /* Trust funding each childhood year, within the per-child cap. */
   if (age < 18) {
     const cap = f.netWorthLocal * perChildTrustCapPct(S);
-    f.trust.fundedLocal = Math.min(cap, f.trust.fundedLocal + f.netWorthLocal * DIALS.trustYearlyPct);
-    f.trust.fundedLocal = Math.round(f.trust.fundedLocal);
+    const before = f.trust.fundedLocal;
+    f.trust.fundedLocal = Math.round(Math.min(cap, before + f.netWorthLocal * DIALS.trustYearlyPct));
+    f.netWorthLocal = Math.max(0, f.netWorthLocal - (f.trust.fundedLocal - before)); /* trust money leaves the estate when it is set aside */
   }
   if (f.company && age < 40) {
     if (swing > 0.2) recordJournal(S, `${f.company.name} had a record year. The family fund is fuller, which shows in what the family can give.`, 'money');
@@ -158,6 +171,40 @@ export function tickFamilyFortuneYearly(S) {
     const key = 'at' + releaseAge;
     if (age >= releaseAge && !f.trust.released[key]) releaseTrust(S, f, key, share);
   }
+  giftBirthdayCar(S);
+}
+
+/* The keys: a real owned car at the birthday, paid from the fund and counted in the annual gift share. */
+export function giftBirthdayCar(S) {
+  const f = ensureFamilyFortune(S);
+  if (!f || f.carGifted) return null;
+  const age = S.player?.age ?? 0;
+  if (age < DIALS.carGiftAge || age > 25) return null;
+  const pool = CARS_MEGA_CATALOG.filter(c => S.year >= c.yearFrom && S.year <= c.yearTo && !(f.tier !== 'very_wealthy' && c.priceUsd2026 > 120000));
+  if (!pool.length) return null;
+  const target = DIALS.carTargetUsd[f.tier];
+  const ranked = pool.map(c => ({ c, d: Math.abs(Math.log(c.priceUsd2026 / target)) + hash01(S, c.id.length * 31 + c.priceUsd2026 % 97) * 0.05 })).sort((a, b) => a.d - b.d);
+  const room = giftRoom(f);
+  let pick = null, q = null;
+  for (const { c } of ranked.slice(0, 40)) {
+    const qq = showroomCarQuote(S, c.id, 'base');
+    if (qq.ok && qq.fullPrice <= room && qq.fullPrice <= f.fundLocal) { pick = c; q = qq; break; }
+  }
+  if (!pick) return null; /* postponed: not enough room this year, tried again the next tick */
+  f.carGifted = true;
+  f.fundLocal -= q.fullPrice; f.yearGifts += q.fullPrice;
+  const color = CAR_COLORS[Math.floor(hash01(S, 41) * CAR_COLORS.length)] || { name: 'Midnight Blue', hex: '#1D3557' };
+  const covered = f.tier === 'very_wealthy';
+  const owned = {
+    id: 'car_gift_' + S.year, catalogId: pick.id, name: `${pick.brandName} ${pick.model}`, tier: pick.tier, class: pick.class, body: pick.body,
+    colorHex: color.hex || '#1D3557', colorName: color.label || color.name || 'Metallic', trimLabel: q.trim.label, mods: [],
+    boughtYear: S.year, valueLocal: Math.round(q.fullPrice * 0.88), monthlyUpkeep: q.monthlyUpkeep, condition: 100,
+    gifted: true, familyCoversUpkeep: covered
+  };
+  S.cars.push(owned);
+  addGrant(f, S, 'car', q.fullPrice, owned.name);
+  recordJournal(S, `For your ${age}th birthday your family gave you the keys to a ${owned.colorName} ${owned.name} (${formatMoney(q.fullPrice, S.country)}). ${covered ? 'The family also covers its running costs while you keep it.' : 'Running costs are yours.'}`, 'family');
+  return owned;
 }
 
 /* The three releases are checked every year; this also covers a birthday that lands mid-year. */
@@ -169,6 +216,7 @@ export function tickFamilyFortuneMonthly(S) {
     const key = 'at' + releaseAge;
     if (age >= releaseAge && !f.trust.released[key]) releaseTrust(S, f, key, share);
   }
+  giftBirthdayCar(S);
 }
 
 /* --- allowance ----------------------------------------------------------- */
@@ -209,7 +257,14 @@ export function askCeiling(S) {
   if (!f) return 0;
   const d = DIALS.askCeiling[f.tier];
   const base = d.of === 'fund' ? f.fundLocal : monthlyInflow(f);
-  return Math.round(base * d.pct);
+  let v = Math.round(base * d.pct);
+  /* Reconciled with main: upper_middle never gets less than the pre-wealth rule (1.5 x standard rent). */
+  if (f.tier === 'upper_middle') {
+    const c = getCountry(S.country);
+    const rent = c?.monthlyBasket2026?.rentStandard;
+    if (rent) v = Math.max(v, Math.round(eraLocalCost(rent * 1.5, S.country, S.year)));
+  }
+  return v;
 }
 
 /* What the ask screen shows before the player commits. */

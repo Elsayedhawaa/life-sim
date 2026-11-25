@@ -1107,7 +1107,7 @@ export function settleHouseholdMonth(S) {
   }
 
   for (const car of S.cars) {
-    monthlyLiving += Math.round(car.monthlyUpkeep || 0);
+    if (!car.familyCoversUpkeep) monthlyLiving += Math.round(car.monthlyUpkeep || 0);
   }
 
   // The funding shown before enrollment is the funding used for billing.
