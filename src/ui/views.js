@@ -53,6 +53,7 @@ import {renderHomeTypeArt} from './homeTypeArt.js';
    ========================================================================== */
 
 import { MONTH_NAMES, FAMILY_TIERS, LIFE_AMBITIONS, computeNetWorthLocal, ensureExtendedState, liquidFundsLocal, JOURNAL_REACTIONS } from '../core/schema.js';
+import { fitBannerToCountry } from './countryArt.js';
 import { COUNTRIES, COUNTRY_IDS, getCountry, formatMoney } from '../data/countries.js';
 import { entryDelta, entryCurrencyIsCurrent } from '../core/ledgerCurrency.js';
 import {
@@ -324,7 +325,7 @@ export function countryLevelNarrative(text,S){
   return out;
 }
 
-export function pickDynamicBanner(S, section = 'life', sub = '') {
+function pickDynamicBannerRaw(S, section = 'life', sub = '') {
   const c = String(S?.country || 'egy').toLowerCase();
   const month = Number(S?.month || 1);
   const age = Number(S?.player?.age ?? 22);
@@ -469,6 +470,14 @@ export function pickDynamicBanner(S, section = 'life', sub = '') {
   }
 
   return regionalSkyline;
+}
+
+export function pickDynamicBanner(S, section = 'life', sub = '') {
+  const raw = pickDynamicBannerRaw(S, section, sub);
+  const c = String(S?.country || 'egy').toLowerCase();
+  const sc = COUNTRY_SCENES[c];
+  const own = sc && Number(S?.year || 2000) >= sc.since ? sc.scene : null;
+  return fitBannerToCountry(raw, c, section, own, Number(S?.turn || 0) + Number(S?.month || 0));
 }
 
 /* Counts computed from the live data, never hand-typed: merged career tracks
