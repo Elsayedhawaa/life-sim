@@ -873,6 +873,7 @@ export function offerConnectedInternship(S) {
   if (age < 17 || age > 23 || S.country !== S.homeCountry) return null;
   if (S.activeScene || (S.sceneQueue || []).length) return null;
   if (f.work?.stint && f.work.stintAbs != null) return null; /* already spending summers at the family company */
+  if (S.career?.employed && S.career?.job) return null; /* a summer internship is for someone not already in full work */
   f.internOffer = { employer: PARTNERS[Math.floor(hash01(S, 311) * PARTNERS.length)], pay: internPay(S, f), year: S.year };
   queueScene(S, buildInternScene(S), true);
   return f.internOffer;
