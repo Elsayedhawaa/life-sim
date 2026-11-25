@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const { resetLifeScopedUi } = await import('../src/ui/lifeScopedUi.js');
+const u = { journalType: 'money', journalQuery: 'cairo', journalYear: '2031', ledgerFilter: 'out', jobQuery: 'nurse', activeTab: 'work', reCompare: [1] };
+resetLifeScopedUi(u);
+assert.equal(u.journalQuery, ''); assert.equal(u.journalType, 'all'); assert.equal(u.journalYear, 'all'); assert.equal(u.ledgerFilter, 'all'); assert.equal(u.jobQuery, '');
+assert.equal(u.activeTab, 'work', 'unrelated state is left alone');
+const main = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+assert.ok((main.match(/resetLifeScopedUi\(uiState\)/g) || []).length >= 2, 'both the new-life and next-generation paths reset it');
+const views = fs.readFileSync(new URL('../src/ui/views.js', import.meta.url), 'utf8');
+assert.ok(!/Estate: \$\{esc\(formatMoney\(netWorth/.test(views), 'header no longer calls living net worth an estate');
+console.log('life scoped ui OK');

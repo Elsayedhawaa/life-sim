@@ -336,6 +336,7 @@ import {
   saveTheme
 } from './ui/views.js';
 /* Turn result card: after every advance / decision, say what changed. */
+import { resetLifeScopedUi } from './ui/lifeScopedUi.js';
 import { snapshotTurn, buildTurnResult, renderTurnResultCardHtml } from './ui/turnResult.js';
 import {
   resolveFurnishTarget,
@@ -1255,6 +1256,7 @@ if (typeof document !== 'undefined') {
       const nextGen = continueAsChild(S, btn.dataset.id);
       if (nextGen) {
         S = nextGen;
+        resetLifeScopedUi(uiState);
         uiState.activeTab = 'life';
         saveGameToStorage(S);
         showToast(`Continuing dynasty as ${S.player.fullName}!`);
@@ -2187,6 +2189,7 @@ if (typeof document !== 'undefined') {
       uiState.showNewLifeModal = false;
       uiState.newLifeDraft = {};
       clearNewLifeDraft();
+      resetLifeScopedUi(uiState);
       uiState.activeTab = 'life';
       saveGameToStorage(S);
       showToast(`Welcome to the world, ${S.player.fullName}!`);

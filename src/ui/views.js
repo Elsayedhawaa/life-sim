@@ -559,7 +559,7 @@ export function renderHudHtml(S, flashKeys) {
           ${(S.player.age >= 16 || S.money.cash !== 0 || netWorth !== 0) ? `
           <div class="hud-wealth-label">Liquid Cash / Net Worth</div>
           <div class="hud-wealth-val mono ${S.money.cash < 0 ? 'text-bad' : 'text-good'}">${esc(formatMoney(S.money.cash, S.country, true))}</div>
-          <div class="muted mono" style="font-size:0.76rem">Estate: ${esc(formatMoney(netWorth, S.country, true))}</div>
+          <div class="muted mono" style="font-size:0.76rem">Net worth: ${esc(formatMoney(netWorth, S.country, true))}</div>
           ` : ''}
           <button class="btn btn-sm" style="margin-top:6px" data-action="open-new-life">${icon('refresh', 13)} New Life</button>
         </div>
