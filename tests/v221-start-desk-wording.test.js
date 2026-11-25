@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { createNewLifeState, ensureExtendedState } from '../src/core/schema.js';
+import { renderWorkTabHtml } from '../src/ui/views.js';
+const S = createNewLifeState({ seed: 4242, country: 'egy', birthYear: 1990, familyTier: 'middle', gender: 'm', ambition: 'entrepreneur' }); ensureExtendedState(S);
+S.player.age = 34; S.year = 2024; S.month = 6; S.money.cash = 2000000;
+const h = renderWorkTabHtml(S, { workSub: 'ventures', bizDesk: 'start' });
+const text = h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+assert.ok(/Startup capital/.test(text), 'start cards show the capital');
+assert.ok(!/Est\. loss|Est\. profit/.test(text), 'no bare "Est. loss" prediction');
+assert.ok(/Scenario check: if sales match the assumed/.test(text), 'scenario wording present');
+assert.ok(/profit is unknown until the first month settles/i.test(text), 'states profit is unknown');
+assert.ok(/Assumptions and costs/.test(text), 'assumptions are visible');
+console.log('start-desk-wording OK');

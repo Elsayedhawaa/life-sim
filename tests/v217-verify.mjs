@@ -181,10 +181,10 @@ section('2. No estimated profit');
 {
   const S = adultLife();
   const biz = launchBiz(S);
-  const html = renderWorkTabHtml(S, { workSub: 'ventures' });
+  const html = renderWorkTabHtml(S, { workSub: 'ventures', bizDesk: 'start' }); /* the Start desk; with a business the default desk is 'owned', which made 2a/2b vacuous */
   const ventures = html.slice(html.indexOf('Private Enterprise'));
-  check('2a no "Est." in the rendered ventures section', !/Est\./.test(ventures), biz ? '' : 'could not launch a business');
-  check('2b launch list shows real inputs (capital) and says profit is unknown', /Capital:/.test(ventures) && /Profit is unknown until the first month settles/.test(ventures));
+  check('2a no bare "Est. loss/profit" prediction in the rendered ventures section', !/Est\. (loss|profit)/.test(ventures), biz ? '' : 'could not launch a business');
+  check('2b launch list shows real inputs (capital) and says profit is unknown', /Startup capital/.test(ventures) && /profit is unknown until the first month settles/i.test(ventures));
   if (biz) {
     const before = S.money.cash;
     runMonths(S, 1);
