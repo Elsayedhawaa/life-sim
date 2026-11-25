@@ -397,11 +397,11 @@ function rawFriendJobScene(S, biz, friend, savedOffer=null) {
         },
       },
       {
-        label: 'Turn it down — the business comes back',
+        label: biz.dead === true ? 'Turn it down — you keep looking on your own terms' : 'Turn it down — you stay with the business',
         effect: (st) => {
           shiftAffection(friend, 2);
           shiftVitals(st, { stress: -2 });
-          recordJournal(st, `Turned down ${first}'s job offer — ${biz.name} gets another chance first. ${first} respects the loyalty, even if the money is tight.`, 'career');
+          recordJournal(st, biz.dead === true ? `Turned down ${first}'s job offer. ${biz.name} is finished and nothing changes there, so you keep looking on your own terms. ${first} understands, even if the money is tight.` : `Turned down ${first}'s job offer to stay with ${biz.name}. ${first} respects the loyalty, even if the money is tight.`, 'career');
         },
       },
     ],
