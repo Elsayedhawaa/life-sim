@@ -48,7 +48,7 @@ import{convertCurrency}from'../data/economy.js';
    businessLoanTerms (businessLoans.js).
    ========================================================================== */
 
-import{checkJobApplication,hireIntoJob}from'./careerEducationEngine.js';
+import{checkJobApplication,hireIntoJob,getMergedCareerTracks}from'./careerEducationEngine.js';
 import { clamp } from '../core/rng.js';
 import { recordJournal, walletMove, queueScene, ensureExtendedState } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
@@ -363,6 +363,14 @@ export function friendJobOffer(S, friend) {
   };
 }
 
+/* The offer carries only employer/title/track/pay. The hard gate (checkJobApplication) also needs the track's degree requirement and whether THIS player meets it; without them every friend offer failed with "Requires a degree in ." and could never be taken. Same rule as the job market listing. */
+function friendJobApplication(st,offer){
+  const track=getMergedCareerTracks(st.year)?.[offer.track];
+  const req=track?.reqDegrees||[];
+  const degrees=st.education?.degrees||[];
+  return {...offer,employer:offer.employer||offer.employerLabel,level:0,reqDegrees:req,qualifiedByDegree:req.length===0||req.some(d=>degrees.includes(d))};
+}
+
 function rawFriendJobScene(S, biz, friend, savedOffer=null) {
   const offer = savedOffer||friendJobOffer(S, friend);
   const fname = personName(friend, 'A friend');
@@ -380,9 +388,10 @@ function rawFriendJobScene(S, biz, friend, savedOffer=null) {
     choices: [
       {
         label: `Take the job — ${offer.title}, ${formatMoney(offer.monthlyGross, S.country)}/mo`,
-        available:st=>checkJobApplication(st,{...offer,employer:offer.employer||offer.employerLabel,level:0}).ok,
+        available:st=>checkJobApplication(st,friendJobApplication(st,offer)).ok,
+        lockReason:st=>checkJobApplication(st,friendJobApplication(st,offer)).msg||'You do not meet the requirements for this job yet.',
         effect: (st) => {
-          const application={...offer,employer:offer.employer||offer.employerLabel,level:0};const gate=checkJobApplication(st,application);if(!gate.ok)return {ok:false};hireIntoJob(st,application,gate.workAuth);
+          const application=friendJobApplication(st,offer);const gate=checkJobApplication(st,application);if(!gate.ok)return {ok:false};hireIntoJob(st,application,gate.workAuth);
           shiftVitals(st, { stress: -6 });
           recordJournal(st, `Took the ${offer.title} job ${first} offered at ${offer.employerLabel} (${formatMoney(offer.monthlyGross, st.country)}/month) while ${biz.name} ${biz.dead === true ? 'is closed' : 'struggles'} — steady pay again, from next month's settlement.`, 'career');
         },

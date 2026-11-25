@@ -252,7 +252,8 @@ function childState() {
   const noticedSecond = f.rel.driftState === 'noticed' && r2.noticed === 1;
   const noticeScene = hasNotice(C);
   console.log(`after 2nd yearly tick (24 months silent): state=${f.rel.driftState} noticed=${r2.noticed} noticeScene=${noticeScene}`);
-  check('year 2 of silence: notice fires, after the warning', noticedSecond && noticeScene, `state=${f.rel.driftState} noticed=${r2.noticed}`);
+  /* (replacement) Under 18 the notice scene is deliberately never queued (socialEnergy.queueDriftNoticeScene: childhood is already yearly pacing; drift stays visible on the People tab). So a child stays 'drifting' with no scene, and the warning-then-notice sequence is asserted for an adult below. */
+  check('year 2 of silence, child: still drifting (visible on People), no notice scene is forced on a child', f.rel.driftState === 'drifting' && r2.noticed === 0 && !noticeScene, `state=${f.rel.driftState} noticed=${r2.noticed} scene=${noticeScene}`);
 }
 { /* monthly pacing is unchanged: warn at 6, notice at 12 */
   const A = createNewLifeState({ seed: 99, country: 'egy', birthYear: 1996, familyTier: 'middle', gender: 'm' });
@@ -261,10 +262,11 @@ function childState() {
   const f = createPerson(A, { age: 30, gender: 'm', role: 'friend', relationLabel: 'Friend' });
   A.people[f.id] = f; A.relations.friendIds = [f.id];
   f.rel.lastContactTurn = A.turn; f.rel.lastContactUnknown = false; f.rel.driftState = 'none';
-  A.turn += 6;
+  /* monthsSinceContact now reads the recorded calendar month of the last contact, so the calendar must move with the turns. */
+  A.turn += 6; A.month += 6;
   const r6 = tickFriendshipDrift(A);
   const warn6 = f.rel.driftState === 'drifting' && r6.warned === 1 && r6.noticed === 0;
-  A.turn += 6;
+  A.turn += 6; A.year += 1; A.month -= 6;
   const r12 = tickFriendshipDrift(A);
   const note12 = f.rel.driftState === 'noticed' && r12.noticed === 1;
   console.log(`monthly: 6mo state=${warn6 ? 'drifting' : f.rel.driftState}, 12mo noticed=${note12}`);
@@ -313,8 +315,8 @@ console.log('--- §5b remittance backfill verdict ---');
   check('ledger cap 400 drops old lines (no complete history to backfill from)', R.ledger.length === 400, `len=${R.ledger.length}`);
   // Only the two live send paths write the total — no backfill code exists.
   const src = readFileSync(new URL('../src/core/schema.js', import.meta.url), 'utf8');
-  const writers = (readFileSync(new URL('../src/systems/completeLifeSystems.js', import.meta.url), 'utf8').match(/remittedHomeEgpTotal =/g) || []).length
-    + (readFileSync(new URL('../src/systems/economyEngine.js', import.meta.url), 'utf8').match(/remittedHomeEgpTotal =/g) || []).length;
+  const writers = (readFileSync(new URL('../src/systems/completeLifeSystems.js', import.meta.url), 'utf8').match(/remittedHomeEgpTotal\s*=[^=]/g) || []).length
+    + (readFileSync(new URL('../src/systems/economyEngine.js', import.meta.url), 'utf8').match(/remittedHomeEgpTotal\s*=[^=]/g) || []).length;
   console.log(`live writers of remittedHomeEgpTotal: ${writers} (the two send paths only)`);
   check('no backfill writer exists (2 live send paths only)', writers === 2, `writers=${writers}`);
   check('remittedHomeEgpTotal left at 0 for the old life (no unsafe backfill applied)', Number(R.money.remittedHomeEgpTotal) === 0, `got ${R.money.remittedHomeEgpTotal}`);

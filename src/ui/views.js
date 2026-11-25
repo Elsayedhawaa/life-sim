@@ -4874,7 +4874,8 @@ function renderCourtsAndCrimeSubtabHtml(S) {
               <span>Counsel Retainer: <strong class="mono">${esc(formatMoney(fee, S.country))}</strong> · ${claim.available?'Review 3 mo · Loss '+esc(formatMoney(claim.amount,S.country)):'No recorded dispute'}</span>${claim.available?'<span style="display:block" class="text-bad">'+esc(claim.collectionNote)+(claim.collectionAvailable?' · Frozen '+esc(formatMoney(claim.recoverableLocal,S.country)):'')+'</span>':''}
             </div>
             <button class="btn btn-primary btn-sm" data-action="file-lawsuit" data-id="${su.id}" ${S.money.cash >= fee&&claim.available ? '' : 'disabled'}>${claim.collectionAvailable?'File traced-funds claim':'Pay for review'}</button>
-            ${S.money.cash < fee ? lockReason('Not enough cash for the retainer', `Need ${esc(formatMoney(Math.round(fee - S.money.cash), S.country))} more`) : ''}
+            ${!claim.available ? lockReason('Nothing to file', 'Your record shows no dispute of this kind.') : ''}
+            ${claim.available && S.money.cash < fee ? lockReason('Not enough cash for the retainer', `Need ${esc(formatMoney(Math.round(fee - S.money.cash), S.country))} more`) : ''}
           </div>
         `;
       }).join('')}

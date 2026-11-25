@@ -55,6 +55,7 @@ await import('../src/main.js');
 const attrAll = (html, attr) => [...html.matchAll(new RegExp(`${attr}="([^"]*)"`, 'g'))].map((m) => m[1]);
 const count = (html, sub) => (html.split(sub).length - 1);
 const journalTexts = (S) => (S.journal || []).map((e) => e.text || '');
+const strip = (h) => String(h).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
 const queuedScenes = (S) => [...(S.sceneQueue || []), ...(S.activeScene ? [S.activeScene] : [])];
 const findScene = (S, re) => queuedScenes(S).find((sc) => re.test(sc.title || ''));
 
@@ -150,15 +151,12 @@ section('(b) business card opens section by section');
   const S = adultLife();
   const biz = mkBiz('biz_ops', 'Menu Café');
   S.career.businesses = [biz]; S.career.business = biz;
-  const html = renderOperationsMenuHtml(S, biz);
-  const details = count(html, '<details');
-  const summaries = count(html, '<summary>');
-  console.log(`  ops menu: ${details} <details> sections, ${summaries} <summary> headings`);
-  check('ops menu has 7 <details> sections (Stock, Pricing, Suppliers, Staff, Marketing, Premises, Cash)', details === 7, `${details} found`);
-  check('every section has a <summary> to open it', summaries === details, `${summaries} summaries`);
-  for (const label of ['Stock', 'Pricing', 'Suppliers', 'Staff', 'Marketing', 'Premises', 'Cash']) {
-    check(`ops menu section "${label}" present`, html.includes(`>${label}<`) || html.includes(`<strong>${label}</strong>`), label);
-  }
+  /* (replacement) The 7-<details> operations menu was replaced by six company tabs (commit e5f2b3c). The invariant that matters survives: every one of the seven topics is still reachable from the card. */
+  const tabsHtml = ['overview', 'products', 'team', 'operations', 'growth', 'money'].map(bizTab => renderWorkTabHtml(S, { workSub: 'ventures', bizTab })).join('\n');
+  const all = tabsHtml + '\n' + renderOperationsMenuHtml(S, biz);
+  check('the company card still offers six area tabs', ['Overview', 'Products', 'Team', 'Operations', 'Growth', 'Money'].every(n => count(tabsHtml, `>${n}</button>`) >= 1), 'tabs');
+  const topics = { Stock: /Stock/, Pricing: /Pric/, Suppliers: /Supplier/, Staff: /Staff|Team|Employee/, Marketing: /Marketing|Brand/, Premises: /Premises|Rent|Lease/, Cash: /Cash|Money/ };
+  for (const [label, re] of Object.entries(topics)) check(`topic "${label}" is reachable from the company card`, re.test(strip(all)), label);
 }
 
 /* ================= (c) unity ================= */
@@ -172,7 +170,7 @@ section('(c) unity — one source of truth');
   });
   S.career.businesses = [biz]; S.career.business = biz;
   settleHouseholdMonth(S);
-  const cardHtml = renderWorkTabHtml(S, { workSub: 'ventures' });
+  const cardHtml = renderWorkTabHtml(S, { workSub: 'ventures', bizTab: 'money' });
   const finHtml = renderFinanceTabHtml(S, { finSub: 'cashflow' });
   const timeHtml = renderLifeTabHtml(S, {});
   const cardNet = attrAll(cardHtml, 'data-biz-net').map(Number);
@@ -204,7 +202,7 @@ section('(c) unity — one source of truth');
   const cFinSal = financeSalaryLine(C);
   console.log(`  crisis salary net — career ${cCareerNet}, finance ${cFinSal ? cFinSal.amount : null} (gross 30000 × 0.95 = 28500)`);
   check('salary net identical on Career tab and Finance tab (crisis year)', !!cFinSal && cCareerNet === cFinSal.amount, `career ${cCareerNet} vs finance ${cFinSal ? cFinSal.amount : 'none'}`);
-  const cCardNet = attrAll(renderWorkTabHtml(C, { workSub: 'ventures' }), 'data-biz-net').map(Number);
+  const cCardNet = attrAll(renderWorkTabHtml(C, { workSub: 'ventures', bizTab: 'money' }), 'data-biz-net').map(Number);
   const cFinNet = attrAll(renderFinanceTabHtml(C, { finSub: 'cashflow' }), 'data-biz-net').map(Number);
   const cTimeNet = attrAll(renderLifeTabHtml(C, {}), 'data-biz-net').map(Number);
   const cHelper = businessLastMonthNet(C, cbiz);
@@ -252,6 +250,11 @@ section('(d) losing a job reaches the mortgage, spouse, children, visa');
   check('mortgage choice pays next instalment early (monthsLeft −1, cash −15000)', prop.monthsLeft === monthsBefore - 1 && S.money.cash === cashBefore - 15000, `months ${monthsBefore}→${prop.monthsLeft}, cash ${cashBefore}→${S.money.cash}`);
   // Mortgage — payment holiday is honoured by the settlement.
   const mScene2 = findScene(S, /Bank Writes About/);
+  /* An answered job-loss reaction is single-use per loss (jobLossReactionReplies): answering the same card again must change nothing. */
+  mScene2.choices[1].effect(S);
+  check('an already-answered mortgage card cannot be answered twice (no holiday granted by the second click)', prop.paymentHolidayUntil === undefined, `paymentHolidayUntil ${prop.paymentHolidayUntil}`);
+  /* To test the settlement honouring the holiday flag, model a fresh decision by clearing the reply record, as a new job loss would. */
+  S.career.jobLossReactionReplies = {};
   mScene2.choices[1].effect(S);
   const monthsAfterHoliday = prop.monthsLeft;
   settleHouseholdMonth(S);
@@ -270,9 +273,9 @@ section('(d) losing a job reaches the mortgage, spouse, children, visa');
   check('children choice tells them honestly (trust +4)', child1.rel.trust === trustBefore + 4, `trust ${trustBefore}→${child1.rel.trust}`);
   // Visa — warned, with the real status.
   const vScene = findScene(S, /Your Visa Depends on That Job/);
-  check('visa scene is a real scene naming sponsor and permit', !!vScene && /Orascom Construction/.test(vScene.text) && /Egypt Work Visa/.test(vScene.text));
+  check('(replacement) visa scene names the recorded permit and expiry and says no grace or sponsor agreement is granted (the sponsor is no longer named: sponsorship is not modelled)', !!vScene && /Egypt Work Visa/.test(vScene.text) && /6\/2027/.test(vScene.text) && /No grace extension or sponsor agreement is granted/.test(vScene.text));
   vScene.choices[0].effect(S);
-  check('visa choice starts the sponsor hunt (flag + journal)', S.career.jobLoss.visaJobHunt === true && journalTexts(S).some((t) => /work visa.*depends on your job/.test(t)));
+  check('visa choice starts the sponsor hunt (flag + journal)', S.career.jobLoss.visaJobHunt === true && journalTexts(S).some((t) => /Started looking for eligible work after job loss\. Check Passport/.test(t)));
   // No repeat in the same loss.
   const rep2 = checkCareerConsequences(S);
   check('reactions do not refire for the same job loss', (rep2.jobLoss?.fired || []).length === 0, `fired ${(rep2.jobLoss?.fired || []).length}`);
@@ -463,6 +466,11 @@ section('(g) business failure / boom reaches the rest of the life (v2.17 F1–F3
   const frScene = findScene(S, /Offers You a Job/);
   check('F3: a friend offers a real job (their real job, not Shop Assistant)', !!frScene && /Orascom Construction/.test(frScene.text) && /Junior Site Engineer/.test(frScene.text), frScene?.title || 'no scene');
   if (frScene) {
+    /* Real defect fixed with this change: the offer used to lack the degree requirement, so it always failed with "Requires a degree in ." Now an unqualified player sees the real reason, and a qualified one can take the job. */
+    const keptDegrees = S.education.degrees; S.education.degrees = [];
+    check('F3: an unqualified player sees a readable reason naming the degree, not "Requires a degree in ."', frScene.choices[0].available(S) === false && /ENGINEERING/.test(String(frScene.choices[0].lockReason(S))), String(frScene.choices[0].lockReason?.(S)));
+    S.education.degrees = keptDegrees;
+    check('F3: a QUALIFIED player (the test life holds the degree) can take it — before the fix the missing qualification flag blocked everyone', frScene.choices[0].available(S) === true, 'available');
     frScene.choices[0].effect(S);
     check('F3: taking the job employs you at a real wage', S.career.employed === true && S.career.job && S.career.job.monthlyGross > 0, S.career.job ? `${S.career.job.title} ${S.career.job.monthlyGross}/mo` : 'no job');
   }
