@@ -328,7 +328,7 @@ import {
   renderLifestyleTabHtml,
   renderWorldTabHtml,
   renderBottomDockHtml,
-  renderNewLifeModalHtml,
+  renderNewLifeModalHtml, renderNewLifePreviewInnerHtml,
   eraClassForYear,
   recordFinanceHistorySnapshot,
   /* v2.16 W1 — light/dark theme: the saved theme is the source of truth. */
@@ -364,11 +364,24 @@ if (!S) {
     gender: 'm',
     ambition: 'global_passport'
   });
-  saveGameToStorage(S);
+  /* The placeholder life is NOT saved: saving it made a refresh load it as
+     "your life" (default name, ignored choices) and hide the setup screen.
+     Until the player starts a life, a reload shows the setup screen again. */
 }
 ensureExtendedState(S);
 
+/* New-life form draft: what the player has picked so far survives any
+   re-render (theme toggle, toast) and a page reload, until a life starts. */
+const NL_DRAFT_KEY = 'world_life_newlife_draft_v1';
+const NL_DRAFT_FIELDS = ['country', 'birthYear', 'gender', 'familyTier', 'firstName', 'familyName', 'skinToneIdx', 'faceShapeIdx', 'ambition'];
+function loadNewLifeDraft() {
+  try { const d = JSON.parse(localStorage.getItem(NL_DRAFT_KEY) || '{}'); return d && typeof d === 'object' ? d : {}; } catch (_) { return {}; }
+}
+function saveNewLifeDraft(d) { try { localStorage.setItem(NL_DRAFT_KEY, JSON.stringify(d)); } catch (_) {} }
+function clearNewLifeDraft() { try { localStorage.removeItem(NL_DRAFT_KEY); } catch (_) {} }
+
 const uiState = {
+  newLifeDraft: loadNewLifeDraft(),
   activeTab: 'life',
   peopleSub: 'circle',
   workSub: 'jobs',
@@ -441,6 +454,7 @@ export function renderApp(preserveFilterKey = null, caretPos = null) {
   // v2.13 W4 — era skin: one class on the app root, driven by S.year only.
   for (const c of ['era-1960s', 'era-1970s', 'era-1980s', 'era-1990s', 'era-2000s', 'era-2010s', 'era-2020s']) root.classList.remove(c);
   root.classList.add(eraClassForYear(S.year));
+  document.documentElement.classList.toggle('nl-open', !!uiState.showNewLifeModal);
   recordFinanceHistorySnapshot(S); // v2.13 W4: one net-worth snapshot per year
 
   let tabContent = '';
@@ -461,7 +475,7 @@ export function renderApp(preserveFilterKey = null, caretPos = null) {
       <main id="main-content">${renderTurnResultCardHtml(S, uiState)}${tabContent}</main>
     </div>
     ${renderBottomDockHtml(S)}
-    ${uiState.showNewLifeModal ? renderNewLifeModalHtml({ country: S.homeCountry, birthYear: 1998, gender: S.player.gender }) : ''}
+    ${uiState.showNewLifeModal ? renderNewLifeModalHtml({ country: S.homeCountry, birthYear: 1998, gender: S.player.gender, ...uiState.newLifeDraft }) : ''}
   `;
 
   for(const panel of root.querySelectorAll('details[data-panel]'))if(openPanels.includes(panel.dataset.panel))panel.open=true;
@@ -501,7 +515,20 @@ function handleActionResult(res) {
 }
 
 if (typeof document !== 'undefined') {
+  const syncNewLifeDraft = (el) => {
+    const form = el && el.closest ? el.closest('#new-life-form') : null;
+    if (!form) return false;
+    const fd = new FormData(form);
+    const d = {};
+    for (const k of NL_DRAFT_FIELDS) if (fd.has(k)) d[k] = String(fd.get(k));
+    uiState.newLifeDraft = d;
+    saveNewLifeDraft(d);
+    const pv = document.getElementById('nl-preview');
+    if (pv) pv.innerHTML = renderNewLifePreviewInnerHtml(d);
+    return true;
+  };
   document.addEventListener('input', (e) => {
+    if (syncNewLifeDraft(e.target)) return;
     const el = e.target;
     if(el?.dataset?.resource){const panel=el.closest('.custom-cloud'),values=['cpu','storage','bandwidth'].map(key=>panel.querySelector('[data-resource='+key+']').value),q=customCloudQuote(Number(panel.dataset.base),...values);panel.querySelector('[data-cloud-quote]').textContent=q?formatMoney(q.monthly,panel.dataset.currency):'Enter valid whole units';return;}
     if (!el || !el.dataset || !el.dataset.filter) return;
@@ -512,6 +539,7 @@ if (typeof document !== 'undefined') {
   });
 
   document.addEventListener('change', (e) => {
+    if (syncNewLifeDraft(e.target)) return;
     const el = e.target;
     if (!el || !el.dataset || !el.dataset.filter) return;
     if (el.tagName !== 'SELECT') return;
@@ -590,6 +618,7 @@ if (typeof document !== 'undefined') {
 
     if (action === 'close-new-life') {
       uiState.showNewLifeModal = false;
+      saveGameToStorage(S); /* closing keeps the placeholder life the player is now playing */
       renderApp();
       return;
     }
@@ -2146,6 +2175,8 @@ if (typeof document !== 'undefined') {
       if (skinToneIdx >= 0) S.player.appearance.skinToneIdx = skinToneIdx;
       S.player.appearance.faceShapeIdx = faceShapeIdx;
       uiState.showNewLifeModal = false;
+      uiState.newLifeDraft = {};
+      clearNewLifeDraft();
       uiState.activeTab = 'life';
       saveGameToStorage(S);
       showToast(`Welcome to the world, ${S.player.fullName}!`);

@@ -5122,12 +5122,32 @@ export function renderBottomDockHtml(S) {
   `;
 }
 
+/* The new-life preview shows one tile per choice, so each picture matches what
+   is chosen: the birth country, the era the birth year falls in, and a family
+   tile captioned with the chosen background. main.js patches it live as the
+   form changes; the form itself is never re-rendered while the player edits. */
+export function renderNewLifePreviewInnerHtml(d = {}) {
+  const country = COUNTRIES[d.country] ? d.country : 'egy';
+  const year = Number(d.birthYear) || 1998;
+  const tier = FAMILY_TIERS[d.familyTier] ? d.familyTier : 'middle';
+  const banner = { egy: 'cairo_nile_felucca_ink.jpg', che: 'switzerland_alps_lake_ink.jpg', swe: 'sweden_stockholm_archipelago_ink.jpg', tur: 'turkey_istanbul_bosphorus_ink.jpg', sau: 'city_gulf_skyline.jpg', uae: 'city_gulf_skyline.jpg', qat: 'city_gulf_skyline.jpg', kwt: 'city_gulf_skyline.jpg', jpn: 'east_asia_skyline_ink.jpg', sgp: 'east_asia_skyline_ink.jpg' }[country] || 'city_europe_west.jpg';
+  const old = year <= 1985;
+  const tile = (file, alt, cap) => `<figure style="margin:0;flex:1;min-width:88px"><img src="assets/banners/${file}" alt="${esc(alt)}" loading="eager" style="width:100%;height:74px;object-fit:cover;border-radius:8px"><figcaption class="muted" style="font-size:0.78rem;margin-top:2px">${esc(cap)}</figcaption></figure>`;
+  return tile(banner, getCountry(country).name, getCountry(country).name)
+    + tile(old ? 'era_vintage_street_ink.jpg' : 'era_modern_city_ink.jpg', old ? 'An older era street' : 'A modern city', `Born ${year}`)
+    + tile('family_hearth_home_ink.jpg', FAMILY_TIERS[tier].label, FAMILY_TIERS[tier].label);
+}
+
 export function renderNewLifeModalHtml(defaults = {}) {
   const selCountry = defaults.country || 'egy';
   const selYear = defaults.birthYear || 1998;
   const selGender = defaults.gender || 'm';
   const selTier = defaults.familyTier || 'middle';
   const selAmbition = defaults.ambition || 'global_passport';
+  const selFirst = defaults.firstName || '';
+  const selFamily = defaults.familyName || '';
+  const selSkin = String(defaults.skinToneIdx ?? '-1');
+  const selFace = String(defaults.faceShapeIdx ?? '');
   /* v2.16 Worker 3 — theme control on the new-life modal: the player
      chooses their theme before they choose their life. The modal reuses
      renderThemeToggleHtml() — the exact same Light/Dark control as the
@@ -5139,18 +5159,12 @@ export function renderNewLifeModalHtml(defaults = {}) {
      Banner: a road at dawn, a life beginning. Choice previews: the chosen
      country's scene, both eras side by side (vintage street vs modern
      city, so the era choice looks different), and the family home. */
-  const nlCountryBanner = { egy: 'cairo_nile_felucca_ink.jpg', che: 'switzerland_alps_lake_ink.jpg', swe: 'sweden_stockholm_archipelago_ink.jpg', tur: 'turkey_istanbul_bosphorus_ink.jpg', sau: 'city_gulf_skyline.jpg', uae: 'city_gulf_skyline.jpg', qat: 'city_gulf_skyline.jpg', kwt: 'city_gulf_skyline.jpg', jpn: 'east_asia_skyline_ink.jpg', sgp: 'east_asia_skyline_ink.jpg' }[selCountry] || 'city_europe_west.jpg';
 
   return `
     <div class="modal-backdrop" id="new-life-modal">
       <div class="modal-sheet">
         ${renderEditorialBannerHtml('new_life_beginnings_ink.jpg', 'Begin a New Life — a road at dawn, a life ahead of you')}
-        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
-          <figure style="margin:0;flex:1;min-width:120px"><img src="assets/banners/${nlCountryBanner}" alt="${esc(getCountry(selCountry).name)}" loading="eager" style="width:100%;height:74px;object-fit:cover;border-radius:8px"><figcaption class="muted" style="font-size:0.78rem;margin-top:2px">${esc(getCountry(selCountry).name)}</figcaption></figure>
-          <figure style="margin:0;flex:1;min-width:120px"><img src="assets/banners/era_vintage_street_ink.jpg" alt="The 1960s and 1970s" loading="eager" style="width:100%;height:74px;object-fit:cover;border-radius:8px;${selYear <= 1985 ? 'outline:2px solid var(--brand-gold)' : ''}"><figcaption class="muted" style="font-size:0.78rem;margin-top:2px">1960s–70s${selYear <= 1985 ? ' — your era' : ''}</figcaption></figure>
-          <figure style="margin:0;flex:1;min-width:120px"><img src="assets/banners/era_modern_city_ink.jpg" alt="Today" loading="eager" style="width:100%;height:74px;object-fit:cover;border-radius:8px;${selYear > 1985 ? 'outline:2px solid var(--brand-gold)' : ''}"><figcaption class="muted" style="font-size:0.78rem;margin-top:2px">Today${selYear > 1985 ? ' — your era' : ''}</figcaption></figure>
-          <figure style="margin:0;flex:1;min-width:120px"><img src="assets/banners/family_hearth_home_ink.jpg" alt="Family home" loading="eager" style="width:100%;height:74px;object-fit:cover;border-radius:8px"><figcaption class="muted" style="font-size:0.78rem;margin-top:2px">${esc(FAMILY_TIERS[selTier]?.label || 'Family background')}</figcaption></figure>
-        </div>
+        <div id="nl-preview" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">${renderNewLifePreviewInnerHtml({ country: selCountry, birthYear: selYear, familyTier: selTier })}</div>
         <div class="section-head">
           <h2>Begin a New Life</h2>
           <button class="btn btn-sm" data-action="close-new-life">Close</button>
@@ -5195,26 +5209,26 @@ export function renderNewLifeModalHtml(defaults = {}) {
 
           <div class="form-field">
             <label for="nl-first">First Name (blank = authentic random)</label>
-            <input id="nl-first" name="firstName" type="text" placeholder="Auto-pick cultural name">
+            <input id="nl-first" name="firstName" type="text" value="${esc(selFirst)}" autocomplete="off" placeholder="Auto-pick cultural name">
           </div>
 
           <div class="form-field">
             <label for="nl-family">Family Surname (blank = random)</label>
-            <input id="nl-family" name="familyName" type="text" placeholder="Auto-pick family surname">
+            <input id="nl-family" name="familyName" type="text" value="${esc(selFamily)}" autocomplete="off" placeholder="Auto-pick family surname">
           </div>
 
           <div class="form-field">
             <label for="nl-skin">Complexion</label>
             <select id="nl-skin" name="skinToneIdx">
-              <option value="-1">Authentic Regional Default</option>
-              ${SKIN_PALETTES.map(sk => `<option value="${sk.id}">${esc(sk.label)}</option>`).join('')}
+              <option value="-1" ${selSkin === '-1' ? 'selected' : ''}>Authentic Regional Default</option>
+              ${SKIN_PALETTES.map(sk => `<option value="${sk.id}" ${selSkin === String(sk.id) ? 'selected' : ''}>${esc(sk.label)}</option>`).join('')}
             </select>
           </div>
 
           <div class="form-field">
             <label for="nl-faceshape">Facial Bone Structure</label>
             <select id="nl-faceshape" name="faceShapeIdx">
-              ${FACE_SHAPES.map(fs => `<option value="${fs.id}">${esc(fs.label)}</option>`).join('')}
+              ${FACE_SHAPES.map(fs => `<option value="${fs.id}" ${selFace === String(fs.id) ? 'selected' : ''}>${esc(fs.label)}</option>`).join('')}
             </select>
           </div>
 
