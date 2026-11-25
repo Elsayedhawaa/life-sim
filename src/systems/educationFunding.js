@@ -2,6 +2,7 @@ import {convertCurrency,eraLocalCost} from '../data/economy.js';
 import {indexNpcIncome} from './npcIncomeIndex.js';
 import {recordJournal,walletMove,queueScene,nextId} from '../core/schema.js';
 import {formatMoney} from '../data/countries.js';
+import {hasFortune,fortuneEducationRoom,fortuneChargeEducation} from './familyFortune.js';
 import {narrativeLoanQuote} from './narrativeLoans.js';
 
 export function educationFamilyPayers(S){
@@ -57,10 +58,12 @@ function familyReserve(S){
 export function familyEducationFunds(S){accrueParentalSavings(S);const saved=educationFamilyPayers(S).reduce((n,p)=>n+convertCurrency(Math.max(0,Number(p.career.savingsLocal)||0),p.residenceCountry||S.country,S.country,S.year),0);return saved+(educationFamilyPayers(S).length?reserveIn(S,familyReserve(S).local):0);}
 export function familyCoversUniversity(S,annualTuition,country=S.country){
  if(annualTuition<=0)return false;
+ if(hasFortune(S)&&S.player.age>=17&&fortuneEducationRoom(S)>=annualTuition)return true; /* the family fund also pays admitted study abroad or private */
  return country===S.homeCountry&&country===S.country&&familyEducationFunds(S)>=annualTuition;
 }
 export function chargeFamilyEducation(S,amount){
  if(amount<=0)return true;
+ if(hasFortune(S)&&fortuneChargeEducation(S,amount))return true;
  if(familyEducationFunds(S)+.01<amount)return false;
  let left=amount;
  for(const p of educationFamilyPayers(S)){

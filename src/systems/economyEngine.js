@@ -215,7 +215,8 @@ export function finalizePropertyPurchase(S, spec, plan, opts = {}) {
       return { ok: false, msg: 'Cannot sign installment/mortgage contracts during active bankruptcy.' };
     }
   }
-  const paid = purchase(S, downInPlayer, plan ? `Down payment on ${spec.name}` : `Purchased ${spec.name} outright`, 'cash', { category: 'housing' });
+  /* opts.gift: the family hands over a finished asset (the caller journals it and moved the value out of the estate): no player payment. */
+  const paid = opts.gift ? { ok: true } : purchase(S, downInPlayer, plan ? `Down payment on ${spec.name}` : `Purchased ${spec.name} outright`, 'cash', { category: 'housing' });
   if (!paid.ok) return paid;
   const prop = {
     id: nextId(S, 'prop'),
@@ -258,6 +259,7 @@ export function finalizePropertyPurchase(S, spec, plan, opts = {}) {
   if (spec.tier === 'upscale' || spec.shape === 'villa' || spec.shape === 'mansion' || spec.shape === 'penthouse') {
     emitFact(S, 'LUXURY_PURCHASE', { itemName: prop.name });
   }
+  if (opts.gift) return { ok: true, msg: `Received ${prop.name}.`, prop };
   if (plan) {
     recordJournal(S, `Signed a ${plan.planKind} on ${prop.name}: ${formatMoney(downInPlayer, S.country)} down, ${formatMoney(Math.round(convertCurrency(plan.nativeMonthlyInst, spec.country, S.country, S.year)), S.country)}/mo.`, 'milestone');
     return { ok: true, msg: `Signed ${plan.planKind} for ${prop.name}!`, prop };

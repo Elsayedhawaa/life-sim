@@ -68,30 +68,39 @@ console.log('family fortune OK');
   const rent = getCountry(U.country).monthlyBasket2026.rentStandard;
   assert.ok(F.askCeiling(U) >= Math.round(eraLocalCost(rent * 1.5, U.country, U.year)) - 1, 'upper_middle ask never below the pre-wealth rule');
 }
-// Birthday keys: a real owned car per tier, paid from the fund, priced in era money; only very_wealthy has running costs covered.
+// Birthday keys: a real choice per tier (car or smaller cash), paid from the fund, priced in era money; only very_wealthy has running costs covered.
 {
-  const { showroomCarQuote } = await import('../src/systems/completeLifeSystems.js');
+  const toOffer = (T) => { for (let i = 0; i < 12 * 30 && !T.familyFortune?.carOffer && !T.gameOver; i++) { if (T.player.age >= 17 && T.familyFortune?.carGifted) break; run(T, 1); } };
+  const clearKeys = (T) => { if (T.activeScene?.key === 'family_keys') T.activeScene = null; T.sceneQueue = (T.sceneQueue || []).filter(x => x.key !== 'family_keys'); };
   const prices = {};
   for (const tier of ['upper_middle', 'wealthy', 'very_wealthy']) {
-    const T = life(tier, 'usa', 2003, 5); const fund0 = () => T.familyFortune?.fundLocal;
-    run(T, 12 * 19);
-    const car = T.cars.find(c => c.gifted);
-    assert.ok(car, tier + ' gets a gifted car by 19');
-    assert.ok(T.familyFortune.grants.some(g => g.kind === 'car'), 'car gift is in the ledger');
-    assert.equal(!!car.familyCoversUpkeep, tier === 'very_wealthy');
-    prices[tier] = car.valueLocal;
-    assert.ok(T.familyFortune.yearGifts <= T.familyFortune.yearlyInflowLocal * F.FORTUNE_DIALS.annualGiftShareCap + 1, 'annual gift cap holds');
+    const T = life(tier, 'usa', 2003, 5); toOffer(T);
+    assert.ok(T.familyFortune.carOffer || T.cars.some(c => c.gifted) || T.familyFortune.grants.some(g => g.kind === 'cash_gift'), tier + ' is offered the keys');
+    if (T.familyFortune.carOffer) {
+      assert.ok(T.activeScene?.key === 'family_keys' || (T.sceneQueue || []).some(x => x.key === 'family_keys'), 'the keys scene is queued');
+      const saved = { key: 'family_keys' };
+      assert.ok(F.restoreKeysScene(T, saved), 'a reload rebuilds the same decision');
+      clearKeys(T);
+      const o = T.familyFortune.carOffer; const priceNow = o.fullPrice;
+      F.resolveKeys(T, 'car');
+      prices[tier] = priceNow;
+      const car = T.cars.find(c => c.gifted);
+      assert.ok(car && T.familyFortune.grants.some(g => g.kind === 'car'));
+      assert.equal(!!car.familyCoversUpkeep, tier === 'very_wealthy');
+      assert.ok(T.familyFortune.yearGifts <= T.familyFortune.yearlyInflowLocal * F.FORTUNE_DIALS.annualGiftShareCap + 1, 'annual gift cap holds');
+      if (tier === 'wealthy') {
+        const { sellVehicle } = await import('../src/systems/economyEngine.js');
+        const cash = T.money.cash; assert.ok(sellVehicle(T, car.id).ok && T.money.cash > cash, 'gifted car can be sold'); assert.ok(!T.cars.some(c => c.gifted), 'sold: nothing left to subsidise');
+      }
+    }
   }
-  assert.ok(prices.upper_middle < prices.wealthy && prices.wealthy < prices.very_wealthy, 'car class rises with the tier: ' + JSON.stringify(prices));
-  // a gifted car can be sold like any car
-  const E = life('wealthy', 'usa', 2003, 5); run(E, 12 * 19);
-  const { sellVehicle } = await import('../src/systems/economyEngine.js');
-  const c0 = E.cars.find(c => c.gifted); const cash = E.money.cash;
-  assert.ok(sellVehicle(E, c0.id).ok && E.money.cash > cash, 'gifted car can be sold');
-  // existing adult saves get no retroactive car
-  const X = life('wealthy', 'usa', 2003, 5); run(X, 12 * 30); X.familyFortune = null; X.cars = [];
+  assert.ok(prices.upper_middle < prices.wealthy && prices.wealthy < prices.very_wealthy, 'car price rises with the tier: ' + JSON.stringify(prices));
+  const C = life('wealthy', 'usa', 2003, 5); toOffer(C);
+  if (C.familyFortune.carOffer) { clearKeys(C); const cash = C.money.cash, fund = C.familyFortune.fundLocal; F.resolveKeys(C, 'cash'); assert.ok(C.money.cash > cash && C.familyFortune.fundLocal < fund && !C.cars.some(c => c.gifted), 'cash choice pays less than the car, from the fund'); assert.ok(C.familyFortune.grants.find(g => g.kind === 'cash_gift').amountLocal < prices.wealthy); }
+  const X = life('wealthy', 'usa', 2003, 5); run(X, 12 * 30); X.familyFortune = null; X.cars = []; X.journal = [];
   F.ensureFamilyFortune(X); F.tickFamilyFortuneMonthly(X);
   assert.equal(X.cars.length, 0, 'no retroactive gift');
+  assert.ok((X.journal || []).some(j => /not backdated/.test(j.text || j)), 'the migration says so in the journal');
 }
 console.log('birthday car OK');
 // Money conservation: estate + trust + released cash stays constant by funding/release alone; migration at 18/22/30 conserves too.
@@ -113,3 +122,38 @@ console.log('birthday car OK');
   assert.ok(C.familyFortune.trust.fundedLocal > 0 && C.familyFortune.netWorthLocal > 0);
 }
 console.log('conservation OK');
+// Funded education: wealthy tier covers study abroad from the fund; a middle family with no money does not.
+{
+  const { familyCoversUniversity, chargeFamilyEducation } = await import('../src/systems/educationFunding.js');
+  const R = life('wealthy', 'usa', 2000, 12); run(R, 12 * 18);
+  R.homeCountry = 'usa';
+  const tuition = Math.round(F.fortuneEducationRoom(R) * 0.5);
+  assert.ok(familyCoversUniversity(R, tuition, 'gbr'), 'fund covers admitted study abroad');
+  const fund0 = R.familyFortune.fundLocal;
+  assert.ok(chargeFamilyEducation(R, tuition) && R.familyFortune.fundLocal === fund0 - tuition, 'charged once, from the fund');
+  assert.ok(R.familyFortune.grants.some(g => g.kind === 'education'));
+  assert.ok(!familyCoversUniversity(R, R.familyFortune.fundLocal * 5, 'gbr'), 'cannot exceed the fund or annual room');
+  const P = life('middle', 'usa', 2000, 12); run(P, 12 * 18); P.homeCountry = 'usa';
+  assert.ok(!familyCoversUniversity(P, 10 ** 9, 'gbr'));
+}
+console.log('education OK');
+// First home: wealthy and very_wealthy get a real owned property from the estate at 22; upper_middle does not; existing saves get none.
+{
+  const toHome = (T) => { for (let i = 0; i < 12 * 30 && !T.familyFortune?.homeOffer && !T.familyFortune?.homeGifted && !T.gameOver; i++) run(T, 1); };
+  for (const [tier, country, year] of [['wealthy', 'usa', 2000], ['very_wealthy', 'usa', 2000], ['wealthy', 'egy', 1990]]) {
+    const T = life(tier, country, year, 6); toHome(T);
+    assert.ok(T.familyFortune.homeOffer, tier + ' ' + country + ' is offered a home');
+    const prior = T.housing.properties.length, nw = T.familyFortune.netWorthLocal, cash = T.money.cash;
+    assert.ok(F.restoreHomeScene(T, { key: 'family_home' }), 'reload rebuilds the same decision');
+    T.activeScene = null; T.sceneQueue = (T.sceneQueue || []).filter(x => x.key !== 'family_home');
+    const price = T.familyFortune.homeOffer.price;
+    F.resolveHome(T, 'rent');
+    const p = T.housing.properties[T.housing.properties.length - 1];
+    assert.ok(T.housing.properties.length === prior + 1 && p.gifted && p.valueLocal > 0 && p.rentedOut, 'a real owned, rentable property');
+    assert.ok(T.familyFortune.netWorthLocal === nw - price && T.money.cash === cash, 'value leaves the estate, not the player cash');
+    assert.ok(price <= T.familyFortune.netWorthLocal * 0.2 + price * 0, 'bounded by the estate');
+  }
+  const U = life('upper_middle', 'usa', 2000, 6); run(U, 12 * 25);
+  assert.ok(!U.familyFortune.homeGifted && !U.familyFortune.homeOffer, 'upper_middle is not offered a home');
+}
+console.log('home OK');
