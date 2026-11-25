@@ -12,6 +12,7 @@ import {canonicalUniversityId,universitySectorLabel} from '../data/institutions.
    conscription rules, CV-verified job offers, boss politics, and enterprises.
    ========================================================================== */
 
+import { presentAbroadDestinations, studyAbroadOpen, restoreAbroadDecision } from './studyAbroadScenes.js';
 import { familyCoversUniversity,chargeFamilyEducation } from './educationFunding.js';
 import { rand, randInt, pick, chance, clamp } from '../core/rng.js';
 import { nextId, recordJournal, walletMove, moveBalance, queueScene, ensureExtendedState } from '../core/schema.js';
@@ -332,6 +333,7 @@ export function presentPostHighSchoolCrossroads(S) {
     };
   });
 
+  if (studyAbroadOpen(S)) choices.push({ exit: true, label: 'Study abroad (admission, English and funding rules apply)', effect: st => presentAbroadDestinations(st) });
   choices.push({
     exit: true,
     label: 'Skip university & enter the workforce immediately (check the Education tab anytime)',
@@ -412,6 +414,8 @@ export function restoreEducationDecision(S, saved) {
     const uni = getUniversitiesFor(S.country, S.year).find(u => key === `pick_major_${u.id}_${S.year}`);
     if (!uni) return null;
     presentUniversityMajorPicker(shadow, uni);
+  } else if (key.startsWith('abroad_')) {
+    const r = restoreAbroadDecision(S); return r ? { ...saved, ...r } : null;
   } else return null;
   return shadow.activeScene ? { ...saved, ...shadow.activeScene } : null;
 }

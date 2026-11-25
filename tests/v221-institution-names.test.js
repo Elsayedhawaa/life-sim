@@ -8,7 +8,12 @@ const cases = [
   ['Matriculated at Cairo University reading Engineering.', 'Matriculated at Cairo University reading Engineering.'],
   ['American University in Cairo', 'American University in Cairo'],
   ['German University in Cairo', 'German University in Cairo'],
-  ['moved to Cairo for work', 'moved to Egypt for work']
+  ['moved to Cairo for work', 'moved to Egypt for work'],
+  ['Cairo Steel hired you.', 'Cairo Steel hired you.'],
+  ["Cairo's traffic is bad.", "Egypt's traffic is bad."],
+  ['Ahmed lives in Cairo.', 'Ahmed lives in Egypt.'],
+  ['Born in Cairo, Egypt in 1998', 'Born in Egypt in 1998'],
+  ['She studies at American University in Cairo.', 'She studies at American University in Cairo.']
 ];
 for (const [i, e] of cases) assert.equal(countryLevelNarrative(i, S), e, i);
 for (const [k, t] of Object.entries(FAMILY_TIERS)) assert.match(t.birth || '', /^(a|an) [a-z-]+( [a-z-]+)* (household|family)$/, k);
