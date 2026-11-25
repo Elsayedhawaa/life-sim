@@ -1,5 +1,6 @@
 /* "a" or "an" before a job title: "an accountant", "a nurse". */
 export function withArticle(word){const w=String(word||'');return(/^(?:[aeio]|u(?![sn]i))/i.test(w)?'an ':'a ')+w;}
+import{isFortuneParent,askFortuneParent}from'./familyFortune.js';
 import{givePersonalMoney}from'./personalReceivables.js';
 import{inheritNpcCompanies}from './companyEstate.js';
 import{personMind,canContactPerson}from './personMind.js';
@@ -1213,6 +1214,7 @@ export function interactWithPerson(S, personId, action, opts = {}) {
 
   if (action === 'ask_for_help') {
     if (S.player.age < 18) return { ok: false, msg: 'Your household already covers your childhood needs.' };
+    if (isFortuneParent(S, p)) { const fr = askFortuneParent(S, p); if (fr) return fr; }
     if (p.age < 22) return { ok: false, msg: `${p.firstName} is too young to support you financially.` };
     const theirSavingsInPlayerCurr = convertCurrency(p.career.savingsLocal || 0, p.residenceCountry, S.country, S.year);
     const askTarget = eraLocalCost(cObj.monthlyBasket2026.rentStandard * 1.5, S.country, S.year);

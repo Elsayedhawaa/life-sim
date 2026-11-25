@@ -1,4 +1,5 @@
 import{reviewPersonalReceivables}from'./personalReceivables.js';
+import { hasFortune, payFamilyAllowanceYear } from './familyFortune.js';
 import {closePlayerLease,reconcilePlayerLease,recordPlayerRentDue,tickPlayerRentalDamage} from './playerTenancy.js';
 import{settleCompanyTrusts}from'./companyTrust.js';
 import{settleNpcCompanyHoldings}from './companyEstate.js';
@@ -1375,7 +1376,7 @@ export function settleHouseholdMonth(S) {
    parents buy everything directly, no pocket money. No living parent: no
    allowance (nothing is invented). At 18 the adult settlement takes over,
    including the university pocket allowance in §5 above. */
-const CHILD_POCKET_SHARE = { struggling: 0.06, working: 0.10, middle: 0.18, upper_middle: 0.35, wealthy: 0.70 };
+const CHILD_POCKET_SHARE = { struggling: 0.06, working: 0.10, middle: 0.18, upper_middle: 0.35, wealthy: 0.70, very_wealthy: 0.70 };
 
 export function childPocketMoneyMonthly(S) {
   if (!S || !S.player) return 0;
@@ -1388,6 +1389,7 @@ export function childPocketMoneyMonthly(S) {
 }
 
 export function settleChildAllowanceYear(S) {
+  if (S && S.player && S.player.age >= 6 && S.player.age < 18 && hasFortune(S)) { const paid = payFamilyAllowanceYear(S); if (paid != null) return paid; }
   const monthly = childPocketMoneyMonthly(S);
   if (monthly <= 0) return 0;
   const annual = Math.round(monthly * 12);

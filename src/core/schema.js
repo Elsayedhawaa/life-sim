@@ -166,7 +166,8 @@ export const FAMILY_TIERS = {
   working:      { label: 'Modest Working Family',  salaryMult: 0.85, savingsMonths: 4,   schoolPref: 'state', homeMode: 'rent_modest' },
   middle:       { label: 'Middle-Class Family',    salaryMult: 1.35, savingsMonths: 10,  schoolPref: 'private', homeMode: 'family_owned' },
   upper_middle: { label: 'Affluent Professional',  salaryMult: 2.50, savingsMonths: 24,  schoolPref: 'private', homeMode: 'family_owned_upscale' },
-  wealthy:      { label: 'Established Wealthy',    salaryMult: 5.20, savingsMonths: 60,  schoolPref: 'international', homeMode: 'family_villa' }
+  wealthy:      { label: 'Established Wealthy',    salaryMult: 5.20, savingsMonths: 60,  schoolPref: 'international', homeMode: 'family_villa' },
+  very_wealthy: { label: 'Dynasty Wealth',         salaryMult: 40,   savingsMonths: 240, schoolPref: 'international', homeMode: 'family_palace' }
 };
 
 export const LIFE_AMBITIONS = {
@@ -250,11 +251,11 @@ export function createNewLifeState(opts = {}) {
     housing: {
       mode: 'parents',      // parents | rent | owned | employer_provided
       currentHomeId: null,
-      currentHomeName: familyTierId === 'wealthy' ? 'Family Villa'
+      currentHomeName: (familyTierId === 'wealthy' || familyTierId === 'very_wealthy') ? (familyTierId === 'very_wealthy' ? 'Heritage Family Estate' : 'Family Villa')
         : familyTierId === 'upper_middle' ? 'Family Duplex'
         : familyTierId === 'struggling' ? 'Modest Family Flat'
         : 'Family Apartment',
-      currentShape: familyTierId === 'wealthy' ? 'villa'
+      currentShape: (familyTierId === 'wealthy' || familyTierId === 'very_wealthy') ? 'villa'
         : familyTierId === 'upper_middle' ? 'duplex'
         : familyTierId === 'struggling' ? 'studio'
         : 'apartment',
@@ -431,7 +432,7 @@ export function createNewLifeState(opts = {}) {
     residenceCountry: countryId,
     city: S.city,
     skinToneIdx: player.appearance.skinToneIdx,
-    jobTitle: familyTierId === 'wealthy' ? 'Company Director' : familyTierId === 'upper_middle' ? 'Senior Consultant' : familyTierId === 'middle' ? 'Accountant' : 'Technician',
+    jobTitle: (familyTierId === 'wealthy' || familyTierId === 'very_wealthy') ? 'Company Director' : familyTierId === 'upper_middle' ? 'Senior Consultant' : familyTierId === 'middle' ? 'Accountant' : 'Technician',
     monthlyIncomeLocal: dadMonthly,
     savingsLocal: Math.round((dadMonthly + momMonthly) * tier.savingsMonths),
     affection: randInt(S, 72, 95),
@@ -451,7 +452,7 @@ export function createNewLifeState(opts = {}) {
     residenceCountry: countryId,
     city: S.city,
     skinToneIdx: player.appearance.skinToneIdx,
-    jobTitle: momWorks ? (familyTierId === 'upper_middle' || familyTierId === 'wealthy' ? 'Specialist Physician' : 'School Teacher') : 'Homemaker',
+    jobTitle: momWorks ? (familyTierId === 'upper_middle' || familyTierId === 'wealthy' || familyTierId === 'very_wealthy' ? 'Specialist Physician' : 'School Teacher') : 'Homemaker',
     monthlyIncomeLocal: momMonthly,
     savingsLocal: Math.round(dadMonthly * (tier.savingsMonths * 0.4)),
     traits: { warmth: randInt(S, 68, 96) },

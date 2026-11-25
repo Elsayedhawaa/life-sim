@@ -1,3 +1,4 @@
+import { isFortuneParent, askPreview, familyLedgerView } from '../systems/familyFortune.js';
 import {courtshipMonthsApart} from '../systems/courtshipLife.js';
 import{personalLoanGates}from'../systems/economyEngine.js';
 import{renderHiring}from'../systems/companyHiring.js';
@@ -1257,6 +1258,7 @@ export function renderPeopleTabHtml(S, uiState = {}) {
       </div>
       ${/* v2.15 W3 — the social-energy budget, stated on the screen. */ renderSocialEnergyHtml(S)}
       ${livingPeople.filter(p=>p.role!=='spouse'&&p.mind?.pending).map(p=>`<div class="card"><strong>${esc(p.firstName)}</strong>${renderPersonRequest(S,p)}</div>`).join('')}
+      ${renderFamilyLedgerCardHtml(S)}
       ${renderSocialConstellationSvg(S)}
       <div class="npc-grid">
         ${livingPeople.map(p => renderNpcCardHtml(S, p)).join('')}
@@ -1269,6 +1271,36 @@ export function renderPeopleTabHtml(S, uiState = {}) {
       </div>
     ` : ''}
   `;
+}
+
+/* The ask button states what the family can give and whether the ask will be heard, before the player commits. */
+function askLabelSuffix(S, p) {
+  const pr = askPreview(S, p);
+  if (!pr) return '';
+  if (pr.cooldown) return ` (asked recently, ${pr.monthsLeft} month${pr.monthsLeft === 1 ? '' : 's'} to wait)`;
+  return ` (about ${formatMoney(pr.low, S.country, true)} to ${formatMoney(pr.high, S.country, true)})`;
+}
+
+/* Family ledger: the fortune behind the family, nominal and in 2026 money side by side. */
+function renderFamilyLedgerCardHtml(S) {
+  const lv = familyLedgerView(S);
+  if (!lv) return '';
+  const { f, real } = lv;
+  const m = (n) => esc(formatMoney(Math.round(n), S.country, true));
+  const row = (label, n) => `<tr><td>${label}</td><td class="mono">${m(n)}</td><td class="mono muted">${m(real(n))}</td></tr>`;
+  const age = S.player.age;
+  const tr = f.trust, rel = tr.released;
+  const schedule = [[18, 'at18', 0.25], [21, 'at21', 0.25], [25, 'at25', 0.5]].map(([a, k, sh]) => `${a}: ${rel[k] ? 'paid' : 'due'}`).join(' · ');
+  const recent = (f.grants || []).slice(-5).reverse().map(g => `<div class="muted" style="font-size:0.82rem">${g.year} · ${esc(g.kind)} · ${m(g.amountLocal)}${g.note ? ' · ' + esc(g.note) : ''}</div>`).join('');
+  return `<div class="card" id="family-ledger">
+    <div class="section-head"><h3>Family fortune</h3><span class="muted mono">${esc(FAMILY_TIERS[f.tier]?.label || '')}</span></div>
+    ${f.company ? `<div class="muted" style="font-size:0.88rem">The family company: ${esc(f.company.name)}, ${esc(f.company.sector)}${f.company.sites.length > 1 ? `, ${f.company.sites.length} sites in ${[...new Set(f.company.sites.map(s => getCountry(s.country).name))].join(', ')}` : ''}.</div>` : ''}
+    <table style="width:100%;margin:8px 0;font-size:0.9rem"><thead><tr><th></th><th align="left">Nominal</th><th align="left">In 2026 money</th></tr></thead><tbody>
+      ${row('Family net worth', f.netWorthLocal)}${row('Cash fund', f.fundLocal)}${row('Yearly inflow', f.yearlyInflowLocal)}${row('Given to you this year', f.yearGifts)}
+    </tbody></table>
+    <div class="muted" style="font-size:0.88rem">Trust for you: ${m(tr.fundedLocal)} set aside. Releases at ${esc(schedule)}.${age < 18 ? ' Allowance: ' + m(lv.allowance) + ' a month.' : ''}</div>
+    ${recent ? `<div style="margin-top:6px"><strong style="font-size:0.85rem">Recent gifts and help</strong>${recent}</div>` : ''}
+  </div>`;
 }
 
 function renderMarriageSubtabHtml(S) {
@@ -1521,7 +1553,7 @@ function renderNpcCardHtml(S, p) {
         ${p.residenceCountry === S.country ? `<button class="btn btn-sm" data-action="npc-interact" data-id="${p.id}" data-kind="family_meal">Friday Meal${socialEnergyCostLabel(S, p, 'interact:family_meal')}</button>` : ''}
         ${S.player.age >= 16 ? `<button class="btn btn-sm" data-action="npc-interact" data-id="${p.id}" data-kind="gift">${icon('gift', 13)} Gift${socialEnergyCostLabel(S, p, 'interact:gift')}</button>` : ''}
         ${S.player.age >= 18 ? `<button class="btn btn-sm" data-action="npc-interact" data-id="${p.id}" data-kind="financial_support">Send Support${socialEnergyCostLabel(S, p, 'interact:financial_support')}</button>` : ''}
-        ${(S.player.age >= 18 && p.age >= 22) ? `<button class="btn btn-sm" data-action="npc-interact" data-id="${p.id}" data-kind="ask_for_help">Ask for Financial Help${socialEnergyCostLabel(S, p, 'interact:ask_for_help')}</button>` : ''}
+        ${(S.player.age >= 18 && p.age >= 22) ? `<button class="btn btn-sm" data-action="npc-interact" data-id="${p.id}" data-kind="ask_for_help">Ask for Financial Help${isFortuneParent(S, p) ? esc(askLabelSuffix(S, p)) : ''}${socialEnergyCostLabel(S, p, 'interact:ask_for_help')}</button>` : ''}
         ${(S.player.age >= 18 && p.age >= 24 && (p.career?.monthlyIncomeLocal || 0) > 0) ? `<button class="btn btn-sm" data-action="npc-interact" data-id="${p.id}" data-kind="wasta_referral">Ask Career / Wasta Referral${socialEnergyCostLabel(S, p, 'interact:wasta_referral')}</button>` : ''}
         ${(p.role === 'child' && p.age >= 5) ? `<button class="btn btn-sm" data-action="npc-interact" data-id="${p.id}" data-kind="mentor_child">Mentor Studies${socialEnergyCostLabel(S, p, 'interact:mentor_child')}</button>` : ''}
         ${p.rel.resentment > 10 ? `<button class="btn btn-sm" data-action="npc-interact" data-id="${p.id}" data-kind="reconcile">Apologize / Clear Air${socialEnergyCostLabel(S, p, 'interact:reconcile')}</button>` : ''}

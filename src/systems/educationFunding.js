@@ -19,8 +19,8 @@ export function educationFamilyPayers(S){
       a number of years of household income, fixed the first time education
       needs it and then drawn down for real. It is finite and recorded.
       wealthy 8 years, upper-middle 3, middle half a year, others none. */
-const PARENT_SAVE_RATE={wealthy:.30,upper_middle:.20,middle:.10,working:.05,struggling:.02};
-const FAMILY_RESERVE_YEARS={wealthy:8,upper_middle:3,middle:.5,working:0,struggling:0};
+const PARENT_SAVE_RATE={very_wealthy:.30,wealthy:.30,upper_middle:.20,middle:.10,working:.05,struggling:.02};
+const FAMILY_RESERVE_YEARS={very_wealthy:8,wealthy:8,upper_middle:3,middle:.5,working:0,struggling:0};
 function priceIndex(S,year){return eraLocalCost(1000,S.country,year)/1000;}
 export function accrueParentalSavings(S){
  if(!S?.education||!S.player)return;

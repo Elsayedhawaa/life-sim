@@ -663,7 +663,7 @@ export function pickCuratedLifeScene(S, restoreBaseId=null) {
 
     if (age >= 13 && mom && mom.alive) {
       addOnce('ch_kitchen_talk', () => {
-        const affluent = ['upper_middle', 'wealthy'].includes(S.familyTier);
+        const affluent = ['upper_middle', 'wealthy', 'very_wealthy'].includes(S.familyTier);
         return {
           key: 'ch_kitchen_talk',
           category: 'family',

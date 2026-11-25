@@ -101,6 +101,7 @@ const WEALTH_WORDS = {
   struggling: 'poor',
   upper_middle: 'rich',
   wealthy: 'ultra',
+  very_wealthy: 'ultra',
 };
 
 /* --------------------------------------------------------------------------

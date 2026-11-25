@@ -27,6 +27,7 @@ import { recordJournal, queueScene, ambitionProgress, computeNetWorthLocal, ensu
 import { getCountry, formatMoney } from '../data/countries.js';
 import { eraSalary, goldPricePerGram } from '../data/economy.js';
 import { restorePeopleDecision, ensureSocialCast, tickNpcAutonomyYearly, maybePickDominoSoulScene } from '../systems/soulEngine.js';
+import { tickFamilyFortuneYearly, tickFamilyFortuneMonthly } from '../systems/familyFortune.js';
 import { settleHouseholdMonth, settleChildAllowanceYear, tickAssetsAnnually } from '../systems/economyEngine.js';
 /* v2.15 W3 — social energy: the yearly childhood turn refills the budget
    (childhood has no monthly settlement to do it). */
@@ -280,6 +281,7 @@ export function advanceSingleTurn(S) {
     refillSocialEnergy(S); /* v2.15 W3 — one year-turn is one refill (see import note above). */
     tickEducationYearly(S);
     tickHealthAndMortalityYearly(S);
+    tickFamilyFortuneYearly(S); /* v2.21 — childhood years also revalue the fortune and fund the trust */
     settleChildAllowanceYear(S); // v2.7: named pocket money from parents (ages 6–17)
     /* v2.9 B10: refresh the stored gold price on the yearly path too, so a
        child holding gold never carries a stale/zero cache into adulthood. */
@@ -319,6 +321,7 @@ export function advanceSingleTurn(S) {
     if (crossedNewYear) {
       emitHistoricalHeadlineIfAny(S);
       tickAssetsAnnually(S);
+      tickFamilyFortuneYearly(S); /* v2.21 — the family's fortune revalues, its company has a year, trust is funded */
       tickNpcAutonomyYearly(S);
       tickEducationYearly(S); // Enforces strict 21+ Tansik age-out
       tickHealthAndMortalityYearly(S);
@@ -337,6 +340,7 @@ export function advanceSingleTurn(S) {
       tickCareerMarketMonth(S); /* v2.15 W2 — headhunters, rivals, pension growth */
       tickCareerActionsMonthly(S); // v2.8 §3: review, warnings, licence lapse, notice
       tickVisaAndLegalMonthly(S);
+      tickFamilyFortuneMonthly(S); /* v2.21 — seeds the fortune the first time, releases the trust at 18/21/25 */
       settleHouseholdMonth(S);
       checkBusinessFate(S); /* v2.17 W5 §6 — a failing or booming business reaches the rest of the life (bank, spouse, friends) */
       checkCareerConsequences(S); /* v2.18 W2 §3 — job loss reaches the mortgage, spouse, children and visa; crisis years warn, freeze pay and risk redundancy */

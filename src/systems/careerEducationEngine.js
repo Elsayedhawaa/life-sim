@@ -170,7 +170,7 @@ export function tickEducationYearly(S) {
     }
 
     /* Realistic Family Coming-of-Age Graduation Seed for Middle / Affluent / Wealthy Households */
-    const gradGiftFactors = { struggling: 0, working: 0.12, middle: 0.45, upper_middle: 1.25, wealthy: 3.20 };
+    const gradGiftFactors = { struggling: 0, working: 0.12, middle: 0.45, upper_middle: 1.25, wealthy: 3.20, very_wealthy: 3.20 };
     const giftMult = gradGiftFactors[S.familyTier] || 0;
     if (giftMult > 0) {
       const midMo = eraSalary(cObj.annualSalaryTiers2026.mid / 12, S.country, S.year);
