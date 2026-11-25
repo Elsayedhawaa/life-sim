@@ -494,6 +494,7 @@ export function restoreHomeScene(S, saved) {
   if (saved && saved.key === 'family_place' && S.familyFortune?.placeOffer) return buildPlaceScene(S);
   if (saved && saved.key === 'family_seed' && S.familyFortune?.seedOffer) return buildSeedScene(S);
   if (saved && saved.key === 'family_deposit' && S.familyFortune?.depositOffer) return buildDepositScene(S);
+  if (saved && saved.key === 'family_bigask' && S.familyFortune?.bigAskOffer) return buildBigAskScene(S);
   return saved && saved.key === 'family_home' && S.familyFortune?.homeOffer ? buildHomeScene(S) : null;
 }
 
@@ -652,6 +653,80 @@ export function resolveDeposit(S, take) {
   recordJournal(S, `Your parents gave you ${formatMoney(amt, S.country)} toward a home deposit.`, 'family');
   return { ok: true, taken: true, amount: amt };
 }
+
+/* --- The big ask (rare, adult): startup capital or a house -------------------
+   Rare, tied to the player's real situation (no property -> a house; no company -> startup money). The answer is a real yes, part or no from the
+   actual fund, this year's gift room, the tight-year state and the parent's real feelings, and the reason is shown. Asking never costs warmth. */
+function bigAskParent(S) {
+  const ids = [S.relations?.motherId, S.relations?.fatherId].filter(Boolean);
+  return ids.map(id => S.people?.[id]).find(x => x && x.alive) || null;
+}
+function bigAskWant(S, f, kind) {
+  if (kind === 'house') {
+    const list = getHousingFor(S.country, S.year).map(h => Math.round(eraLocalCost(h.price2026, S.country, S.year))).filter(x => x > 0).sort((a, b) => a - b);
+    if (!list.length) return 0;
+    return Math.round(list[Math.floor(list.length * 0.4)] * 0.5);
+  }
+  const usd = { upper_middle: 25e3, wealthy: 250e3, very_wealthy: 5e6 }[f.tier] || 0;
+  return Math.round(eraLocalCost(usd, S.country, S.year));
+}
+export function offerBigAsk(S) {
+  const f = ensureFamilyFortune(S);
+  if (!f || f.bigAskOffer) return null;
+  const age = S.player?.age ?? 0;
+  if (age < 24 || age > 45 || !bigAskParent(S)) return null;
+  if (f.bigAskYear != null && S.year - f.bigAskYear < 4) return null;
+  if (S.activeScene || (S.sceneQueue || []).length) return null;
+  const hasProp = (S.housing?.properties || []).length > 0;
+  const hasCo = (S.career?.businesses || []).some(b => b && !b.dead);
+  const kind = !hasProp ? 'house' : (!hasCo ? 'startup' : null);
+  if (!kind) return null;
+  if (hash01(S, 191 + S.month) > 0.03) return null; /* rare: about one month in thirty */
+  const want = bigAskWant(S, f, kind);
+  if (want <= 0) return null;
+  f.bigAskOffer = { kind, want, year: S.year };
+  queueScene(S, buildBigAskScene(S), true);
+  return f.bigAskOffer;
+}
+export function buildBigAskScene(S) {
+  const f = S.familyFortune, o = f?.bigAskOffer;
+  if (!o) return null;
+  const par = bigAskParent(S);
+  const what = o.kind === 'house' ? `a house of your own. About ${formatMoney(o.want, S.country)} would make a real difference` : `a business of your own. About ${formatMoney(o.want, S.country)} would get it started`;
+  return {
+    key: 'family_bigask', category: 'family', title: 'A big question',
+    text: `You have been thinking about ${what}. ${par ? par.firstName : 'Your parent'} would be the one to ask. It is a real question: the answer depends on what the family can spare this year and how ${par ? par.firstName : 'they'} feel${par ? 's' : ''} about it. Asking will not change how they see you.`,
+    choices: [
+      { label: `Ask for about ${formatMoney(o.want, S.country)}`, effect: st => resolveBigAsk(st, true) },
+      { label: 'Not now', effect: st => resolveBigAsk(st, false) }
+    ]
+  };
+}
+export function resolveBigAsk(S, ask) {
+  const f = S.familyFortune, o = f?.bigAskOffer;
+  if (!o) return null;
+  f.bigAskOffer = null;
+  f.bigAskYear = S.year;
+  if (!ask) { recordJournal(S, 'You decided not to bring it up with your family yet.', 'family'); return { ok: true, asked: false }; }
+  const p = bigAskParent(S);
+  const why = (msg) => { recordJournal(S, msg, 'family'); return { ok: false, asked: true, msg }; };
+  if (!p) return why('There was no one to ask any more.');
+  if (isTightYear(f, S)) return why(`${p.firstName} said it is a tight year for the family company and they cannot take on something this big now. Asking cost you nothing with them.`);
+  const rel = p.rel || {}, tr = p.traits || {};
+  const will = (rel.affection || 0) * 0.45 + (rel.trust || 0) * 0.35 + (tr.warmth || 0) * 0.25 - (rel.resentment || 0) * 0.6 - (tr.materialism || 0) * 0.2;
+  if (will < 50) return why(`${p.firstName} listened and said no this time. It was about the request, not about you. Asking did not change how they feel.`);
+  const share = Math.round(f.fundLocal * 0.2); /* no single ask takes more than a fifth of the fund */
+  const room = Math.round(giftRoom(f, S));
+  const amt = Math.min(o.want, share, room, Math.round(f.fundLocal));
+  if (amt <= 0) return why(`${p.firstName} would like to help, but the family fund is committed to other gifts this year. Nothing was paid.`);
+  spend(f, amt); f.yearGifts += amt;
+  walletMove(S, amt, `Help from ${p.fullName} for ${o.kind === 'house' ? 'a house' : 'a business'}`, 'family');
+  addGrant(f, S, 'bigask', amt, o.kind === 'house' ? 'toward a house' : 'startup capital');
+  const full = amt >= o.want;
+  const msg = full ? `${p.firstName} said yes and gave you ${formatMoney(amt, S.country)}.` : `${p.firstName} could give ${formatMoney(amt, S.country)} of the ${formatMoney(o.want, S.country)} you asked for. That is what the fund can spare without leaving the family short.`;
+  recordJournal(S, msg, 'family');
+  return { ok: true, asked: true, amount: amt, full, msg };
+}
 export function resolveHome(S, how) {
   const f = S.familyFortune, o = f?.homeOffer;
   if (!o) return null;
@@ -754,7 +829,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S);
+  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S); offerBigAsk(S);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;
