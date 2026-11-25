@@ -204,31 +204,35 @@ console.log('upkeep OK');
     const sg = f.grants.find(g => g.kind === 'shares'); assert.ok(f.shares && sg, tier + ' holds service shares'); const gp = parseFloat(sg.note); assert.ok(gp >= 0.5 && gp <= 1.0, 'granted stake is 0.5-1%: ' + sg.note);
     assert.ok(f.grants.some(g => g.kind === 'dividend') || f.dividendsPaid >= 0, 'dividends are recorded');
     const fund = f.fundLocal, cash = T.money.cash; const paid = F.payDividends(T, 0.1);
-    assert.ok(paid > 0 && f.fundLocal === fund - paid && T.money.cash >= cash + paid - 1, 'dividend moves money from the fund to the player');
+    assert.ok(paid > 0 && f.fundLocal === (f.inherited ? fund : fund - paid) && T.money.cash >= cash + paid - 1, 'dividend reaches the player; before the estate is settled it comes out of the fund, after it comes from company profit');
     assert.ok(paid <= f.yearlyInflowLocal * F.FORTUNE_DIALS.dividendCapPctOfInflow + 1, 'dividend capped by inflow');
     assert.ok(F.payDividends(T, -0.5) < paid, 'a losing year pays less');
   }
   const U = life('upper_middle', 'usa', 2000, 8); run(U, 12 * 22); assert.equal(U.familyFortune.shares, null, 'no company, no shares');
   // succession: kill both parents, once.
-  const D = life('wealthy', 'usa', 2000, 8); run(D, 12 * 23);
-  const nw = D.familyFortune.netWorthLocal, cash0 = D.money.cash; const co0 = D.familyFortune.companyLocal, fund0 = D.familyFortune.fundLocal, own0 = JSON.stringify(D.familyFortune.own);
+  const D = life('wealthy', 'usa', 2000, 8); run(D, 12 * 19); for (const id of [D.relations.fatherId, D.relations.motherId]) if (id) D.people[id].alive = true; D.familyFortune.inherited = false;
+  const nw = D.familyFortune.netWorthLocal, cash0 = D.money.cash; const co0 = D.familyFortune.companyLocal, fund0 = D.familyFortune.fundLocal, oth0 = D.familyFortune.otherLocal, own0 = JSON.parse(JSON.stringify(D.familyFortune.own));
+  const savings0 = Object.fromEntries((D.relations.siblingIds || []).map(id => [id, D.people[id].career?.savingsLocal || 0]));
   assert.equal(F.ownershipView(D).sum, 100, 'owners sum to 100 before');
-  D.familyFortune.inherited = false;
   for (const id of [D.relations.fatherId, D.relations.motherId]) if (id) D.people[id].alive = false;
+  const alive = (D.relations.siblingIds || []).filter(id => D.people[id].alive);
+  D.familyFortune.inherited = false;
   const r = F.settleSuccession(D);
   assert.ok(r && r.share > 0 && D.familyFortune.inherited, 'estate settled');
-  const sibs = (D.relations.siblingIds || []).filter(id => D.people[id].alive).length;
   const g = D.familyFortune, ls = g.lastSuccession;
-  assert.equal(ls.n, 1 + sibs, 'divisor counts only living children');
+  assert.equal(ls.n, 1 + alive.length, 'divisor counts only living children');
   assert.equal(F.ownershipView(D).sum, 100, 'owners still sum to 100 after the transfer');
   assert.equal(g.companyLocal, co0, 'the company valuation is untouched by who owns it');
-  assert.equal(g.own.parents + g.own.heirs, 0, 'the parents hold nothing after');
+  assert.equal(g.own.parents + g.own.heirs + g.own.pool, 0, 'the parents and the pool hold nothing after');
+  assert.equal(ls.cashAssets, fund0 + oth0, 'cash and other assets are all distributed');
+  assert.equal(g.fundLocal + g.otherLocal, 0, 'nothing left in the parents estate');
   assert.ok(Math.abs(D.money.cash - cash0 - r.cash) <= 1, 'the player receives the cash');
-  assert.equal(g.netWorthLocal, nw - ls.cashOut, 'the estate falls by exactly the cash paid out');
-  assert.equal(g.fundLocal, fund0 - ls.cashOut, 'cash came from the fund');
-  const stake = Math.round(co0 * ls.stakeEach / 100);
-  assert.ok(Math.abs(F.ownershipView(D).stakeValue(g.own.player) - (Math.round(co0 * JSON.parse(own0).player / 100) + stake)) <= 2, 'player stake value = earlier stake + the exact transfer value, no dilution');
-  assert.ok(Math.abs(g.netWorthLocal + ls.cashOut - nw) <= 1, 'assets before = assets after + cash handed over');
+  assert.equal(ls.cashAssets, ls.tax + ls.payout + ls.remainder, 'assets before = tax + paid out + rounding remainder');
+  assert.ok(ls.remainder >= 0 && ls.remainder < ls.n, 'rounding remainder is under one unit per heir');
+  assert.equal(g.netWorthLocal, co0, 'estate after = the company, owned by the children');
+  for (const t of ls.toSiblings) assert.ok(D.people[t.id].career.savingsLocal === savings0[t.id] + t.amount && t.amount > 0, 'a sibling share lands in that sibling savings');
+  assert.equal(ls.toSiblings.length, alive.length, 'every living sibling paid, no dead one');
+  assert.ok(F.ownershipView(D).stakeValue(g.own.player) >= Math.round(co0 * own0.player / 100), 'player stake value never falls');
   assert.equal(F.settleSuccession(D), null, 'only once');
   // a living parent blocks succession
   const L = life('wealthy', 'usa', 2000, 9); run(L, 12 * 23); L.familyFortune.inherited = false; L.people[L.relations.fatherId].alive = true; if (L.relations.motherId) L.people[L.relations.motherId].alive = true;
@@ -254,9 +258,15 @@ console.log('company link OK');
   const up = F.ownershipView(O); assert.equal(up.sum, 100, 'upgrade keeps owners at 100'); assert.ok(Math.abs(of.netWorthLocal - nwo) <= 1, 'upgrade keeps the total');
   /* dead siblings are not counted */
   const K = life('wealthy', 'usa', 2000, 11); const kf = F.ensureFamilyFortune(K); K.relations.siblingIds = K.relations.siblingIds || [];
-  K.people.sibA = { id: 'sibA', alive: true }; K.people.sibB = { id: 'sibB', alive: false }; K.relations.siblingIds.push('sibA', 'sibB');
-  K.player.age = 21; F.grantServiceShares(K);
+  K.people.sibA = { id: 'sibA', alive: true, age: 25 }; K.people.sibB = { id: 'sibB', alive: false, age: 25 }; K.people.sibC = { id: 'sibC', alive: true, age: 14 }; K.relations.siblingIds.push('sibA', 'sibB', 'sibC');
+  K.player.age = 22; K.career.employed = true; K.career.job = K.career.job || { title: 'Analyst' };
+  const sy = K.year; let pl = 0;
+  for (let i = 0; i < 40; i++) { K.year = sy + i; K.player.age = 22 + i; K.people.sibA.age = 25 + i; K.people.sibC.age = 14 + i; const b4 = kf.own.player; F.grantServiceShares(K); pl = Math.max(pl, kf.own.player - b4); if (i === 3) assert.equal(kf.own.siblings.sibC || 0, 0, 'a sibling under 21 earns nothing'); assert.ok(kf.own.player <= 10.0001 && (kf.own.siblings.sibA || 0) <= 10.0001, 'at most 10% per child'); assert.equal(F.ownershipView(K).sum, 100, 'owners sum to 100 every year'); }
+  assert.ok(pl > 0 && pl <= 1.0001, 'a working year earns 0.5-1%');
   assert.ok(kf.own.siblings.sibA > 0 && kf.own.siblings.sibB == null, 'service shares go only to living siblings');
+  assert.ok((kf.own.siblings.sibC || 0) > 0, 'the later-born sibling starts earning once they reach 21');
+  assert.ok(kf.workYears >= 10, 'work years counted for the player');
+  K.career.employed = false; const wy = kf.workYears; K.year += 1; F.grantServiceShares(K); assert.equal(kf.workYears, wy, 'no job, no share year');
   assert.equal(F.ownershipView(K).sum, 100, 'pool + holders sum to 100');
 }
 console.log('fund within estate OK');
