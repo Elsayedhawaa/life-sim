@@ -979,7 +979,7 @@ function goalProgressDetail(S, g) {
   }
   if (g.id === 'g_grad') {
     if (S.education.degrees.length > 0) return { pct: 100, text: 'Degree earned' };
-    if (S.education.highSchoolScore != null) return { pct: Math.round(S.education.highSchoolScore), text: `Exam score ${S.education.highSchoolScore}% — qualification lands at 19` };
+    if (S.education.highSchoolScore != null) return { pct: Math.round(S.education.highSchoolScore), text: S.education.university ? `Exam score ${S.education.highSchoolScore}% — passed, and you are studying at ${S.education.university.name}; this goal counts as done at 19` : `Exam score ${S.education.highSchoolScore}% — qualification lands at 19` };
     /* Progress is the share of the school years (6 to 18) actually lived: nothing before school starts, never an invented flat figure. */
     if (S.player.age < 6) return { pct: 0, text: 'Not in school yet — it starts at six' };
     return { pct: Math.max(0, Math.min(90, Math.round(((S.player.age - 6) / 12) * 100))), text: `Still in school (${S.education.stage.replace('_', ' ')}), age ${S.player.age} of 18` };

@@ -1,3 +1,5 @@
+/* "a" or "an" before a job title: "an accountant", "a nurse". */
+export function withArticle(word){const w=String(word||'');return(/^(?:[aeio]|u(?![sn]i))/i.test(w)?'an ':'a ')+w;}
 import{givePersonalMoney}from'./personalReceivables.js';
 import{inheritNpcCompanies}from './companyEstate.js';
 import{personMind,canContactPerson}from './personMind.js';
@@ -701,14 +703,14 @@ function npcJobChange(S, person) {
     // their first job from the existing age-22 rule, not from this.
     if ((title === 'Seeking Work' || title === 'Unemployed') && npcChance(S, 0.20)) {
       npcGiveJob(S, person);
-      recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} found a new job as a ${person.career.title.toLowerCase()} in ${person.city} (${formatMoney(person.career.monthlyIncomeLocal, person.residenceCountry)}/mo).`, 'career');
+      recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} found a new job as ${withArticle(person.career.title.toLowerCase())} in ${person.city} (${formatMoney(person.career.monthlyIncomeLocal, person.residenceCountry)}/mo).`, 'career');
     }
     return;
   }
   if (npcChance(S, person.traits.reliability < 40 ? 0.03 : 0.015)) {
     person.career.monthlyIncomeLocal = 0;
     person.career.title = 'Seeking Work';
-    recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} lost their job as a ${title.toLowerCase()} in ${person.city}. They are looking for work again.`, 'career');
+    recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} lost their job as ${withArticle(title.toLowerCase())} in ${person.city}. They are looking for work again.`, 'career');
     return;
   }
   if (npcChance(S, person.traits.ambition > 68 ? 0.07 : 0.04)) {
@@ -732,7 +734,7 @@ function npcJobChange(S, person) {
       const entryPay = eraSalary(pCountry.annualSalaryTiers2026.entry / 12, person.residenceCountry, S.year);
       person.career.title = next;
       person.career.monthlyIncomeLocal = Math.round(entryPay * (0.75 + (person.traits.ambition / 140))); person.career.incomeIndexYear = S.year;
-      recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} changed careers and is now working as a ${next.toLowerCase()} in ${person.city}.`, 'career');
+      recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} changed careers and is now working as ${withArticle(next.toLowerCase())} in ${person.city}.`, 'career');
     }
   }
 }
@@ -767,7 +769,7 @@ export function tickNpcAutonomyYearly(S) {
       person.career.monthlyIncomeLocal = Math.round(entryPay * mult); person.career.incomeIndexYear = S.year;
       person.career.savingsLocal = Math.round(person.career.monthlyIncomeLocal * 2);
       if (person.role === 'child') {
-        recordJournal(S, `Your ${person.gender === 'f' ? 'daughter' : 'son'} ${person.firstName} graduated and started working as a ${person.career.title.toLowerCase()} (${formatMoney(person.career.monthlyIncomeLocal, person.residenceCountry)}/mo).`, 'relationship');
+        recordJournal(S, `Your ${person.gender === 'f' ? 'daughter' : 'son'} ${person.firstName} graduated and started working as ${withArticle(person.career.title.toLowerCase())} (${formatMoney(person.career.monthlyIncomeLocal, person.residenceCountry)}/mo).`, 'relationship');
       }
     } else if (person.age > 22 && person.age < 63 && person.career.monthlyIncomeLocal > 0) {
       indexNpcIncome(S, person); /* era-index before the career raise: pay keeps pace with the price/wage level */
