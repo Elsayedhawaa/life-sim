@@ -806,7 +806,7 @@ export function settleHouseholdMonth(S) {
           if (biz.misses === 2 && !warned) {
             biz.fate.closureWarnedStreak = streak;
             debtMissedWarning(S, `missed_biz_${biz.id}`, `Second Missed Business Payment — ${biz.name}`,
-              `${biz.name} has missed two months of its bills (${formatMoney(biz.debtLocal, S.country)} now owed). ${catchUpActive ? 'Your bank\'s catch-up window pauses closure for now, but it ends soon. ' : ''}One more missed month once the pause is over and the business will be closed and sold for salvage — inject cash, cut costs, or sell it now.`);
+              `${biz.name} has missed two months of its bills (${formatMoney(biz.debtLocal, S.country)} now owed). ${catchUpActive ? 'Your bank\'s catch-up window pauses closure for now, but it ends soon. ' : ''}One more missed month once the pause is over and the business will be closed and sold for salvage — repay the bills, cut costs, or sell it from the business card after you acknowledge this.`);
           } else if (catchUpActive) {
             recordJournal(S, `${biz.name} remains open under its catch-up agreement. Bills and late fees still add to the debt.`, 'money');
           } else if (biz.misses >= 3 && !warned) {
@@ -814,7 +814,7 @@ export function settleHouseholdMonth(S) {
             biz.fate.closureWarnedStreak = streak;
             biz.misses = 2;
             debtMissedWarning(S, `missed_biz_${biz.id}_final_${S.year}_${S.month}`, `Final Warning — ${biz.name}`,
-              `The catch-up window for ${biz.name} has ended and ${formatMoney(biz.debtLocal, S.country)} is still owed. Miss one more month and the business will be closed and sold for salvage — inject cash, cut costs, or sell it now.`);
+              `The catch-up window for ${biz.name} has ended and ${formatMoney(biz.debtLocal, S.country)} is still owed. Miss one more month and the business will be closed and sold for salvage — repay the bills, cut costs, or sell it from the business card after you acknowledge this.`);
           } else if (biz.misses >= 3) {
             const closed = closeBusiness(S, biz, '3 missed monthly payments', { viaSettlement: true });
             if (closed.ok && closed.salvage > 0) {
