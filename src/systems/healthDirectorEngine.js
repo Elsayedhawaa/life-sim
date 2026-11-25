@@ -7,6 +7,7 @@ import{estateChargePlan,remapInheritedCompany}from './companyEstate.js';
    ========================================================================== */
 
 import { rand, randInt, pick, chance, clamp } from '../core/rng.js';
+import { liquidateFamilyStakeOnDeath } from './familyFortune.js';
 import { createNewLifeState, recordJournal, walletMove, queueScene, computeNetWorthLocal, newCoupleRecord, syncCoupleToLegacy } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { eraLocalCost, convertCurrency, goldPricePerGram } from '../data/economy.js';
@@ -354,6 +355,7 @@ export function continueAsChild(S, childId) {
      for delivery into the continuing child's life further down. */
   S.legacyContinued=true;
   const bizDeath = transferBusinessesOnDeath(S, childId);
+  liquidateFamilyStakeOnDeath(S);
 
   const livingKids = S.relations.childIds.map(id => S.people[id]).filter(c => c && c.alive);
   const cashEstate=Math.max(0,computeNetWorthLocal(S));

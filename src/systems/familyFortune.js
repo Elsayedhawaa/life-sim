@@ -193,7 +193,7 @@ export function tickFamilyFortuneYearly(S) {
   f.companyLocal = Math.max(0, Math.round((f.companyLocal || 0) * (1 + infl + swingNW)));
   f.otherLocal = Math.max(0, Math.round((f.otherLocal || 0) * (1 + infl + mkt)));
   f.baseInflowLocal = Math.round(f.baseInflowLocal * (1 + infl));
-  f.yearlyInflowLocal = Math.max(Math.round(f.baseInflowLocal * 0.3), Math.round(f.baseInflowLocal * (1 + swing)));
+  f.yearlyInflowLocal = f.company?.sold ? 0 : Math.max(Math.round(f.baseInflowLocal * 0.3), Math.round(f.baseInflowLocal * (1 + swing)));
   const dep = eraDepositRates(S.country, S.year).savings || 0;
   if (!f.inherited) f.fundLocal = Math.max(0, Math.round(f.fundLocal * (1 + dep) + f.yearlyInflowLocal * DIALS.fundRetention));
   /* Cash above the share the family keeps liquid is reinvested: it moves into other assets, so net worth does not change. */
@@ -458,7 +458,7 @@ export function settleSuccession(S) {
   addGrant(f, S, 'inheritance', each + stakeValue, `split with ${sibs.length} sibling${sibs.length === 1 ? '' : 's'}`);
   f.lastSuccession = { before, after: { nw: f.netWorthLocal, company: f.companyLocal, own: ownSum(f) }, cashAssets, tax, payout: out, cashOut: out, toSiblings: per, n, stakeEach, remainder: payable - out };
   recordJournal(S, `Your parents' estate was settled between ${n === 1 ? 'you' : n + ' of you'}. Properties and investments were sold. Your part: ${formatMoney(each, S.country)} in cash${f.company ? ` and ${stakeEach}% of ${f.company.name}, worth ${formatMoney(stakeValue, S.country)}` : ''}.${tax > 0 ? ` Estate tax of ${formatMoney(tax, S.country)} was paid first (a simplified game rule).` : ''}`, 'family');
-  if (f.company && sibs.length && !f.successionTalkDone && !S.activeScene) { f.successionTalk = { year: S.year }; queueScene(S, buildSuccessionScene(S), true); }
+  if (f.company && sibs.length && !f.successionTalkDone) { f.successionTalk = { year: S.year }; deliverSuccessionTalk(S, f); }
   return { share: each + stakeValue, cash: each, stakePct: stakeEach };
 }
 
@@ -686,7 +686,7 @@ export function offerBigAsk(S) {
   const hasCo = (S.career?.businesses || []).some(b => b && !b.dead);
   const kind = !hasProp ? 'house' : (!hasCo ? 'startup' : null);
   if (!kind) return null;
-  if (hash01(S, 191 + S.month) > 0.03) return null; /* rare: about one month in thirty */
+  if (hash01(S, 191 + (S.month || 1)) > 0.03) return null; /* rare: about one month in thirty */
   const want = bigAskWant(S, f, kind);
   if (want <= 0) return null;
   f.bigAskOffer = { kind, want, year: S.year };
@@ -750,7 +750,7 @@ export function offerSiblingVenture(S) {
   if (f.ventureYear != null && S.year - f.ventureYear < 4) return null;
   if (S.activeScene || (S.sceneQueue || []).length) return null;
   const sibs = aliveSiblings(S).filter(id => { const q = S.people[id]; return (q.birthYear != null ? S.year - q.birthYear : (q.age ?? 99)) >= 18; });
-  if (!sibs.length || hash01(S, 233 + S.month) > 0.03) return null;
+  if (!sibs.length || hash01(S, 233 + (S.month || 1)) > 0.03) return null;
   const sib = S.people[sibs[Math.floor(hash01(S, 239) * sibs.length)]];
   const stake = ventureStake(S, f);
   if (stake <= 0 || (Number(S.money?.cash) || 0) < stake * 3) return null; /* only offered when you can afford to lock it away */
@@ -779,13 +779,13 @@ export function resolveVenture(S, join) {
   if (!join || !sib) { recordJournal(S, `You passed on ${sib ? sib.firstName + "'s" : 'the'} venture. They understood.`, 'family'); return { ok: true, joined: false }; }
   if ((Number(S.money?.cash) || 0) < o.stake) { recordJournal(S, `You could not put in the money for ${sib.firstName}'s venture after all. Nothing was paid.`, 'family'); return { ok: false, joined: false, reason: 'no cash' }; }
   walletMove(S, -o.stake, `Co-invested in ${sib.fullName}'s venture`, 'family');
-  f.venture = { sibId: o.sibId, stake: o.stake, dueAbs: S.year * 12 + S.month + VENTURE_MONTHS };
+  f.venture = { sibId: o.sibId, stake: o.stake, dueAbs: S.year * 12 + (S.month || 1) + VENTURE_MONTHS };
   recordJournal(S, `You put ${formatMoney(o.stake, S.country)} into ${sib.fullName}'s venture. It is locked for three years.`, 'family');
   return { ok: true, joined: true };
 }
 export function checkVentureMaturity(S, f) {
   const v = f?.venture;
-  if (!v || S.year * 12 + S.month < v.dueAbs) return null;
+  if (!v || S.year * 12 + (S.month || 1) < v.dueAbs) return null;
   f.venture = null;
   const sib = S.people?.[v.sibId];
   const mult = Math.round((0.5 + hash01(S, 241 + v.dueAbs) * 1.5) * 100) / 100;
@@ -800,6 +800,33 @@ export function checkVentureMaturity(S, f) {
    Keep it together (nothing changes), buy your siblings out to lead it (each sibling must agree; you pay their stake in cash), or propose selling it and splitting
    the proceeds (every sibling must agree; a sale costs 4%). A sibling who says no is not angry: they simply decline, but being pressed costs a little warmth. */
 const SALE_COST = 0.04;
+/* The talk is delivered in the first quiet month: a busy scene at settlement only delays it, never loses it. */
+function talkInPlay(S) { const k = x => x && x.key === 'family_succession'; return k(S.activeScene) || (S.sceneQueue || []).some(k); }
+export function deliverSuccessionTalk(S, f) {
+  if (!f?.successionTalk || !f.company || f.company.sold || talkInPlay(S)) return null;
+  if (S.activeScene || (S.sceneQueue || []).length) return null;
+  redistributeDeadStakes(S, f);
+  if (!talkSibs(S, f).length) { f.successionTalk = null; f.successionTalkDone = true; return null; } /* nobody left to talk to */
+  queueScene(S, buildSuccessionScene(S), true);
+  return true;
+}
+/* A sibling who died keeps no seat: their stake passes in equal parts to you and the living siblings at unchanged value, as at succession. */
+export function redistributeDeadStakes(S, f) {
+  if (!f?.own || !f.company) return 0;
+  const living = aliveSiblings(S);
+  let moved = 0;
+  for (const id of Object.keys(f.own.siblings || {})) {
+    const pct = f.own.siblings[id] || 0;
+    if (pct <= 0 || living.includes(id)) continue;
+    const each = r6(pct / (1 + living.length));
+    f.own.siblings[id] = 0; f.own.player = r6(f.own.player + each);
+    for (const l of living) f.own.siblings[l] = r6((f.own.siblings[l] || 0) + each);
+    f.own.player = r6(f.own.player + (pct - each * (1 + living.length)));
+    moved += pct;
+  }
+  if (moved > 0) { f.shares = { pct: f.own.player, since: f.shares?.since || S.year }; recordJournal(S, `The share of ${f.company.name} held by a sibling who has died passed in equal parts to you and your living siblings.`, 'family'); }
+  return moved;
+}
 function sibWilling(p) { const r = p.rel || {}; return (r.affection || 0) * 0.5 + (r.trust || 0) * 0.4 - (r.resentment || 0) * 0.6 >= 40; }
 function talkSibs(S, f) { return aliveSiblings(S).filter(id => (f.own.siblings?.[id] || 0) > 0); }
 function equalParts(S, f) { const v = [f.own.player, ...talkSibs(S, f).map(id => f.own.siblings[id])]; return Math.max(...v) - Math.min(...v) < 0.01; }
@@ -810,6 +837,7 @@ export function buyoutCost(S) {
 export function buildSuccessionScene(S) {
   const f = S.familyFortune;
   if (!f?.successionTalk || !f.company) return null;
+  redistributeDeadStakes(S, f);
   const n = talkSibs(S, f).length;
   return {
     key: 'family_succession', category: 'family', title: `The future of ${f.company.name}`,
@@ -824,11 +852,12 @@ export function buildSuccessionScene(S) {
 export function resolveSuccessionTalk(S, how) {
   const f = S.familyFortune;
   if (!f?.successionTalk) return null;
+  redistributeDeadStakes(S, f);
   f.successionTalk = null; f.successionTalkDone = true;
   const name = f.company?.name || 'the company';
   const sibIds = talkSibs(S, f);
   const press = (ids) => { for (const id of ids) { const q = S.people[id]; q.rel = q.rel || {}; q.rel.affection = Math.max(0, (q.rel.affection || 0) - 4); } };
-  if (how === 'keep' || !sibIds.length) { recordJournal(S, `You agreed with your siblings to keep ${name} together, in equal parts.`, 'family'); return { ok: true, how: 'keep' }; }
+  if (how === 'keep' || !sibIds.length) { recordJournal(S, equalParts(S, f) ? `You agreed with your siblings to keep ${name} together, in equal parts.` : `You agreed with your siblings to keep ${name} together as it is: you hold ${f.own.player}%.`, 'family'); return { ok: true, how: 'keep' }; }
   const no = sibIds.filter(id => !sibWilling(S.people[id]));
   if (how === 'lead') {
     const yes = sibIds.filter(id => !no.includes(id));
@@ -852,7 +881,7 @@ export function resolveSuccessionTalk(S, how) {
   let mine = 0;
   for (const id of sibIds) { const q = S.people[id]; const amt = Math.round(net * f.own.siblings[id] / 100); q.career = q.career || {}; q.career.savingsLocal = (Number(q.career.savingsLocal) || 0) + Math.round(convertCurrency(amt, S.country, q.residenceCountry || S.country, S.year)); f.own.siblings[id] = 0; }
   mine = Math.round(net * f.own.player / 100);
-  f.own.player = 0; f.own.pool = 0; f.own.parents = 0; f.own.heirs = 0; f.companyLocal = 0; f.company.sold = true; f.shares = { pct: 0, since: S.year }; sync(f);
+  f.own.player = 0; f.own.pool = 0; f.own.parents = 0; f.own.heirs = 0; f.companyLocal = 0; f.company.sold = true; f.company.soldYear = S.year; f.yearlyInflowLocal = 0; f.baseInflowLocal = 0; f.yearDividend = 0; f.shares = { pct: 0, since: S.year }; sync(f);
   if (mine > 0) walletMove(S, mine, `Your share of the sale of ${name}`, 'family');
   if (S.career?.employed && S.career?.job?.employer === name) { S.career.job = null; S.career.employed = false; }
   addGrant(f, S, 'sale', mine, `sale of ${name}`);
@@ -895,14 +924,14 @@ export function resolveIntern(S, yes) {
   if (!o) return null;
   f.internOffer = null;
   if (!yes) { f.internDone = true; recordJournal(S, `You thanked the family friend at ${o.employer} and skipped the internship.`, 'family'); return { ok: true, taken: false }; }
-  f.intern = { employer: o.employer, pay: o.pay, startAbs: S.year * 12 + S.month, months: 0, paid: 0 };
+  f.intern = { employer: o.employer, pay: o.pay, startAbs: S.year * 12 + (S.month || 1), months: 0, paid: 0 };
   recordJournal(S, `You started a summer internship at ${o.employer}, paid ${formatMoney(o.pay, S.country)} a month.`, 'career');
   return { ok: true, taken: true };
 }
 export function tickConnectedInternship(S, f) {
   const it = f?.intern;
   if (!it) return null;
-  const now = S.year * 12 + S.month;
+  const now = S.year * 12 + (S.month || 1);
   if (now <= it.startAbs + it.months) return null; /* one month's work each tick, never twice in a month */
   it.months++;
   walletMove(S, it.pay, `${it.employer} internship pay`, 'career'); it.paid += it.pay;
@@ -1039,7 +1068,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f);
+  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); deliverSuccessionTalk(S, f);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;
@@ -1181,3 +1210,24 @@ export function familyLedgerView(S) {
 }
 
 export { DIALS as FORTUNE_DIALS };
+
+/* When the player dies, their stake in the family company is not cash. The company buys it back at its value: the company shrinks by that amount, the other owners keep exactly the value they had
+   (their percentages scale up), and the cash joins the estate. Net worth is unchanged, so nothing is paid twice and nothing vanishes. With no other owner left the company is sold whole. */
+export function liquidateFamilyStakeOnDeath(S) {
+  const f = S.familyFortune;
+  if (!f?.own || !f.company || f.company.sold) return 0;
+  const p = Number(f.own.player) || 0;
+  if (p <= 0) return 0;
+  const value = Math.round((f.companyLocal || 0) * p / 100);
+  const rest = r6(ownSum(f) - p);
+  f.companyLocal = Math.max(0, (f.companyLocal || 0) - value);
+  f.own.player = 0;
+  if (rest > 0) {
+    const k = 100 / rest;
+    f.own.parents = r6(f.own.parents * k); f.own.pool = r6(f.own.pool * k); f.own.heirs = r6(f.own.heirs * k);
+    for (const id of Object.keys(f.own.siblings || {})) f.own.siblings[id] = r6(f.own.siblings[id] * k);
+  } else { f.company.sold = true; f.company.soldYear = S.year; f.yearlyInflowLocal = 0; f.baseInflowLocal = 0; }
+  f.shares = { pct: 0, since: S.year }; sync(f);
+  if (value > 0) walletMove(S, value, `The family company bought back your stake in ${f.company.name}`, 'family');
+  return value;
+}
