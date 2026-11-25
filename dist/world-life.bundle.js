@@ -4279,7 +4279,7 @@ ${o(wA(e,a,t))}<details><summary>Branches &amp; locations</summary>${t.branchesH
         ${e.pacing==="monthly"&&!a?`
           <button type="button" class="btn btn-navy" style="padding:13px 14px" data-action="fast-forward-year" title="Runs up to 12 months, one at a time, and stops at the first event that needs you">
             ${Ve("fastforward",17)}
-            <span>Skip ahead (stops at events)</span>
+            <span>Skip ahead</span>
           </button>
         `:""}
       </div>
