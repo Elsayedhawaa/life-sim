@@ -23,5 +23,5 @@ k.rel.promises = [];
 k.age = 40; s.player.age = 30;
 const a = interactWithPerson(s, k.id, 'talk_visit');
 const b = interactWithPerson(s, k.id, 'talk_visit');
-assert.equal(a.ok, true); assert.equal(b.ok, false);
+assert.equal(a.ok, true); assert.equal(b.ok, true); const aff = k.rel.affection; interactWithPerson(s, k.id, "talk_visit"); assert.ok(k.rel.affection - aff <= 1, "repeat earns at most +1");
 console.log('no-energy + grounded quotes OK');

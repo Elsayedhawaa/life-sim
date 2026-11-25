@@ -1,10 +1,54 @@
-import {convertCurrency} from '../data/economy.js';
+import {convertCurrency,eraLocalCost} from '../data/economy.js';
 import {recordJournal,walletMove} from '../core/schema.js';
 
 export function educationFamilyPayers(S){
  return [S.relations?.fatherId,S.relations?.motherId].map(id=>S.people?.[id]).filter(p=>p?.alive&&p.career);
 }
-export function familyEducationFunds(S){return educationFamilyPayers(S).reduce((n,p)=>n+convertCurrency(Math.max(0,Number(p.career.savingsLocal)||0),p.residenceCountry||S.country,S.country,S.year),0);}
+/* FAMILY MONEY MODEL (game rules, not real-world statistics).
+   1. Parents' savings used to be a one-time number set at birth: salaries
+      never added to it, so even a rich family's pot only shrank with school
+      fees. Now each living parent saves a share of their real income, by
+      family tier, month by month (never counted twice: a "through" month is
+      stored). An existing life gets ONE catch-up over the years lived, using
+      the parent's current pay scaled back by the era price index, so it is
+      not a flat guess; at most 18 years.
+   2. The top tiers also have a family reserve (inherited assets, trusts):
+      a number of years of household income, fixed the first time education
+      needs it and then drawn down for real. It is finite and recorded.
+      wealthy 8 years, upper-middle 3, middle half a year, others none. */
+const PARENT_SAVE_RATE={wealthy:.30,upper_middle:.20,middle:.10,working:.05,struggling:.02};
+const FAMILY_RESERVE_YEARS={wealthy:8,upper_middle:3,middle:.5,working:0,struggling:0};
+function priceIndex(S,year){return eraLocalCost(1000,S.country,year)/1000;}
+export function accrueParentalSavings(S){
+ if(!S?.education||!S.player)return;
+ const now=S.year*12+(S.month||1);
+ const acc=S.education.parentSavingsAccrual??(S.education.parentSavingsAccrual={through:null});
+ const rate=PARENT_SAVE_RATE[S.familyTier]??.10;
+ const payers=educationFamilyPayers(S);
+ if(acc.through==null){
+  /* one-time catch-up: each lived year at that year's price level */
+  const lived=Math.min(18,Math.max(0,Math.floor(S.player.age||0)));
+  const idxNow=priceIndex(S,S.year)||1;
+  let scale=0;for(let i=1;i<=lived;i++){scale+=Math.min(1,(priceIndex(S,S.year-i)||idxNow)/idxNow)*12;}
+  for(const p of payers){const m=Math.max(0,Number(p.career.monthlyIncomeLocal)||0);p.career.savingsLocal=(Number(p.career.savingsLocal)||0)+Math.round(m*rate*scale);}
+  acc.through=now;acc.catchUp=true;return;
+ }
+ const months=Math.max(0,Math.min(216,now-acc.through));
+ acc.through=now;
+ if(months<=0)return;
+ for(const p of payers){const m=Math.max(0,Number(p.career.monthlyIncomeLocal)||0);p.career.savingsLocal=(Number(p.career.savingsLocal)||0)+Math.round(m*rate*months);}
+}
+function reserveIn(S,local){const r=S.education.familyReserve;const c=r?.country||S.country;return c===S.country?local:convertCurrency(local,c,S.country,S.year);}
+function familyReserve(S){
+ const e=S.education;
+ if(!e.familyReserve){
+  const income=educationFamilyPayers(S).reduce((n,p)=>n+Math.max(0,Number(p.career.monthlyIncomeLocal)||0)*12,0);
+  const years=FAMILY_RESERVE_YEARS[S.familyTier]??0;
+  e.familyReserve={local:Math.round(income*years),years,setYear:S.year,country:S.homeCountry||S.country};
+ }
+ return e.familyReserve;
+}
+export function familyEducationFunds(S){accrueParentalSavings(S);const saved=educationFamilyPayers(S).reduce((n,p)=>n+convertCurrency(Math.max(0,Number(p.career.savingsLocal)||0),p.residenceCountry||S.country,S.country,S.year),0);return saved+(educationFamilyPayers(S).length?reserveIn(S,familyReserve(S).local):0);}
 export function familyCoversUniversity(S,annualTuition,country=S.country){
  if(annualTuition<=0)return false;
  return country===S.homeCountry&&country===S.country&&familyEducationFunds(S)>=annualTuition;
@@ -17,6 +61,7 @@ export function chargeFamilyEducation(S,amount){
   const country=p.residenceCountry||S.country;const available=convertCurrency(Math.max(0,Number(p.career.savingsLocal)||0),country,S.country,S.year);const debit=Math.min(left,available);
   p.career.savingsLocal=Math.max(0,(Number(p.career.savingsLocal)||0)-convertCurrency(debit,S.country,country,S.year));left-=debit;if(left<=.01)break;
  }
+ if(left>.01&&educationFamilyPayers(S).length){const r=familyReserve(S);const have=reserveIn(S,r.local);const d=Math.min(left,have);r.local=Math.max(0,r.local-(have>0?r.local*(d/have):0));left-=d;}
  return left<=.01;
 }
 export function settleFamilyUniversityMonth(S){

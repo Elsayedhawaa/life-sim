@@ -362,7 +362,7 @@ export function presentUniversityMajorPicker(S, uni) {
   const choices = majors.map(m => ({
     label: `${m.label} (${m.level}, ${m.years} yrs, ${formatMoney(annualUniversityBudget(S,uni,m.id),S.country)}/yr game budget, entry index ${tansikCutoffFor(S.country, uni, m.id, S.year).cutoff}/100 at ${uni.name} — you scored ${score}%)`,
     available: st => universityAffordability(st, uni,m.id).status !== 'cannot',
-    lockReason: 'You need funding first. Check scholarships, a cheaper university, or work and save.',
+    lockReason: universityAffordability(S, uni, m.id).line + ' Options: a scholarship (Education tab), a cheaper university, or work first.',
     effect: (st) => {
       applyToUniversity(st, uni.id, m.id);
     }

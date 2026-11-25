@@ -28,7 +28,7 @@ assert.equal(uniSupportsMajor('TU Delft','medicine'),false);assert.equal(uniSupp
 let s=createNewLifeState({country:'usa',seed:14,birthYear:2008});ensureExtendedState(s);s.player.age=18;s.year=2026;s.education.stage='graduated_high';s.education.highSchoolScore=99;s.money.cash=1e9;
 assert.equal(applyToUniversity(s,'usa_harvard','medicine').ok,false);assert.equal(s.education.university,null);s.education.degrees=['cs'];assert.equal(applyToUniversity(s,'usa_harvard','medicine').ok,true);assert.equal(s.education.university.totalYears,4);
 // Existing enrolled saves keep their contracted duration and annual charge.
-const old={...s.education.university,totalYears:6,annualTuition:12345};s.education.university=old;assert.equal(monthlyUniversityTuition(s),Math.round(12345/12));assert.equal(s.education.university.totalYears,6);
+const old={...s.education.university,totalYears:6,annualTuition:12345,fundingSource:'self',scholarshipPct:0,prepaidMonths:0};s.education.university=old;assert.equal(monthlyUniversityTuition(s),Math.round(12345/12));assert.equal(s.education.university.totalYears,6);
 assert.equal(degreeProgramFor('gbr','medicine',{id:'gbr_ucl'}).years,6);
 assert.equal(degreeProgramFor('egy','medicine',null,2017).years,6);assert.equal(degreeProgramFor('egy','medicine',null,2018).years,5);
 assert.equal(uniSupportsMajor('UCL','veterinary'),false);assert.equal(uniSupportsMajor('NUS','veterinary'),false);assert.equal(uniSupportsMajor('Harvard','pharmacy'),false);

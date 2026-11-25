@@ -8816,12 +8816,12 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         if (newCity) { p.movedFrom = p.city; p.city = newCity; p.movedYear = st.year; }
         return p;
       };
-      const where = newCity ? ` to ${newCity}` : '';
+      const where = ''; /* scenes stay country-level: no city names in event text */
       return {
         key: 'ev_school_friend_moves',
         category: 'school',
         title: `${frName} Is Moving Away`,
-        text: `${frName}, your friend from school, is moving${where}. ${frName}'s family leaves after Friday, and neither of you knows what to say about it.`,
+        text: `${frName}, your friend from school, is moving away. ${frName}'s family leaves after Friday, and neither of you knows what to say about it.`,
         choices: [
           {
             label: "Promise to stay in touch",

@@ -15,7 +15,7 @@ for(const dest of COUNTRY_IDS.filter(c=>c!=='egy'))for(const level of ['bachelor
  if(funding==='scholarship'){s.education.studyAwards={[studyAwardKey(s,dest,level)]:{awarded:true}};}
  const q=studyAbroadQuote(s,dest,{level,funding});if(!q.ok){console.log(dest,level,funding,q.reason);continue;}
  const cash=s.money.cash,parents=familyEducationFunds(s),r=applyStudyAbroad(s,dest,'cs',{level,funding});assert.ok(r.ok,r.msg);assert.equal(s.country,dest);assert.equal(s.legal.residency.kind,'student_visa');
- if(funding==='parents'){assert.equal(Math.round(s.money.cash),Math.round(convertCurrency(cash,'egy',dest,2026)));assert.ok(Math.abs(parents-convertCurrency(familyEducationFunds(s),dest,'egy',2026)-q.totalPlayer)<2);}
+ if(funding==='parents'){assert.equal(Math.round(s.money.cash),Math.round(convertCurrency(cash,'egy',dest,2026)));assert.ok(Math.abs(parents-convertCurrency(familyEducationFunds(s),dest,'egy',2026)-q.totalPlayer)<2,[dest,level,parents,familyEducationFunds(s),q.totalPlayer].join(' '));}
  else assert.ok(Math.abs(s.money.cash-convertCurrency(cash-q.totalPlayer,'egy',dest,2026))<2);
  if(level==='bachelor'){
  assert.equal(s.education.university.annualTuition,q.annualDest);assert.equal(monthlyUniversityTuition(s),0);

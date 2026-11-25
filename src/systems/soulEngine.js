@@ -1146,8 +1146,16 @@ export function interactWithPerson(S, personId, action, opts = {}) {
      real once-per-month record, so repeating it earns nothing extra. It is
      marked only once the action really happens (see spendEnergy). */
   const repeatKey = ['talk_visit', 'family_meal', 'gift'].includes(action) ? `interact_${action}_${p.id}` : null;
-  if (repeatKey && (S.cooldowns?.[repeatKey] || 0) > S.turn) {
-    return { ok: false, msg: `You already did that with ${p.firstName} this month.` };
+  /* Repeating is allowed, but only the first time in a period earns the
+     full reward. Later ones are plain time together with a small gain. */
+  const repeated = !!(repeatKey && (S.cooldowns?.[repeatKey] || 0) > S.turn);
+  if (repeated && action === 'gift') {
+    return { ok: false, msg: `You already gave ${p.firstName} a gift this month.` };
+  }
+  if (repeated) {
+    noteSocialContact(S, p);
+    rememberDeed(S, p, 'visited', `More time together.`, { affection: 1 });
+    return { ok: true, msg: `More time with ${p.firstName}. It is nice, but you already caught up this month, so little changes.` };
   }
 
   if (action === 'talk_visit') {
