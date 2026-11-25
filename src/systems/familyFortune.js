@@ -495,6 +495,7 @@ export function restoreHomeScene(S, saved) {
   if (saved && saved.key === 'family_place' && S.familyFortune?.placeOffer) return buildPlaceScene(S);
   if (saved && saved.key === 'family_seed' && S.familyFortune?.seedOffer) return buildSeedScene(S);
   if (saved && saved.key === 'family_intro' && S.familyFortune?.introOffer) return buildIntroScene(S);
+  if (saved && saved.key === 'family_wedding' && S.familyFortune?.weddingOffer) return buildWeddingScene(S);
   if (saved && saved.key === 'family_deposit' && S.familyFortune?.depositOffer) return buildDepositScene(S);
   if (saved && saved.key === 'family_bigask' && S.familyFortune?.bigAskOffer) return buildBigAskScene(S);
   if (saved && saved.key === 'family_venture' && S.familyFortune?.ventureOffer) return buildVentureScene(S);
@@ -955,6 +956,58 @@ export function resolveIntroduction(S, yes) {
   return { ok: true, taken: true, orderId: b.id + '_contract_' + c.serial };
 }
 
+/* --- A hand with the wedding (wealth event: the wedding ask) -------------------------------------------
+   When you are engaged and a parent is alive, the family offers to cover a share of the wedding venue from the family fund: 25% (upper middle),
+   50% (wealthy) or 75% (very wealthy). These shares are a game balance choice. The pledge is paid when the wedding is actually held, on the venue you
+   really chose, from the fund, inside the annual gift cap (a partial payment is explained). It is tied to the person you are engaged to. Declining costs nothing. */
+const WEDDING_SHARE = { upper_middle: 0.25, wealthy: 0.5, very_wealthy: 0.75 };
+export function offerWeddingHelp(S) {
+  const f = ensureFamilyFortune(S);
+  const eng = S.marriage?.engagement;
+  if (!f || !eng || f.weddingOffer || f.weddingPledge || isTightYear(f, S) || (f.weddingDoneFor && f.weddingDoneFor === eng.partnerId)) return null;
+  if (S.activeScene || (S.sceneQueue || []).length) return null;
+  const parentAlive = [S.relations?.fatherId, S.relations?.motherId].some(id => id && S.people?.[id]?.alive);
+  const partner = S.people?.[eng.partnerId]; if (!parentAlive || !partner || !partner.alive) return null;
+  if (f.fundLocal <= 0) return null;
+  f.weddingOffer = { partnerId: eng.partnerId, share: WEDDING_SHARE[f.tier] || 0.25, year: S.year };
+  queueScene(S, buildWeddingScene(S), true);
+  return f.weddingOffer;
+}
+export function buildWeddingScene(S) {
+  const f = S.familyFortune, o = f?.weddingOffer; if (!o) return null;
+  const partner = S.people?.[o.partnerId]; if (!partner) return null;
+  return {
+    key: 'family_wedding', category: 'family', title: 'A hand with the wedding',
+    text: `Your family is glad about you and ${partner.firstName}. They offer to cover ${Math.round(o.share * 100)}% of the wedding venue from the family fund, paid on the day you hold it, for the venue you choose. It counts toward what the family can give you this year, so if the fund is stretched they may only manage part. You pay the rest, as with any wedding.`,
+    choices: [
+      { label: 'Accept their help with the venue', effect: st => resolveWeddingHelp(st, true) },
+      { label: 'Thank them, we will pay for it ourselves', effect: st => resolveWeddingHelp(st, false) }
+    ]
+  };
+}
+export function resolveWeddingHelp(S, yes) {
+  const f = S.familyFortune, o = f?.weddingOffer; if (!o) return null;
+  f.weddingOffer = null;
+  if (!yes) { f.weddingDoneFor = o.partnerId; recordJournal(S, 'You thanked your family and said you would pay for the wedding yourselves.', 'family'); return { ok: true, taken: false }; }
+  f.weddingPledge = { partnerId: o.partnerId, share: o.share };
+  recordJournal(S, `Your family will cover ${Math.round(o.share * 100)}% of the wedding venue.`, 'family');
+  return { ok: true, taken: true };
+}
+/* Called by the wedding itself, after the venue is paid: returns what the family really paid. */
+export function payWeddingHelp(S, venueCost, partnerId) {
+  const f = S.familyFortune, pl = f?.weddingPledge; if (!pl) return 0;
+  f.weddingPledge = null;
+  if (pl.partnerId !== partnerId) return 0;
+  f.weddingDoneFor = partnerId;
+  const want = Math.round(venueCost * pl.share), amt = Math.max(0, Math.min(want, Math.round(f.fundLocal), Math.round(giftRoom(f, S))));
+  if (amt <= 0) { recordJournal(S, 'Your family wanted to help with the wedding, but the family money was committed this year. Nothing was paid.', 'family'); return 0; }
+  spend(f, amt); f.yearGifts += amt;
+  walletMove(S, amt, 'Family help with the wedding venue', 'family');
+  addGrant(f, S, 'wedding', amt, 'toward the wedding venue');
+  recordJournal(S, amt < want ? `Your family paid ${formatMoney(amt, S.country)} toward the wedding venue, less than the ${formatMoney(want, S.country)} they promised, because the family money was stretched.` : `Your family paid ${formatMoney(amt, S.country)} toward the wedding venue.`, 'family');
+  return amt;
+}
+
 /* --- The connected internship (17-23): a paid summer at a partner company -------------------
    The family's connections open a three-month paid internship at a partner firm (a real employer record, paid monthly through the summer,
    less free time). At the end you earn a reference (a few interview points) and, if you are free to work, may convert it into a first job there. Declining costs nothing. */
@@ -1134,7 +1187,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerIntroduction(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); deliverSuccessionTalk(S, f);
+  checkWorkQuit(S, f); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerIntroduction(S); offerWeddingHelp(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); deliverSuccessionTalk(S, f);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;
@@ -1279,8 +1332,8 @@ export { DIALS as FORTUNE_DIALS };
 
 /* When the player dies, their stake in the family company is sold for real cash, so the estate holds cash that someone actually paid:
    1. each living sibling may buy an equal part of it at full value, as far as their own savings go (their savings fall by exactly what they pay);
-   2. whatever they cannot pay for is sold to outside investors at a 10% discount (a minority stake in a private company), and leaves the family.
-   The company itself is untouched; ownership moves. Net worth falls only by the discount. */
+   2. whatever they cannot pay for goes to outside investors at full value, and leaves the family.
+   The company itself is untouched; ownership moves. Net worth is unchanged: the stake became cash. */
 export function liquidateFamilyStakeOnDeath(S) {
   const f = S.familyFortune;
   if (!f?.own || !f.company || f.company.sold) return 0;

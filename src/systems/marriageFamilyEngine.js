@@ -18,6 +18,7 @@ import {
 } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { eraLocalCost, eraSalary, goldPricePerGram, convertCurrency } from '../data/economy.js';
+import { payWeddingHelp } from './familyFortune.js';
 import { getMarriageProfile } from '../data/visasAndMarriage.js';
 import { V1_CHILD_NURSERIES, V1_CHILD_ACTIVITIES } from '../data/megaCareerEduMedical.js';
 import { rememberDeed, emitFact, closeMarriageWithoutCouple } from './soulEngine.js';
@@ -411,6 +412,8 @@ export function celebrateWedding(S, venueId = null, opts = {}) {
   if (furnishCost > 0) {
     walletMove(S, -furnishCost, 'Marital home setup (Gehaz)', 'family');
   }
+
+  payWeddingHelp(S, venueCost, partner.id);
 
   /* Authentic Noqta / Wedding Cash Envelope Gifts from Family & Circle! */
   const warmCircle = Object.values(S.people).filter(p => p && p.alive && p.id !== 'player' && (p.rel?.affection || 0) >= 55).length;
