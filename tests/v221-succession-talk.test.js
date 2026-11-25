@@ -13,7 +13,7 @@ function mk(seed, mood) {
     return S;
   }
 }
-const sum = f => Math.round((f.own.parents + f.own.pool + f.own.player + f.own.heirs + Object.values(f.own.siblings).reduce((a, b) => a + b, 0)) * 1e6) / 1e6;
+const sum = f => Math.round(((f.own.outside || 0) + f.own.parents + f.own.pool + f.own.player + f.own.heirs + Object.values(f.own.siblings).reduce((a, b) => a + b, 0)) * 1e6) / 1e6;
 // settlement queues the talk, and it survives a reload
 { const S = mk(1, 90); F.settleSuccession(S); const f = S.familyFortune; assert.ok(f.successionTalk && S.sceneQueue.some(x => x && x.key === 'family_succession') || S.activeScene?.key === 'family_succession'); assert.equal(F.restoreHomeScene(S, { key: 'family_succession' })?.key, 'family_succession'); }
 // keep: nothing changes
@@ -48,17 +48,20 @@ console.log('succession talk OK');
 function r6(x) { return Math.round(x * 1e6) / 1e6; }
 // audit fixes: death liquidation conserves value, a busy scene only delays the talk, dead siblings' stakes are not lost, sold company stops all income
 { const { computeNetWorthLocal } = await import('../src/core/schema.js');
-  // death: the stake becomes cash at value, others keep their value, net worth unchanged
-  const S = mk(1, 90); F.settleSuccession(S); const f = S.familyFortune; const sib = S.relations.siblingIds.find(i => S.people[i]?.alive);
-  const sibVal0 = f.companyLocal * f.own.siblings[sib] / 100, nw0 = computeNetWorthLocal(S), cash0 = S.money.cash, pv = Math.round(f.companyLocal * f.own.player / 100);
+  // death: the stake is sold for cash someone really paid: siblings from their savings (to the cent), the rest to outsiders at a 10% discount
+  const S = mk(1, 90); F.settleSuccession(S); const f = S.familyFortune; const sibIds = S.relations.siblingIds.filter(i => S.people[i]?.alive);
+  for (const id of sibIds) S.people[id].career = { ...(S.people[id].career || {}), savingsLocal: 0 };
+  const cv = f.companyLocal, pv = Math.round(cv * f.own.player / 100), cash0 = S.money.cash, nw0 = computeNetWorthLocal(S);
   const got = F.liquidateFamilyStakeOnDeath(S);
-  assert.equal(got, pv); assert.equal(Math.round(S.money.cash - cash0), pv); assert.equal(f.own.player, 0); assert.equal(sum(f), 100);
-  assert.ok(Math.abs(computeNetWorthLocal(S) - nw0) <= 2, 'net worth unchanged: nothing paid twice, nothing lost');
-  assert.ok(Math.abs(f.companyLocal * f.own.siblings[sib] / 100 - sibVal0) <= 2, 'the sibling keeps exactly their value');
+  assert.equal(Math.round(S.money.cash - cash0), got); assert.equal(f.own.player, 0); assert.equal(sum(f), 100); assert.equal(f.companyLocal, cv, 'the company is untouched');
+  assert.ok(Math.abs(got - Math.round(pv * 0.9)) <= 2, 'siblings with no savings pay nothing, so it all sells to outsiders at 10% off'); assert.ok(f.own.outside > 0);
+  assert.ok(Math.abs((nw0 - computeNetWorthLocal(S)) - (pv - got)) <= 3, 'net worth falls only by the discount');
   assert.equal(F.liquidateFamilyStakeOnDeath(S), 0, 'only once');
-  // no other owner: the company is sold whole
-  const T = mk(1, 90); F.settleSuccession(T); const g = T.familyFortune; for (const id of Object.keys(g.own.siblings)) { g.own.player += g.own.siblings[id]; g.own.siblings[id] = 0; } g.own.player = 100;
-  F.liquidateFamilyStakeOnDeath(T); assert.ok(g.company.sold && g.companyLocal === 0 && g.yearlyInflowLocal === 0);
+  // rich siblings really pay from savings
+  const R = mk(1, 90); F.settleSuccession(R); const rf = R.familyFortune; const rs = R.relations.siblingIds.filter(i => R.people[i]?.alive); for (const id of rs) R.people[id].career = { ...(R.people[id].career || {}), savingsLocal: 1e12 };
+  const sav0 = rs.reduce((a, id) => a + R.people[id].career.savingsLocal, 0), rv = Math.round(rf.companyLocal * rf.own.player / 100), rc0 = R.money.cash; const rg = F.liquidateFamilyStakeOnDeath(R);
+  const sav1 = rs.reduce((a, id) => a + R.people[id].career.savingsLocal, 0);
+  assert.ok(Math.abs(rg - rv) <= 3 && Math.abs((sav0 - sav1) - rg) <= 3, 'siblings pay full value and their savings fall by exactly that'); assert.ok(!(rf.own.outside > 0)); assert.equal(sum(rf), 100);
   // continueAsChild: the dead player's net worth is paid out once
   const { continueAsChild } = await import('../src/systems/healthDirectorEngine.js');
   const D = mk(1, 90); F.settleSuccession(D); D.sceneQueue = []; D.activeScene = null; const { createPerson } = await import('../src/core/schema.js'); const ch = createPerson(D, { role: 'child', age: 25, nationality: 'usa', residenceCountry: 'usa' }); D.people[ch.id] = ch; D.relations.childIds = [ch.id]; const cid = ch.id;
@@ -68,11 +71,11 @@ function r6(x) { return Math.round(x * 1e6) / 1e6; }
   assert.ok(f.successionTalk && !f.successionTalkDone, 'still pending'); assert.ok(!(S.sceneQueue || []).some(x => x?.key === 'family_succession'));
   S.activeScene = null; S.sceneQueue = []; F.tickFamilyFortuneMonthly(S); assert.ok((S.sceneQueue || []).some(x => x?.key === 'family_succession') || S.activeScene?.key === 'family_succession', 'delivered in the next quiet month');
   const n = (S.sceneQueue || []).filter(x => x?.key === 'family_succession').length; F.tickFamilyFortuneMonthly(S); assert.ok((S.sceneQueue || []).filter(x => x?.key === 'family_succession').length <= n, 'never queued twice'); }
-// a sibling who dies before the talk: their stake goes to the living in equal parts; a sale pays only living owners and loses nothing
-{ const S = mk(1, 90); F.settleSuccession(S); const f = S.familyFortune; const sibs = S.relations.siblingIds.filter(i => S.people[i]?.alive); S.people[sibs[0]].alive = false; const before = sum(f), v0 = f.companyLocal * f.own.siblings[sibs[0]] / 100;
-  const moved = F.redistributeDeadStakes(S, f); assert.ok(moved > 0 && f.own.siblings[sibs[0]] === 0 && sum(f) === before, 'nothing vanishes');
-  const sc = F.buildSuccessionScene(S); assert.ok(sc && !/equal parts/.test(sc.text) || true);
-  S.money.cash = 1; const cashB = S.money.cash; const net = Math.round(f.companyLocal * 0.96); const r = F.resolveSuccessionTalk(S, 'sell'); assert.ok(r.sold); const living = S.relations.siblingIds.filter(i => S.people[i]?.alive); assert.ok(r.mine > 0 && r.mine <= net, 'your cut, not the dead sibling\'s separately'); }
+// a sibling who dies before the talk: their stake stays with their family (not seized by you or the others) and a sale pays their family
+{ const S = mk(1, 90); F.settleSuccession(S); const f = S.familyFortune; const sibs = S.relations.siblingIds.filter(i => S.people[i]?.alive); S.people[sibs[0]].alive = false; const dead0 = f.own.siblings[sibs[0]], me0 = f.own.player, others0 = sibs.slice(1).map(i => f.own.siblings[i]);
+  assert.equal(F.redistributeDeadStakes(S, f), 0); assert.equal(f.own.siblings[sibs[0]], dead0, 'kept with their family'); assert.equal(f.own.player, me0); assert.equal(sum(f), 100);
+  assert.ok(F.deadHolderPct(S, f) === dead0); const sc = F.buildSuccessionScene(S); assert.ok(sc && !/equal parts/.test(sc.text) && /sibling who has died/.test(sc.text));
+  const cv = f.companyLocal; const r = F.resolveSuccessionTalk(S, 'sell'); assert.ok(r.sold); assert.ok(Math.abs(r.mine - Math.round(cv * 0.96 * me0 / 100)) <= 2, 'you get only your own share'); assert.equal(sum(f), 0, 'no ownership is left, and the late sibling\'s share was paid out to their family'); }
 // keep wording follows real ownership
 { const S = mk(1, 90); F.settleSuccession(S); const f = S.familyFortune; f.own.player = r6(f.own.player + 5); const id = S.relations.siblingIds.find(i => (f.own.siblings[i] || 0) > 0); f.own.siblings[id] = r6(f.own.siblings[id] - 5); F.resolveSuccessionTalk(S, 'keep'); const all = JSON.stringify(S.journal || []); assert.ok(/together as it is: you hold/.test(all), 'unequal: states the real share'); assert.ok(!/together, in equal parts/.test(all)); }
 console.log('audit fixes OK');

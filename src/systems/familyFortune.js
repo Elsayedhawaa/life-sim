@@ -78,7 +78,7 @@ function sync(f) { f.netWorthLocal = Math.max(0, Math.round((f.companyLocal || 0
 function spend(f, amount) { f.fundLocal = Math.max(0, f.fundLocal - amount); sync(f); }
 /* Value earmarked or handed over comes from other assets first, then cash. */
 function takeFromEstate(f, amount) { const o = Math.min(f.otherLocal, amount); f.otherLocal -= o; const rest = amount - o; if (rest > 0) f.fundLocal = Math.max(0, f.fundLocal - rest); sync(f); return amount; }
-function ownSum(f) { return Math.round(((f.own.parents || 0) + (f.own.pool || 0) + (f.own.player || 0) + (f.own.heirs || 0) + Object.values(f.own.siblings || {}).reduce((a, b) => a + b, 0)) * 1e6) / 1e6; }
+function ownSum(f) { return Math.round(((f.own.outside || 0) + (f.own.parents || 0) + (f.own.pool || 0) + (f.own.player || 0) + (f.own.heirs || 0) + Object.values(f.own.siblings || {}).reduce((a, b) => a + b, 0)) * 1e6) / 1e6; }
 
 function perChildTrustCapPct(S) {
   const children = 1 + siblingCount(S);
@@ -810,26 +810,16 @@ export function deliverSuccessionTalk(S, f) {
   queueScene(S, buildSuccessionScene(S), true);
   return true;
 }
-/* A sibling who died keeps no seat: their stake passes in equal parts to you and the living siblings at unchanged value, as at succession. */
-export function redistributeDeadStakes(S, f) {
-  if (!f?.own || !f.company) return 0;
+/* A sibling who has died is not a living owner: their stake stays with their own family, unpaid by you and not yours. Their family's children are not modelled, so the stake is never moved to you or the other siblings.
+   In a sale their family receives their share of the proceeds; in a buyout their stake is not for sale. */
+export function deadHolderPct(S, f) {
   const living = aliveSiblings(S);
-  let moved = 0;
-  for (const id of Object.keys(f.own.siblings || {})) {
-    const pct = f.own.siblings[id] || 0;
-    if (pct <= 0 || living.includes(id)) continue;
-    const each = r6(pct / (1 + living.length));
-    f.own.siblings[id] = 0; f.own.player = r6(f.own.player + each);
-    for (const l of living) f.own.siblings[l] = r6((f.own.siblings[l] || 0) + each);
-    f.own.player = r6(f.own.player + (pct - each * (1 + living.length)));
-    moved += pct;
-  }
-  if (moved > 0) { f.shares = { pct: f.own.player, since: f.shares?.since || S.year }; recordJournal(S, `The share of ${f.company.name} held by a sibling who has died passed in equal parts to you and your living siblings.`, 'family'); }
-  return moved;
+  return r6(Object.keys(f?.own?.siblings || {}).filter(id => !living.includes(id)).reduce((a, id) => a + (f.own.siblings[id] || 0), 0));
 }
+export function redistributeDeadStakes() { return 0; }
 function sibWilling(p) { const r = p.rel || {}; return (r.affection || 0) * 0.5 + (r.trust || 0) * 0.4 - (r.resentment || 0) * 0.6 >= 40; }
 function talkSibs(S, f) { return aliveSiblings(S).filter(id => (f.own.siblings?.[id] || 0) > 0); }
-function equalParts(S, f) { const v = [f.own.player, ...talkSibs(S, f).map(id => f.own.siblings[id])]; return Math.max(...v) - Math.min(...v) < 0.01; }
+function equalParts(S, f) { const v = [f.own.player, ...talkSibs(S, f).map(id => f.own.siblings[id])]; return deadHolderPct(S, f) === 0 && Math.max(...v) - Math.min(...v) < 0.01; }
 export function buyoutCost(S) {
   const f = S.familyFortune; if (!f?.own) return 0;
   return Math.round(talkSibs(S, f).reduce((a, id) => a + companyValue(f) * f.own.siblings[id] / 100, 0));
@@ -841,7 +831,7 @@ export function buildSuccessionScene(S) {
   const n = talkSibs(S, f).length;
   return {
     key: 'family_succession', category: 'family', title: `The future of ${f.company.name}`,
-    text: `With your parents gone, ${f.company.name} belongs to you and ${n === 1 ? 'your sibling' : 'your ' + n + ' siblings'}${equalParts(S, f) ? ' in equal parts' : `: you hold ${f.own.player}% and your siblings hold ${r6(talkSibs(S, f).reduce((a, id) => a + f.own.siblings[id], 0))}% between them`}. You sit down together to decide what comes next. Keeping it as it is changes nothing. Leading it alone means buying them out, about ${formatMoney(buyoutCost(S), S.country)} in cash if everyone agrees. Selling it and splitting the money costs ${Math.round(SALE_COST * 100)}% in fees and needs every one of you to agree.`,
+    text: `With your parents gone, ${f.company.name} belongs to you and ${n === 1 ? 'your sibling' : 'your ' + n + ' siblings'}${equalParts(S, f) ? ' in equal parts' : `: you hold ${f.own.player}% and your siblings hold ${r6(talkSibs(S, f).reduce((a, id) => a + f.own.siblings[id], 0))}% between them${deadHolderPct(S, f) > 0 ? `, and ${deadHolderPct(S, f)}% stays with the family of a sibling who has died` : ''}`}. You sit down together to decide what comes next. Keeping it as it is changes nothing. Leading it alone means buying them out, about ${formatMoney(buyoutCost(S), S.country)} in cash if everyone agrees. Selling it and splitting the money costs ${Math.round(SALE_COST * 100)}% in fees and needs every one of you to agree.`,
     choices: [
       { label: 'Keep it together as it is', effect: st => resolveSuccessionTalk(st, 'keep') },
       { label: `Offer to buy your siblings out (${formatMoney(buyoutCost(S), S.country)})`, effect: st => resolveSuccessionTalk(st, 'lead') },
@@ -880,12 +870,14 @@ export function resolveSuccessionTalk(S, how) {
   const value = companyValue(f), net = Math.round(value * (1 - SALE_COST));
   let mine = 0;
   for (const id of sibIds) { const q = S.people[id]; const amt = Math.round(net * f.own.siblings[id] / 100); q.career = q.career || {}; q.career.savingsLocal = (Number(q.career.savingsLocal) || 0) + Math.round(convertCurrency(amt, S.country, q.residenceCountry || S.country, S.year)); f.own.siblings[id] = 0; }
+  let lateFamily = 0;
+  for (const id of Object.keys(f.own.siblings || {})) { if (sibIds.includes(id)) continue; lateFamily += Math.round(net * (f.own.siblings[id] || 0) / 100); f.own.siblings[id] = 0; }
   mine = Math.round(net * f.own.player / 100);
-  f.own.player = 0; f.own.pool = 0; f.own.parents = 0; f.own.heirs = 0; f.companyLocal = 0; f.company.sold = true; f.company.soldYear = S.year; f.yearlyInflowLocal = 0; f.baseInflowLocal = 0; f.yearDividend = 0; f.shares = { pct: 0, since: S.year }; sync(f);
+  f.own.player = 0; f.own.pool = 0; f.own.parents = 0; f.own.heirs = 0; f.own.outside = 0; f.companyLocal = 0; f.company.sold = true; f.company.soldYear = S.year; f.yearlyInflowLocal = 0; f.baseInflowLocal = 0; f.yearDividend = 0; f.shares = { pct: 0, since: S.year }; sync(f);
   if (mine > 0) walletMove(S, mine, `Your share of the sale of ${name}`, 'family');
   if (S.career?.employed && S.career?.job?.employer === name) { S.career.job = null; S.career.employed = false; }
   addGrant(f, S, 'sale', mine, `sale of ${name}`);
-  recordJournal(S, `${name} was sold. After ${Math.round(SALE_COST * 100)}% in fees your part was ${formatMoney(mine, S.country)}. The company, and any job there, is gone.`, 'family');
+  recordJournal(S, `${name} was sold. After ${Math.round(SALE_COST * 100)}% in fees your part was ${formatMoney(mine, S.country)}.${lateFamily > 0 ? ` The share of a sibling who has died, ${formatMoney(lateFamily, S.country)}, went to their family.` : ''} The company, and any job there, is gone.`, 'family');
   return { ok: true, how: 'sell', sold: true, mine };
 }
 
@@ -1211,23 +1203,32 @@ export function familyLedgerView(S) {
 
 export { DIALS as FORTUNE_DIALS };
 
-/* When the player dies, their stake in the family company is not cash. The company buys it back at its value: the company shrinks by that amount, the other owners keep exactly the value they had
-   (their percentages scale up), and the cash joins the estate. Net worth is unchanged, so nothing is paid twice and nothing vanishes. With no other owner left the company is sold whole. */
+/* When the player dies, their stake in the family company is sold for real cash, so the estate holds cash that someone actually paid:
+   1. each living sibling may buy an equal part of it at full value, as far as their own savings go (their savings fall by exactly what they pay);
+   2. whatever they cannot pay for is sold to outside investors at a 10% discount (a minority stake in a private company), and leaves the family.
+   The company itself is untouched; ownership moves. Net worth falls only by the discount. */
+const OUTSIDE_DISCOUNT = 0.10;
 export function liquidateFamilyStakeOnDeath(S) {
   const f = S.familyFortune;
   if (!f?.own || !f.company || f.company.sold) return 0;
   const p = Number(f.own.player) || 0;
   if (p <= 0) return 0;
-  const value = Math.round((f.companyLocal || 0) * p / 100);
-  const rest = r6(ownSum(f) - p);
-  f.companyLocal = Math.max(0, (f.companyLocal || 0) - value);
-  f.own.player = 0;
-  if (rest > 0) {
-    const k = 100 / rest;
-    f.own.parents = r6(f.own.parents * k); f.own.pool = r6(f.own.pool * k); f.own.heirs = r6(f.own.heirs * k);
-    for (const id of Object.keys(f.own.siblings || {})) f.own.siblings[id] = r6(f.own.siblings[id] * k);
-  } else { f.company.sold = true; f.company.soldYear = S.year; f.yearlyInflowLocal = 0; f.baseInflowLocal = 0; }
-  f.shares = { pct: 0, since: S.year }; sync(f);
-  if (value > 0) walletMove(S, value, `The family company bought back your stake in ${f.company.name}`, 'family');
-  return value;
+  const value = companyValue(f), living = aliveSiblings(S);
+  let cash = 0, left = p, siblingPaid = 0, outsideCash = 0;
+  const part = living.length ? r6(p / living.length) : 0;
+  for (const id of living) {
+    const cost = Math.round(value * part / 100); if (cost <= 0) continue;
+    const q = S.people[id]; q.career = q.career || {};
+    const sav = Number(q.career.savingsLocal) || 0;
+    const frac = Math.max(0, Math.min(1, sav / cost));
+    if (frac <= 0) continue;
+    const pct = r6(part * frac), pay = Math.round(cost * frac);
+    q.career.savingsLocal = sav - pay;
+    f.own.siblings[id] = r6((f.own.siblings[id] || 0) + pct); left = r6(left - pct); cash += pay; siblingPaid += pay;
+  }
+  if (left > 0) { const gross = Math.round(value * left / 100), net = Math.round(gross * (1 - OUTSIDE_DISCOUNT)); f.own.outside = r6((f.own.outside || 0) + left); cash += net; outsideCash = net; }
+  f.own.player = 0; f.shares = { pct: 0, since: S.year }; sync(f);
+  if (cash > 0) walletMove(S, cash, `Your stake in ${f.company.name} was sold (${formatMoney(siblingPaid, S.country)} from your siblings, ${formatMoney(outsideCash, S.country)} from outside investors)`, 'family');
+  recordJournal(S, `Your stake in ${f.company.name} was sold for ${formatMoney(cash, S.country)}: your siblings bought what their savings allowed and outside investors bought the rest at a ${Math.round(OUTSIDE_DISCOUNT * 100)}% discount.`, 'family');
+  return cash;
 }
