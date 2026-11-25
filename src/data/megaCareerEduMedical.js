@@ -20725,13 +20725,13 @@ export const V1_ACHIEVEMENTS = [
     "id": "first_car",
     "label": "First Car",
     "icon": "car",
-    "desc": "Bought your first car."
+    "desc": "Got your first car."
   },
   {
     "id": "first_home",
     "label": "First Home",
     "icon": "home",
-    "desc": "Bought your first property."
+    "desc": "Owned your first property."
   },
   {
     "id": "married",
