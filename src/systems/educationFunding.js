@@ -68,7 +68,19 @@ export function chargeFamilyEducation(S,amount){
  if(left>.01&&educationFamilyPayers(S).length){const r=familyReserve(S);const have=reserveIn(S,r.local);const d=Math.min(left,have);r.local=Math.max(0,r.local-(have>0?r.local*(d/have):0));r.drawn=true;left-=d;}
  return left<=.01;
 }
+export const SCHOLARSHIP_RENEWAL_MIN_SKILL=60;
+/* A scholarship is renewed on results at each academic-year boundary: academic skill must stay at or above the standing. One miss is probation (funding kept, warned). A second miss in a row ends the award and tuition is paid by the student monthly. */
+export function reviewScholarshipRenewal(S){
+ const u=S.education.university;if(!u||u.fundingSource!=='scholarship'||!(u.scholarshipPct>0))return;
+ const el=Number(u.elapsedMonths)||0;if(el<=0||el%12!==0||u.renewalReviewedAt===el)return;u.renewalReviewedAt=el;
+ const skill=Math.round(S.education.academicSkill||0);
+ if(skill>=SCHOLARSHIP_RENEWAL_MIN_SKILL){u.probation=false;recordJournal(S,`Your scholarship at ${u.name} was renewed: your results (${skill}%) met the ${SCHOLARSHIP_RENEWAL_MIN_SKILL}% standing.`,'career');return;}
+ if(!u.probation){u.probation=true;recordJournal(S,`Scholarship probation at ${u.name}: your results (${skill}%) are under the ${SCHOLARSHIP_RENEWAL_MIN_SKILL}% standing. Funding continues for now. Another weak year ends it.`,'career');return;}
+ u.fundingSource='self';u.scholarshipPct=0;u.scholarshipLost=true;u.probation=false;
+ recordJournal(S,`Your scholarship at ${u.name} ended after two years under the ${SCHOLARSHIP_RENEWAL_MIN_SKILL}% standing (${skill}% now). You now pay tuition monthly yourself.`,'money');
+}
 export function settleFamilyUniversityMonth(S){
+ reviewScholarshipRenewal(S);
  const u=S.education.university;if(!u)return;if(u.prepaidMonths>0){u.prepaidMonths--;u._tuitionPrepaidThisMonth=true;if(u.fundingSource==='family')u.familyMonthsRemaining=Math.max(0,(u.familyMonthsRemaining||0)-1);return;}u._tuitionPrepaidThisMonth=false;if(u.fundingSource!=='family')return;
  if(!(u.familyMonthsRemaining>0)){
   // No retroactive free family funding in legacy saves; renew against real funds.
