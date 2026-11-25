@@ -24,4 +24,13 @@ P.year = 2025; P.month = 1; P.player.age = 35; P.money.cash = 5e6; launchSmallBu
 const pb = P.career.businesses[0]; evaluateProgress(P); pb.lastPL = { net: 400000, revenue: 900000, costs: 500000 }; pb.monthlyRev = 900000;
 assert.ok(sellBusiness(P, pb.id).ok); evaluateProgress(P);
 assert.ok((getProgress(P).earned || []).some((e) => e.id === 'business_sold_profit'), 'profitable sale earns the achievement');
+// Negative cases: an instant loss sale, and a sale whose unpaid bills eat the price, must not earn the achievement.
+const earned = (X) => (getProgress(X).earned || []).some((e) => e.id === 'business_sold_profit');
+for (const debt of [0, 5e6]) {
+  const N = createNewLifeState({ seed: 778, country: 'egy', birthYear: 1990, familyTier: 'middle', gender: 'm', ambition: 'entrepreneur' }); ensureExtendedState(N);
+  N.year = 2025; N.month = 1; N.player.age = 35; N.money.cash = 5e6; launchSmallBusiness(N, 'cafe', 'Loss Cafe', { mode: 'part_time' });
+  const nb = N.career.businesses[0]; evaluateProgress(N); nb.debtLocal = debt;
+  assert.ok(sellBusiness(N, nb.id).ok); evaluateProgress(N);
+  assert.ok(!earned(N), `loss sale (debt ${debt}) must not earn sold-for-profit`);
+}
 console.log('business flip + sold-profit OK');
