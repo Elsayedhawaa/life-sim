@@ -272,45 +272,79 @@ export function grantServiceShares(S) {
     const p = S.people[id];
     if ((p.age ?? 0) >= DIALS.sharesGrantAge && hash01(S, S.year * 13 + id.length * 7 + (p.age | 0) * 3 + 5) < 0.7) heirs.push({ id, salt: 71 });
   }
-  let granted = null;
-  for (const h of heirs) {
+  /* Every qualifying child is treated the same way. All wants are worked out first, the pool is split in proportion if it cannot cover them, and each child's shortfall is paid as a cash bonus. */
+  const rows = heirs.map(h => {
     const held = h.id === 'player' ? f.own.player : (f.own.siblings[h.id] || 0);
     const room = DIALS.sharesPerChildCapPct - held;
-    if (room <= 0) continue;
-    const want = Math.min(room, Math.round((lo + hash01(S, S.year * 17 + h.salt + h.id.length) * (hi - lo)) * 100) / 100);
-    const each = Math.min(want, Math.floor(f.own.pool * 100) / 100);
-    const short = want - each;
-    if (each > 0) {
-      f.own.pool = r6(f.own.pool - each);
-      if (h.id === 'player') f.own.player = r6(f.own.player + each); else f.own.siblings[h.id] = r6((f.own.siblings[h.id] || 0) + each);
+    const want = room > 0 ? Math.min(room, Math.round((lo + hash01(S, S.year * 17 + h.salt + h.id.length) * (hi - lo)) * 100) / 100) : 0;
+    return { id: h.id, want, each: 0, short: 0 };
+  }).filter(r => r.want > 0);
+  const totalWant = rows.reduce((a, r) => a + r.want, 0);
+  const pool = Math.floor(f.own.pool * 100) / 100;
+  const scale = totalWant > pool ? pool / totalWant : 1;
+  for (const r of rows) { r.each = Math.floor(r.want * scale * 100) / 100; r.short = Math.round((r.want - r.each) * 100) / 100; }
+  let granted = null;
+  for (const r of rows) {
+    if (r.each > 0) {
+      f.own.pool = r6(f.own.pool - r.each);
+      if (r.id === 'player') f.own.player = r6(f.own.player + r.each); else f.own.siblings[r.id] = r6((f.own.siblings[r.id] || 0) + r.each);
     }
-    if (h.id === 'player') {
+    if (r.id === 'player') {
       f.workYears = (f.workYears || 0) + 1;
-      if (each > 0) { addGrant(f, S, 'shares', Math.round(companyValue(f) * each / 100), `${each}% of ${f.company.name}`); recordJournal(S, `A year of work earned you ${each}% of ${f.company.name}. The family gives service shares to children who work, up to ${DIALS.sharesPerChildCapPct}% each.`, 'family'); granted = f.own.player; }
-      if (short > 0 && f.fundLocal > 0) {
-        const bonus = Math.min(Math.round(short * companyValue(f) / 100), Math.round(f.fundLocal));
-        if (bonus > 0) { spend(f, bonus); walletMove(S, bonus, `Cash bonus from ${f.company.name}`, 'family'); addGrant(f, S, 'bonus', bonus, 'the share pool was used up'); recordJournal(S, `The shares set aside for the children are used up, so ${f.company.name} paid you a cash bonus of ${formatMoney(bonus, S.country)} instead.`, 'money'); }
-      }
+      if (r.each > 0) { addGrant(f, S, 'shares', Math.round(companyValue(f) * r.each / 100), `${r.each}% of ${f.company.name}`); recordJournal(S, `A year of work earned you ${r.each}% of ${f.company.name}. The family gives service shares to children who work, up to ${DIALS.sharesPerChildCapPct}% each.`, 'family'); granted = f.own.player; }
+    }
+  }
+  /* Cash bonuses for the shortfall: the same rule for every child, from the fund, scaled equally if the fund cannot cover them all. */
+  const owed = rows.filter(r => r.short > 0).map(r => ({ ...r, cash: Math.round(r.short * companyValue(f) / 100) }));
+  const totalOwed = owed.reduce((a, r) => a + r.cash, 0);
+  if (totalOwed > 0 && f.fundLocal > 0 && !f.inherited) {
+    const k = Math.min(1, Math.floor(f.fundLocal) / totalOwed);
+    f.bonusesPaid = f.bonusesPaid || {};
+    for (const r of owed) {
+      const bonus = Math.floor(r.cash * k);
+      if (bonus <= 0) continue;
+      spend(f, bonus);
+      if (r.id === 'player') { walletMove(S, bonus, `Cash bonus from ${f.company.name}`, 'family'); addGrant(f, S, 'bonus', bonus, 'the share pool was used up'); recordJournal(S, `The shares set aside for the children are used up, so ${f.company.name} paid you a cash bonus of ${formatMoney(bonus, S.country)} instead.`, 'money'); }
+      else { const p = S.people[r.id]; p.career = p.career || {}; p.career.savingsLocal = (Number(p.career.savingsLocal) || 0) + Math.round(convertCurrency(bonus, S.country, p.residenceCountry || S.country, S.year)); }
+      f.bonusesPaid[r.id] = (f.bonusesPaid[r.id] || 0) + bonus;
     }
   }
   if (granted != null) f.shares = { pct: f.own.player, since: f.shares?.since || S.year };
   else if (!f.shares && f.own.player > 0) f.shares = { pct: f.own.player, since: S.year };
   return f.shares;
 }
+/* Dividends: one profit stream. The company's yearly distribution is its value x yield, cut in a losing year, and never more than a set share of the year's modelled inflow (its actual profit). Every owner who holds shares gets their percentage of it: the player to their wallet, each living sibling to their savings. Parents' and pool shares are not paid out. While the parents are alive it comes out of the family fund (their cash); after the estate is settled it is the company's own profit. */
 export function payDividends(S, swing) {
   const f = S.familyFortune;
-  if (!f?.own?.player || !f.company) return 0;
-  const stake = companyValue(f) * f.own.player / 100;
-  const good = swing >= 0 ? 1 : Math.max(0, 1 + swing * 2); /* a losing company year cuts the dividend */
-  let amt = Math.round(stake * DIALS.dividendYield * good);
-  amt = Math.min(amt, Math.round(f.yearlyInflowLocal * DIALS.dividendCapPctOfInflow), f.inherited ? Infinity : Math.round(f.fundLocal));
-  if (amt <= 0) return 0;
-  if (!f.inherited) spend(f, amt); /* after the estate is settled the company pays from its own profit */ f.dividendsPaid = (f.dividendsPaid || 0) + amt; f.yearDividend = amt;
-  walletMove(S, amt, `Dividend from ${f.company.name}`, 'family');
-  addGrant(f, S, 'dividend', amt, f.company.name);
-  recordJournal(S, `${f.company.name} paid you a dividend of ${formatMoney(amt, S.country)}.`, 'money');
-  return amt;
+  if (!f?.own || !f.company) return 0;
+  const holders = [];
+  if (f.own.player > 0) holders.push({ id: 'player', pct: f.own.player });
+  for (const id of aliveSiblings(S)) if ((f.own.siblings[id] || 0) > 0) holders.push({ id, pct: f.own.siblings[id] });
+  if (!holders.length) return 0;
+  const good = swing >= 0 ? 1 : Math.max(0, 1 + swing * 2);
+  const cap = Math.round(f.yearlyInflowLocal * DIALS.dividendCapPctOfInflow);
+  let rows = holders.map(h => ({ ...h, amt: Math.round(companyValue(f) * h.pct / 100 * DIALS.dividendYield * good) }));
+  let total = rows.reduce((a, r) => a + r.amt, 0);
+  const limit = f.inherited ? cap : Math.min(cap, Math.round(f.fundLocal));
+  if (total > limit) { const k = limit / total; rows = rows.map(r => ({ ...r, amt: Math.floor(r.amt * k) })); total = rows.reduce((a, r) => a + r.amt, 0); }
+  if (total <= 0) return 0;
+  if (!f.inherited) spend(f, total);
+  f.dividendsOut = (f.dividendsOut || 0) + total;
+  let mine = 0;
+  for (const r of rows) {
+    if (r.amt <= 0) continue;
+    if (r.id === 'player') { mine = r.amt; walletMove(S, r.amt, `Dividend from ${f.company.name}`, 'family'); }
+    else { const p = S.people[r.id]; p.career = p.career || {}; p.career.savingsLocal = (Number(p.career.savingsLocal) || 0) + Math.round(convertCurrency(r.amt, S.country, p.residenceCountry || S.country, S.year)); }
+  }
+  f.lastDividend = { total, rows: rows.map(r => ({ id: r.id, amt: r.amt })), limit, fromFund: !f.inherited };
+  if (mine > 0) {
+    f.dividendsPaid = (f.dividendsPaid || 0) + mine; f.yearDividend = mine;
+    addGrant(f, S, 'dividend', mine, f.company.name);
+    recordJournal(S, `${f.company.name} paid you a dividend of ${formatMoney(mine, S.country)}.`, 'money');
+  }
+  return mine;
 }
+
 /* Succession, once, when both parents are gone. Everything the parents held passes to the living children (you and your living siblings), equally:
    - the company stake moves as ownership, the company value is untouched;
    - the cash fund and the other assets (properties, investments) are valued, the game's estate tax rule is applied to the whole estate (the same rule the player's own estate uses; only some countries levy it), the tax is paid out of the cash and assets, and the rest is paid out equally. You get your part as cash; each sibling's part is added to their own savings.
@@ -385,7 +419,99 @@ export function buildHomeScene(S) {
   };
 }
 export function restoreHomeScene(S, saved) {
+  if (saved && saved.key === 'family_seed' && S.familyFortune?.seedOffer) return buildSeedScene(S);
+  if (saved && saved.key === 'family_deposit' && S.familyFortune?.depositOffer) return buildDepositScene(S);
   return saved && saved.key === 'family_home' && S.familyFortune?.homeOffer ? buildHomeScene(S) : null;
+}
+
+/* --- Your own door: a seed gift when the player starts their own company (wealthy tiers) ---
+   One time, the family backs it with cash from the fund. Declining costs nothing and changes no warmth. */
+function seedAmount(S, f) {
+  const usd = { upper_middle: [5e3, 10e3], wealthy: [50e3, 100e3], very_wealthy: [1e6, 5e6] }[f.tier];
+  const x = usd[0] + hash01(S, 77) * (usd[1] - usd[0]);
+  return Math.round(eraLocalCost(x, S.country, S.year));
+}
+export function offerSeedGift(S) {
+  const f = ensureFamilyFortune(S);
+  if (!f || f.seedDone || f.seedOffer) return null;
+  if ((S.player?.age ?? 0) < 19 || !(S.career?.businesses || []).some(b => b && !b.dead)) return null;
+  if (S.activeScene || (S.sceneQueue || []).length) return null; /* wait for a quiet month */
+  const room = Math.round(f.fundLocal * 0.5);
+  const amount = Math.min(seedAmount(S, f), room, Math.round(giftRoom(f, S) + 0));
+  if (amount <= 0) return null;
+  f.seedOffer = { amount, year: S.year };
+  queueScene(S, buildSeedScene(S), true);
+  return f.seedOffer;
+}
+export function buildSeedScene(S) {
+  const f = S.familyFortune, o = f?.seedOffer;
+  if (!o) return null;
+  return {
+    key: 'family_seed', category: 'family', title: 'Your own door',
+    text: `You have started a company of your own. Your family hears about it and offers to back you with ${formatMoney(o.amount, S.country)} in seed money, a one-time gift from the family fund. It is yours, with no strings. Taking your own path changes nothing between you and them.`,
+    choices: [
+      { label: `Accept ${formatMoney(o.amount, S.country)} as seed money`, effect: st => resolveSeed(st, true) },
+      { label: 'Thank them and do it on your own', effect: st => resolveSeed(st, false) }
+    ]
+  };
+}
+export function resolveSeed(S, take) {
+  const f = S.familyFortune, o = f?.seedOffer;
+  if (!o) return null;
+  f.seedOffer = null; f.seedDone = true;
+  if (!take) { recordJournal(S, 'You thanked your family for the offer and are building your company on your own. They are proud, and the door stays open.', 'family'); return { ok: true, taken: false }; }
+  const amt = Math.min(o.amount, Math.round(f.fundLocal));
+  if (amt <= 0) return { ok: false };
+  giftRoom(f, S); spend(f, amt); f.yearGifts += amt;
+  walletMove(S, amt, 'Seed gift from your family', 'family');
+  addGrant(f, S, 'seed', amt, 'seed money for your own company');
+  recordJournal(S, `Your family put ${formatMoney(amt, S.country)} behind your own company. It is a gift, not a loan.`, 'family');
+  return { ok: true, taken: true, amount: amt };
+}
+
+/* --- Upper middle: help with the deposit on a first home -----------------
+   20-40% of the deposit-size price of an entry home, one time, between 24 and 30 and only while the player owns no property. */
+export function offerDepositHelp(S) {
+  const f = ensureFamilyFortune(S);
+  if (!f || f.tier !== 'upper_middle' || f.depositDone || f.depositOffer) return null;
+  const age = S.player?.age ?? 0;
+  if (age < 24 || age > 30) return null;
+  if ((S.housing?.properties || []).length) { f.depositDone = true; return null; }
+  if (S.activeScene || (S.sceneQueue || []).length) return null;
+  const list = getHousingFor(S.country, S.year).map(h => Math.round(eraLocalCost(h.price2026, S.country, S.year))).filter(x => x > 0).sort((a, b) => a - b);
+  if (!list.length) return null;
+  const entry = list[Math.floor(list.length * 0.25)];
+  const pct = 0.2 + hash01(S, 83) * 0.2;
+  const amount = Math.min(Math.round(entry * 0.2 * pct), Math.round(f.fundLocal * 0.25), Math.round(giftRoom(f, S)));
+  if (amount <= 0) return null;
+  f.depositOffer = { amount, entryPrice: entry, pct: Math.round(pct * 100), year: S.year };
+  queueScene(S, buildDepositScene(S), true);
+  return f.depositOffer;
+}
+export function buildDepositScene(S) {
+  const f = S.familyFortune, o = f?.depositOffer;
+  if (!o) return null;
+  return {
+    key: 'family_deposit', category: 'family', title: 'Help with a deposit',
+    text: `Your parents know a first home is a big step. They offer ${formatMoney(o.amount, S.country)} toward the deposit, about ${o.pct}% of what a deposit would be on an entry-level home (around ${formatMoney(o.entryPrice, S.country)}). It is a gift from the family fund. You decide when and what to buy.`,
+    choices: [
+      { label: `Accept ${formatMoney(o.amount, S.country)} for a deposit`, effect: st => resolveDeposit(st, true) },
+      { label: 'Not now, thank them', effect: st => resolveDeposit(st, false) }
+    ]
+  };
+}
+export function resolveDeposit(S, take) {
+  const f = S.familyFortune, o = f?.depositOffer;
+  if (!o) return null;
+  f.depositOffer = null; f.depositDone = true;
+  if (!take) { recordJournal(S, 'You thanked your parents and said you will save for the deposit yourself.', 'family'); return { ok: true, taken: false }; }
+  const amt = Math.min(o.amount, Math.round(f.fundLocal));
+  if (amt <= 0) return { ok: false };
+  giftRoom(f, S); spend(f, amt); f.yearGifts += amt;
+  walletMove(S, amt, 'Family help with a home deposit', 'family');
+  addGrant(f, S, 'deposit', amt, 'toward a first home deposit');
+  recordJournal(S, `Your parents gave you ${formatMoney(amt, S.country)} toward a home deposit.`, 'family');
+  return { ok: true, taken: true, amount: amt };
 }
 export function resolveHome(S, how) {
   const f = S.familyFortune, o = f?.homeOffer;
@@ -489,6 +615,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
+  offerSeedGift(S); offerDepositHelp(S);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;

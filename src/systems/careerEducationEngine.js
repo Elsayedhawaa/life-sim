@@ -2028,10 +2028,16 @@ export function presentGraduateOrJobSearchOffers(S, customTitle = null, snapshot
     .filter(j => j.qualifiedByDegree && !j.missingBoard && checkJobApplication(S,j).ok)
     /* A recruiter leads with the roles your own degree opens, then the open-entry roles, each by pay. Pay alone put a pilot cadetship above a medical or law graduate's own field. */
     .sort((a, b) => (recruitFit(S, b) - recruitFit(S, a)) || (b.monthlyGross - a.monthlyGross));
+  /* A wealthy family's graduate is not offered the bottom of the market: roles that pay under 60% of the best offer, and no 'also-ran' third pick, are dropped. Only the offer list is shaped here; an existing job is never touched. */
+  const richTier = !snapshot && (S.familyTier === 'wealthy' || S.familyTier === 'very_wealthy');
+  if (richTier && eligible.length > 1) {
+    const best = eligible[0].monthlyGross;
+    for (let i = eligible.length - 1; i > 0; i--) if (eligible[i].monthlyGross < best * 0.6 && recruitFit(S, eligible[i]) === 0) eligible.splice(i, 1);
+  }
   if (!eligible.length) return;
 
   const topOffer = eligible[0];
-  const altOffer = snapshot?eligible[1]:eligible[Math.min(2, eligible.length - 1)];
+  const altOffer = snapshot ? eligible[1] : eligible[richTier ? Math.min(1, eligible.length - 1) : Math.min(2, eligible.length - 1)];
   const quotedOffer = (st, offer, auth) => ({
     gross: auth.partTimeOnly ? Math.round(offer.monthlyGross * 0.45) : offer.monthlyGross,
     title: auth.partTimeOnly ? `Part-Time ${offer.title}` : offer.title

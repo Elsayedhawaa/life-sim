@@ -270,3 +270,62 @@ console.log('company link OK');
   assert.equal(F.ownershipView(K).sum, 100, 'pool + holders sum to 100');
 }
 console.log('fund within estate OK');
+{ /* Your own door (seed gift) and upper-middle deposit help: real choices, conserved, reload-safe, no warmth change */
+  const mk = (tier, seed) => { const T = life(tier, 'usa', 2000, seed); T.player.age = 25; T.activeScene = null; T.sceneQueue = []; return T; };
+  for (const tier of ['wealthy', 'very_wealthy']) {
+    const T = mk(tier, 12); const f = F.ensureFamilyFortune(T);
+    assert.equal(F.offerSeedGift(T), null, 'no company, no seed offer');
+    T.career.businesses = [{ id: 'b1', name: 'Mine', dead: false }];
+    const fund0 = f.fundLocal, nw0 = f.netWorthLocal, cash0 = T.money.cash;
+    const o = F.offerSeedGift(T); assert.ok(o && o.amount > 0, tier + ' is offered seed money');
+    const sc = T.activeScene || T.sceneQueue[0]; assert.ok(sc && sc.key === 'family_seed' && sc.choices.length === 2, 'a real two-choice scene');
+    assert.ok(F.restoreHomeScene(T, { key: 'family_seed' }), 'the pending offer restores after a reload');
+    const warm0 = JSON.stringify(Object.values(T.people).map(p => p.relationship ?? p.closeness ?? null));
+    const r = F.resolveSeed(T, true);
+    assert.ok(r.taken && f.fundLocal === fund0 - r.amount && f.netWorthLocal === nw0 - r.amount && T.money.cash >= cash0 + r.amount - 1, 'cash moves from the fund and estate to the player');
+    assert.equal(JSON.stringify(Object.values(T.people).map(p => p.relationship ?? p.closeness ?? null)), warm0, 'no warmth change');
+    assert.equal(F.offerSeedGift(T), null, 'once only');
+    const U = mk(tier, 13); F.ensureFamilyFortune(U); U.career.businesses = [{ id: 'b2', dead: false }]; const fu = U.familyFortune.fundLocal; F.offerSeedGift(U); const d = F.resolveSeed(U, false);
+    assert.ok(d.taken === false && U.familyFortune.fundLocal === fu && U.familyFortune.seedDone, 'declining costs nothing');
+  }
+  const lo = mk('wealthy', 14), hi = mk('very_wealthy', 14); F.ensureFamilyFortune(lo); F.ensureFamilyFortune(hi); lo.career.businesses = hi.career.businesses = [{ id: 'x', dead: false }];
+  assert.ok(F.offerSeedGift(hi).amount > F.offerSeedGift(lo).amount * 5, 'very wealthy seed is far larger than wealthy');
+  /* deposit help */
+  const U = mk('upper_middle', 15); const f = F.ensureFamilyFortune(U); U.housing.properties = [];
+  U.player.age = 22; assert.equal(F.offerDepositHelp(U), null, 'not before 24');
+  U.player.age = 26; const fund0 = f.fundLocal, nw0 = f.netWorthLocal, cash0 = U.money.cash;
+  const o = F.offerDepositHelp(U); assert.ok(o && o.amount > 0 && o.pct >= 20 && o.pct <= 40, 'a 20-40% deposit offer: ' + JSON.stringify(o));
+  assert.ok(F.restoreHomeScene(U, { key: 'family_deposit' }), 'deposit offer restores after reload');
+  const r = F.resolveDeposit(U, true); assert.ok(r.taken && f.fundLocal === fund0 - r.amount && f.netWorthLocal === nw0 - r.amount && U.money.cash >= cash0 + r.amount - 1, 'deposit cash moves from fund and estate to the player');
+  const V = mk('upper_middle', 16); F.ensureFamilyFortune(V); V.housing.properties = [{ id: 'p' }]; assert.equal(F.offerDepositHelp(V), null, 'no help once the player owns property');
+  const W = mk('wealthy', 17); F.ensureFamilyFortune(W); assert.equal(F.offerDepositHelp(W), null, 'wealthy tiers get a home, not deposit help');
+}
+console.log('seed gift and deposit help OK');
+{ /* equal treatment of qualifying children; one profit stream for dividends */
+  const mkK = () => { const K = life('wealthy', 'usa', 2000, 21); const kf = F.ensureFamilyFortune(K); K.relations.siblingIds = K.relations.siblingIds || [];
+    K.people.sA = { id: 'sA', alive: true, age: 30, fullName: 'A', career: { savingsLocal: 0 } }; K.people.sB = { id: 'sB', alive: true, age: 30, fullName: 'B', career: { savingsLocal: 0 } };
+    K.relations.siblingIds = ['sA', 'sB']; K.player.age = 30; K.career.employed = true; K.career.job = K.career.job || { title: 'x' }; K.activeScene = null; return [K, kf]; };
+  { const [K, kf] = mkK(); kf.own = { parents: 99.1, pool: 0.9, player: 0, siblings: {}, heirs: 0 }; kf.fundLocal = Math.max(kf.fundLocal, 1e6); F.ensureFamilyFortune(K);
+    const sv0 = K.people.sA.career.savingsLocal; let found = false;
+    for (let y = 0; y < 10 && !found; y++) { K.year += 1; const fund0 = kf.fundLocal, cash0 = K.money.cash, p0 = kf.own.pool, wy = kf.workYears || 0; F.grantServiceShares(K);
+      const sA = kf.own.siblings.sA || 0, sB = kf.own.siblings.sB || 0, pl = kf.own.player;
+      if (kf.workYears > wy && (K.people.sA.career.savingsLocal > sv0 || kf.bonusesPaid?.sA)) { found = true;
+        assert.ok(pl > 0 && sA > 0 && sB > 0 && kf.own.pool < 0.03, 'the pool is shared by all three, none left over for later: ' + [pl, sA, sB, kf.own.pool]);
+        assert.ok(kf.bonusesPaid.player > 0 && kf.bonusesPaid.sA > 0, 'short pool pays every qualifying child a cash bonus');
+        assert.equal(F.ownershipView(K).sum, 100, 'owners sum to 100');
+        const paid = Object.values(kf.bonusesPaid).reduce((a, b) => a + b, 0); assert.equal(kf.fundLocal, fund0 - paid, 'fund fell by every bonus paid'); assert.equal(Math.abs(kf.netWorthLocal - (kf.companyLocal + kf.fundLocal + kf.otherLocal)) <= 1, true, 'estate still adds up'); }
+    }
+    assert.ok(found, 'a year with a short pool was reached');
+  }
+  { const [K, kf] = mkK(); kf.own = { parents: 40, pool: 0, player: 20, siblings: { sA: 20, sB: 20 }, heirs: 0 }; kf.fundLocal = Math.max(kf.fundLocal, 5e6); kf.yearlyInflowLocal = Math.max(kf.yearlyInflowLocal, 1e7);
+    kf.netWorthLocal = kf.companyLocal + kf.fundLocal + kf.otherLocal; const fund0 = kf.fundLocal, nw0 = kf.netWorthLocal, cash0 = K.money.cash, a0 = K.people.sA.career.savingsLocal, b0 = K.people.sB.career.savingsLocal;
+    const mine = F.payDividends(K, 0.1), ld = kf.lastDividend;
+    assert.equal(ld.rows.length, 3, 'every share owner is paid from the one profit stream'); assert.ok(ld.total <= Math.round(kf.yearlyInflowLocal * F.FORTUNE_DIALS.dividendCapPctOfInflow) + 1, 'capped by modelled profit');
+    assert.equal(fund0 - kf.fundLocal, ld.total, 'while the parents live it comes out of the fund, all owners together'); assert.equal(nw0 - kf.netWorthLocal, ld.total, 'estate falls by the same');
+    assert.ok(K.money.cash - cash0 >= mine - 1 && K.people.sA.career.savingsLocal > a0 && K.people.sB.career.savingsLocal > b0, 'player to wallet, siblings to savings');
+    assert.ok(Math.abs(ld.rows[0].amt - ld.rows[1].amt) <= 1, 'equal stakes get equal dividends');
+    const lose = F.payDividends(K, -0.4); assert.ok(kf.lastDividend.total < ld.total, 'a losing year pays less to everyone');
+    kf.inherited = true; const fund1 = kf.fundLocal; F.payDividends(K, 0.1); assert.equal(kf.fundLocal, fund1, 'after the estate is settled the fund is not drawn'); assert.equal(kf.lastDividend.fromFund, false);
+  }
+}
+console.log('equal treatment and dividend stream OK');
