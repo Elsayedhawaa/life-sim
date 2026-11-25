@@ -159,7 +159,7 @@ export function tickFamilyFortuneYearly(S) {
   const dep = eraDepositRates(S.country, S.year).savings || 0;
   f.fundLocal = Math.max(0, Math.round(f.fundLocal * (1 + dep) + f.yearlyInflowLocal * DIALS.fundRetention - 0));
   f.lastYearSwing = swing;
-  f.yearGifts = 0;
+  f.yearGifts = 0; f.yearEducation = 0;
   f.lastTickYear = S.year;
   const age = S.player?.age ?? 0;
   /* Trust funding each childhood year, within the per-child cap. */
@@ -330,8 +330,8 @@ export function fortuneEducationRoom(S) {
 export function fortuneChargeEducation(S, amount) {
   const f = S.familyFortune?.schemaVersion === 1 ? S.familyFortune : null;
   if (!f || !(amount > 0) || fortuneEducationRoom(S) + 0.01 < amount) return false;
-  f.fundLocal -= amount; f.yearGifts += amount;
-  addGrant(f, S, 'education', amount, 'tuition');
+  f.fundLocal -= amount; f.yearGifts += amount; f.yearEducation = (f.yearEducation || 0) + amount;
+  addGrant(f, S, 'education', amount, 'school or university fees');
   return true;
 }
 

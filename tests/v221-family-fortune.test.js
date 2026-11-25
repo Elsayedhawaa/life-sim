@@ -157,3 +157,5 @@ console.log('education OK');
   assert.ok(!U.familyFortune.homeGifted && !U.familyFortune.homeOffer, 'upper_middle is not offered a home');
 }
 console.log('home OK');
+{ const R = life('wealthy', 'usa', 2000, 12); run(R, 12 * 12); const f = R.familyFortune; assert.ok(f.yearEducation <= f.yearGifts, 'fees are a part of the year total, shown on their own row'); }
+console.log('fee split OK');
