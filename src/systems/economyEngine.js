@@ -1817,8 +1817,8 @@ export function convertFinancesOnCountryMove(S, fromCountry, toCountry) {
     if (account === 'cash') walletMove(S, d, label, 'fx');
     else moveBalance(S, 'savings', d, label, 'fx');
   };
-  fxMove('cash', S.money.cash, convertCurrency(S.money.cash, fromCountry, toCountry, S.year), `Currency conversion: cash (${getCountry(fromCountry).currency} → ${getCountry(toCountry).currency})`);
-  fxMove('savings', S.money.savings, convertCurrency(S.money.savings, fromCountry, toCountry, S.year), `Currency conversion: savings (${getCountry(fromCountry).currency} → ${getCountry(toCountry).currency})`);
+  { const o = S.money.cash, n = convertCurrency(o, fromCountry, toCountry, S.year); fxMove('cash', o, n, `Currency conversion, cash: ${formatMoney(o, fromCountry)} became ${formatMoney(n, toCountry)} (a change of currency, not a cost)`); }
+  { const o = S.money.savings, n = convertCurrency(o, fromCountry, toCountry, S.year); fxMove('savings', o, n, `Currency conversion, savings: ${formatMoney(o, fromCountry)} became ${formatMoney(n, toCountry)} (a change of currency, not a cost)`); }
   S.money.remittanceMonthlyLocal = Math.round(convertCurrency(S.money.remittanceMonthlyLocal, fromCountry, toCountry, S.year));
   for(const key of ['statePensionMonthly','privateDrawdownMonthly'])if(Number.isFinite(S.career[key]))S.career[key]=Math.max(0,Math.round(convertCurrency(S.career[key],fromCountry,toCountry,S.year)));
   S.career.monthlyPension=Math.max(0,Math.round(convertCurrency(S.career.monthlyPension||0,fromCountry,toCountry,S.year)));

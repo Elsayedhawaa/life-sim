@@ -9,6 +9,7 @@
 
 import { MONTH_NAMES } from '../core/schema.js';
 import { formatMoney } from '../data/countries.js';
+import { convertCurrency } from '../data/economy.js';
 import { esc } from './views.js';
 
 function num(v) {
@@ -24,6 +25,7 @@ export function snapshotTurn(S) {
   return {
     year: S.year,
     month: S.month,
+    country: S.country,
     age: num(p.age),
     cash: num(S.money && S.money.cash),
     savings: num(S.money && S.money.savings),
@@ -75,11 +77,21 @@ export function buildTurnResult(S, before, kind, stepsRun = 1) {
   }
 
   /* Money: net change plus the movements, grouped by label. */
-  const cashDelta = Math.round((after.cash - before.cash) * 100) / 100;
-  const savingsDelta = Math.round((after.savings - before.savings) * 100) / 100;
+  /* A move to another country converts the balances. Old and new amounts are in different currencies, so they are never subtracted from each other:
+     the change shown is against the old balance converted at the same rate, and the conversion is its own line (old amount to new amount). */
+  const moved = before.country && before.country !== S.country;
+  const conv = v => moved ? Math.round(convertCurrency(v, before.country, S.country, S.year) * 100) / 100 : v;
+  const cashDelta = Math.round((after.cash - conv(before.cash)) * 100) / 100;
+  const savingsDelta = Math.round((after.savings - conv(before.savings)) * 100) / 100;
+  const fxLines = [];
+  if (moved) {
+    if (before.cash) fxLines.push(`Cash: ${formatMoney(before.cash, before.country)} became ${formatMoney(conv(before.cash), S.country)}`);
+    if (before.savings) fxLines.push(`Savings: ${formatMoney(before.savings, before.country)} became ${formatMoney(conv(before.savings), S.country)}`);
+  }
   const moves = new Map();
   for (const e of newEntriesSince(S.ledger, before.ledgerTopId)) {
     if (e.account !== 'cash' && e.account !== 'savings') continue;
+    if (e.category === 'fx') continue; /* pure currency conversion is not spending or income */
     const key = (e.label || 'Payment').replace(e.category === 'monthly_settlement' ? / \(\d{1,2}\/\d{4}\)$/ : /$^/, '');
     moves.set(key, Math.round(((moves.get(key) || 0) + num(e.delta)) * 100) / 100);
   }
@@ -126,6 +138,7 @@ export function buildTurnResult(S, before, kind, stepsRun = 1) {
     cashBalance: after.cash,
     savingsDelta,
     moneyLines,
+    fxLines,
     vitalDeltas,
     skillDeltas,
     relationshipDeltas,
@@ -146,15 +159,16 @@ export function renderTurnResultCardHtml(S, uiState) {
   if (!r) return '';
 
   const moneyBits = [];
-  if (r.cashDelta !== 0 || r.moneyLines.length > 0) {
+  if (r.cashDelta !== 0 || r.moneyLines.length > 0 || (r.fxLines || []).length) {
     const netCls = r.cashDelta > 0 ? 'text-good' : r.cashDelta < 0 ? 'text-bad' : '';
     const netTxt = r.cashDelta === 0 ? '±0' : signedMoney(r.cashDelta, S.country);
     const shown = r.moneyLines.slice(0, 6);
     const more = r.moneyLines.length - shown.length;
     moneyBits.push(`
       <div class="trc-money">
-        <div class="muted">Cash change</div>
-        <div class="trc-net mono ${netCls}">${esc(netTxt)}</div>
+        ${(r.fxLines || []).length ? `<div class="muted">Currency conversion (not a cost)</div><ul class="trc-lines">${r.fxLines.map(t => `<li><span>${esc(t)}</span></li>`).join('')}</ul>` : ''}
+        ${r.cashDelta !== 0 || r.moneyLines.length || !(r.fxLines || []).length ? `<div class="muted">Cash change</div>
+        <div class="trc-net mono ${netCls}">${esc(netTxt)}</div>` : ''}
         ${shown.length ? `<ul class="trc-lines">
           ${shown.map(l => `<li><span>${esc(l.label)}</span><span class="mono ${l.delta >= 0 ? 'text-good' : 'text-bad'}">${esc(signedMoney(l.delta, S.country))}</span></li>`).join('')}
           ${more > 0 ? `<li class="muted">and ${more} more movement${more === 1 ? '' : 's'}</li>` : ''}
