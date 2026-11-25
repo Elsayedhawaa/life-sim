@@ -18,6 +18,7 @@ import { getHousingFor, getCarsForYear } from '../data/institutions.js';
 import { finalizePropertyPurchase } from './economyEngine.js';
 import { showroomCarQuote } from './completeLifeSystems.js';
 import { hireIntoJob } from './careerEducationEngine.js';
+import { syncSiblingCompanies } from './siblingCompanies.js';
 
 export const FORTUNE_TIERS = ['upper_middle', 'wealthy', 'very_wealthy'];
 
@@ -1283,7 +1284,7 @@ export function resolveKeys(S, how) {
 export function tickFamilyFortuneMonthly(S) {
   const f = ensureFamilyFortune(S);
   if (!f) return;
-  checkWorkQuit(S, f); syncSiblingStanding(S, f); syncSiblingAssets(S); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerIntroduction(S); offerWeddingHelp(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); deliverSuccessionTalk(S, f);
+  checkWorkQuit(S, f); syncSiblingStanding(S, f); syncSiblingAssets(S); syncSiblingCompanies(S); stintSummerCost(S, f); offerPlaceAtTable(S); offerSeedGift(S); offerIntroduction(S); offerWeddingHelp(S); offerDepositHelp(S); offerBigAsk(S); offerSiblingVenture(S); checkVentureMaturity(S, f); offerConnectedInternship(S); tickConnectedInternship(S, f); deliverSuccessionTalk(S, f);
   const age = S.player?.age ?? 0;
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;
