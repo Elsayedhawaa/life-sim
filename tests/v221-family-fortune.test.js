@@ -29,7 +29,8 @@ assert.ok(f.trust.released.at18 && f.trust.released.at21 && f.trust.released.at2
 const perChildCap = F.FORTUNE_DIALS.trustPerChildCapPct;
 const trustTotal = f.grants.filter(g => g.kind === 'trust').reduce((a, g) => a + g.amountLocal, 0);
 assert.ok(trustTotal <= f.trust.totalLocal, 'releases never exceed what was funded');
-assert.ok(f.trust.totalLocal <= f.netWorthLocal * perChildCap * 1.5, 'trust stays inside the per-child cap (net worth grew since funding)');
+const leftEstate = f.grants.filter(g => g.kind === 'home' || g.kind === 'inheritance').reduce((a, g) => a + g.amountLocal, 0);
+assert.ok(f.trust.totalLocal <= (f.netWorthLocal + leftEstate) * perChildCap * 1.5, 'trust stays inside the per-child cap (net worth grew since funding)');
 for (const g of f.grants) assert.ok(g.amountLocal > 0 && Number.isFinite(g.amountLocal));
 assert.ok(f.fundLocal >= 0, 'fund never negative');
 // 3. Ask: preview range, cooldown, no relationship cost.
@@ -195,3 +196,32 @@ console.log('year roll OK');
   V.familyFortune.fundLocal = 0; assert.ok(!F.familyPaysCarUpkeep(V, car.monthlyUpkeep), 'empty fund: the player pays');
 }
 console.log('upkeep OK');
+// Company link: service shares at 21, dividends from good years paid out of the fund, succession when both parents are gone.
+{
+  for (const tier of ['wealthy', 'very_wealthy']) {
+    const T = life(tier, 'usa', 2000, 8); run(T, 12 * 22);
+    const f = T.familyFortune;
+    const sg = f.grants.find(g => g.kind === 'shares'); assert.ok(f.shares && sg, tier + ' holds service shares'); const gp = parseFloat(sg.note); assert.ok(gp >= 0.5 && gp <= 1.0, 'granted stake is 0.5-1%: ' + sg.note);
+    assert.ok(f.grants.some(g => g.kind === 'dividend') || f.dividendsPaid >= 0, 'dividends are recorded');
+    const fund = f.fundLocal, cash = T.money.cash; const paid = F.payDividends(T, 0.1);
+    assert.ok(paid > 0 && f.fundLocal === fund - paid && T.money.cash >= cash + paid - 1, 'dividend moves money from the fund to the player');
+    assert.ok(paid <= f.yearlyInflowLocal * F.FORTUNE_DIALS.dividendCapPctOfInflow + 1, 'dividend capped by inflow');
+    assert.ok(F.payDividends(T, -0.5) < paid, 'a losing year pays less');
+  }
+  const U = life('upper_middle', 'usa', 2000, 8); run(U, 12 * 22); assert.equal(U.familyFortune.shares, null, 'no company, no shares');
+  // succession: kill both parents, once.
+  const D = life('wealthy', 'usa', 2000, 8); run(D, 12 * 23);
+  const nw = D.familyFortune.netWorthLocal, cash0 = D.money.cash;
+  D.familyFortune.inherited = false;
+  for (const id of [D.relations.fatherId, D.relations.motherId]) if (id) D.people[id].alive = false;
+  const r = F.settleSuccession(D);
+  assert.ok(r && r.share > 0 && D.familyFortune.inherited, 'estate settled');
+  const sibs = (D.relations.siblingIds || []).length;
+  assert.ok(r.share <= nw * 0.8 / (1 + sibs) + 1, 'equal part of the estate outside the company pool');
+  assert.ok(Math.abs(D.money.cash - cash0 - r.cash) <= 1 && D.familyFortune.netWorthLocal === nw - r.share, 'estate value leaves the family estate once');
+  assert.equal(F.settleSuccession(D), null, 'only once');
+  // a living parent blocks succession
+  const L = life('wealthy', 'usa', 2000, 9); run(L, 12 * 23); L.familyFortune.inherited = false; L.people[L.relations.fatherId].alive = true; if (L.relations.motherId) L.people[L.relations.motherId].alive = true;
+  assert.equal(F.settleSuccession(L), null, 'nothing while a parent lives');
+}
+console.log('company link OK');

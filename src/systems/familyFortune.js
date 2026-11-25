@@ -38,6 +38,11 @@ const DIALS = {
   /* Birthday car target price (2026 USD): upper_middle is a modest first car, wealthy a German-class car, very_wealthy a dream-garage car. */
   carTargetUsd: { upper_middle: 9000, wealthy: 65000, very_wealthy: 250000 },
   carGiftAge: 18,
+  /* Company link (wealthy, very_wealthy): the family company is worth this share of net worth; the player gets service shares from the children's pool. */
+  companyShareOfNetWorth: { wealthy: 0.55, very_wealthy: 0.7 },
+  sharesGrantAge: 21, sharesPctRange: [0.5, 1.0], dividendYield: 0.03, dividendCapPctOfInflow: 0.10,
+  /* Succession: when both parents are gone the estate outside the company pool is split equally among the children (you and your siblings). */
+  estateOutsidePoolShare: 0.8, estateCashShareOfFund: 0.5,
   /* First home (wealthy, very_wealthy): an estate asset, so it leaves net worth, not the cash fund. At most this share of net worth, aimed at this share of that ceiling. */
   homeGiftAge: 22, homeCapPctOfNetWorth: 0.08, homeAimShare: { wealthy: 0.6, very_wealthy: 1.0 },
   trustYearlyPct: 0.0025,         /* of net worth, each childhood year */
@@ -100,7 +105,10 @@ export function ensureFamilyFortune(S) {
     lastTickYear: year,
     lastYearSwing: 0,
     carGifted: false,
-    homeGifted: false
+    homeGifted: false,
+    shares: null,
+    dividendsPaid: 0,
+    inherited: false
   };
   /* An existing life gets the one computed at-18 release, not backfilled years. */
   const age = S.player?.age ?? 0;
@@ -109,7 +117,7 @@ export function ensureFamilyFortune(S) {
     const full = Math.round(f.netWorthLocal * perChildTrustCapPct(S) * 0.9);
     f.trust.fundedLocal = full;
     f.netWorthLocal = Math.max(0, f.netWorthLocal - full);
-    f.carGifted = true; f.homeGifted = true; /* no retroactive gifts for an existing save */
+    f.carGifted = true; f.homeGifted = true; f.inherited = (S.relations?.motherId ? !S.people?.[S.relations.motherId]?.alive : true) && (S.relations?.fatherId ? !S.people?.[S.relations.fatherId]?.alive : true); /* no retroactive gifts for an existing save */
     recordJournal(S, 'Your family fortune is now tracked in the game. Gifts are not backdated: no car, trust stage or allowance is added for years already lived, only the trust stages you have already reached are paid once.', 'money');
     for (const [releaseAge, share] of DIALS.trustRelease) {
       if (age >= releaseAge) releaseTrust(S, f, 'at' + releaseAge, share);
@@ -140,7 +148,7 @@ export function monthlyInflow(f) { return f.yearlyInflowLocal / 12; }
 
 /* Gift totals are per calendar year, rolled by the year on the clock, so a charge made before the January tick lands in the right year. */
 function giftRoom(f, S) {
-  if (S && f.giftYear !== S.year) { f.yearGifts = 0; f.yearEducation = 0; f.yearUpkeep = 0; f.giftYear = S.year; }
+  if (S && f.giftYear !== S.year) { f.yearGifts = 0; f.yearEducation = 0; f.yearUpkeep = 0; f.yearDividend = 0; f.giftYear = S.year; }
   return Math.max(0, f.yearlyInflowLocal * DIALS.annualGiftShareCap - f.yearGifts);
 }
 
@@ -160,7 +168,7 @@ export function tickFamilyFortuneYearly(S) {
   const dep = eraDepositRates(S.country, S.year).savings || 0;
   f.fundLocal = Math.max(0, Math.round(f.fundLocal * (1 + dep) + f.yearlyInflowLocal * DIALS.fundRetention - 0));
   f.lastYearSwing = swing;
-  if (f.giftYear !== S.year) { f.yearGifts = 0; f.yearEducation = 0; f.yearUpkeep = 0; f.giftYear = S.year; } /* already rolled by an earlier charge this year */
+  if (f.giftYear !== S.year) { f.yearGifts = 0; f.yearEducation = 0; f.yearUpkeep = 0; f.yearDividend = 0; f.giftYear = S.year; } /* already rolled by an earlier charge this year */
   f.lastTickYear = S.year;
   const age = S.player?.age ?? 0;
   /* Trust funding each childhood year, within the per-child cap. */
@@ -174,6 +182,7 @@ export function tickFamilyFortuneYearly(S) {
     if (swing > 0.2) recordJournal(S, `${f.company.name} had a record year. The family fund is fuller, which shows in what the family can give.`, 'money');
     else if (swing < -0.15) recordJournal(S, `${f.company.name} had a tight year. The family is holding back on gifts until it recovers.`, 'money');
   }
+  payDividends(S, swing);
   /* Trust releases at 18 / 21 / 25 */
   for (const [releaseAge, share] of DIALS.trustRelease) {
     const key = 'at' + releaseAge;
@@ -181,6 +190,8 @@ export function tickFamilyFortuneYearly(S) {
   }
   giftBirthdayCar(S);
   offerFirstHome(S);
+  grantServiceShares(S);
+  settleSuccession(S);
 }
 
 /* The keys: a real owned car at the birthday, paid from the fund and counted in the annual gift share. */
@@ -205,6 +216,61 @@ export function giftBirthdayCar(S) {
   f.carOffer = { catalogId: pick.id, fullPrice: q.fullPrice, monthlyUpkeep: q.monthlyUpkeep, trimLabel: q.trim.label, colorIdx: ci, age };
   queueScene(S, buildKeysScene(S), true);
   return f.carOffer;
+}
+
+/* --- company shares, dividends, succession ------------------------------ */
+function companyValue(f) { return f.netWorthLocal * (DIALS.companyShareOfNetWorth[f.tier] || 0); }
+export function grantServiceShares(S) {
+  const f = ensureFamilyFortune(S);
+  if (!f || !f.company || f.shares) return null;
+  const age = S.player?.age ?? 0;
+  if (age < DIALS.sharesGrantAge) return null;
+  const [lo, hi] = DIALS.sharesPctRange;
+  const sibs = (S.relations?.siblingIds || []).filter(id => S.people?.[id]).length;
+  const poolEach = f.childrenPoolPct / (1 + sibs); /* what each child could hold from the pool */
+  const pct = Math.min(poolEach, Math.round((lo + hash01(S, 61) * (hi - lo)) * 100) / 100);
+  f.shares = { pct, since: S.year };
+  addGrant(f, S, 'shares', Math.round(companyValue(f) * pct / 100), `${pct}% of ${f.company.name}`);
+  recordJournal(S, `Your family gave you ${pct}% of ${f.company.name} as service shares. They pay a dividend while the company has good years, and they are yours to keep.`, 'family');
+  return f.shares;
+}
+export function payDividends(S, swing) {
+  const f = S.familyFortune;
+  if (!f?.shares || !f.company) return 0;
+  const stake = companyValue(f) * f.shares.pct / 100;
+  const good = swing >= 0 ? 1 : Math.max(0, 1 + swing * 2); /* a losing company year cuts the dividend */
+  let amt = Math.round(stake * DIALS.dividendYield * good);
+  amt = Math.min(amt, Math.round(f.yearlyInflowLocal * DIALS.dividendCapPctOfInflow), Math.round(f.fundLocal));
+  if (amt <= 0) return 0;
+  f.fundLocal -= amt; f.dividendsPaid = (f.dividendsPaid || 0) + amt; f.yearDividend = amt;
+  walletMove(S, amt, `Dividend from ${f.company.name}`, 'family');
+  addGrant(f, S, 'dividend', amt, f.company.name);
+  recordJournal(S, `${f.company.name} paid you a dividend of ${formatMoney(amt, S.country)}.`, 'money');
+  return amt;
+}
+export function settleSuccession(S) {
+  const f = S.familyFortune;
+  if (!f || f.inherited) return null;
+  const alive = id => !!id && !!S.people?.[id]?.alive;
+  if (alive(S.relations?.motherId) || alive(S.relations?.fatherId)) return null;
+  if (!S.relations?.motherId && !S.relations?.fatherId) return null;
+  f.inherited = true;
+  const sibs = (S.relations?.siblingIds || []).filter(id => S.people?.[id]).length;
+  const share = Math.round(f.netWorthLocal * DIALS.estateOutsidePoolShare / (1 + sibs));
+  const cash = Math.min(share, Math.round(f.fundLocal * DIALS.estateCashShareOfFund / (1 + sibs)));
+  const stakeValue = share - cash;
+  f.netWorthLocal = Math.max(0, f.netWorthLocal - share);
+  f.fundLocal = Math.max(0, f.fundLocal - cash);
+  if (cash > 0) walletMove(S, cash, 'Inheritance from your parents', 'family');
+  let note = '';
+  if (f.company && f.shares && companyValue(f) > 0 && stakeValue > 0) {
+    const add = Math.round(stakeValue / Math.max(1, companyValue(f) + stakeValue) * 10000) / 100;
+    f.shares.pct = Math.round((f.shares.pct + add) * 100) / 100;
+    note = ` The rest of your part comes as ${add}% more of ${f.company.name}.`;
+  }
+  addGrant(f, S, 'inheritance', share, `split with ${sibs} sibling${sibs === 1 ? '' : 's'}`);
+  recordJournal(S, `Your parents' estate was settled: your equal part is ${formatMoney(share, S.country)}${sibs ? `, shared out with ${sibs} sibling${sibs === 1 ? '' : 's'}` : ''}. ${formatMoney(cash, S.country)} came as cash.${note}`, 'family');
+  return { share, cash };
 }
 
 /* First home: offered at 22 to wealthy and very_wealthy families. The family hands over a finished asset from the estate. */
@@ -270,7 +336,7 @@ export function buildKeysScene(S) {
   if (!o.asked) choices.push({ label: 'Ask for a better car', effect: st => resolveKeys(st, 'ask') });
   return {
     key: 'family_keys', category: 'family', title: 'The keys',
-    text: `For your ${o.age}th birthday your family has chosen a ${name} for you (${formatMoney(o.fullPrice, S.country)}). ${covered ? 'The family would also cover its running costs while you keep it.' : 'Running costs would be yours.'} You can take it, or ask for a better one. They may agree or say no, and if they say no the ${name} stays on offer.`,
+    text: `For your ${o.age}th birthday your family has chosen a ${name} for you (${formatMoney(o.fullPrice, S.country)}). ${covered ? 'The family would also cover its running costs while you keep it.' : 'Running costs would be yours.'} ${o.asked ? 'You already asked once, so this is the car on offer.' : `You can take it, or ask for a better one. They may agree or say no, and if they say no the ${name} stays on offer.`}`,
     choices
   };
 }
@@ -348,6 +414,8 @@ export function tickFamilyFortuneMonthly(S) {
   }
   giftBirthdayCar(S);
   offerFirstHome(S);
+  grantServiceShares(S);
+  settleSuccession(S);
 }
 
 /* --- funded education ---------------------------------------------------- */
