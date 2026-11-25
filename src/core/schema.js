@@ -162,12 +162,12 @@ function defaultHairColorFor(S, countryId) {
 }
 
 export const FAMILY_TIERS = {
-  struggling:   { label: 'Working-Poor Household', salaryMult: 0.55, savingsMonths: 1.5, schoolPref: 'state', homeMode: 'rent_modest' },
-  working:      { label: 'Modest Working Family',  salaryMult: 0.85, savingsMonths: 4,   schoolPref: 'state', homeMode: 'rent_modest' },
-  middle:       { label: 'Middle-Class Family',    salaryMult: 1.35, savingsMonths: 10,  schoolPref: 'private', homeMode: 'family_owned' },
-  upper_middle: { label: 'Affluent Professional',  salaryMult: 2.50, savingsMonths: 24,  schoolPref: 'private', homeMode: 'family_owned_upscale' },
-  wealthy:      { label: 'Established Wealthy',    salaryMult: 5.20, savingsMonths: 60,  schoolPref: 'international', homeMode: 'family_villa' },
-  very_wealthy: { label: 'Dynasty Wealth',         salaryMult: 40,   savingsMonths: 240, schoolPref: 'international', homeMode: 'family_palace' }
+  struggling:   { label: 'Working-Poor Household', birth: 'a working-poor household', salaryMult: 0.55, savingsMonths: 1.5, schoolPref: 'state', homeMode: 'rent_modest' },
+  working:      { label: 'Modest Working Family', birth: 'a modest working family', salaryMult: 0.85, savingsMonths: 4,   schoolPref: 'state', homeMode: 'rent_modest' },
+  middle:       { label: 'Middle-Class Family',   birth: 'a middle-class family', salaryMult: 1.35, savingsMonths: 10,  schoolPref: 'private', homeMode: 'family_owned' },
+  upper_middle: { label: 'Affluent Professional', birth: 'an affluent professional family', salaryMult: 2.50, savingsMonths: 24,  schoolPref: 'private', homeMode: 'family_owned_upscale' },
+  wealthy:      { label: 'Established Wealthy', birth: 'an established wealthy family',    salaryMult: 5.20, savingsMonths: 60,  schoolPref: 'international', homeMode: 'family_villa' },
+  very_wealthy: { label: 'Dynasty Wealth', birth: 'a dynasty-wealth family',         salaryMult: 40,   savingsMonths: 240, schoolPref: 'international', homeMode: 'family_palace' }
 };
 
 export const LIFE_AMBITIONS = {
@@ -518,7 +518,7 @@ export function createNewLifeState(opts = {}) {
 
   recordJournal(
     S,
-    `Born in ${S.city}, ${cObj.name} in ${birthYear} into a ${tier.label.toLowerCase()} — ${father.firstName} (${father.career.title.toLowerCase()}) and ${mother.firstName} (${mother.career.title.toLowerCase()}), ${sibLine}.`,
+    `Born in ${S.city}, ${cObj.name} in ${birthYear} into ${tier.birth || 'a ' + tier.label.toLowerCase()} — ${father.firstName} (${father.career.title.toLowerCase()}) and ${mother.firstName} (${mother.career.title.toLowerCase()}), ${sibLine}.`,
     'milestone'
   );
 

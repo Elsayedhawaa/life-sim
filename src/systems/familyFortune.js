@@ -899,7 +899,7 @@ export function resolveSuccessionTalk(S, how) {
   for (const id of Object.keys(f.own.siblings || {})) { if (sibIds.includes(id)) continue; stray += f.own.siblings[id] || 0; f.own.siblings[id] = 0; }
   f.own.player = r6((f.own.player || 0) + stray);
   mine = Math.round(net * f.own.player / 100);
-  f.own.player = 0; f.own.pool = 0; f.own.parents = 0; f.own.heirs = 0; f.own.outside = 0; f.companyLocal = 0; f.company.sold = true; f.company.soldYear = S.year; f.yearlyInflowLocal = 0; f.baseInflowLocal = 0; f.yearDividend = 0; f.yearState = null; f.shares = { pct: 0, since: S.year }; sync(f);
+  f.own.player = 0; f.own.pool = 0; f.own.parents = 0; f.own.heirs = 0; f.own.outside = 0; f.companyLocal = 0; f.company.sold = true; f.company.soldYear = S.year; f.yearlyInflowLocal = 0; f.baseInflowLocal = 0; f.yearDividend = 0; f.yearState = null; f.shares = { pct: 0, since: S.year }; sync(f); syncSiblingStanding(S, f);
   if (mine > 0) walletMove(S, mine, `Your share of the sale of ${name}`, 'family');
   if (S.career?.employed && S.career?.job?.employer === name) { S.career.job = null; S.career.employed = false; }
   addGrant(f, S, 'sale', mine, `sale of ${name}`);
@@ -1045,6 +1045,11 @@ export function syncSiblingStanding(S, f) {
       n++;
     }
     if (c.title === 'Retired') continue;
+    if (c.familyStanding === 'works' && !live) { /* the company was sold: the sale rule says any job there is gone, for a sibling as for you. Pay stops with it; nothing is invented in its place and the NPC career machinery takes over from Seeking Work. */
+      c.familyStanding = 'left'; if (c.employer === co) c.employer = null; c.monthlyIncomeLocal = 0; c.title = 'Seeking Work'; n++;
+      recordJournal(S, `${p.firstName || 'Your sibling'} lost the job at ${co} when it was sold and is looking for work.`, 'family');
+      continue;
+    }
     if (c.familyStanding === 'works') {
       if (income <= 0 || c.title === 'Seeking Work' || c.title === 'Unemployed') { c.familyStanding = 'left'; if (c.employer === co) c.employer = null; n++; }
       continue;
@@ -1340,7 +1345,7 @@ export function payFamilyAllowanceYear(S) {
   const annual = Math.min(monthly * 12, f.fundLocal, room);
   if (annual <= 0) return 0;
   spend(f, annual); f.yearGifts += annual;
-  walletMove(S, Math.round(annual), `Allowance from your parents (${formatMoney(monthly, S.country)}/month x 12)`, 'allowance');
+  walletMove(S, Math.round(annual), `Allowance from your parents (${formatMoney(monthly, S.country)}/month × 12)`, 'allowance');
   addGrant(f, S, 'allowance', annual, 'yearly allowance');
   return Math.round(annual);
 }

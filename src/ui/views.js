@@ -300,7 +300,16 @@ export function countryLevelNarrative(text,S){
   const entries=Object.values(COUNTRIES).flatMap(c=>(c.cities||[]).map(city=>[city,c.name]));
   if(S.city&&!entries.some(([city])=>city===S.city))entries.push([S.city,getCountry(S.country).name]);
   entries.sort((a,b)=>b[0].length-a[0].length);
+  /* Institution names that carry a city ("Cairo University", "American University in Cairo") are real proper names: keep them whole, and only rewrite the city when it stands as a place. */
+  const kept=[];
+  const inst='University|College|Institute|Academy|Polytechnic|Conservatoire|School|Hospital';
+  for(const [city] of entries){
+    const esc=city.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re=new RegExp(`(?:${esc}\\s+(?:[A-Z][\\p{L}.&'-]*\\s+)?(?:${inst})(?![\\p{L}])|(?:${inst})(?:\\s+of\\s+Technology|\\s+of\\s+Science)?\\s+(?:in|of|at)\\s+${esc}(?![\\p{L}]))`,'gu');
+    out=out.replace(re,m=>{kept.push(m);return `\u0001${kept.length-1}\u0002`;});
+  }
   for(const [city,country] of entries)out=out.split(city).join(country);
+  out=out.replace(/\u0001(\d+)\u0002/g,(_,i)=>kept[+i]);
   /* "Istanbul, Turkey" became "Turkey, Turkey": keep one country name when the stored text already named it after the city. */
   for(const country of new Set(entries.map(e=>e[1]))){
     const esc=country.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');

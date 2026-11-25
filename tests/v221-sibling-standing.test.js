@@ -42,3 +42,11 @@ const mk = (tier, seed = 2) => { const S = createNewLifeState({ seed, country: '
   p.career.savingsLocal += 200e6; const total0 = p.career.savingsLocal + h0 + c0; F.syncSiblingAssets(S);
   assert.ok(p.assets.home.price > h0 * 2, 'a richer sibling lives in a bigger home'); assert.equal(p.career.savingsLocal + p.assets.home.price + p.assets.car.price, total0, 'net worth unchanged by the move'); const snap = JSON.stringify(p.assets); assert.equal(F.syncSiblingAssets(S), 0); assert.equal(JSON.stringify(p.assets), snap); }
 console.log('sibling standing OK');
+{ /* sale of the family company: a sibling who worked there loses that post with it, no income is invented, a job elsewhere is untouched */
+  let S = mk('very_wealthy'); for (let sd = 3; S.relations.siblingIds.filter(i => S.people[i]?.alive).length < 2 && sd < 200; sd++) S = mk('very_wealthy', sd); const f = S.familyFortune; const ids = S.relations.siblingIds.filter(i => S.people[i]?.alive);
+  ids.forEach((id, i) => { const p = S.people[id]; p.age = 35; p.career = { ...(p.career || {}), title: 'Senior Analyst', employer: 'Elsewhere Ltd', monthlyIncomeLocal: 5000, savingsLocal: 1000 }; p.career.familyWorks = i === 0; });
+  F.syncSiblingStanding(S, f); const a = S.people[ids[0]], b = S.people[ids[1]]; assert.equal(a.career.employer, f.company.name);
+  f.company.sold = true; assert.ok(F.syncSiblingStanding(S, f) >= 1);
+  assert.equal(a.career.employer, null); assert.equal(a.career.title, 'Seeking Work'); assert.equal(a.career.monthlyIncomeLocal, 0); assert.equal(F.siblingEmployerLine(S, ids[0]), ''); assert.equal(a.career.savingsLocal, 1000, 'no money moved');
+  assert.equal(b.career.employer, 'Elsewhere Ltd'); assert.equal(b.career.title, 'Senior Analyst'); assert.equal(b.career.monthlyIncomeLocal, 5000);
+  assert.equal(F.syncSiblingStanding(S, f), 0, 'idempotent'); }
