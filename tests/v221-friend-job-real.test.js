@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { createNewLifeState, ensureExtendedState } from '../src/core/schema.js';
+import { friendWithRealJob } from '../src/systems/businessFate.js';
+const s = createNewLifeState({ country: 'egy', seed: 3, familyTier: 'middle', birthYear: 1975, age: 0 }); ensureExtendedState(s);
+const id = 'f1'; s.people[id] = { id, alive: true, role: 'friend', age: 21, rel: { affection: 80 }, career: { title: 'University Student', monthlyIncomeLocal: 0, employer: null } };
+s.relations.friendIds = [id];
+assert.equal(friendWithRealJob(s), null, 'a student friend with no employer cannot offer a job');
+s.people[id].career = { title: 'University Student', monthlyIncomeLocal: 500, employer: null }; assert.equal(friendWithRealJob(s), null, 'no employer, still no offer');
+s.people[id].career = { title: 'Accountant', monthlyIncomeLocal: 900, employer: 'Delta Audit' }; assert.equal(friendWithRealJob(s)?.id, id, 'real job with employer qualifies');
+console.log('friend-job-real OK');

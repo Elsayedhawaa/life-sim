@@ -123,6 +123,21 @@ export function spouseOf(S) {
   return partner && partner.alive ? partner : null;
 }
 
+/* A friend can only offer a job if they really have one: a named employer,
+   real income, an actual title (not a student/unemployed/retired placeholder). */
+const NON_JOB_TITLES = /^(infant|primary school|secondary student|university student|unemployed|seeking work|retired|homemaker|student)/i;
+export function friendWithRealJob(S) {
+  let best = null;
+  for (const id of S?.relations?.friendIds || []) {
+    const p = S.people && S.people[id];
+    const c = p?.career;
+    if (!p || !p.alive || !c) continue;
+    if (!(Number(c.monthlyIncomeLocal) > 0) || !c.employer || !c.title || NON_JOB_TITLES.test(String(c.title))) continue;
+    if (!best || (Number(p.rel?.affection) || 0) > (Number(best.rel?.affection) || 0)) best = p;
+  }
+  return best;
+}
+
 export function friendOf(S) {
   const ids = S?.relations?.friendIds || [];
   let best = null;
@@ -568,8 +583,8 @@ export function checkBusinessFate(S) {
       } else if (!fateFired(biz, 'spouse') && spouse) {
         scene = buildSpouseReactionScene(S, biz, spouse);
         kind = 'spouse';
-      } else if (!fateFired(biz, 'friendJob') && friend) {
-        scene = buildFriendJobScene(S, biz, friend);
+      } else if (!fateFired(biz, 'friendJob') && friendWithRealJob(S)) {
+        scene = buildFriendJobScene(S, biz, friendWithRealJob(S));
         kind = 'friendJob';
       }
       if (scene && kind) {
