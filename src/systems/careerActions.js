@@ -1154,7 +1154,7 @@ export function buildCareerReviewScene(S,snapshot){
         label: 'Thank them, and ask what to improve',
         effect: (stt) => {
           if(!stt.career.job||stt.career.job.employer!==employer||(jobId&&stt.career.job.id!==jobId)||!stt.people[bossId]?.alive)return;
-          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey])return;stt.career.reviewReplies[replyKey]=true;
+          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey]){recordJournal(stt,`You had already answered this at ${employer} in ${year}. Nothing changed.`,'career');return;}stt.career.reviewReplies[replyKey]=true;
           const b = stt.people[bossId];
           if (b) rememberDeed(stt, b, 'review_good', 'You took the review well and asked how to improve.', { affection: 3, respect: 4 });
           if (stt.career.job) stt.career.job.performance = clamp(stt.career.job.performance + 2, 0, 100);
@@ -1165,7 +1165,7 @@ export function buildCareerReviewScene(S,snapshot){
         label: 'Ask directly about promotion',
         effect: (stt) => {
           if(!stt.career.job||stt.career.job.employer!==employer||(jobId&&stt.career.job.id!==jobId)||!stt.people[bossId]?.alive)return;
-          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey])return;stt.career.reviewReplies[replyKey]=true;
+          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey]){recordJournal(stt,`You had already answered this at ${employer} in ${year}. Nothing changed.`,'career');return;}stt.career.reviewReplies[replyKey]=true;
           recordJournal(stt, `At your review you asked ${boss.firstName} directly about promotion.`, 'career');
           const res = applyPromotion(stt);
           if (!res.ok) recordJournal(stt, `${boss.firstName}’s answer: ${res.msg}`, 'career');
@@ -1175,7 +1175,7 @@ export function buildCareerReviewScene(S,snapshot){
         label: 'Push back — the rating is unfair',
         effect: (stt) => {
           if(!stt.career.job||stt.career.job.employer!==employer||(jobId&&stt.career.job.id!==jobId)||!stt.people[bossId]?.alive)return;
-          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey])return;stt.career.reviewReplies[replyKey]=true;
+          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey]){recordJournal(stt,`You had already answered this at ${employer} in ${year}. Nothing changed.`,'career');return;}stt.career.reviewReplies[replyKey]=true;
           const b = stt.people[bossId];
           if (!b) return;
           if (chance(stt, 0.4)) {
@@ -1207,7 +1207,7 @@ export function buildCareerWarningScene(S,snapshot){
         label: 'Accept it and commit to improving',
         effect: (stt) => {
           if(!stt.career.job||stt.career.job.employer!==employer||(jobId&&stt.career.job.id!==jobId)||!stt.people[bossId]?.alive)return;
-          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey])return;stt.career.reviewReplies[replyKey]=true;
+          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey]){recordJournal(stt,`You had already answered this at ${employer} in ${year}. Nothing changed.`,'career');return;}stt.career.reviewReplies[replyKey]=true;
           const b = stt.people[bossId];
           if (b) rememberDeed(stt, b, 'warning_accepted', 'You accepted a formal warning and committed to improving.', { respect: 2 });
           if (stt.career.job) stt.career.job.performance = clamp(stt.career.job.performance + 2, 0, 100);
@@ -1218,7 +1218,7 @@ export function buildCareerWarningScene(S,snapshot){
         label: 'Appeal it — the targets were impossible',
         effect: (stt) => {
           if(!stt.career.job||stt.career.job.employer!==employer||(jobId&&stt.career.job.id!==jobId)||!stt.people[bossId]?.alive)return;
-          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey])return;stt.career.reviewReplies[replyKey]=true;
+          stt.career.reviewReplies??={};const replyKey=(snapshot.warnings!==undefined?'warning_'+warnings:'review')+'_'+employer+'_'+year;if(stt.career.reviewReplies[replyKey]){recordJournal(stt,`You had already answered this at ${employer} in ${year}. Nothing changed.`,'career');return;}stt.career.reviewReplies[replyKey]=true;
           const b = stt.people[bossId];
           if (!b) return;
           if (chance(stt, 0.35)) {
