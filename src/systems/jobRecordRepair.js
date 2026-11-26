@@ -14,10 +14,12 @@ export function brokenJobRecord(S) {
   const tracks = getMergedCareerTracks(S.year);
   return PLACEHOLDER_EMPLOYER.test(String(j.employer || '')) || (PLACEHOLDER_TITLE.test(String(j.title || '')) && !tracks[j.track]);
 }
+/* Game rule (my own judgment, not sourced data): a few core tracks carry no era date in the catalogue but are plainly modern roles. For THIS list only they are not offered before these years. */
+const MODERN_ONLY_FROM = { data_science: 2010, analytics: 2005, product_design: 2005, product: 2000, cybersecurity: 2000 };
 function candidateTracks(S) {
   const j = S.career.job, tracks = getMergedCareerTracks(S.year), out = [];
   for (const [id, t] of Object.entries(tracks)) {
-    const title = t.rungs?.[0]?.title; if (!title) continue;
+    const title = t.rungs?.[0]?.title; if (!title) continue; if (MODERN_ONLY_FROM[id] && S.year < MODERN_ONLY_FROM[id]) continue;
     const app = { employer: j.employer, title, track: id, level: 0, monthlyGross: j.monthlyGross, reqDegrees: t.reqDegrees || [], qualifiedByDegree: (t.reqDegrees || []).length === 0 || (t.reqDegrees || []).some(d => (S.education?.degrees || []).includes(d)) };
     let ok = false; try { ok = !!checkJobApplication(S, app).ok; } catch (_) { ok = false; }
     if (ok && app.qualifiedByDegree) out.push({ id, label: t.label || id, title });
@@ -29,12 +31,14 @@ function pickScene(S) {
   const cands = candidateTracks(S);
   const choices = cands.map(c => ({ label: `${c.label} (starts as ${c.title})`, effect: st => {
     const j = st.career.job; if (!j || st.jobRecordRepair?.answered) return;
-    const before = describe(st); j.track = c.id; j.level = 0; j.title = c.title; j.monthsInRole = j.monthsInRole || 0;
+    const before = describe(st); const fr = String(j.employer || '').match(/^the firm where (.+) works$/i);
+    j.track = c.id; j.level = 0; j.title = c.title; j.monthsInRole = j.monthsInRole || 0;
+    if (fr) j.employer = `Employer not recorded (you were referred by ${fr[1]})`;
     st.jobRecordRepair = { answered: 'chose', track: c.id, year: st.year }; st.jobRecordRepair.pending = false;
-    recordJournal(st, `You told the game what this job is: ${c.title} (${c.label}). Pay and employer name stay as they were recorded (was: ${before}).`, 'career');
+    recordJournal(st, `You told the game what this job is: ${c.title} (${c.label}). Your pay, start date and contract stay as recorded. The placeholder employer name was replaced with \"not recorded\", because the game does not know who it was (was: ${before}).`, 'career');
   } }));
   choices.push({ label: 'Back', exit: true, effect: st => { const sc = buildScene(st, 'back'); if (sc) queueScene(st, sc, true); } });
-  return { key: 'job_record_repair_pick', baseId: 'job_record_repair_pick', category: 'career', navigation: true, title: 'What kind of work is this job?', text: `Recorded: ${describe(S)}. Pick the kind of work it really is. Only jobs you could actually be hired into are listed. Your pay and the employer name stay exactly as recorded.`, choices };
+  return { key: 'job_record_repair_pick', baseId: 'job_record_repair_pick', category: 'career', navigation: true, title: 'What kind of work is this job?', text: `Recorded: ${describe(S)}. Pick the kind of work it really is. Only jobs you could actually be hired into are listed. Your pay, start date and contract stay exactly as recorded. The made-up employer name is replaced with \"not recorded\", not with a guessed company.`, choices };
 }
 export function buildScene(S, again = '') {
   if (!brokenJobRecord(S) || S.jobRecordRepair?.answered) return null;

@@ -1076,6 +1076,8 @@ export function getMergedCareerTracks(year = 2026) {
   for (const vt of (V1_CAREER_TRACKS || [])) {
     if (map[vt.id]) continue;
     const ind = String(vt.industry || '');
+    if (vt.availableFrom && year < Number(vt.availableFrom)) continue;
+    if (vt.availableUntil && year > Number(vt.availableUntil)) continue;
     if (ind.startsWith('legacy_') && year > 1998) continue;
     if (ind.startsWith('emerging_') && year < 1996) continue;
     if (ind === 'emerging_ai_automation' && year < 2016) continue;
