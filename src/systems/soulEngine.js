@@ -364,7 +364,10 @@ function npcKinWord(person) {
   if (person.role === 'nephew') return 'nephew';
   if (person.role === 'niece') return 'niece';
   if (person.role === 'grandchild') return person.gender === 'f' ? 'granddaughter' : 'grandson';
-  return (person.relationLabel || 'friend').toLowerCase();
+  const lab = String(person.relationLabel || 'friend');
+  const poss = lab.match(/^\S+'s (.+)$/);
+  if (poss) return `friend's ${poss[1].toLowerCase()}`; /* "Sofia's son" read as "Your sofia's son": say whose kin without lowercasing a name */
+  return lab.charAt(0).toLowerCase() + lab.slice(1); /* keep employer names and other proper nouns as written */
 }
 
 /* Make sure the NPC-side marriage fields exist and agree with each other.
@@ -554,7 +557,7 @@ function npcHaveChild(S, mother, father) {
     S,
     close
       ? `Your ${npcKinWord(mother)} ${mother.firstName} gave birth to ${gender === 'f' ? 'a baby girl' : 'a baby boy'}, ${baby.firstName}. You are ${youAre} now.`
-      : `${mother.firstName} (${mother.relationLabel}) had a baby, ${baby.firstName}.`,
+      : `Your ${npcKinWord(mother)} ${mother.firstName} had a baby, ${baby.firstName}.`,
     'milestone'
   );
   if (close) {

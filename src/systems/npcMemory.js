@@ -152,7 +152,7 @@ export function breakReason(S, person) {
   const lastContact = Number(person.rel?.lastContactTurn ?? S.turn);
   const monthsQuiet = Math.max(0, Math.round(S.turn - lastContact));
   if (monthsQuiet >= 12) {
-    return `You have not spoken to ${person.firstName} in ${monthsQuiet} months. The silence did the damage, not one row.`;
+    return `You have not spoken to ${person.firstName} in ${monthsQuiet >= 24 ? `about ${Math.floor(monthsQuiet / 12)} years` : 'over a year'}. The silence did the damage, not one row.`;
   }
   if ((person.rel?.resentment || 0) >= 40) {
     return `${person.firstName} has been carrying resentment for a long time, and it finally outweighed the good years.`;

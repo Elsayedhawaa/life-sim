@@ -17,7 +17,7 @@ import {EVENTS_EVERYDAY_FAMILY} from '../src/data/eventsEverydayFamily.js';
   const j=(s.journal||[]).find(x=>/have not spoken to/.test(x.text||''));
   assert.ok(j,'notice journal recorded');
   assert.ok(!/in a year/.test(j.text),`journal must not say "in a year" for 53 months, got: ${j.text}`);
-  assert.ok(/53 months/.test(j.text),`journal must state 53 months, got: ${j.text}`);
+  assert.ok(/about 4 years/.test(j.text),`journal must state the real span (53 months = about 4 years), got: ${j.text}`);
   console.log('R9-2 notice journal states actual months:', JSON.stringify(j.text.slice(0,90)));
 }
 

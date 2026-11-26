@@ -2182,7 +2182,7 @@ export function tickCareerMonthly(S) {
     const check=job.actionState?.licence||{};
     const overdue=(check.medicalDueYear!=null&&check.medicalDueYear<S.year)||(check.simDueYear!=null&&check.simDueYear<S.year)||PROFESSIONAL_LICENSES.some(l=>(track?.reqDegrees||[]).includes(l.reqDegree)&&(S.credentials.licenses||[]).includes(l.id)&&(S.credentials.licenceRenewals?.[l.id]?.validUntilYear??Infinity)<S.year);
     const wouldPromote = nextRung && trackExp >= nextRung.minExp && job.performance + mentorBoost >= 72 && !payFrozen && !overdue;
-    if(overdue&&nextRung&&trackExp>=nextRung.minExp)recordJournal(S,'Automatic promotion paused: renew the overdue career medical, simulator or board check under Train & Licences.','career');
+    if(overdue&&nextRung&&trackExp>=nextRung.minExp){const as=job.actionState||(job.actionState={});const fresh=as.promoPauseSeenYear==null||as.promoPauseSeenYear<S.year-1;as.promoPauseSeenYear=S.year;if(fresh||S.year-(as.promoPauseNotedYear??-1e9)>=5){as.promoPauseNotedYear=S.year;recordJournal(S,'Promotion on hold: your licence check is overdue. Renew it under Train & Licences.','career');}}
     /* GAME DESIGN (not a real-world figure): the two senior rungs (level 3 and
        above) are not handed out by a tenure clock. Meeting the bar makes you
        eligible; the player applies under Career (the existing promotion

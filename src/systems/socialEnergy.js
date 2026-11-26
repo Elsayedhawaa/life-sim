@@ -35,6 +35,8 @@ import { recordJournal, queueScene, nextId } from '../core/schema.js';
 /* A month of social life: enough for a couple of visits and a few calls,
    not enough to work every relationship every month. A big favour (4) is
    nearly half the month — as it should feel. */
+/* Long silences read as years, not as a count of months. */
+export function quietSpan(m) { m = Math.max(0, Math.round(Number(m) || 0)); if (m < 12) return `${m} month${m === 1 ? '' : 's'}`; if (m < 24) return 'about a year'; return `about ${Math.floor(m / 12)} years`; }
 export const SOCIAL_ENERGY_MAX = 10;
 
 export const SOCIAL_ENERGY_COSTS = {
@@ -383,12 +385,12 @@ export function tickFriendshipDrift(S) {
          gets the warning now, not the notice. */
       if (state !== 'drifting' && state !== 'noticed') {
         p.rel.driftState = 'drifting';
-        recordJournal(S, `You and ${p.fullName} are drifting apart — you have not spoken in ${months} months. A call or a visit would stop the drift.`, 'relationship');
+        recordJournal(S, `You and ${p.fullName} are drifting apart — you have not spoken in ${quietSpan(months)}. A call or a visit would stop the drift.`, 'relationship');
         warned++;
       } else if (state !== 'noticed') {
         if (queueDriftNoticeScene(S, p)) {
           p.rel.driftState = 'noticed';
-          recordJournal(S, `You have not spoken to ${p.fullName} in ${months} months. You can reconnect, leave the door open, or let the friendship go.`, 'relationship');
+          recordJournal(S, `You have not spoken to ${p.fullName} in ${quietSpan(months)}. You can reconnect, leave the door open, or let the friendship go.`, 'relationship');
           noticed++;
         }
       } else {
@@ -397,7 +399,7 @@ export function tickFriendshipDrift(S) {
     } else if (months >= DRIFT_WARN_MONTHS) {
       if (state === 'none') {
         p.rel.driftState = 'drifting';
-        recordJournal(S, `You and ${p.fullName} are drifting apart — you have not spoken in ${months} months. A call or a visit would stop the drift.`, 'relationship');
+        recordJournal(S, `You and ${p.fullName} are drifting apart — you have not spoken in ${quietSpan(months)}. A call or a visit would stop the drift.`, 'relationship');
         warned++;
       }
       p.rel.affection = clamp(p.rel.affection - 3);
