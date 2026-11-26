@@ -508,6 +508,8 @@ export function isRandomLifeSceneCurrent(scene, S) {
   const current = resolveEventCtx(S,event);
   if (Object.entries(scene.eventParticipantIds || {}).some(([role, id]) =>
     !S.people[id]?.alive || current[role]?.id !== id)) return false;
+  /* A parent named only inside the text (not a required cast member) who has died since the scene was built would still be spoken of as alive. */
+  if (Object.values(scene.eventMentionedIds || {}).some(id => !S.people[id]?.alive)) return false;
   return eventGatePasses(event, S, { ignoreHistory: true });
 }
 
@@ -521,6 +523,14 @@ function prepareRandomLifeScene(S, ev, scene, ctx, buildRngState, savedResolutio
       scene.eventParticipantIds = Object.fromEntries(
         (ev.gates?.requiredPeople || []).map(role => [role, ctx[role]?.id]).filter(([, id]) => id)
       );
+      {
+        const said = [scene.title, scene.text, ...(scene.choices || []).map(c => c.label)].join(' ');
+        const req = ev.gates?.requiredPeople || [];
+        const m = {};
+        if (!req.includes('mom') && ctx.mom?.id && /\b(your (mother|mom|mum)|Mum|Mom)\b/.test(said)) m.mom = ctx.mom.id;
+        if (!req.includes('dad') && ctx.dad?.id && /\b(your (father|dad)|Dad)\b/.test(said)) m.dad = ctx.dad.id;
+        if (Object.keys(m).length) scene.eventMentionedIds = m;
+      }
       /* v2.15 W5 — thread bookkeeping on the scene. A terminal event
          (one with no follow-up of its own) closes its chain the moment
          the player picks a choice: the choice label is the ending, in
