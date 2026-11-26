@@ -10,7 +10,7 @@ assert.equal(C.siblingFieldFor('Senior Accountant'), 'accounting_firm'); assert.
   const before = p.career.savingsLocal, nid0 = JSON.stringify(S.ids || {}); const r = C.foundSiblingCompany(S, a, 'tutoring_center'); assert.ok(r.ok, r.msg);
   assert.equal(p.ownedBusinesses.length, 1); const biz = p.ownedBusinesses[0]; assert.ok(biz.manager, 'a paid manager runs it'); assert.equal(p.career.title, 'Senior Teacher', 'they keep their job'); assert.equal(p.career.employer, 'X LLP');
   assert.equal(Math.round(before - p.career.savingsLocal), Math.round(r.spent), 'savings fell by exactly the launch cost'); assert.ok(r.spent <= before * 0.15 + 2 * 0, 'within the cap');
-  assert.match(C.siblingCompanyLine(S, a), /^Owns .*, run by a paid manager\.$/);
+  assert.match(C.siblingCompanyLine(S, a), /^Owns .*, run by a paid manager\. No month settled yet\.$/);
   const other = Object.values(S.people).filter(x => x.ownedBusinesses?.length).length; assert.equal(other, 1, 'nobody else gained one');
   assert.ok(!(S.career.businesses || []).some(x => x.id === biz.id), "the player's own book is untouched");
   S.month = 4; let m = 0; for (let i = 0; i < 24; i++) { S.month = (S.month % 12) + 1; if (S.month === 1) S.year++; settleNpcCompanyHoldings(S); m++; } assert.ok(Number.isFinite(p.career.savingsLocal), 'monthly settlement runs on it'); assert.ok(biz.history || biz.lastNpcEstateMonth, 'it was ticked');

@@ -56,5 +56,9 @@ export function foundSiblingCompany(S, id, typeId) {
 }
 export function siblingCompanyLine(S, id) {
   const p = S.people?.[id]; const b = (p?.ownedBusinesses || []).find(x => !x.dead); if (!b) return '';
-  return `Owns ${b.name}, run by a paid manager.`;
+  /* only recorded state: the last settled month's net (npcOwnerAccount) and any bills still owed (debtLocal). No trend, growth or value is implied. */
+  const a = b.npcOwnerAccount, run = b.manager ? 'run by a paid manager' : 'run by the owner';
+  const month = a && Number.isFinite(a.net) ? ` Last settled month: ${a.net >= 0 ? 'profit' : 'loss'} of ${formatMoney(Math.abs(a.net), a.currency || a.book)}.` : ' No month settled yet.';
+  const debt = Number(b.debtLocal) > 0 ? ` Bills owed: ${formatMoney(b.debtLocal, b.figuresCurrency || b.country || S.country)}.` : '';
+  return `Owns ${b.name}, ${run}.${month}${debt}`;
 }
