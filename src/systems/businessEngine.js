@@ -484,6 +484,10 @@ export function ventureViabilityWarningHtml(S, bp, ev = null) {
   const expectedFT = Number(e.expectedRevFullTimeHome) || 0;
   const selfPT = (Number(e.monthlyCostPartTimeHomeSelf) || 0);
   const mgrPT = (Number(e.monthlyCostPartTimeHomeManagerRun) || 0);
+  if(bp&&bp.id.startsWith('enterprise_')){
+    const mgrCost=Math.round(Number(e.monthlyCostPartTimeHomeManagerRun)||0),selfCost=Math.round(Number(e.monthlyCostPartTimeHomeSelf)||0);
+    return `<div class="muted" style="margin:6px 0"><strong style="color:var(--brand-crimson)">No sales at launch</strong> · A company earns nothing until you choose a market, finish preparation and open it, and some need suitable premises first. Opening does not guarantee customers. Estimated recurring costs from launch, part-time: about ${fmt(selfCost)}/mo running it yourself, about ${fmt(mgrCost)}/mo with a paid manager (the manager's wage plus those costs; estimates; the recorded costs appear after the first month settles). Any gap comes out of your cash or salary.</div>`;
+  }
   if(bp&&bp.id==='tech_founder'){
     const mgrCost=Math.round(Number(e.monthlyCostPartTimeHomeManagerRun)||0),selfCost=Math.round(Number(e.monthlyCostPartTimeHomeSelf)||0);
     return `<div class="muted" style="margin:6px 0"><strong style="color:var(--brand-crimson)">No sales at launch</strong> · A tech startup earns nothing until you choose a product, finish the prototype and beta, and release it. Release does not guarantee paying users. Estimated recurring costs from launch, part-time: about ${fmt(selfCost)}/mo running it yourself, about ${fmt(mgrCost)}/mo with a paid manager (the manager's wage plus those costs; full-time runs higher costs, as the operating estimate above shows; estimates; the recorded costs appear after the first month settles). Any gap comes out of your cash or salary.</div>`;
