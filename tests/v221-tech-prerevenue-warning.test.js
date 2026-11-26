@@ -8,7 +8,7 @@ for(const country of ['usa','egy','deu']){
   const S=createNewLifeState({seed:7,country,birthYear:1990,familyTier:'wealthy',gender:'m'});ensureExtendedState(S);S.year=2025;S.month=3;S.player.age=35;
   const bp=findVentureRow(S,'tech_founder'),ev=evaluateBusinessLaunch(S,bp);
   const html=ventureViabilityWarningHtml(S,bp,ev);
-  assert.match(html,/No sales at launch/);assert.match(html,/does not guarantee paying users/);assert.match(html,/with a paid manager/);
+  assert.match(html,/No sales at launch/);assert.match(html,/does not guarantee paying users/);assert.match(html,/with a paid manager/);assert.match(html,/part-time/);
   assert.doesNotMatch(html,/Scenario check/,'no placeholder-sales scenario');
   const bakery=findVentureRow(S,'bakery');if(bakery){const h=ventureViabilityWarningHtml(S,bakery,evaluateBusinessLaunch(S,bakery));assert.doesNotMatch(h,/No sales at launch/);}
 }
