@@ -1326,17 +1326,19 @@ export function settleHouseholdMonth(S) {
         S.money.missedRentMonths = 0;
         const oldHome = S.housing.currentHomeName;
         closePlayerLease(S,{disputed:true});
-        S.housing.lastEviction = { year: S.year, month: S.month, from: oldHome };
+        S.housing.evictionCount = (Number(S.housing.evictionCount) || 0) + 1;
+        const again = S.housing.evictionCount > 1;
+        S.housing.lastEviction = { year: S.year, month: S.month, from: oldHome, again };
         if (S.country === S.homeCountry) {
           S.housing.mode = 'parents';
           S.housing.currentHomeName = 'Family Home (After Eviction)';
           S.housing.monthlyRent = 0;
-          recordJournal(S, `After 3 months of unpaid rent, your landlord terminated your lease at ${oldHome}. You packed up and moved back in with family.`, 'money');
+          recordJournal(S, again ? `Three more months of unpaid rent, and you lost the lease at ${oldHome}. You went back to family again.` : `After 3 months of unpaid rent, your landlord terminated your lease at ${oldHome}. You packed up and moved back in with family.`, 'money');
         } else {
           const sharedRoom = eraLocalCost(cObj.monthlyBasket2026.rentModest * 0.55, S.country, S.year);
           S.housing.currentHomeName = 'Shared Bedspace / Room';
           S.housing.monthlyRent = sharedRoom;
-          recordJournal(S, `Evicted from ${oldHome} for rent arrears — you downgraded into a cramped shared room (${formatMoney(sharedRoom, S.country)}/mo).`, 'money');
+          recordJournal(S, again ? `Evicted again, from ${oldHome}. The arrears piled up before the shared room was paid for, and you took another one at ${formatMoney(sharedRoom, S.country)}/month.` : `Evicted from ${oldHome} for rent arrears — you downgraded into a cramped shared room (${formatMoney(sharedRoom, S.country)}/mo).`, 'money');
         }
         S.player.vitals.happiness = clamp(S.player.vitals.happiness - 14);
       }

@@ -503,7 +503,7 @@ export function settleSuccession(S) {
   const stakeValue = Math.round(companyValue(f) * stakeEach / 100);
   addGrant(f, S, 'inheritance', each + stakeValue, `split with ${sibs.length} sibling${sibs.length === 1 ? '' : 's'}`);
   f.lastSuccession = { before, after: { nw: f.netWorthLocal, company: f.companyLocal, own: ownSum(f) }, cashAssets, tax, payout: out, cashOut: out, toSiblings: per, n, stakeEach, remainder: payable - out };
-  recordJournal(S, `Your parents' estate was settled between ${n === 1 ? 'you' : n + ' of you'}. Properties and investments were sold. Your part: ${formatMoney(each, S.country)} in cash${f.company ? ` and ${stakeEach}% of ${f.company.name}, worth ${formatMoney(stakeValue, S.country)}` : ''}.${tax > 0 ? ` Estate tax of ${formatMoney(tax, S.country)} was paid first (a simplified game rule).` : ''}`, 'family');
+  recordJournal(S, `Your parents' estate was settled between ${n === 1 ? 'you' : n + ' of you'}. Properties and investments were sold. Your part: ${formatMoney(each, S.country)} in cash${f.company ? ` and ${Math.round(stakeEach * 10) / 10}% of ${f.company.name}, worth ${formatMoney(stakeValue, S.country)}` : ''}.${tax > 0 ? ` Estate tax of ${formatMoney(tax, S.country)} was paid first (a simplified game rule).` : ''}`, 'family');
   if (f.company && sibs.length && !f.successionTalkDone) { f.successionTalk = { year: S.year }; redistributeDeadStakes(S, f); deliverSuccessionTalk(S, f); }
   return { share: each + stakeValue, cash: each, stakePct: stakeEach };
 }

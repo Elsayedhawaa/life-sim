@@ -140,7 +140,8 @@ export function resolveThread(S, chainId, { how = 'choice', outcome = '', lastEv
     lastEventId,
   };
   store[chainId] = record;
-  recordJournal(S, `A loose thread closed: ${record.outcome}`, 'life');
+  /* "You chose: <button label>" only repeats the choice the journal already holds on the next line, so it is not written out a second time. The record itself is kept. */
+  if (!/^You chose:/.test(record.outcome)) recordJournal(S, `A loose thread closed: ${record.outcome}`, 'life');
   return record;
 }
 

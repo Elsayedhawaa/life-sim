@@ -48,3 +48,18 @@ console.log('PASS v221-journal-wording');
   assert.ok(!/lost their job as \$\{withArticle/.test(rd('systems/soulEngine.js')),'a named person lost her/his job, not "their"');
   console.log('PASS v221-journal-wording part 4');
 }
+{
+  const {resolveThread}=await import('../src/systems/threadResolution.js');
+  const {createNewLifeState,ensureExtendedState}=await import('../src/core/schema.js');
+  const s=createNewLifeState({country:'usa',seed:3});ensureExtendedState(s);
+  const n0=s.journal.length;
+  resolveThread(s,'ev_probe_a',{how:'choice',outcome:'You chose: Walk with him every week from now on.'});
+  assert.ok(s.threadResolutions.ev_probe_a,'the thread record is still kept');
+  assert.ok(!s.journal.slice(0,s.journal.length-n0+3).some(j=>/loose thread closed: You chose/.test(j.text)),'a choice label is not journaled a second time');
+  resolveThread(s,'ev_probe_b',{how:'time',outcome:'The friendship faded without a word.'});
+  assert.ok(s.journal.some(j=>/A loose thread closed: The friendship faded/.test(j.text)),'other outcomes still read as before');
+  const fsz=await import('node:fs');const rdz=f=>fsz.readFileSync(new URL('../src/systems/'+f,import.meta.url),'utf8');
+  assert.ok(/again \? `Evicted again, from/.test(rdz('economyEngine.js'))&&/e\.again \? 'Evicted Again'/.test(rdz('majorLifeEvents.js')),'a repeat eviction reads as a repeat');
+  assert.ok(/Math\.round\(stakeEach \* 10\) \/ 10/.test(rdz('familyFortune.js')),'estate stake percent is rounded');
+  console.log('PASS v221-journal-wording part 5');
+}
