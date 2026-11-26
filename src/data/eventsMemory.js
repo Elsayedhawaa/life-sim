@@ -100,6 +100,7 @@ export const EVENTS_MEMORY = [
       const favour = findMemory(person, FAVOUR_MEMORY_KINDS);
       const amount = eraUsdCost(1200, S.country, S.year);
       const name = nm(person, 'your friend');
+      const bond = ['father', 'mother', 'sibling', 'child', 'grandchild', 'nephew', 'niece'].includes(person.role) ? 'relationship' : 'friendship';
       return {
         key: 'ev_memory_favour_returns', category: 'friends',
         title: 'A Favour Comes Back',
@@ -116,7 +117,7 @@ export const EVENTS_MEMORY = [
             const p = st.people[person.id];
             if (p) recordMemory(st, p, 'supported_crisis', `You refused repayment for your old favour in ${st.year} — they respect you more for it.`, { affection: 12, trust: 8, respect: 6 });
             st.player.vitals.happiness = clamp(st.player.vitals.happiness + 5);
-            recordJournal(st, `${name} tried to repay an old favour and you refused the money. The friendship is worth more than the cash.`, 'friends');
+            recordJournal(st, `${name} tried to repay an old favour and you refused the money. The ${bond} is worth more than the cash.`, 'friends');
           } },
         ],
       };
@@ -132,6 +133,9 @@ export const EVENTS_MEMORY = [
       if (!person) return null;
       const betrayal = findMemory(person, BETRAYAL_MEMORY_KINDS);
       const name = nm(person, 'your friend');
+      /* The same scene runs for family: a parent or sibling is a relationship, not a friendship. */
+      const kin = ['father', 'mother', 'sibling', 'child', 'grandchild', 'nephew', 'niece'].includes(person.role);
+      const bond = kin ? 'relationship' : 'friendship';
       return {
         key: 'ev_memory_broken_bond', category: 'friends',
         title: 'The Thing They Cannot Forget',
@@ -141,17 +145,17 @@ export const EVENTS_MEMORY = [
             const p = st.people[person.id];
             if (p) recordMemory(st, p, 'made_amends', `You apologised properly in ${st.year} for letting them down, and meant it.`, { affection: 10, trust: 12, resentment: -25 });
             st.player.vitals.happiness = clamp(st.player.vitals.happiness + 4);
-            recordJournal(st, `You apologised properly to ${name} for what happened, and meant it. The friendship has a chance again.`, 'friends');
+            recordJournal(st, `You apologised properly to ${name} for what happened, and meant it. The ${bond} has a chance again.`, 'friends');
           } },
-          { label: 'Let it go — the friendship is over', effect: (st) => {
+          { label: kin ? 'Let it go — the relationship is over' : 'Let it go — the friendship is over', effect: (st) => {
             const p = st.people[person.id];
             if (p) {
-              recordMemory(st, p, 'neglected', `You let the friendship end in ${st.year} without a word, after they told you plainly what was wrong.`, { affection: -40, trust: -40, resentment: 30 });
+              recordMemory(st, p, 'neglected', `You let the ${bond} end in ${st.year} without a word, after they told you plainly what was wrong.`, { affection: -40, trust: -40, resentment: 30 });
               p.rel.affection = clamp(p.rel.affection, 0, 20);
               p.rel.trust = clamp(p.rel.trust, 0, 20);
             }
             st.player.vitals.happiness = clamp(st.player.vitals.happiness - 8);
-            recordJournal(st, `The friendship with ${name} ended. The reason, in their words: "${betrayal ? betrayal.summary : 'You let me down when it mattered.'}"`, 'friends');
+            recordJournal(st, `The ${bond} with ${name} ended. The reason, in their words: "${betrayal ? betrayal.summary : 'You let me down when it mattered.'}"`, 'friends');
           } },
         ],
       };
