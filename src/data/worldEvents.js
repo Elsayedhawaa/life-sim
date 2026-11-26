@@ -233,7 +233,9 @@ export const WORLD_EVENTS = [
     name: 'The 2014 Oil Price Crash',
     startYear: 2014, startMonth: 6, endYear: 2016, endMonth: 12,
     headline: 'Oil has crashed from $115 a barrel to under $30, and Gulf budgets are being cut.',
+    headlineElsewhere: 'Oil has crashed from $115 a barrel to under $30, and fuel is getting cheaper.',
     whatItMeans: 'In the Gulf, government spending and business fall and pay is squeezed. In countries that import oil, fuel gets cheaper and businesses do a little better.',
+    whatItMeansElsewhere: 'Fuel gets cheaper and businesses do a little better.',
     effects: {
       all: { house: 1.01, business: 1.05, salary: 1.02, rate: 0 },
       countries: {
@@ -358,3 +360,7 @@ export const POLICY_RATE_ANCHORS = {
   ind: [[1960, 0.06], [2000, 0.08], [2010, 0.065], [2020, 0.04], [2023, 0.065], [2025, 0.06]],
   sgp: [[1960, 0.03], [2000, 0.025], [2009, 0.001], [2020, 0.001], [2023, 0.04], [2025, 0.03]],
 };
+
+/* Gulf-specific wording is shown only where the event has a country effect for that place (the Gulf states). */
+export function eventHeadline(ev, countryId) { return ev && ev.headlineElsewhere && !(ev.effects && ev.effects.countries && ev.effects.countries[countryId]) ? ev.headlineElsewhere : (ev ? ev.headline : ''); }
+export function eventMeaning(ev, countryId) { return ev && ev.whatItMeansElsewhere && !(ev.effects && ev.effects.countries && ev.effects.countries[countryId]) ? ev.whatItMeansElsewhere : (ev ? ev.whatItMeans : ''); }

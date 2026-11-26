@@ -216,8 +216,10 @@ export function executeCountryRelocation(S, destCountry, residencyObj, moveHouse
     const rentModest = eraLocalCost(destObj.monthlyBasket2026.rentModest, destCountry, S.year);
     S.housing.mode = 'rent';
     S.housing.currentHomeId = null;
-    S.housing.currentHomeName = `${S.city} Starter Apartment`;
-    S.housing.monthlyRent = rentModest;
+    const studentShare = residencyObj && residencyObj.kind === 'student_visa';
+    /* A student arriving abroad with no income takes a shared room (the same cheapest-room price the eviction rule uses), not a whole starter flat. */
+    S.housing.currentHomeName = studentShare ? 'Shared Bedspace / Room' : `${S.city} Starter Apartment`;
+    S.housing.monthlyRent = studentShare ? eraLocalCost(destObj.monthlyBasket2026.rentModest * 0.55, destCountry, S.year) : rentModest;
   }
 
   /* Residency status — the one state machine (D6) */

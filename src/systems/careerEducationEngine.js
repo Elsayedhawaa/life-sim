@@ -1296,8 +1296,8 @@ export function employerCandidates(country,year,trackId,industry){
  if(trackId==='prosecutor')names=names.filter(n=>/prosecut|justice|attorney|court/i.test(n));
  return names;
 }
-/* An employer that dismissed you after formal warnings does not hire you straight back. GAME DESIGN (not a real-world figure): 5 years. */
-export function recentlyDismissedFrom(S){return ((S&&S.career&&S.career.dismissedFrom)||[]).filter(d=>S.year-d.year<5).map(d=>d.employer);}
+/* An employer that dismissed you after formal warnings does not hire you straight back. GAME DESIGN (not a real-world figure): 5 years after a dismissal, 3 after a redundancy (the length of a crisis). */
+export function recentlyDismissedFrom(S){return ((S&&S.career&&S.career.dismissedFrom)||[]).filter(d=>S.year-d.year<(d.kind==='redundant'?3:5)).map(d=>d.employer);}
 function pickRealCompanyForTrack(country,year,trackId,industry,S){
  let names=employerCandidates(country,year,trackId,industry);
  const barred=recentlyDismissedFrom(S);const open=names.filter(n=>!barred.includes(n));if(open.length)names=open;

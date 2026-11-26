@@ -10,7 +10,7 @@
 
 import { getCountry } from '../data/countries.js';
 import { getMarketState, worldSummaryLine } from '../systems/worldEvents.js';
-import { WORLD_EVENTS } from '../data/worldEvents.js';
+import { WORLD_EVENTS, eventHeadline } from '../data/worldEvents.js';
 
 function esc(s) {
   return String(s ?? '')
@@ -46,7 +46,7 @@ export function renderWorldMarketPanelHtml(S) {
         <div class="item-row">
           <div class="item-row-main">
             <strong>${esc(e.name)}</strong>
-            <span>${esc(ev ? ev.headline : '')}</span>
+            <span>${esc(ev ? eventHeadline(ev, cObj.id) : '')}</span>
             <span class="muted">House prices ${pct(e.housePrice)} · Businesses ${pct(e.businessRevenue)} · Pay ${pct(e.salary)}${e.rateShift ? ` · Interest rates ${e.rateShift > 0 ? '+' : ''}${(e.rateShift * 100).toFixed(0)} points` : ''} · Runs ${e.startYear}–${e.endYear}</span>
           </div>
         </div>`;

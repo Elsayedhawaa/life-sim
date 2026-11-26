@@ -261,6 +261,7 @@ export function makeRedundant(S, opts = {}) {
   const { severanceMonths, source } = noticeAndSeveranceFor(S.country, years);
   const severance = Math.round(gross * severanceMonths);
   S.career.jobLoss.lastJob = { employer, title, monthlyGross: gross, year: S.year, month: S.month, reason: 'redundancy' };
+  (S.career.dismissedFrom ||= []).push({ employer, year: S.year, kind: 'redundant' });
   S.career.employed = false;
   S.career.job = null;
   S.career.unemployedMonths = 0;

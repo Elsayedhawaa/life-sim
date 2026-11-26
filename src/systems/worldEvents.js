@@ -37,7 +37,7 @@
 import { eraLocalCost } from '../data/economy.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { queueScene, recordJournal, ensureExtendedState } from '../core/schema.js';
-import { WORLD_EVENTS, POLICY_RATE_ANCHORS } from '../data/worldEvents.js';
+import { WORLD_EVENTS, POLICY_RATE_ANCHORS, eventHeadline, eventMeaning } from '../data/worldEvents.js';
 
 export { WORLD_EVENTS };
 
@@ -238,7 +238,7 @@ export function buildWorldEventScene(S, ev, effect) {
     maxPerLife: 1,
     category: 'world',
     title: ev.name,
-    text: `${ev.headline} ${ev.whatItMeans} ${meansLine}`,
+    text: `${eventHeadline(ev, S.country)} ${eventMeaning(ev, S.country)} ${meansLine}`,
     choices: [
       {
         label: 'Carry on — I will ride this out',
@@ -291,7 +291,7 @@ export function tickWorldEvents(S) {
       salary: effect.salary !== undefined ? effect.salary : 1,
       rateShift: effect.rate !== undefined ? effect.rate : 0,
     });
-    recordJournal(S, `${S.year} — ${ev.name}: ${ev.headline}`, 'world');
+    recordJournal(S, `${S.year} — ${ev.name}: ${eventHeadline(ev, S.country)}`, 'world');
     if (S.player && S.player.age >= 14) {
       const scene = buildWorldEventScene(S, ev, effect);
       if (queueScene(S, scene)) firedNow.push(ev.id);

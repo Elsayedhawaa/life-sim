@@ -67,6 +67,9 @@ console.log('PASS v221-journal-wording');
   const {recordJournal}=await import('../src/core/schema.js');
   const {createNewLifeState,ensureExtendedState}=await import('../src/core/schema.js');
   const s=createNewLifeState({country:'egy',seed:4});ensureExtendedState(s);
+  /* The fixture names its own people now: the seeded life no longer has to happen to contain a Sherif and a Sara (name pools were widened). */
+  for(const [id,p] of Object.entries(s.people))if(['Sherif','Sara'].includes(p.firstName))delete s.people[id];
+  s.people.p_sherif0={id:'p_sherif0',firstName:'Sherif',gender:'m',role:'friend',alive:true};s.people.p_sara0={id:'p_sara0',firstName:'Sara',gender:'f',role:'friend',alive:true};
   const says=t=>{recordJournal(s,t,'friends');return s.journal[0].text};
   assert.equal(says('Sherif landed their dream job; you congratulated them warmly over the phone.'),'Sherif landed his dream job; you congratulated him warmly over the phone.');
   assert.equal(says('Sara told you in confidence that their marriage is over; you kept the secret and stood by them.'),'Sara told you in confidence that her marriage is over; you kept the secret and stood by her.');

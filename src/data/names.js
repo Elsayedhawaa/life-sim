@@ -138,3 +138,30 @@ export function pickFamilyName(countryId, rngFn) {
   const poolObj = NAME_POOLS[countryId] || NAME_POOLS.egy;
   return poolObj.family[Math.floor(rngFn() * poolObj.family.length)];
 }
+
+/* Wider first-name pools so a long life does not repeat a name among the people around the player. Added to the lists above; same cultural pools, no duplicates. */
+const MORE_FIRST_NAMES = {
+  egy: { male: ['Mohamed', 'Hesham', 'Wael', 'Islam', 'Essam', 'Samir', 'Magdy', 'Hany', 'Yasser', 'Ayman', 'Osama', 'Bassem', 'Mahmoud', 'Walid'], female: ['Aliaa', 'Shaimaa', 'Nermeen', 'Doaa', 'Eman', 'Hagar', 'Rasha', 'Sherine', 'Ghada', 'Mai', 'Yara', 'Lamia', 'Basma', 'Samar'] },
+  sau: { male: ['Abdulaziz', 'Turki', 'Mansour', 'Hamad', 'Rakan', 'Meshari', 'Waleed', 'Talal', 'Fawaz', 'Majed', 'Ibrahim', 'Yousef', 'Hisham', 'Osama'], female: ['Nouf', 'Hanan', 'Shahd', 'Rahaf', 'Ghada', 'Mashael', 'Sara', 'Amal', 'Fai', 'Joud', 'Taghreed', 'Wejdan', 'Reem', 'Haifa'] },
+  uae: { male: ['Ahmed', 'Abdulla', 'Khalid', 'Salem', 'Ali', 'Jassim', 'Yousef', 'Hazza', 'Mohammed', 'Ammar', 'Faris', 'Rashed', 'Suhail', 'Talal'], female: ['Shaikha', 'Sheikha', 'Moza', 'Ayesha', 'Reem', 'Noor', 'Dana', 'Hind', 'Salma', 'Fatima', 'Sana', 'Lubna', 'Maryam', 'Rouda'] },
+  gbr: { male: ['Henry', 'Alfie', 'Charlie', 'Freddie', 'Archie', 'Joshua', 'Samuel', 'Benjamin', 'Ryan', 'Luke', 'Adam', 'Max', 'Rory', 'Finn'], female: ['Poppy', 'Ella', 'Evie', 'Millie', 'Florence', 'Ruby', 'Jessica', 'Phoebe', 'Rosie', 'Imogen', 'Holly', 'Erin', 'Megan', 'Alice'] },
+  usa: { male: ['Jacob', 'Logan', 'Owen', 'Tyler', 'Austin', 'Jordan', 'Brandon', 'Dylan', 'Adam', 'Aaron', 'Henry', 'Wyatt', 'Carter', 'Jason'], female: ['Hannah', 'Olivia', 'Grace', 'Abigail', 'Samantha', 'Megan', 'Brooke', 'Savannah', 'Kayla', 'Paige', 'Allison', 'Morgan', 'Haley', 'Victoria'] },
+  deu: { male: ['Ben', 'Elias', 'Finn', 'Henrik', 'Philipp', 'Sebastian', 'Stefan', 'Andreas', 'Michael', 'Thomas', 'Markus', 'Daniel', 'Fabian', 'Simon'], female: ['Emilia', 'Mia', 'Charlotte', 'Lea', 'Leonie', 'Nina', 'Sabine', 'Katja', 'Julia', 'Jana', 'Lisa', 'Franziska', 'Antonia', 'Greta'] },
+  can: { male: ['Jacob', 'Nathan', 'Benjamin', 'Samuel', 'Thomas', 'William', 'Alexandre', 'Mathieu', 'Ryan', 'Dylan', 'Jack', 'Carter', 'Hunter', 'Cameron'], female: ['Sophie', 'Léa', 'Emily', 'Abigail', 'Sophia', 'Avery', 'Brooklyn', 'Madison', 'Jessica', 'Rachel', 'Alexis', 'Megan', 'Mia', 'Amelia'] },
+  aus: { male: ['William', 'Thomas', 'Henry', 'James', 'Mitchell', 'Riley', 'Harrison', 'Jackson', 'Archie', 'Max', 'Hudson', 'Lincoln', 'Mason', 'Xavier'], female: ['Charlotte', 'Amelia', 'Ava', 'Grace', 'Emily', 'Lily', 'Georgia', 'Eliza', 'Poppy', 'Hannah', 'Sophie', 'Lucy', 'Willow', 'Ella'] },
+  nld: { male: ['Jesse', 'Milan', 'Finn', 'Noah', 'Gijs', 'Jasper', 'Niels', 'Tim', 'Max', 'Mees', 'Pieter', 'Wouter', 'Hugo', 'Jelle'], female: ['Sophie', 'Mila', 'Saar', 'Anouk', 'Britt', 'Femke', 'Iris', 'Evi', 'Lisa', 'Maud', 'Roos', 'Sara', 'Yara', 'Zoë'] },
+  fra: { male: ['Nathan', 'Paul', 'Adam', 'Tom', 'Léo', 'Clément', 'Alexandre', 'Mathis', 'Nicolas', 'Baptiste', 'Romain', 'Victor', 'Étienne', 'Pierre'], female: ['Alice', 'Lola', 'Zoé', 'Clara', 'Eva', 'Sarah', 'Anaïs', 'Mathilde', 'Pauline', 'Océane', 'Charlotte', 'Élodie', 'Lucie', 'Romane'] },
+  jpn: { male: ['Minato', 'Yuki', 'Hayato', 'Sosuke', 'Kosuke', 'Shota', 'Ryota', 'Naoki', 'Takeshi', 'Yusuke', 'Tatsuya', 'Masato', 'Hideki', 'Satoshi'], female: ['Yuna', 'Miyu', 'Akari', 'Riko', 'Misaki', 'Haruna', 'Saki', 'Emi', 'Kaori', 'Natsuki', 'Ayumi', 'Chihiro', 'Noriko', 'Mayu'] },
+  ita: { male: ['Francesco', 'Giovanni', 'Antonio', 'Stefano', 'Simone', 'Federico', 'Edoardo', 'Gabriele', 'Nicola', 'Alberto', 'Giacomo', 'Emanuele', 'Daniele', 'Fabio'], female: ['Ginevra', 'Greta', 'Emma', 'Camilla', 'Silvia', 'Valentina', 'Federica', 'Paola', 'Serena', 'Noemi', 'Arianna', 'Veronica', 'Elisa', 'Ilaria'] },
+  sgp: { male: ['Wei Ming', 'Kai Xiang', 'Jia Hao', 'Daniel', 'Aaron', 'Rizwan', 'Hafiz', 'Vikram', 'Kevin', 'Brandon', 'Jun Jie', 'Zhi Xuan', 'Ravi', 'Haziq'], female: ['Shi Hui', 'Pei Shan', 'Priya', 'Siti', 'Aisyah', 'Rebecca', 'Michelle', 'Jessica', 'Wen Xin', 'Li Ting', 'Divya', 'Farah', 'Natalie', 'Shu Ling'] },
+  bra: { male: ['Davi', 'Arthur', 'Bernardo', 'Heitor', 'Gustavo', 'Felipe', 'Leonardo', 'Enzo', 'Samuel', 'Rodrigo', 'Eduardo', 'Vinícius', 'Henrique', 'Leandro'], female: ['Sophia', 'Isabella', 'Valentina', 'Giovanna', 'Maria Eduarda', 'Lívia', 'Rafaela', 'Larissa', 'Fernanda', 'Gabriela', 'Amanda', 'Isadora', 'Bianca', 'Carolina'] },
+  ind: { male: ['Vivaan', 'Ishaan', 'Krishna', 'Ayaan', 'Dev', 'Harsh', 'Karan', 'Manish', 'Sanjay', 'Amit', 'Varun', 'Yash', 'Tarun', 'Gaurav'], female: ['Saanvi', 'Aadhya', 'Anika', 'Pooja', 'Sneha', 'Kritika', 'Tanvi', 'Nisha', 'Swati', 'Divya', 'Anjali', 'Radhika', 'Simran', 'Lakshmi'] },
+  che: { male: ['Livio', 'Nils', 'Samuel', 'Tim', 'Robin', 'Dario', 'Marco', 'Reto', 'Beat', 'Andrin', 'Silvan', 'Pascal', 'Gian', 'Joel'], female: ['Alina', 'Noemi', 'Livia', 'Selina', 'Jana', 'Céline', 'Chiara', 'Michelle', 'Fiona', 'Larissa', 'Sandra', 'Aline', 'Elin', 'Seraina'] },
+  swe: { male: ['William', 'Hugo', 'Axel', 'Viktor', 'Filip', 'Mattias', 'Fredrik', 'Magnus', 'Jonas', 'Stefan', 'Sven', 'Olof', 'Daniel', 'Isak'], female: ['Astrid', 'Wilma', 'Linnéa', 'Maja', 'Ebba', 'Elsa', 'Frida', 'Sofie', 'Malin', 'Helena', 'Cecilia', 'Josefin', 'Emelie', 'Klara'] },
+  tur: { male: ['Yusuf', 'Hasan', 'Hüseyin', 'Ömer', 'Cem', 'Barış', 'Kaan', 'Berk', 'Murat', 'Volkan', 'Can', 'Furkan', 'Eren', 'Cihan'], female: ['Büşra', 'Esra', 'Hatice', 'Melike', 'Sevgi', 'Pınar', 'Dilara', 'Buse', 'Ceren', 'Nur', 'Seda', 'Ebru', 'Aylin', 'Sibel'] }
+};
+for (const [cid, g] of Object.entries(MORE_FIRST_NAMES)) {
+  const pool = NAME_POOLS[cid];
+  if (!pool) continue;
+  for (const sex of ['male', 'female']) for (const n of g[sex]) if (!pool[sex].includes(n)) pool[sex].push(n);
+}

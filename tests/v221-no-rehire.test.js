@@ -12,3 +12,9 @@ s.career.dismissedFrom=[{employer:emp,year:2029}];
 const after=jobs().filter(j=>j.employer===emp);
 assert.equal(after.length,0,'dismissing employer is not listed: '+after.length);
 console.log('PASS v221-no-rehire');
+// redundancy: not rehired by the firm that cut you in the same crisis (3 years)
+const e2=jobs().filter(j=>j.employer)[0].employer;
+s.career.dismissedFrom=[{employer:e2,year:2029,kind:'redundant'}];
+assert.equal(jobs().filter(j=>j.employer===e2).length,0,'redundant-from employer not listed');
+s.year=2034;assert.ok(jobs().some(j=>j.employer===e2),'listed again after the window');
+console.log('PASS v221-no-rehire 2');
