@@ -830,7 +830,7 @@ function decidePromotion(S, approach) {
     const ratio = rung.mult / (track.rungs[job.level]?.mult || 1);
     job.level = rung.level;
     job.title = jobEmploymentFraction(job) < 1 ? `Part-Time ${rung.title}` : rung.title;
-    job.monthlyGross = Math.round(job.monthlyGross * ratio);
+    job.monthlyGross = Math.round(job.monthlyGross * ratio); job.payIndexYear = S.year;
     job.monthsInRole = 0;
     job.performance = clamp(job.performance + 3, 0, 100);
     S.player.vitals.happiness = clamp(S.player.vitals.happiness + 8);
@@ -987,6 +987,7 @@ function dismissForCause(S) {
   S.career.employed = false;
   S.career.job = null;
   S.career.lastReference = { kind: 'poor', from: boss ? boss.fullName : 'Management', note: 'Dismissed after three warnings.' };
+  (S.career.dismissedFrom ||= []).push({ employer, year: S.year });
   if (severance > 0) {
     walletMove(S, severance, `Severance after dismissal — ${employer}`, 'career');
   }

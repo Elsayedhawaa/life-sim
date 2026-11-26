@@ -727,7 +727,7 @@ export function negotiateWithOffer(S) {
     const raised = Math.round(job.monthlyGross * 1.08);
     const next = Math.max(matched, raised);
     const old = job.monthlyGross;
-    job.monthlyGross = next;
+    job.monthlyGross = next; job.payIndexYear = S.year;
     if (boss) boss.rel.respect = clamp(boss.rel.respect + 4);
     recordJournal(S, `You showed ${boss ? boss.firstName : 'management'} the ${offer.employer} offer — they matched most of it on the spot: ${formatMoney(old, S.country)} → ${formatMoney(next, S.country)}/month. You stayed.`, 'career');
     return { ok: true, msg: `Counter-offer accepted — your pay rises to ${formatMoney(next, S.country)}/month. You turned ${offer.employer} down.` };

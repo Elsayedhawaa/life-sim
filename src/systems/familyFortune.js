@@ -56,7 +56,11 @@ const DIALS = {
 /* Variety only: among the few dearest cars this person can already afford, a per-person seeded pick. Budget, room and upgrade rules are applied before this and unchanged. */
 function pickCar(S, cars, p) {
   let k = 0; for (const ch of String(p?.id || '')) k = (Math.imul(k, 31) + ch.charCodeAt(0)) | 0;
-  return cars[Math.floor(hash01(S, k ^ 0x51ed) * Math.min(3, cars.length))];
+  const first = Math.floor(hash01(S, k ^ 0x51ed) * Math.min(3, cars.length));
+  /* A mother and father do not both buy the very same model: if the other parent already holds it, take the next one down the list. */
+  const others = (S.people ? Object.values(S.people) : []).filter(x => x && x !== p && (x.role === 'mother' || x.role === 'father') && x.assets && x.assets.car).map(x => x.assets.car.id);
+  for (let i = 0; i < Math.min(3, cars.length); i++) { const c = cars[(first + i) % Math.min(3, cars.length)]; if (!others.includes(c.c.id)) return c; }
+  return cars[first];
 }
 function hash01(S, salt) {
   let h = (Math.trunc(Number(S.seed) || 17) ^ Math.imul(salt | 0, 2654435761)) >>> 0;
@@ -617,7 +621,7 @@ export function resolvePlace(S, yes) {
 function seedAmount(S, f) {
   const usd = { upper_middle: [5e3, 10e3], wealthy: [50e3, 100e3], very_wealthy: [1e6, 5e6] }[f.tier];
   const x = usd[0] + hash01(S, 77) * (usd[1] - usd[0]);
-  return Math.round(eraLocalCost(x, S.country, S.year));
+  return Math.round(fortuneLocal(S, x));
 }
 export function offerSeedGift(S) {
   const f = ensureFamilyFortune(S);
@@ -721,7 +725,7 @@ function bigAskWant(S, f, kind) {
     return Math.round(list[Math.floor(list.length * 0.4)] * 0.5);
   }
   const usd = { upper_middle: 25e3, wealthy: 250e3, very_wealthy: 5e6 }[f.tier] || 0;
-  return Math.round(eraLocalCost(usd, S.country, S.year));
+  return Math.round(fortuneLocal(S, usd));
 }
 export function offerBigAsk(S) {
   const f = ensureFamilyFortune(S);
@@ -787,7 +791,7 @@ export function resolveBigAsk(S, ask) {
 const VENTURE_MONTHS = 36;
 function ventureStake(S, f) {
   const cash = Number(S.money?.cash) || 0;
-  const cap = Math.round(eraLocalCost({ upper_middle: 8e3, wealthy: 40e3, very_wealthy: 250e3 }[f.tier] || 0, S.country, S.year));
+  const cap = Math.round(fortuneLocal(S, { upper_middle: 8e3, wealthy: 40e3, very_wealthy: 250e3 }[f.tier] || 0));
   return Math.min(Math.round(cash * 0.15), cap);
 }
 export function offerSiblingVenture(S) {
@@ -1127,7 +1131,7 @@ export function syncSiblingAssets(S) {
     }
     const sav2 = Number(p.career.savingsLocal) || 0;
     if (sav2 > 0) {
-      const cars = getCarsForYear(S.year).map(c => ({ c, price: Math.round(convertCurrency(eraLocalCost(c.priceUsd2026, 'usa', S.year), 'usa', R, S.year)) })).filter(x => x.price > assetIn(p.assets.car, R, S.year) * 2 && x.price > 0 && x.price <= (sav2 + assetIn(p.assets.car, R, S.year)) * 0.03).sort((x, y) => y.price - x.price);
+      const cars = getCarsForYear(S.year).filter(c => carSoldInCountry(c, R)).map(c => ({ c, price: Math.round(convertCurrency(eraLocalCost(c.priceUsd2026, 'usa', S.year), 'usa', R, S.year)) })).filter(x => x.price > assetIn(p.assets.car, R, S.year) * 2 && x.price > 0 && x.price <= (sav2 + assetIn(p.assets.car, R, S.year)) * 0.03).sort((x, y) => y.price - x.price);
       if (cars.length) { const t = pickCar(S, cars, p); p.career.savingsLocal = sav2 + assetIn(p.assets.car, R, S.year) - t.price; p.assets.car = { id: t.c.id, name: t.c.name, price: t.price, country: R, year: S.year }; n++; }
     }
   }
@@ -1187,7 +1191,7 @@ export function syncParentAssets(S) {
     }
     if (mism(p.assets.car)) continue;
     const curC = assetIn(p.assets.car, R, S.year), baseC = pool() + (est ? 0 : curC);
-    const cars = getCarsForYear(S.year).map(c => ({ c, price: Math.round(convertCurrency(eraLocalCost(c.priceUsd2026, 'usa', S.year), 'usa', R, S.year)) })).filter(x => x.price > curC * 2 && x.price > 0 && x.price <= baseC * 0.03 && room(x.price, curC)).sort((x, y) => y.price - x.price);
+    const cars = getCarsForYear(S.year).filter(c => carSoldInCountry(c, R)).map(c => ({ c, price: Math.round(convertCurrency(eraLocalCost(c.priceUsd2026, 'usa', S.year), 'usa', R, S.year)) })).filter(x => x.price > curC * 2 && x.price > 0 && x.price <= baseC * 0.03 && room(x.price, curC)).sort((x, y) => y.price - x.price);
     if (cars.length) { const t = pickCar(S, cars, p); if (!est) p.career.savingsLocal = baseC - t.price; const had = !!p.assets.car; p.assets.car = { id: t.c.id, name: t.c.name, price: t.price, country: R, year: S.year, estate: est };
       n++; if (seeded) recordJournal(S, `${word} ${had ? 'replaced his car with' : 'bought'} a ${t.c.name} (${formatMoney(t.price, R)}${est ? ', from the family estate' : ''}).`.replace('his car', p.role === 'mother' ? 'her car' : 'his car'), 'family'); }
   }

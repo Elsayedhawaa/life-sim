@@ -13,3 +13,8 @@ const s=createNewLifeState({country:'jpn',seed:3});ensureExtendedState(s);s.year
 assert.equal(showroomCarQuote(s,by('dodge').id).ok,false);
 assert.equal(showroomCarQuote(s,by('toyota').id).ok,true);
 console.log('PASS v221-car-market');
+const sub=C.find(c=>/Suburban/.test(c.model)&&c.yearFrom<=2030&&c.yearTo>=2030)||C.find(c=>/Suburban/.test(c.model));
+if(sub){assert.equal(ok(sub,'aus'),false,'Suburban not sold in Australia');assert.equal(ok(sub,'usa'),true);}
+// the older catalogue has only names: the same rule reads the brand from the name
+assert.equal(ok({name:'Dodge Charger'},'jpn'),false);assert.equal(ok({name:'Toyota Corolla'},'jpn'),true);
+console.log('PASS v221-car-market 2');

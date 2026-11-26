@@ -48,7 +48,7 @@ export function createPerson(S, opts = {}) {
   const countryId = opts.nationality || S.country || 'egy';
   const cObj = getCountry(countryId);
   const gender = opts.gender || (rand(S) < 0.5 ? 'm' : 'f');
-  const firstName = opts.firstName || pickFirstName(countryId, gender, () => rand(S), opts.excludeNames || []);
+  const firstName = opts.firstName || pickFirstName(countryId, gender, () => rand(S), opts.excludeNames || Object.values(S.people || {}).filter(x => x && x.alive !== false).map(x => x.firstName)); /* a new person does not share a first name with someone alive in this life */
   const familyName = opts.familyName || pickFamilyName(countryId, () => rand(S));
   const age = Math.max(0, Number(opts.age ?? 25));
   const birthYear = opts.birthYear ?? (S.year - age);

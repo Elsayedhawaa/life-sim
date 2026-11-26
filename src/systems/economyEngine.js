@@ -1338,7 +1338,12 @@ export function settleHouseholdMonth(S) {
           const sharedRoom = eraLocalCost(cObj.monthlyBasket2026.rentModest * 0.55, S.country, S.year);
           S.housing.currentHomeName = 'Shared Bedspace / Room';
           S.housing.monthlyRent = sharedRoom;
-          recordJournal(S, again ? `Evicted again, from ${oldHome}. The arrears piled up before the shared room was paid for, and you took another one at ${formatMoney(sharedRoom, S.country)}/month.` : `Evicted from ${oldHome} for rent arrears — you downgraded into a cramped shared room (${formatMoney(sharedRoom, S.country)}/mo).`, 'money');
+          /* Already in the cheapest shared room and losing it again: the room and rent are unchanged, so the line is told once a year, not every quarter. */
+          const repeatSameRoom = again && oldHome === 'Shared Bedspace / Room';
+          if (!(repeatSameRoom && S.housing.repeatEvictionNoteYear === S.year)) {
+            if (repeatSameRoom) S.housing.repeatEvictionNoteYear = S.year;
+            recordJournal(S, again ? `Evicted again, from ${oldHome}. The arrears piled up before the shared room was paid for, and you took another one at ${formatMoney(sharedRoom, S.country)}/month.` : `Evicted from ${oldHome} for rent arrears — you downgraded into a cramped shared room (${formatMoney(sharedRoom, S.country)}/mo).`, 'money');
+          }
         }
         S.player.vitals.happiness = clamp(S.player.vitals.happiness - 14);
       }

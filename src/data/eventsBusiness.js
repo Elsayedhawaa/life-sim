@@ -333,7 +333,7 @@ export const BUSINESS_EVENTS = [
               }
               walletMove(st, -fee, `Tax inspection paperwork — ${b.name}`, 'business');
               st.player.vitals.stress = clamp(st.player.vitals.stress + 4);
-              recordJournal(st, `You cooperated fully with the tax inspection of ${b.name}. It cost ${formatMoney(fee, st.country)} in paperwork and time, and ended clean.`, 'business');
+              recordJournal(st, fee > 0 ? `You cooperated fully with the tax inspection of ${b.name}. It cost ${formatMoney(fee, st.country)} in paperwork and time, and ended clean.` : `You cooperated fully with the tax inspection of ${b.name}. It took some time and ended clean.`, 'business');
             },
           },
           {
@@ -785,7 +785,7 @@ export const BUSINESS_EVENTS = [
               walletMove(st, -amt, `Stock and cash stolen in a break-in — ${b.name}`, 'business');
               b.premises.conditionPct = Math.max(5, Math.round(Number(b.premises.conditionPct ?? 90) - 10));
               st.player.vitals.stress = clamp(st.player.vitals.stress + 5);
-              recordJournal(st, `A break-in at ${b.name} cost about ${formatMoney(amt, st.country)} in stock and cash, and left the premises damaged. The police have a report number and nothing else.`, 'business');
+              recordJournal(st, `A break-in at ${b.name} ${amt > 0 ? `cost about ${formatMoney(amt, st.country)} in stock and cash, and` : 'took little, but it'} left the premises damaged. The police have a report number and nothing else.`, 'business');
             },
           },
           {

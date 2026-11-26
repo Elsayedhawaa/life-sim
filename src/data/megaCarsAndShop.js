@@ -1563,8 +1563,11 @@ const CAR_MARKET_RULES = {
 const CHINESE_BRANDS = ['byd', 'chery', 'haval', 'geely', 'changan', 'exeed', 'jetour', 'nio', 'xpeng', 'zeekr', 'xiaomi', 'lynkco'];
 export function carSoldInCountry(car, countryId) {
   if (!car || !countryId) return true;
-  const rule = CAR_MARKET_RULES[car.brand];
+  const brand = car.brand || String(car.name || '').split(' ')[0].toLowerCase().replace(/[^a-z]/g, '');
+  const rule = CAR_MARKET_RULES[brand];
   if (rule) return rule.includes(countryId);
-  if (CHINESE_BRANDS.includes(car.brand)) return countryId !== 'usa' && countryId !== 'can';
+  if (CHINESE_BRANDS.includes(brand)) return countryId !== 'usa' && countryId !== 'can';
+  /* Full-size American SUVs (Suburban, Tahoe) are sold in North America and the Gulf, not elsewhere. */
+  if (/\b(Suburban|Tahoe)\b/i.test(String(car.model || car.name || ''))) return ['usa', 'can', 'sau', 'uae'].includes(countryId);
   return true;
 }

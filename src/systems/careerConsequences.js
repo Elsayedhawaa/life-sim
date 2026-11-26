@@ -101,6 +101,17 @@ function personName(p, fallback) {
    businessRevenue < 1. Returns the events and the combined
    multipliers, so the headhunter rate and the payslip read the same
    crisis this function sees. */
+/* What the redundancy line may say still has to be faced: only things this life actually has. */
+export function redundancyBurdens(S) {
+  const parts = [];
+  if ((S.money?.loans || []).some(l => /mortgage/i.test(String(l.kind || l.type || l.name || l.label || '')))) parts.push('the mortgage');
+  if ((S.relations?.spouseIds || []).length || (S.relations?.childIds || []).length) parts.push('the family');
+  if (S.homeCountry && S.country && S.homeCountry !== S.country) parts.push('the visa');
+  if (!parts.length) return ' The search starts now.';
+  const joined = parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
+  return ` ${joined.charAt(0).toUpperCase() + joined.slice(1)} ${parts.length === 1 ? 'has' : 'have'} to be faced now.`;
+}
+
 export function crisisInfo(S) {
   const active = activeWorldEvents(S, S.country);
   const crisisEvents = active.filter(({ effect }) => (effect.business !== undefined ? effect.business : 1) < 1);
@@ -255,7 +266,7 @@ export function makeRedundant(S, opts = {}) {
   S.career.unemployedMonths = 0;
   if (severance > 0) walletMove(S, severance, `Severance after redundancy — ${employer} (${severanceMonths} months' pay, ${source === 'law' ? 'by law' : 'modelled practice'})`, 'career');
   shiftVitals(S, { stress: 10, happiness: -8 });
-  recordJournal(S, `Made redundant from ${employer} (${title}) in the crisis — ${severance > 0 ? `${formatMoney(severance, S.country)} severance paid (${severanceMonths} months' pay).` : 'no severance is owed under local rules.'} The mortgage, the family and the visa all have to be faced now.`, 'career');
+  recordJournal(S, `Made redundant from ${employer} (${title}) in the crisis — ${severance > 0 ? `${formatMoney(severance, S.country)} severance paid (${severanceMonths} months' pay).` : 'no severance is owed under local rules.'}${redundancyBurdens(S)}`, 'career');
   const scene=buildRedundancyScene(S,{employer,title,severance,severanceMonths,country:S.country,year:S.year,month:S.month});
   /* Same employer, same year, second redundancy: the scene has a
      fixed title ("Made Redundant at X"), so a second queue would

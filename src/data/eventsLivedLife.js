@@ -36,7 +36,7 @@ function story(id, title, gates, text, options, extra = {}) {
   };
 }
 const adult = { minAge: 18 };
-const jobHunt = { minAge: 20, hasJob: false, education: 'graduated' };
+const jobHunt = { minAge: 20, maxAge: 64, hasJob: false, education: 'graduated' }; /* GAME DESIGN: the job-hunt scenes stop at 64; later life is not an application hunt */
 const techHunt = { ...jobHunt, minYear: 2008 };
 const friend = { minAge: 18, requiredPeople: ['friend'] };
 const localPlace = S => ({

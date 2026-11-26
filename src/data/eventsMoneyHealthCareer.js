@@ -1148,7 +1148,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 25},
     build: (S, ctx) => {
-      const q=computeZakatDueLocal(S);if(!q.eligible||q.due<=0||S.credentials.zakatLastYearPaid===S.year)return null;
+      if(String(S.player?.religion||'').toLowerCase()!=='muslim')return null;const q=computeZakatDueLocal(S);if(!q.eligible||q.due<=0||S.credentials.zakatLastYearPaid===S.year)return null;
       return{key:'ev_money_zakat_due',category:'money',title:'Review Your Annual Giving',text:`The game's simplified Finance estimate is ${formatMoney(q.due,S.country)}, using the same 85g-gold threshold and 2.5% calculation. This is not a personal religious ruling or a verified holding-period calculation. Payment records this year's fulfillment in Finance, so it cannot be charged twice.`,choices:[{label:`Pay the modeled ${formatMoney(q.due,S.country)}`,effect:st=>payAnnualZakat(st)},{label:'Review later in Finance',effect:st=>{}}]};
     },
   },

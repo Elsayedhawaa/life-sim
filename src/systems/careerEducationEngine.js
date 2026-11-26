@@ -1258,7 +1258,7 @@ export function findRealJobForPerson(S, person, countryId) {
     payMult = track.payMult || 1;
     industry = track.industry || trackId;
   }
-  const employer = pickRealCompanyForTrack(countryId, S.year, trackId === 'nursing' ? 'medicine' : trackId, industry);
+  const employer = pickRealCompanyForTrack(countryId, S.year, trackId === 'nursing' ? 'medicine' : trackId, industry, S);
   if(!employer)return null;
   const baseEntry = eraSalary(getCountry(countryId).annualSalaryTiers2026.entry / 12, countryId, S.year);
   const monthlyGross = Math.round(baseEntry * payMult * mult);
@@ -1296,8 +1296,11 @@ export function employerCandidates(country,year,trackId,industry){
  if(trackId==='prosecutor')names=names.filter(n=>/prosecut|justice|attorney|court/i.test(n));
  return names;
 }
-function pickRealCompanyForTrack(country,year,trackId,industry){
- const names=employerCandidates(country,year,trackId,industry);
+/* An employer that dismissed you after formal warnings does not hire you straight back. GAME DESIGN (not a real-world figure): 5 years. */
+export function recentlyDismissedFrom(S){return ((S&&S.career&&S.career.dismissedFrom)||[]).filter(d=>S.year-d.year<5).map(d=>d.employer);}
+function pickRealCompanyForTrack(country,year,trackId,industry,S){
+ let names=employerCandidates(country,year,trackId,industry);
+ const barred=recentlyDismissedFrom(S);const open=names.filter(n=>!barred.includes(n));if(open.length)names=open;
  return names.length?names[(year+trackId.length*3)%names.length]:null;
 }
 
@@ -1366,7 +1369,7 @@ export function listAvailableJobs(S) {
       if (trackExp >= r.minExp) bestRung = r;
     }
 
-    const employer = pickRealCompanyForTrack(S.country, S.year, trackId, track.industry);
+    const employer = pickRealCompanyForTrack(S.country, S.year, trackId, track.industry, S);
     if(!employer)continue;
     const baseAnnual = eraSalary(cObj.annualSalaryTiers2026.entry, S.country, S.year);
     const licBoost = matchingLicensePayBoost(S,track.reqDegrees);
@@ -2231,7 +2234,7 @@ export function tickCareerMonthly(S) {
       const promotionFrom={title:job.title,monthlyGross:job.monthlyGross};
       job.level = nextRung.level;
       job.title = jobEmploymentFraction(job) < 1 ? `Part-Time ${nextRung.title}` : nextRung.title;
-      job.monthlyGross = Math.round(job.monthlyGross * ratio);
+      job.monthlyGross = Math.round(job.monthlyGross * ratio); job.payIndexYear=S.year;
       S.career.lastPromotion={at:S.year*12+S.month,year:S.year,month:S.month,employer:job.employer,track:job.track,level:job.level,title:job.title,previousTitle:promotionFrom.title,previousGross:promotionFrom.monthlyGross,monthlyGross:job.monthlyGross};
       S.player.vitals.happiness = clamp(S.player.vitals.happiness + 8);
       emitFact(S, 'INCOME_SURGE', { employer: job.employer, monthlyGross: job.monthlyGross });
