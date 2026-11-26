@@ -39,7 +39,14 @@ const par = S => [S.relations.fatherId, S.relations.motherId].map(i => S.people[
   const S = mk('very_wealthy'); const f = S.familyFortune; F.syncParentAssets(S); const held = () => par(S).reduce((t, p) => t + (p.assets?.home?.price || 0) + (p.assets?.car?.price || 0), 0);
   const h0 = held(), free = f.otherLocal - h0; assert.ok(free > 0);
   F.__takeFromEstate(f, Math.floor(free / 2), S); assert.equal(held(), h0, 'small draw leaves the parents assets alone');
-  F.__takeFromEstate(f, f.otherLocal - h0 + f.fundLocal + Math.floor(h0 / 2), S); assert.ok(held() <= f.otherLocal, 'subset protected'); assert.ok(held() < h0 && held() > 0, 'assets were sold down, not erased');
+  const j0 = S.journal.length, cars0 = par(S).filter(p => p.assets?.car).length, homeV0 = par(S).find(p => p.assets?.home).assets.home.price, onw = f.netWorthLocal;
+  F.__takeFromEstate(f, f.otherLocal - h0 + f.fundLocal + Math.floor(h0 / 20), S); assert.ok(held() <= f.otherLocal, 'subset protected');
+  assert.ok(par(S).filter(p => p.assets?.car).length < cars0, 'a car was actually sold, not shrunk in value'); assert.ok(S.journal.slice(0, S.journal.length - j0 + 1).some(x => /sold the/.test(x.text || x)), 'the sale is journalled');
+  assert.equal(par(S).find(p => p.assets?.home).assets.home.price, homeV0, 'the home is untouched while a car can cover it'); assert.ok(f.netWorthLocal < onw);
+  /* more than the cars can cover: the home is downsized or sold */
+  const cars1 = par(S).filter(p => p.assets?.car).length; F.__takeFromEstate(f, f.otherLocal - held() + Math.floor(held() * 0.9), S); assert.ok(held() <= f.otherLocal);
+  assert.ok(par(S).filter(p => p.assets?.car).length === 0 || par(S).filter(p => p.assets?.car).length <= cars1); const hm = par(S).find(p => p.assets?.home); assert.ok(!hm || hm.assets.home.price < homeV0, 'the home was downsized or sold');
+  assert.ok(S.journal.some(x => /sold the family home/.test(x.text || x)), 'home sale journalled');
   F.__takeFromEstate(f, 1e18, S); assert.equal(f.otherLocal, 0); assert.equal(held(), 0); }
 { /* no free upgrades: with no unallocated pool left, the parents cannot upgrade */
   const S = mk('very_wealthy'); const f = S.familyFortune; F.syncParentAssets(S); const c = par(S).find(p => p.assets?.car); c.assets.car.price = 1000;

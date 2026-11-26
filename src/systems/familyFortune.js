@@ -86,12 +86,30 @@ function takeFromEstate(f, amount, S) {
   if (rest > 0) f.otherLocal = Math.max(0, f.otherLocal - rest);
   sync(f); if (S) protectParentAssets(S); return amount;
 }
-/* The recorded home and cars of the parents are a subset of otherLocal: if the estate shrinks below them (gifts, trust, a sale), they are scaled down to fit, i.e. sold, so the subset never exceeds the estate. */
+/* The recorded home and cars of the parents are a subset of otherLocal. If the estate shrinks below them (gifts, trust, a sale), the shortfall is met by REAL sales, in this order (game rule, not instructed):
+   a car is sold first (the smallest one that covers the shortfall, else the dearest, repeating); if that is still not enough the family home is downsized to the dearest smaller home they can keep, or sold outright if none fits (they rent).
+   The sale price is the recorded value, so what is not needed to cover the shortfall stays in the estate as unallocated money: nothing is erased or created. Each sale is journalled. */
 export function protectParentAssets(S) {
-  const f = S.familyFortune; if (!f) return 0; const sum = estateAssetSum(S, S.country); if (sum <= f.otherLocal || sum <= 0) return 0;
-  const k = Math.max(0, f.otherLocal) / sum;
-  for (const id of [S.relations?.fatherId, S.relations?.motherId]) { const a = S.people?.[id]?.assets; for (const x of [a?.home, a?.car]) if (x && x.estate) x.price = Math.floor(x.price * k); }
-  return 1;
+  const f = S.familyFortune; if (!f) return 0; const R = S.country; let sum = estateAssetSum(S, R); if (sum <= f.otherLocal || sum <= 0) return 0;
+  let n = 0, d = Math.ceil(sum - Math.max(0, f.otherLocal));
+  const ownerCars = () => parentIds(S).map(id => S.people?.[id]).filter(p => p?.assets?.car?.estate).map(p => ({ p, v: assetIn(p.assets.car, R, S.year) }));
+  while (d > 0) {
+    const cars = ownerCars().sort((x, y) => x.v - y.v); if (!cars.length) break;
+    const c = cars.find(x => x.v >= d) || cars[cars.length - 1];
+    const nm = c.p.assets.car.name || 'car'; delete c.p.assets.car; d -= c.v; n++;
+    recordJournal(S, `Your ${roleWord(c.p)} sold the ${nm} to cover the family's costs.`, 'family');
+  }
+  if (d > 0) {
+    const holder = parentIds(S).map(id => S.people?.[id]).find(p => p?.assets?.home?.estate);
+    if (holder) {
+      const v = assetIn(holder.assets.home, R, S.year), budget = v - d;
+      const opt = getHousingFor(R, S.year).map(h => ({ h, price: Math.round(eraLocalCost(h.price2026, R, S.year)) })).filter(x => x.price > 0 && x.price <= budget && x.price < v).sort((x, y) => y.price - x.price)[0];
+      if (opt) { holder.assets.home = { id: opt.h.id, kind: opt.h.kind, tier: opt.h.tier, price: opt.price, country: R, year: S.year, estate: true }; recordJournal(S, `Your parents sold the family home and moved to a smaller one, to cover the family's costs.`, 'family'); }
+      else { delete holder.assets.home; recordJournal(S, `Your parents sold the family home to cover the family's costs and now rent.`, 'family'); }
+      n++;
+    }
+  }
+  return n;
 }
 function ownSum(f) { return Math.round(((f.own.outside || 0) + (f.own.parents || 0) + (f.own.pool || 0) + (f.own.player || 0) + (f.own.heirs || 0) + Object.values(f.own.siblings || {}).reduce((a, b) => a + b, 0)) * 1e6) / 1e6; }
 
