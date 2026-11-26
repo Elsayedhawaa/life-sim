@@ -48,6 +48,7 @@ export function foundSiblingCompany(S, id, typeId) {
   if (!made.ok) return made;
   const biz = shadow.career.businesses[shadow.career.businesses.length - 1]; if (!biz) return { ok: false, msg: 'No company created.' };
   const spent = start - shadow.money.cash; if (!(spent > 0) || spent > savings * CAP + (ev.managerWageEstimateLocal || 0) * 2 + 1) return { ok: false, msg: 'Cost out of range.' };
+  biz.foundedByOwner = true; /* opened by this owner, not inherited: the closing wording depends on it */
   biz.id = nextId(S, 'biz'); /* the copy's counter is not the world's: take a fresh id so nothing can collide later */
   c.savingsLocal = Math.round((savings - spent) * 100) / 100; c.siblingCompanyYear = S.year;
   p.ownedBusinesses = [...(p.ownedBusinesses || []), biz];
