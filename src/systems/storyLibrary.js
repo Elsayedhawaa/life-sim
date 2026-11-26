@@ -952,13 +952,13 @@ export function getCurrentChapter(S) {
   if (retired || age >= 65) id = 'twilight';
   else if (age < 6) id = 'childhood';
   else if (age < 18 && !finishedSchool) id = 'school';
-  else if (age >= 50 && youngKids === 0 && (married || kids > 0 || employed)) id = 'long_middle';
+  else if (age >= 50 && youngKids === 0 && (married || kids > 0 || employed || workedBefore)) id = 'long_middle';
   else if (married || livingKids > 0) id = 'family';
   else if ((employed||workedBefore) && finishedSchool && !inUniversity) id = 'building';
   else id = 'first_steps';
 
   const def = LIFE_CHAPTERS.find(c => c.id === id);
-  return { id, name: def.name, meaning: id==='building'&&!employed?'You have work behind you and are between jobs now. Your experience remains while you choose what comes next.':def.meaning, beats: chapterBeats(S, id) };
+  return { id, name: def.name, meaning: id==='building'&&!employed?'You have work behind you and are between jobs now. Your experience remains while you choose what comes next.':id==='long_middle'&&kids===0?'The big building years are behind you. Now it is about what the life you built is for.':def.meaning, beats: chapterBeats(S, id) };
 }
 
 /* Mark a chapter change as an event. The first time a chapter is seen it is

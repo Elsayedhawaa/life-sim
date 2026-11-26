@@ -76,6 +76,7 @@ console.log('PASS v221-journal-wording');
   s.people.p_x={id:'p_x',firstName:'Sherif',gender:'m',role:'friend'};
   assert.equal(says('Sherif asked you to be godparent to their child, and you accepted.'),'Sherif asked you to be godparent to his child, and you accepted.','a second person with the same first name and gender is still one person');
   assert.equal(says('Sherif referred to you: you referred them, glad to vouch for their work, hoping they would not mind.'),'Sherif referred to you: you referred him, glad to vouch for his work, hoping he would not mind.');
+  assert.equal(says('Sara scratched your car; they paid for the repair. You stood beside them so they could rest.'),'Sara scratched your car; she paid for the repair. You stood beside her so she could rest.');
   console.log('PASS v221-journal-wording part 6');
 }
 {
@@ -102,4 +103,14 @@ console.log('PASS v221-journal-wording');
   assert.ok(/Math\.round\(f\.own\.player \* 10\) \/ 10}% of/.test(ff),'bought-out stake percent is rounded');
   assert.ok(/'One sibling'/.test(ff),'"1 turned you down" names who turned you down');
   console.log('PASS v221-journal-wording part 9');
+}
+{
+  const {getCurrentChapter}=await import('../src/systems/storyLibrary.js');
+  const {createNewLifeState,ensureExtendedState}=await import('../src/core/schema.js');
+  const s=createNewLifeState({country:'tur',seed:12});ensureExtendedState(s);
+  s.player.age=52;s.relations.childIds=[];s.relations.spouseIds=[];s.career.employed=true;s.career.job={title:'Engineer',monthlyGross:1000};s.education.highSchoolScore=80;
+  let ch=getCurrentChapter(s);assert.equal(ch.id,'long_middle');assert.ok(!/children are grown/.test(ch.meaning),'no children, no "the children are grown"');
+  s.career.employed=false;s.career.job=null;s.career.workHistory=[{employer:'x'}];s.career.yearsExperience=12;
+  ch=getCurrentChapter(s);assert.notEqual(ch.id,'building','a 52-year-old between jobs is not back at "Building a Life"');
+  console.log('PASS v221-journal-wording part 10');
 }

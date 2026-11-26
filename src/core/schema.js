@@ -683,6 +683,9 @@ const PRONOUN_PHRASES = [
   [/\bgodparent to their child\b/g, (g) => `godparent to ${g.pos} child`],
   [/\bleft their parents' home\b/g, (g) => `left ${g.pos} parents' home`],
   [/\bthat they are engaged\b/g, (g) => `that ${g.sub} is engaged`],
+  [/\bso they could\b/g, (g) => `so ${g.sub} could`],
+  [/\bthey paid\b/g, (g) => `${g.sub} paid`],
+  [/\bfriend of theirs\b/g, (g) => `friend of ${g.sub === 'she' ? 'hers' : 'his'}`],
   [/\bhoping they would not mind\b/g, (g) => `hoping ${g.sub} would not mind`],
   [/\bvouch for their work\b/g, (g) => `vouch for ${g.pos} work`],
   [/\bif they are sure\b/g, (g) => `if ${g.sub} is sure`],
@@ -694,7 +697,7 @@ const PRONOUN_PHRASES = [
   [/\bhas their eye\b/g, (g) => `has ${g.pos} eye`],
   [/\bwelcomed their partner\b/g, (g) => `welcomed ${g.pos} partner`],
   [/\bknocked on their door\b/g, (g) => `knocked on ${g.pos} door`],
-  [/\b(helped|thanked|stood by|took|asked|embraced|told|congratulated|talked|referred|threw|called) them\b/g, (g, m, v) => `${v} ${g.obj}`]
+  [/\b(helped|thanked|stood by|stood beside|visit|took|asked|embraced|told|congratulated|talked|referred|threw|called) them\b/g, (g, m, v) => `${v} ${g.obj}`]
 ];
 function pronounizeJournal(S, text) {
   if (!/\b(their|them|they)\b/.test(text) || !S?.people) return text;
