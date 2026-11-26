@@ -15,7 +15,7 @@ import {checkSocialEnergy,spendSocialEnergy,noteSocialContact} from '../systems/
 import { chance, clamp, pick, randInt } from '../core/rng.js';
 import { recordJournal, walletMove, moveBalance, queueScene } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
-import { eraLocalCost } from '../data/economy.js';
+import { eraUsdCost } from '../data/economy.js';
 import { rememberDeed } from '../systems/soulEngine.js';
 /* v2.7 — event purchases go through the real shop catalogue (see
    buyShopItemForEvent in economyEngine.js): real item, real price, charged
@@ -52,7 +52,7 @@ function live(S, ctx) {
 
 function nm(p, fb) { return (p && p.firstName) || fb; }
 /* Year-adjusted local cost for a 2026-denominated amount. */
-function cost(st, base2026) { return eraLocalCost(base2026, st.country, st.year); }
+function cost(st, baseUsd) { return eraUsdCost(baseUsd, st.country, st.year); }
 function money(st, base2026) { return formatMoney(cost(st, base2026), st.country); }
 
 export const EVENTS_EVERYDAY_FAMILY = [

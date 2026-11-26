@@ -19,7 +19,7 @@
 import { clamp } from '../core/rng.js';
 import { recordJournal, walletMove } from '../core/schema.js';
 import { formatMoney } from '../data/countries.js';
-import { eraLocalCost } from '../data/economy.js';
+import { eraLocalCost, eraUsdCost } from '../data/economy.js';
 import {
   recordMemory, findPeopleWithMemory, findMemory,
   FAVOUR_MEMORY_KINDS, BETRAYAL_MEMORY_KINDS,
@@ -46,7 +46,7 @@ export const EVENTS_MEMORY = [
     build: (S, ctx) => {
       const friend = liveFriend(S, ctx);
       if (!friend) return null;
-      const amount = eraLocalCost(1500, S.country, S.year);
+      const amount = eraUsdCost(1500, S.country, S.year);
       const favour = findMemory(friend, FAVOUR_MEMORY_KINDS);
       const betrayal = findMemory(friend, BETRAYAL_MEMORY_KINDS);
       const name = nm(friend, 'your friend');
@@ -98,7 +98,7 @@ export const EVENTS_MEMORY = [
       const person = (ctx && ctx.friend && people.includes(ctx.friend)) ? ctx.friend : people[0];
       if (!person) return null;
       const favour = findMemory(person, FAVOUR_MEMORY_KINDS);
-      const amount = eraLocalCost(1200, S.country, S.year);
+      const amount = eraUsdCost(1200, S.country, S.year);
       const name = nm(person, 'your friend');
       return {
         key: 'ev_memory_favour_returns', category: 'friends',

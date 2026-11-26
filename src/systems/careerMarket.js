@@ -51,6 +51,7 @@ import {
 import {
   listAvailableJobs,
   getLadderForJob,
+  getMergedCareerTracks,
   getPerformanceParts,
   getJobContract,
   resignCurrentJob,
@@ -528,8 +529,12 @@ function buildHeadhunterOffer(S) {
   const nextRung = ladder?.next || null;
   const title = nextRung ? nextRung.title : job.title;
   const level = nextRung ? nextRung.level : job.level;
-  const baseGross = sameTrack ? sameTrack.monthlyGross : job.monthlyGross;
-  const monthlyGross = Math.round(baseGross * (1.12 + cmRand(S) * 0.18));
+  /* The offer pays for the title it names: your pay times the same rung step a promotion to that title gives, plus the usual 12-30% for changing employer. It was the market pay of your experience rung (not the named title), which could sit several rungs above your job and gave offers of 2-3x your pay.
+     GAME DESIGN (not a real-world figure): the rung step is the promotion ratio already used in-game (next rung mult / current rung mult). */
+  const trackRungs = (getMergedCareerTracks(S.year)[job.track] || {}).rungs || [];
+  const curRung = trackRungs.find(r => r.level === job.level), nxtRung = trackRungs.find(r => r.level === level);
+  const rungStep = nextRung && curRung?.mult && nxtRung?.mult ? Math.max(1, nxtRung.mult / curRung.mult) : 1;
+  const monthlyGross = Math.round(job.monthlyGross * rungStep * (1.12 + cmRand(S) * 0.18));
   if (monthlyGross <= job.monthlyGross) return null;
 
   const recruiter = cmCreatePerson(S, {

@@ -1,3 +1,4 @@
+import { COUNTRIES } from './countries.js';
 /* ============================================================================
    World Life 2.0 — Canonical Historical Economy, CPI, FX, Gold & Tax Engine
    Covers 1960–2100 across all 18 countries with ZERO currency round-trip drift.
@@ -464,6 +465,16 @@ export function eraLocalCost(amount2026Local, countryId, year) {
   if (raw < 10) return Math.round(raw * 100) / 100;
   if (raw < 200) return Math.round(raw);
   return Math.round(raw / 5) * 5;
+}
+
+/* Event prices are written as US-dollar amounts at US prices (a dentist visit is 400, a laptop repair 150). A bare 400 yen or 400 rupees is not that. This scales one by the country's own cost of living, so the cost stays the same share of a month's basket everywhere:
+   local = USD amount x (the country's monthly basket in USD / the US basket in USD) x the 2026 exchange rate, then the usual year price index.
+   GAME DESIGN (not a real-world figure): the basket is food, utilities, transport, phone and standard rent from monthlyBasket2026. The US is exactly unchanged. */
+const basketUsd2026 = id => { const c = COUNTRIES[id]?.monthlyBasket2026; if (!c) return 0; return ((c.foodAdult || 0) + (c.utilities || 0) + (c.transport || 0) + (c.phoneInternet || 0) + (c.rentStandard || 0)) / usdRate(id, REFERENCE_YEAR); };
+export function costLevelVsUsa(countryId) { const us = basketUsd2026('usa'), me = basketUsd2026(countryId); return us > 0 && me > 0 ? me / us : 1; }
+export function eraUsdCost(amountUsd, countryId, year) {
+  const local2026 = (Number(amountUsd) || 0) * costLevelVsUsa(countryId) * usdRate(countryId, REFERENCE_YEAR);
+  return eraLocalCost(local2026, countryId, year);
 }
 
 /* Price a 2026-denominated local salary cleanly in historical or future year */
