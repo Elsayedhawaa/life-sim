@@ -484,6 +484,10 @@ export function ventureViabilityWarningHtml(S, bp, ev = null) {
   const expectedFT = Number(e.expectedRevFullTimeHome) || 0;
   const selfPT = (Number(e.monthlyCostPartTimeHomeSelf) || 0);
   const mgrPT = (Number(e.monthlyCostPartTimeHomeManagerRun) || 0);
+  if(bp&&bp.id==='tech_founder'){
+    const mgrCost=Math.round(Number(e.monthlyCostPartTimeHomeManagerRun)||0),selfCost=Math.round(Number(e.monthlyCostPartTimeHomeSelf)||0);
+    return `<div class="muted" style="margin:6px 0"><strong style="color:var(--brand-crimson)">No sales at launch</strong> · A tech startup earns nothing until you choose a product, finish the prototype and beta, and release it. Release does not guarantee paying users. Estimated recurring costs from launch: about ${fmt(selfCost)}/mo when you run it yourself, about ${fmt(mgrCost)}/mo with a paid manager (estimates; the recorded costs appear after the first month settles). Any gap comes out of your cash or salary.</div>`;
+  }
   const warn=(mode,takings,cost,manager=false)=>`<div class="muted" style="margin:6px 0"><strong style="color:var(--brand-crimson)">Loss risk</strong> · ${mode}${manager?' + manager':''} · Scenario check: if sales match the assumed ${fmt(takings)}/mo, costs run about ${fmt(cost-takings)}/mo higher. Real months vary, and profit is unknown until the first month settles. <span title="Assumption, not a prediction. Real revenue varies and a loss reduces your cash." aria-label="Information">ⓘ</span><details><summary>Assumptions and costs</summary>Assumed sales ${fmt(takings)}/mo<br>Wages ${fmt(wages)}/mo · Other ${fmt(mode==='Part-time'?otherPT:other)}/mo${manager?` · Manager ${fmt(managerWage)}/mo`:''}</details></div>`;
   if(selfPT>expectedPT)return warn('Part-time',expectedPT,selfPT);
   if(mgrPT>expectedPT)return warn('Part-time',expectedPT,mgrPT,true);
