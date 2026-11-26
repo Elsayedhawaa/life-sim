@@ -36,7 +36,7 @@ export function presentAbroadSubjects(S, dest, uniId) {
 }
 export function presentAbroadFunding(S, dest, uniId, majorId) {
   const choices = FUNDING.map(([f, label]) => { const x = q(S, dest, { uniId, majorId, funding: f }); return {
-    label: `${label} · about ${formatMoney(x.totalPlayer, S.country)} up front (${x.years} years)`, available: st => border(st).ok && q(st, dest, { uniId, majorId, funding: f }).ok, lockReason: (!border(S).ok && border(S).reason) || x.reason || 'Not possible right now.',
+    label: `${label} · about ${formatMoney(x.totalPlayer, S.country)} up front for the first year${x.years > 1 ? ` of ${x.years}` : ''}`, available: st => border(st).ok && q(st, dest, { uniId, majorId, funding: f }).ok, lockReason: (!border(S).ok && border(S).reason) || x.reason || 'Not possible right now.',
     effect: st => { const r = applyStudyAbroad(st, dest, majorId, { uniId, level: 'bachelor', funding: f }); if (!r.ok) recordJournal(st, r.msg || 'The study move could not go ahead.', 'education'); } }; });
   choices.push({ exit: true, label: 'Choose a different subject', effect: st => presentAbroadSubjects(st, dest, uniId) });
   scene(S, 'fund', 'Study abroad: who pays?', 'Nothing is charged until you choose. Living costs continue monthly after the first year.', choices);

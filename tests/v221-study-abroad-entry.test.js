@@ -17,7 +17,7 @@ const go = (S, re) => { const p = pick(S, re); assert.ok(p.ok, `${re} available`
   const g = S.activeScene.choices.filter(c => !c.exit && c.available(S)); assert.ok(g.length >= 1, 'some destination works'); const dest = g[0].label.split(' · ')[0]; go(S, new RegExp('^' + dest));
   const u = S.activeScene.choices.find(c => !c.exit && c.available(S)); go(S, new RegExp('^' + u.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   const m = S.activeScene.choices.find(c => !c.exit && c.available(S)); go(S, new RegExp('^' + m.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(S.activeScene.key, /^abroad_fund_/); const cash = S.money.cash; go(S, /^Pay from your own/);
+  assert.match(S.activeScene.key, /^abroad_fund_/); for (const c of S.activeScene.choices.filter(c => !c.exit)) { assert.match(c.label, /up front for the first year( of \d+)?$/, 'the quote says it covers the first year, not the whole programme'); assert.ok(!/\(\d+ years\)/.test(c.label)); } const cash = S.money.cash; go(S, /^Pay from your own/);
   assert.ok(S.education.university && S.education.university.international, 'enrolled abroad'); assert.ok(S.money.cash < cash, 'charged once'); assert.notEqual(S.country, 'egy'); }
 { /* an expired passport locks every destination with the passport's own reason, so the scene never offers what the move would refuse */
   const S = mk(5e9, true); S.legal.passports.forEach(p => { p.expiresYear = 2010; }); open(S); go(S, /^Study abroad/); const g = S.activeScene.choices.filter(c => !c.exit); assert.ok(g.every(c => c.available(S) === false)); assert.match(g[0].lockReason, /passport/i); }
