@@ -73,5 +73,7 @@ console.log('PASS v221-journal-wording');
   assert.equal(says('Sherif told you first that they are engaged, and you asked if they are sure.'),'Sherif told you first that he is engaged, and you asked if he is sure.');
   assert.equal(says('Sherif and Sara announced their engagement.'),'Sherif and Sara announced their engagement.','two people named: left alone');
   assert.equal(says('Someone moved and they left.'),'Someone moved and they left.','no named person: left alone');
+  s.people.p_x={id:'p_x',firstName:'Sherif',gender:'m',role:'friend'};
+  assert.equal(says('Sherif asked you to be godparent to their child, and you accepted.'),'Sherif asked you to be godparent to his child, and you accepted.','a second person with the same first name and gender is still one person');
   console.log('PASS v221-journal-wording part 6');
 }

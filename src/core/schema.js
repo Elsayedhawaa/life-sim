@@ -696,13 +696,14 @@ const PRONOUN_PHRASES = [
 ];
 function pronounizeJournal(S, text) {
   if (!/\b(their|them|they)\b/.test(text) || !S?.people) return text;
-  let hit = null, n = 0;
+  let hit = null; const names = new Set(), genders = new Set();
   for (const p of Object.values(S.people)) {
     if (!p || p.id === 'player' || p.role === 'player' || !p.firstName) continue;
     if (!new RegExp(`(^|[^A-Za-z])${p.firstName.replace(/[^A-Za-z]/g, '')}([^A-Za-z]|$)`).test(text)) continue;
-    n++; hit = p;
+    names.add(p.firstName); genders.add(p.gender); hit = p;
   }
-  if (n !== 1 || (hit.gender !== 'f' && hit.gender !== 'm')) return text;
+  /* two people who share one first name and one gender still name one person in the sentence */
+  if (names.size !== 1 || genders.size !== 1 || (hit.gender !== 'f' && hit.gender !== 'm')) return text;
   const g = hit.gender === 'f' ? { sub: 'she', obj: 'her', pos: 'her' } : { sub: 'he', obj: 'him', pos: 'his' };
   let out = text;
   for (const [re, fn] of PRONOUN_PHRASES) out = out.replace(re, (m, ...a) => fn(g, m, ...a));

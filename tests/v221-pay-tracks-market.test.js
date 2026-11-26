@@ -10,7 +10,7 @@ for(const c of C){
   const job=s.career.job,track=getMergedCareerTracks(s.year)[job.track];
   for(let m=0;m<12*20;m++){
     s.month=(m%12)+1;if(s.month===1&&m)s.year++;
-    job.performance=60;job.workMode='coast';s.career.trackExperience[job.track]=0;job.payFrozenUntilYear=0;
+    job.performance=60;job.workMode='coast';s.career.trackExperience[job.track]=0;job.payFrozenUntilYear=s.year<2031?2031:0;
     tickCareerMonthly(s);
     if(s.career.job!==job)break;
   }

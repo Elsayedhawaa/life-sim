@@ -1751,7 +1751,7 @@ export function hireIntoJob(S, jobOffer, workAuth, extra = {}) {
     track: jobOffer.track,
     level: jobOffer.level,
     monthlyGross: gross,
-    startYear: S.year,
+    startYear: S.year, payIndexYear: S.year,
     monthsInRole: 0,
     performance: 68,
     workMode: 'normal',
