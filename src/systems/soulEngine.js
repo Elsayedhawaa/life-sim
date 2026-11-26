@@ -356,7 +356,7 @@ const NPC_AUTONOMY_ROLES = new Set(['sibling', 'child', 'friend', 'classmate', '
 const NPC_CAREER_CHANGE_TITLES = ['Teacher', 'Accountant', 'Shop Manager', 'Driver', 'Nurse', 'Sales Representative', 'Project Manager', 'Engineer', 'Operations Coordinator', 'Graduate Specialist'];
 
 /* Plain words for who this person is to the player. */
-function npcKinWord(person) {
+export function npcKinWord(person) {
   if (person.role === 'sibling') return person.gender === 'f' ? 'sister' : 'brother';
   if (person.role === 'child') return person.gender === 'f' ? 'daughter' : 'son';
   if (person.role === 'father') return 'father';
@@ -367,7 +367,8 @@ function npcKinWord(person) {
   const lab = String(person.relationLabel || 'friend');
   const poss = lab.match(/^\S+'s (.+)$/);
   if (poss) return `friend's ${poss[1].toLowerCase()}`; /* "Sofia's son" read as "Your sofia's son": say whose kin without lowercasing a name */
-  return lab.charAt(0).toLowerCase() + lab.slice(1); /* keep employer names and other proper nouns as written */
+  const at = lab.match(/^(.+?) at (.+)$/); /* "Colleague at Richter Trading": lower the role, keep the employer's name as written */
+  return at ? `${at[1].toLowerCase()} at ${at[2]}` : lab.toLowerCase();
 }
 
 /* Make sure the NPC-side marriage fields exist and agree with each other.
@@ -522,7 +523,7 @@ function npcMaybeBirth(S, person) {
   if (npcChance(S, p)) npcHaveChild(S, person, spouse);
 }
 
-function npcHaveChild(S, mother, father) {
+export function npcHaveChild(S, mother, father) {
   const gender = npcRand(S) < 0.5 ? 'm' : 'f';
   // Who the baby is to the player: a sibling's child is a niece/nephew,
   // a child's child is a grandchild, an in-law's child follows their
@@ -535,7 +536,7 @@ function npcHaveChild(S, mother, father) {
     if (anchor.role === 'sibling') { role = gender === 'f' ? 'niece' : 'nephew'; label = gender === 'f' ? 'Niece' : 'Nephew'; }
     else { role = 'grandchild'; label = gender === 'f' ? 'Granddaughter' : 'Grandson'; }
   }
-  const baby = npcCreatePerson(S, {
+  const babyOpts = {
     gender,
     age: 0,
     role,
@@ -544,7 +545,9 @@ function npcHaveChild(S, mother, father) {
     residenceCountry: mother.residenceCountry || S.country,
     city: mother.city || S.city,
     familyName: mother.familyName
-  });
+  };
+  let baby = npcCreatePerson(S, babyOpts);
+  for (let tries = 0; tries < 6 && baby.firstName === mother.firstName; tries++) baby = npcCreatePerson(S, babyOpts); /* a baby is not named exactly like its mother */
   baby.parentIds = [mother.id, father.id];
   baby.leftHome = false;
   S.people[baby.id] = baby;

@@ -2198,7 +2198,7 @@ export function tickCareerMonthly(S) {
       if (elig && !elig.eligible) {
         recordJournal(S, `You meet the experience and performance bar for ${nextRung.title} at ${job.employer}, but cannot apply yet: ${elig.missing.join('; ')}.`, 'career');
       } else if (elig) {
-        recordJournal(S, `You now meet the bar for ${nextRung.title} at ${job.employer}. This rung is not automatic: apply for it under Career, or look for the title at another employer.`, 'career');
+        if (job.barNotedLevel !== nextRung.level) { job.barNotedLevel = nextRung.level; recordJournal(S, `You now meet the bar for ${nextRung.title} at ${job.employer}. This rung is not automatic: apply for it under Career, or look for the title at another employer.`, 'career'); }
         if (job.seniorPromptLevel !== nextRung.level) {
           job.seniorPromptLevel = nextRung.level;
           queueScene(S, {

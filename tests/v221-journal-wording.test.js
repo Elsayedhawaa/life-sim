@@ -6,7 +6,24 @@ assert.equal(quietSpan(9),'9 months');assert.equal(quietSpan(14),'about a year')
 const fs=await import('node:fs');
 const soul=fs.readFileSync(new URL('../src/systems/soulEngine.js',import.meta.url),'utf8');
 assert.ok(!/\(\$\{mother\.relationLabel\}\) had a baby/.test(soul),'baby line must not print the raw role label in brackets');
-assert.ok(!/toLowerCase\(\);\n\}\n\n\/\* Make sure the NPC-side/.test(soul),'kin word must not lowercase whole labels');
 const ev=fs.readFileSync(new URL('../src/data/eventsEverydayFamily.js',import.meta.url),'utf8');
 assert.ok(!/best man \/ maid of honour/.test(ev),'no slash role');
 console.log('PASS v221-journal-wording');
+{
+  const {npcKinWord,npcHaveChild}=await import('../src/systems/soulEngine.js');
+  const {createNewLifeState,ensureExtendedState}=await import('../src/core/schema.js');
+  assert.equal(npcKinWord({role:'friend',relationLabel:'High-School Friend'}),'high-school friend');
+  assert.equal(npcKinWord({role:'colleague',relationLabel:'Colleague at Richter Trading'}),'colleague at Richter Trading');
+  assert.equal(npcKinWord({role:'friend',relationLabel:"Sofia's Son"}),"friend's son");
+  let same=0,babies=0;
+  for(let seed=1;seed<=600;seed++){
+    const s=createNewLifeState({country:'usa',seed,familyTier:'middle'});ensureExtendedState(s);
+    const before=new Set(Object.keys(s.people));
+    const ppl=Object.values(s.people);const mother=ppl.find(p=>p.role==='mother'),father=ppl.find(p=>p.role==='father');if(!mother||!father)continue;
+    try{npcHaveChild(s,mother,father)}catch(e){continue}
+    const baby=Object.values(s.people).find(p=>!before.has(p.id)&&p.age===0);if(!baby)continue;babies++;if(baby.firstName===mother.firstName)same++;
+  }
+  assert.ok(babies>=300,'enough babies checked ('+babies+')');
+  assert.equal(same,0,same+' babies share their mother\'s first name');
+  console.log('PASS v221-journal-wording part 2',babies);
+}
