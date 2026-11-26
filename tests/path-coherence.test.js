@@ -6,6 +6,25 @@ const SEEDS=+process.env.SEEDS||12, COUNTRIES=['egy','gbr','usa','tur','deu','jp
 const found=new Map();let SCENES=0;const seen=new Set();
 const flag=(kind,id,detail,s)=>{const k=kind+'|'+id;if(!found.has(k))found.set(k,{kind,id,detail,year:s.year,n:0});found.get(k).n++;};
 const DEATHISH=/\b(died|death|funeral|passed away|late |estate|inherit|grie|bereave|memorial|widow)/i;
+
+/* A choice "does something" only if the state changed or the effect itself wrote a journal line. The resolver's own fallback line ("<title>: <label>.") never counts, and a journal at its cap cannot hide a change. */
+async function probeChoice(s,a,idx){
+  const snap=()=>JSON.stringify([s.money,s.ledger?.length,s.eventOutcomes,s.career,s.legal,s.housing,s.player.vitals,s.reputation,s.skills,s.values,Object.values(s.people).map(p=>[p.alive,p.rel?.affection,p.rel?.trust,p.rel?.resentment]),s.sceneQueue?.length,s.facts]);
+  const qkeys=(s.sceneQueue||[]).map(x=>x.key),before=snap(),head=s.journal?.[0]?.id,lbl=a.choices?.[idx]?.label,fallback=`${a.title}: ${typeof lbl==='function'?lbl(s):lbl}.`;
+  try{resolveActiveSceneChoice(s,idx);}catch(e){flag('choice-throws',a.eventId||a.baseId||a.key,String(e.message).slice(0,80)+' @'+String(e.stack).split('\n')[1].trim().slice(0,90),s);s.activeScene=null;return true;}
+  const hi=(s.journal||[]).findIndex(x=>x.id===head),fresh=(s.journal||[]).slice(0,hi<0?s.journal.length:hi);
+  const opened=!!s.activeScene&&s.activeScene.key!==a.key&&!qkeys.includes(s.activeScene.key); /* a choice that opens a new scene (a browse or detail step) is navigation, not a no-op; a scene that was already waiting in the queue does not count */
+  return snap()!==before||opened||fresh.some(x=>x.text!==fallback);
+}
+{ /* the checker itself: a literal no-op is caught, a real mutation or an authored journal line is not, with the journal below and at its cap */
+  const {recordJournal}=await import('../src/core/schema.js');
+  for(const capped of [false,true]){
+    const t=createNewLifeState({seed:5,country:'gbr'});ensureExtendedState(t);if(capped)while(t.journal.length<350)recordJournal(t,'filler '+t.journal.length,'life');
+    const mk=()=>({title:'Probe',category:'life',choices:[{label:'Do the thing',effect:()=>{}},{label:'Pay',effect:st=>{st.money.cash+=1}},{label:'Say',effect:st=>recordJournal(st,'Authored line','life')}]});
+    const res=[];for(let i=0;i<3;i++){t.activeScene=mk();res.push(await probeChoice(t,t.activeScene,i));}
+    if(res.join()!=='false,true,true'){console.log('CHECKER SELF-TEST FAILED',capped,res);process.exit(1);}
+  }
+}
 for(let seed=1;seed<=SEEDS;seed++){
  const s=createNewLifeState({country:COUNTRIES[seed%COUNTRIES.length],seed:seed*7+3});ensureExtendedState(s);
  for(let i=0;i<1100&&!s.gameOver;i++){
@@ -28,10 +47,8 @@ for(let seed=1;seed<=SEEDS;seed++){
   if(!hasPartner&&/\byour (wife|husband|spouse|fianc)/i.test(text))flag('partner-claim-no-partner',id,'',s);
   if(/undefined|NaN|\[object|\{\w+\}/.test(text))flag('text-leak',id,text.match(/undefined|NaN|\[object|\{\w+\}/)[0],s);
   const idx=(i+seed)%Math.max(1,(a.choices||[]).length);
-  const snap=()=>JSON.stringify([s.money,s.ledger?.length,s.eventOutcomes,s.career,s.legal,s.housing,s.player.vitals,s.reputation,s.skills,s.values,s.journal?.length,s.journal?.[0]?.id,Object.values(s.people).map(p=>[p.alive,p.rel?.affection,p.rel?.trust,p.rel?.resentment]),s.sceneQueue?.length,s.facts]);
-  const before=snap();
-  try{resolveActiveSceneChoice(s,idx);}catch(e){flag('choice-throws',id,String(e.message).slice(0,80)+' @'+String(e.stack).split('\n')[1].trim().slice(0,90),s);s.activeScene=null;}
-  if(snap()===before&&!/^(continue|understood|ok|close)|unchanged|hold out/i.test(a.choices?.[idx]?.label||'')&&(a.choices?.[idx]?.available?.(s)!==false))flag('choice-does-nothing',id+'#'+idx,(a.choices?.[idx]?.label||'').slice(0,50),s);
+  const mutated=await probeChoice(s,a,idx);
+  if(!mutated&&!/^(continue|understood|ok|close)|unchanged|hold out/i.test(a.choices?.[idx]?.label||'')&&(a.choices?.[idx]?.available?.(s)!==false))flag('choice-does-nothing',id+'#'+idx,(a.choices?.[idx]?.label||'').slice(0,50),s);
   if(s.activeScene)s.activeScene=null;
  }
 }

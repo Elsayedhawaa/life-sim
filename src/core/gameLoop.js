@@ -424,12 +424,12 @@ export function resolveActiveSceneChoice(S, choiceIdx) {
   if (typeof chosen.effect !== 'function') return { ok: false, reason: 'missing_effect' };
 
   S.activeScene = null;
-  const journalBefore = S.journal.length;
+  const journalHeadBefore = S.journal[0]?.id; /* newest entry, not length: the journal is capped, so its length stops changing */
   if (typeof chosen.effect === 'function') {
     chosen.effect(S);
   }
   /* Guarantee outcome is always recorded in human words if effect didn't write one */
-  if (S.journal.length === journalBefore) {
+  if ((S.journal[0]?.id) === journalHeadBefore) {
     const lbl = typeof chosen.label === 'function' ? chosen.label(S) : chosen.label;
     recordJournal(S, `${scene.title}: ${lbl}.`, scene.category || 'life');
   }
