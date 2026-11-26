@@ -1813,6 +1813,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     gates: { requiredPeople: ['mom'], minAge: 14, maxAge: 80, countries: ['egy', 'sau', 'uae'] },
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
+      if (String(S.player?.religion || '').toLowerCase() !== 'muslim') return null; /* the scene has the mother planning the first iftar */
       const p = live(S, ctx);
       return {
         key: 'ev_life_ramadan_prep', category: 'life',

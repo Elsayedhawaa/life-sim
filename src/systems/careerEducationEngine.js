@@ -1362,6 +1362,8 @@ export function listAvailableJobs(S) {
   const jobs = [];
 
   for (const [trackId, track] of Object.entries(merged)) {
+    /* A sovereign wealth fund job exists only where a state fund of that name does: Saudi (PIF), UAE (ADIA, Mubadala), Singapore (GIC), Egypt (Sovereign Fund of Egypt). Elsewhere the same degree uses the investment and finance tracks. Jobs already held are untouched. */
+    if (trackId === 'sovereign_pe' && !['sau', 'uae', 'sgp', 'egy'].includes(S.country)) continue;
     const qualifiedByDegree = track.reqDegrees.length === 0 || track.reqDegrees.some(d => degrees.includes(d));
     const trackExp = S.career.trackExperience[trackId] || 0;
 

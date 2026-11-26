@@ -849,6 +849,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: { requiredPeople: ['mom'],"minAge": 22, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
+      if (String(S.player?.religion || '').toLowerCase() !== 'muslim') return null; /* Ramadan food shopping is a Muslim household's event */
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
       const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';

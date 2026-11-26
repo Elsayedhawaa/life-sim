@@ -583,7 +583,9 @@ function npcDivorce(S, person) {
     const half = Math.round(total / 2);
     person.career.savingsLocal = half;
     spouse.career.savingsLocal = total - half;
-    splitLine = `Under ${getCountry(person.residenceCountry || S.country).name} civil law, their savings were split evenly.`;
+    const cName = getCountry(person.residenceCountry || S.country).name;
+    const place = ['United Arab Emirates', 'United States', 'United Kingdom', 'Netherlands'].includes(cName) ? `the ${cName}` : cName;
+    splitLine = `Under the civil law in ${place}, their savings were split evenly.`;
   }
   const kids = npcChildrenOf(S, person).filter(k => k.age < 18);
   const kidsLine = kids.length
