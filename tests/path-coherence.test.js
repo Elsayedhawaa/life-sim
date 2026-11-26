@@ -28,7 +28,7 @@ for(let seed=1;seed<=SEEDS;seed++){
   if(!hasPartner&&/\byour (wife|husband|spouse|fianc)/i.test(text))flag('partner-claim-no-partner',id,'',s);
   if(/undefined|NaN|\[object|\{\w+\}/.test(text))flag('text-leak',id,text.match(/undefined|NaN|\[object|\{\w+\}/)[0],s);
   const idx=(i+seed)%Math.max(1,(a.choices||[]).length);
-  const snap=()=>JSON.stringify([s.money,s.ledger?.length,s.eventOutcomes,s.career,s.legal,s.housing,s.player.vitals,s.reputation,s.skills,s.values,s.journal?.length,Object.values(s.people).map(p=>[p.alive,p.rel?.affection,p.rel?.trust,p.rel?.resentment]),s.sceneQueue?.length,s.facts]);
+  const snap=()=>JSON.stringify([s.money,s.ledger?.length,s.eventOutcomes,s.career,s.legal,s.housing,s.player.vitals,s.reputation,s.skills,s.values,s.journal?.length,s.journal?.[0]?.id,Object.values(s.people).map(p=>[p.alive,p.rel?.affection,p.rel?.trust,p.rel?.resentment]),s.sceneQueue?.length,s.facts]);
   const before=snap();
   try{resolveActiveSceneChoice(s,idx);}catch(e){flag('choice-throws',id,String(e.message).slice(0,80)+' @'+String(e.stack).split('\n')[1].trim().slice(0,90),s);s.activeScene=null;}
   if(snap()===before&&!/^(continue|understood|ok|close)|unchanged|hold out/i.test(a.choices?.[idx]?.label||'')&&(a.choices?.[idx]?.available?.(s)!==false))flag('choice-does-nothing',id+'#'+idx,(a.choices?.[idx]?.label||'').slice(0,50),s);

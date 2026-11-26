@@ -6581,12 +6581,12 @@ export const EVENTS_EVERYDAY_FAMILY = [
         choices: [
           { label: 'Call now, apologise, and take them out', effect: (st) => {
               walletMove(st, -cost(st, 150), 'Belated birthday dinner for a friend', 'money');
-              if (p.friend) rememberDeed(st, p.friend, 'neglected', 'Forgot the birthday, then made it up.', { affection: -2, trust: 2 });
+              if (p.friend) { noteSocialContact(st, p.friend); rememberDeed(st, p.friend, 'neglected', 'Forgot the birthday, then made it up.', { affection: -2, trust: 2 }); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness - 1);
               recordJournal(st, `You forgot ${frName}'s birthday; you called, apologised, and took them out to make up for it.`, 'friends');
           } },
           { label: 'Send a message and hope they do not mind', effect: (st) => {
-              if (p.friend) rememberDeed(st, p.friend, 'neglected', 'Forgot the birthday and sent a message.', { affection: -6, trust: -4, resentment: 4 });
+              if (p.friend) { noteSocialContact(st, p.friend); rememberDeed(st, p.friend, 'neglected', 'Forgot the birthday and sent a message.', { affection: -6, trust: -4, resentment: 4 }); }
               st.player.vitals.happiness = clamp(st.player.vitals.happiness - 2);
               recordJournal(st, `You forgot ${frName}'s birthday and sent a message, hoping they would not mind.`, 'friends');
           } },

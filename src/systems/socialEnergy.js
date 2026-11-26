@@ -388,7 +388,7 @@ export function tickFriendshipDrift(S) {
       } else if (state !== 'noticed') {
         if (queueDriftNoticeScene(S, p)) {
           p.rel.driftState = 'noticed';
-          recordJournal(S, `You have not spoken to ${p.fullName} in a year. You can reconnect, leave the door open, or let the friendship go.`, 'relationship');
+          recordJournal(S, `You have not spoken to ${p.fullName} in ${months} months. You can reconnect, leave the door open, or let the friendship go.`, 'relationship');
           noticed++;
         }
       } else {
