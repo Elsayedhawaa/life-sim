@@ -1130,7 +1130,7 @@ export function pickCuratedLifeScene(S, restoreBaseId=null) {
       addOnce('ad_midlife_perspective', () => ({
         key: 'ad_midlife_perspective',
         category: 'life',
-        title: 'Forty Candles & Looking Back',
+        title: age < 50 ? 'Forty Candles & Looking Back' : 'Looking Back',
         text: `Turning ${age} brings an unexpectedly quiet evening. Looking back over the years, you weigh what deserves the best of your remaining energy.`,
         choices: [
           {
@@ -1139,7 +1139,7 @@ export function pickCuratedLifeScene(S, restoreBaseId=null) {
               st.player.vitals.health = clamp(st.player.vitals.health + 6);
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 8);
               st.player.vitals.stress = clamp(st.player.vitals.stress - 12);
-              recordJournal(st, `Entering your forties, you consciously slowed the pace to protect your health and closest relationships.`, 'milestone');
+              recordJournal(st, `At ${age}, you consciously slowed the pace to protect your health and closest relationships.`, 'milestone');
             }
           },
           {

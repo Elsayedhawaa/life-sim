@@ -37,3 +37,14 @@ console.log('PASS v221-journal-wording');
   assert.ok(/Residency status: \$\{String\(fromKind\)\.replace/.test(vm),'residency kinds must not print raw underscores');
   console.log('PASS v221-journal-wording part 3');
 }
+{
+  /* Source-level checks: these lines sit inside events that need a long played scene to reach. */
+  const fsy=await import('node:fs');
+  const rd=f=>fsy.readFileSync(new URL('../src/'+f,import.meta.url),'utf8');
+  const hd=rd('systems/healthDirectorEngine.js');
+  assert.ok(!/Entering your forties/.test(hd),'the midlife line can fire at any age 40+, so it must name the age, not "your forties"');
+  assert.ok(/title: age < 50 \? 'Forty Candles & Looking Back' : 'Looking Back'/.test(hd),'a "Forty Candles" title must not show at 55');
+  assert.ok(!/bought a smaller shop/.test(rd('data/eventsMoneyHealthCareer.js')),'"bought a smaller shop" reads as buying a store');
+  assert.ok(!/lost their job as \$\{withArticle/.test(rd('systems/soulEngine.js')),'a named person lost her/his job, not "their"');
+  console.log('PASS v221-journal-wording part 4');
+}

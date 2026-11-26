@@ -1126,7 +1126,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
               walletMove(st, -B, 'Buy less and cook simpler meals', 'money');
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-3));
               st.player.vitals.health = clamp(st.player.vitals.health + (-1));
-              recordJournal(st, `You bought a smaller shop for ${formatMoney(B, S.country)} and cooked simpler meals all week.`, 'money');
+              recordJournal(st, `You kept the shop small, ${formatMoney(B, S.country)} for the week, and cooked simpler meals.`, 'money');
             },
           },
           {

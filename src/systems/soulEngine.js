@@ -717,7 +717,7 @@ function npcJobChange(S, person) {
   if (npcChance(S, person.traits.reliability < 40 ? 0.03 : 0.015)) {
     person.career.monthlyIncomeLocal = 0;
     person.career.title = 'Seeking Work';
-    recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} lost their job as ${withArticle(title.toLowerCase())} in ${person.city}. They are looking for work again.`, 'career');
+    recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} lost ${person.gender === 'f' ? 'her' : person.gender === 'm' ? 'his' : 'their'} job as ${withArticle(title.toLowerCase())} in ${person.city}. ${person.gender === 'f' ? 'She is' : person.gender === 'm' ? 'He is' : 'They are'} looking for work again.`, 'career');
     return;
   }
   if (npcChance(S, person.traits.ambition > 68 ? 0.07 : 0.04)) {
