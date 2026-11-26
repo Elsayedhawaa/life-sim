@@ -21,6 +21,7 @@ import {
   SKILLED_MIGRATION_RULES
 } from '../data/visasAndMarriage.js';
 import { convertFinancesOnCountryMove } from './economyEngine.js';
+import { payShape } from './payShape.js';
 import { enrollInUniversity, findRealJobForPerson } from './careerEducationEngine.js';
 import { getBusinesses, buildRelocationBusinessChoices, applyRelocationBusinessDecision, restoreBusinessLocal, convertBusinessFiguresCurrency } from './businessLegacy.js';
 import { emitFact, spawnWorkplaceCast, rememberDeed } from './soulEngine.js';
@@ -633,7 +634,7 @@ export function applyGulfWorkChannel(S, destCountry, channelId) {
   const gulfExpLvl = Math.min(3, Math.floor((S.career.yearsExperience || 0) / 3));
   const gulfRung = track.rungs[gulfExpLvl] || track.rungs[0];
   const gulfBaseEntry = eraSalary(destObj.annualSalaryTiers2026.entry / 12, destCountry, S.year);
-  const gulfMonthlyGross = Math.round(gulfBaseEntry * track.payMult * gulfRung.mult * ch.salaryMult);
+  const gulfMonthlyGross = Math.round(gulfBaseEntry * payShape(destCountry, trackId, track.payMult, gulfRung.mult) * ch.salaryMult);
 
   const moved = executeCountryRelocation(S, destCountry, {
     kind: 'gulf_iqama',
@@ -731,7 +732,7 @@ export function applyDirectSkilledVisa(S, destCountry) {
   const destObjPre = getCountry(destCountry);
   const expLvlPre = Math.min(2, Math.floor((S.career.yearsExperience || 0) / 3));
   const rungPre = track.rungs[expLvlPre] || track.rungs[0];
-  const estAnnualDest = eraSalary(destObjPre.annualSalaryTiers2026.entry, destCountry, S.year) * track.payMult * rungPre.mult;
+  const estAnnualDest = eraSalary(destObjPre.annualSalaryTiers2026.entry, destCountry, S.year) * payShape(destCountry, trackId, track.payMult, rungPre.mult);
   if (destCountry === 'gbr' && S.year >= 2024) {
     const discounted = S.player.age < 26 || ['medicine', 'pharma'].includes(trackId);
     const minGbp = eraSalary(discounted ? 30960 : (S.year >= 2025 ? 41700 : 38700), 'gbr', S.year);
@@ -761,7 +762,7 @@ export function applyDirectSkilledVisa(S, destCountry) {
   const skilledExpLvl = Math.min(2, Math.floor((S.career.yearsExperience || 0) / 3));
   const skilledRung = track.rungs[skilledExpLvl] || track.rungs[0];
   const skilledBaseEntry = eraSalary(destObj.annualSalaryTiers2026.entry / 12, destCountry, S.year);
-  const skilledMonthlyGross = Math.round(skilledBaseEntry * track.payMult * skilledRung.mult);
+  const skilledMonthlyGross = Math.round(skilledBaseEntry * payShape(destCountry, trackId, track.payMult, skilledRung.mult));
 
   const moved = executeCountryRelocation(S, destCountry, {
     kind: 'work_visa',

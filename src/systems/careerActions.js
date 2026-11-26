@@ -13,6 +13,7 @@ import{careerHours,partTimeJob}from'./careerSchedule.js';
    visaMigrationEngine and completeLifeSystems, none of which import it.
    ========================================================================== */
 
+import { payRatio } from './payShape.js';
 import { rand, randInt, chance, clamp } from '../core/rng.js';
 import { recordJournal, walletMove, queueScene, ensureExtendedState } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
@@ -827,7 +828,7 @@ function decidePromotion(S, approach) {
   }
   if (score >= 150) {
     const track = getMergedCareerTracks(S.year)[job.track];
-    const ratio = rung.mult / (track.rungs[job.level]?.mult || 1);
+    const ratio = payRatio(S.country, job.track, track.payMult, track.rungs[job.level]?.mult || 1, rung.mult);
     job.level = rung.level;
     job.title = jobEmploymentFraction(job) < 1 ? `Part-Time ${rung.title}` : rung.title;
     job.monthlyGross = Math.round(job.monthlyGross * ratio); job.payIndexYear = S.year;

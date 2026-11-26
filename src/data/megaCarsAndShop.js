@@ -1566,6 +1566,8 @@ export function carSoldInCountry(car, countryId) {
   const brand = car.brand || String(car.name || '').split(' ')[0].toLowerCase().replace(/[^a-z]/g, '');
   const rule = CAR_MARKET_RULES[brand];
   if (rule) return rule.includes(countryId);
+  /* Hyundai left the Japanese passenger-car market in 2010 and returned in 2022 with only the Ioniq 5 and Nexo (Reuters, 8 Feb 2022). Coarse: in Japan only those two are sold. */
+  if (brand === 'hyundai' && countryId === 'jpn') return /ioniq|nexo/i.test(String(car.model || car.name || ''));
   if (CHINESE_BRANDS.includes(brand)) return countryId !== 'usa' && countryId !== 'can';
   /* Full-size American SUVs (Suburban, Tahoe) are sold in North America and the Gulf, not elsewhere. */
   if (/\b(Suburban|Tahoe)\b/i.test(String(car.model || car.name || ''))) return ['usa', 'can', 'sau', 'uae'].includes(countryId);

@@ -30,6 +30,7 @@ import{recordUSCoveredEarnings}from './usRetirement.js';
    downstream lands exactly where it did before this round.
    ========================================================================== */
 
+import { payRatio } from './payShape.js';
 import { randInt, clamp, hashSeed } from '../core/rng.js';
 import { recordJournal, walletMove, moveBalance, ensureExtendedState, createPerson } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
@@ -534,9 +535,10 @@ function buildHeadhunterOffer(S) {
   const level = nextRung ? nextRung.level : job.level;
   /* The offer pays for the title it names: your pay times the same rung step a promotion to that title gives, plus the usual 12-30% for changing employer. It was the market pay of your experience rung (not the named title), which could sit several rungs above your job and gave offers of 2-3x your pay.
      GAME DESIGN (not a real-world figure): the rung step is the promotion ratio already used in-game (next rung mult / current rung mult). */
-  const trackRungs = (getMergedCareerTracks(S.year)[job.track] || {}).rungs || [];
+  const trackDef = getMergedCareerTracks(S.year)[job.track] || {};
+  const trackRungs = trackDef.rungs || [];
   const curRung = trackRungs.find(r => r.level === job.level), nxtRung = trackRungs.find(r => r.level === level);
-  const rungStep = nextRung && curRung?.mult && nxtRung?.mult ? Math.max(1, nxtRung.mult / curRung.mult) : 1;
+  const rungStep = nextRung && curRung?.mult && nxtRung?.mult ? Math.max(1, payRatio(S.country, job.track, trackDef.payMult || 1, curRung.mult, nxtRung.mult)) : 1;
   const monthlyGross = Math.round(job.monthlyGross * rungStep * (1.12 + cmRand(S) * 0.18));
   if (monthlyGross <= job.monthlyGross) return null;
   mk.recentOfferEmployers = [...(mk.recentOfferEmployers || []).filter(r => S.year - r.year < 3), { employer, year: S.year }];

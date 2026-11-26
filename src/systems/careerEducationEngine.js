@@ -1,4 +1,5 @@
 import { isSeriousCondition } from './mortalityModel.js';
+import { payShape, payRatio } from './payShape.js';
 import { familyNameInterviewPoints, internshipReferencePoints } from './familyName.js';
 import{recordCivilLoss}from'./civilClaims.js';
 import{careerHours}from'./careerSchedule.js';
@@ -1261,7 +1262,7 @@ export function findRealJobForPerson(S, person, countryId) {
   const employer = pickRealCompanyForTrack(countryId, S.year, trackId === 'nursing' ? 'medicine' : trackId, industry, S);
   if(!employer)return null;
   const baseEntry = eraSalary(getCountry(countryId).annualSalaryTiers2026.entry / 12, countryId, S.year);
-  const monthlyGross = Math.round(baseEntry * payMult * mult);
+  const monthlyGross = Math.round(baseEntry * payShape(countryId, trackId, payMult, mult));
   // NPCs keep the flat career shape (title/employer/track/monthlyIncomeLocal)
   // and also carry a job object for any code that reads career.job.
   person.career.title = title;
@@ -1344,7 +1345,7 @@ export function marketMonthlyGross(country, year, trackId, level) {
   const rung = tr && (tr.rungs.find(r => r.level === level) || tr.rungs[0]);
   if (!tr || !rung) return 0;
   const base = eraSalary(getCountry(country).annualSalaryTiers2026.entry, country, year);
-  return Math.max(Math.round((base / 12) * tr.payMult * rung.mult), statutoryMinMonthlyGross(country, year, { month: 6 }));
+  return Math.max(Math.round((base / 12) * payShape(country, trackId, tr.payMult, rung.mult)), statutoryMinMonthlyGross(country, year, { month: 6 }));
 }
 /* A monthly pay written as 2026 US dollars at US wages, in this country's currency: scaled by how this country's market pays the same rung compared with the USA's. The USA is unchanged. */
 export function usdMonthlyPayToLocal(country, year, usdMonthly, trackId = 'business', level = 1) {
@@ -1375,7 +1376,7 @@ export function listAvailableJobs(S) {
     const licBoost = matchingLicensePayBoost(S,track.reqDegrees);
     const pgList = S.postgrad?.completed || [];
     const pgBoost = pgList.some(p => p.tier === 'fellowship_phd') ? 1.42 : pgList.length > 0 ? 1.26 : 1.0;
-    const monthlyGross = Math.max(Math.round((baseAnnual / 12) * track.payMult * bestRung.mult * licBoost * pgBoost), statutoryMinMonthlyGross(S.country, S.year, { month: S.month }));
+    const monthlyGross = Math.max(Math.round((baseAnnual / 12) * payShape(S.country, trackId, track.payMult, bestRung.mult) * licBoost * pgBoost), statutoryMinMonthlyGross(S.country, S.year, { month: S.month }));
     const missingBoard = qualifiedByDegree ? getRequiredForeignBoardForJob(S, trackId, track.reqDegrees) : null;
 
     jobs.push({
@@ -1606,7 +1607,7 @@ export function getLadderForJob(S) {
   const pgBoost = pgList.some(p => p.tier === 'fellowship_phd') ? 1.42 : pgList.length > 0 ? 1.26 : 1.0;
   const board = getRequiredForeignBoardForJob(S, job.track, track.reqDegrees || []);
   const rungs = track.rungs.map(r => {
-    const pay = Math.max(Math.round((baseAnnual / 12) * track.payMult * r.mult * licBoost * pgBoost * jobEmploymentFraction(job)), Math.round(statutoryMinMonthlyGross(S.country, S.year, { month: S.month }) * jobEmploymentFraction(job)));
+    const pay = Math.max(Math.round((baseAnnual / 12) * payShape(S.country, job.track, track.payMult, r.mult) * licBoost * pgBoost * jobEmploymentFraction(job)), Math.round(statutoryMinMonthlyGross(S.country, S.year, { month: S.month }) * jobEmploymentFraction(job)));
     const reqs = [
       { label: `${r.minExp} year${r.minExp === 1 ? '' : 's'} in this track`, met: trackExp >= r.minExp, detail: `you have ${trackExp}` }
     ];
@@ -2018,7 +2019,7 @@ export function describeJobOffer(S, job) {
   const licBoost = matchingLicensePayBoost(S,track.reqDegrees||[]);
   const pgList = S.postgrad?.completed || [];
   const pgBoost = pgList.some(p => p.tier === 'fellowship_phd') ? 1.42 : pgList.length > 0 ? 1.26 : 1.0;
-  const nextGross = nextRung ? Math.round((baseAnnual / 12) * (track.payMult || 1) * nextRung.mult * licBoost * pgBoost) : null;
+  const nextGross = nextRung ? Math.round((baseAnnual / 12) * payShape(S.country, job.track, track.payMult || 1, nextRung.mult) * licBoost * pgBoost) : null;
   const isCit = S.legal.citizenships.includes(S.country) || S.legal.residency.kind === 'permanent_resident';
   /* W1's payslip (landed after this round started): the market reads the
      same function as the job card — one source of truth, not two. */
@@ -2230,7 +2231,7 @@ export function tickCareerMonthly(S) {
       }
     }
     if (wouldPromote && !rivalBlocks && !needsApplication) {
-      const ratio = nextRung.mult / (track.rungs[job.level]?.mult || 1);
+      const ratio = payRatio(S.country, job.track, track.payMult, track.rungs[job.level]?.mult || 1, nextRung.mult);
       const promotionFrom={title:job.title,monthlyGross:job.monthlyGross};
       job.level = nextRung.level;
       job.title = jobEmploymentFraction(job) < 1 ? `Part-Time ${nextRung.title}` : nextRung.title;
@@ -2260,7 +2261,7 @@ export function tickCareerMonthly(S) {
         const listed=listAvailableJobs(S).find(j=>j.track===job.track);
         const rung=(track?.rungs||[]).find(r=>r.level===job.level);
         const baseRung=(track?.rungs||[]).find(r=>r.level===listed?.level);
-        const market=listed&&rung?Math.round(listed.monthlyGross*rung.mult/(baseRung?.mult||1)*jobEmploymentFraction(job)):previousGross;
+        const market=listed&&rung?Math.round(listed.monthlyGross*payRatio(S.country,job.track,track.payMult,baseRung?.mult||1,rung.mult)*jobEmploymentFraction(job)):previousGross;
         const headroom=job.performance>=65?1.25:1.10;
         const requested=Math.round(previousGross*(job.performance>=65?1.055:1.02));
         // No retrospective pay cut, but no endless above-market compounding.
