@@ -1210,6 +1210,7 @@ function renderLegacyScreenHtml(S) {
       <div class="scene-kicker" style="color:var(--brand-gold)">END OF A CHAPTER · GENERATION ${sum.generation}</div>
       <h2 style="font-size:1.35rem;margin-bottom:6px">${esc(sum.fullName)} (${esc(sum.lifespan)})</h2>
       <p class="scene-body">Passed away ${esc(sum.cause)} in ${esc(sum.finalCountry)}. Final Estate: <strong class="mono">${esc(sum.netWorthFormatted)}</strong> · Passports: ${esc(sum.citizenships.join(', '))} · Legacy Score: <strong class="mono">${sum.score}/100</strong>.</p>
+      <p class="muted" style="font-size:.8rem;margin:0 0 10px">Game rule: inheritance shares and estate tax are simplified. Only the UK has an estate tax in this game; other countries show none. This is not real-world legal or tax guidance.</p>
       ${sum.livingChildren.length > 0 ? `
         <div style="margin-bottom:12px">
           <strong style="display:block;margin-bottom:6px">Continue the Family Dynasty as Your Child:</strong>
