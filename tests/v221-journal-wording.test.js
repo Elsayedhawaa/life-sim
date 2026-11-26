@@ -27,3 +27,13 @@ console.log('PASS v221-journal-wording');
   assert.equal(same,0,same+' babies share their mother\'s first name');
   console.log('PASS v221-journal-wording part 2',babies);
 }
+{
+  const {npcKinWord}=await import('../src/systems/soulEngine.js');
+  assert.equal(npcKinWord({role:'friend',relationLabel:'Expat contact in Amsterdam'}),'expat contact in Amsterdam');
+  const fsx=await import('node:fs');
+  const cw=fsx.readFileSync(new URL('../src/systems/careerWork.js',import.meta.url),'utf8');
+  assert.ok(!/\$\{work\.title\.toLowerCase\(\)\} unfinished/.test(cw),'task title must be quoted, not lowercased into the sentence');
+  const vm=fsx.readFileSync(new URL('../src/systems/visaMigrationEngine.js',import.meta.url),'utf8');
+  assert.ok(/Residency status: \$\{String\(fromKind\)\.replace/.test(vm),'residency kinds must not print raw underscores');
+  console.log('PASS v221-journal-wording part 3');
+}

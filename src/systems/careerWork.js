@@ -367,7 +367,7 @@ export function maybeAssignCareerWork(S) {
   const job = S.career.job;
   let work = S.career.currentWork;
   if (work && work.trackId !== job.track) {
-    recordJournal(S, `You left your ${work.title.toLowerCase()} unfinished when you changed jobs — the new role has its own work.`, 'career');
+    recordJournal(S, `You left "${work.title}" unfinished when you changed jobs — the new role has its own work.`, 'career');
     S.career.currentWork = null;
     work = null;
   }

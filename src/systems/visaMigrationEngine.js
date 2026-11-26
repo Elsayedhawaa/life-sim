@@ -127,7 +127,7 @@ export function transitionResidency(S, toKind, opts = {}) {
     ? `No permanent residency route exists for expats in ${getCountry(S.country).name} — legal years here never convert to PR or citizenship.`
     : null;
   if (!opts.silent) {
-    recordJournal(S, `Residency status: ${fromKind} → ${toKind}${res.permitName ? ` (${res.permitName})` : ''}.`, 'visa');
+    recordJournal(S, `Residency status: ${String(fromKind).replace(/_/g, ' ')} → ${String(toKind).replace(/_/g, ' ')}${res.permitName ? ` (${res.permitName})` : ''}.`, 'visa');
   }
   return { ok: true, changed: true, from: fromKind, to: toKind };
 }

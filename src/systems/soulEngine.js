@@ -367,8 +367,8 @@ export function npcKinWord(person) {
   const lab = String(person.relationLabel || 'friend');
   const poss = lab.match(/^\S+'s (.+)$/);
   if (poss) return `friend's ${poss[1].toLowerCase()}`; /* "Sofia's son" read as "Your sofia's son": say whose kin without lowercasing a name */
-  const at = lab.match(/^(.+?) at (.+)$/); /* "Colleague at Richter Trading": lower the role, keep the employer's name as written */
-  return at ? `${at[1].toLowerCase()} at ${at[2]}` : lab.toLowerCase();
+  const at = lab.match(/^(.+?) (at|in) (.+)$/); /* "Colleague at Richter Trading", "Expat contact in Amsterdam": lower the role, keep the name as written */
+  return at ? `${at[1].toLowerCase()} ${at[2]} ${at[3]}` : lab.toLowerCase();
 }
 
 /* Make sure the NPC-side marriage fields exist and agree with each other.
