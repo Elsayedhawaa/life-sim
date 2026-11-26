@@ -57,11 +57,12 @@ export function restoreMajorScene(S, saved) {
   return { ...saved, choices: continueChoices(saved.text, null) };
 }
 
-function announce(S, kind, { title, text, personId = null, facts = {}, journal = null }) {
+function announce(S, kind, { title, text, personId = null, facts = {}, journal = null, noScene = false }) {
   S.majorEvents ??= [];
   const rec = { kind, year: S.year, month: S.month, turn: S.turn, personId, facts };
   S.majorEvents.push(rec);
   if (S.majorEvents.length > 120) S.majorEvents.splice(0, S.majorEvents.length - 120);
+  if (noScene) return rec; /* the record stays (follow-up events key off it); only the duplicate card is held back */
   const key = `major_${kind}_${S.year}_${S.month}_${personId || 'self'}`;
   const who = personId ? S.people?.[personId] : null;
   const roleKey = facts.role || (/^(separation|divorce|affair)/.test(kind) ? 'spouse' : null);
@@ -99,6 +100,8 @@ export function announceMajorChanges(S, before) {
         title: redundant ? 'You Have Been Made Redundant' : 'You Have Been Fired',
         text: redundant ? `${emp} has let you go as part of cuts. Your pay stops, and the household budget now depends on what you do next.` : `${emp} has dismissed you after repeated formal warnings. Your pay stops, and a poor reference may follow you into the next search.`,
         facts: { employer: emp, title: before.job?.title || null },
+        /* the crisis redundancy already queued its own detailed card (severance, choices): do not show a second card for the same loss */
+        noScene: !!redundant && [S.activeScene, ...(S.sceneQueue || [])].some(sc => sc && sc.baseId === 'made_redundant'),
       }));
     }
   }
