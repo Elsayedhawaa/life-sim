@@ -53,6 +53,11 @@ const DIALS = {
   trustRelease: [[18, 0.25], [21, 0.25], [25, 0.5]]
 };
 
+/* Variety only: among the few dearest cars this person can already afford, a per-person seeded pick. Budget, room and upgrade rules are applied before this and unchanged. */
+function pickCar(S, cars, p) {
+  let k = 0; for (const ch of String(p?.id || '')) k = (Math.imul(k, 31) + ch.charCodeAt(0)) | 0;
+  return cars[Math.floor(hash01(S, k ^ 0x51ed) * Math.min(3, cars.length))];
+}
 function hash01(S, salt) {
   let h = (Math.trunc(Number(S.seed) || 17) ^ Math.imul(salt | 0, 2654435761)) >>> 0;
   h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
@@ -1123,7 +1128,7 @@ export function syncSiblingAssets(S) {
     const sav2 = Number(p.career.savingsLocal) || 0;
     if (sav2 > 0) {
       const cars = getCarsForYear(S.year).map(c => ({ c, price: Math.round(convertCurrency(eraLocalCost(c.priceUsd2026, 'usa', S.year), 'usa', R, S.year)) })).filter(x => x.price > assetIn(p.assets.car, R, S.year) * 2 && x.price > 0 && x.price <= (sav2 + assetIn(p.assets.car, R, S.year)) * 0.03).sort((x, y) => y.price - x.price);
-      if (cars.length) { const t = cars[0]; p.career.savingsLocal = sav2 + assetIn(p.assets.car, R, S.year) - t.price; p.assets.car = { id: t.c.id, name: t.c.name, price: t.price, country: R, year: S.year }; n++; }
+      if (cars.length) { const t = pickCar(S, cars, p); p.career.savingsLocal = sav2 + assetIn(p.assets.car, R, S.year) - t.price; p.assets.car = { id: t.c.id, name: t.c.name, price: t.price, country: R, year: S.year }; n++; }
     }
   }
   return n;
@@ -1183,7 +1188,7 @@ export function syncParentAssets(S) {
     if (mism(p.assets.car)) continue;
     const curC = assetIn(p.assets.car, R, S.year), baseC = pool() + (est ? 0 : curC);
     const cars = getCarsForYear(S.year).map(c => ({ c, price: Math.round(convertCurrency(eraLocalCost(c.priceUsd2026, 'usa', S.year), 'usa', R, S.year)) })).filter(x => x.price > curC * 2 && x.price > 0 && x.price <= baseC * 0.03 && room(x.price, curC)).sort((x, y) => y.price - x.price);
-    if (cars.length) { const t = cars[0]; if (!est) p.career.savingsLocal = baseC - t.price; const had = !!p.assets.car; p.assets.car = { id: t.c.id, name: t.c.name, price: t.price, country: R, year: S.year, estate: est };
+    if (cars.length) { const t = pickCar(S, cars, p); if (!est) p.career.savingsLocal = baseC - t.price; const had = !!p.assets.car; p.assets.car = { id: t.c.id, name: t.c.name, price: t.price, country: R, year: S.year, estate: est };
       n++; if (seeded) recordJournal(S, `${word} ${had ? 'replaced his car with' : 'bought'} a ${t.c.name} (${formatMoney(t.price, R)}${est ? ', from the family estate' : ''}).`.replace('his car', p.role === 'mother' ? 'her car' : 'his car'), 'family'); }
   }
   if (!seeded) S.parentAssetsSeeded = true;

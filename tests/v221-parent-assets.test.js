@@ -40,7 +40,7 @@ const par = S => [S.relations.fatherId, S.relations.motherId].map(i => S.people[
   const h0 = held(), free = f.otherLocal - h0; assert.ok(free > 0);
   F.__takeFromEstate(f, Math.floor(free / 2), S); assert.equal(held(), h0, 'small draw leaves the parents assets alone');
   const j0 = S.journal.length, cars0 = par(S).filter(p => p.assets?.car).length, homeV0 = par(S).find(p => p.assets?.home).assets.home.price, onw = f.netWorthLocal;
-  F.__takeFromEstate(f, f.otherLocal - h0 + f.fundLocal + Math.floor(h0 / 20), S); assert.ok(held() <= f.otherLocal, 'subset protected');
+  const cmin = Math.min(...par(S).filter(p => p.assets?.car).map(p => p.assets.car.price)); /* sized to what the cheapest held car covers, since parents now pick among the top three cars */ F.__takeFromEstate(f, f.otherLocal - h0 + f.fundLocal + Math.max(1, Math.min(Math.floor(h0 / 20), Math.floor(cmin / 2))), S); assert.ok(held() <= f.otherLocal, 'subset protected');
   assert.ok(par(S).filter(p => p.assets?.car).length < cars0, 'a car was actually sold, not shrunk in value'); assert.ok(S.journal.slice(0, S.journal.length - j0 + 1).some(x => /sold the/.test(x.text || x)), 'the sale is journalled');
   assert.equal(par(S).find(p => p.assets?.home).assets.home.price, homeV0, 'the home is untouched while a car can cover it'); assert.ok(f.netWorthLocal < onw);
   /* more than the cars can cover: the home is downsized or sold */
