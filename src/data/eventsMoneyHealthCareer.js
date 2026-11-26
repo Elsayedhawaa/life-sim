@@ -1,7 +1,7 @@
 import{ALL_VACATIONS}from'./megaCareerEduMedical.js';
 import{childSchoolQuote,enrollChildSchoolYear}from'../systems/educationFunding.js';
 import{permitRenewalQuote,renewCurrentPermit,returnToHomeCountry,premiumResidencyQuote,applyPremiumOrGoldenResidency}from'../systems/visaMigrationEngine.js';
-import{CARS_MEGA_CATALOG}from'./megaCarsAndShop.js';
+import{CARS_MEGA_CATALOG,carSoldInCountry}from'./megaCarsAndShop.js';
 import{setStudyEffort,computeEndOfService,resignCurrentJob}from'../systems/careerEducationEngine.js';
 import{payRecordedDebt}from'../systems/recordedDebtPayments.js';
 import{lendPersonalMoney,settlePersonalReceivable,givePersonalMoney}from'../systems/personalReceivables.js';
@@ -11160,7 +11160,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: {"minAge": 26, "hasJob": true, "abroad": true, "countries": ["sau", "uae"]},
     build:(S,ctx)=>{
-      const cars=CARS_MEGA_CATALOG.filter(c=>S.year>=c.yearFrom&&S.year<=c.yearTo).sort((a,b)=>a.priceUsd2026-b.priceUsd2026);if(!cars.length)return null;
+      const cars=CARS_MEGA_CATALOG.filter(c=>carSoldInCountry(c,S.country)&&S.year>=c.yearFrom&&S.year<=c.yearTo).sort((a,b)=>a.priceUsd2026-b.priceUsd2026);if(!cars.length)return null;
       const q=showroomCarQuote(S,cars[0].id),car=q.car;
       return{key:'ev_gulf_car_abroad',category:'money',title:'A Real Car Quote',text:`${car.brandName} ${car.model} · Base. Cash ${formatMoney(q.fullPrice,S.country)}. Finance: ${formatMoney(q.down,S.country)} down; ${formatMoney(q.balance,S.country)} debt after 24% flat markup, 48 payments around ${formatMoney(q.monthlyPayment,S.country)}. Upkeep ${formatMoney(q.monthlyUpkeep,S.country)}/month. Needs valid driving licence or hired driver; normal purchase gates apply.`,choices:[{label:`Buy for ${formatMoney(q.fullPrice,S.country)} cash`,effect:st=>buyShowroomCar(st,car.id)},{label:`Finance · ${formatMoney(q.down,S.country)} down`,effect:st=>buyShowroomCar(st,car.id,'base',0,true)},{label:'Keep current transport',effect:st=>{}}]};
     },

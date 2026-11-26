@@ -2198,7 +2198,7 @@ export function tickCareerMonthly(S) {
     const check=job.actionState?.licence||{};
     const overdue=(check.medicalDueYear!=null&&check.medicalDueYear<S.year)||(check.simDueYear!=null&&check.simDueYear<S.year)||PROFESSIONAL_LICENSES.some(l=>(track?.reqDegrees||[]).includes(l.reqDegree)&&(S.credentials.licenses||[]).includes(l.id)&&(S.credentials.licenceRenewals?.[l.id]?.validUntilYear??Infinity)<S.year);
     const wouldPromote = nextRung && trackExp >= nextRung.minExp && job.performance + mentorBoost >= 72 && !payFrozen && !overdue;
-    if(overdue&&nextRung&&trackExp>=nextRung.minExp){const as=job.actionState||(job.actionState={});const fresh=as.promoPauseSeenYear==null||as.promoPauseSeenYear<S.year-1;as.promoPauseSeenYear=S.year;if(fresh||S.year-(as.promoPauseNotedYear??-1e9)>=5){as.promoPauseNotedYear=S.year;recordJournal(S,'Promotion on hold: your licence check is overdue. Renew it under Train & Licences.','career');}}
+    if(overdue&&nextRung&&trackExp>=nextRung.minExp){const as=job.actionState||(job.actionState={});const fresh=as.promoPauseSeenYear==null||as.promoPauseSeenYear<S.year-1;as.promoPauseSeenYear=S.year;if(fresh)as.promoPauseSinceYear=S.year;if(fresh||S.year-(as.promoPauseNotedYear??-1e9)>=1){as.promoPauseNotedYear=S.year;const held=S.year-(as.promoPauseSinceYear??S.year);recordJournal(S,held>=1?`Promotion still on hold: your licence check has been overdue for ${held} year${held===1?'':'s'} and you have met the bar for the next rung. Nothing moves until you renew it under Train & Licences.`:'Promotion on hold: your licence check is overdue. Renew it under Train & Licences.','career');}}
     /* GAME DESIGN (not a real-world figure): the two senior rungs (level 3 and
        above) are not handed out by a tenure clock. Meeting the bar makes you
        eligible; the player applies under Career (the existing promotion
@@ -2267,7 +2267,11 @@ export function tickCareerMonthly(S) {
         const indexed=Math.round(previousGross*wageGrowth);
         job.payIndexYear=S.year;
         job.monthlyGross=Math.max(previousGross,Math.min(Math.max(requested,indexed),Math.round(market*headroom)));
-        recordJournal(S,`Annual pay review at ${job.employer}: ${formatMoney(previousGross,S.country)} to ${formatMoney(job.monthlyGross,S.country)}/month gross. Game market reference ${formatMoney(market,S.country)}/month for this rung, merit ceiling ${Math.round(headroom*100)}% of market. Above-ceiling pay is held, not cut.`,'career');
+        /* The market reference and ceiling are explained once per job, not on all of a career's reviews. */
+        const explain=job.payReviewExplained?'':` The game's market reference for this role is ${formatMoney(market,S.country)} a month; raises stop at ${Math.round(headroom*100)}% of it.`;
+        job.payReviewExplained=true;
+        const rose=job.monthlyGross>previousGross;
+        recordJournal(S,rose?`Annual pay review at ${job.employer}: ${formatMoney(previousGross,S.country)} to ${formatMoney(job.monthlyGross,S.country)} a month gross, up ${Math.max(1,Math.round((job.monthlyGross/previousGross-1)*100))}%.${explain}`:`Annual pay review at ${job.employer}: no rise this year. At ${formatMoney(previousGross,S.country)} a month you already earn more than this role normally tops out at, so your pay is held, not cut.${explain}`,'career');
       }
       if (wouldPromote && rivalBlocks) {
         const rivalPerson = S.people[rivalRec.personId];

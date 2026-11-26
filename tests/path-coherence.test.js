@@ -38,7 +38,7 @@ for(let seed=1;seed<=SEEDS;seed++){
   // 2 labelled people alive
   for(const l of a.people||[])if(l.name&&!major){const p=Object.values(s.people).find(x=>x.firstName===l.name&&x.alive===false);if(p&&!Object.values(s.people).some(x=>x.firstName===l.name&&x.alive))flag('label-dead',id,l.label,s);}
   // 3 dead person named in text
-  if(!major)for(const p of Object.values(s.people))if(p.alive===false&&p.firstName&&p.firstName.length>2&&new RegExp('\\b'+p.firstName+'\\b').test(text)&&!Object.values(s.people).some(x=>x!==p&&x.alive&&x.firstName===p.firstName))flag('dead-named',id,p.relationLabel,s);
+  if(!major)for(const p of Object.values(s.people))if(p.alive===false&&p.firstName&&p.firstName.length>2&&new RegExp('\\b'+p.firstName+'\\b').test(text)&&!Object.values(s.people).some(x=>x!==p&&x.alive&&(x.firstName===p.firstName||new RegExp('\\b'+p.firstName+'\\b').test(x.fullName||''))))flag('dead-named',id,p.relationLabel,s);
   // 4 state claims
   const job=s.career?.job;
   if(!job&&/\byour (boss|manager|employer)\b|\byour (current )?job\b|\byour (monthly )?salary\b/i.test(text)&&!major)flag('job-claim-no-job',id,'',s);

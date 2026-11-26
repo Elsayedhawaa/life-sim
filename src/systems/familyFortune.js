@@ -12,7 +12,7 @@ import { recordJournal, walletMove, queueScene } from '../core/schema.js';
 import { eraLocalCost, usdRate, inflationRate, eraDepositRates, convertCurrency } from '../data/economy.js';
 import { estateChargePlan } from './companyEstate.js';
 import { formatMoney, getCountry } from '../data/countries.js';
-import { CARS_MEGA_CATALOG, CAR_COLORS } from '../data/megaCarsAndShop.js';
+import { CARS_MEGA_CATALOG, CAR_COLORS, carSoldInCountry } from '../data/megaCarsAndShop.js';
 import { propertyMarketYear } from './propertyMarketRisk.js';
 import { getHousingFor, getCarsForYear } from '../data/institutions.js';
 import { finalizePropertyPurchase } from './economyEngine.js';
@@ -298,7 +298,7 @@ export function giftBirthdayCar(S) {
   if (!f || f.carGifted || isTightYear(f, S) || !quietMonth(S)) return null; /* one decision at a time: wait for a quiet month */ /* planned gifts wait out a tight year */
   const age = S.player?.age ?? 0;
   if (age < DIALS.carGiftAge || age > 25) return null;
-  const pool = CARS_MEGA_CATALOG.filter(c => S.year >= c.yearFrom && S.year <= c.yearTo && !(f.tier !== 'very_wealthy' && c.priceUsd2026 > 120000));
+  const pool = CARS_MEGA_CATALOG.filter(c => carSoldInCountry(c, S.country) && S.year >= c.yearFrom && S.year <= c.yearTo && !(f.tier !== 'very_wealthy' && c.priceUsd2026 > 120000));
   if (!pool.length) return null;
   const target = DIALS.carTargetUsd[f.tier];
   const ranked = pool.map(c => ({ c, d: Math.abs(Math.log(c.priceUsd2026 / target)) + hash01(S, c.id.length * 31 + c.priceUsd2026 % 97) * 0.05 })).sort((a, b) => a.d - b.d);
@@ -1360,7 +1360,7 @@ function parentWarmth(S) {
   return Math.min(1, Math.max(0, best));
 }
 function betterCarQuote(S, f, o) {
-  const pool = CARS_MEGA_CATALOG.filter(c => S.year >= c.yearFrom && S.year <= c.yearTo && !(f.tier !== 'very_wealthy' && c.priceUsd2026 > 160000));
+  const pool = CARS_MEGA_CATALOG.filter(c => carSoldInCountry(c, S.country) && S.year >= c.yearFrom && S.year <= c.yearTo && !(f.tier !== 'very_wealthy' && c.priceUsd2026 > 160000));
   const cur = CARS_MEGA_CATALOG.find(c => c.id === o.catalogId);
   const target = (cur?.priceUsd2026 || DIALS.carTargetUsd[f.tier]) * 1.8;
   const ranked = pool.filter(c => c.priceUsd2026 > (cur?.priceUsd2026 || 0) * 1.3).map(c => ({ c, d: Math.abs(Math.log(c.priceUsd2026 / target)) })).sort((a, b) => a.d - b.d);

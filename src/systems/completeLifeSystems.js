@@ -42,7 +42,7 @@ import {
   CAR_TRIMS,
   CAR_COLORS,
   CAR_MODS,
-  CARS_MEGA_CATALOG,
+  CARS_MEGA_CATALOG, carSoldInCountry,
   SHOP_MEGA_CATALOG,
   BNPL_PROVIDERS
 } from '../data/megaCarsAndShop.js';
@@ -784,6 +784,7 @@ export function obtainOrRenewDrivingLicence(S) {
 export function showroomCarQuote(S,carId,trimId='base'){
  const car=CARS_MEGA_CATALOG.find(c=>c.id===carId),trim=CAR_TRIMS.find(t=>t.id===trimId);
  if(!car||!trim||S.year<car.yearFrom||S.year>car.yearTo)return{ok:false,msg:'Vehicle/trim unavailable in this year.'};
+ if(!carSoldInCountry(car,S.country))return{ok:false,msg:'This model is not sold in your country.'};
  const dutyMult=S.country==='egy'&&!car.ev&&['lux','exec','sport','hyper'].includes(car.class)?1.75:1;
  const fullPrice=Math.round(convertCurrency(car.priceUsd2026*trim.mult*dutyMult,'usa',S.country,S.year)),down=Math.round(fullPrice*.25),principal=fullPrice-down,balance=Math.round(principal*1.24);
  const monthlyUpkeep=Math.max(15,Math.round(convertCurrency(75+car.priceUsd2026*.003,'usa',S.country,S.year)));

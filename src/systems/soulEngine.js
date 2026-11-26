@@ -353,7 +353,7 @@ function npcCreatePerson(S, opts = {}) {
 }
 
 const NPC_AUTONOMY_ROLES = new Set(['sibling', 'child', 'friend', 'classmate', 'colleague', 'nephew', 'niece', 'grandchild', 'in-law', 'ex_partner']);
-const NPC_CAREER_CHANGE_TITLES = ['Teacher', 'Accountant', 'Shop Manager', 'Driver', 'Nurse', 'Sales Representative', 'Project Manager', 'Engineer', 'Operations Coordinator', 'Graduate Specialist'];
+const NPC_CAREER_CHANGE_TITLES = ['Teacher', 'Accountant', 'Shop Manager', 'Driver', 'Nurse', 'Sales Representative', 'Project Manager', 'Engineer', 'Operations Coordinator', 'Analyst'];
 
 /* Plain words for who this person is to the player. */
 export function npcKinWord(person) {
@@ -406,7 +406,7 @@ function npcGiveJob(S, person) {
   const pCountry = getCountry(person.residenceCountry || S.country);
   const entryPay = eraSalary(pCountry.annualSalaryTiers2026.entry / 12, person.residenceCountry, S.year);
   const mult = 0.75 + (person.traits.ambition / 140);
-  person.career.title = person.vitals.smarts >= 78 ? 'Graduate Specialist' : 'Operations Coordinator';
+  person.career.title = person.vitals.smarts >= 78 ? 'Analyst' : 'Operations Coordinator';
   person.career.monthlyIncomeLocal = Math.round(entryPay * mult); person.career.incomeIndexYear = S.year;
   person.career.savingsLocal = Math.max(Number(person.career.savingsLocal) || 0, Math.round(person.career.monthlyIncomeLocal * 2));
 }
@@ -700,7 +700,7 @@ function npcMaybeLeaveHome(S, person) {
   npcLeaveHome(S, person);
 }
 
-function npcJobChange(S, person) {
+export function npcJobChange(S, person) {
   if(person.career?.businessEmployeeId&&(S.career.businesses||[]).some(b=>b.id===person.career.businessEmployeeId&&((b.staff||[]).some(e=>e.personId===person.id)||b.manager?.personId===person.id)))return;
   const income = Number(person.career.monthlyIncomeLocal) || 0;
   const title = person.career.title || '';
@@ -734,7 +734,9 @@ function npcJobChange(S, person) {
     recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} was promoted to ${person.career.title.toLowerCase()} in ${person.city} — now earning ${formatMoney(person.career.monthlyIncomeLocal, person.residenceCountry)}/mo.`, 'career');
     return;
   }
-  if (person.age >= 25 && person.age <= 55 && npcChance(S, 0.01)) {
+  /* A career change starts again at entry pay, so it is only drawn for someone who earns about that already; a physician or pilot does not become a driver. GAME DESIGN (not a real-world figure): up to 1.8x the entry pay. */
+  const entryNow = eraSalary(getCountry(person.residenceCountry || S.country).annualSalaryTiers2026.entry / 12, person.residenceCountry, S.year) * (0.75 + (person.traits.ambition / 140));
+  if (person.age >= 25 && person.age <= 55 && income <= entryNow * 1.8 && npcChance(S, 0.01)) {
     const next = npcPick(S, NPC_CAREER_CHANGE_TITLES.filter(t => t !== title && !title.includes(t)));
     if (next) {
       const pCountry = getCountry(person.residenceCountry || S.country);
@@ -772,7 +774,7 @@ export function tickNpcAutonomyYearly(S) {
     } else if (person.age === 22 && (!person.career.monthlyIncomeLocal || ['Unemployed', 'Seeking Work', 'University Student'].includes(person.career.title))) {
       const entryPay = eraSalary(pCountry.annualSalaryTiers2026.entry / 12, person.residenceCountry, S.year);
       const mult = 0.75 + (person.traits.ambition / 140);
-      person.career.title = person.vitals.smarts >= 78 ? 'Graduate Specialist' : 'Operations Coordinator';
+      person.career.title = person.vitals.smarts >= 78 ? 'Analyst' : 'Operations Coordinator';
       person.career.monthlyIncomeLocal = Math.round(entryPay * mult); person.career.incomeIndexYear = S.year;
       person.career.savingsLocal = Math.round(person.career.monthlyIncomeLocal * 2);
       if (person.role === 'child') {

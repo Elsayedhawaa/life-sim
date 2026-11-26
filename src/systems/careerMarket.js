@@ -521,9 +521,12 @@ function buildHeadhunterOffer(S) {
   const market = listAvailableJobs(S);
   const sameTrack = market.find(j => j.track === job.track);
   /* A real named employer in this track, not the one you work for. */
-  const pool = getEmployersFor(S.country, job.track).filter(n => n && n !== job.employer);
+  const mk = ensureCareerMarket(S);
+  /* A firm that has just filled the role does not ring again the next year. An employer that approached you in the last 3 years is skipped; when every other employer in the track has, nobody calls this time. GAME DESIGN (not a real-world figure): 3 years. */
+  const recent = (mk.recentOfferEmployers || []).filter(r => S.year - r.year < 3).map(r => r.employer);
+  const pool = getEmployersFor(S.country, job.track).filter(n => n && n !== job.employer && !recent.includes(n));
   let employer = pool.length ? cmPick(S, pool) : null;
-  if (!employer && sameTrack && sameTrack.employer !== job.employer) employer = sameTrack.employer;
+  if (!employer && sameTrack && sameTrack.employer !== job.employer && !recent.includes(sameTrack.employer) && !getEmployersFor(S.country, job.track).length) employer = sameTrack.employer;
   if (!employer) return null;
   const ladder = getLadderForJob(S);
   const nextRung = ladder?.next || null;
@@ -536,6 +539,7 @@ function buildHeadhunterOffer(S) {
   const rungStep = nextRung && curRung?.mult && nxtRung?.mult ? Math.max(1, nxtRung.mult / curRung.mult) : 1;
   const monthlyGross = Math.round(job.monthlyGross * rungStep * (1.12 + cmRand(S) * 0.18));
   if (monthlyGross <= job.monthlyGross) return null;
+  mk.recentOfferEmployers = [...(mk.recentOfferEmployers || []).filter(r => S.year - r.year < 3), { employer, year: S.year }];
 
   const recruiter = cmCreatePerson(S, {
     role: 'recruiter',

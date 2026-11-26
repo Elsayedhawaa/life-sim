@@ -1550,3 +1550,21 @@ export const BNPL_PROVIDERS = {
     "availableFrom": 2015
   }
 };
+
+/* Import market rule. The catalogue has no per-country field, so this is a coarse brand-level rule built only on
+   widely known facts: US-domestic truck/luxury marques are sold in North America and the Gulf; Chinese-brand cars are
+   not sold in the USA or Canada; Tata and Mahindra sell in India and a few export markets; Nasr is Egyptian-built.
+   Cars a player already owns are never touched. */
+const CAR_MARKET_RULES = {
+  dodge: ['usa', 'can', 'sau', 'uae', 'bra'], ram: ['usa', 'can', 'sau', 'uae', 'bra'], gmc: ['usa', 'can', 'sau', 'uae'],
+  lincoln: ['usa', 'can'], rivian: ['usa', 'can'], lucid: ['usa', 'can', 'sau', 'uae', 'deu', 'nld', 'che'],
+  tata: ['ind', 'gbr', 'sau', 'uae'], mahindra: ['ind', 'gbr', 'sau', 'uae', 'aus'], nasr: ['egy']
+};
+const CHINESE_BRANDS = ['byd', 'chery', 'haval', 'geely', 'changan', 'exeed', 'jetour', 'nio', 'xpeng', 'zeekr', 'xiaomi', 'lynkco'];
+export function carSoldInCountry(car, countryId) {
+  if (!car || !countryId) return true;
+  const rule = CAR_MARKET_RULES[car.brand];
+  if (rule) return rule.includes(countryId);
+  if (CHINESE_BRANDS.includes(car.brand)) return countryId !== 'usa' && countryId !== 'can';
+  return true;
+}

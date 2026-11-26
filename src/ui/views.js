@@ -99,7 +99,7 @@ import {
 import {
   CAR_TRIMS,
   CAR_COLORS,
-  CARS_MEGA_CATALOG,
+  CARS_MEGA_CATALOG, carSoldInCountry,
   SHOP_MEGA_CATALOG,
   BNPL_PROVIDERS
 } from '../data/megaCarsAndShop.js';
@@ -4529,7 +4529,7 @@ function renderPetsSubtabHtml(S) {
 }
 
 function renderCarShowroomSubtabHtml(S, uiState) {
-  const eraCars = CARS_MEGA_CATALOG.filter(c => c.yearFrom <= S.year && c.yearTo >= S.year);
+  const eraCars = CARS_MEGA_CATALOG.filter(c => carSoldInCountry(c, S.country) && c.yearFrom <= S.year && c.yearTo >= S.year);
   const q = String(uiState.carQuery || '').trim().toLowerCase();
   const clsFilter = uiState.carClass || 'all';
   const filtered = eraCars.filter(c => {
