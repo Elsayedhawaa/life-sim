@@ -31,7 +31,9 @@ function pickScene(S) {
   const cands = candidateTracks(S);
   const choices = cands.map(c => ({ label: `${c.label} (starts as ${c.title})`, effect: st => {
     const j = st.career.job; if (!j || st.jobRecordRepair?.answered) return;
-    const before = describe(st); const fr = String(j.employer || '').match(/^the firm where (.+) works$/i);
+    const before = describe(st); const oldTrack = j.track, cw = st.career.currentWork;
+    if (cw && cw.trackId === oldTrack && oldTrack !== c.id) { st.career.currentWork = null; recordJournal(st, `Your open work request (${cw.title}) was closed without penalty, because it belonged to the old job record. The new role has its own work.`, 'career'); }
+    const fr = String(j.employer || '').match(/^the firm where (.+) works$/i);
     j.track = c.id; j.level = 0; j.title = c.title; j.monthsInRole = j.monthsInRole || 0;
     if (fr) j.employer = `Employer not recorded (you were referred by ${fr[1]})`;
     st.jobRecordRepair = { answered: 'chose', track: c.id, year: st.year }; st.jobRecordRepair.pending = false;
