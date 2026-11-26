@@ -18,7 +18,7 @@ import { familyCoversUniversity,chargeFamilyEducation } from './educationFunding
 import { rand, randInt, pick, chance, clamp } from '../core/rng.js';
 import { nextId, recordJournal, walletMove, moveBalance, queueScene, ensureExtendedState } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
-import { eraSalary, statutoryMinMonthlyGross, eraLocalCost, convertCurrency, computePayslip, contractRuleFor, vacationEntitlementDays, noticeAndSeveranceFor, eraDepositRates } from '../data/economy.js';
+import { eraSalary, wageFactor, statutoryMinMonthlyGross, eraLocalCost, convertCurrency, computePayslip, contractRuleFor, vacationEntitlementDays, noticeAndSeveranceFor, eraDepositRates } from '../data/economy.js';
 import {
   MAJORS,
   CAREER_TRACKS,
@@ -1335,6 +1335,22 @@ export function matchingLicensePayBoost(S,reqDegrees=[]){
   return PROFESSIONAL_LICENSES.some(l=>reqDegrees.includes(l.reqDegree)&&(S.credentials?.licenses||[]).includes(l.id))?1.14:1;
 }
 
+/* The market line for a rung with no licence or postgraduate boost: the country's entry salary tier, that year's wage index, the track's pay multiplier and the rung's. Used to price posts that are written as US-dollar amounts so they sit on the same line as every other job in the country. */
+export function marketMonthlyGross(country, year, trackId, level) {
+  const tr = getMergedCareerTracks(year)[trackId];
+  const rung = tr && (tr.rungs.find(r => r.level === level) || tr.rungs[0]);
+  if (!tr || !rung) return 0;
+  const base = eraSalary(getCountry(country).annualSalaryTiers2026.entry, country, year);
+  return Math.max(Math.round((base / 12) * tr.payMult * rung.mult), statutoryMinMonthlyGross(country, year, { month: 6 }));
+}
+/* A monthly pay written as 2026 US dollars at US wages, in this country's currency: scaled by how this country's market pays the same rung compared with the USA's. The USA is unchanged. */
+export function usdMonthlyPayToLocal(country, year, usdMonthly, trackId = 'business', level = 1) {
+  const here = marketMonthlyGross(country, year, trackId, level);
+  const us = marketMonthlyGross('usa', 2026, trackId, level);
+  if (!(here > 0) || !(us > 0)) return Math.round(convertCurrency(usdMonthly, 'usa', country, year));
+  return Math.round(usdMonthly * here / us);
+}
+
 export function listAvailableJobs(S) {
   const cObj = getCountry(S.country);
   const degrees = S.education.degrees;
@@ -2245,7 +2261,12 @@ export function tickCareerMonthly(S) {
         const headroom=job.performance>=65?1.25:1.10;
         const requested=Math.round(previousGross*(job.performance>=65?1.055:1.02));
         // No retrospective pay cut, but no endless above-market compounding.
-        job.monthlyGross=Math.max(previousGross,Math.min(requested,Math.round(market*headroom)));
+        /* Pay does not fall behind the market line: the raise is at least the country's own wage-index growth since the last review (a frozen year is caught up when it thaws). In a low-inflation country that is below the usual merit step, so nothing changes there; where wages move 15-25% a year it stops pay sinking to a third of the market reference. Still capped by the merit ceiling below. A save without the field starts from last year, so nothing is paid retroactively. */
+        const idxFrom=Number.isFinite(job.payIndexYear)?job.payIndexYear:S.year-1;
+        const wageGrowth=Math.max(1,wageFactor(S.country,S.year)/Math.max(1e-9,wageFactor(S.country,idxFrom)));
+        const indexed=Math.round(previousGross*wageGrowth);
+        job.payIndexYear=S.year;
+        job.monthlyGross=Math.max(previousGross,Math.min(Math.max(requested,indexed),Math.round(market*headroom)));
         recordJournal(S,`Annual pay review at ${job.employer}: ${formatMoney(previousGross,S.country)} to ${formatMoney(job.monthlyGross,S.country)}/month gross. Game market reference ${formatMoney(market,S.country)}/month for this rung, merit ceiling ${Math.round(headroom*100)}% of market. Above-ceiling pay is held, not cut.`,'career');
       }
       if (wouldPromote && rivalBlocks) {

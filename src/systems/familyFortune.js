@@ -17,7 +17,7 @@ import { propertyMarketYear } from './propertyMarketRisk.js';
 import { getHousingFor, getCarsForYear } from '../data/institutions.js';
 import { finalizePropertyPurchase } from './economyEngine.js';
 import { showroomCarQuote } from './completeLifeSystems.js';
-import { hireIntoJob } from './careerEducationEngine.js';
+import { hireIntoJob, usdMonthlyPayToLocal } from './careerEducationEngine.js';
 import { syncSiblingCompanies } from './siblingCompanies.js';
 
 export const FORTUNE_TIERS = ['upper_middle', 'wealthy', 'very_wealthy'];
@@ -555,7 +555,7 @@ export function restoreHomeScene(S, saved) {
    16-20: spend summers there (a small early stake, less free time). 21+: a full-time post in the family company when the player has no job. Shares only follow actual work there. Declining costs nothing and the door stays open. */
 function companyPost(S, f) {
   const usd = f.tier === 'very_wealthy' ? 110e3 : 65e3;
-  const gross = Math.round(eraLocalCost(usd, S.country, S.year) / 12);
+  const gross = usdMonthlyPayToLocal(S.country, S.year, usd / 12);
   return { employer: f.company.name, title: f.tier === 'very_wealthy' ? 'Associate, Group Strategy' : 'Management Trainee', track: 'business', level: 1, monthlyGross: gross, id: 'family_company_post' };
 }
 export function offerPlaceAtTable(S) {
@@ -1229,7 +1229,7 @@ export function siblingStakeLine(S, id) {
    less free time). At the end you earn a reference (a few interview points) and, if you are free to work, may convert it into a first job there. Declining costs nothing. */
 const PARTNERS = ['Halden & Rowe Partners', 'Northgate Capital', 'Meridian Group', 'Alder Freight', 'Corvale Holdings', 'Tolland Advisory'];
 const INTERN_MONTHS = 3;
-function internPay(S, f) { return Math.round(eraLocalCost(f.tier === 'very_wealthy' ? 3000 : 1800, S.country, S.year)); }
+function internPay(S, f) { return usdMonthlyPayToLocal(S.country, S.year, f.tier === 'very_wealthy' ? 3000 : 1800); }
 export function offerConnectedInternship(S) {
   const f = ensureFamilyFortune(S);
   if (!f || f.internDone || f.internOffer || f.intern || S.month !== 6) return null;
@@ -1307,7 +1307,7 @@ export function resolveInternConvert(S, yes) {
   if (!yes) { recordJournal(S, `You kept the reference from ${o.employer} and went looking elsewhere.`, 'career'); return { ok: true, taken: false }; }
   if (S.career?.employed && S.career?.job) { recordJournal(S, `You already have a job, so the offer from ${o.employer} could not be taken.`, 'career'); return { ok: false, taken: false }; }
   const usd = f.tier === 'very_wealthy' ? 80e3 : 55e3;
-  hireIntoJob(S, { employer: o.employer, title: 'Analyst', track: 'business', level: 1, monthlyGross: Math.round(eraLocalCost(usd, S.country, S.year) / 12), id: 'family_intern_convert' }, { partTimeOnly: false }, {});
+  hireIntoJob(S, { employer: o.employer, title: 'Analyst', track: 'business', level: 1, monthlyGross: usdMonthlyPayToLocal(S.country, S.year, usd / 12), id: 'family_intern_convert' }, { partTimeOnly: false }, {});
   recordJournal(S, `You joined ${o.employer} as an analyst.`, 'career');
   return { ok: true, taken: true };
 }
