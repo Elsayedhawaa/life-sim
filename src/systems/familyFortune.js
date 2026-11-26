@@ -933,7 +933,7 @@ export function resolveSuccessionTalk(S, how) {
     f.shares = { pct: f.own.player, since: f.shares?.since || S.year };
     press(no);
     const ctl = f.own.player > 50;
-    recordJournal(S, `${bought ? `You bought out ${bought} sibling${bought > 1 ? 's' : ''} for ${formatMoney(paid, S.country)}. You now hold ${f.own.player}% of ${name}${ctl ? ' and lead it' : ', not enough for control'}.` : `Nobody sold you their share of ${name}.`}${no.length ? ` ${no.length} turned you down and it cost a little warmth.` : ''}${stopped ? ' You could not afford every share.' : ''}`, 'family');
+    recordJournal(S, `${bought ? `You bought out ${bought} sibling${bought > 1 ? 's' : ''} for ${formatMoney(paid, S.country)}. You now hold ${Math.round(f.own.player * 10) / 10}% of ${name}${ctl ? ' and lead it' : ', not enough for control'}.` : `Nobody sold you their share of ${name}.`}${no.length ? ` ${no.length === 1 ? 'One sibling' : no.length + ' siblings'} turned you down and it cost a little warmth.` : ''}${stopped ? ' You could not afford every share.' : ''}`, 'family');
     return { ok: true, how: 'lead', bought, paid, control: ctl };
   }
   /* sell: everyone must agree */

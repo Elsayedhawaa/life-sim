@@ -5737,7 +5737,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(9000, S.country, S.year);
+      /* the offer quotes what "Take the new job" really does: the current gross plus the 15% the choice applies. With no job it keeps the country-scaled 9,000 USD sample. */
+      const A = S.career?.job?.monthlyGross ? Math.round(S.career.job.monthlyGross * 1.15) : eraUsdCost(9000, S.country, S.year);
       return {
         key: 'ev_career_headhunter',
         category: 'career',

@@ -75,6 +75,7 @@ console.log('PASS v221-journal-wording');
   assert.equal(says('Someone moved and they left.'),'Someone moved and they left.','no named person: left alone');
   s.people.p_x={id:'p_x',firstName:'Sherif',gender:'m',role:'friend'};
   assert.equal(says('Sherif asked you to be godparent to their child, and you accepted.'),'Sherif asked you to be godparent to his child, and you accepted.','a second person with the same first name and gender is still one person');
+  assert.equal(says('Sherif referred to you: you referred them, glad to vouch for their work, hoping they would not mind.'),'Sherif referred to you: you referred him, glad to vouch for his work, hoping he would not mind.');
   console.log('PASS v221-journal-wording part 6');
 }
 {
@@ -83,4 +84,22 @@ console.log('PASS v221-journal-wording');
   assert.ok(!/recordJournal\(S, `\$\{scene\.title\}: \$\{lbl\}\.`/.test(gl),'fallback journal line must not glue the card title and the button label with a colon');
   assert.ok(/You went with "\$\{String\(lbl\)/.test(gl));
   console.log('PASS v221-journal-wording part 7');
+}
+{
+  const {EVENTS_MONEY_HEALTH_CAREER:evs}=await import('../src/data/eventsMoneyHealthCareer.js');
+  const {createNewLifeState,ensureExtendedState}=await import('../src/core/schema.js');
+  const ev=evs.find(e=>e.id==='ev_career_headhunter'||e.key==='ev_career_headhunter');
+  const s=createNewLifeState({country:'bra',seed:8});ensureExtendedState(s);s.player.age=40;s.career.employed=true;s.career.job={id:'j',monthlyGross:64959,performance:60};
+  const sc=ev.build(s,{});
+  assert.ok(sc.text.includes('74,703')||/74.703/.test(sc.text),'the quoted salary is the real new gross (64,959 x 1.15), got: '+sc.text.slice(0,120));
+  sc.choices[0].effect(s);
+  assert.equal(s.career.job.monthlyGross,74703);
+  assert.ok(/74.703/.test(s.journal[0].text),'journal line quotes the real new pay');
+  console.log('PASS v221-journal-wording part 8');
+}
+{
+  const fsw=await import('node:fs');const ff=fsw.readFileSync(new URL('../src/systems/familyFortune.js',import.meta.url),'utf8');
+  assert.ok(/Math\.round\(f\.own\.player \* 10\) \/ 10}% of/.test(ff),'bought-out stake percent is rounded');
+  assert.ok(/'One sibling'/.test(ff),'"1 turned you down" names who turned you down');
+  console.log('PASS v221-journal-wording part 9');
 }
