@@ -2455,7 +2455,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_dads_old_friend', category: 'family',
         title: `${dadName}'s Old Friend Visits`,
-        text: `${dadName}'s oldest friend — a man you have not seen in years — turns up at the house unannounced, full of stories about the two of them as young men. He looks at you and says, "You have your father's face, but your mother's temper, I hope."`,
+        text: `${dadName}'s oldest friend — a man you have not seen in years — turns up at the house unannounced, full of stories about the two of them as young men. He looks at you and says, ${p.mom ? '"You have your father\'s face, but your mother\'s temper, I hope."' : '"You have your father\'s face, I will say that."'}`,
         choices: [
           { label: 'Sit with them and listen to the old stories', effect: (st) => {
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 5);
@@ -2678,7 +2678,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_dad_car_breaks', category: 'family',
         title: `${dadName}'s Car Breaks Down`,
-        text: `${dadName}'s old car has broken down again, and the garage wants ${formatMoney(fix, S.country)} to fix it. He is too proud to ask for help, but your mother mentions it — twice — in one phone call.`,
+        text: `${dadName}'s old car has broken down again, and the garage wants ${formatMoney(fix, S.country)} to fix it. He is too proud to ask for help, but ${p.mom ? 'your mother mentions it — twice — in one phone call' : 'it comes up — twice — in one phone call'}.`,
         choices: [
           { label: `Pay for the repair (${formatMoney(fix, S.country)})`, effect: (st) => {
               walletMove(st, -fix, `Repair for ${dadName}'s car`, 'money');
@@ -2848,7 +2848,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_sib_baby_born', category: 'family',
         title: `You Are an Aunt or Uncle Now`,
-        text: `${sibName} calls you from the hospital, exhausted and glowing: the baby has arrived, healthy and loud. Your mother is already on her way with soup, and the whole family is talking at once. You are an aunt or uncle now.`,
+        text: `${sibName} calls you from the hospital, exhausted and glowing: the baby has arrived, healthy and loud. ${p.mom ? 'Your mother is already on her way with soup, and the whole family is talking at once.' : 'The whole family is talking at once.'} You are an aunt or uncle now.`,
         choices: [
           { label: `Visit with a gift for the baby (${formatMoney(gift, S.country)})`, effect: (st) => {
               walletMove(st, -gift, 'Gift for a newborn niece/nephew', 'money');
@@ -3126,7 +3126,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_will_discussion', category: 'family',
         title: `${dadName} Wants to Talk About the Will`,
-        text: `${dadName} asks you to sit down after dinner. He wants to talk about the will — who gets the house, who gets the land, what happens when he and your mother are gone. It is a conversation he has been putting off for years, and it is not easy for anyone at the table.`,
+        text: `${dadName} asks you to sit down after dinner. He wants to talk about the will — who gets the house, who gets the land, ${p.mom ? 'what happens when he and your mother are gone' : 'what happens when he is gone'}. It is a conversation he has been putting off for years, and it is not easy for anyone at the table.`,
         choices: [
           { label: 'Listen carefully and write everything down', effect: (st) => {
               if (p.dad) rememberDeed(st, p.dad, 'supported_crisis', 'Listened properly about the will.', { affection: 8, trust: 10, respect: 6 });
@@ -7346,7 +7346,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_friend_embarrassing_photo', category: 'friends',
         title: `${frName} Posted an Embarrassing Photo of You`,
-        text: `${frName} has posted a photo of you online from last night — mid-laugh, eyes half closed, hair everywhere — and it already has dozens of likes and comments. Your colleagues have seen it. Your family has seen it. It is, objectively, a terrible photo.`,
+        text: `${frName} has posted a photo of you online from last night — mid-laugh, eyes half closed, hair everywhere — and it already has dozens of likes and comments. ${S.career?.employed && S.career?.job ? 'Your colleagues have seen it. ' : ''}Your family has seen it. It is, objectively, a terrible photo.`,
         choices: [
           { label: 'Laugh it off — it is actually funny', effect: (st) => {
               if (p.friend) rememberDeed(st, p.friend, 'gift', 'Laughed off the embarrassing photo.', { affection: 6, trust: 5 });
@@ -7476,7 +7476,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       return {
         key: 'ev_family_dad_health_followup_l2', category: 'family',
         title: 'A Year After the Warning',
-        text: `It has been a year since the doctors warned ${dadName} to change how he lives. Some of it stuck — he walks in the mornings now, and your mother watches his plate like a guard. Some of it did not, and he still works too late and eats whatever is put in front of him.`,
+        text: `It has been a year since the doctors warned ${dadName} to change how he lives. Some of it stuck — he walks in the mornings now${p.mom ? ', and your mother watches his plate like a guard' : ''}. Some of it did not, and he still works too late and eats whatever is put in front of him.`,
         choices: [
           { label: `Pay for a full check-up to see where he stands (${formatMoney(checkup, S.country)})`, effect: (st) => {
               walletMove(st, -checkup, `Full check-up for ${dadName}`, 'money');

@@ -788,7 +788,7 @@ export function collectExtendedLifeScenes(S, addOnce) {
           }
         },
         {
-          label: 'Consolidate all assets cleanly for your spouse and children',
+          label: `Consolidate all assets cleanly for ${(()=>{const al=(ids)=>(ids||[]).some(id=>S.people?.[id]?.alive);const sp=al(S.relations?.spouseIds),ch=al(S.relations?.childIds);return sp&&ch?'your spouse and children':sp?'your spouse':ch?'your children':'your heirs';})()}`,
           effect: (st) => {
             st.willPlan.charityPct = 0;
             st.willPlan.draftedYear = st.year;
