@@ -12,4 +12,7 @@ for(const country of ['usa','egy','deu']){
   assert.doesNotMatch(html,/Scenario check/,'no placeholder-sales scenario');
   const bakery=findVentureRow(S,'bakery');if(bakery){const h=ventureViabilityWarningHtml(S,bakery,evaluateBusinessLaunch(S,bakery));assert.doesNotMatch(h,/No sales at launch/);}
 }
+import fs from 'node:fs';
+const v=fs.readFileSync(new URL('../src/ui/views.js',import.meta.url),'utf8');
+assert.match(v,/bp\.id==='tech_founder'\?ventureViabilityWarningHtml\(S,bp,ev\)/,'launch card renders the tech warning');
 console.log('PASS v221-tech-prerevenue-warning');
