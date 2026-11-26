@@ -267,6 +267,12 @@ function templateForTrack(trackId) {
   return null;
 }
 
+/* A skill id shown to the player as words: a template's own label, else "<Field> work" for a generic craft_<field> id, else the id with spaces. */
+export function workSkillLabel(id) {
+  for (const t of Object.values(CAREER_WORK_TEMPLATES)) if (t.skillId === id && t.skillLabel) return t.skillLabel;
+  const m = /^craft_(.+)$/.exec(String(id)); const raw = m ? m[1] : String(id).replace(/_/g, ' ');
+  const w = raw.charAt(0).toUpperCase() + raw.slice(1); return m ? `${w} work` : w;
+}
 function prettyTrack(trackId) {
   return String(trackId || 'work').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
@@ -614,6 +620,6 @@ export function renderCareerWorkHtml(S) {
         <div class="muted">No open piece of work right now — the next one arrives with the new month.</div>`}
         ${last && last.status === 'done' ? `<div class="muted" style="margin-top:6px">Last finished: ${esc(last.title)} — ${esc(last.outcome)}.</div>` : ''}
         ${achievements.length ? `<div style="margin-top:8px"><strong>Visible wins (${S.career.workAchievementCount}):</strong> ${achievements.map((a) => `<div class="muted">· ${esc(a.label)} (${a.year})</div>`).join('')}</div>` : ''}
-        ${skills.length ? `<div class="muted" style="margin-top:6px">Skills that grow by doing: ${skills.map((s) => `${esc(s.id)} ${s.level}%`).join(' · ')} — a skill you never use falls a little every month.</div>` : ''}
+        ${skills.length ? `<div class="muted" style="margin-top:6px">Skills that grow by doing: ${skills.map((s) => `${esc(workSkillLabel(s.id))} ${s.level}%`).join(' · ')} — a skill you never use falls a little every month.</div>` : ''}
       </div>`;
 }
