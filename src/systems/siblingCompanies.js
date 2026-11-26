@@ -44,7 +44,7 @@ export function foundSiblingCompany(S, id, typeId) {
   shadow.money.cash = 1e15; const ev = evaluateBusinessLaunch(shadow, bp); const cap = ev.capitalLocal || 0;
   if (!(cap > 0) || cap > savings * CAP || savings < (cap + (ev.managerWageEstimateLocal || 0)) * SAFETY) return { ok: false, msg: 'Savings do not support it.' };
   const start = Math.round(cap * 3) + (ev.managerWageEstimateLocal || 0) * 2; shadow.money.cash = start;
-  const made = createBusiness(shadow, typeId, `${p.lastName || shadow.player.familyName} ${bp.label.split(' ')[0]}`, { runBy: 'manager', manager: managerShortlist(shadow, { country: shadow.country, monthlyRev: ev.revLocal, capitalInvested: ev.capitalLocal, staff: [], mode: 'part_time', manager: null })[0] });
+  const made = createBusiness(shadow, typeId, `${p.lastName || shadow.player.familyName} ${bp.label.split(' ')[0]}`, { runBy: 'manager', mode: 'full_time', manager: managerShortlist(shadow, { country: shadow.country, monthlyRev: ev.revLocal, capitalInvested: ev.capitalLocal, staff: [], mode: 'part_time', manager: null })[0] });
   if (!made.ok) return made;
   const biz = shadow.career.businesses[shadow.career.businesses.length - 1]; if (!biz) return { ok: false, msg: 'No company created.' };
   const spent = start - shadow.money.cash; if (!(spent > 0) || spent > savings * CAP + (ev.managerWageEstimateLocal || 0) * 2 + 1) return { ok: false, msg: 'Cost out of range.' };
