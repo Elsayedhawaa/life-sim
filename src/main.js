@@ -519,18 +519,24 @@ function handleActionResult(res) {
 }
 
 if (typeof document !== 'undefined') {
-  const syncNewLifeDraft = (el) => {
+  /* New-life form: typing only updates the in-memory draft and a debounced save (so each keystroke does no storage write and no image rebuild);
+     the preview is rebuilt only when country / birth year / family tier really changed. A change event, a hidden page or a refresh flushes the save at once. Mitigation, not a diagnosed fix. */
+  let nlSaveTimer = null;
+  const flushNewLifeDraft = () => { if (nlSaveTimer) { clearTimeout(nlSaveTimer); nlSaveTimer = null; } if (uiState.newLifeDraft && Object.keys(uiState.newLifeDraft).length) saveNewLifeDraft(uiState.newLifeDraft); };
+  const syncNewLifeDraft = (el, immediate) => {
     const form = el && el.closest ? el.closest('#new-life-form') : null;
     if (!form) return false;
     const fd = new FormData(form);
     const d = {};
     for (const k of NL_DRAFT_FIELDS) if (fd.has(k)) d[k] = String(fd.get(k));
     uiState.newLifeDraft = d;
-    saveNewLifeDraft(d);
-    const pv = document.getElementById('nl-preview');
-    if (pv) pv.innerHTML = renderNewLifePreviewInnerHtml(d);
+    if (immediate) flushNewLifeDraft(); else { if (nlSaveTimer) clearTimeout(nlSaveTimer); nlSaveTimer = setTimeout(flushNewLifeDraft, 400); }
+    const key = [d.country, d.birthYear, d.familyTier].join('|');
+    const pv = document.getElementById('nl-preview'); if (pv && pv.dataset.k !== key) { pv.dataset.k = key; pv.innerHTML = renderNewLifePreviewInnerHtml(d); }
     return true;
   };
+  window.addEventListener('pagehide', flushNewLifeDraft);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushNewLifeDraft(); });
   document.addEventListener('input', (e) => {
     if (syncNewLifeDraft(e.target)) return;
     const el = e.target;
@@ -543,7 +549,7 @@ if (typeof document !== 'undefined') {
   });
 
   document.addEventListener('change', (e) => {
-    if (syncNewLifeDraft(e.target)) return;
+    if (syncNewLifeDraft(e.target, true)) return;
     const el = e.target;
     if (!el || !el.dataset || !el.dataset.filter) return;
     if (el.tagName !== 'SELECT') return;
@@ -2156,6 +2162,7 @@ if (typeof document !== 'undefined') {
   document.addEventListener('submit', (e) => {
     if (e.target && e.target.id === 'new-life-form') {
       e.preventDefault();
+      if (nlSaveTimer) { clearTimeout(nlSaveTimer); nlSaveTimer = null; }
       const fd = new FormData(e.target);
       const country = String(fd.get('country') || 'egy');
       const birthYear = Number(fd.get('birthYear') || 1998);
