@@ -2536,7 +2536,10 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
     const netR = businessLastMonthNet(S, biz);
     const staffCount = (biz.staff || []).length;
     const losing = (biz.monthsLosing || 0) > 0;
-    const modeLabel = biz.mode === 'full_time'
+    const mgrName = biz.manager && biz.manager.name ? biz.manager.name : '';
+    const modeLabel = mgrName
+      ? (biz.mode === 'full_time' ? `Run by ${mgrName} · full-time scale` : `Run by ${mgrName} · part-time scale (revenue ×0.6)`)
+      : biz.mode === 'full_time'
       ? `Full-time (~${BUSINESS_FULL_TIME_HOURS} hrs/week)`
       : `Part-time (${BUSINESS_PART_TIME_HOURS} hrs/week, revenue ×0.6)`;
     const plHtml = pl ? `
@@ -2604,7 +2607,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
     <div class="biz-workspace" style="margin-bottom:10px">
       <div class="section-head">
         <div class="biz-card-title">${businessIllustration(biz)}<h3>${esc(biz.name)}</h3></div>
-        <span class="hud-pill">${biz.enterprise?`${biz.enterprise.stage} · ${biz.mode==='full_time'?'Full-time owner':'Part-time owner'}`:biz.tech?`${biz.tech.stage==='live'?'Trading':'Pre-launch'} · ${biz.mode==='full_time'?'Full-time founder':'Part-time founder'}`:`${Number.isFinite(levelCap)?`Level ${biz.level}/${levelCap}`:`Level ${biz.level}`} · ${esc(modeLabel)}`}</span>
+        <span class="hud-pill">${biz.enterprise?`${biz.enterprise.stage} · ${mgrName?esc(`Run by ${mgrName}`):biz.mode==='full_time'?'Full-time owner':'Part-time owner'}`:biz.tech?`${biz.tech.stage==='live'?'Trading':'Pre-launch'} · ${mgrName?esc(`Run by ${mgrName}`):biz.mode==='full_time'?'Full-time founder':'Part-time founder'}`:`${Number.isFinite(levelCap)?`Level ${biz.level}/${levelCap}`:`Level ${biz.level}`} · ${esc(modeLabel)}`}</span>
         <span class="hud-pill">${managedBadge}</span>
         ${!businessIsManaged(S,biz)?'<span class="biz-alert">Management hours uncovered</span>':''}
       </div>
