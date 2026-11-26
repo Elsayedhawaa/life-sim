@@ -7,10 +7,10 @@ const found=new Map();let SCENES=0;const seen=new Set();
 const flag=(kind,id,detail,s)=>{const k=kind+'|'+id;if(!found.has(k))found.set(k,{kind,id,detail,year:s.year,n:0});found.get(k).n++;};
 const DEATHISH=/\b(died|death|funeral|passed away|late |estate|inherit|grie|bereave|memorial|widow)/i;
 
-/* A choice "does something" only if the state changed or the effect itself wrote a journal line. The resolver's own fallback line ("<title>: <label>.") never counts, and a journal at its cap cannot hide a change. */
+/* A choice "does something" only if the state changed or the effect itself wrote a journal line. The resolver's own fallback line ("You went with \"<label>\" on \"<title>\"." since 9:44 Nov 26, was "<title>: <label>.") never counts, and a journal at its cap cannot hide a change. */
 async function probeChoice(s,a,idx){
   const snap=()=>JSON.stringify([s.money,s.ledger?.length,s.eventOutcomes,s.career,s.legal,s.housing,s.player.vitals,s.reputation,s.skills,s.values,Object.values(s.people).map(p=>[p.alive,p.rel?.affection,p.rel?.trust,p.rel?.resentment]),s.sceneQueue?.length,s.facts]);
-  const qkeys=(s.sceneQueue||[]).map(x=>x.key),before=snap(),head=s.journal?.[0]?.id,lbl=a.choices?.[idx]?.label,fallback=`${a.title}: ${typeof lbl==='function'?lbl(s):lbl}.`;
+  const qkeys=(s.sceneQueue||[]).map(x=>x.key),before=snap(),head=s.journal?.[0]?.id,lbl=a.choices?.[idx]?.label,fallback=`You went with "${String(typeof lbl==='function'?lbl(s):lbl).replace(/[.!\s]+$/,'')}" on "${a.title}".`;
   try{resolveActiveSceneChoice(s,idx);}catch(e){flag('choice-throws',a.eventId||a.baseId||a.key,String(e.message).slice(0,80)+' @'+String(e.stack).split('\n')[1].trim().slice(0,90),s);s.activeScene=null;return true;}
   const hi=(s.journal||[]).findIndex(x=>x.id===head),fresh=(s.journal||[]).slice(0,hi<0?s.journal.length:hi);
   const opened=!!s.activeScene&&s.activeScene.key!==a.key&&!qkeys.includes(s.activeScene.key); /* a choice that opens a new scene (a browse or detail step) is navigation, not a no-op; a scene that was already waiting in the queue does not count */

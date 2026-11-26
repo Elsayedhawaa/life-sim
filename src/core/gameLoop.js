@@ -431,7 +431,8 @@ export function resolveActiveSceneChoice(S, choiceIdx) {
   /* Guarantee outcome is always recorded in human words if effect didn't write one */
   if ((S.journal[0]?.id) === journalHeadBefore) {
     const lbl = typeof chosen.label === 'function' ? chosen.label(S) : chosen.label;
-    recordJournal(S, `${scene.title}: ${lbl}.`, scene.category || 'life');
+    /* a plain sentence, not a card title and a button label glued with a colon */
+    recordJournal(S, `You went with "${String(lbl).replace(/[.!\s]+$/, '')}" on "${scene.title}".`, scene.category || 'life');
   }
 
   /* Drain next urgent scene if one is waiting */

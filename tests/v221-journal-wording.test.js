@@ -77,3 +77,10 @@ console.log('PASS v221-journal-wording');
   assert.equal(says('Sherif asked you to be godparent to their child, and you accepted.'),'Sherif asked you to be godparent to his child, and you accepted.','a second person with the same first name and gender is still one person');
   console.log('PASS v221-journal-wording part 6');
 }
+{
+  const fsq=await import('node:fs');
+  const gl=fsq.readFileSync(new URL('../src/core/gameLoop.js',import.meta.url),'utf8');
+  assert.ok(!/recordJournal\(S, `\$\{scene\.title\}: \$\{lbl\}\.`/.test(gl),'fallback journal line must not glue the card title and the button label with a colon');
+  assert.ok(/You went with "\$\{String\(lbl\)/.test(gl));
+  console.log('PASS v221-journal-wording part 7');
+}
