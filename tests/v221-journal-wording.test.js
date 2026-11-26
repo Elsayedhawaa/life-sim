@@ -63,3 +63,15 @@ console.log('PASS v221-journal-wording');
   assert.ok(/Math\.round\(stakeEach \* 10\) \/ 10/.test(rdz('familyFortune.js')),'estate stake percent is rounded');
   console.log('PASS v221-journal-wording part 5');
 }
+{
+  const {recordJournal}=await import('../src/core/schema.js');
+  const {createNewLifeState,ensureExtendedState}=await import('../src/core/schema.js');
+  const s=createNewLifeState({country:'egy',seed:4});ensureExtendedState(s);
+  const says=t=>{recordJournal(s,t,'friends');return s.journal[0].text};
+  assert.equal(says('Sherif landed their dream job; you congratulated them warmly over the phone.'),'Sherif landed his dream job; you congratulated him warmly over the phone.');
+  assert.equal(says('Sara told you in confidence that their marriage is over; you kept the secret and stood by them.'),'Sara told you in confidence that her marriage is over; you kept the secret and stood by her.');
+  assert.equal(says('Sherif told you first that they are engaged, and you asked if they are sure.'),'Sherif told you first that he is engaged, and you asked if he is sure.');
+  assert.equal(says('Sherif and Sara announced their engagement.'),'Sherif and Sara announced their engagement.','two people named: left alone');
+  assert.equal(says('Someone moved and they left.'),'Someone moved and they left.','no named person: left alone');
+  console.log('PASS v221-journal-wording part 6');
+}

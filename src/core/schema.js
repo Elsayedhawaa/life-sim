@@ -674,9 +674,43 @@ export function createSaveGoal(S, { kind, refId, label, target, deposit = false 
   return { ok: true, msg: `Goal set: save ${formatMoney(targetAmt, S.country)} for ${label}. Track it under Life Goals on the Timeline tab.`, goal };
 }
 
+/* A named person whose gender the game knows is "he" or "she", never "they". Only fixed phrases about one person are rewritten, and only when exactly one known person (not the player) is named in the line, so a sentence about two people is left alone. */
+const PRONOUN_PHRASES = [
+  [/\blost their job\b/g, (g) => `lost ${g.pos} job`],
+  [/\btheir dream job\b/g, (g) => `${g.pos} dream job`],
+  [/\bannounced their engagement\b/g, (g) => `announced ${g.pos} engagement`],
+  [/\bthat their marriage\b/g, (g) => `that ${g.pos} marriage`],
+  [/\bgodparent to their child\b/g, (g) => `godparent to ${g.pos} child`],
+  [/\bleft their parents' home\b/g, (g) => `left ${g.pos} parents' home`],
+  [/\bthat they are engaged\b/g, (g) => `that ${g.sub} is engaged`],
+  [/\bif they are sure\b/g, (g) => `if ${g.sub} is sure`],
+  [/\bare they sure\b/g, (g) => `is ${g.sub} sure`],
+  [/\bwish they were staying\b/g, (g) => `wish ${g.sub} were staying`],
+  [/\bthey stopped calling\b/g, (g) => `${g.sub} stopped calling`],
+  [/\bnow they are a stranger\b/g, (g) => `now ${g.sub} is a stranger`],
+  [/\band they are good\b/g, (g) => `and ${g.sub} is good`],
+  [/\bhas their eye\b/g, (g) => `has ${g.pos} eye`],
+  [/\bwelcomed their partner\b/g, (g) => `welcomed ${g.pos} partner`],
+  [/\bknocked on their door\b/g, (g) => `knocked on ${g.pos} door`],
+  [/\b(helped|thanked|stood by|took|asked|embraced|told|congratulated) them\b/g, (g, m, v) => `${v} ${g.obj}`]
+];
+function pronounizeJournal(S, text) {
+  if (!/\b(their|them|they)\b/.test(text) || !S?.people) return text;
+  let hit = null, n = 0;
+  for (const p of Object.values(S.people)) {
+    if (!p || p.id === 'player' || p.role === 'player' || !p.firstName) continue;
+    if (!new RegExp(`(^|[^A-Za-z])${p.firstName.replace(/[^A-Za-z]/g, '')}([^A-Za-z]|$)`).test(text)) continue;
+    n++; hit = p;
+  }
+  if (n !== 1 || (hit.gender !== 'f' && hit.gender !== 'm')) return text;
+  const g = hit.gender === 'f' ? { sub: 'she', obj: 'her', pos: 'her' } : { sub: 'he', obj: 'him', pos: 'his' };
+  let out = text;
+  for (const [re, fn] of PRONOUN_PHRASES) out = out.replace(re, (m, ...a) => fn(g, m, ...a));
+  return out;
+}
 export function recordJournal(S, text, category = 'life', meta = {}) {
   if (!S || !text) return;
-  const clean = String(text).trim();
+  const clean = pronounizeJournal(S, String(text).trim());
   if (!clean) return;
   S.journal.unshift({
     id: nextId(S, 'j'),
