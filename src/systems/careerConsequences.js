@@ -234,6 +234,8 @@ export function redundancyChance(S, info) {
   /* The family's own firm does not make its owner's child redundant in a downturn: that is the family cutting itself. */
   const famFirm = S.familyFortune && S.familyFortune.company && S.familyFortune.company.name;
   if (famFirm && S.career.job.employer === famFirm) return 0;
+  /* Hospital and school posts are not cut in a market crisis (the Covid and Ukraine-war shocks raised demand for clinical staff or left schools staffed). GAME DESIGN rule: medicine, nursing, teaching and clinical psychology tracks are exempt. */
+  if (['medicine', 'nursing', 'teaching', 'clinical_psych'].includes(S.career.job.track)) return 0;
   const c = ensureCareerConsequenceState(S);
   /* Every active crisis event must have been warned about, in an
      earlier month — never a redundancy in the same month as the

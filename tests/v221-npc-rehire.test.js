@@ -28,3 +28,9 @@ assert.equal(redundancyChance(T,{crisis:true,events:[]}),0,'family firm never ma
 T.career.job.employer='Some Other Firm';
 assert.ok(redundancyChance(T,{crisis:true,events:[]})>=0);
 console.log('PASS v221-family-firm-redundancy');
+// clinical and school posts are not cut by a market crisis
+for (const tr of ['medicine','nursing','teaching','clinical_psych']) {
+  T.career.job={employer:'Royal Melbourne Hospital',title:'Junior Clinical Psychology Specialist',track:tr,monthlyGross:5000,monthsInRole:12};
+  assert.equal(redundancyChance(T,{crisis:true,events:[]}),0,tr+' exempt');
+}
+console.log('PASS v221-public-posts-no-crisis-redundancy');
