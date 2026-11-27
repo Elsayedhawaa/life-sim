@@ -791,8 +791,11 @@ export function tickNpcAutonomyYearly(S) {
       }
     } else if (person.age > 22 && person.age < 63 && person.career.monthlyIncomeLocal > 0) {
       indexNpcIncome(S, person); /* era-index before the career raise: pay keeps pace with the price/wage level */
-      const raiseMult = 1 + (person.traits.ambition > 68 ? 0.04 : 0.015);
-      person.career.monthlyIncomeLocal = Math.round(person.career.monthlyIncomeLocal * raiseMult);
+      /* The era index above already carries price AND real-wage growth, and
+         promotions (+18%, capped at Principal) carry seniority. A further
+         1.5-4% every year compounded on top of both, so a mother who started
+         near the market line (34k INR/mo in 1998) earned ~8x the market line
+         by 2026. GAME DESIGN: no extra annual raise beyond index + promotions. */
       const saveRate = person.traits.materialism > 70 ? 0.06 : 0.16;
       person.career.savingsLocal += Math.round(person.career.monthlyIncomeLocal * 12 * saveRate);
     } else if (person.age === 64 && person.career.monthlyIncomeLocal > 0 && person.career.title !== 'Retired') {
