@@ -1059,7 +1059,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_money_stolen_wallet',
         category: 'money',
         title: "Your Wallet Is Stolen",
-        text: `On a crowded bus, your pocket feels suddenly light. Your wallet is gone — ${formatMoney(A, S.country)} in cash, your ID, and every card. The police station takes a report and shrugs.`,
+        text: `On a crowded bus, your pocket feels suddenly light. Your wallet is gone — ${A > 0 ? `${formatMoney(A, S.country)} in cash, ` : 'no cash in it, but '}your ID, and every card. The police station takes a report and shrugs.`,
         choices: [
           {
             label: "Cancel everything and replace the ID",
@@ -1067,7 +1067,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
               walletMove(st, -A, 'Cash stolen from wallet', 'money');
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+8));
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + (-4));
-              recordJournal(st, `Your wallet was stolen with ${formatMoney(A, S.country)} inside. You spent the day cancelling cards and replacing your ID.`, 'money');
+              recordJournal(st, `Your wallet was stolen${A > 0 ? ` with ${formatMoney(A, S.country)} inside` : ', with no cash in it'}. You spent the day cancelling cards and replacing your ID.`, 'money');
             },
           },
           {

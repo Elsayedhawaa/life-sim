@@ -711,18 +711,25 @@ export function npcJobChange(S, person) {
     // Hired after a spell without work. Students are excluded: they get
     // their first job from the existing age-22 rule, not from this.
     if ((title === 'Seeking Work' || title === 'Unemployed') && npcChance(S, 0.20)) {
-      npcGiveJob(S, person);
+      const fj = person.career.formerJob;
+      if (fj && fj.title && fj.income > 0 && S.year - fj.year <= 8) {
+        person.career.title = fj.title; person.career.monthlyIncomeLocal = fj.income; person.career.incomeIndexYear = fj.incomeIndexYear;
+      } else npcGiveJob(S, person);
+      delete person.career.formerJob;
       recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} found a new job as ${withArticle(person.career.title.toLowerCase())} in ${person.city} (${formatMoney(person.career.monthlyIncomeLocal, person.residenceCountry)}/mo).`, 'career');
     }
     return;
   }
   if (npcChance(S, person.traits.reliability < 40 ? 0.03 : 0.015)) {
+    /* Remember the job, so a physician who loses a post is not rehired as an entry-level analyst. */
+    person.career.formerJob = { title, income, incomeIndexYear: person.career.incomeIndexYear || S.year, year: S.year };
     person.career.monthlyIncomeLocal = 0;
     person.career.title = 'Seeking Work';
     recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} lost ${person.gender === 'f' ? 'her' : person.gender === 'm' ? 'his' : 'their'} job as ${withArticle(title.toLowerCase())} in ${person.city}. ${person.gender === 'f' ? 'She is' : person.gender === 'm' ? 'He is' : 'They are'} looking for work again.`, 'career');
     return;
   }
-  if (npcChance(S, person.traits.ambition > 68 ? 0.07 : 0.04)) {
+  /* Principal is the top of the title ladder: there is no further promotion, so no repeated "promoted to principal" line and no 18% jump each time. */
+  if (!/^Principal /.test(String(title)) && npcChance(S, person.traits.ambition > 68 ? 0.07 : 0.04)) {
     // A second promotion moves Senior -> Lead -> Principal, so the title
     // keeps showing the rise instead of stalling at Senior forever.
     // The old rank is stripped first: a third promotion must never

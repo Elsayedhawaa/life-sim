@@ -231,6 +231,9 @@ export function warnCrisisYear(S, info) {
 export function redundancyChance(S, info) {
   if (!S?.career?.employed || !S.career.job) return 0;
   if (!info || !info.crisis) return 0;
+  /* The family's own firm does not make its owner's child redundant in a downturn: that is the family cutting itself. */
+  const famFirm = S.familyFortune && S.familyFortune.company && S.familyFortune.company.name;
+  if (famFirm && S.career.job.employer === famFirm) return 0;
   const c = ensureCareerConsequenceState(S);
   /* Every active crisis event must have been warned about, in an
      earlier month — never a redundancy in the same month as the

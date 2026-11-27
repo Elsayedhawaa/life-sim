@@ -12,3 +12,7 @@ assert.ok(strip.test(so),'apprentice prefix stripped before Senior');
 const t='Apprentice / Store Associate'.replace(/^(Apprentice \/|Apprentice|Junior|Trainee|Assistant|Graduate) /, '');
 assert.equal(t,'Store Associate');
 console.log('PASS v221-raise-and-titles');
+assert.ok(/!\/\^Principal \/\.test\(String\(title\)\) && npcChance/.test(so),'NPC at Principal has no further promotion');
+console.log('PASS v221-npc-top-rank');
+assert.ok(/A > 0 \? ` with \$\{formatMoney\(A, S\.country\)\} inside`/.test(ev),'stolen wallet with no cash says so');
+console.log('PASS v221-stolen-wallet-zero');
