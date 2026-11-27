@@ -414,6 +414,15 @@ export function severanceFor(S, biz, emp) {
   return { months, amount: Math.round((Number(emp.wageLocal) || 0) * months), source, note };
 }
 
+/* Prompt shown before a firing is carried out: the name and the severance that will come out of the owner's cash. Null when the employee is gone. */
+export function fireConfirmPrompt(S, biz, staffId) {
+  if (!biz) return null;
+  const emp = ensureStaffArray(S, biz).find(e => e.id === staffId);
+  if (!emp) return null;
+  const sev = severanceFor(S, biz, emp);
+  return `Fire ${emp.name}? Severance ${formatMoney(sev.amount, S.country)} comes out of your cash. Tap Fire again within 10 seconds to confirm.`;
+}
+
 export function fireBusinessEmployee(S, biz, staffId) {
   if (!biz) return { ok: false, msg: 'No business selected.' };
   const staff = ensureStaffArray(S, biz);

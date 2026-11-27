@@ -154,7 +154,8 @@ import { runDiseaseTreatment } from './systems/mortalityModel.js';
 import {
   findBusiness,
   hireBusinessEmployee,
-  fireBusinessEmployee
+  fireBusinessEmployee,
+  fireConfirmPrompt
 } from './systems/businessStaff.js';
 /* v2.17 W3 §4: train / promote actions for business staff. */
 import {
@@ -810,7 +811,18 @@ if (typeof document !== 'undefined') {
     }
 
     if (action === 'biz-fire') {
-      handleActionResult(fireBusinessEmployee(S, findBusiness(S, btn.dataset.biz), btn.dataset.staff));
+      /* Two taps: the first names the person and the severance, the second (within 10 s) fires. */
+      const fireKey = btn.dataset.biz + '|' + btn.dataset.staff;
+      const armed = window.__fireArm;
+      if (armed && armed.key === fireKey && Date.now() - armed.at < 10000) {
+        window.__fireArm = null;
+        handleActionResult(fireBusinessEmployee(S, findBusiness(S, btn.dataset.biz), btn.dataset.staff));
+      } else {
+        const prompt = fireConfirmPrompt(S, findBusiness(S, btn.dataset.biz), btn.dataset.staff);
+        if (!prompt) { handleActionResult(fireBusinessEmployee(S, findBusiness(S, btn.dataset.biz), btn.dataset.staff)); return; }
+        window.__fireArm = { key: fireKey, at: Date.now() };
+        showToast(prompt);
+      }
       return;
     }
 
