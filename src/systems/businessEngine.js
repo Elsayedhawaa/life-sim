@@ -328,9 +328,10 @@ export const VENTURE_MARGIN_BEFORE_OWNER = 0.10;
 export function labourShareRepricing(bp, pricing, wageBillLocal) {
   const share = VENTURE_LABOUR_SHARE[bp && bp.id];
   if (!share || !(wageBillLocal > 0)) return pricing;
-  const revLocal = Math.round(wageBillLocal / share);
+  const homeTakings = wageBillLocal / share; /* a new venture starts run from home, which books BUSINESS_HOME_REV_MULT of its takings: calibrate the labour share to what the first months really sell */
+  const revLocal = Math.round(homeTakings / BUSINESS_HOME_REV_MULT);
   const k = Math.max(0.25, Math.min(2, revLocal / Math.max(1, pricing.revLocal)));
-  return { ...pricing, revLocal, capitalLocal: Math.round(pricing.capitalLocal * k), costLocal: Math.max(otherCostsFloor(revLocal), Math.round(revLocal * (1 - share - VENTURE_MARGIN_BEFORE_OWNER))) };
+  return { ...pricing, revLocal, capitalLocal: Math.round(pricing.capitalLocal * k), costLocal: Math.max(otherCostsFloor(revLocal), Math.round(homeTakings * (1 - share - VENTURE_MARGIN_BEFORE_OWNER))) };
 }
 export function ventureLocalPricing(S, bp) {
   const scale = ventureWageScale(S.country, S.year);
