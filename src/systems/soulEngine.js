@@ -443,7 +443,7 @@ function npcMarry(S, person, polygamy = false) {
     residenceCountry: partnerCountry,
     city: npcPick(S, pCountry.cities) || pCountry.cities[0],
     religion: person.religion,
-    familyName: person.familyName,
+    /* The partner is a different family: their own surname from their own country's pool (played defect: a sister married "Ramy Farouk", her own family name). */
     traits: { warmth: npcRandInt(S, 45, 90), traditionalism: npcRandInt(S, 30, 90) }
   });
   npcGiveJob(S, partner);

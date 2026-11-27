@@ -6336,11 +6336,13 @@ export const EVENTS_EVERYDAY_FAMILY = [
         text: `${frName} asks you the question with a nervous grin: will you be their ${S.player.gender==='f'?'maid of honour':'best man'} at their wedding? It means a speech, a suit or dress, and standing beside them on the biggest day of their life.`,
         choices: [
           { label: 'Say yes — of course', effect: (st) => {
+              if (p.friend) noteSocialContact(st, p.friend);
               if (p.friend) rememberDeed(st, p.friend, 'proud_moment', `Agreed to be ${st.player.gender==='f'?'maid of honour':'best man'}.`, { affection: 12, trust: 10 });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 6);
               recordJournal(st, `${frName} asked you to be their ${st.player.gender==='f'?'maid of honour':'best man'}; you said yes, of course.`, 'friends');
           } },
           { label: 'Say yes, but dread the speech already', effect: (st) => {
+              if (p.friend) noteSocialContact(st, p.friend);
               if (p.friend) rememberDeed(st, p.friend, 'proud_moment', 'Agreed, dreading the speech.', { affection: 8, trust: 7 });
               st.player.vitals.stress = clamp(st.player.vitals.stress + 3);
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);

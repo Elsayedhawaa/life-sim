@@ -185,6 +185,11 @@ export function noteSocialContact(S, p) {
 
 /* Months since the last real contact. Turns are months in adult pacing
    and years in childhood pacing. */
+/* GAME DESIGN: friendship drift is about adult life. A child cannot ring a classmate, so the silence is counted from age 17 at the earliest, and nobody drifts before 18. */
+export function driftGapMonths(S, p) {
+  const age = Number(S?.player?.age) || 0;
+  return Math.min(monthsSinceContact(S, p), Math.max(0, (age - 17) * 12));
+}
 export function monthsSinceContact(S, p) {
   if (!p || !p.rel || typeof p.rel.lastContactTurn !== 'number') return 0;
   if (Number.isFinite(p.rel.lastContactYear) && Number.isFinite(p.rel.lastContactMonth)) {
@@ -229,7 +234,7 @@ export function driftStatusFor(S, p) {
   if (!p || !p.alive || !p.rel) return null;
   const state = p.rel.driftState || 'none';
   if (state !== 'drifting' && state !== 'noticed') return null;
-  return { state, months: monthsSinceContact(S, p) };
+  return { state, months: driftGapMonths(S, p) };
 }
 
 /* A memory written by this file's own hand (soulEngine's rememberDeed is
@@ -283,7 +288,7 @@ function buildDriftNoticeScene(S, p) {
     category: 'relationship',
     speakerId: p.id,
     title: `It has been a while: ${p.firstName}`,
-    text: `You have not caught up with ${p.fullName} in ${monthsSinceContact(S, p)} months. ${close ? `${p.firstName} was one of your closest friends — the kind of friend you do not replace. ` : ''}You have both been busy. The friendship is fading, but it will not end unless you choose to let it go.`,
+    text: `You have not caught up with ${p.fullName} in ${quietSpan(driftGapMonths(S, p))}. ${close ? `${p.firstName} was one of your closest friends — the kind of friend you do not replace. ` : ''}You have both been busy. The friendship is fading, but it will not end unless you choose to let it go.`,
     choices: [
       {
         label: `Reach out now — call ${p.firstName}`,
@@ -313,14 +318,15 @@ function buildDriftNoticeScene(S, p) {
 export function reachOutToDriftingFriend(S, p) {
   if (!S || !p || !p.alive) return { ok: false, msg: 'Person unavailable.' };
   const cost = DRIFT_REACH_OUT_COST;
+  const span = quietSpan(driftGapMonths(S, p));
   if (socialEnergy(S).energy < cost) {
-    recordJournal(S, `You meant to call ${p.fullName} after a year of silence, but you had no social energy left this month. The friendship is still hanging — call them when next month's energy comes back.`, 'relationship');
+    recordJournal(S, `You meant to call ${p.fullName} after ${span} of silence, but you had no social energy left this month. The friendship is still hanging — call them when next month's energy comes back.`, 'relationship');
     return { ok: false, msg: `You have no social energy left this month to reach out to ${p.firstName}. It comes back at the start of next month.` };
   }
   spendSocialEnergy(S, cost);
   noteSocialContact(S, p);
-  rememberSocialDeed(S, p, 'visited', 'You reached out after a year apart — the friendship is alive again.', { affection: 12, trust: 6, resentment: -10 });
-  recordJournal(S, `After a year of silence, you called ${p.fullName}. It was awkward for a minute, then it was like no time had passed. The friendship is alive again.`, 'relationship');
+  rememberSocialDeed(S, p, 'visited', `You reached out after ${span} apart — the friendship is alive again.`, { affection: 12, trust: 6, resentment: -10 });
+  recordJournal(S, `After ${span} of silence, you called ${p.fullName}. It was awkward for a minute, then it was like no time had passed. The friendship is alive again.`, 'relationship');
   return { ok: true, msg: `You reached out to ${p.firstName} — the friendship is alive again.` };
 }
 
@@ -376,7 +382,8 @@ export function tickFriendshipDrift(S) {
     backfillLastContact(S, p);
     /* No real record of a last contact: never drift on a guess. */
     if (p.rel.lastContactUnknown) continue;
-    const months = monthsSinceContact(S, p);
+    if ((Number(S.player?.age) || 0) < 18) continue;
+    const months = driftGapMonths(S, p);
     const state = p.rel.driftState || 'none';
     if (state === 'drifted') continue;
     if (months >= DRIFT_NOTICE_MONTHS) {

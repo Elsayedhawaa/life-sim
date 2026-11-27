@@ -55,7 +55,9 @@ export const EVENTS_MEMORY = [
         ? `${name} has not forgotten what you did — "${favour.summary}"`
         : betrayal
           ? `${name} has not forgotten — "${betrayal.summary}"`
-          : `${name} likes you well enough, but you have no real history of standing by each other.`;
+          : findMemory(friend, ['proud_moment', 'visited', 'kept_promise'])
+            ? `${name} remembers: "${findMemory(friend, ['proud_moment', 'visited', 'kept_promise']).summary}"`
+            : `${name} likes you well enough, but you have no real history of standing by each other.`;
       return {
         key: 'ev_memory_ask_for_help', category: 'friends',
         title: 'Asking for Help',
