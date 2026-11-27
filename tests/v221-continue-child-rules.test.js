@@ -8,3 +8,6 @@ const c=createPerson(s,{age:34,gender:'m',role:'child',relationLabel:'Son',natio
 triggerPlayerDeath(s,'test');assert.ok(s.gameOver);assert.equal(deadLifeBlocks(s,'continue-as-child'),false);assert.equal(deadLifeBlocks(s,'buy-car'),true);
 const next=continueAsChild(s,c.id);assert.ok(next,'child takes over');assert.equal(next.generation,2);assert.ok(next.rules?.creditLimit,'generation 2 keeps the credit-limit rule');assert.equal(next.gameOver,false);
 console.log('ok v221 continue child rules');
+/* Played defect: after continue-as-child the dead life's month-end card (cash -367,320) stayed on screen. */
+import{resetLifeScopedUi}from'../src/ui/lifeScopedUi.js';
+{const ui={turnResult:{cashBalance:-367320}};resetLifeScopedUi(ui);assert.equal(ui.turnResult,null,'last life card cleared for the next generation or new life');}

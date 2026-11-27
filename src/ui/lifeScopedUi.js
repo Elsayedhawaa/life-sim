@@ -1,6 +1,7 @@
+/* turnResult is the last month-end card: the next life must not open on the previous life's card. */
 /* Filters and searches that describe one life's records. A new life (or the next generation) starts with none of them applied,
    so the journal and ledger never open already narrowed by the last life's search. */
-export const LIFE_SCOPED_UI_DEFAULTS = { journalType: 'all', journalQuery: '', journalYear: 'all', ledgerFilter: 'all', jobQuery: '', jobOnlyQualified: false, bizQuery: '' };
+export const LIFE_SCOPED_UI_DEFAULTS = { journalType: 'all', journalQuery: '', journalYear: 'all', ledgerFilter: 'all', jobQuery: '', jobOnlyQualified: false, bizQuery: '', turnResult: null };
 export function resetLifeScopedUi(uiState) {
   if (!uiState) return uiState;
   for (const [k, v] of Object.entries(LIFE_SCOPED_UI_DEFAULTS)) uiState[k] = v;

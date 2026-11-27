@@ -1126,7 +1126,7 @@ export function syncCoupleToLegacy(S, couple) {
         spouseId,
         spouseName: spouse ? spouse.fullName : '',
         country: couple.country || S.country,
-        year: couple.year || S.year,
+        year: (couple.stage === 'married' && couple.stageSince?.year) || couple.year || S.year, /* the year of the wedding, not the year you met */
         venueLabel: '',
         mahrPrompt: 0,
         mahrDeferred: 0,
