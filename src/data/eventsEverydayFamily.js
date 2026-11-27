@@ -54,6 +54,8 @@ function live(S, ctx) {
 function nm(p, fb) { return (p && p.firstName) || fb; }
 /* Year-adjusted local cost for a 2026-denominated amount. */
 function cost(st, baseUsd) { return eraUsdCost(baseUsd, st.country, st.year); }
+/* Medical and dental care is a service, so it follows local wages (same rule as eraHealthCost in eventsMoneyHealthCareer). */
+function healthCost(st, baseUsd) { return usdMonthlyPayToLocal(st.country, st.year, baseUsd); }
 /* A business stake is sized against what people earn, not what goods cost: 2,500 USD at US wages, in this country's wages (the same scale the career pay and family fund use). By goods prices it was 1.4-1.6 months of entry pay in Egypt, Turkey and Brazil against 0.8 in the USA. */
 function stakeCost(st, baseUsd) { return usdMonthlyPayToLocal(st.country, st.year, baseUsd); }
 function money(st, base2026) { return formatMoney(cost(st, base2026), st.country); }
@@ -1115,7 +1117,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     gates: { minAge: 16, maxAge: 80 },
     build: (S, ctx) => {
       const p = live(S, ctx);
-      const dentist = cost(S, 400);
+      const dentist = healthCost(S, 400);
       return {
         key: 'ev_life_toothache', category: 'life',
         title: 'A Tooth That Will Not Let You Sleep',
@@ -2708,7 +2710,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
       const dadName = nm(p.dad, 'your father');
-      const bill = cost(S, 1200);
+      const bill = healthCost(S, 1200);
       return {
         key: 'ev_family_mom_falls_ill', category: 'family',
         title: `${momName} Is in Hospital`,
@@ -2744,7 +2746,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
         text: `${momName} is well enough to come home from the hospital, but she is weak, and the doctors have given her a long list of things she must and must not do. She is already arguing that she can manage the housework herself. She cannot.`,
         choices: [
           { label: 'Arrange help at home for her recovery', effect: (st) => {
-              walletMove(st, -cost(st, 500), 'Home help during mother\'s recovery', 'money');
+              walletMove(st, -healthCost(st, 500), 'Home help during mother\'s recovery', 'money');
               if (p.mom) rememberDeed(st, p.mom, 'supported_crisis', 'Arranged help at home during recovery.', { affection: 10, trust: 8 });
               st.player.vitals.happiness = clamp(st.player.vitals.happiness + 3);
               recordJournal(st, `Your mother came home from hospital weak; you arranged help at home for her recovery.`, 'family');
@@ -3693,7 +3695,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
-      const check = cost(S, 300);
+      const check = healthCost(S, 300);
       return {
         key: 'ev_family_mom_checkup', category: 'family',
         title: `${momName}'s Check-Up`,
@@ -4668,7 +4670,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
-      const session = cost(S, 500);
+      const session = healthCost(S, 500);
       return {
         key: 'ev_marriage_couples_therapy', category: 'marriage',
         title: `${spName} Suggests Talking to Someone`,
@@ -7477,7 +7479,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
-      const checkup = cost(S, 1200);
+      const checkup = healthCost(S, 1200);
       return {
         key: 'ev_family_dad_health_followup_l2', category: 'family',
         title: 'A Year After the Warning',
@@ -7544,7 +7546,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     build: (S, ctx) => {
       const p = live(S, ctx);
       const momName = nm(p.mom, 'your mother');
-      const help = cost(S, 900);
+      const help = healthCost(S, 900);
       return {
         key: 'ev_family_mom_recovery_l2', category: 'family',
         title: `${momName} Is Overdoing It Again`,
