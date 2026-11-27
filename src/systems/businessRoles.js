@@ -95,7 +95,7 @@ export const ROLE_EFFECTS = {
   paralegal: { repeatRate: 0,    revenueMult: 0,    revenueAdd: 0.04, costAdd: -0.01, moraleDelta: 0, verb: 'does the casework — fewer mistakes, faster files' },
   architect: { repeatRate: 0,    revenueMult: 0,    revenueAdd: 0.06, costAdd: 0,     moraleDelta: 0, verb: 'designs — better plans win more projects' },
   consultant:{ repeatRate: 0,    revenueMult: 0,    revenueAdd: 0.07, costAdd: 0,     moraleDelta: 0, verb: 'advises clients — good advice brings repeat work' },
-  technician:{ repeatRate: 0,    revenueMult: 0,    revenueAdd: 0.05, costAdd: -0.01, moraleDelta: 0, verb: 'fixes things — jobs done right, fewer callbacks' },
+  technician:{ repeatRate: 0,    revenueMult: 0,    revenueAdd: 0.05, costAdd: -0.01, moraleDelta: 0, verb: 'does the technical work — jobs done right, fewer callbacks' },
   dispatcher:{ repeatRate: 0,    revenueMult: 0,    revenueAdd: 0.04, costAdd: -0.01, moraleDelta: 0, verb: 'runs the routes — vans on time, fewer wasted trips' },
   packager:  { repeatRate: 0,    revenueMult: 0,    revenueAdd: 0.03, costAdd: -0.01, moraleDelta: 0, verb: 'packs orders — fewer mistakes, faster dispatch' },
   assistant: { repeatRate: 0.01, revenueMult: 0,    revenueAdd: 0.04, costAdd: 0,     moraleDelta: 0, verb: 'helps out — errands, paperwork, whatever the day needs' },
