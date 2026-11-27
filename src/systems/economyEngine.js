@@ -1344,6 +1344,11 @@ export function settleHouseholdMonth(S) {
     }
   }
 
+  /* GAME DESIGN: stress eases when money is not the problem. Played defect: a man who was in debt at 26 and rich from 28 sat at 85-89% stress for seven years, because nothing ever lowered it passively. While cash is not negative and no rent is owed, stress drops 2 a month, down to a resting level of 40. Work, events and debt keep adding to it as before. */
+  if (S.player.age >= 18 && S.money.cash >= 0 && !(summary.rentArrearsAdded > 0) && S.player.vitals.stress > 40) {
+    S.player.vitals.stress = Math.max(40, clamp(S.player.vitals.stress - 2));
+  }
+
   /* 15. REAL INSOLVENCY, EVICTION & BANKRUPTCY CONSEQUENCES */
   if (S.money.cash < 0||summary.rentArrearsAdded>0) {
     S.money.creditScore = clamp(S.money.creditScore - 12, 300, 850);
