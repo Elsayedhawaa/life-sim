@@ -12,3 +12,8 @@ hireBusinessEmployee(s,b,'doctor');
 const h=renderCompany(s,b,'operations');
 assert.ok(/A doctor is on the team/.test(h)&&!/A doctor is required/.test(h),'staffed clinic must not say required');
 console.log('ok v221 clinic price and core copy');
+/* Specialist visit: cash consultations run about 150-400 USD (cardiology, endocrinology); the old 410 USD sat above that range. */
+const s2=createNewLifeState({country:'usa',seed:5});ensureExtendedState(s2);s2.player.age=40;s2.year=2026;s2.month=1;s2.money.cash=1e8;s2.education.degrees=['medicine'];
+const c=createBusiness(s2,'enterprise_clinic','S',{mode:'full_time'}).biz;companyAction(s2,c,'niche',2);
+assert.ok(c.enterprise.price>=240&&c.enterprise.price<=340,'US specialist visit price in the 240-340 USD band, got '+c.enterprise.price);
+console.log('ok v221 specialist price');
