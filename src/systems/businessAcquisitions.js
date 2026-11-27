@@ -47,7 +47,7 @@ import { getCountry, formatMoney } from '../data/countries.js';
 import { pickFirstName, pickFamilyName } from '../data/names.js';
 import {
   businessValuation, normalizeBusiness, migrateBusinesses, syncBusinessMirror,
-  listAllBusinessVentures, findVentureRow, ventureLocalPricing
+  listAllBusinessVentures, findVentureRow, ventureLocalPricing, ventureRepriced
 } from './businessEngine.js';
 import { seedStartingStaff } from './businessStaff.js';
 import { listCommercialPremises } from './businessPremises.js';
@@ -106,7 +106,8 @@ export function makeForSaleListing(S, overrides = {}) {
      venture in the same country has the same capital, takings and
      other costs whether founded or bought. The || fallbacks are the
      old defaults for a row missing a figure. */
-  const pricing = ventureLocalPricing(S, {
+  const pricing = ventureRepriced(S, {
+    id: row.id,
     capitalUsd2026: row.capitalUsd2026 || 20000,
     monthlyRevUsd2026: row.monthlyRevUsd2026 || 3000,
     monthlyCostUsd2026: row.monthlyCostUsd2026 || 1500

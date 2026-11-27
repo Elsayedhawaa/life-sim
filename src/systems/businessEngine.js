@@ -322,6 +322,16 @@ export function ventureWageScale(countryId, year = 2026) {
    instead of one the P&L then reads as ~nothing. Measured Egypt 2022
    the floor never binds (every row's own cost is already >= 25% of
    its takings); it only guards degenerate data. */
+/* Labour as a share of takings, from published benchmarks (sources in the commit notes): independent cafe 28-35% (Dripos, UK PL Coffee Shop Consulting), hair salon 40-55% (Go By The Numbers, Tangled Data), gym payroll median 38.4% (Health & Fitness Association 2025). Restaurant uses the cafe figure. GAME DESIGN: the midpoint of each range, and a 10% margin before the owner's own pay. The launch rows are priced at Egypt's level and then scaled by the wage ratio, which left a US cafe at 99k a month, 5 times a real one, and a staff bill far below a real labour share. Pricing takings from the starter wage bill keeps every country at the same labour share. */
+export const VENTURE_LABOUR_SHARE = { cafe: 0.32, restaurant: 0.32, salon: 0.45, gym: 0.384 };
+export const VENTURE_MARGIN_BEFORE_OWNER = 0.10;
+export function labourShareRepricing(bp, pricing, wageBillLocal) {
+  const share = VENTURE_LABOUR_SHARE[bp && bp.id];
+  if (!share || !(wageBillLocal > 0)) return pricing;
+  const revLocal = Math.round(wageBillLocal / share);
+  const k = Math.max(0.25, Math.min(2, revLocal / Math.max(1, pricing.revLocal)));
+  return { ...pricing, revLocal, capitalLocal: Math.round(pricing.capitalLocal * k), costLocal: Math.max(otherCostsFloor(revLocal), Math.round(revLocal * (1 - share - VENTURE_MARGIN_BEFORE_OWNER))) };
+}
 export function ventureLocalPricing(S, bp) {
   const scale = ventureWageScale(S.country, S.year);
   const revLocal = Math.round(convertCurrency(bp.monthlyRevUsd2026, 'usa', S.country, S.year) * scale);
@@ -331,6 +341,13 @@ export function ventureLocalPricing(S, bp) {
     revLocal,
     costLocal: Math.max(otherCostsFloor(revLocal), Math.round(convertCurrency(bp.monthlyCostUsd2026, 'usa', S.country, S.year) * scale))
   };
+}
+
+/* ventureLocalPricing, then the labour-share repricing for the types that have a published labour share. Launch and purchase both call this so a venture costs the same founded or bought. */
+export function ventureRepriced(S, bp) {
+  const roles = bp && bp.id ? staffRolesForType(bp.id) : [];
+  const wageBill = roles.length > 0 ? roles.slice(0, 3).reduce((sum, role) => sum + roleWageLocal(S, role, S.country), 0) : 0;
+  return labourShareRepricing(bp, ventureLocalPricing(S, bp), wageBill);
 }
 
 /* Launch evaluation — ONE function, used by the launch code AND by the
@@ -354,7 +371,7 @@ export function evaluateBusinessLaunch(S, bp, mode = null) {
      real wage level, so the wage bill the launch seeds is covered the
      way it is in Egypt. Egypt's scale is exactly 1, so its numbers
      are unchanged. */
-  const pricing = ventureLocalPricing(S, bp);
+  const pricing = ventureRepriced(S, bp);
   const capitalLocal = pricing.capitalLocal;
   const revLocal = pricing.revLocal;
   const costLocal = bp.id.startsWith('enterprise_')?Math.round(eraSalary(getCountry(S.country).annualSalaryTiers2026.mid/12,S.country,S.year)*(COMPANY_SECTORS[bp.id.slice(11)]?.fixed||.1)):bp.id==='tech_founder'?Math.max(1,Math.round(eraSalary(getCountry(S.country).annualSalaryTiers2026.mid/12,S.country,S.year)*.08)):pricing.costLocal;
