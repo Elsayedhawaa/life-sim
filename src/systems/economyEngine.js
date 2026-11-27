@@ -1313,6 +1313,25 @@ export function settleHouseholdMonth(S) {
      accruePensionMonth. */
   if (pensionAccrual) accruePensionMonth(S, pensionAccrual);
 
+  /* GAME DESIGN credit limit (new lives only, S.rules.creditLimit): nobody can borrow without end. Cash may run to 12 months of
+     living costs below zero. Past that, creditors stop lending and the player goes without: the excess is not added to the debt,
+     and health, happiness and stress take a hit each month it happens. Old saves carry no flag and are unchanged. */
+  if (S.rules?.creditLimit && S.money.cash < 0) {
+    const monthlyLiving = Math.max(0, Number(summary.living) - Number(bizSettleCosts || 0));
+    const cap = Math.round(monthlyLiving * 12);
+    if (cap > 0 && S.money.cash < -cap) {
+      const unpaid = Math.round((-cap - S.money.cash) * 100) / 100;
+      walletMove(S, unpaid, 'Credit limit reached: costs you went without are not added to the debt', 'credit_limit');
+      S.player.vitals.health = clamp(S.player.vitals.health - 3);
+      S.player.vitals.happiness = clamp(S.player.vitals.happiness - 4);
+      S.player.vitals.stress = clamp(S.player.vitals.stress + 5);
+      if ((S.money.creditLimitNoteTurn ?? -99) + 12 <= S.turn) {
+        S.money.creditLimitNoteTurn = S.turn;
+        recordJournal(S, `You are ${formatMoney(cap, S.country)} in debt, the most lenders will allow. Past that you go without: skipped meals, unpaid bills, no repairs. It is wearing you down until you earn or sell something. Game limit: 12 months of living costs.`, 'money');
+      }
+    }
+  }
+
   /* 15. REAL INSOLVENCY, EVICTION & BANKRUPTCY CONSEQUENCES */
   if (S.money.cash < 0||summary.rentArrearsAdded>0) {
     S.money.creditScore = clamp(S.money.creditScore - 12, 300, 850);
