@@ -17,15 +17,16 @@ const START_ANCHOR = {
 };
 /* USA doctors and lawyers, annual targets by rung multiplier (the rung's own multiplier, so the same rung is hit at any era).
    Medicine: intern 71,040 (AAMC PGY-1 mean as of July 2026, via doctorsalaries.org/residency-salary/), resident physician 82,000 (rounded from the AAMC PGY-3 to PGY-6 means of 76,044 to 87,183, same page), specialist 275,930 (BLS physicians and surgeons median, May 2025, bls.gov/ooh/healthcare/physicians-and-surgeons.htm). Rungs above stay on the old line.
+   Egypt intern (rung 0): 2,800 EGP a month, 33,600 a year (head of the doctors' syndicate, April 2025, mowagha.com/news105126.html; zadteb.com gives the same for 2025/2026). Egyptian resident and specialist pay is NOT sourced, so those rungs are unchanged.
    Law: junior 99,760 (BLS OEWS lawyers 25th percentile, May 2024, via factanker.com), senior counsel 159,670 (BLS lawyers median, May 2025, bls.gov/ooh/legal/lawyers.htm). GAME DESIGN: the associate-counsel rung is set to 126,000, the geometric mean of those two. Partner rungs stay on the old line. */
 const RUNG_TARGET = {
-  medicine: { usa: { 0.72: 71040, 1.35: 82000, 2.55: 275930 }, payMult: 1.52 },
+  medicine: { usa: { 0.72: 71040, 1.35: 82000, 2.55: 275930 }, egy: { 0.72: 33600 }, payMult: 1.52 },
   law: { usa: { 0.85: 99760, 1.45: 126000, 2.35: 159670 }, payMult: 1.2 },
 };
 function anchorBoost(country, trackId, rungMult) {
   const rt = RUNG_TARGET[trackId];
   const target = rt && rt[country] && rt[country][rungMult];
-  if (target) return target / (48000 * rt.payMult * rungMult);
+  if (target) return target / ((country === 'egy' ? 126000 : 48000) * rt.payMult * rungMult);
   const a = START_ANCHOR[trackId];
   const f = a && a.factors[country];
   if (!f) return 1;

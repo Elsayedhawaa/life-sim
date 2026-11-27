@@ -26,3 +26,5 @@ near(y('jpn','nursing',0),3510324,0.03,'JP university-graduate nurse start');
 near(y('nld','teaching',1),45016,0.03,'NL primary teacher start');
 near(y('can','teaching',1),57703,0.03,'Ontario A1 start');
 console.log('PASS v221-start-anchor-more-countries');
+assert.ok(y('egy','medicine',0)<=90000,'Egypt intern pay is held at the statutory floor (7,000 a month) not the old 138k, got '+y('egy','medicine',0));
+console.log('PASS v221-start-anchor-egypt-intern');
