@@ -2208,6 +2208,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     gates: { requiredPeople: ['sib'], minAge: 22, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
+      if (p.sib && Number(p.sib.age) > 40) return null; /* a sibling past 40 is not starting a first term the family cannot afford */
       const sibName = nm(p.sib, 'your sibling');
       const fee = cost(S, 2000);
       return {

@@ -18,6 +18,7 @@
 
 import { clamp } from '../core/rng.js';
 import { recordJournal, walletMove } from '../core/schema.js';
+import { endFriendship } from '../systems/socialEnergy.js';
 import { formatMoney } from '../data/countries.js';
 import { eraLocalCost, eraUsdCost } from '../data/economy.js';
 import {
@@ -154,6 +155,8 @@ export const EVENTS_MEMORY = [
               p.rel.affection = clamp(p.rel.affection, 0, 20);
               p.rel.trust = clamp(p.rel.trust, 0, 20);
             }
+            /* A friend you let go leaves the circle for good (same ending as the People tab). Family stays family. */
+            if (p && !kin) endFriendship(st, p);
             st.player.vitals.happiness = clamp(st.player.vitals.happiness - 8);
             recordJournal(st, `The ${bond} with ${name} ended. The reason, in their words: "${betrayal ? betrayal.summary : 'You let me down when it mattered.'}"`, 'friends');
           } },

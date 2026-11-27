@@ -5836,7 +5836,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(1500, S.country, S.year);
+      /* The raise is the 5% the effect applies to the real salary, so the figure shown is what the pay actually rises by. */
+      const A = Math.max(1, Math.round((S.career?.job?.monthlyGross || 0) * 0.05)) || eraUsdCost(1500, S.country, S.year);
       return {
         key: 'ev_career_raise_granted',
         category: 'career',

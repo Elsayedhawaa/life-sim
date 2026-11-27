@@ -731,7 +731,7 @@ export function npcJobChange(S, person) {
     if (title.startsWith('Senior ')) person.career.title = `Lead ${baseTitle}`;
     else if (title.startsWith('Lead ')) person.career.title = `Principal ${baseTitle}`;
     else if (title.startsWith('Principal ')) person.career.title = title; // already at the top; the pay still rises
-    else person.career.title = `Senior ${title.replace(/^(Junior|Trainee|Assistant|Graduate) /, '')}`; /* "Senior Junior Data Analyst" is a contradiction */
+    else person.career.title = `Senior ${title.replace(/^(Apprentice \/|Apprentice|Junior|Trainee|Assistant|Graduate) /, '')}`; /* "Senior Junior Data Analyst" is a contradiction */
     person.career.monthlyIncomeLocal = Math.round(income * 1.18);
     recordJournal(S, `Your ${npcKinWord(person)} ${person.firstName} was promoted to ${person.career.title.toLowerCase()} in ${person.city} — now earning ${formatMoney(person.career.monthlyIncomeLocal, person.residenceCountry)}/mo.`, 'career');
     return;
