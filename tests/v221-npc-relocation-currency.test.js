@@ -15,3 +15,16 @@ import { readFileSync } from 'node:fs';
 const src=readFileSync(new URL('../src/data/eventsMoneyHealthCareer.js',import.meta.url),'utf8');
 for(const bad of [/ev_health_gym_membership[\s\S]{0,900}?eraUsdCost\(700/, /ev_money_internet_bill[\s\S]{0,900}?eraUsdCost\(600/, /ev_health_swimming[\s\S]{0,900}?eraHealthCost\(600/])assert.ok(!bad.test(src),'old inflated monthly price returned');
 console.log('ok v221 npc relocation currency');
+/* an ordinary Cairo wage stays an ordinary wage in Munich: not a 350 EUR month */
+{
+  const q=createNewLifeState({country:'egy',seed:6,familyTier:'middle'});ensureExtendedState(q);
+  const d=q.people[q.relations.fatherId];
+  d.residenceCountry='egy';
+  const {getCountry}=await import(W+'data/countries.js'); const {eraSalary}=await import(W+'data/economy.js');
+  const midE=eraSalary(getCountry('egy').annualSalaryTiers2026.mid/12,'egy',q.year);
+  d.career.monthlyIncomeLocal=Math.round(midE); d.career.incomeIndexYear=q.year;
+  se.npcRelocateMoney(q,d,'egy','deu');
+  const midD=eraSalary(getCountry('deu').annualSalaryTiers2026.mid/12,'deu',q.year);
+  assert.ok(Math.abs(d.career.monthlyIncomeLocal/midD-1)<0.05,'a typical Egyptian wage becomes a typical German wage, got '+d.career.monthlyIncomeLocal+' vs '+Math.round(midD));
+}
+console.log('ok v221 npc relocation wage standing');

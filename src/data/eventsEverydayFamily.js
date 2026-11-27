@@ -462,7 +462,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     gates: { minAge: 12, maxAge: 70 },
     build: (S, ctx) => {
       const p = live(S, ctx);
-      const fix = cost(S, 120);
+      const fix = cost(S, 45);
       return {
         key: 'ev_life_bad_haircut', category: 'life',
         title: 'The Haircut That Went Wrong',

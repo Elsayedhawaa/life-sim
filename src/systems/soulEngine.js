@@ -703,9 +703,13 @@ export function npcRelocateMoney(S, person, fromCountry, toCountry) {
   const c = person.career;
   if (!c) return;
   const conv = v => Math.round(convertCurrency(Number(v) || 0, fromCountry, toCountry, S.year));
-  if (Number(c.monthlyIncomeLocal) > 0) { c.monthlyIncomeLocal = conv(c.monthlyIncomeLocal); c.incomeIndexYear = S.year; }
+  /* Savings travel at the exchange rate. Pay does not: someone earning an ordinary wage in Cairo is paid an ordinary wage in Munich, so income keeps its standing against the typical (mid-tier) wage of each country, era-indexed. GAME DESIGN: the mid tier is the yardstick. */
+  const midOf = id => eraSalary((getCountry(id).annualSalaryTiers2026.mid || 1) / 12, id, S.year);
+  const ratio = midOf(toCountry) / Math.max(1, midOf(fromCountry));
+  const pay = v => Math.max(1, Math.round((Number(v) || 0) * ratio));
+  if (Number(c.monthlyIncomeLocal) > 0) { c.monthlyIncomeLocal = pay(c.monthlyIncomeLocal); c.incomeIndexYear = S.year; }
   if (Number(c.savingsLocal) > 0) c.savingsLocal = conv(c.savingsLocal);
-  if (c.formerJob && Number(c.formerJob.income) > 0) { c.formerJob.income = conv(c.formerJob.income); c.formerJob.incomeIndexYear = S.year; }
+  if (c.formerJob && Number(c.formerJob.income) > 0) { c.formerJob.income = pay(c.formerJob.income); c.formerJob.incomeIndexYear = S.year; }
 }
 
 function npcMaybeLeaveHome(S, person) {
