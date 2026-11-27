@@ -71,6 +71,7 @@ export const BUSINESS_STRETCHED_HOURS = OWNER_STRETCHED_HOURS;
    P&L charges after. v2.17: no estimate is shown before launch. */
 export const BUSINESS_PART_TIME_REV_MULT = 0.6;
 export const BUSINESS_HOME_REV_MULT = 0.8;
+export const BUSINESS_SETTLED_REV_CALIBRATION = 1.3;
 /* Part-time other costs: a business run 18 hours a week buys less
    stock, uses less power and spends less on marketing — most of the
    "other" costs vary with how much the business actually trades. 0.75,
@@ -430,8 +431,9 @@ export function evaluateBusinessLaunch(S, bp, mode = null) {
     : Math.round(midMonthly * 0.6) * 3;
   const rentEstimateLocal = Math.round(eraSalary(getCountry(S.country).monthlyBasket2026.rentStandard, S.country, S.year) * 0.8);
   const trueMonthlyCostLocal = costLocal + wageEstimateLocal + rentEstimateLocal;
-  const expectedRevFullTimeHome = Math.round(revLocal * BUSINESS_HOME_REV_MULT * 0.9);
-  const expectedRevPartTimeHome = Math.round(revLocal * BUSINESS_PART_TIME_REV_MULT * BUSINESS_HOME_REV_MULT * 0.9);
+  /* Calibration (GAME DESIGN, tuned not sourced): 5 seeds x 24 months of full monthly settlement show a manager-run part-time home venture books about 1.2x-1.8x (median 1.5x) of the old 0.9-allowance figure once reach and repeat custom build, while its costs match the estimate within a few percent. The expected takings carry that factor, taken as 1.3 so the warning leans cautious. */
+  const expectedRevFullTimeHome = Math.round(revLocal * BUSINESS_HOME_REV_MULT * 0.9 * BUSINESS_SETTLED_REV_CALIBRATION);
+  const expectedRevPartTimeHome = Math.round(revLocal * BUSINESS_PART_TIME_REV_MULT * BUSINESS_HOME_REV_MULT * 0.9 * BUSINESS_SETTLED_REV_CALIBRATION);
   /* Part-time other costs run at BUSINESS_PART_TIME_COST_MULT (the P&L
      charges other ×0.75 part-time — some of it is fixed) — the warning
      tests the same numbers the P&L charges, not the full-time figure. */
