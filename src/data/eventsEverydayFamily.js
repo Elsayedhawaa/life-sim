@@ -1922,7 +1922,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     gates: { requiredPeople: ['dad'], minAge: 22, maxAge: 65, wealth: ['poor', 'middle'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
-      const ask = cost(S, 1500);
+      const ask = stakeCost(S, 1500);
       const dadName = nm(p.dad, 'your father');
       return {
         key: 'ev_family_dad_loan_request', category: 'family',
@@ -1957,7 +1957,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     gates: { requiredPeople: ['dad'], minAge: 22, afterEvent: 'ev_family_dad_loan_request', afterChoices:[0,2], afterEventMinTurns: 6, loanOutstanding: { event: 'ev_family_dad_loan_request', minMonths: 6 } },
     build: (S, ctx) => {
       const p = live(S, ctx);
-      const back = loanFromOutcome(S, 'ev_family_dad_loan_request')?.amount ?? cost(S, 1500);
+      const back = loanFromOutcome(S, 'ev_family_dad_loan_request')?.amount ?? stakeCost(S, 1500);
       const dadName = nm(p.dad, 'your father');
       return {
         key: 'ev_family_dad_loan_repaid', category: 'family',
@@ -2213,7 +2213,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
       const p = live(S, ctx);
       if (p.sib && Number(p.sib.age) > 40) return null; /* a sibling past 40 is not starting a first term the family cannot afford */
       const sibName = nm(p.sib, 'your sibling');
-      const fee = cost(S, 2000);
+      const fee = stakeCost(S, 2000);
       return {
         key: 'ev_family_sib_tuition', category: 'family',
         title: `${sibName} Needs Tuition Money`,
@@ -2295,7 +2295,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
-      const gift = cost(S, 500);
+      const gift = stakeCost(S, 500);
       return {
         key: 'ev_family_sib_wedding', category: 'family',
         title: `${sibName}'s Wedding Day`,
@@ -2324,7 +2324,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     build: (S, ctx) => {
       const p = live(S, ctx);
       const sibName = nm(p.sib, 'your sibling');
-      const help = cost(S, 800);
+      const help = stakeCost(S, 800);
       return {
         key: 'ev_family_sib_lost_job', category: 'family',
         title: `${sibName} Lost Their Job`,
@@ -2649,7 +2649,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     build: (S, ctx) => {
       const p = live(S, ctx);
       const dadName = nm(p.dad, 'your father');
-      const gift = cost(S, 5000);
+      const gift = stakeCost(S, 5000);
       return {
         key: 'ev_family_parents_down_payment', category: 'family',
         title: `${dadName} Offers Help With a Home`,
