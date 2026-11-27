@@ -21456,7 +21456,7 @@ export const EXTRA_BUSINESSES = [
     "label": "24-Hour Community Pharmacy",
     "capitalUsd2026": 34000,
     "monthlyRevUsd2026": 11800,
-    "monthlyCostUsd2026": 7600,
+    "monthlyCostUsd2026": 9800,
     "reqMajor": "pharmacy",
     "from": 1960,
     "volatility": 0.15,

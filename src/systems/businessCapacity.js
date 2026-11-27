@@ -234,6 +234,14 @@ export function unmanagedRevenueMult(biz) {
 export function applyUnmanagedDecay(S, biz) {
   if (!biz || typeof biz !== 'object') return { revenueMult: 1, moraleDelta: 0, flagged: false };
   if (typeof biz.unmanagedMonths !== 'number') biz.unmanagedMonths = 0;
+  const graceUntil = Number(S?.rules?.capacityGraceUntil);
+  if (graceUntil > 0 && Number(S.year) * 12 + Number(S.month || 1) <= graceUntil && !businessIsManaged(S, biz)) {
+    if (!S.rules.capacityGraceNoted) {
+      S.rules.capacityGraceNoted = true;
+      recordJournal(S, `Your businesses now need your hours, or a manager. For the next six months nothing slips while you sort it out: hire managers or take them over yourself.`, 'career');
+    }
+    return { revenueMult: 1, moraleDelta: 0, flagged: false };
+  }
   if (businessIsManaged(S, biz)) {
     const wasAtRisk = biz.atRisk === true;
     biz.unmanagedMonths = 0;

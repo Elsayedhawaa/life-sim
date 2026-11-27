@@ -198,7 +198,7 @@ export function createNewLifeState(opts = {}) {
     month: 1,
     pacing: 'yearly', // Adaptive: 'yearly' ages 0-17, 'monthly' ages 18+
     gameOver: false,
-    rules: { creditLimit: true },
+    rules: { creditLimit: true, capacity: true },
     generation: opts.generation || 1,
     dynastyHistory: Array.isArray(opts.dynastyHistory) ? opts.dynastyHistory.slice() : [],
 
@@ -1341,6 +1341,12 @@ export function syncPlayerCareerMirror(S) {
 
 export function ensureExtendedState(S) {
   if (!S) return S;
+  /* GAME DESIGN (old-save migration): saves made before owner hours were tracked get six months in which no business slides for lack of hours, so loading never punishes a life that was fine when it was saved. Saves with no business are simply marked. New lives carry the flag from birth. */
+  if (!S.rules || typeof S.rules !== 'object') S.rules = {};
+  if (S.rules.capacity !== true) {
+    S.rules.capacity = true;
+    if (Array.isArray(S.career?.businesses) && S.career.businesses.length > 0) S.rules.capacityGraceUntil = Number(S.year) * 12 + Number(S.month || 1) + 6;
+  }
   // RNG: repair a missing/corrupt stream from the life's own seed (never silent 0.5).
   if (typeof S.rngState !== 'number') {
     S.rngState = hashSeed(S.seed ?? 'world-life-2');
