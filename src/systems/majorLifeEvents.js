@@ -142,7 +142,7 @@ export function announceMajorChanges(S, before) {
   }
   if (after.eviction && after.eviction !== before.eviction) {
     const e = S.housing.lastEviction;
-    made.push(announce(S, 'eviction', { title: e.again ? 'Evicted Again' : 'You Were Evicted', text: e.again ? `You lost the lease at ${e.from || 'your home'} again after months of unpaid rent.` : `Your landlord ended your lease at ${e.from || 'your home'} after months of unpaid rent.`, facts: { from: e.from || null } }));
+    if (!e.quiet) made.push(announce(S, 'eviction', { title: e.again ? 'Evicted Again' : 'You Were Evicted', text: e.again ? `You lost the lease at ${e.from || 'your home'} again after months of unpaid rent.` : `Your landlord ended your lease at ${e.from || 'your home'} after months of unpaid rent.`, facts: { from: e.from || null } }));
   }
   if (after.crashes > before.crashes) {
     const c = S.carCrashes[S.carCrashes.length - 1];

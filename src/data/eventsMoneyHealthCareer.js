@@ -611,7 +611,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(5000, S.country, S.year);
+      const A = Math.max(1, Math.round((Number(S.career?.job?.monthlyGross) || usdMonthlyPayToLocal(S.country, S.year, 3000)) * 1.0));
       return {
         key: 'ev_money_bonus',
         category: 'money',
@@ -1168,8 +1168,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(5000, S.country, S.year);
-      const B = eraUsdCost(1000, S.country, S.year);
+      const A = usdMonthlyPayToLocal(S.country, S.year, 5000);
+      const B = usdMonthlyPayToLocal(S.country, S.year, 1000);
       const asset=GLOBAL_MARKET_ASSETS.filter(x=>x.availableFrom<=S.year&&x.kind==='etf').sort((a,b)=>b.volatility-a.volatility)[0];
       return {
         key: 'ev_money_investment_tip',
@@ -1220,8 +1220,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(10000, S.country, S.year);
-      const B = eraUsdCost(5000, S.country, S.year);
+      const A = usdMonthlyPayToLocal(S.country, S.year, 10000);
+      const B = usdMonthlyPayToLocal(S.country, S.year, 5000);
       return {
         key: 'ev_money_bank_certificate',
         category: 'money',
@@ -2008,8 +2008,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(3000, S.country, S.year);
-      const B = eraUsdCost(4000, S.country, S.year);
+      const A = usdMonthlyPayToLocal(S.country, S.year, 3000);
+      const B = usdMonthlyPayToLocal(S.country, S.year, 4000);
       return {
         key: 'ev_money_freelance_gig',
         category: 'money',
@@ -2058,7 +2058,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(12000, S.country, S.year);
+      const A = usdMonthlyPayToLocal(S.country, S.year, 12000);
       return {
         key: 'ev_money_inheritance_small',
         category: 'money',

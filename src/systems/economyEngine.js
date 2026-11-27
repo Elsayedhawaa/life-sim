@@ -1340,7 +1340,8 @@ export function settleHouseholdMonth(S) {
           S.housing.monthlyRent = sharedRoom;
           /* Already in the cheapest shared room and losing it again: the room and rent are unchanged, so the line is told once a year, not every quarter. */
           const repeatSameRoom = again && oldHome === 'Shared Bedspace / Room';
-          if (!(repeatSameRoom && S.housing.repeatEvictionNoteYear === S.year)) {
+          S.housing.lastEviction.quiet = !!(repeatSameRoom && S.housing.repeatEvictionNoteYear === S.year);
+          if (!S.housing.lastEviction.quiet) {
             if (repeatSameRoom) S.housing.repeatEvictionNoteYear = S.year;
             recordJournal(S, again ? `Evicted again, from ${oldHome}. The arrears piled up before the shared room was paid for, and you took another one at ${formatMoney(sharedRoom, S.country)}/month.` : `Evicted from ${oldHome} for rent arrears — you downgraded into a cramped shared room (${formatMoney(sharedRoom, S.country)}/mo).`, 'money');
           }
