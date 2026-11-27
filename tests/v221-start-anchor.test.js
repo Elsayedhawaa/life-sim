@@ -13,3 +13,11 @@ assert.ok(y('usa','nursing',3)<=150000*1.02,'top of ladder not inflated');
 assert.ok(y('gbr','nursing',2)<60000,'UK nurse manager stays near band 7-8a');
 near(y('egy','nursing',0),98280,0.02,'unchecked country unchanged');
 console.log('PASS v221-start-anchor');
+// USA doctors and lawyers
+near(y('usa','medicine',0),71040,0.03,'US intern = AAMC PGY-1');
+near(y('usa','medicine',2),275930,0.03,'US specialist = BLS median');
+near(y('usa','law',0),99760,0.03,'US junior lawyer = BLS P25');
+near(y('usa','law',2),159670,0.03,'US senior counsel = BLS median');
+assert.ok(y('usa','medicine',3)>y('usa','medicine',2)&&y('usa','law',3)>y('usa','law',2),'ladders stay rising');
+assert.ok(y('usa','medicine',1)>y('usa','medicine',0)&&y('usa','law',1)>y('usa','law',0));
+console.log('PASS v221-start-anchor-usa-doctors-lawyers');
