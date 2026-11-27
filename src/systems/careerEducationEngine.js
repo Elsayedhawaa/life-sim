@@ -1881,7 +1881,7 @@ export function buildJobInterviewScene(S, jobOffer) {
     text: `The hiring manager at ${jobOffer.employer} in your city interviews you for ${jobOffer.title}. ${detail.involves ? `${detail.involves} ` : ''}They ask about your experience, and why they should pick you over every other candidate. How do you answer?`,
     choices: [
       {
-        label: 'Lead with your experience — walk them through what you have actually done',
+        label: (S.career.yearsExperience || 0) > 0 ? 'Lead with your experience — walk them through what you have actually done' : 'Lead with what you have done so far — school, projects, anything you have built',
         effect: (st) => { resolveJobInterview(st, jobOffer, 'experience'); }
       },
       {

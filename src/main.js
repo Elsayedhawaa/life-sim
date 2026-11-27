@@ -1,3 +1,4 @@
+import{deadLifeBlocks,DEAD_LIFE_MESSAGE}from'./core/deadLifeGuard.js';
 import {courtshipAction,reconnectCourtship} from './systems/courtshipLife.js';
 import{settleWaterDamage}from'./systems/homeWaterDamage.js';
 import{settlePersonalReceivable}from'./systems/personalReceivables.js';
@@ -563,6 +564,7 @@ if (typeof document !== 'undefined') {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     const action = btn.dataset.action;
+    if (deadLifeBlocks(S, action)) { showToast(DEAD_LIFE_MESSAGE); return; }
 
     if(action==='zoom-floorplan'){
       const svg=btn.closest('.readable-floor')?.querySelector('svg.architectural-plan');
