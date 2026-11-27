@@ -1323,7 +1323,13 @@ export function settleHouseholdMonth(S) {
     if (cap > 0 && S.money.cash < -cap) {
       const unpaid = Math.round((-cap - S.money.cash) * 100) / 100;
       walletMove(S, unpaid, 'Credit limit reached: costs you went without are not added to the debt', 'credit_limit');
-      S.player.vitals.health = clamp(S.player.vitals.health - 3);
+      /* GAME DESIGN: the health hit stops at a floor of 35. Below that, the people around you cover the basics so the slide ends, but happiness and stress keep taking the hit. */
+      const CREDIT_HEALTH_FLOOR = 35;
+      if (S.player.vitals.health > CREDIT_HEALTH_FLOOR) S.player.vitals.health = Math.max(CREDIT_HEALTH_FLOOR, clamp(S.player.vitals.health - 3));
+      else if ((S.money.creditHelpNoteTurn ?? -99) + 12 <= S.turn) {
+        S.money.creditHelpNoteTurn = S.turn;
+        recordJournal(S, 'You are still at the limit. Relatives and friends cover the basics, so your health stops falling, but nothing gets better until you earn or sell something.', 'money');
+      }
       S.player.vitals.happiness = clamp(S.player.vitals.happiness - 4);
       S.player.vitals.stress = clamp(S.player.vitals.stress + 5);
       if ((S.money.creditLimitNoteTurn ?? -99) + 12 <= S.turn) {

@@ -12,3 +12,8 @@ assert.ok(S.journal.some(j=>/the most lenders will allow/.test(j.text||j.line||J
 assert.ok(S.ledger.some(e=>/Credit limit reached/.test(e.label)),'ledger shows the cut');
 const O=mk(false);settleHouseholdMonth(O);assert.ok(O.money.cash<-4.9e6,'old save without the flag keeps its debt: '+O.money.cash);
 console.log('ok v221 credit limit');
+/* Health floor: the limit's health hit stops at 35 and the player is told why. */
+{const F=mk(true);F.player.vitals.health=36;for(let i=0;i<30;i++){F.money.cash=-5e6;F.turn+=1;settleHouseholdMonth(F);}
+assert.ok(F.player.vitals.health>=35,'health stops at the floor: '+F.player.vitals.health);
+assert.ok(F.journal.some(j=>/Relatives and friends cover the basics/.test(JSON.stringify(j))),'family-help line is written once at the floor');}
+console.log('ok v221 credit limit floor');
