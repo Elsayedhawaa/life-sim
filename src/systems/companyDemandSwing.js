@@ -8,7 +8,7 @@
    GAME DESIGN numbers, one per sector: the typical size of a swing in demand
    (1 sigma). Steady services are small, harvests and building jobs are lumpy. */
 export const DEMAND_SWING_SIGMA = {
-  clinic: .04, pharmacy: .04, hospitality: .10, education: .06, food: .08, logistics: .09, retail: .09,
+  clinic: .04, pharmacy: .04, hospitality: .10, facility: .06, education: .06, food: .08, logistics: .09, retail: .09,
   manufacturing: .11, software: .12, construction: .2, farming: .22
 };
 const MAX_SWING = .45;
