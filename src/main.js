@@ -9,7 +9,7 @@ import{contractAction}from'./systems/companyContracts.js';
 import{lotAction}from'./systems/companyLots.js';
 import{competitionAction}from'./systems/companyCompetition.js';
 import{receivablesAction}from'./systems/companyReceivables.js';
-import{upgradeSpecialty}from'./systems/companyMigration.js';
+import{upgradeSpecialty,convertWithTrial}from'./systems/companyMigration.js';
 import{governanceAction,negotiateFamilyStake}from'./systems/companyGovernance.js';
 import{npcCompanyAction}from'./systems/companyNpcControls.js';
 import{estateReviewAction}from'./systems/companyEstateReview.js';
@@ -2022,7 +2022,7 @@ if (typeof document !== 'undefined') {
     if(action==='company-competition'){handleActionResult(competitionAction(S,(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz),btn.dataset.kind));return;}
     if(action==='company-receivable'){handleActionResult(receivablesAction(S,(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz),btn.dataset.kind,btn.dataset.value));return;}
     if(action==='company-specialty'){handleActionResult(upgradeSpecialty(S,(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz)));return;}
-    if(action==='company-migrate'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(migrateCompanyModel(S,b));return;}
+    if(action==='company-migrate'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(convertWithTrial(S,b));return;}
     if(action==='family-rota'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(changeFamilyRota(S,b,btn.dataset.employee,btn.dataset.hours));return;}
     if(action==='family-share'){const b=(S.career.businesses||[]).find(x=>x.id===btn.dataset.biz);handleActionResult(familyShareAction(S,b,btn.dataset.kind,btn.dataset.person,btn.dataset.pct,btn.dataset.amount));return;}
     if(action==='family-stake-offer'){handleActionResult(negotiateFamilyStake(S,(S.career.businesses||[]).find(b=>b.id===btn.dataset.biz),btn.dataset.person,btn.dataset.kind,Number(btn.dataset.pct),btn.dataset.offer,Number(btn.dataset.amount)));return;}
