@@ -8,3 +8,9 @@ for (const k of ['ev_family_dad_loan_request','ev_family_sib_tuition','ev_family
 }
 assert.ok(/stakeCost\(S, 1500\)/.test(s.slice(s.indexOf("const back = loanFromOutcome"),s.indexOf("const back = loanFromOutcome")+200)),'loan repayment fallback matches');
 console.log('PASS v221-family-transfers-wage-scale (source-level)');
+const m=fs.readFileSync(new URL('../src/data/eventsMoneyHealthCareer.js',import.meta.url),'utf8');
+for (const k of ['ev_money_sibling_loan','ev_money_friend_loan']) {
+  const i=m.indexOf("key:'"+k+"'"); assert.ok(i>0,k);
+  assert.ok(/usdMonthlyPayToLocal\(S\.country, S\.year, \d+\)/.test(m.slice(i-700,i)),k+' amount uses the wage scale');
+}
+console.log('PASS v221-sibling-friend-loans-wage-scale (source-level)');

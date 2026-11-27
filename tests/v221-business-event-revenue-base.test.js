@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+const store=new Map();globalThis.localStorage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)};
+import { readFileSync } from 'node:fs';
+const src = readFileSync(new URL('../src/data/eventsBusiness.js', import.meta.url), 'utf8');
+const m = src.match(/function revOf\(biz\) \{[\s\S]*?\n\}/);
+assert.ok(m, 'revOf present');
+const revOf = new Function(m[0] + '; return revOf;')();
+assert.equal(revOf({ monthlyRev: 500000 }), 500000);
+assert.ok(revOf({ monthlyRev: 0, monthlyCost: 64736, history: [] }) >= 64736, 'cost base when no takings yet');
+assert.equal(revOf({ monthlyRev: 0, monthlyCost: 100, history: [{ revenue: 200 }, { revenue: 400 }] }), 300);
+console.log('ok v221 business event revenue base');

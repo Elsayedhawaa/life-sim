@@ -88,7 +88,18 @@ function shiftCost(biz, mult) {
 function shiftRepeatRate(biz, delta) {
   biz.repeatRate = clamp((Number(biz.repeatRate ?? 0.5)) + delta, 0, 1);
 }
-function revOf(biz) { return Math.max(1, Number(biz.monthlyRev || 0)); }
+/* Enterprise-mode ventures carry monthlyRev 0 (takings come from capacity),
+   so event amounts scaled by it printed "2 JPY". Use the nominal figure when
+   there is one, else the mean of the last 6 settled months, else the cost
+   base (what it takes to run the place). */
+function revOf(biz) {
+  const nominal = Number(biz.monthlyRev || 0);
+  if (nominal > 0) return nominal;
+  const h = Array.isArray(biz.history) ? biz.history.slice(-6).map(x => Number(x && x.revenue) || 0) : [];
+  const avg = h.length ? h.reduce((a, b) => a + b, 0) / h.length : 0;
+  if (avg > 0) return avg;
+  return Math.max(1, Number(biz.monthlyCost || 0));
+}
 function costOf(biz) { return Math.max(1, Number(biz.monthlyCost || 0)); }
 
 export const BUSINESS_EVENTS = [

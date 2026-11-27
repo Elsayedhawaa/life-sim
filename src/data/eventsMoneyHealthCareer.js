@@ -2,7 +2,7 @@ import{ALL_VACATIONS}from'./megaCareerEduMedical.js';
 import{childSchoolQuote,enrollChildSchoolYear}from'../systems/educationFunding.js';
 import{permitRenewalQuote,renewCurrentPermit,returnToHomeCountry,premiumResidencyQuote,applyPremiumOrGoldenResidency}from'../systems/visaMigrationEngine.js';
 import{CARS_MEGA_CATALOG,carSoldInCountry}from'./megaCarsAndShop.js';
-import{setStudyEffort,computeEndOfService,resignCurrentJob}from'../systems/careerEducationEngine.js';
+import{setStudyEffort,computeEndOfService,resignCurrentJob,usdMonthlyPayToLocal}from'../systems/careerEducationEngine.js';
 import{payRecordedDebt}from'../systems/recordedDebtPayments.js';
 import{lendPersonalMoney,settlePersonalReceivable,givePersonalMoney}from'../systems/personalReceivables.js';
 import{eraDepositRates}from'./economy.js';
@@ -487,7 +487,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     build: (S, ctx) => {
       const p=ctx.sib;if(!p?.alive)return null;
       if((S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='open'))return null;
-      const A=eraUsdCost(1200, S.country, S.year),B=eraUsdCost(600, S.country, S.year);
+      const A=usdMonthlyPayToLocal(S.country, S.year, 1200),B=usdMonthlyPayToLocal(S.country, S.year, 600);
       return{key:'ev_money_sibling_loan',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,available:st=>st.money.cash>=A,lockReason:`You have less than ${formatMoney(A,S.country)} in cash.`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,available:st=>st.money.cash>=B,lockReason:`You have less than ${formatMoney(B,S.country)} in cash.`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
     },
   },
@@ -512,7 +512,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     build: (S, ctx) => {
       const p=ctx.friend;if(!p?.alive)return null;
       if((S.money.personalReceivables||[]).some(l=>l.personId===p.id&&l.status==='open'))return null;
-      const A=eraUsdCost(2000, S.country, S.year),B=eraUsdCost(800, S.country, S.year);
+      const A=usdMonthlyPayToLocal(S.country, S.year, 2000),B=usdMonthlyPayToLocal(S.country, S.year, 800);
       return{key:'ev_money_friend_loan',category:'money',title:p.firstName+' Asks for a Loan',text:`${p.firstName} asks to borrow ${formatMoney(A,S.country)}. A funded loan transfers your cash to their savings and records the exact principal. Due next month; repayment depends on their actual available money. You can request it in Finance.`,choices:[{label:`Lend ${formatMoney(A,S.country)}`,available:st=>st.money.cash>=A,lockReason:`You have less than ${formatMoney(A,S.country)} in cash.`,effect:st=>lendPersonalMoney(st,p.id,A)},{label:`Lend ${formatMoney(B,S.country)}`,available:st=>st.money.cash>=B,lockReason:`You have less than ${formatMoney(B,S.country)} in cash.`,effect:st=>lendPersonalMoney(st,p.id,B)},{label:'Decline',effect:st=>{}}]};
     },
   },
