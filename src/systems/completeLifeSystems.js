@@ -25,7 +25,7 @@ import { rand, randInt, chance, clamp, pick } from '../core/rng.js';
 import { narrativeLoanQuote } from './narrativeLoans.js';
 import { nextId, recordJournal, walletMove, moveBalance, ensureExtendedState, computeNetWorthLocal, queueScene } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
-import { eraLocalCost, eraSalary, convertCurrency, goldPricePerGram, inflationRate, vacationEntitlementDays,computeMonthlyNetPay } from '../data/economy.js';
+import { eraLocalCost, eraSalary, convertCurrency, eraUsdCost, goldPricePerGram, inflationRate, vacationEntitlementDays,computeMonthlyNetPay } from '../data/economy.js';
 import {
   PROPERTY_UNITS,
   FINISHING_TIERS,
@@ -765,7 +765,7 @@ export function startCustomConstructionOnLand(S, ownedLandId, projectTypeId = 'v
 export function obtainOrRenewDrivingLicence(S) {
   ensureExtendedState(S);
   if (S.player.age < 18) return { ok: false, msg: 'Minimum driving licence age is 18.' };
-  const fee = Math.round(convertCurrency(160, 'usa', S.country, S.year));
+  const fee = Math.round(eraUsdCost(160, S.country, S.year));
   if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} for traffic department test & licence.` };
 
   walletMove(S, -fee, 'Driving licence exam & issuance', 'lifestyle');
@@ -2144,7 +2144,7 @@ export function registerProfessionalSyndicate(S) {
     business: 'Commerce & Chartered Accountants Syndicate'
   };
   const synName = `${getCountry(S.country).adjective} ${deg==='medicine'?'Medical':deg==='engineering'?'Engineering':'Professional'} Association (game membership)`;
-  const fee = Math.round(convertCurrency(185, 'usa', S.country, S.year));
+  const fee = Math.round(eraUsdCost(185, S.country, S.year));
   if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} for game professional-association membership.` };
 
   walletMove(S, -fee, `Syndicate registration: ${synName}`, 'career');
@@ -2284,10 +2284,10 @@ export function petStats(pt) {
   return pt;
 }
 export function petFeedCostLocal(S, pt) {
-  return Math.max(5, Math.round(convertCurrency((pt.upkeepUsd || 25) * 0.25, 'usa', S.country, S.year)));
+  return Math.max(5, Math.round(eraUsdCost((pt.upkeepUsd || 25) * 0.25, S.country, S.year)));
 }
 export function petVetCostLocal(S, pt) {
-  return Math.max(10, Math.round(convertCurrency(30 + (pt.upkeepUsd || 25) * 0.5, 'usa', S.country, S.year)));
+  return Math.max(10, Math.round(eraUsdCost(30 + (pt.upkeepUsd || 25) * 0.5, S.country, S.year)));
 }
 function findPet(S, petId) {
   return (S.pets || []).find(p => p.id === petId || p.specId === petId);
@@ -2559,7 +2559,7 @@ export function setPropertyFacadePalette(S, propId, facadeId) {
   const spec = FACADE_PALETTE_OPTIONS.find(f => f.id === facadeId);
   if (!spec) return { ok: false, msg: 'Unknown facade material.' };
 
-  const cost = Math.round(convertCurrency(950, 'usa', S.country, S.year));
+  const cost = Math.round(eraUsdCost(950, S.country, S.year));
   if (S.money.cash < cost) return { ok: false, msg: `Need ${formatMoney(cost, S.country)} for exterior cladding & stonework.` };
   { const paid = purchase(S, cost, `Facade cladding: ${spec.label}`, 'cash', { category: 'housing' }); if (!paid.ok) return paid; }
   prop.facadeStyle = spec.id;
@@ -2685,7 +2685,7 @@ export function getHaircut(S, styleId) {
   ensureExtendedState(S);
   const style = HAIRCUT_STYLES.find(s => s.id === styleId);
   if (!style) return { ok: false, msg: 'Haircut not offered.' };
-  const fee = Math.round(convertCurrency(style.priceUsd, 'usa', S.country, S.year));
+  const fee = Math.round(eraUsdCost(style.priceUsd, S.country, S.year));
   if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} for a ${style.label}.` };
   walletMove(S, -fee, `Haircut: ${style.label}`, 'lifestyle');
   S.player.vitals.looks = clamp((S.player.vitals.looks || 65) + style.looks);
@@ -2717,7 +2717,7 @@ export function buyOutfit(S, styleId) {
   ensureExtendedState(S);
   const style = OUTFIT_STYLES.find(s => s.id === styleId);
   if (!style) return { ok: false, msg: 'Outfit not offered.' };
-  const fee = Math.round(convertCurrency(style.priceUsd, 'usa', S.country, S.year));
+  const fee = Math.round(eraUsdCost(style.priceUsd, S.country, S.year));
   if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} for the ${style.label}.` };
   walletMove(S, -fee, `Outfit: ${style.label}`, 'lifestyle');
   S.player.vitals.looks = clamp((S.player.vitals.looks || 65) + style.looks);

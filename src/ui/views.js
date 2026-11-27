@@ -67,7 +67,7 @@ import {
   isNoPersonalIncomeTaxCountry,
   inflationRate,
   contractRuleFor,
-  vacationEntitlementDays,
+  vacationEntitlementDays, eraUsdCost,
   vacationRuleFor
 } from '../data/economy.js';
 import {
@@ -4429,7 +4429,7 @@ function renderAppearanceStudioSubtabHtml(S) {
       </div>
       <p class="muted" style="margin-bottom:8px">A haircut costs real money, changes your looks on your record, and someone close to you reacts to it. The portrait toggles above are free — these are not.</p>
       ${HAIRCUT_STYLES.map(hs => {
-        const fee = Math.round(convertCurrency(hs.priceUsd, 'usa', S.country, S.year));
+        const fee = Math.round(eraUsdCost(hs.priceUsd, S.country, S.year));
         const afford = S.money.cash >= fee;
         return `
           <div class="item-row">
@@ -4453,7 +4453,7 @@ function renderAppearanceStudioSubtabHtml(S) {
       </div>
       <p class="muted" style="margin-bottom:8px"></p>
       ${OUTFIT_STYLES.map(os => {
-        const fee = Math.round(convertCurrency(os.priceUsd, 'usa', S.country, S.year));
+        const fee = Math.round(eraUsdCost(os.priceUsd, S.country, S.year));
         const afford = S.money.cash >= fee;
         return `
           <div class="item-row">

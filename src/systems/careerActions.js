@@ -19,6 +19,7 @@ import { recordJournal, walletMove, queueScene, ensureExtendedState } from '../c
 import { getCountry, formatMoney } from '../data/countries.js';
 import {
   convertCurrency,
+  eraUsdCost,
   computeMonthlyNetPay,
   computeOvertimePay,
   overtimeRuleFor,
@@ -325,7 +326,7 @@ export function trainOptions(S) {
   const job = S?.career?.job;
   if (!job) return [];
   const opts = [];
-  const courseFee = Math.round(convertCurrency(400, 'usa', S.country, S.year));
+  const courseFee = Math.round(eraUsdCost(400, S.country, S.year));
   opts.push({
     kind: 'course', id: null,
     label: 'Short professional course',
@@ -355,7 +356,7 @@ export function trainOptions(S) {
   }
   const ls = licenceStatus(S);
   if (ls.medicalDue != null) {
-    const fee = Math.round(convertCurrency(150, 'usa', S.country, S.year));
+    const fee = Math.round(eraUsdCost(150, S.country, S.year));
     opts.push({
       kind: 'medical', id: null,
       label: 'Annual fitness medical check',
@@ -363,7 +364,7 @@ export function trainOptions(S) {
     });
   }
   if (ls.simDue != null) {
-    const fee = Math.round(convertCurrency(600, 'usa', S.country, S.year));
+    const fee = Math.round(eraUsdCost(600, S.country, S.year));
     opts.push({
       kind: 'sim', id: null,
       label: 'Simulator proficiency session',
@@ -390,7 +391,7 @@ export function trainQualify(S, kind, licId = null) {
 
   const lock=trainingLock(S,kind,licId);if(lock)return {ok:false,msg:lock};
   if (kind === 'course') {
-    const fee = Math.round(convertCurrency(400, 'usa', S.country, S.year));
+    const fee = Math.round(eraUsdCost(400, S.country, S.year));
     if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} for the course fee.` };
     walletMove(S, -fee, 'Professional short course', 'career');
     job.performance = clamp(job.performance + 3, 0, 100);
@@ -426,7 +427,7 @@ export function trainQualify(S, kind, licId = null) {
   if (kind === 'medical') {
     const ls = licenceStatus(S);
     if (ls.medicalDue == null) return { ok: false, msg: 'Your role has no annual fitness medical check.' };
-    const fee = Math.round(convertCurrency(150, 'usa', S.country, S.year));
+    const fee = Math.round(eraUsdCost(150, S.country, S.year));
     if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} for the medical check.` };
     walletMove(S, -fee, 'Annual fitness medical check', 'career');
     st.licence.medicalDueYear = S.year + 1;
@@ -439,7 +440,7 @@ export function trainQualify(S, kind, licId = null) {
   if (kind === 'sim') {
     const ls = licenceStatus(S);
     if (ls.simDue == null) return { ok: false, msg: 'Your role has no simulator check.' };
-    const fee = Math.round(convertCurrency(600, 'usa', S.country, S.year));
+    const fee = Math.round(eraUsdCost(600, S.country, S.year));
     if (S.money.cash < fee) return { ok: false, msg: `Need ${formatMoney(fee, S.country)} for the simulator session.` };
     walletMove(S, -fee, 'Simulator proficiency session', 'career');
     st.licence.simDueYear = S.year + 1;
