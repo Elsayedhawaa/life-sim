@@ -13,5 +13,5 @@ assert.equal(b.enterprise.capacity,Math.round(p.capacity*(p.choices[n][3]||1)),'
 b.enterprise.progress=100;b.enterprise.stage='ready';let k=0;const fill=()=>{if(b.enterprise.stage==='trading'&&(b.enterprise.lastTeam||100)<100&&k<40){hireBusinessEmployee(s,b,p.production[k%p.production.length]);k++;}for(const r of p.production)if(!b.staff.some(w=>w.role===r))assert.ok(hireBusinessEmployee(s,b,r).ok);};fill();if(p.minPremises)for(let i=0;i<p.minPremises;i++)assert.ok(companyAction(s,b,'premises').ok);assert.ok(companyAction(s,b,'open').ok);
 let rev=0,pr=0;for(let m=0;m<36;m++){s.month=(m%12)+1;if(m%12==0&&m)s.year++;fill();if(p.stock&&b.enterprise.stock<b.enterprise.capacity*.5)companyAction(s,b,'order','full');settleHouseholdMonth(s);
 if(m>=24){const l=b.lastPL;rev+=l.revenue;pr+=l.revenue-l.wages-l.rent-l.manager-l.fixed-(p.stock?l.units*l.unitCost:l.variableCost);}}
-const margin=pr/rev;assert.ok(margin>-.06&&margin<(id==="clinic"&&n===0?.45:.2),`${id}/${n} ${c} margin ${margin.toFixed(2)}`);}}}
+const margin=pr/rev;assert.ok(margin>-.06&&margin<(id==="clinic"&&n===0?.3:.2),`${id}/${n} ${c} margin ${margin.toFixed(2)}`);}}}
 console.log('ok v221 niche volume');
