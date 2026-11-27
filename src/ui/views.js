@@ -137,7 +137,7 @@ import { buildLegacySummary, computeLiveLegacyScore, legacyScoreReasons } from '
 /* v2.13 Worker 1 — progress system + stakes dashboard (Timeline panel). */
 import { getProgress, computeStakes } from '../systems/progressEngine.js';
 import { getCurrentChapter, noteChapterChange, ambitionStatus, noteAmbitionOutcome } from '../systems/storyLibrary.js';
-import { rentalMoveInQuote, childPocketMoneyMonthly, resolveCurrentHome } from '../systems/economyEngine.js';
+import { halfDepositAmount, rentalMoveInQuote, childPocketMoneyMonthly, resolveCurrentHome } from '../systems/economyEngine.js';
 import { migrateBusinesses, evaluateBusinessLaunch, computeWorkload, ventureViabilityWarningHtml, BUSINESS_FULL_TIME_HOURS, BUSINESS_PART_TIME_HOURS } from '../systems/businessEngine.js';
 /* v2.14 — management capacity (W1), manager (W2), per-industry decisions
    (W3), buying + branches (W4), exits + cash (W5). The hard cap is gone:
@@ -4070,8 +4070,8 @@ function renderBanksSubtabHtml(S, cObj) {
           <span class="muted">Deposit 50% moves half of the cash in your hand (${esc(formatMoney(Math.floor(S.money.cash * 0.5), S.country))}) into this savings account. Savings earns interest, and it is used first if a bill would leave your cash short.</span>
         </div>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-sm" data-action="bank-deposit" data-pct="0.5" ${S.money.cash > 100 ? '' : 'disabled'}>Deposit 50% of cash (${esc(formatMoney(Math.floor(S.money.cash * 0.5), S.country))} → savings)</button>
-          ${S.money.cash <= 100 ? lockReason('Not enough cash to deposit', `You hold ${esc(formatMoney(S.money.cash, S.country))} — a deposit needs more than ${esc(formatMoney(100, S.country))}`) : ''}
+          <button class="btn btn-sm" data-action="bank-deposit" data-pct="0.5" ${halfDepositAmount(S) >= 1 ? '' : 'disabled'}>Deposit 50% of cash (${esc(formatMoney(halfDepositAmount(S), S.country))} → savings)</button>
+          ${halfDepositAmount(S) < 1 ? lockReason('Not enough cash to deposit', `You hold ${esc(formatMoney(S.money.cash, S.country))} — half of that is under ${esc(formatMoney(1, S.country))}, so there is nothing to deposit`) : ''}
           <button class="btn btn-sm" data-action="bank-withdraw" ${S.money.savings > 0 ? '' : 'disabled'}>Withdraw All</button>
           ${S.money.savings <= 0 ? lockReason('Nothing in savings to withdraw', 'Deposit cash first') : ''}
         </div>

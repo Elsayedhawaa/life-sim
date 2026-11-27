@@ -1321,7 +1321,8 @@ export function settleHouseholdMonth(S) {
     /* GAME DESIGN: while game relief's seven-year credit block runs, no new credit at all: the limit is zero. */
     const creditBlocked = S.year <= (S.money.bankruptUntilYear ?? -1);
     S.money.creditBlocked = creditBlocked;
-    const cap = creditBlocked ? 0 : Math.round(monthlyLiving * 12);
+    /* GAME DESIGN: inside the block the penalty still waits for one month of living, housing and debt payments of overdraft, so a few pounds below zero is not treated as going without food. */
+    const cap = creditBlocked ? Math.ceil(monthlyLiving + Math.max(0, Number(summary.housing) || 0) + Math.max(0, Number(summary.debt) || 0)) : Math.round(monthlyLiving * 12);
     if (monthlyLiving > 0) S.money.creditCap = cap; /* read by the option builder to lock luxuries at the limit */
     if ((cap > 0 || creditBlocked) && monthlyLiving > 0 && S.money.cash < -cap) {
       const unpaid = Math.round((-cap - S.money.cash) * 100) / 100;
@@ -1499,6 +1500,8 @@ export function buyShopItemForEvent(S, item, { secondHand = false, label = null 
    DIRECT PLAYER FINANCIAL, GOLD, REAL ESTATE & VEHICLE ACTIONS
    ========================================================================== */
 
+/* What the 50% deposit button moves: half the cash, whole units. No raw minimum: the button works for any amount of at least 1 unit. */
+export function halfDepositAmount(S) { return Math.max(0, Math.floor((Number(S.money.cash) || 0) * 0.5)); }
 export function depositToSavings(S, amount) {
   const amt = Math.floor(Number(amount) || 0);
   if (amt <= 0 || S.money.cash < amt) return { ok: false, msg: 'Insufficient cash.' };

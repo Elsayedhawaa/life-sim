@@ -440,12 +440,15 @@ export function evaluateBusinessLaunch(S, bp, mode = null) {
   const monthlyCostPartTimeHomeSelf = Math.round(costLocal * BUSINESS_PART_TIME_COST_MULT) + wageEstimateLocal;
   const monthlyCostPartTimeHomeManagerRun = monthlyCostPartTimeHomeSelf + managerWageEstimateLocal;
   const monthlyCostFullTimeHomeSelf = costLocal + wageEstimateLocal;
+  /* Manager-run: the part-time cuts do not apply, so the estimate is the full-rate revenue against full-rate costs plus the manager. */
+  const monthlyCostManagerRunHome = monthlyCostFullTimeHomeSelf + managerWageEstimateLocal;
   return {
     ok: locks.length === 0,
     locks,
     capitalLocal, revLocal, costLocal,
     ventureScale: pricing.scale, /* v2.18 W4 — the per-country wage-level scale applied above (1 in Egypt) */
     wageEstimateLocal, rentEstimateLocal, trueMonthlyCostLocal,
+    monthlyCostManagerRunHome,
     eraLabel: bp.to ? `Available ${bp.from}–${bp.to}` : `Available since ${bp.from}`,
     /* v2.14 §1 — management capacity (the real constraint, in plain
        words, for the launch screen). ok above is the hard locks only
@@ -514,7 +517,8 @@ export function ventureViabilityWarningHtml(S, bp, ev = null) {
   }
   const warn=(mode,takings,cost,manager=false)=>`<div class="muted" style="margin:6px 0"><strong style="color:var(--brand-crimson)">Loss risk</strong> · ${mode}${manager?' + manager':''} · Scenario check: if sales match the assumed ${fmt(takings)}/mo, costs run about ${fmt(cost-takings)}/mo higher. Real months vary, and sales may come in higher or lower than this estimate. Profit is unknown until the first month settles. <span title="Assumption, not a prediction. Real revenue varies and a loss reduces your cash." aria-label="Information">ⓘ</span><details><summary>Assumptions and costs</summary>Assumed sales ${fmt(takings)}/mo<br>Wages ${fmt(wages)}/mo · Other ${fmt(mode==='Part-time'?otherPT:other)}/mo${manager?` · Manager ${fmt(managerWage)}/mo`:''}</details></div>`;
   if(selfPT>expectedPT)return warn('Part-time',expectedPT,selfPT);
-  if(mgrPT>expectedPT)return warn('Part-time',expectedPT,mgrPT,true);
+  const mgrRun=Number(e.monthlyCostManagerRunHome)||0;
+  if(mgrRun>expectedFT)return warn('Part-time',expectedFT,mgrRun,true);
   const selfFT=Number(e.monthlyCostFullTimeHomeSelf)||0;
   if(selfFT>expectedFT)return warn('Full-time',expectedFT,selfFT);
   return '';
@@ -1118,7 +1122,9 @@ export function computeBusinessMonth(S, biz) {
   const otherBase = Number(biz.monthlyCost) || 0;
 
   let revMult = 1;
-  if (biz.mode === 'part_time') revMult *= BUSINESS_PART_TIME_REV_MULT;
+  /* GAME DESIGN: the part-time cut is the owner's 18 hours a week. With a manager running the business the owner's hours are not what limits trade, so the cut does not apply (the manager's wage is already charged). */
+  const partTimeOwnerRun = biz.mode === 'part_time' && !biz.manager;
+  if (partTimeOwnerRun) revMult *= BUSINESS_PART_TIME_REV_MULT;
   if (biz.premises?.kind === 'home') revMult *= BUSINESS_HOME_REV_MULT;
   if (biz.remote) revMult *= 0.7;
   const cond = Number(biz.premises?.conditionPct ?? 90);
@@ -1141,7 +1147,7 @@ export function computeBusinessMonth(S, biz) {
   if (!businessIsManaged(S, biz)) revMult *= unmanagedRevenueMult(biz);
 
   let costMult = 1;
-  if (biz.mode === 'part_time') costMult *= BUSINESS_PART_TIME_COST_MULT;
+  if (partTimeOwnerRun) costMult *= BUSINESS_PART_TIME_COST_MULT;
   if (now <= (biz.buffs?.bonusUntil || 0)) costMult *= 0.95;
   if (pricingDir === 1) costMult *= 1.03;
   else if (pricingDir === -1) costMult *= 0.97;

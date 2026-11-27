@@ -19,7 +19,7 @@ assert.ok(F.journal.some(j=>/Relatives and friends cover the basics/.test(JSON.s
 console.log('ok v221 credit limit floor');
 /* Relief's credit block: no new credit at all while it runs; the cards say so and mention relief. */
 {const B=mk(true);B.money.bankruptUntilYear=B.year+3;B.money.cash=-80000;B.turn+=1;settleHouseholdMonth(B);
-assert.ok(B.money.cash>-1,'during the relief block the limit is zero: '+B.money.cash);
+assert.ok(B.money.cash>=-B.money.creditCap-1&&B.money.cash>-80000&&B.money.creditCap>0,'during the relief block the overdraft is held to one month of costs: '+B.money.cash+' cap '+B.money.creditCap);
 assert.ok(B.journal.some(j=>/relief is still running, so no lender will give you credit until/.test(JSON.stringify(j))),'journal says why');
 const N=mk(true);N.money.cash=-5e6;N.turn+=1;settleHouseholdMonth(N);
 assert.ok(N.journal.some(j=>/Game cash relief, when it is offered/.test(JSON.stringify(j))),'normal limit line points at relief and work');
@@ -29,3 +29,8 @@ console.log('ok v221 credit block');
 import{atCreditLimit}from'../src/core/discretionary.js';
 {const B=mk(true);B.money.creditBlocked=false;B.money.bankruptUntilYear=B.year+2;B.money.cash=0;assert.ok(atCreditLimit(B),'at zero cash inside the relief block, luxuries are locked at once');B.money.cash=500;assert.ok(!atCreditLimit(B),'with cash in hand they are open');}
 console.log('ok v221 live block lock');
+/* Tolerance: one month of shortfall inside the relief block, starting from zero cash, is not 'going without'. */
+{const T=mk(true);T.money.bankruptUntilYear=T.year+3;T.money.cash=0;T.turn+=1;const h=T.player.vitals.health;settleHouseholdMonth(T);
+assert.ok(!T.journal.some(j=>/relief is still running, so no lender/.test(JSON.stringify(j))),'no went-without card for a tiny overdraft');
+assert.ok(T.player.vitals.health>=h-1.5,'no 3-point health hit: '+h+' -> '+T.player.vitals.health);}
+console.log('ok v221 relief tolerance');
