@@ -21,3 +21,8 @@ near(y('usa','law',2),159670,0.03,'US senior counsel = BLS median');
 assert.ok(y('usa','medicine',3)>y('usa','medicine',2)&&y('usa','law',3)>y('usa','law',2),'ladders stay rising');
 assert.ok(y('usa','medicine',1)>y('usa','medicine',0)&&y('usa','law',1)>y('usa','law',0));
 console.log('PASS v221-start-anchor-usa-doctors-lawyers');
+near(y('nld','nursing',0),45016,0.03,'NL hbo nurse start');
+near(y('jpn','nursing',0),3510324,0.03,'JP university-graduate nurse start');
+near(y('nld','teaching',1),45016,0.03,'NL primary teacher start');
+near(y('can','teaching',1),57703,0.03,'Ontario A1 start');
+console.log('PASS v221-start-anchor-more-countries');
