@@ -985,7 +985,7 @@ export function handleNpcDeath(S, person) {
     let lawLabel = 'Civil Probate Equal Division';
     let netEstatePlayerLocal = estateInPlayerLocal;
 
-    if (['egy', 'sau', 'uae'].includes(profCountry) || S.player.religion === 'muslim') {
+    if (['egy', 'sau', 'uae'].includes(profCountry)) {
       const spouseTake = (otherParent && otherParent.alive) ? (person.role === 'father' ? 0.125 : 0.25) : 0;
       const pool = 1 - spouseTake;
       const playerUnits = S.player.gender === 'm' ? 2 : 1;

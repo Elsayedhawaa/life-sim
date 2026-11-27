@@ -4,7 +4,7 @@
    Sweden: software and systems developers median 53,500 SEK a month, P10 39,600, P90 72,600 (SCB 2025 via yrkesstatistik.se/lon/2512/) against a 30k a month (360k a year) entry tier. Australia: entry 80-90k AUD (softwareengineersalary.com), Brisbane junior 60-80k, senior 110-150k, against a 62k entry tier. Netherlands: junior 35-45k EUR, medior 45-65k, senior 70-90k (searchxrecruitment.com) against a 40k entry tier.
    GAME DESIGN (not a real-world figure): for these countries the whole track premium (track multiplier x rung multiplier, minus 1) is multiplied by 0.15 (Italy, Germany, Japan) or 0.2 (UK, France, Canada, Sweden, Australia) or 0.15 (Netherlands). Other countries keep the old shape, as no source was checked for them. Egypt keeps its steep ladder, which matches Egyptian reports (junior 7-12k EGP a month, senior 500k+ a year). */
 export const TECH_PAY_TRACKS = ['tech', 'software', 'web_development', 'mobile_app_development', 'cloud_devops_engineer', 'ai_ml', 'ai_automation', 'cybersecurity', 'cybersecurity_analyst'];
-export const TECH_PREMIUM_SHARE = { ita: 0.15, deu: 0.15, jpn: 0.15, gbr: 0.2, fra: 0.2, can: 0.2, swe: 0.2, aus: 0.2, nld: 0.15 };
+export const TECH_PREMIUM_SHARE = { ita: 0.15, deu: 0.15, jpn: 0.15, gbr: 0.2, fra: 0.2, can: 0.2, swe: 0.2, aus: 0.2, nld: 0.15, che: 0.5 };
 
 export function payShape(country, trackId, payMult, rungMult) {
   const raw = (payMult || 1) * (rungMult || 1);
