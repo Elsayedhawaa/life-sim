@@ -90,8 +90,10 @@ export function buildTurnResult(S, before, kind, stepsRun = 1) {
     if (before.savings) fxLines.push(`Savings: ${formatMoney(before.savings, before.country)} became ${formatMoney(conv(before.savings), S.country)}`);
   }
   const moves = new Map();
+  let wentWithout = 0;
   for (const e of newEntriesSince(S.ledger, before.ledgerTopId)) {
     if (e.account !== 'cash' && e.account !== 'savings') continue;
+    if (e.category === 'credit_limit') { wentWithout += entryDelta(S, e); continue; } /* costs you went without: not income, shown as its own note */
     if (e.category === 'fx') continue; /* pure currency conversion is not spending or income */
     const key = (e.label || 'Payment').replace(e.category === 'monthly_settlement' ? / \(\d{1,2}\/\d{4}\)$/ : /$^/, '');
     const k2 = entryCurrencyIsCurrent(S, e) ? key : `${key} (paid in ${e.currency}, shown in ${getCountry(S.country).currency})`;
@@ -147,7 +149,8 @@ export function buildTurnResult(S, before, kind, stepsRun = 1) {
     storyLines,
     ageDelta: after.age - before.age,
     sceneWaiting: !!S.activeScene,
-    gameOver: !!S.gameOver
+    gameOver: !!S.gameOver,
+    wentWithout: Math.round(wentWithout)
   };
 }
 
@@ -202,6 +205,7 @@ export function renderTurnResultCardHtml(S, uiState) {
   if (r.moneyLines.some(l => /Monthly (housing|living costs|debt payments|family support)/.test(l.label))) {
     noteBits.push('<span title="Bills already deducted." aria-label="Information">ⓘ</span>');
   }
+  if (r.wentWithout > 0) noteBits.push(`<div class="trc-note text-bad">You are at your credit limit, so about ${esc(formatMoney(r.wentWithout, S.country))} of this month's costs went unpaid. You went without, and your health, happiness and calm take the hit. This is not added to your debt.</div>`);
   if (r.sceneWaiting) noteBits.push(`<div class="trc-note">A decision is waiting for you below.</div>`);
   if (r.gameOver) noteBits.push(`<div class="trc-note">This life has ended.</div>`);
   if (quiet) noteBits.push(`<div class="trc-note muted">A quiet one. Nothing changed.</div>`);

@@ -1,4 +1,5 @@
 import { lenderCreditScore, familyNameCreditPoints, familyNameInterviewPoints } from '../systems/familyName.js';
+import { discretionaryLock } from '../core/discretionary.js';
 import { siblingCompanyLine } from '../systems/siblingCompanies.js';
 import { isFortuneParent, askPreview, familyLedgerView, siblingStakeLine, siblingAssetsLine, parentAssetsLine, siblingEmployerLine } from '../systems/familyFortune.js';
 import {courtshipMonthsApart} from '../systems/courtshipLife.js';
@@ -1181,13 +1182,14 @@ function renderActiveSceneHtml(S) {
       <div class="scene-choices">
         ${(() => {
           const choiceHtml = (ch, idx) => {
-          const avail = typeof ch.available !== 'function' || ch.available(S);
+          const limitLock = discretionaryLock(S, sc, ch);
+          const avail = !limitLock && (typeof ch.available !== 'function' || ch.available(S));
           const lbl = typeof ch.label === 'function' ? ch.label(S) : ch.label;
           return `
             <button type="button" class="choice-btn" data-action="choose-scene" data-idx="${idx}" ${avail ? '' : 'disabled'}>
               ${esc(lbl)}
             </button>
-            ${avail ? '' : sceneChoiceLockReason(S, ch, lbl)}
+            ${avail ? '' : (limitLock ? lockReason('Credit limit reached', limitLock) : sceneChoiceLockReason(S, ch, lbl))}
           `;
           };
           if (sc.choices.length <= 6) return sc.choices.map(choiceHtml).join('');

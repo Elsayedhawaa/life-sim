@@ -1,4 +1,5 @@
 import {restoreSpouseConversation,spouseConversationCurrent} from '../systems/spouseAutonomy.js';
+import { discretionaryLock } from './discretionary.js';
 import {restoreCourtshipScene,courtshipSceneCurrent} from '../systems/courtshipLife.js';
 import{restoreAgingSignScene}from'../systems/mortalityModel.js';
 import{restoreScholarshipEndedScene}from'../systems/educationFunding.js';
@@ -421,6 +422,7 @@ export function resolveActiveSceneChoice(S, choiceIdx) {
   const chosen = scene.choices[choiceIdx];
   if (!chosen) return { ok: false, reason: 'invalid_choice' };
   if (typeof chosen.available === 'function' && !chosen.available(S)) return { ok: false, reason: 'unavailable' };
+  if (discretionaryLock(S, scene, chosen)) return { ok: false, reason: 'unavailable' };
   if (typeof chosen.effect !== 'function') return { ok: false, reason: 'missing_effect' };
 
   S.activeScene = null;

@@ -2,6 +2,7 @@
 // against the saved state at that moment. Coverage limits: only the claim types listed in CHECKS.
 import{createNewLifeState,ensureExtendedState}from'../src/core/schema.js';
 import{advanceSingleTurn,resolveActiveSceneChoice}from'../src/core/gameLoop.js';
+import{discretionaryLock}from'../src/core/discretionary.js';
 const SEEDS=+process.env.SEEDS||12, COUNTRIES=['egy','gbr','usa','tur','deu','jpn'];
 const found=new Map();let SCENES=0;const seen=new Set();
 const flag=(kind,id,detail,s)=>{const k=kind+'|'+id;if(!found.has(k))found.set(k,{kind,id,detail,year:s.year,n:0});found.get(k).n++;};
@@ -48,7 +49,7 @@ for(let seed=1;seed<=SEEDS;seed++){
   if(/undefined|NaN|\[object|\{\w+\}/.test(text))flag('text-leak',id,text.match(/undefined|NaN|\[object|\{\w+\}/)[0],s);
   const idx=(i+seed)%Math.max(1,(a.choices||[]).length);
   const mutated=await probeChoice(s,a,idx);
-  if(!mutated&&!/^(continue|understood|ok|close)|unchanged|hold out/i.test(a.choices?.[idx]?.label||'')&&(a.choices?.[idx]?.available?.(s)!==false))flag('choice-does-nothing',id+'#'+idx,(a.choices?.[idx]?.label||'').slice(0,50),s);
+  if(!mutated&&!/^(continue|understood|ok|close)|unchanged|hold out/i.test(a.choices?.[idx]?.label||'')&&(a.choices?.[idx]?.available?.(s)!==false)&&!discretionaryLock(s,a,a.choices?.[idx]))flag('choice-does-nothing',id+'#'+idx,(a.choices?.[idx]?.label||'').slice(0,50),s);
   if(s.activeScene)s.activeScene=null;
  }
 }

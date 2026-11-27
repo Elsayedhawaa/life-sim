@@ -1316,9 +1316,10 @@ export function settleHouseholdMonth(S) {
   /* GAME DESIGN credit limit (new lives only, S.rules.creditLimit): nobody can borrow without end. Cash may run to 12 months of
      living costs below zero. Past that, creditors stop lending and the player goes without: the excess is not added to the debt,
      and health, happiness and stress take a hit each month it happens. Old saves carry no flag and are unchanged. */
-  if (S.rules?.creditLimit && S.money.cash < 0) {
+  if (S.rules?.creditLimit) {
     const monthlyLiving = Math.max(0, Number(summary.living) - Number(bizSettleCosts || 0));
     const cap = Math.round(monthlyLiving * 12);
+    if (cap > 0) S.money.creditCap = cap; /* read by the option builder to lock luxuries at the limit */
     if (cap > 0 && S.money.cash < -cap) {
       const unpaid = Math.round((-cap - S.money.cash) * 100) / 100;
       walletMove(S, unpaid, 'Credit limit reached: costs you went without are not added to the debt', 'credit_limit');
