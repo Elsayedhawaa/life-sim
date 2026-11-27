@@ -574,7 +574,9 @@ export function rollMortality(S) {
   }
   /* Disease: each condition rolls independently; the worst one that hits
      is the cause. (Independent rolls, highest-risk first.) */
+  /* GAME DESIGN: a condition diagnosed this same year cannot kill this year. The diagnosis scene is only just queued, so the player must get a turn to respond first. */
   const ranked = [...conds]
+    .filter(c => c.sinceYear !== S.year)
     .map(c => ({ cond: c, p: diseaseAnnualDeathProb(S, c) }))
     .filter(x => x.p > 0)
     .sort((a, b) => b.p - a.p);
