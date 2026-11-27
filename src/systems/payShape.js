@@ -6,11 +6,28 @@
 export const TECH_PAY_TRACKS = ['tech', 'software', 'web_development', 'mobile_app_development', 'cloud_devops_engineer', 'ai_ml', 'ai_automation', 'cybersecurity', 'cybersecurity_analyst'];
 export const TECH_PREMIUM_SHARE = { ita: 0.15, deu: 0.15, jpn: 0.15, gbr: 0.2, fra: 0.2, can: 0.2, swe: 0.2, aus: 0.2, nld: 0.15, che: 0.5 };
 
+/* Starting pay of nurses and teachers, from published public pay scales. The tracks price them as the country's generic entry wage times 0.78 (nursing) or 0.88 (teaching) times a rung multiplier, which is far under the published start in the countries below:
+   Nurse start: USA 66,030 USD (BLS OEWS May 2024, 10th percentile for registered nurses; the median is 97,550, bls.gov/ooh/healthcare/registered-nurses.htm). UK 31,049 GBP (NHS Agenda for Change band 5 entry, 2025/26, nhsemployers.org/articles/pay-scales-202526). Germany 40,976 EUR a year (TVöD P7 step 2, 3,414.69 a month, mein-tvoed.de/tvoed/p7).
+   Teacher start: UK 32,916 GBP (England main pay range minimum, September 2025). Australia 90,177 AUD (NSW public schools new graduate, education.nsw.gov.au/teach-nsw/explore-teaching/salary-of-a-teacher; other states pay less).
+   GAME DESIGN: the factor lifts the starting rung to the published figure, then fades to nothing at a rung multiplier of 2.5, so managers and heads are not inflated. Other countries are unchecked and keep the old shape. */
+const START_ANCHOR = {
+  nursing: { ref: 1, factors: { usa: 66030 / (48000 * 0.78), gbr: 31049 / (28000 * 0.78), deu: 40976 / (42000 * 0.78) } },
+  teaching: { ref: 1.18, factors: { gbr: 32916 / (28000 * 0.88 * 1.18), aus: 90177 / (62000 * 0.88 * 1.18) } },
+};
+function anchorBoost(country, trackId, rungMult) {
+  const a = START_ANCHOR[trackId];
+  const f = a && a.factors[country];
+  if (!f) return 1;
+  const w = Math.max(0, Math.min(1, (2.5 - (rungMult || 1)) / (2.5 - a.ref)));
+  return 1 + (f - 1) * w;
+}
+
 export function payShape(country, trackId, payMult, rungMult) {
   const raw = (payMult || 1) * (rungMult || 1);
+  const boost = anchorBoost(country, trackId, rungMult);
   const share = TECH_PREMIUM_SHARE[country];
-  if (share == null || !TECH_PAY_TRACKS.includes(trackId) || raw <= 1) return raw;
-  return 1 + (raw - 1) * share;
+  if (share == null || !TECH_PAY_TRACKS.includes(trackId) || raw <= 1) return raw * boost;
+  return (1 + (raw - 1) * share) * boost;
 }
 /* The pay ratio of moving from one rung to another on a track in this country. */
 export function payRatio(country, trackId, payMult, fromRungMult, toRungMult) {
