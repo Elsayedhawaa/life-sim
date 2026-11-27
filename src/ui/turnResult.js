@@ -205,7 +205,7 @@ export function renderTurnResultCardHtml(S, uiState) {
   if (r.moneyLines.some(l => /Monthly (housing|living costs|debt payments|family support)/.test(l.label))) {
     noteBits.push('<span title="Bills already deducted." aria-label="Information">ⓘ</span>');
   }
-  if (r.wentWithout > 0) noteBits.push(`<div class="trc-note text-bad">You are at your credit limit, so about ${esc(formatMoney(r.wentWithout, S.country))} of this month's costs went unpaid. You went without, and your health, happiness and calm take the hit. This is not added to your debt.</div>`);
+  if (r.wentWithout > 0) noteBits.push(`<div class="trc-note text-bad">You are at your credit limit, so about ${esc(formatMoney(r.wentWithout, S.country))} of this month's costs went unpaid. You went without, and your health, happiness and calm take the hit. This is not added to your debt. ${S.year <= (S.money?.bankruptUntilYear ?? -1) ? `Game relief is already in use, so new credit is closed until ${esc(String(S.money.bankruptUntilYear + 1))}: only earning or selling something helps.` : 'Game cash relief clears the debt but blocks new credit for seven years, and it is offered again each year while you stay this deep. Work and sales are in the Career and Finance tabs.'}</div>`);
   if (r.sceneWaiting) noteBits.push(`<div class="trc-note">A decision is waiting for you below.</div>`);
   if (r.gameOver) noteBits.push(`<div class="trc-note">This life has ended.</div>`);
   if (quiet) noteBits.push(`<div class="trc-note muted">A quiet one. Nothing changed.</div>`);

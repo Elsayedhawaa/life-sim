@@ -1318,9 +1318,12 @@ export function settleHouseholdMonth(S) {
      and health, happiness and stress take a hit each month it happens. Old saves carry no flag and are unchanged. */
   if (S.rules?.creditLimit) {
     const monthlyLiving = Math.max(0, Number(summary.living) - Number(bizSettleCosts || 0));
-    const cap = Math.round(monthlyLiving * 12);
-    if (cap > 0) S.money.creditCap = cap; /* read by the option builder to lock luxuries at the limit */
-    if (cap > 0 && S.money.cash < -cap) {
+    /* GAME DESIGN: while game relief's seven-year credit block runs, no new credit at all: the limit is zero. */
+    const creditBlocked = S.year <= (S.money.bankruptUntilYear ?? -1);
+    S.money.creditBlocked = creditBlocked;
+    const cap = creditBlocked ? 0 : Math.round(monthlyLiving * 12);
+    if (monthlyLiving > 0) S.money.creditCap = cap; /* read by the option builder to lock luxuries at the limit */
+    if ((cap > 0 || creditBlocked) && monthlyLiving > 0 && S.money.cash < -cap) {
       const unpaid = Math.round((-cap - S.money.cash) * 100) / 100;
       walletMove(S, unpaid, 'Credit limit reached: costs you went without are not added to the debt', 'credit_limit');
       /* GAME DESIGN: the health hit stops at a floor of 35. Below that, the people around you cover the basics so the slide ends, but happiness and stress keep taking the hit. */
@@ -1334,7 +1337,9 @@ export function settleHouseholdMonth(S) {
       S.player.vitals.stress = clamp(S.player.vitals.stress + 5);
       if ((S.money.creditLimitNoteTurn ?? -99) + 12 <= S.turn) {
         S.money.creditLimitNoteTurn = S.turn;
-        recordJournal(S, `You are ${formatMoney(cap, S.country)} in debt, the most lenders will allow. Past that you go without: skipped meals, unpaid bills, no repairs. It is wearing you down until you earn or sell something. Game limit: 12 months of living costs.`, 'money');
+        recordJournal(S, creditBlocked
+          ? `Your game relief is still running, so no lender will give you credit until ${S.money.bankruptUntilYear + 1}. Whatever you cannot pay, you go without: skipped meals, unpaid bills, no repairs. Only earning or selling something helps.`
+          : `You are ${formatMoney(cap, S.country)} in debt, the most lenders will allow. Past that you go without: skipped meals, unpaid bills, no repairs. It is wearing you down until you earn or sell something. Game cash relief, when it is offered, clears the debt but blocks new credit for seven years; work and sales are in the Career and Finance tabs. Game limit: 12 months of living costs.`, 'money');
       }
     }
   }

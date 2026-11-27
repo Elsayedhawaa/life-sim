@@ -17,3 +17,11 @@ console.log('ok v221 credit limit');
 assert.ok(F.player.vitals.health>=35,'health stops at the floor: '+F.player.vitals.health);
 assert.ok(F.journal.some(j=>/Relatives and friends cover the basics/.test(JSON.stringify(j))),'family-help line is written once at the floor');}
 console.log('ok v221 credit limit floor');
+/* Relief's credit block: no new credit at all while it runs; the cards say so and mention relief. */
+{const B=mk(true);B.money.bankruptUntilYear=B.year+3;B.money.cash=-80000;B.turn+=1;settleHouseholdMonth(B);
+assert.ok(B.money.cash>-1,'during the relief block the limit is zero: '+B.money.cash);
+assert.ok(B.journal.some(j=>/relief is still running, so no lender will give you credit until/.test(JSON.stringify(j))),'journal says why');
+const N=mk(true);N.money.cash=-5e6;N.turn+=1;settleHouseholdMonth(N);
+assert.ok(N.journal.some(j=>/Game cash relief, when it is offered/.test(JSON.stringify(j))),'normal limit line points at relief and work');
+assert.ok(N.money.cash<-1000,'without a block the 12-month limit still applies');}
+console.log('ok v221 credit block');
