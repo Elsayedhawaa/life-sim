@@ -193,14 +193,21 @@ export function voidMonthCostLocal(S, prop) {
 /* ------------------------------------------------------------------ *
    Tenants — real person records, from the employer pool.
    ------------------------------------------------------------------ */
-export function tenantEmployersFor(countryId) {
+export function tenantEmployersFor(countryId, onlySector) {
   const byCountry = EMPLOYERS[countryId] || {};
   const names = [];
-  for (const sector of Object.values(byCountry)) {
+  for (const [key, sector] of Object.entries(byCountry)) {
+    if (onlySector && key !== onlySector) continue;
     if (Array.isArray(sector)) for (const n of sector) if (n) names.push(n);
   }
   return names;
 }
+/* Which employer sector in the employer list fits each tenant job title. Titles with no matching sector (shop, kitchen, driving, desk work) use the services sector. */
+export const TENANT_TITLE_SECTOR = {
+  'Teacher': 'teaching', 'Nurse': 'medicine', 'Accountant': 'finance', 'Engineer': 'engineering', 'Bank Clerk': 'finance', 'Pharmacist': 'pharma',
+  'Electrician': 'trades', 'Technician': 'trades', 'Warehouse Worker': 'trades', 'Driver': 'trades',
+  'Shop Assistant': 'bpo', 'Sales Assistant': 'bpo', 'Chef': 'bpo', 'Office Manager': 'bpo', 'Receptionist': 'bpo'
+};
 
 /* Find a tenant for a rented-out property. The deposit is posted by
    the caller: through pendingMoves when the monthly tick finds the
@@ -218,8 +225,11 @@ export function findTenant(S, prop, opts = {}) {
   const countryId = prop.country || S.country;
   const employers = tenantEmployersFor(countryId);
   if (!employers.length) return { ok: false, msg: `No employers on record in ${getCountry(countryId).name} to find a tenant from.` };
-  const employer = employers[Math.floor(rand(S) * employers.length)];
+  /* The job title picks the sector, and the employer comes from that sector, so a tenant is never "a teacher at Decathlon". */
   const jobTitle = TENANT_JOB_TITLES[Math.floor(rand(S) * TENANT_JOB_TITLES.length)];
+  const sectorList = tenantEmployersFor(countryId, TENANT_TITLE_SECTOR[jobTitle]);
+  const pool = sectorList.length ? sectorList : employers;
+  const employer = pool[Math.floor(rand(S) * pool.length)];
   const cObj = getCountry(countryId);
   const midNative = eraSalary((cObj.annualSalaryTiers2026.mid || 60000) / 12, countryId, S.year);
   const rentNative = effectiveMonthlyRentNative(S, prop);

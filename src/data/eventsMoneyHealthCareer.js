@@ -119,8 +119,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(900, S.country, S.year);
-      const B = eraUsdCost(450, S.country, S.year);
+      const A = eraUsdCost(300, S.country, S.year);
+      const B = eraUsdCost(150, S.country, S.year);
       return {
         key: 'ev_money_electricity_spike',
         category: 'money',
@@ -908,8 +908,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(1400, S.country, S.year);
-      const B = eraUsdCost(700, S.country, S.year);
+      const A = eraUsdCost(250, S.country, S.year);
+      const B = eraUsdCost(60, S.country, S.year);
       return {
         key: 'ev_money_uniform_cost',
         category: 'money',
@@ -958,7 +958,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(1100, S.country, S.year);
+      const A = eraUsdCost(350, S.country, S.year);
       return {
         key: 'ev_money_ac_bill',
         category: 'money',
@@ -1107,8 +1107,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(1500, S.country, S.year);
-      const B = eraUsdCost(1000, S.country, S.year);
+      const A = eraUsdCost(240, S.country, S.year);
+      const B = eraUsdCost(160, S.country, S.year);
       return {
         key: 'ev_money_grocery_inflation',
         category: 'money',
@@ -1660,8 +1660,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(4500, S.country, S.year);
-      const B = eraUsdCost(450, S.country, S.year);
+      const A = eraUsdCost(2000, S.country, S.year);
+      const B = eraUsdCost(170, S.country, S.year);
       return {
         key: 'ev_money_car_insurance',
         category: 'money',
@@ -1912,7 +1912,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(900, S.country, S.year);
+      const A = eraUsdCost(250, S.country, S.year);
       return {
         key: 'ev_money_sell_old_phone',
         category: 'money',
@@ -2287,8 +2287,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(150, S.country, S.year);
-      const B = eraUsdCost(60, S.country, S.year);
+      const A = eraUsdCost(45, S.country, S.year);
+      const B = eraUsdCost(22, S.country, S.year);
       return {
         key: 'ev_money_haircut_price',
         category: 'money',
@@ -2537,8 +2537,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(2500, S.country, S.year);
-      const B = eraUsdCost(800, S.country, S.year);
+      const A = eraUsdCost(400, S.country, S.year);
+      const B = eraUsdCost(120, S.country, S.year);
       return {
         key: 'ev_money_birthday_gift_spouse',
         category: 'money',
