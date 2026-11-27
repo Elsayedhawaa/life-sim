@@ -8,5 +8,8 @@ for(const id of['cafe','clinic','retail_shop']){const{s,b}=world(id);const snap=
 /* A windfall is refused as well */
 {const{s,b}=world('car_rental_fleet');const r=convertWithTrial(s,b);assert.equal(r.ok,false);assert.match(r.msg,/more than double/);}
 /* A conversion whose trial lands near the old revenue goes ahead */
-{const{s,b}=world('salon');const r=convertWithTrial(s,b);assert.equal(r.ok,true,r.msg);assert.ok(b.enterprise);}
+{const{s,b}=world('pet_grooming');const r=convertWithTrial(s,b);assert.equal(r.ok,true,r.msg);assert.ok(b.enterprise);}
+
+/* The trial re-orders stock every month, as a player would; a trial that ordered once read zero sales by month four. */
+{const{s,b}=world('restaurant');const t=conversionTrial(s,b);assert.ok(t.revenue>t.oldRevenue*.3,'restaurant trial keeps selling with monthly stock: '+t.revenue/t.oldRevenue);}
 console.log('ok v221 conversion trial');
