@@ -15,6 +15,13 @@ assert.ok(yr('ita','tech',4)<=110000,'ita top '+yr('ita','tech',4));
 assert.ok(yr('deu','tech',0)>=42000&&yr('deu','tech',0)<=55000,'deu junior '+yr('deu','tech',0));
 assert.ok(yr('deu','software',2)<=95000);
 assert.ok(yr('jpn','tech',0)>=3.8e6&&yr('jpn','tech',0)<=5.2e6,'jpn junior '+yr('jpn','tech',0));
+// UK junior 30-40k GBP, senior 55-65k, CTO 100k+ (embstalent.co.uk); France junior 32-46k EUR (vocaneo.com); Canada junior 47-64k CAD (glassdoor.ca), all-level median about 104k CAD (jobbank.gc.ca)
+assert.ok(yr('gbr','tech',0)>=30000&&yr('gbr','tech',0)<=40000,'gbr junior '+yr('gbr','tech',0));
+assert.ok(yr('gbr','tech',2)>=50000&&yr('gbr','tech',2)<=70000,'gbr senior '+yr('gbr','tech',2));
+assert.ok(yr('gbr','tech',4)<=125000,'gbr top '+yr('gbr','tech',4));
+assert.ok(yr('fra','tech',0)>=32000&&yr('fra','tech',0)<=46000,'fra junior '+yr('fra','tech',0));
+assert.ok(yr('can','tech',0)>=47000&&yr('can','tech',0)<=70000,'can junior '+yr('can','tech',0));
+assert.ok(yr('can','tech',2)<=130000,'can senior '+yr('can','tech',2));
 // unchanged where no source was checked
 assert.equal(payShape('usa','tech',2,1),2);
 assert.equal(payShape('egy','tech',2,7.33),2*7.33);
