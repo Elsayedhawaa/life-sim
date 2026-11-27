@@ -2583,6 +2583,7 @@ function renderVenturesSubtabHtml(S, uiState, allVentures) {
       <div class="card" style="border:2px solid var(--brand-crimson);background:rgba(180,35,24,0.10);margin:8px 0">
         <strong style="color:var(--brand-crimson)">⚠ Losing money — ${biz.monthsLosing} month${biz.monthsLosing > 1 ? 's' : ''} in a row.</strong>
         <div class="muted">Unpaid months ${biz.misses||0}/3 · Equity ${esc(formatMoney(capitalLeft,S.country))}</div>
+        ${biz.enterprise&&biz.enterprise.stage==='trading'&&(Number(biz.enterprise.reach)||0)<1.2?'<div class="muted">Still building customers. A new business usually takes a year or two to fill its capacity, so early losses are normal, but payroll and rent keep running and come out of the company cash.</div>':''}
       </div>` : '';
     /* v2.20 I3 — the debt line follows the real state: the miss count
        is never reset while debt stands, the month the debt began is
