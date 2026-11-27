@@ -11,7 +11,7 @@ export function isDiscretionaryScene(sc) {
   return !!sc && (DISCRETIONARY_SCENES.has(sc.baseId) || DISCRETIONARY_SCENES.has(sc.key) || /Asks for Financial Backing$/.test(sc.title || ''));
 }
 export function atCreditLimit(S) {
-  if (S?.rules?.creditLimit && S.money?.creditBlocked) return Number(S.money.cash) <= 0.5; /* relief's credit block: no credit at all */
+  if (S?.rules?.creditLimit && (S.money?.creditBlocked || S.year <= (S.money?.bankruptUntilYear ?? -1))) return Number(S.money.cash) <= 0.5; /* relief's credit block: no credit at all */
   return !!(S?.rules?.creditLimit && Number(S.money?.creditCap) > 0 && Number(S.money.cash) <= -Number(S.money.creditCap) + 0.5);
 }
 const probed = new WeakMap();

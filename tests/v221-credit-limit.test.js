@@ -25,3 +25,7 @@ const N=mk(true);N.money.cash=-5e6;N.turn+=1;settleHouseholdMonth(N);
 assert.ok(N.journal.some(j=>/Game cash relief, when it is offered/.test(JSON.stringify(j))),'normal limit line points at relief and work');
 assert.ok(N.money.cash<-1000,'without a block the 12-month limit still applies');}
 console.log('ok v221 credit block');
+/* The lock reads the relief block live, not only after the next monthly settlement. */
+import{atCreditLimit}from'../src/core/discretionary.js';
+{const B=mk(true);B.money.creditBlocked=false;B.money.bankruptUntilYear=B.year+2;B.money.cash=0;assert.ok(atCreditLimit(B),'at zero cash inside the relief block, luxuries are locked at once');B.money.cash=500;assert.ok(!atCreditLimit(B),'with cash in hand they are open');}
+console.log('ok v221 live block lock');
