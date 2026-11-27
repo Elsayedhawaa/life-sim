@@ -22,6 +22,13 @@ assert.ok(yr('gbr','tech',4)<=125000,'gbr top '+yr('gbr','tech',4));
 assert.ok(yr('fra','tech',0)>=32000&&yr('fra','tech',0)<=46000,'fra junior '+yr('fra','tech',0));
 assert.ok(yr('can','tech',0)>=47000&&yr('can','tech',0)<=70000,'can junior '+yr('can','tech',0));
 assert.ok(yr('can','tech',2)<=130000,'can senior '+yr('can','tech',2));
+// Sweden: SCB P10 475k, median 642k, P90 871k SEK a year; Australia junior 60-90k AUD, senior 110-150k; Netherlands junior 35-45k, senior 70-90k
+assert.ok(yr('swe','tech',0)>=400000&&yr('swe','tech',0)<=560000,'swe junior '+yr('swe','tech',0));
+assert.ok(yr('swe','tech',2)<=900000,'swe senior '+yr('swe','tech',2));
+assert.ok(yr('aus','tech',0)>=60000&&yr('aus','tech',0)<=90000,'aus junior '+yr('aus','tech',0));
+assert.ok(yr('aus','tech',2)>=100000&&yr('aus','tech',2)<=160000,'aus senior '+yr('aus','tech',2));
+assert.ok(yr('nld','tech',0)>=35000&&yr('nld','tech',0)<=50000,'nld junior '+yr('nld','tech',0));
+assert.ok(yr('nld','tech',2)>=65000&&yr('nld','tech',2)<=95000,'nld senior '+yr('nld','tech',2));
 // unchanged where no source was checked
 assert.equal(payShape('usa','tech',2,1),2);
 assert.equal(payShape('egy','tech',2,7.33),2*7.33);

@@ -17,6 +17,7 @@ import { recordJournal, walletMove, moveBalance, queueScene } from '../core/sche
 import { getCountry, formatMoney } from '../data/countries.js';
 import { eraUsdCost } from '../data/economy.js';
 import { rememberDeed } from '../systems/soulEngine.js';
+import { usdMonthlyPayToLocal } from '../systems/careerEducationEngine.js';
 /* v2.7 — event purchases go through the real shop catalogue (see
    buyShopItemForEvent in economyEngine.js): real item, real price, charged
    through the ledger, and the item exists in the player's possessions after. */
@@ -53,6 +54,8 @@ function live(S, ctx) {
 function nm(p, fb) { return (p && p.firstName) || fb; }
 /* Year-adjusted local cost for a 2026-denominated amount. */
 function cost(st, baseUsd) { return eraUsdCost(baseUsd, st.country, st.year); }
+/* A business stake is sized against what people earn, not what goods cost: 2,500 USD at US wages, in this country's wages (the same scale the career pay and family fund use). By goods prices it was 1.4-1.6 months of entry pay in Egypt, Turkey and Brazil against 0.8 in the USA. */
+function stakeCost(st, baseUsd) { return usdMonthlyPayToLocal(st.country, st.year, baseUsd); }
 function money(st, base2026) { return formatMoney(cost(st, base2026), st.country); }
 
 export const EVENTS_EVERYDAY_FAMILY = [
@@ -3201,7 +3204,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     gates: { minAge: 25, maxAge: 60, wealth: ['middle', 'upper_middle', 'wealthy'] },
     build: (S, ctx) => {
       const p = live(S, ctx);
-      const ask = cost(S, 3000);
+      const ask = stakeCost(S, 3000);
       return {
         key: 'ev_family_uncle_investment', category: 'family',
         title: 'An Uncle With a Business Idea',
@@ -6547,7 +6550,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
-      const ask = cost(S, 2500);
+      const ask = stakeCost(S, 2500);
       return {
         key: 'ev_friend_business_invest', category: 'friends',
         title: `${frName} Starts a Business`,
