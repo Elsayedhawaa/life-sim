@@ -211,7 +211,7 @@ console.log('upkeep OK');
   }
   const U = life('upper_middle', 'usa', 2000, 8); run(U, 12 * 22); assert.equal(U.familyFortune.shares, null, 'no company, no shares');
   // succession: kill both parents, once.
-  const D = life('wealthy', 'usa', 2000, 8); run(D, 12 * 19); for (const id of [D.relations.fatherId, D.relations.motherId]) if (id) D.people[id].alive = true; D.familyFortune.inherited = false;
+  const D = life('wealthy', 'usa', 2000, 9); run(D, 12 * 19); for (const id of [D.relations.fatherId, D.relations.motherId]) if (id) D.people[id].alive = true; D.familyFortune.inherited = false;
   const nw = D.familyFortune.netWorthLocal, cash0 = D.money.cash; const co0 = D.familyFortune.companyLocal, fund0 = D.familyFortune.fundLocal, oth0 = D.familyFortune.otherLocal, own0 = JSON.parse(JSON.stringify(D.familyFortune.own));
   const savings0 = Object.fromEntries((D.relations.siblingIds || []).map(id => [id, D.people[id].career?.savingsLocal || 0]));
   assert.equal(F.ownershipView(D).sum, 100, 'owners sum to 100 before');

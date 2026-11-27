@@ -1493,7 +1493,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(1200, S.country, S.year);
+      const A = eraUsdCost(300, S.country, S.year);
       return {
         key: 'ev_money_child_tutor',
         category: 'money',
@@ -2337,8 +2337,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(600, S.country, S.year);
-      const B = eraUsdCost(300, S.country, S.year);
+      const A = eraUsdCost(60, S.country, S.year);
+      const B = eraUsdCost(30, S.country, S.year);
       return {
         key: 'ev_money_internet_bill',
         category: 'money',
@@ -2961,7 +2961,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraHealthCost(300, S.country, S.year);
+      const A = eraHealthCost(40, S.country, S.year);
       return {
         key: 'ev_health_blood_pressure',
         category: 'health',
@@ -3208,7 +3208,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraHealthCost(800, S.country, S.year);
+      const A = eraHealthCost(150, S.country, S.year);
       return {
         key: 'ev_health_anxiety',
         category: 'health',
@@ -3410,8 +3410,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraHealthCost(800, S.country, S.year);
-      const B = eraHealthCost(500, S.country, S.year);
+      const A = eraUsdCost(80, S.country, S.year);
+      const B = eraUsdCost(50, S.country, S.year);
       return {
         key: 'ev_health_weight_gain',
         category: 'health',
@@ -3558,7 +3558,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraHealthCost(350, S.country, S.year);
+      const A = eraHealthCost(30, S.country, S.year);
       return {
         key: 'ev_health_vitamin_deficiency',
         category: 'health',
@@ -3905,7 +3905,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraHealthCost(700, S.country, S.year);
+      const A = eraUsdCost(60, S.country, S.year);
       return {
         key: 'ev_health_gym_membership',
         category: 'health',
@@ -4005,8 +4005,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraHealthCost(500, S.country, S.year);
-      const B = eraHealthCost(150, S.country, S.year);
+      const A = eraUsdCost(120, S.country, S.year);
+      const B = eraUsdCost(40, S.country, S.year);
       return {
         key: 'ev_health_yoga_class',
         category: 'health',
@@ -4355,7 +4355,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraHealthCost(250, S.country, S.year);
+      const A = eraHealthCost(25, S.country, S.year);
       return {
         key: 'ev_health_allergy_season',
         category: 'health',
@@ -4454,8 +4454,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraHealthCost(400, S.country, S.year);
-      const B = eraHealthCost(150, S.country, S.year);
+      const A = eraHealthCost(60, S.country, S.year);
+      const B = eraHealthCost(30, S.country, S.year);
       return {
         key: 'ev_health_stomach_ulcer',
         category: 'health',
@@ -4555,7 +4555,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraHealthCost(350, S.country, S.year);
+      const A = eraHealthCost(80, S.country, S.year);
       return {
         key: 'ev_health_diabetes_scare',
         category: 'health',
@@ -4604,7 +4604,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraHealthCost(300, S.country, S.year);
+      const A = eraHealthCost(30, S.country, S.year);
       return {
         key: 'ev_health_cholesterol',
         category: 'health',
@@ -4798,8 +4798,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraHealthCost(600, S.country, S.year);
-      const B = eraHealthCost(100, S.country, S.year);
+      const A = eraUsdCost(60, S.country, S.year);
+      const B = eraUsdCost(25, S.country, S.year);
       return {
         key: 'ev_health_swimming',
         category: 'health',
@@ -4822,7 +4822,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
               walletMove(st, -B, 'Swim at weekends', 'health');
               st.player.vitals.health = clamp(st.player.vitals.health + (+2));
               if (st.skills) st.skills.fitness = clamp(st.skills.fitness + (+2));
-              recordJournal(st, `You swam at weekends for ${formatMoney(B, S.country)} a session. It was enough to feel stronger.`, 'health');
+              recordJournal(st, `You swam at weekends, paying by the visit, about ${formatMoney(B, S.country)} a month. It was enough to feel stronger.`, 'health');
             },
           },
           {
@@ -4997,7 +4997,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraHealthCost(200, S.country, S.year);
+      const A = eraHealthCost(40, S.country, S.year);
       return {
         key: 'ev_health_old_age_aches',
         category: 'health',
@@ -7066,7 +7066,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(150, S.country, S.year);
+      const A = eraUsdCost(25, S.country, S.year);
       return {
         key: 'ev_career_union_meeting',
         category: 'career',
@@ -8665,7 +8665,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(800, S.country, S.year);
+      const A = eraUsdCost(120, S.country, S.year);
       return {
         key: 'ev_school_music_lesson',
         category: 'school',
@@ -11312,7 +11312,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(1500, S.country, S.year);
+      const A = eraUsdCost(300, S.country, S.year);
       return {
         key: 'ev_back_tutor_results',
         category: 'school',

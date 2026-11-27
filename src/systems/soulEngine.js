@@ -464,6 +464,7 @@ function npcMarry(S, person, polygamy = false) {
 
   const movedAbroad = partnerCountry !== (person.residenceCountry || S.country);
   if (movedAbroad) {
+    npcRelocateMoney(S, person, person.residenceCountry || S.country, partnerCountry);
     person.residenceCountry = partnerCountry;
     person.city = partner.city;
   }
@@ -653,6 +654,7 @@ function npcMove(S, person) {
     if (!dest) return;
     const dCountry = getCountry(dest);
     const reason = spouseAbroad ? 'to join their spouse' : npcPick(S, ['a job offer', 'lower living costs', 'a fresh start', "their company's transfer"]);
+    npcRelocateMoney(S, person, fromCountry, dest);
     person.residenceCountry = dest;
     person.city = npcPick(S, dCountry.cities) || dCountry.cities[0];
     recordJournal(S, `Your ${kin} ${person.firstName} moved from ${fromCity} to ${person.city}, ${dCountry.name} — ${reason}, after their work visa came through.`, 'relationship');
@@ -692,6 +694,18 @@ function npcLeaveHome(S, person) {
   } else {
     recordJournal(S, `Your ${kin} ${person.firstName} left ${person.role === 'sibling' ? 'the family home' : "their parents' home"} and moved to ${dest} for ${reason}.`, 'relationship');
   }
+}
+
+/* An NPC's income and savings are stored in the currency of the country they live in. When they move to another country the stored numbers must be converted, or a 4,994 EUR a month project manager "earns 4,994 JPY" in Kyoto. Converted at that year's exchange rate (income is indexed to this year first). */
+export function npcRelocateMoney(S, person, fromCountry, toCountry) {
+  if (!fromCountry || !toCountry || fromCountry === toCountry) return;
+  indexNpcIncome(S, person);
+  const c = person.career;
+  if (!c) return;
+  const conv = v => Math.round(convertCurrency(Number(v) || 0, fromCountry, toCountry, S.year));
+  if (Number(c.monthlyIncomeLocal) > 0) { c.monthlyIncomeLocal = conv(c.monthlyIncomeLocal); c.incomeIndexYear = S.year; }
+  if (Number(c.savingsLocal) > 0) c.savingsLocal = conv(c.savingsLocal);
+  if (c.formerJob && Number(c.formerJob.income) > 0) { c.formerJob.income = conv(c.formerJob.income); c.formerJob.incomeIndexYear = S.year; }
 }
 
 function npcMaybeLeaveHome(S, person) {

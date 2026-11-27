@@ -17,6 +17,7 @@ const parts=src.split(/\n  \{\n    id: /).slice(1);
 for(const p of parts){
   const id=(p.match(/^'([^']+)'/)||[])[1];
   const health=/category: 'health'/.test(p)||id==='ev_money_dentist_bill';
-  if(health) assert.ok(!/eraUsdCost\(/.test(p), id+' still prices medical care on the goods scale');
+  const leisure=['ev_health_gym_membership','ev_health_yoga_class','ev_health_swimming','ev_health_weight_gain'].includes(id);
+  if(health&&!leisure) assert.ok(!/eraUsdCost\(/.test(p), id+' still prices medical care on the goods scale');
 }
 console.log('ok v221 health prices wage scale');

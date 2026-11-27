@@ -736,7 +736,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     gates: { minAge: 18, maxAge: 55, hasJob: true },
     build: (S, ctx) => {
       const p = live(S, ctx);
-      const month = cost(S, 300);
+      const month = cost(S, 50);
       return {
         key: 'ev_life_gym_offer', category: 'life',
         title: 'A Gym Membership Offer',
@@ -4670,7 +4670,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     build: (S, ctx) => {
       const p = live(S, ctx);
       const spName = nm(p.spouse, 'your spouse');
-      const session = healthCost(S, 500);
+      const session = healthCost(S, 150);
       return {
         key: 'ev_marriage_couples_therapy', category: 'marriage',
         title: `${spName} Suggests Talking to Someone`,
@@ -7321,7 +7321,7 @@ export const EVENTS_EVERYDAY_FAMILY = [
     build: (S, ctx) => {
       const p = live(S, ctx);
       const frName = nm(p.friend, 'a close friend');
-      const month = cost(S, 250);
+      const month = cost(S, 50);
       return {
         key: 'ev_friend_join_gym', category: 'friends',
         title: `${frName} Wants a Gym Partner`,
