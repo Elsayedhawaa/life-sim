@@ -755,7 +755,8 @@ export function settleHouseholdMonth(S) {
            debt ("14,294 owed, 0 missed months"). */
         if((biz.debtLocal||0)<=0)biz.misses=0;
       } else {
-        biz.monthsLosing = (biz.monthsLosing || 0) + 1;
+        /* v2.21 — a staged company that has not opened yet cannot earn: its preparation months are a startup cost, not a losing streak (the streak feeds the failing-business flag and staff morale). */
+        biz.monthsLosing = (biz.enterprise && biz.enterprise.stage && biz.enterprise.stage !== 'trading') ? 0 : (biz.monthsLosing || 0) + 1;
         const shortfall = Math.abs(pl.net);
         const avail = (Number(S.money.cash) || 0) + (Number(S.money.savings) || 0) + netDelta + (pl.fundingUsed||0);
         if (avail >= shortfall) {
