@@ -166,6 +166,8 @@ export function tickHealthAndMortalityYearly(S) {
       if (S.medical.conditions.some(ex => ex.id === m.id)) return false;
       /* Dementia has its own age-based onset roll above, not this pool. */
       if (m.id === 'dementia') return false;
+      /* Appendicitis is an acute emergency with its own event (ev_health_appendicitis). As a lasting condition at 5% a year it let people die years later of an appendix that would have burst in days. */
+      if (m.id === 'appendicitis') return false;
       /* Strict Biological Sex Gating */
       if ((m.category === 'fertility_f' || m.id === 'breast_cancer' || m.id === 'cervical_cancer') && S.player.gender !== 'f') return false;
       if (m.id === 'prostate_cancer' && S.player.gender !== 'm') return false;

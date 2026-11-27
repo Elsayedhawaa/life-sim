@@ -2274,7 +2274,7 @@ export function tickCareerMonthly(S) {
         job.payIndexYear=S.year;
         job.monthlyGross=Math.max(previousGross,Math.min(Math.max(requested,indexed),Math.round(market*headroom)));
         /* The market reference and ceiling are explained once per job, not on all of a career's reviews. */
-        const explain=job.payReviewExplained?'':` The game's market reference for this role is ${formatMoney(market,S.country)} a month; raises stop at ${Math.round(headroom*100)}% of it.`;
+        const explain=job.payReviewExplained?'':` Pay for this role tops out near ${formatMoney(Math.round(market*headroom),S.country)} a month until you move up.`;
         job.payReviewExplained=true;
         const rose=job.monthlyGross>previousGross;
         recordJournal(S,rose?`Annual pay review at ${job.employer}: ${formatMoney(previousGross,S.country)} to ${formatMoney(job.monthlyGross,S.country)} a month gross, up ${Math.max(1,Math.round((job.monthlyGross/previousGross-1)*100))}%.${explain}`:`Annual pay review at ${job.employer}: no rise this year. At ${formatMoney(previousGross,S.country)} a month you already earn more than this role normally tops out at, so your pay is held, not cut.${explain}`,'career');

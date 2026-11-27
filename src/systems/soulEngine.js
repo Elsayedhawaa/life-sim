@@ -657,14 +657,14 @@ function npcMove(S, person) {
     npcRelocateMoney(S, person, fromCountry, dest);
     person.residenceCountry = dest;
     person.city = npcPick(S, dCountry.cities) || dCountry.cities[0];
-    recordJournal(S, `Your ${kin} ${person.firstName} moved from ${fromCity} to ${person.city}, ${dCountry.name} — ${reason}, after their work visa came through.`, 'relationship');
+    recordJournal(S, `Your ${kin} ${person.firstName} moved to ${dCountry.name} — ${reason}, after their work visa came through.`, 'relationship');
   } else {
     const cities = getCountry(fromCountry).cities.filter(c => c !== fromCity);
     if (!cities.length) return;
     const toCity = npcPick(S, cities);
     const reason = npcPick(S, ['a bigger place', 'to be closer to family', 'a shorter commute', 'a fresh start']);
     person.city = toCity;
-    recordJournal(S, `Your ${kin} ${person.firstName} moved across ${getCountry(fromCountry).name}, from ${fromCity} to ${toCity} — ${reason}.`, 'relationship');
+    recordJournal(S, `Your ${kin} ${person.firstName} moved to another city in ${getCountry(fromCountry).name} — ${reason}.`, 'relationship'); /* the journal keeps places at country level, so naming the two cities read "from Egypt to Egypt" */
   }
 }
 
@@ -1720,7 +1720,7 @@ export function buildFamilyBackingScene(S,request){
  const amount=Math.round(convertCurrency(request.amount,request.country,S.country,S.year)),key='ask_loan_'+p.id+'_'+request.year;
  const resolved=st=>!!st.legal.familyBackingReplies?.[key];
  const mark=(st,kind)=>{st.legal.familyBackingReplies??={};st.legal.familyBackingReplies[key]={kind,year:st.year,month:st.month};};
- const gift=(st,value)=>{if(resolved(st))return;const result=givePersonalMoney(st,p.id,value);if(!result.ok)return;mark(st,'gift');rememberDeed(st,st.people[p.id],'helped_money','Sent financial support.',{affection:8,respect:7,trust:6});recordJournal(st,'Sent '+formatMoney(value,st.country)+' to '+p.firstName+'. Purpose: '+request.purpose+'. No purchase or venture is claimed.','family');};
+ const gift=(st,value)=>{if(resolved(st))return;const result=givePersonalMoney(st,p.id,value);if(!result.ok)return;mark(st,'gift');rememberDeed(st,st.people[p.id],'helped_money','Sent financial support.',{affection:8,respect:7,trust:6});recordJournal(st,'Sent '+formatMoney(value,st.country)+' to '+p.firstName+'. They said it was for '+request.purpose+'. You took no share in it.','family');};
  return{key,category:'relationship',speakerId:p.id,familyBackingSnapshot:request,title:p.firstName+' Asks for Financial Backing',text:p.firstName+' needs '+formatMoney(amount,S.country)+' for '+request.purpose+'. Gifts move actual cash to their savings. A promise records a one-year commitment, without sending money now.',choices:[{label:'Give '+formatMoney(amount,S.country),available:()=>S.money.cash>=amount&&!resolved(S),effect:st=>gift(st,amount)},{label:'Give half · '+formatMoney(Math.round(amount/2),S.country),available:()=>S.money.cash>=Math.round(amount/2)&&!resolved(S),effect:st=>gift(st,Math.round(amount/2))},{label:'Promise support within one year',effect:st=>{if(resolved(st)||!st.people[p.id]?.alive)return;createPromise(st,st.people[p.id],'money_help','Support for '+request.purpose,amount,12);mark(st,'promise');recordJournal(st,'Recorded a one-year support promise to '+p.firstName+'. No money sent.','family');}},{label:'Decline',effect:st=>{if(resolved(st))return;mark(st,'declined');rememberDeed(st,st.people[p.id],'refused_help','Declined financial support.',{affection:-4,resentment:7});}}]};
 }
 export function restoreFamilyBackingScene(S,saved){return saved?.familyBackingSnapshot?buildFamilyBackingScene(S,saved.familyBackingSnapshot):null;}

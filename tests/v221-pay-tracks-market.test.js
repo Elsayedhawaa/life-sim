@@ -32,7 +32,7 @@ console.log('Long-career pay tracks the market reference in all 18 countries, wi
   for(let m=0;m<12*8;m++){s.month=(m%12)+1;if(s.month===1&&m)s.year++;job.performance=60;job.workMode='coast';s.career.trackExperience[job.track]=0;tickCareerMonthly(s);}
   const lines=s.journal.filter(j=>/Annual pay review/.test(j.text));
   assert.ok(lines.length>=5,'several reviews happened');
-  assert.equal(lines.filter(j=>/market reference for this role/.test(j.text)).length,1,'the market-reference explanation is written once');
+  assert.equal(lines.filter(j=>/Pay for this role tops out near/.test(j.text)).length,1,'the market-reference explanation is written once');
   assert.ok(lines.every(j=>!/Game market reference/.test(j.text)),'the old technical sentence is gone');
   console.log('PASS pay review wording');
 }
