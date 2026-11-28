@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+const store = new Map(); globalThis.localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
+const { createNewLifeState, ensureExtendedState } = await import('../src/core/schema.js');
+const { rememberDeed } = await import('../src/systems/soulEngine.js');
+const S = createNewLifeState({ country: 'egy', seed: 3, birthYear: 1990 }); ensureExtendedState(S);
+const mom = S.people[S.relations.momId] || Object.values(S.people).find(p => p && p.rel && p.id !== 'player');
+rememberDeed(S, mom, 'event', 'Tell Aya and replace them', { affection: 2 });
+assert.equal(mom.rel.memories[0].summary, 'You decided to tell Aya and replace them.');
+rememberDeed(S, mom, 'visited', 'Visited on Friday.', {});
+assert.equal(mom.rel.memories[0].summary, 'Visited on Friday.', 'other kinds are untouched');
+console.log('ok v221 event memory wording');

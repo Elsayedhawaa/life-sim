@@ -1156,7 +1156,7 @@ export function buildCareerReviewScene(S,snapshot){
     recurring: true, /* the review is yearly for the whole career; the anti-spam caps dropped every one after the third */
     title: `Your annual review with ${boss.firstName}`,
     category: 'career',
-    text: `${employer} · ${year}. ${bossName} rates you ${perf}% (${band}). Team contributions: ${steppedUp}. Ask for feedback, check current promotion requirements, or contest the rating.`,
+    text: `${employer} · ${year}. ${bossName} rates you ${perf}% (${band}). Times you took on extra work for the team: ${steppedUp}. Ask for feedback, check current promotion requirements, or contest the rating.`,
     careerReviewSnapshot:snapshot,
     choices: [
       {

@@ -33,6 +33,11 @@ export function getAllKnownLivingPeople(S) {
 
 export function rememberDeed(S, person, kind, summary, impact = {}) {
   if (!person || !person.rel) return;
+  /* A generic 'event' memory used to store the button label as the memory ("Tell Aya and replace them"). Say what it is: a decision the player made. */
+  if (kind === 'event' && typeof summary === 'string' && summary && !/[.!?]$/.test(summary) && !/^You /.test(summary)) {
+    const low = /^[A-Z][a-z]/.test(summary) ? summary[0].toLowerCase() + summary.slice(1) : summary;
+    summary = `You decided to ${low.replace(/^(?:to )/, '')}.`;
+  }
   person.rel.memories.unshift({
     id: nextId(S, 'mem'),
     year: S.year,
