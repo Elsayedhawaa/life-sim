@@ -16690,7 +16690,7 @@ export const V1_BUSINESS_TYPES = [
     "id": "law_firm",
     "label": "Law firm",
     "startupEGP": 900000,
-    "monthlyOverheadEGP": 80000,
+    "monthlyOverheadEGP": 115000,
     "baseRevenueEGP": 240000,
     "maxLevel": 6,
     "staffRoles": [
