@@ -2,7 +2,7 @@ import{ALL_VACATIONS}from'./megaCareerEduMedical.js';
 import{childSchoolQuote,enrollChildSchoolYear}from'../systems/educationFunding.js';
 import{permitRenewalQuote,renewCurrentPermit,returnToHomeCountry,premiumResidencyQuote,applyPremiumOrGoldenResidency}from'../systems/visaMigrationEngine.js';
 import{CARS_MEGA_CATALOG,carSoldInCountry}from'./megaCarsAndShop.js';
-import{setStudyEffort,computeEndOfService,resignCurrentJob,usdMonthlyPayToLocal}from'../systems/careerEducationEngine.js';
+import{setStudyEffort,computeEndOfService,resignCurrentJob,usdMonthlyPayToLocal,internMonthlyPayToLocal}from'../systems/careerEducationEngine.js';
 import{payRecordedDebt}from'../systems/recordedDebtPayments.js';
 import{lendPersonalMoney,settlePersonalReceivable,givePersonalMoney}from'../systems/personalReceivables.js';
 import{eraDepositRates}from'./economy.js';
@@ -10011,8 +10011,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = usdMonthlyPayToLocal(S.country, S.year, 4000);
-      const B = usdMonthlyPayToLocal(S.country, S.year, 2500);
+      const A = internMonthlyPayToLocal(S.country, S.year, 4000);
+      const B = internMonthlyPayToLocal(S.country, S.year, 2500);
       return {
         key: 'ev_uni_internship',
         category: 'school',

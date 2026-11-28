@@ -17,7 +17,7 @@ import { propertyMarketYear } from './propertyMarketRisk.js';
 import { getHousingFor, getCarsForYear } from '../data/institutions.js';
 import { finalizePropertyPurchase } from './economyEngine.js';
 import { showroomCarQuote } from './completeLifeSystems.js';
-import { hireIntoJob, usdMonthlyPayToLocal } from './careerEducationEngine.js';
+import { hireIntoJob, usdMonthlyPayToLocal, internMonthlyPayToLocal } from './careerEducationEngine.js';
 import { syncSiblingCompanies } from './siblingCompanies.js';
 
 export const FORTUNE_TIERS = ['upper_middle', 'wealthy', 'very_wealthy'];
@@ -1233,7 +1233,7 @@ export function siblingStakeLine(S, id) {
    less free time). At the end you earn a reference (a few interview points) and, if you are free to work, may convert it into a first job there. Declining costs nothing. */
 const PARTNERS = ['Halden & Rowe Partners', 'Northgate Capital', 'Meridian Group', 'Alder Freight', 'Corvale Holdings', 'Tolland Advisory'];
 const INTERN_MONTHS = 3;
-function internPay(S, f) { return usdMonthlyPayToLocal(S.country, S.year, f.tier === 'very_wealthy' ? 3000 : 1800); }
+function internPay(S, f) { return internMonthlyPayToLocal(S.country, S.year, f.tier === 'very_wealthy' ? 3000 : 1800); }
 export function offerConnectedInternship(S) {
   const f = ensureFamilyFortune(S);
   if (!f || f.internDone || f.internOffer || f.intern || S.month !== 6) return null;

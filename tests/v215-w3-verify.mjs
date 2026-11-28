@@ -133,7 +133,7 @@ function findScene(S, baseId) {
     scene ? scene.choices.map(c => c.label).join(' | ') : 'none');
   /* retired: energy removed */
   check('§4 journal carries the notice in plain words',
-    S.journal.some(j => j.text.includes(f.fullName) && j.text.includes('in a year')));
+    S.journal.some(j => j.text.includes(f.fullName) && /(have not spoken to|since you and)/.test(j.text) && j.text.includes('about a year')));
   /* Reach out: costs exactly 1, restores the friendship. */
   activateScene(S, `drift_notice_${f.id}`);
   const eBefore = socialEnergy(S).energy;

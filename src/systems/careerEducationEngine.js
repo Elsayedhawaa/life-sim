@@ -1355,6 +1355,17 @@ export function usdMonthlyPayToLocal(country, year, usdMonthly, trackId = 'busin
   return Math.round(usdMonthly * here / us);
 }
 
+/* GAME DESIGN (tuned near sourced ranges, not source-verified): an internship pays a fraction of what the same market pays an entry-level hire. The share is set per country from one published intern-pay figure (2024-26) divided by this game's own 2025-26 figure for that country, so it still moves with local wages over the years.
+   USA 1.0: NACE 2026 guide, bachelor's interns $23.35/h, about $4,040 a month full time.
+   Sources: UK ISE 2024 intern salary 24,159 GBP/yr; Germany JobTeaser 2026 average 1,713 EUR/mo; France legal minimum 4.50 EUR/h (service-public.gouv.fr, 2026), about 683 EUR/mo, used as the figure because no average was found;
+   Brazil Nube 2025 average bolsa R$ 1,362; Egypt Wuzzuf 2026 typical 2,500-5,000 EGP (large firms 6,000-8,000); Turkey 2025 legal intern wage 6,631 TRY (Legal500); India Internshala median 8,000 INR; Singapore Straits Times 2025 stipends 1,000-1,500 SGD;
+   Switzerland 2,000-2,500 CHF (frontaliers-grandest.eu); UAE Indeed Dubai 3,793 AED; Italy 500-600 EUR (Randstad, regional minimums above the 300 EUR national floor); Japan 1,100-1,500 JPY/h (viviane.jp) at about 160 h; Netherlands 367 EUR average (Eerste Kamer 2024 report) rounded up.
+   Weak or borrowed: Saudi Arabia reuses the UAE share, Sweden uses a 7-person pay table (offentligaloner.se, 21,600 SEK). Canada, Australia are left at the US-scaled figure. */
+const INTERN_PAY_SHARE = { usa: 1, gbr: 0.86, deu: 0.49, fra: 0.24, bra: 0.43, egy: 0.48, tur: 0.26, ind: 0.2, sgp: 0.33, che: 0.42, uae: 0.45, sau: 0.45, ita: 0.24, jpn: 0.6, nld: 0.12, swe: 0.72 };
+export function internMonthlyPayToLocal(country, year, usdMonthly) {
+  return Math.round(usdMonthlyPayToLocal(country, year, usdMonthly) * (INTERN_PAY_SHARE[country] ?? 1));
+}
+
 export function listAvailableJobs(S) {
   const cObj = getCountry(S.country);
   const degrees = S.education.degrees;

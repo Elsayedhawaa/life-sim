@@ -246,14 +246,15 @@ function childState() {
   const noNoticeScene = !hasNotice(C);
   const warnJournalled = C.journal.some(j => typeof j.text === 'string' && j.text.includes(f.fullName) && /drifting apart/.test(j.text));
   console.log(`after 1 yearly tick (12 months silent): state=${f.rel.driftState} warned=${r1.warned} noticed=${r1.noticed} noticeScene=${!noNoticeScene} warnJournalled=${warnJournalled}`);
-  check('year 1 of silence: warning only, no notice scene', warnedFirst && noNoticeScene && warnJournalled, `state=${f.rel.driftState} warned=${r1.warned} noticed=${r1.noticed}`);
+  /* Retired premise: tickFriendshipDrift now skips everyone under 18 (v2.21), so a child never drifts. The check keeps the safety point: no warning, no journal line and no notice scene for a child. */
+  check('year 1 of silence, child: no drift state, no warning, no notice scene', f.rel.driftState === 'none' && r1.warned === 0 && r1.noticed === 0 && noNoticeScene && !warnJournalled, `state=${f.rel.driftState} warned=${r1.warned} noticed=${r1.noticed}`);
   C.turn += 1; C.year += 1; // a second yearly turn: 24 months of silence
   const r2 = tickFriendshipDrift(C);
   const noticedSecond = f.rel.driftState === 'noticed' && r2.noticed === 1;
   const noticeScene = hasNotice(C);
   console.log(`after 2nd yearly tick (24 months silent): state=${f.rel.driftState} noticed=${r2.noticed} noticeScene=${noticeScene}`);
   /* (replacement) Under 18 the notice scene is deliberately never queued (socialEnergy.queueDriftNoticeScene: childhood is already yearly pacing; drift stays visible on the People tab). So a child stays 'drifting' with no scene, and the warning-then-notice sequence is asserted for an adult below. */
-  check('year 2 of silence, child: still drifting (visible on People), no notice scene is forced on a child', f.rel.driftState === 'drifting' && r2.noticed === 0 && !noticeScene, `state=${f.rel.driftState} noticed=${r2.noticed} scene=${noticeScene}`);
+  check('year 2 of silence, child: still no drift state and no notice scene', f.rel.driftState === 'none' && r2.noticed === 0 && !noticeScene, `state=${f.rel.driftState} noticed=${r2.noticed}`);
 }
 { /* monthly pacing is unchanged: warn at 6, notice at 12 */
   const A = createNewLifeState({ seed: 99, country: 'egy', birthYear: 1996, familyTier: 'middle', gender: 'm' });
