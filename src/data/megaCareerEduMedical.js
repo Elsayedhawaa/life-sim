@@ -16874,7 +16874,7 @@ export const V1_BUSINESS_TYPES = [
     "id": "gym_franchise",
     "label": "Gym franchise",
     "startupEGP": 5000000,
-    "monthlyOverheadEGP": 350000,
+    "monthlyOverheadEGP": 600000,
     "baseRevenueEGP": 900000,
     "maxLevel": 6,
     "staffRoles": [
@@ -17014,7 +17014,7 @@ export const V1_BUSINESS_TYPES = [
     "id": "mobile_shop",
     "label": "Mobile phone & accessories shop",
     "startupEGP": 700000,
-    "monthlyOverheadEGP": 55000,
+    "monthlyOverheadEGP": 112000,
     "baseRevenueEGP": 190000,
     "maxLevel": 5,
     "staffRoles": [
@@ -21609,7 +21609,7 @@ export const EXTRA_BUSINESSES = [
     "label": "Refrigerated Pharma & Food Transport",
     "capitalUsd2026": 68000,
     "monthlyRevUsd2026": 18200,
-    "monthlyCostUsd2026": 11600,
+    "monthlyCostUsd2026": 12400,
     "reqMajor": null,
     "from": 1960,
     "volatility": 0.30,
