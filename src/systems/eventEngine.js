@@ -167,6 +167,16 @@ function personFitsEvent(S,p,rules={}){
 
 /* People for the event text, resolved from live relations exactly the way
    storyLibrary.js does it, so a missing person never crashes the text. */
+/* The default friend in a card rotates through the living friends by month
+   instead of always being the first one on the list, so one friend does not
+   star in most of a life's cards. Deterministic for a given date, so the gate
+   and the built card agree. GAME DESIGN. */
+function rotatingFriend(S, byId) {
+  const alive = (S.relations.friendIds || []).map(byId).filter((p) => p && p.alive);
+  if (!alive.length) return null;
+  return alive[((S.year || 0) * 12 + (S.month || 0)) % alive.length];
+}
+
 export function resolveEventCtx(S, event=null) {
   const byId = (id) => (id && S.people[id]) || null;
   const firstAlive = (ids) => (Array.isArray(ids) ? ids.map(byId).find((p) => p && p.alive) : null) || null;
@@ -176,7 +186,7 @@ export function resolveEventCtx(S, event=null) {
     mom: firstAlive([S.relations.motherId]),
     dad: firstAlive([S.relations.fatherId]),
     sib: firstAlive(S.relations.siblingIds),
-    friend: firstAlive(S.relations.friendIds),
+    friend: rotatingFriend(S, byId),
     child: kids[0] || null,
     youngChild: kids.find((p) => p.age <= 8) || null,
     teen: kids.find((p) => p.age >= 13 && p.age <= 19) || null,
