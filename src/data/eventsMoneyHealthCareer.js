@@ -10746,29 +10746,30 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(2000, S.country, S.year);
-      const B = eraUsdCost(1000, S.country, S.year);
+      /* GAME DESIGN (my rule, not a sourced rate): about 30 US dollars an hour at US prices, 2 hours a week per child for 17 weeks, scaled to the country's cost of living. One lump at the end of term, not a monthly income. */
+      const A = eraUsdCost(2040, S.country, S.year);
+      const B = eraUsdCost(1020, S.country, S.year);
       return {
         key: 'ev_uni_tutoring_side',
         category: 'school',
         title: "Tutoring School Students",
-        text: `A family offers you ${formatMoney(A, S.country)} a month to tutor their child in the evenings — your best subject, two hours a week, and money that would cover your food.`,
+        text: `A family wants you to tutor their children in the evenings for one term, about 17 weeks. Their two children together are four hours a week and pay ${formatMoney(A, S.country)} for the term, paid at the end. One child is two hours a week for ${formatMoney(B, S.country)}. It is your best subject.`,
         choices: [
           {
-            label: "Take the tutoring work",
+            label: "Take both children",
             effect: (st) => {
-              walletMove(st, +A, 'Take the tutoring work', 'school');
+              walletMove(st, +A, 'Take both children', 'school');
               st.education.academicSkill = clamp(st.education.academicSkill + (+3));
               if (st.skills) st.skills.charisma = clamp(st.skills.charisma + (+2));
-              recordJournal(st, `You tutored a school student for ${formatMoney(A, S.country)} a month, and found you were good at teaching.`, 'school');
+              recordJournal(st, `You tutored two school students for a term and were paid ${formatMoney(A, S.country)} in all. You found you were good at teaching.`, 'school');
             },
           },
           {
-            label: "Take one student only",
+            label: "Take one child only",
             effect: (st) => {
-              walletMove(st, +B, 'Take one student only', 'school');
+              walletMove(st, +B, 'Take one child only', 'school');
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+1));
-              recordJournal(st, `You tutored one student for ${formatMoney(B, S.country)} a month, and kept your evenings mostly free.`, 'school');
+              recordJournal(st, `You tutored one student for a term and were paid ${formatMoney(B, S.country)} in all. Your evenings stayed mostly free.`, 'school');
             },
           },
           {

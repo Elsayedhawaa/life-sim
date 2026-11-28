@@ -226,8 +226,8 @@ export function buildWorldEventScene(S, ev, effect) {
   if (business > 1) bits.push(`businesses earn about ${Math.round((business - 1) * 100)}% more`);
   if (salary < 1) bits.push(`pay is squeezed by about ${Math.round((1 - salary) * 100)}%`);
   if (salary > 1) bits.push(`pay rises by about ${Math.round((salary - 1) * 100)}%`);
-  if (rate < 0) bits.push(`interest rates fall by ${Math.abs(Math.round(rate * 100))} points, so borrowing gets cheaper`);
-  if (rate > 0) bits.push(`interest rates rise by ${Math.round(rate * 100)} points, so borrowing gets dearer`);
+  if (rate < 0) bits.push(`interest rates fall by ${Math.abs(Math.round(rate * 100))} ${Math.abs(Math.round(rate * 100)) === 1 ? 'point' : 'points'}, so borrowing gets cheaper`);
+  if (rate > 0) bits.push(`interest rates rise by ${Math.round(rate * 100)} ${Math.round(rate * 100) === 1 ? 'point' : 'points'}, so borrowing gets dearer`);
   const meansLine = bits.length
     ? `For you, in ${cObj.name}, that means ${bits.join(', ')}.`
     : `For you, in ${cObj.name}, daily life carries on much as before.`;

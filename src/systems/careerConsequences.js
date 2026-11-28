@@ -145,12 +145,20 @@ export const CRISIS_HEADHUNTER_MULT = 0.4;
 /* payslip, the merit rise, the raise negotiation) sees the same one.  */
 /* ------------------------------------------------------------------ */
 
+/* GAME DESIGN (my rule, not a sourced figure): a crisis freeze lasts the warning year and at most the year after,
+   and a new freeze cannot start in the year right after one ended, so a pay freeze is never a five-year stall.
+   Real freezes are one to two years (public-sector and firm-level freezes in 2009-10 and 2020-21). The crisis itself can
+   run longer than that; the freeze does not. Returns the year the freeze runs to, or 0 when none was set. */
 export function setPayFreeze(S, untilYear, reason) {
   const job = S?.career?.job;
-  if (!job) return false;
-  job.payFrozenUntilYear = Math.max(Number(job.payFrozenUntilYear) || 0, Number(untilYear) || 0);
+  if (!job) return 0;
+  const prev = Number(job.payFrozenUntilYear) || 0;
+  if (prev && prev >= S.year - 1 && prev < S.year) return 0; // a freeze just ended: one thaw year first
+  const until = Math.min(Number(untilYear) || 0, S.year + 1);
+  if (until < S.year) return 0;
+  job.payFrozenUntilYear = Math.max(prev, until);
   job.payFreezeReason = reason || 'pay is frozen while the crisis lasts';
-  return true;
+  return job.payFrozenUntilYear;
 }
 
 export function clearPayFreeze(S) {
@@ -214,14 +222,14 @@ export function warnCrisisYear(S, info) {
   if (!unwarned.length) return { ok: false, msg: 'Already warned for this crisis.' };
   const names = unwarned.map((e) => e.name).join(', ');
   const untilYear = Math.max(...info.events.map((e) => e.endYear || S.year));
-  setPayFreeze(S, untilYear, `pay is frozen while ${names} lasts — no rises until ${untilYear}`);
+  const frozenTo = setPayFreeze(S, untilYear, `pay is frozen while ${names} lasts — no rises this year`);
   for (const e of unwarned) c.crisisWarnings[e.id] = { year: S.year, month: S.month };
-  const scene = buildCrisisWarningScene(S,{names,untilYear,employer:job.employer,key:`crisis_warn_${unwarned.map(e=>e.id).join('_')}_${S.year}`});
+  const scene = buildCrisisWarningScene(S,{names,untilYear:frozenTo,employer:job.employer,key:`crisis_warn_${unwarned.map(e=>e.id).join('_')}_${S.year}`});
   const queued = queueScene(S, scene, true);
   if (queued) {
-    recordJournal(S, `${names}: headhunters are calling less, your pay at ${job.employer} is frozen until ${untilYear}, and redundancies are a real risk while the crisis lasts.`, 'career');
+    recordJournal(S, `${names}: headhunters are calling less, ${frozenTo ? `your pay at ${job.employer} is frozen until ${frozenTo}, and ` : ''}redundancies are a real risk while the crisis lasts.`, 'career');
   }
-  return { ok: queued, msg: queued ? `Warned about ${names} — pay frozen until ${untilYear}.` : 'Warning could not be queued.' };
+  return { ok: queued, msg: queued ? (frozenTo ? `Warned about ${names} — pay frozen until ${frozenTo}.` : `Warned about ${names}.`) : 'Warning could not be queued.' };
 }
 
 /* ------------------------------------------------------------------ */
@@ -600,21 +608,21 @@ export function buildCrisisWarningScene(S,{names,untilYear,employer,key}){
     maxPerLife: 3,
     category: 'career',
     title: `${names} — Your Job Is About to Feel It`,
-    text: `${job.employer} · ${names}. Game effects: pay frozen until ${untilYear}, fewer job leads, higher layoff risk.`,
+    text: `${job.employer} · ${names}. Game effects: ${untilYear ? `pay frozen until ${untilYear}, ` : ''}fewer job leads, higher layoff risk.`,
     crisisWarningSnapshot:{names,untilYear,employer:job.employer,key},
     choices: [
       {
         label: 'Tighten the belt and keep your head down',
         effect: (st) => {
           shiftVitals(st, { stress: 2 });
-          recordJournal(st, `With ${names} in the news, you decided to keep your head down at ${job.employer} — pay frozen, hiring frozen, and redundancies coming.`, 'career');
+          recordJournal(st, `With ${names} in the news, you decided to keep your head down at ${job.employer} — ${untilYear ? 'pay frozen, ' : ''}hiring frozen, and redundancies coming.`, 'career');
         }
       },
       {
         label: 'Start looking now, before the cuts come',
         effect: (st) => {
           ensureCareerConsequenceState(st).jobLoss.lookingEarly = true;
-          recordJournal(st, `With ${names} in the news, you started looking for work before the cuts came — pay is frozen at ${job.employer} until ${untilYear}.`, 'career');
+          recordJournal(st, `With ${names} in the news, you started looking for work before the cuts came${untilYear ? ` — pay is frozen at ${job.employer} until ${untilYear}` : ''}.`, 'career');
         }
       }
     ]

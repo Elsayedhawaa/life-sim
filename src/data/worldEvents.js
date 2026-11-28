@@ -232,8 +232,10 @@ export const WORLD_EVENTS = [
     id: 'oil_crash_2014',
     name: 'The 2014 Oil Price Crash',
     startYear: 2014, startMonth: 6, endYear: 2016, endMonth: 12,
-    headline: 'Oil has crashed from $115 a barrel to under $30, and Gulf budgets are being cut.',
-    headlineElsewhere: 'Oil has crashed from $115 a barrel to under $30, and fuel is getting cheaper.',
+    headline: 'Oil has fallen from about $115 a barrel and keeps sliding, and Gulf budgets are being cut.',
+    headlineElsewhere: 'Oil has fallen from about $115 a barrel and keeps sliding, and fuel is getting cheaper.',
+    headlineByCountry: { egy: 'Oil has fallen from about $115 a barrel, but Egypt cut fuel subsidies in July 2014 and pump prices went up, so households see no relief at the pump.' },
+    whatItMeansByCountry: { egy: 'Egypt imports fuel but keeps pump prices administered, and the July 2014 subsidy cut raised them sharply (petrol by about 42 percent on average). Falling oil does not lower pump prices here.' },
     whatItMeans: 'In the Gulf, government spending and business fall and pay is squeezed. In countries that import oil, fuel gets cheaper and businesses do a little better.',
     whatItMeansElsewhere: 'Fuel gets cheaper and businesses do a little better.',
     effects: {
@@ -241,6 +243,7 @@ export const WORLD_EVENTS = [
       countries: {
         sau: { house: 0.95, business: 0.88, salary: 0.95, rate: 0 },
         uae: { house: 0.95, business: 0.88, salary: 0.95, rate: 0 },
+        egy: { house: 1.0, business: 1.0, salary: 1.0, rate: 0 },
       },
     },
   },
@@ -248,8 +251,8 @@ export const WORLD_EVENTS = [
     id: 'egypt_float_2016',
     name: 'Egypt Floats the Pound (2016)',
     startYear: 2016, startMonth: 11, endYear: 2018, endMonth: 12,
-    headline: 'Egypt has floated the pound — it has halved against the dollar overnight and prices are jumping.',
-    whatItMeans: 'In Egypt, everything imported costs far more, house prices jump in pounds, real pay buys much less, and the central bank raises rates to about 19% — borrowing gets very expensive.',
+    headline: 'Egypt has floated the pound — it has lost about half its value against the dollar within weeks and prices are jumping.',
+    whatItMeans: 'In Egypt, everything imported costs far more, house prices jump in pounds, real pay buys much less, and the central bank raises rates by three points at once and keeps raising them, to nearly 19% by 2017 — borrowing gets very expensive.',
     effects: {
       countries: {
         egy: { house: 1.25, business: 0.92, salary: 0.90, rate: 0.06 },
@@ -273,6 +276,7 @@ export const WORLD_EVENTS = [
     name: 'The Covid Pandemic',
     startYear: 2020, startMonth: 3, endYear: 2022, endMonth: 6,
     headline: 'A pandemic has shut the world down — streets are empty, shops are closed, and nobody knows how long this lasts.',
+    whatItMeansNoHousingBoom: 'Businesses lose a fifth of their trade and pay is cut or frozen, while central banks slash rates and house prices dip.',
     whatItMeans: 'Businesses lose a fifth of their trade and pay is cut or frozen, while central banks slash rates. Oddly, house prices RISE in America and Britain, as cheap mortgages and working from home push people to buy bigger homes.',
     effects: {
       all: { house: 0.95, business: 0.80, salary: 0.95, rate: -0.02 },
@@ -282,7 +286,7 @@ export const WORLD_EVENTS = [
         can: { house: 1.10, business: 0.80, salary: 0.95, rate: -0.02 },
         aus: { house: 1.08, business: 0.80, salary: 0.95, rate: -0.02 },
         deu: { house: 1.10, business: 0.80, salary: 0.95, rate: -0.02 },
-        egy: { house: 0.95, business: 0.80, salary: 0.95, rate: -0.01 },
+        egy: { house: 0.95, business: 0.80, salary: 0.95, rate: -0.03 },
         tur: { house: 0.95, business: 0.80, salary: 0.95, rate: -0.01 },
         bra: { house: 0.95, business: 0.80, salary: 0.95, rate: -0.01 },
         ind: { house: 0.95, business: 0.80, salary: 0.95, rate: -0.01 },
@@ -362,5 +366,10 @@ export const POLICY_RATE_ANCHORS = {
 };
 
 /* Gulf-specific wording is shown only where the event has a country effect for that place (the Gulf states). */
-export function eventHeadline(ev, countryId) { return ev && ev.headlineElsewhere && !(ev.effects && ev.effects.countries && ev.effects.countries[countryId]) ? ev.headlineElsewhere : (ev ? ev.headline : ''); }
-export function eventMeaning(ev, countryId) { return ev && ev.whatItMeansElsewhere && !(ev.effects && ev.effects.countries && ev.effects.countries[countryId]) ? ev.whatItMeansElsewhere : (ev ? ev.whatItMeans : ''); }
+export function eventHeadline(ev, countryId) { if (ev && ev.headlineByCountry && ev.headlineByCountry[countryId]) return ev.headlineByCountry[countryId]; return ev && ev.headlineElsewhere && !(ev.effects && ev.effects.countries && ev.effects.countries[countryId]) ? ev.headlineElsewhere : (ev ? ev.headline : ''); }
+export function eventMeaning(ev, countryId) {
+  if (ev && ev.whatItMeansByCountry && ev.whatItMeansByCountry[countryId]) return ev.whatItMeansByCountry[countryId];
+  /* the housing-boom sentence is only true where the country's own house effect is a rise */
+  if (ev && ev.whatItMeansNoHousingBoom) { const own = ev.effects && ev.effects.countries && ev.effects.countries[countryId]; const h = own ? own.house : (ev.effects && ev.effects.all ? ev.effects.all.house : 1); if (h < 1) return ev.whatItMeansNoHousingBoom; }
+  return ev && ev.whatItMeansElsewhere && !(ev.effects && ev.effects.countries && ev.effects.countries[countryId]) ? ev.whatItMeansElsewhere : (ev ? ev.whatItMeans : '');
+}

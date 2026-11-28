@@ -53,8 +53,8 @@ export const COUNTRIES = {
       1991: 'Economic reform & float push the pound past 3 EGP to the dollar.',
       2003: 'The pound floats from 3.4 to nearly 6 EGP/USD; imported goods jump overnight.',
       2011: 'January 25th protests fill Tahrir Square; curfews, uncertainty, and fierce debate sweep every home.',
-      2016: 'November float halves the pound overnight and sends bank CDs soaring toward 20%.',
-      2020: 'COVID-19 curfews shutter cafes, schools, and airports across Egypt.',
+      2016: 'The pound is floated in November and loses about half its value; bank CDs pay close to 20% by 2017.',
+      2020: 'COVID-19 reaches Egypt in the spring; from late March curfews shutter cafes, schools, and airports.',
       2023: 'Steep currency devaluations push families toward gold, real estate installments, and Gulf offers.'
     }
   },
