@@ -110,7 +110,7 @@ export function runDiagnosticTestOrMed(S, kind, id) {
     S.player.vitals.health=clamp(S.player.vitals.health+5);
     recordJournal(S,`Filled one game course of ${item.label} prescription for ${matches.map(c=>c.label||c.id).join(', ')}. No automatic refill.`,'health');
   }
-  return {ok:true,msg:kind==='test'?'Screening recorded, no treatment effect.':'Prescription course filled for matching conditions.'};
+  return {ok:true,msg:kind==='test'?'Screening done, no treatment effect.':'Prescription course filled for matching conditions.'};
 }
 
 export function tickHealthAndMortalityYearly(S) {

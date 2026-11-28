@@ -449,7 +449,7 @@ function buildVisaScene(S, lossKey) {
       {
         label: 'Record a sponsor follow-up',
         effect: (st) => {
-          recordJournal(st, `Recorded a sponsor follow-up${st.legal?.residency?.sponsorName ? ` (${st.legal.residency.sponsorName})` : ''}. No message was sent and no permit extension was granted.`, 'visa');
+          recordJournal(st, `You marked a sponsor follow-up to do${st.legal?.residency?.sponsorName ? ` (${st.legal.residency.sponsorName})` : ''}. No message was sent and no permit extension was granted.`, 'visa');
         }
       }
     ]

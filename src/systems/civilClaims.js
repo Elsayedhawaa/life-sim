@@ -10,10 +10,10 @@ export function civilClaimQuote(S,suitId){
  const kind={sue_scam_broker:'broker_fraud',sue_employer_wages:'unpaid_wages',sue_wrongful_dismissal:'wrongful_dismissal',sue_landlord_deposit:'deposit'}[suitId];
  const loss=(S.legal.civilLosses||[]).find(x=>x.kind===kind&&x.status==='open');
  const recoverable=loss?.defendant&&loss.defendant.country===loss.country?Math.max(0,Math.min(Number(loss.amount)||0,Number(loss.defendant.frozenLocal)||0)):0;
- return{loss,available:!!loss,reason:loss?'Documented loss':'No recorded dispute',collectionAvailable:recoverable>0,recoverableLocal:loss?Math.floor(convertCurrency(recoverable,loss.country,S.country,S.year)):0,collectionNote:recoverable>0?'Simulation · Traced funds frozen · Hearing 3 mo · Recovery capped at frozen funds.':'No identified defendant assets in this record. Paid review cannot recover cash in the current model.',amount:loss?Math.round(convertCurrency(loss.amount,loss.country,S.country,S.year)):0};
+ return{loss,available:!!loss,reason:loss?'Documented loss':'No dispute on file',collectionAvailable:recoverable>0,recoverableLocal:loss?Math.floor(convertCurrency(recoverable,loss.country,S.country,S.year)):0,collectionNote:recoverable>0?'Simulation · Traced funds frozen · Hearing 3 mo · Recovery capped at frozen funds.':'No identified defendant assets in this record. Paid review cannot recover cash in the current model.',amount:loss?Math.round(convertCurrency(loss.amount,loss.country,S.country,S.year)):0};
 }
 export function fileCivilClaim(S,suit){
- const q=civilClaimQuote(S,suit.id);if(!q.available)return{ok:false,msg:'No recorded dispute. Nothing charged.'};
+ const q=civilClaimQuote(S,suit.id);if(!q.available)return{ok:false,msg:'No dispute on file. Nothing charged.'};
  const fee=Math.round(convertCurrency(suit.lawyerFeeUsd,'usa',S.country,S.year));if(S.money.cash<fee)return{ok:false,msg:'Not enough cash for counsel.'};
  walletMove(S,-fee,'Civil claim counsel','legal');q.loss.status='filed';q.loss.dueAt=S.year*12+S.month+3;q.loss.suitId=suit.id;q.loss.filedCountry=S.country;q.loss.feePaidLocal=fee;
  return{ok:true,msg:'Filed · Review in 3 months'};

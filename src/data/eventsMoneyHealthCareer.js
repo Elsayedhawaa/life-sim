@@ -11158,7 +11158,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     build:(S,ctx)=>{
       const dest=ALL_VACATIONS.find(v=>v.pilgrimage==='umrah');if(!dest)return null;
       const quote=tripExecutionQuote(S,dest),cost=tripCostLocal(S,dest);
-      return{key:'ev_gulf_umrah_trip',category:'life',title:'Plan Your Umrah Trip',text:`${dest.name}: ${dest.days_typical||5} calendar days. Package ${formatMoney(cost,S.country)}; total including modeled unpaid leave ${formatMoney(quote.total,S.country)}. ${quote.ok?'Calendar and cash available.':quote.reason} Passport, travel-ban and other trip checks still apply. This quote covers the player only, not unrecorded family tickets.`,choices:[{label:`Take recorded trip · ${formatMoney(quote.total,S.country)}`,effect:st=>takeVacationOrPilgrimage(st,dest.id)},{label:'Keep the trip for later',effect:st=>{}}]};
+      return{key:'ev_gulf_umrah_trip',category:'life',title:'Plan Your Umrah Trip',text:`${dest.name}: ${dest.days_typical||5} calendar days. Package ${formatMoney(cost,S.country)}; total including modeled unpaid leave ${formatMoney(quote.total,S.country)}. ${quote.ok?'Calendar and cash available.':quote.reason} Passport, travel-ban and other trip checks still apply. This quote covers the player only, not unrecorded family tickets.`,choices:[{label:`Take the trip · ${formatMoney(quote.total,S.country)}`,effect:st=>takeVacationOrPilgrimage(st,dest.id)},{label:'Keep the trip for later',effect:st=>{}}]};
     },
   },
   {
@@ -11548,7 +11548,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: { requiredPeople: ['friend'],"minAge": 24, "afterEvent": "ev_money_payday_loan_shop", "afterEventMinTurns": 3},
     build: (S, ctx) => {
       const l=S.money.loans.find(x=>x.narrativeKind==='payday');if(!l)return null;
-      return{key:'ev_back_loan_shop_returns',category:'money',title:'The Loan Shop Statement',text:`Actual remaining game debt: ${formatMoney(l.balance,S.country)}. Monthly collections already use this same balance. A payment here reduces it, never creates a second debt.`,choices:[{label:'Clear the recorded balance',effect:st=>payNarrativeLoan(st,l.id)},{label:'Pay half of the recorded balance',effect:st=>payNarrativeLoan(st,l.id,.5)},{label:'Keep the current repayment schedule',effect:st=>{}}]};
+      return{key:'ev_back_loan_shop_returns',category:'money',title:'The Loan Shop Statement',text:`Actual remaining game debt: ${formatMoney(l.balance,S.country)}. Monthly collections already use this same balance. A payment here reduces it, never creates a second debt.`,choices:[{label:'Pay off the balance',effect:st=>payNarrativeLoan(st,l.id)},{label:'Pay half the balance',effect:st=>payNarrativeLoan(st,l.id,.5)},{label:'Keep the current repayment schedule',effect:st=>{}}]};
     },
   },
   {

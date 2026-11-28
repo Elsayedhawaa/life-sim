@@ -66,7 +66,7 @@ export function settleGameDivorce(S,spouse,couple,{custody='shared',contested=fa
   S.marriage.divorceOrders.push(order);
   for(const ch of children){ch.custody={orderId:order.id,arrangement:result,otherParentId:spouse.id,playerNightsPer14:result==='shared'?7:result==='player'?11:3};ch.householdWith=result==='spouse'?spouse.id:'player';}
   spouse.householdWith=spouse.id;spouse.maritalStatus='divorced';spouse.spouseIds=(spouse.spouseIds||[]).filter(id=>id!=='player');spouse.role='ex_spouse';spouse.relationLabel='Ex-spouse';
-  recordJournal(S,`Simplified game divorce: ${sold.length} marital properties/cars sold, ${kept.length} kept through buyout; debts remain with kept titles; ${formatMoney(spouseAward,S.country)} awarded to ${spouse.firstName}. Legal fees ${formatMoney(fee,S.country)}. Custody ${result}; ${formatMoney(monthly,S.country)}/month child support from ${payer}. ${baseline?'Recorded premarital assets protected.':'Legacy marriage has no premarital inventory: existing properties/cars treated as shared.'} Not local family law; no automatic fault penalty for infidelity.`,'family');
+  recordJournal(S,`Simplified game divorce: ${sold.length} marital properties/cars sold, ${kept.length} kept through buyout; debts remain with kept titles; ${formatMoney(spouseAward,S.country)} awarded to ${spouse.firstName}. Legal fees ${formatMoney(fee,S.country)}. Custody ${result}; ${formatMoney(monthly,S.country)}/month child support from ${payer}. ${baseline?'Premarital assets are protected.':'Legacy marriage has no premarital inventory: existing properties/cars treated as shared.'} Not local family law; no automatic fault penalty for infidelity.`,'family');
   return order;
 }
 export function settleChildSupportMonth(S,available){

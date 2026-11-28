@@ -153,5 +153,5 @@ export function enrollChildSchoolYear(S,childId,tier='standard'){
  ch.schoolEnrollment={...q,paidLocal:q.cost,paymentCountry:S.country,status:'prepaid',label:tier==='international'?'Game international school':'Game local school'};
  ch.schoolHistory??=[];ch.schoolHistory.push({...ch.schoolEnrollment});
  recordJournal(S,'Prepaid12months at '+ch.schoolEnrollment.label+' for '+ch.firstName+'. No employer subsidy or automatic renewal.','family');
- return{ok:true,msg:'School year recorded and prepaid.'};
+ return{ok:true,msg:'School year prepaid.'};
 }

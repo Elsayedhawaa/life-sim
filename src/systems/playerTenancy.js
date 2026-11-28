@@ -12,7 +12,7 @@ export function closePlayerLease(S,{disputed=false}={}){
  const damageDeduction=Math.min(local-arrears,damageTotal);
  lease.deductedForDamage=damageDeduction;lease.inspection={at:S.year*12+S.month,items:damages.map(x=>({...x})),total:damageTotal,deducted:damageDeduction};
  const remaining=local-arrears-damageDeduction;
- if(arrears>0){lease.deductedForRent=arrears;lease.rentArrears-=arrears;recordJournal(S,'Paid rental deposit applied to recorded unpaid rent. No new cash received.','housing');}
+ if(arrears>0){lease.deductedForRent=arrears;lease.rentArrears-=arrears;recordJournal(S,'Your rental deposit was used against the unpaid rent. No new cash came in.','housing');}
  lease.status=disputed?'disputed':'ended';lease.endedAt=S.year*12+S.month;
  if(disputed){const loss=recordCivilLoss(S,'deposit',remaining,lease.landlord,{frozenLocal:remaining,defendantName:lease.landlord});lease.lossId=loss?.id;recordJournal(S,'Your paid rental deposit is disputed. Traced funds are reserved for settlement or a separate paid court claim.','housing');}
  else{if(remaining>0)walletMove(S,remaining,'Refund of paid rental deposit','housing');lease.refundedLocal=remaining;lease.refundCountry=S.country;}
@@ -20,7 +20,7 @@ export function closePlayerLease(S,{disputed=false}={}){
  const damageRemainder=Math.max(0,damageTotal-damageDeduction);
  if(damageRemainder>0)lease.rentArrears=(lease.rentArrears||0)+damageRemainder;
  if(lease.rentArrears>0){S.money.loans.push({id:'rentarrears_'+lease.id,label:'Rental liability after deposit',balance:lease.rentArrears,monthlyPayment:Math.max(1,Math.ceil(lease.rentArrears/12)),annualRate:0,remainingMonths:12,country:S.country,missedMonths:0});lease.rentArrears=0;}
- S.housing.leaseHistory??=[];S.housing.leaseHistory.push({...lease});S.housing.playerLease=null;return{ok:true,msg:disputed?'Paid deposit recorded as a dispute.':'Rental deposit returned.'};
+ S.housing.leaseHistory??=[];S.housing.leaseHistory.push({...lease});S.housing.playerLease=null;return{ok:true,msg:disputed?'The deposit is now under dispute.':'Rental deposit returned.'};
 }
 export function reconcilePlayerLease(S){const l=S.housing?.playerLease;if(l?.status==='active'&&(S.housing.mode!=='rent'||S.housing.currentHomeId!==l.homeId||S.country!==l.country))closePlayerLease(S);}
 export function playerDepositValue(S){const l=S.housing?.playerLease;return l?.status==='active'?Math.max(0,convertCurrency(l.deposit,l.country,S.country,S.year)):0;}
@@ -29,12 +29,12 @@ export function recordPlayerRentDue(S,amount,available){const l=S.housing?.playe
 
 export function recordRentalDamage(S,label,cost){const l=S.housing?.playerLease;if(!l||l.status!=='active'||!Number.isSafeInteger(cost)||cost<=0)return null;l.damage??=[];const d={id:'damage_'+l.id+'_'+l.damage.length,label,cost,playerCaused:true,recorded:true,status:'open',at:S.year*12+S.month};l.damage.push(d);return d;}
 export function tickPlayerRentalDamage(S){const l=S.housing?.playerLease;if(!l||l.status!=='active'||l.lastDamageTick===S.year*12+S.month)return;l.lastDamageTick=S.year*12+S.month;if(!(l.damage||[]).some(x=>x.status==='open')&&chance(S,.02)){const cost=Math.max(1,Math.round(l.deposit*.15));recordRentalDamage(S,'Accidental broken cupboard door',cost);recordJournal(S,'You broke a cupboard door in your rented home. Repair cost is recorded against your paid deposit; fix it before moving or it appears in the inspection.','housing');}}
-export function repairPlayerRentalDamage(S,id){const l=S.housing?.playerLease;const d=l?.damage?.find(x=>x.id===id&&x.status==='open');if(!d)return{ok:false,msg:'No recorded rental damage.'};if(S.money.cash<d.cost)return{ok:false,msg:'Not enough cash for this repair.'};walletMove(S,-d.cost,'Rental damage repair: '+d.label,'housing');d.status='repaired';d.paid=d.cost;return{ok:true,msg:'The damage is repaired. Nothing is taken from your deposit for it.'};}
+export function repairPlayerRentalDamage(S,id){const l=S.housing?.playerLease;const d=l?.damage?.find(x=>x.id===id&&x.status==='open');if(!d)return{ok:false,msg:'No rental damage on file.'};if(S.money.cash<d.cost)return{ok:false,msg:'Not enough cash for this repair.'};walletMove(S,-d.cost,'Rental damage repair: '+d.label,'housing');d.status='repaired';d.paid=d.cost;return{ok:true,msg:'The damage is repaired. Nothing is taken from your deposit for it.'};}
 
 export function payPlayerRentArrears(S){
  const l=S.housing?.playerLease;const amount=Math.max(0,Math.ceil(Number(l?.rentArrears)||0));
- if(!l||l.status!=='active'||amount<=0)return{ok:false,msg:'No recorded unpaid rent.'};
+ if(!l||l.status!=='active'||amount<=0)return{ok:false,msg:'No unpaid rent on file.'};
  if(!Number.isSafeInteger(amount)||!Number.isFinite(S.money.cash)||S.money.cash<amount)return{ok:false,msg:'Not enough cash to clear unpaid rent.'};
- walletMove(S,-amount,'Payment of recorded rental arrears','housing');l.rentArrears=0;l.arrearsPayments??=[];l.arrearsPayments.push({year:S.year,month:S.month,amount,country:S.country});S.money.missedRentMonths=0;
+ walletMove(S,-amount,'Payment of rental arrears','housing');l.rentArrears=0;l.arrearsPayments??=[];l.arrearsPayments.push({year:S.year,month:S.month,amount,country:S.country});S.money.missedRentMonths=0;
  return{ok:true,msg:'The unpaid rent is cleared. Your deposit stays refundable.'};
 }

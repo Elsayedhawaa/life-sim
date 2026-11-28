@@ -3154,7 +3154,7 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
         <div style="border-top:1px solid var(--line-soft);padding-top:8px">
           ${S.housing.playerLease?.status==='active'?'<p>Paid rental deposit · '+esc(formatMoney(S.housing.playerLease.deposit,S.housing.playerLease.country))+' · Unpaid rent '+esc(formatMoney(S.housing.playerLease.rentArrears||0,S.country))+' · Deposit covers recorded unpaid rent, then inspected player damage; balance returned on moving or disputed after eviction.</p>':''}
           ${S.housing.playerLease?.status==='active'&&S.housing.playerLease.rentArrears>0?'<div style="margin:8px 0"><button class="btn btn-sm" data-action="pay-player-rent-arrears">Clear unpaid rent · '+esc(formatMoney(S.housing.playerLease.rentArrears,S.country))+' cash</button></div>':''}
-          ${(S.housing.playerLease?.damage||[]).filter(d=>d.status==='open').map(d=>'<div class="item-row"><span>Recorded damage · '+esc(d.label)+' · '+esc(formatMoney(d.cost,S.country))+'</span><button class="btn btn-sm" data-action="repair-player-rental" data-id="'+esc(d.id)+'">Repair before inspection</button></div>').join('')}
+          ${(S.housing.playerLease?.damage||[]).filter(d=>d.status==='open').map(d=>'<div class="item-row"><span>Damage · '+esc(d.label)+' · '+esc(formatMoney(d.cost,S.country))+'</span><button class="btn btn-sm" data-action="repair-player-rental" data-id="'+esc(d.id)+'">Repair before inspection</button></div>').join('')}
           <strong style="font-size:0.82rem">Quick Rental Apartments in ${esc(getCountry(S.country).name)}:</strong>
           ${rentalUnits.map(h => {
             const quote = rentalMoveInQuote(S, h);
@@ -4889,7 +4889,7 @@ function renderMedicalAndSurgeriesSubtabHtml(S) {
         if (!isSeriousCondition(cd.id)) {
           return `<div class="muted" style="margin-bottom:6px">• <strong>${esc(cd.label)}</strong> (since ${cd.sinceYear}) — ${cd.managed ? 'Managed' : 'Untreated'}</div>`;
         }
-        const courseLock=cd.treatmentStatus==='treated'?'Condition controlled, ongoing care continues.':cd.lastTreatmentPeriod===S.year*12+S.month?'Course already recorded this month. Review next month.':'';
+        const courseLock=cd.treatmentStatus==='treated'?'Condition controlled, ongoing care continues.':cd.lastTreatmentPeriod===S.year*12+S.month?'You already took a course this month. Look again next month.':'';
         const opts = treatmentOptions(S, cd);
         const priv = opts.find(o => o.care === 'private');
         const pub = opts.find(o => o.care === 'public');
@@ -4975,7 +4975,7 @@ function renderCourtsAndCrimeSubtabHtml(S) {
           <div class="item-row">
             <div class="item-row-main">
               <strong>${esc(su.label)}</strong>
-              <span>Counsel Retainer: <strong class="mono">${esc(formatMoney(fee, S.country))}</strong> · ${claim.available?'Review 3 mo · Loss '+esc(formatMoney(claim.amount,S.country)):'No recorded dispute'}</span>${claim.available?'<span style="display:block" class="text-bad">'+esc(claim.collectionNote)+(claim.collectionAvailable?' · Frozen '+esc(formatMoney(claim.recoverableLocal,S.country)):'')+'</span>':''}
+              <span>Counsel Retainer: <strong class="mono">${esc(formatMoney(fee, S.country))}</strong> · ${claim.available?'Review 3 mo · Loss '+esc(formatMoney(claim.amount,S.country)):'No dispute on file'}</span>${claim.available?'<span style="display:block" class="text-bad">'+esc(claim.collectionNote)+(claim.collectionAvailable?' · Frozen '+esc(formatMoney(claim.recoverableLocal,S.country)):'')+'</span>':''}
             </div>
             <button class="btn btn-primary btn-sm" data-action="file-lawsuit" data-id="${su.id}" ${S.money.cash >= fee&&claim.available ? '' : 'disabled'}>${claim.collectionAvailable?'File traced-funds claim':'Pay for review'}</button>
             ${!claim.available ? lockReason('Nothing to file', 'Your record shows no dispute of this kind.') : ''}
