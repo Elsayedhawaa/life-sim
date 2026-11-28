@@ -511,12 +511,13 @@ export function diseaseAnnualDeathProb(S, cond) {
   /* Everything else: keep the data file's flat rate, halved-ish when managed
      (the old 0.35 multiplier), as before. */
   const flat = (cond.deathRiskPerYear || 0) * (cond.managed ? 0.35 : 1.0);
-  /* GAME DESIGN: a lasting condition on the generic flat rate adds at most twice the ordinary death risk for the
-     age (about three times in total). The flat figures (1 to 2 percent a year for diabetes, epilepsy, an
+  /* GAME DESIGN: a lasting condition on the generic flat rate adds at most the ordinary death risk for the
+     age (about double in total). The flat figures (1 to 2 percent a year for diabetes, epilepsy, an
      arrhythmia) were added on top of the baseline at every age, which killed people in their 30s and 40s at
      many times the real excess. Serious diseases with their own staged rows are unchanged. */
-  if (cond.chronic) return Math.min(flat, 2 * baselineAnnualDeathProb(S));
-  return flat;
+  if (cond.chronic) return Math.min(flat, 1 * baselineAnnualDeathProb(S));
+  /* GAME DESIGN: an acute condition in its first two years adds at most twice the ordinary yearly risk. */
+  return Math.min(flat, 2 * baselineAnnualDeathProb(S));
 }
 
 /* Hypertension, left unmanaged for years, slowly becomes heart disease —

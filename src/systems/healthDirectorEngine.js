@@ -160,7 +160,7 @@ export function tickHealthAndMortalityYearly(S) {
     'gallstones', 'ulcer', 'gerd', 'arthritis', 'hernia', 'breast_cancer', 'cervical_cancer'
   ]);
 
-  const condProb = age < 16 ? 0.025 : age < 35 ? 0.045 : age < 55 ? 0.085 : 0.14;
+  const condProb = age < 16 ? 0.025 : age < 35 ? 0.03 : age < 55 ? 0.065 : 0.12;
   if (S.medical.conditions.length < 2 && mortChance(S, condProb)) {
     const pool = MEDICAL_CONDITIONS.filter(m => {
       if (S.medical.conditions.some(ex => ex.id === m.id)) return false;

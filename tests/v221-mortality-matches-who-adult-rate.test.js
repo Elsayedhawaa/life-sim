@@ -15,7 +15,9 @@ for (const c of Object.keys(WHO)) assert.ok(Math.abs(m.countryMortalityMultiplie
 const S = { player: { age: 35, gender: 'm' }, country: 'usa', year: 2026, skills: { fitness: 50 }, medical: { conditions: [] } };
 const base = m.baselineAnnualDeathProb(S);
 const p = m.diseaseAnnualDeathProb(S, { id: 'type1_diabetes', chronic: true, deathRiskPerYear: 0.02, managed: false, sinceYear: 2020 });
-assert.ok(p <= 2 * base + 1e-9, 'flat chronic rate capped: ' + p + ' vs ' + base);
+assert.ok(p <= base + 1e-9, 'flat chronic rate capped: ' + p + ' vs ' + base);
+const pa = m.diseaseAnnualDeathProb(S, { id: 'hepatitis_b', chronic: false, deathRiskPerYear: 0.02, managed: false, sinceYear: 2026 });
+assert.ok(pa <= 2 * base + 1e-9, 'acute flat rate capped: ' + pa + ' vs ' + base);
 /* rare conditions are rarer than the everyday ones */
 assert.ok(m.onsetWeight({ id: 'hepatitis_b' }, 40) < m.onsetWeight({ id: 'asthma' }, 40));
 console.log('ok v221 mortality matches WHO adult rate');
