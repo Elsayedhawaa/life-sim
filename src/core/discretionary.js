@@ -1,7 +1,7 @@
 /* GAME DESIGN: at the credit limit (new lives, S.rules.creditLimit), optional spending in these decisions is locked and says why.
    Bills, medical care and family obligations stay open. The cost is probed once per option on a throwaway copy of the state. */
 export const DISCRETIONARY_SCENES = new Set([
-  'ev_life_lottery_nothing','ev_money_investment_tip','ev_money_bank_certificate','ev_life_beggar_asks','ev_life_local_match',
+  'ev_health_lasik','ev_health_hearing_test','ev_health_therapy_first','ev_health_eye_test','ev_money_broken_glasses','ev_life_lottery_nothing','ev_money_investment_tip','ev_money_bank_certificate','ev_life_beggar_asks','ev_life_local_match',
   'ev_life_street_festival','ev_life_new_cafe','ev_life_birthday_forgotten','ev_friend_birthday_forgot','ev_friend_birthday_party',
   'ev_friend_new_restaurant','ev_friend_football_match','ev_friend_join_gym','ev_life_subscription_renewal','ad_gold_hedge',
   'ev_friend_business_invest','ev_friend_asks_loan','ev_family_sib_money_never_back_l2','ev_family_parents_anniversary',

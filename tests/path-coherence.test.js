@@ -11,11 +11,11 @@ const DEATHISH=/\b(died|death|funeral|passed away|late |estate|inherit|grie|bere
 /* A choice "does something" only if the state changed or the effect itself wrote a journal line. The resolver's own fallback line ("You went with \"<label>\" on \"<title>\"." since 9:44 Nov 26, was "<title>: <label>.") never counts, and a journal at its cap cannot hide a change. */
 async function probeChoice(s,a,idx){
   const snap=()=>JSON.stringify([s.money,s.ledger?.length,s.eventOutcomes,s.career,s.legal,s.housing,s.player.vitals,s.reputation,s.skills,s.values,Object.values(s.people).map(p=>[p.alive,p.rel?.affection,p.rel?.trust,p.rel?.resentment]),s.sceneQueue?.length,s.facts]);
-  const qkeys=(s.sceneQueue||[]).map(x=>x.key),before=snap(),head=s.journal?.[0]?.id,lbl=a.choices?.[idx]?.label,fallback=`You went with "${String(typeof lbl==='function'?lbl(s):lbl).replace(/[.!\s]+$/,'')}" on "${a.title}".`;
+  const qkeys=(s.sceneQueue||[]).map(x=>x.key),before=snap(),head=s.journal?.[0]?.id,lbl=a.choices?.[idx]?.label,said=String(typeof lbl==='function'?lbl(s):lbl).replace(/[.!\s]+$/,''),fallbacks=[`On "${a.title}", you chose: ${said}.`,`${a.title}: you acknowledged it.`]; /* v221: the fallback wording changed; both new forms count as the no-journal fallback */
   try{resolveActiveSceneChoice(s,idx);}catch(e){flag('choice-throws',a.eventId||a.baseId||a.key,String(e.message).slice(0,80)+' @'+String(e.stack).split('\n')[1].trim().slice(0,90),s);s.activeScene=null;return true;}
   const hi=(s.journal||[]).findIndex(x=>x.id===head),fresh=(s.journal||[]).slice(0,hi<0?s.journal.length:hi);
   const opened=!!s.activeScene&&s.activeScene.key!==a.key&&!qkeys.includes(s.activeScene.key); /* a choice that opens a new scene (a browse or detail step) is navigation, not a no-op; a scene that was already waiting in the queue does not count */
-  return snap()!==before||opened||fresh.some(x=>x.text!==fallback);
+  return snap()!==before||opened||fresh.some(x=>!fallbacks.includes(x.text));
 }
 { /* the checker itself: a literal no-op is caught, a real mutation or an authored journal line is not, with the journal below and at its cap */
   const {recordJournal}=await import('../src/core/schema.js');

@@ -86,7 +86,7 @@ console.log('PASS v221-journal-wording');
   const fsq=await import('node:fs');
   const gl=fsq.readFileSync(new URL('../src/core/gameLoop.js',import.meta.url),'utf8');
   assert.ok(!/recordJournal\(S, `\$\{scene\.title\}: \$\{lbl\}\.`/.test(gl),'fallback journal line must not glue the card title and the button label with a colon');
-  assert.ok(/You went with "\$\{String\(lbl\)/.test(gl));
+  assert.ok(/you chose: \$\{said\}/.test(gl) && !/You went with/.test(gl)); /* v221 expectation change: the fallback line no longer reads "You went with ..." */
   console.log('PASS v221-journal-wording part 7');
 }
 {

@@ -1333,14 +1333,16 @@ export function settleHouseholdMonth(S) {
       /* GAME DESIGN: the health hit stops at a floor of 35. Below that, the people around you cover the basics so the slide ends, but happiness and stress keep taking the hit. */
       const CREDIT_HEALTH_FLOOR = 35;
       if (S.player.vitals.health > CREDIT_HEALTH_FLOOR) S.player.vitals.health = Math.max(CREDIT_HEALTH_FLOOR, clamp(S.player.vitals.health - 3));
-      else if ((S.money.creditHelpNoteTurn ?? -99) + 12 <= S.turn) {
+      else if ((S.money.creditHelpNoteTurn ?? -99) + 12 <= S.turn && !(creditBlocked && S.money.reliefHelpNoteSpell === S.money.bankruptUntilYear)) {
         S.money.creditHelpNoteTurn = S.turn;
+        if (creditBlocked) S.money.reliefHelpNoteSpell = S.money.bankruptUntilYear; /* GAME DESIGN: once per relief spell, not every year */
         recordJournal(S, 'You are still at the limit. Relatives and friends cover the basics, so your health stops falling, but nothing gets better until you earn or sell something.', 'money');
       }
       S.player.vitals.happiness = clamp(S.player.vitals.happiness - 4);
       S.player.vitals.stress = clamp(S.player.vitals.stress + 5);
-      if ((S.money.creditLimitNoteTurn ?? -99) + 12 <= S.turn) {
+      if ((S.money.creditLimitNoteTurn ?? -99) + 12 <= S.turn && !(creditBlocked && S.money.reliefLimitNoteSpell === S.money.bankruptUntilYear)) {
         S.money.creditLimitNoteTurn = S.turn;
+        if (creditBlocked) S.money.reliefLimitNoteSpell = S.money.bankruptUntilYear; /* GAME DESIGN: once per relief spell */
         recordJournal(S, creditBlocked
           ? `Your game relief is still running, so no lender will give you credit until ${S.money.bankruptUntilYear + 1}. Whatever you cannot pay, you go without: skipped meals, unpaid bills, no repairs. Only earning or selling something helps.`
           : `You are ${formatMoney(cap, S.country)} in debt, the most lenders will allow. Past that you go without: skipped meals, unpaid bills, no repairs. It is wearing you down until you earn or sell something. Game cash relief, when it is offered, clears the debt but blocks new credit for seven years; work and sales are in the Career and Finance tabs. Game limit: 12 months of living costs.`, 'money');
