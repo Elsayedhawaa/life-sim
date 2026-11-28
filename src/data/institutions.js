@@ -1271,7 +1271,7 @@ export const BUSINESS_TYPES = [
     "label": "Private Specialist Clinic",
     "capitalUsd2026": 45000,
     "monthlyRevUsd2026": 14500,
-    "monthlyCostUsd2026": 8200,
+    "monthlyCostUsd2026": 9400,
     "volatility": 0.18,
     "reqMajor": "medicine",
     "from": 1960,

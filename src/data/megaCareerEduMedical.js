@@ -16740,7 +16740,7 @@ export const V1_BUSINESS_TYPES = [
     "id": "logistics",
     "label": "Logistics company",
     "startupEGP": 3000000,
-    "monthlyOverheadEGP": 200000,
+    "monthlyOverheadEGP": 395000,
     "baseRevenueEGP": 600000,
     "maxLevel": 5,
     "staffRoles": [
