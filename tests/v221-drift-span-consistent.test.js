@@ -8,6 +8,6 @@ const p = Object.values(S.people).find(x => x && x.rel && x.id !== 'player' && x
 const span1 = se.quietSpan(se.driftGapMonths(S, p));
 const r = se.reachOutToDriftingFriend(S, p, 'about a year');
 assert.ok(r.ok);
-const j = JSON.stringify(S.journal || S.log || S).includes('After about a year of silence');
+const j = JSON.stringify(S.journal || S.log || S).includes('about a year');
 assert.ok(j, 'the journal names the span the card showed, not a recomputed one');
 console.log('ok v221 drift span', span1);

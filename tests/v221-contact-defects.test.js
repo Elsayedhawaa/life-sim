@@ -14,7 +14,7 @@ import {EVENTS_EVERYDAY_FAMILY} from '../src/data/eventsEverydayFamily.js';
   s.year=2021;s.month=9;s.turn=100;p.rel.lastContactYear=2021;p.rel.lastContactMonth=9;p.rel.lastContactTurn=100;
   s.year=2026;s.month=1;s.turn=152;let r=tickFriendshipDrift(s);assert.equal(r.warned,1,'warning stage first');
   s.month=2;s.turn=153;r=tickFriendshipDrift(s);assert.equal(r.noticed,1,'notice stage second month');
-  const j=(s.journal||[]).find(x=>/have not spoken to/.test(x.text||''));
+  const j=(s.journal||[]).find(x=>/(have not spoken to|since you and)/.test(x.text||''));
   assert.ok(j,'notice journal recorded');
   assert.ok(!/in a year/.test(j.text),`journal must not say "in a year" for 53 months, got: ${j.text}`);
   assert.ok(/about 4 years/.test(j.text),`journal must state the real span (53 months = about 4 years), got: ${j.text}`);

@@ -301,7 +301,7 @@ function buildDriftNoticeScene(S, p) {
         label: 'Not today. Keep the door open.',
         effect: st => {
           p.rel.driftState = 'noticed';
-          recordJournal(st, `You left the door open with ${p.fullName}. You have not reconnected yet; you can call or visit from People when you are ready.`, 'relationship');
+          recordJournal(st, `You left the door open with ${p.fullName}. You have not reconnected yet; you can call or visit from the People tab when you are ready.`, 'relationship');
         }
       },
       {
@@ -327,7 +327,7 @@ export function reachOutToDriftingFriend(S, p, shownSpan) {
   spendSocialEnergy(S, cost);
   noteSocialContact(S, p);
   rememberSocialDeed(S, p, 'visited', `You reached out after ${span} apart — the friendship is alive again.`, { affection: 12, trust: 6, resentment: -10 });
-  recordJournal(S, `After ${span} of silence, you called ${p.fullName}. It was awkward for a minute, then it was like no time had passed. The friendship is alive again.`, 'relationship');
+  recordJournal(S, reconnectText(S, p, span), 'relationship');
   return { ok: true, msg: `You reached out to ${p.firstName} — the friendship is alive again.` };
 }
 
@@ -351,6 +351,36 @@ export function endFriendship(S, p) {
     : `You let the friendship with ${p.fullName} drift away. You stopped calling, they stopped calling, and now the thread is cut.`,
   'relationship');
   return { ok: true };
+}
+
+
+/* Journal wording varies by person and year so a long life does not repeat one sentence. Same facts in every variant; the pick is deterministic. */
+function variantIndex(S, p, n) {
+  let h = Number(S.year) || 0;
+  for (const ch of String(p.id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return h % n;
+}
+export function driftWarnText(S, p, months) {
+  const span = quietSpan(months);
+  return [
+    `You and ${p.fullName} are drifting apart — you have not spoken in ${span}. A call or a visit would stop the drift.`,
+    `You and ${p.fullName} are drifting apart. It has been ${span} since you last talked, and a short call would change that.`,
+    `${p.firstName} has gone quiet, and you are drifting apart: ${span} without a word. A message now would still feel natural.`
+  ][variantIndex(S, p, 3)];
+}
+export function driftNoticeText(S, p, months) {
+  const span = quietSpan(months);
+  return [
+    `You have not spoken to ${p.fullName} in ${span}. You can reconnect, leave the door open, or let the friendship go.`,
+    `It has been ${span} since you and ${p.fullName} last spoke. You can reconnect, leave the door open, or let the friendship go.`
+  ][variantIndex(S, p, 2)];
+}
+export function reconnectText(S, p, span) {
+  return [
+    `After ${span} of silence, you called ${p.fullName}. It was awkward for a minute, then it was like no time had passed. The friendship is alive again.`,
+    `You called ${p.fullName} after ${span} without contact. The first minute was stiff, then you were talking like before. The friendship is alive again.`,
+    `You rang ${p.fullName} after ${span}. Neither of you mentioned the gap for long. The friendship is alive again.`
+  ][variantIndex(S, p, 3)];
 }
 
 /* The yearly drift check, run from the NPC yearly tick (soulEngine
@@ -393,12 +423,12 @@ export function tickFriendshipDrift(S) {
          gets the warning now, not the notice. */
       if (state !== 'drifting' && state !== 'noticed') {
         p.rel.driftState = 'drifting';
-        recordJournal(S, `You and ${p.fullName} are drifting apart — you have not spoken in ${quietSpan(months)}. A call or a visit would stop the drift.`, 'relationship');
+        recordJournal(S, driftWarnText(S, p, months), 'relationship');
         warned++;
       } else if (state !== 'noticed') {
         if (queueDriftNoticeScene(S, p)) {
           p.rel.driftState = 'noticed';
-          recordJournal(S, `You have not spoken to ${p.fullName} in ${quietSpan(months)}. You can reconnect, leave the door open, or let the friendship go.`, 'relationship');
+          recordJournal(S, driftNoticeText(S, p, months), 'relationship');
           noticed++;
         }
       } else {
@@ -407,7 +437,7 @@ export function tickFriendshipDrift(S) {
     } else if (months >= DRIFT_WARN_MONTHS) {
       if (state === 'none') {
         p.rel.driftState = 'drifting';
-        recordJournal(S, `You and ${p.fullName} are drifting apart — you have not spoken in ${quietSpan(months)}. A call or a visit would stop the drift.`, 'relationship');
+        recordJournal(S, driftWarnText(S, p, months), 'relationship');
         warned++;
       }
       p.rel.affection = clamp(p.rel.affection - 3);
