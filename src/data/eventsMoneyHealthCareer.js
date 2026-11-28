@@ -3669,7 +3669,9 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
               walletMove(st, -A, 'Have the surgery at once', 'health');
               st.player.vitals.health = clamp(st.player.vitals.health + (-6));
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+5));
-              recordJournal(st, `You had emergency appendix surgery, costing ${formatMoney(A, S.country)}. It saved you — and emptied your savings.`, 'health');
+              const left = st.money && typeof st.money.cash === 'number' ? st.money.cash : null;
+              const tail = left === null ? '' : left < A * 0.1 ? ' — and left you almost nothing in savings' : left < A * 2 ? ' — and took a big bite out of your savings' : '';
+              recordJournal(st, `You had emergency appendix surgery, costing ${formatMoney(A, S.country)}. It saved you${tail}.`, 'health');
             },
           },
           {
@@ -6562,7 +6564,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     id: 'ev_career_night_shift',
     category: 'career',
     repeatable: false,
-    gates: {"minAge": 22, "hasJob": true},
+    gates: {"minAge": 22, "hasJob": true, "jobTrackIn": ['medicine','surgery','pediatrics','cardiology','cardiology_surg','nursing','radiology_imaging','sports_medicine','bpo','trades','hospitality','hospitality_luxury','aviation','last_mile_delivery_ops','ecommerce_operations','supply_chain_ports','mining_minerals','petroleum_energy','telecom_5g','cybersecurity','cybersecurity_analyst','ev_technician','legacy_pc_support','entry']},
     build: (S, ctx) => {
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';

@@ -260,6 +260,10 @@ export function eventGatePasses(ev, S, { ignoreHistory = false } = {}) {
     const has = !!(S.career.employed && S.career.job);
     if (has !== !!g.hasJob) return false;
   }
+  if (Array.isArray(g.jobTrackIn)) {
+    const j = S.career.job;
+    if (!j || !g.jobTrackIn.includes(j.track)) return false;
+  }
   if(g.recentPromotionMonths!==undefined){const q=S.career.lastPromotion,j=S.career.job,elapsed=q?S.year*12+S.month-q.at:Infinity;if(!q||elapsed<0||elapsed>g.recentPromotionMonths||!j||q.employer!==j.employer||q.track!==j.track||q.level!==j.level)return false;}
   if(g.minJobPerformance!==undefined&&(!S.career.job||(S.career.job.performance||0)<g.minJobPerformance))return false;
   if (g.hasCar !== undefined) {
