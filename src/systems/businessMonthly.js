@@ -358,12 +358,13 @@ function computeBusinessMonthOperating(S, biz, opts = {}) {
     const pricingDir = Number(biz.buffs?.pricingDir || 0);
     if (pricingDir === 1) repeatDelta -= 0.02;
     else if (pricingDir === -1) repeatDelta += 0.01;
-    if (pl.net > 0) repeatDelta += 0.01;
+    /* v2.21 GAME DESIGN (mine, unsourced): in new lives a profitable month stops adding repeat customers once the rate is 0.8, so profit and a manager's monthly pull alone cannot ratchet revenue up to the +20% the rate allows; skill and decisions still move it, and a losing month still lowers it. */
+    if (pl.net > 0) { if (!(S.rules?.repeatCap && Number(biz.repeatRate ?? 0.5) >= 0.8)) repeatDelta += 0.01; }
     else if (pl.net < 0) repeatDelta -= 0.02;
     repeatDelta += Number(eff.repeatRateDelta) || 0;
     /* v2.17 W2 — monthEffects (W3/W4 contract): their repeat-rate
        delta lands here, in this one place, with everything else. */
-    repeatDelta += Number(me.repeatRateDelta) || 0;
+    { const mgr = Number(me.repeatRateDelta) || 0; if (!(mgr > 0 && S.rules?.repeatCap && Number(biz.repeatRate ?? 0.5) >= 0.8)) repeatDelta += mgr; } /* v2.21: the manager's monthly pull on repeat customers (+0.022 a month) stops at 0.8 in new lives, the same cap as profit (GAME DESIGN, mine, unsourced) */
     biz.repeatRate = clamp((Number(biz.repeatRate ?? 0.5)) + repeatDelta, 0, 1);
   }
   pl.repeatRate = Number((Number(biz.repeatRate ?? 0.5)).toFixed(3));

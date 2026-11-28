@@ -198,7 +198,7 @@ export function createNewLifeState(opts = {}) {
     month: 1,
     pacing: 'yearly', // Adaptive: 'yearly' ages 0-17, 'monthly' ages 18+
     gameOver: false,
-    rules: { creditLimit: true, capacity: true },
+    rules: { creditLimit: true, capacity: true, repeatCap: true },
     generation: opts.generation || 1,
     dynastyHistory: Array.isArray(opts.dynastyHistory) ? opts.dynastyHistory.slice() : [],
 
