@@ -16534,7 +16534,7 @@ export const V1_BUSINESS_TYPES = [
     "id": "retail_shop",
     "label": "Retail shop",
     "startupEGP": 500000,
-    "monthlyOverheadEGP": 50000,
+    "monthlyOverheadEGP": 62000,
     "baseRevenueEGP": 120000,
     "maxLevel": 5,
     "staffRoles": [
@@ -16800,7 +16800,7 @@ export const V1_BUSINESS_TYPES = [
     "id": "bakery",
     "label": "Bakery",
     "startupEGP": 700000,
-    "monthlyOverheadEGP": 60000,
+    "monthlyOverheadEGP": 86000,
     "baseRevenueEGP": 160000,
     "maxLevel": 5,
     "staffRoles": [
@@ -16816,7 +16816,7 @@ export const V1_BUSINESS_TYPES = [
     "id": "bookstore",
     "label": "Bookstore",
     "startupEGP": 400000,
-    "monthlyOverheadEGP": 35000,
+    "monthlyOverheadEGP": 40500,
     "baseRevenueEGP": 90000,
     "maxLevel": 5,
     "staffRoles": [
