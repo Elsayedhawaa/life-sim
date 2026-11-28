@@ -42,8 +42,10 @@ export function mortRand(S) {
    Weights below are relative likelihoods, not measured incidence rates. */
 export function onsetWeight(cond, age) {
   if (isCancer(cond.id)) {
-    if (cond.id === 'leukemia') return 0.4;
-    return age < 50 ? 0.3 : age < 65 ? 0.6 : 1.0;
+    /* GAME DESIGN: cancers were killing about 7% of sweep lives before 60; adult tables put that nearer 3%
+       (my estimate, no source fetched). Weights lowered for ages under 65 only, my fit. */
+    if (cond.id === 'leukemia') return 0.15;
+    return age < 50 ? 0.1 : age < 65 ? 0.3 : 1.0;
   }
   if (cond.id === 'heart_attack' || cond.id === 'stroke_recovery') return age < 55 ? 0.6 : 1.0;
   if (cond.id === 'dementia') return 0.3;

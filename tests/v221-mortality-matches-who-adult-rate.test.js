@@ -21,3 +21,7 @@ assert.ok(pa <= 2 * base + 1e-9, 'acute flat rate capped: ' + pa + ' vs ' + base
 /* rare conditions are rarer than the everyday ones */
 assert.ok(m.onsetWeight({ id: 'hepatitis_b' }, 40) < m.onsetWeight({ id: 'asthma' }, 40));
 console.log('ok v221 mortality matches WHO adult rate');
+/* cancer onset is rarer for adults under 65 than for older people */
+assert.ok(m.onsetWeight({ id: 'lung_cancer' }, 40) <= 0.15, 'cancer onset weight under 50');
+assert.ok(m.onsetWeight({ id: 'leukemia' }, 30) <= 0.2, 'leukemia onset weight');
+assert.equal(m.onsetWeight({ id: 'lung_cancer' }, 70), 1);
