@@ -476,6 +476,7 @@ export function getProgress(S) {
 
 const DEBT_CHAIN = 'Miss one payment and there is a late fee and your credit score drops. Miss twice and the bank warns you. Miss three times and the bank can repossess what the loan bought — or foreclose on a home.';
 const BUSINESS_CLOSURE = 'A business that keeps missing payments is closed after 3 missed payments and sold off for half of what you put into it.';
+const BUSINESS_CLOSURE_LOSSES = 'A business that keeps losing money closes once its own capital is used up, and is sold off for half of the capital it had left. Your personal cash does not count unless you put it into the business.';
 
 export function computeStakes(S) {
   const stakes = [];
@@ -595,7 +596,7 @@ export function computeStakes(S) {
         ? `${biz.name} has lost money for ${losing} month${losing > 1 ? 's' : ''}${misses > 0 ? ` and missed ${misses} payment${misses > 1 ? 's' : ''}` : ''}`
         : `${biz.name} has missed ${misses} payment${misses > 1 ? 's' : ''}`,
       detail: atRisk ? 'This business is at risk of closing.' : 'Losing money — watch it before the losses pile up.',
-      consequence: atRisk ? BUSINESS_CLOSURE : 'If the losses continue, missed payments pile up — and after 3 missed payments the business is closed.'
+      consequence: misses > 0 ? BUSINESS_CLOSURE : atRisk ? BUSINESS_CLOSURE_LOSSES : 'If the losses continue, the business capital runs down and the business closes when it is gone.'
     });
   }
 
