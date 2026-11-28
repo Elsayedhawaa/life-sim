@@ -326,13 +326,15 @@ export function ventureWageScale(countryId, year = 2026) {
 /* Labour as a share of takings, from published benchmarks (sources in the commit notes): independent cafe 28-35% (Dripos, UK PL Coffee Shop Consulting), hair salon 40-55% (Go By The Numbers, Tangled Data), gym payroll median 38.4% (Health & Fitness Association 2025). Restaurant uses the cafe figure. GAME DESIGN: the midpoint of each range, and a 10% margin before the owner's own pay. The launch rows are priced at Egypt's level and then scaled by the wage ratio, which left a US cafe at 99k a month, 5 times a real one, and a staff bill far below a real labour share. Pricing takings from the starter wage bill keeps every country at the same labour share. */
 export const VENTURE_LABOUR_SHARE = { cafe: 0.32, restaurant: 0.32, salon: 0.45, gym: 0.384 };
 export const VENTURE_MARGIN_BEFORE_OWNER = 0.10;
+/* GAME DESIGN (mine, tuned near sourced ranges, not source-verified): cafe and restaurant keep a 2% margin before the owner (default 10%). Published pre-tax margins are about 5% on average (National Restaurant Association via Grubhub and Toast), 3-5% full service, 6-9% quick service, 0-15% overall; the 10% default left a manager-run cafe at 15-21% pre-tax in year 1. */
+export const VENTURE_MARGIN_OVERRIDE = { cafe: 0.02, restaurant: 0.02 };
 export function labourShareRepricing(bp, pricing, wageBillLocal) {
   const share = VENTURE_LABOUR_SHARE[bp && bp.id];
   if (!share || !(wageBillLocal > 0)) return pricing;
   const homeTakings = wageBillLocal / share; /* a new venture starts run from home, which books BUSINESS_HOME_REV_MULT of its takings: calibrate the labour share to what the first months really sell */
   const revLocal = Math.round(homeTakings / BUSINESS_HOME_REV_MULT);
   const k = Math.max(0.25, Math.min(2, revLocal / Math.max(1, pricing.revLocal)));
-  return { ...pricing, revLocal, capitalLocal: Math.round(pricing.capitalLocal * k), costLocal: Math.max(otherCostsFloor(revLocal), Math.round(homeTakings * (1 - share - VENTURE_MARGIN_BEFORE_OWNER))) };
+  return { ...pricing, revLocal, capitalLocal: Math.round(pricing.capitalLocal * k), costLocal: Math.max(otherCostsFloor(revLocal), Math.round(homeTakings * (1 - share - (VENTURE_MARGIN_OVERRIDE[bp.id] ?? VENTURE_MARGIN_BEFORE_OWNER)))) };
 }
 export function ventureLocalPricing(S, bp) {
   const scale = ventureWageScale(S.country, S.year);

@@ -78,7 +78,8 @@ import { rand, clamp, hashSeed } from '../core/rng.js';
 import { nextId, recordJournal, walletMove, recordLedgerEntry, ensureExtendedState } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { pickFirstName, pickFamilyName } from '../data/names.js';
-import { monthsInBusiness, consecutiveProfitableMonths, averageStaffSkill, businessMonthIndex, settleBusinessExitDebt } from './businessEngine.js';
+import { monthsInBusiness, consecutiveProfitableMonths, averageStaffSkill, businessMonthIndex, settleBusinessExitDebt, ventureWageScale } from './businessEngine.js';
+import { convertCurrency } from '../data/economy.js';
 import { fireAllStaff, monthlyMidSalary } from './businessStaff.js';
 
 /* ------------------------------------------------------------------ *
@@ -243,8 +244,28 @@ export function supplyChainDiscount(S, biz) {
    Brand: grows with profitable months, falls with bad months.
    Returns the signed change, so the fold can show it on the P&L.
    ------------------------------------------------------------------ */
+/* v2.21 — the brand's money unit. The brand gain is 2% of the month's net,
+   and the 1,000 start, 5,000 breakout and 50,000 cap were tuned on Egypt's
+   numbers. The net is in LOCAL currency, so a yen or lira business gained
+   brand 50-100 times faster and hit the +50% revenue cap in its first year
+   (measured: a manager-run cafe, brand 267,761 after 12 months in Japan,
+   5,285 in Egypt, 3,478 in the USA). The net is now divided by how many
+   local units equal one Egypt-wage Egyptian pound (FX x the wage scale the
+   venture rows already use), so the brand grows at the same pace relative to
+   local pay everywhere. Egypt's unit is exactly 1: its numbers do not move.
+   GAME DESIGN: applies to new brand gains only; a brand already earned in
+   an old save keeps its value. An unusable ratio falls back to 1. */
+export function brandMoneyUnit(S, biz) {
+  const cid = (biz && biz.country) || S.country;
+  const year = Number(S.year) || 2026;
+  try {
+    const fx = convertCurrency(1, 'egy', cid, year);
+    const unit = fx * ventureWageScale(cid, year);
+    return Number.isFinite(unit) && unit > 0 ? unit : 1;
+  } catch (e) { return 1; }
+}
 export function applyBrandMonth(S, biz, pl) {
-  const net = Number(pl?.net) || 0;
+  const net = (Number(pl?.net) || 0) / brandMoneyUnit(S, biz);
   let delta = 0;
   if (net > 0) delta = BRAND_PROFIT_BASE + net * BRAND_PROFIT_SHARE;
   else if (net < 0) delta = -(BRAND_LOSS_BASE + Math.abs(net) * BRAND_LOSS_SHARE);
