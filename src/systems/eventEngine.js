@@ -64,7 +64,7 @@ import { BUSINESS_EVENTS } from '../data/eventsBusiness.js';
 /* v2.11 W3 — business state readers (shared with businessPremises.js,
    the single source of truth; work with the v2.10 single-business
    shape and the v2.11 businesses[] shape alike). */
-import { businessesOf, bizStaffCount, bizAgeMonths } from '../systems/businessPremises.js';
+import { operatingBusinessesOf as businessesOf, bizStaffCount, bizAgeMonths } from '../systems/businessPremises.js';
 /* v2.15 W5 — memory events, thread resolution, NPC memory readers. */
 import { EVENTS_LIVED_LIFE } from '../data/eventsLivedLife.js';
 import { EVENTS_MEMORY } from '../data/eventsMemory.js';

@@ -280,6 +280,7 @@ export function restoreDriftNoticeScene(S, saved) {
 }
 
 function buildDriftNoticeScene(S, p) {
+  const shownSpan = quietSpan(driftGapMonths(S, p)); /* the card and its answer must name the same silence even if the card waits in the queue */
   const close = (p.rel.affection || 0) >= BEST_FRIEND_AFFECTION;
   return {
     key: `drift_${p.id}_${S.year}`,
@@ -288,13 +289,13 @@ function buildDriftNoticeScene(S, p) {
     category: 'relationship',
     speakerId: p.id,
     title: `It has been a while: ${p.firstName}`,
-    text: `You have not caught up with ${p.fullName} in ${quietSpan(driftGapMonths(S, p))}. ${close ? `${p.firstName} was one of your closest friends — the kind of friend you do not replace. ` : ''}You have both been busy. The friendship is fading, but it will not end unless you choose to let it go.`,
+    text: `You have not caught up with ${p.fullName} in ${shownSpan}. ${close ? `${p.firstName} was one of your closest friends — the kind of friend you do not replace. ` : ''}You have both been busy. The friendship is fading, but it will not end unless you choose to let it go.`,
     choices: [
       {
         label: `Reach out now — call ${p.firstName}`,
         available: st => socialEnergy(st).energy >= DRIFT_REACH_OUT_COST,
         lockReason: 'Not enough social energy to call this month.',
-        effect: (st) => { reachOutToDriftingFriend(st, p); }
+        effect: (st) => { reachOutToDriftingFriend(st, p, shownSpan); }
       },
       {
         label: 'Not today. Keep the door open.',
@@ -315,10 +316,10 @@ function buildDriftNoticeScene(S, p) {
    month's energy is already gone, the choice says so plainly in the
    journal and the friendship stays hanging — the player can still call
    from the person card when next month's energy comes back. */
-export function reachOutToDriftingFriend(S, p) {
+export function reachOutToDriftingFriend(S, p, shownSpan) {
   if (!S || !p || !p.alive) return { ok: false, msg: 'Person unavailable.' };
   const cost = DRIFT_REACH_OUT_COST;
-  const span = quietSpan(driftGapMonths(S, p));
+  const span = shownSpan || quietSpan(driftGapMonths(S, p));
   if (socialEnergy(S).energy < cost) {
     recordJournal(S, `You meant to call ${p.fullName} after ${span} of silence, but you had no social energy left this month. The friendship is still hanging — call them when next month's energy comes back.`, 'relationship');
     return { ok: false, msg: `You have no social energy left this month to reach out to ${p.firstName}. It comes back at the start of next month.` };

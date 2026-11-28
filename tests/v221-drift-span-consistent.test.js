@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+const store = new Map(); globalThis.localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
+const { createNewLifeState, ensureExtendedState } = await import('../src/core/schema.js');
+const se = await import('../src/systems/socialEnergy.js');
+const S = createNewLifeState({ country: 'gbr', seed: 8, birthYear: 1990 }); ensureExtendedState(S);
+S.player.age = 30;
+const p = Object.values(S.people).find(x => x && x.rel && x.id !== 'player' && x.alive);
+const span1 = se.quietSpan(se.driftGapMonths(S, p));
+const r = se.reachOutToDriftingFriend(S, p, 'about a year');
+assert.ok(r.ok);
+const j = JSON.stringify(S.journal || S.log || S).includes('After about a year of silence');
+assert.ok(j, 'the journal names the span the card showed, not a recomputed one');
+console.log('ok v221 drift span', span1);

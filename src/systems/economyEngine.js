@@ -1081,11 +1081,13 @@ export function settleHouseholdMonth(S) {
     summary.rentArrearsAdded=rentRecord?.unpaid||0;
   }
 
-  if(S.housing.mode==='parents'&&S.player.age>=24){
+  /* GAME DESIGN: adult board is paid to a living parent; once both are dead nobody is owed it. */
+  const parentAliveForBoard=!!(S.people[S.relations.fatherId]?.alive||S.people[S.relations.motherId]?.alive);
+  if(S.housing.mode==='parents'&&S.player.age>=24&&parentAliveForBoard){
     const board=eraLocalCost(cObj.monthlyBasket2026.rentModest*.35,S.country,S.year);
     netDelta-=board;summary.housing+=board;
     S.housing.familyBoardMonthly=board;
-  }
+  } else if(S.housing.mode==='parents'&&S.player.age>=24)S.housing.familyBoardMonthly=0;
 
   for(const p of S.housing.properties||[])if(p.ruralCabin){
     const costs=(Number(p.annualTaxNative)||0)+(Number(p.annualInsuranceNative)||0)+(Number(p.nativeValue)||0)*(p.maintenanceRate||.03);

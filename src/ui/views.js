@@ -2949,7 +2949,11 @@ export function renderRealEstateTabHtml(S, uiState = {}) {
     if (fatherP && fatherP.alive) whereOwnerLine = `Your father ${esc(fatherP.fullName)} owns it.`;
     else if (motherP && motherP.alive) whereOwnerLine = `Your mother ${esc(motherP.fullName)} owns it.`;
     else whereOwnerLine = 'Your family owns it.';
-    whereCostLine = 'It costs you nothing — your parents cover the home.';
+    const parentLives = !!((fatherP && fatherP.alive) || (motherP && motherP.alive));
+    if (!parentLives) whereLiveLine = `You live in the family home, the ${whereHomeName}, in ${wherePlace}.`;
+    whereCostLine = S.player.age >= 24
+      ? (parentLives ? (Number(S.housing.familyBoardMonthly) > 0 ? `You pay your family ${esc(formatMoney(Number(S.housing.familyBoardMonthly), S.country))} a month toward the home.` : 'You pay your family board toward the home each month.') : 'Your parents are gone and nobody charges you for the home.')
+      : 'It costs you nothing — your parents cover the home.';
   } else if (S.housing.mode === 'rent') {
     wherePill = 'Rented';
     whereLiveLine = `You rent the ${whereHomeName} in ${wherePlace}.`;

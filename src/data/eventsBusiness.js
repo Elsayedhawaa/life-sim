@@ -25,7 +25,7 @@ import { chance, clamp, randInt } from '../core/rng.js';
 import { recordJournal, walletMove } from '../core/schema.js';
 import { formatMoney } from '../data/countries.js';
 import {
-  businessesOf, bizStaffList, bizStaffCount, bizAgeMonths,
+  operatingBusinessesOf as businessesOf, bizStaffList, bizStaffCount, bizAgeMonths,
 } from '../systems/businessPremises.js';
 
 /* --- deterministic business pickers (shared by build and effects) --- */

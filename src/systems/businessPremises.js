@@ -45,6 +45,13 @@ export function businessesOf(S) {
   return [];
 }
 
+/* A company still being planned, prepared or waiting to open has no stock, staff turnover, customers or trading premises to suffer a fire, a theft or a tax inspection. Legacy businesses with no enterprise record count as trading. */
+export function businessIsOperating(b) {
+  const stage = b && b.enterprise && b.enterprise.stage;
+  return !!b && !(stage === 'planning' || stage === 'preparing' || stage === 'ready');
+}
+export function operatingBusinessesOf(S) { return businessesOf(S).filter(businessIsOperating); }
+
 export function businessById(S, id) {
   if (!id) return businessesOf(S)[0] || null;
   return businessesOf(S).find((b) => b && b.id === id) || null;

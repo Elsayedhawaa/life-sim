@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+const store = new Map(); globalThis.localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
+const { createNewLifeState, ensureExtendedState } = await import('../src/core/schema.js');
+const { settleHouseholdMonth } = await import('../src/systems/economyEngine.js');
+const mk = () => { const s = createNewLifeState({ country: 'gbr', seed: 4, birthYear: 1990 }); ensureExtendedState(s); s.player.age = 30; s.housing.mode = 'parents'; s.money.cash = 100000; return s; };
+const a = mk(); settleHouseholdMonth(a);
+assert.ok(a.housing.familyBoardMonthly > 0, 'board is charged while a parent lives');
+const b = mk();
+for (const id of [b.relations.fatherId, b.relations.motherId]) if (b.people[id]) b.people[id].alive = false;
+settleHouseholdMonth(b);
+assert.equal(b.housing.familyBoardMonthly, 0, 'no board is owed once both parents have died');
+console.log('ok v221 family home after parents');
