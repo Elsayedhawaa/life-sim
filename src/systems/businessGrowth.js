@@ -78,7 +78,7 @@ import { rand, clamp, hashSeed } from '../core/rng.js';
 import { nextId, recordJournal, walletMove, recordLedgerEntry, ensureExtendedState } from '../core/schema.js';
 import { getCountry, formatMoney } from '../data/countries.js';
 import { pickFirstName, pickFamilyName } from '../data/names.js';
-import { monthsInBusiness, consecutiveProfitableMonths, averageStaffSkill, businessMonthIndex, settleBusinessExitDebt, ventureWageScale } from './businessEngine.js';
+import { monthsInBusiness, consecutiveProfitableMonths, averageStaffSkill, businessMonthIndex, settleBusinessExitDebt, ventureWageScale, ventureEraFactor } from './businessEngine.js';
 import { convertCurrency } from '../data/economy.js';
 import { fireAllStaff, monthlyMidSalary } from './businessStaff.js';
 
@@ -260,7 +260,7 @@ export function brandMoneyUnit(S, biz) {
   const year = Number(S.year) || 2026;
   try {
     const fx = convertCurrency(1, 'egy', cid, year);
-    const unit = fx * ventureWageScale(cid, year);
+    const unit = fx * ventureWageScale(cid, year) * ventureEraFactor(year);
     return Number.isFinite(unit) && unit > 0 ? unit : 1;
   } catch (e) { return 1; }
 }

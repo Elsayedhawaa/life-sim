@@ -11,4 +11,6 @@ for(const cc of['usa','egy','jpn']){
 {const{S,bp,e}=mk('usa',2);const before=S.money.cash;B.createBusiness(S,'accounting_firm','T',{mode:'part_time'});assert.ok(S.money.cash<=before-Math.round(e.capitalLocal)*0.99,'capital leaves cash');}
 // savings count
 {const{S,bp,e}=mk('usa',1.02);S.money.savings=e.capitalLocal*3;assert.ok(!/Low cash buffer/.test(B.ventureViabilityWarningHtml(S,bp,B.evaluateBusinessLaunch(S,bp))),'savings count');}
+// cash below the capital is the lock's job: no buffer note saying 0
+{const{S,bp,e}=mk('egy',0.5);assert.ok(!/Low cash buffer/.test(B.ventureViabilityWarningHtml(S,bp,e)),'no note under capital');}
 console.log('ok v221 low cash note');

@@ -336,8 +336,15 @@ export function labourShareRepricing(bp, pricing, wageBillLocal) {
   const k = Math.max(0.25, Math.min(2, revLocal / Math.max(1, pricing.revLocal)));
   return { ...pricing, revLocal, capitalLocal: Math.round(pricing.capitalLocal * k), costLocal: Math.max(otherCostsFloor(revLocal), Math.round(homeTakings * (1 - share - (VENTURE_MARGIN_OVERRIDE[bp.id] ?? VENTURE_MARGIN_BEFORE_OWNER)))) };
 }
+/* v2.21 GAME DESIGN (mine): the venture rows are USD 2026 figures. Converted at a year's exchange rate they track the currency, but the wage bill tracks local pay, and Egypt's pay in USD moved a lot (devaluations), so a venture's margin swung with the start year (measured manager-run year-1 pre-tax, Egypt: bakery 27% in 1995, -10% in 2010, 1% in 2033). Takings, capital and other costs are now also multiplied by Egypt's mid salary in USD that year over the same in 2026, so they follow pay (an anchor of 2026, so 2026 is exactly 1). Applies to ventures priced from now on; a business already running keeps its stored figures. */
+export function ventureEraFactor(year = 2026) {
+  const y = Number(year) || 2026;
+  const usd = (yy) => { const m = eraSalary(getCountry('egy').annualSalaryTiers2026.mid / 12, 'egy', yy); return convertCurrency(m, 'egy', 'usa', yy); };
+  const f = usd(y) / usd(2025);
+  return Number.isFinite(f) && f > 0 ? Math.min(4, Math.max(0.1, f)) : 1;
+}
 export function ventureLocalPricing(S, bp) {
-  const scale = ventureWageScale(S.country, S.year);
+  const scale = ventureWageScale(S.country, S.year) * ventureEraFactor(S.year);
   const revLocal = Math.round(convertCurrency(bp.monthlyRevUsd2026, 'usa', S.country, S.year) * scale);
   return {
     scale,
@@ -508,6 +515,8 @@ export function ventureLowCashNoteHtml(S, bp, ev = null) {
   const sales = Number(e.expectedRevFullTimeHome) || 0;
   const worst = cost - 0.5 * sales;
   if (!(worst > 0)) return '';
+  /* Cash below the startup capital is already a locked launch with its own message, so no buffer note then. */
+  if ((Number(S.money?.cash) || 0) < (Number(e.capitalLocal) || 0)) return '';
   const left = Math.max(0, (Number(S.money?.cash) || 0) - (Number(e.capitalLocal) || 0)) + Math.max(0, Number(S.money?.savings) || 0);
   if (left >= 3 * worst) return '';
   const fmt = (n) => formatMoney(Math.round(n), S.country);
