@@ -79,6 +79,14 @@ import { startPregnancy } from './marriageFamilyEngine.js';
    1. DEEP REAL ESTATE: COMPOUNDS, UNIT SHAPES, FINISHING, ROOMS, STAFF & LAND
    ========================================================================== */
 
+const HABIT_LINE_VARIANTS = {
+  jog: ['A run round the block, and your legs feel stronger.', 'You ran further than last time without stopping.', 'A short run before the heat built, and the day started clearer.', 'Out early for a run. The first ten minutes were the hard part.'],
+  gym: ['Two hours of weights and the mirror looks different by Friday.', 'A full session, and the lifts you dreaded felt lighter.', 'You kept to the plan at the gym and added a little weight.', 'The gym was quiet and you got through the whole routine.'],
+  swim: ['Lanes, chlorine, and a proper appetite afterwards.', 'Forty lengths and a slow walk home.', 'You swam until your arms were tired, then lay in the sun.', 'A cold start in the pool, then it felt easy.'],
+  read: ['Ninety pages read. Some of it stays.', 'You finished a book you had put off for months.', 'A few evenings with a good book and you lost track of the time.', 'You read slowly and underlined the parts you wanted to keep.'],
+  meditate: ['Twenty quiet minutes. The noise in your head gets smaller.', 'You sat still and let the thoughts pass without chasing them.', 'A calm ten minutes before the day began.'],
+  hangout: ['No plan, three hours, and a bond that got the exercise it needed.', 'You lost an afternoon talking about nothing and it did you good.', 'A long evening with friends, and the week felt lighter after.']
+};
 export function buyCompoundOrDistrictUnit(S, opts = {}) {
   ensureExtendedState(S);
   if (S.player.age < 18) return { ok: false, msg: 'Must be 18+ to sign property contracts.' };
@@ -1715,9 +1723,12 @@ export function doDailyActivity(S, actId) {
     const prev = S.habitUse?.[act.id];
     S.habitUse = S.habitUse || {};
     const sameYear = prev && prev.year === S.year;
-    S.habitUse[act.id] = { year: S.year, month: S.month, count: sameYear ? (prev.count || 1) + 1 : 1 };
+    S.habitUse[act.id] = { year: S.year, month: S.month, count: sameYear ? (prev.count || 1) + 1 : 1, total: ((prev && prev.total) || 0) + 1 };
   }
-  if (act.line) recordJournal(S, act.line, 'lifestyle');
+  /* The same sentence every year reads like a template, so the common habits rotate through a few plain lines by how often you have done them. */
+  const variants = HABIT_LINE_VARIANTS[act.id];
+  const lineNow = variants && act.line ? variants[((S.habitUse[act.id].total || 1) - 1) % variants.length] : act.line;
+  if (lineNow) recordJournal(S, lineNow, 'lifestyle');
 
   const deltaTxt = deltas.length
     ? deltas.map(d => `${d.label} ${d.delta > 0 ? '+' : '−'}${Math.abs(d.delta)}`).join(', ')

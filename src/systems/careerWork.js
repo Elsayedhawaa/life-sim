@@ -162,6 +162,18 @@ export const CAREER_WORK_TEMPLATES = {
     cornerLabel: 'Ship it without the load test and hope rush hour is kind',
     helpLabel: 'Help a teammate debug their service'
   },
+  data: {
+    /* Data-science, analytics and AI jobs get their own work, not the software team's payment bug. */
+    skillId: 'analysis', skillLabel: 'Analysis', deadlineMonths: 2,
+    variants: [
+      { title: 'Find out why the churn forecast stopped matching reality', detail: 'Last quarter the model said one customer in twelve would leave. One in seven did. Trace the drift to the data or the features, retrain it, and show the managers how far to trust the new number.', achievement: 'Found why the forecast drifted and retrained it on clean data' },
+      { title: 'Clean the customer table before the monthly report', detail: 'The same customer appears three times under different spellings and the totals are wrong. Match the duplicates, fix the joins, and check the totals against finance before the report goes out.', achievement: 'Cleaned the customer data so the monthly numbers matched finance' }
+    ],
+    hardLabel: 'Take the broken forecast yourself',
+    difficultLabel: 'Ask for the data clean-up nobody wants to touch',
+    cornerLabel: 'Send the report without checking the totals against finance',
+    helpLabel: 'Help a teammate debug their pipeline'
+  },
   engineering: {
     skillId: 'site', skillLabel: 'Site management', deadlineMonths: 2,
     variants: [
@@ -246,9 +258,9 @@ export const CAREER_WORK_ALIASES = {
   surgery: 'medicine', pediatrics: 'medicine', cardiology: 'medicine', dentistry: 'medicine',
   psychology: 'medicine', veterinary: 'medicine', physiotherapy: 'medicine', pharmacy: 'medicine',
   tech: 'software', web_development: 'software', mobile_app_development: 'software',
-  data_science: 'software', analytics: 'software', data_analyst: 'software',
+  data_science: 'data', analytics: 'data', data_analyst: 'data',
   cybersecurity: 'software', cybersecurity_analyst: 'software', cloud_devops_engineer: 'software',
-  qa_engineering: 'software', ai_automation: 'software', product_design: 'software',
+  qa_engineering: 'software', ai_automation: 'data', product_design: 'software',
   civil_eng: 'engineering', architect: 'engineering', renewable_energy: 'engineering', ev_technician: 'trades',
   accounting: 'finance', investment: 'finance', business: 'finance', consulting: 'finance',
   marketing: 'sales', sales: 'sales', product: 'sales', ecommerce_operations: 'sales',
