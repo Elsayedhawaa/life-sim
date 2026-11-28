@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 const store = new Map(); globalThis.localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
 const m = await import('../src/systems/mortalityModel.js');
-/* WHO adult mortality rate, probability of dying between 15 and 60 per 1000, both sexes (WHO GHO WHOSIS_000004, 2023 table as mirrored at azenha.ai) */
-const WHO = { egy: 114, gbr: 74, usa: 113, tur: 108, deu: 64, jpn: 50 };
+/* WHO adult mortality rate, probability of dying between 15 and 60 per 1000, both sexes (WHO GHO API WHOSIS_000004, year 2019, read directly from ghoapi.azureedge.net) */
+const WHO = { egy: 135, sau: 87, uae: 34, gbr: 69, usa: 105, deu: 65, can: 66, aus: 61, nld: 54, fra: 68, jpn: 49, ita: 50, sgp: 46, bra: 128, ind: 164, che: 44, swe: 50, tur: 69 };
 for (const [c, target] of Object.entries(WHO)) {
   let surv = 1;
   for (let a = 15; a < 60; a++) { let q = 0; for (const g of ['m', 'f']) q += m.baselineAnnualDeathProb({ player: { age: a, gender: g }, country: c, year: 2026, skills: { fitness: 50 } }) / 2; surv *= 1 - q; }

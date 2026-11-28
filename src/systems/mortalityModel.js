@@ -121,13 +121,15 @@ function interpQx(age) {
    no country table was sourced for them, so no invented gap is applied. */
 export function countryMortalityMultiplier(country, age) {
   /* GAME DESIGN calibration (adult years 15-60), anchored on the WHO adult mortality rate (probability of dying
-     between 15 and 60, both sexes, per 1000): Egypt 114, UK 74, USA 113, Turkiye 108, Germany 64, Japan 50
-     (WHO Global Health Observatory indicator WHOSIS_000004; figures read from a mirror of the 2023 table, see
-     https://www.who.int/data/gho/data/indicators/indicator-details/GHO/adult-mortality-rate-(probability-of-dying-between-15-and-60-years-per-1000-population)
-     and https://azenha.ai/bulldozer/dataset/who-adult-mortality/). The factor is each country's figure over what the
-     US-table baseline gives for the same ages (111 per 1000, both sexes). The size of each factor is my fit, not a
-     published multiplier. From 60 to 70 it blends into the older-age factors below, which are unchanged. */
-  const ADULT = { gbr: 0.67, egy: 1.03, usa: 1.0, tur: 0.97, deu: 0.58, jpn: 0.45 };
+     between 15 and 60, both sexes, per 1000), read directly from the WHO Global Health Observatory API, indicator
+     WHOSIS_000004, year 2019 (the last year before the 2020-21 pandemic spike), all 18 game countries:
+     https://ghoapi.azureedge.net/api/WHOSIS_000004 . Per 1000: Egypt 135, Saudi 87, UAE 34, UK 69, USA 105,
+     Germany 65, Canada 66, Australia 61, Netherlands 54, France 68, Japan 49, Italy 50, Singapore 46, Brazil 128,
+     India 164, Switzerland 44, Sweden 50, Turkiye 69. The factor is each figure over what the US-table baseline
+     gives for the same ages (111 per 1000, both sexes). The size of each factor is my fit, not a published
+     multiplier. UAE is low partly because the resident population is mostly working-age migrants. From 60 to 70
+     it blends into the older-age factors below, which are unchanged (1.0 for countries with no older-age table). */
+  const ADULT = { egy: 1.22, sau: 0.78, uae: 0.31, gbr: 0.62, usa: 0.95, deu: 0.59, can: 0.59, aus: 0.55, nld: 0.49, fra: 0.61, jpn: 0.44, ita: 0.45, sgp: 0.41, bra: 1.15, ind: 1.48, che: 0.40, swe: 0.45, tur: 0.62 };
   const OLD = (a) => {
     if (country === 'gbr') return 0.85;
     if (country === 'egy') return a < 70 ? 1.5 : a < 80 ? 1.4 : 1.25;
