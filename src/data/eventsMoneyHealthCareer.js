@@ -8233,14 +8233,14 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_school_detention',
         category: 'school',
         title: "Detention After School",
-        text: `You are kept back after school — detention, for talking in class, or for the homework, or for the thing you did not quite do. The classroom is empty, the clock is loud, and ${momName} will ask where you were.`,
+        text: `You are kept back after school for detention. The classroom is empty, the clock is loud, and ${momName} will ask where you were.`,
         choices: [
           {
             label: "Serve it quietly and learn",
             effect: (st) => {
               st.education.academicSkill = clamp(st.education.academicSkill + (+2));
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (+1));
-              recordJournal(st, `You served the detention quietly, and learned from it.`, 'school');
+              recordJournal(st, `You served the detention quietly and kept your head down.`, 'school');
             },
           },
           {
@@ -8248,7 +8248,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
             effect: (st) => {
               st.reputation = clamp((st.reputation == null ? 55 : st.reputation) + (-2));
               st.player.vitals.stress = clamp(st.player.vitals.stress + (+4));
-              recordJournal(st, `You argued the detention was unfair. It was not, and the teacher knew it.`, 'school');
+              recordJournal(st, `You argued the detention was unfair. The teacher did not change her mind.`, 'school');
             },
           },
           {

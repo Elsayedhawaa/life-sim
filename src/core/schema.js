@@ -1448,6 +1448,7 @@ export function ensureExtendedState(S) {
   return S;
 }
 
+const MONEY_ASK_SCENE_KEYS = new Set(['ev_money_friend_loan', 'ev_friend_asks_loan', 'ev_money_sibling_loan', 'ev_family_sib_borrows_money', 'ev_family_dad_loan_request', 'ev_back_friend_repays_l2', 'ev_friend_borrows_disappears']);
 export function queueScene(S, scene, urgent = false) {
   if (!S || !scene || !scene.title || !Array.isArray(scene.choices) || !scene.choices.length) return false;
   const key = scene.key || scene.id || scene.title;
@@ -1472,6 +1473,13 @@ export function queueScene(S, scene, urgent = false) {
   if (!urgent && !navigation && !recurring) {
     if (!S.titleCounts) S.titleCounts = {};
     if ((S.titleCounts[scene.title] || 0) >= 3) return false;
+  }
+
+  /* GAME DESIGN (tuned, not sourced): one money ask from a friend or relative at a time. After any of these ask scenes is queued, no other ask scene is queued for 9 months, so two people never borrow back to back. */
+  if (!urgent && (MONEY_ASK_SCENE_KEYS.has(key) || String(key).startsWith('ask_loan_'))) {
+    const nowM = (S.year || 0) * 12 + (S.month || 0);
+    if (S.lastMoneyAskMonth != null && nowM - S.lastMoneyAskMonth < 9 && nowM >= S.lastMoneyAskMonth) return false;
+    S.lastMoneyAskMonth = nowM;
   }
 
   /* Prevent duplicate identical card in active slot or queue (Fixes D3/D4 permanently!) */

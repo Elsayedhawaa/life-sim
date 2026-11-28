@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+const store = new Map(); globalThis.localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
+const { createNewLifeState, ensureExtendedState, queueScene } = await import('../src/core/schema.js');
+const S = createNewLifeState({ country: 'egy', seed: 3, birthYear: 1990 }); ensureExtendedState(S);
+S.year = 2026; S.month = 3; S.activeScene = null; S.sceneQueue = [];
+const sc = (key, title) => ({ key, title, text: 'x', choices: [{ label: 'ok', effect() {} }] });
+assert.ok(queueScene(S, sc('ev_friend_asks_loan', 'A friend asks')), 'first ask queues');
+assert.equal(queueScene(S, sc('ev_money_friend_loan', 'Another friend asks')), false, 'second ask in the same spell is held back');
+S.month = 6; assert.equal(queueScene(S, sc('ask_loan_p9_2026', 'Sibling asks')), false, 'still held at 3 months');
+S.year = 2027; S.month = 2; assert.ok(queueScene(S, sc('ev_money_friend_loan', 'Another friend asks')), 'after 9+ months another ask can queue');
+console.log('ok v221 money ask spacing');

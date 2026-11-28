@@ -1070,7 +1070,7 @@ export function maybePickDominoSoulScene(S) {
           : `over tea`;
         const purpose = asker.role === 'sibling'
           ? (asker.age < 29 ? 'covering marriage apartment deposits' : 'bridging a supplier gap in a small venture')
-          : 'covering an urgent lease and clinic deposit';
+          : 'covering an urgent rent and deposit';
 
         return buildFamilyBackingScene(S,{personId:asker.id,amount:askAmt,country:S.country,year:S.year,purpose});
       }

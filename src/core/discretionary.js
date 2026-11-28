@@ -44,5 +44,12 @@ function probeCost(S, ch) {
 /* Returns a plain-words lock reason, or null when the option is open. */
 export function discretionaryLock(S, sc, ch) {
   if (!atCreditLimit(S) || !isDiscretionaryScene(sc) || typeof ch?.effect !== 'function') return null;
-  return probeCost(S, ch) > 0.5 ? 'You are at your credit limit. Optional spending like this is closed until you are back under it.' : null;
+  if (!(probeCost(S, ch) > 0.5)) return null;
+  /* A card must never have every option locked: that left the player on a card they could not close. If no option is free, the cheapest stays open so the card can be answered. */
+  const live = (sc.choices || []).filter(c => typeof c?.effect === 'function');
+  if (live.length && live.every(c => probeCost(S, c) > 0.5)) {
+    const cheapest = live.reduce((a, b) => (probeCost(S, b) < probeCost(S, a) ? b : a));
+    if (cheapest === ch) return null;
+  }
+  return 'You are at your credit limit. Optional spending like this is closed until you are back under it.';
 }
