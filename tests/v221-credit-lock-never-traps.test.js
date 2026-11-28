@@ -14,3 +14,9 @@ console.log('ok v221 credit lock never traps');
 { const { isDiscretionaryScene } = await import('../src/core/discretionary.js');
   assert.ok(isDiscretionaryScene({ key: 'ev_family_sib_wedding_l2', baseId: 'ev_family_sib_wedding_l2', title: 'x' }), 'a sibling flat deposit is optional spending at the credit limit');
   console.log('ok v221 sibling deposit locked at limit'); }
+{ const { isDiscretionaryScene } = await import('../src/core/discretionary.js');
+  for (const id of ['ev_family_coast_trip', 'ev_friend_holiday_invite', 'ev_family_mom_new_phone', 'ev_family_sib_engaged', 'ev_money_spouse_sofa'])
+    assert.ok(isDiscretionaryScene({ key: id, baseId: id, title: 'x' }), id + ' is optional spending at the credit limit');
+  for (const id of ['ev_money_fridge_breaks', 'ev_money_school_fees_due', 'ev_family_mom_falls_ill'])
+    assert.ok(!isDiscretionaryScene({ key: id, baseId: id, title: 'x' }), id + ' (a necessity) stays open at the credit limit');
+  console.log('ok v221 optional family spending locked, necessities open'); }

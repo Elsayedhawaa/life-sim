@@ -5,7 +5,7 @@ export const DISCRETIONARY_SCENES = new Set([
   'ev_life_street_festival','ev_life_new_cafe','ev_life_birthday_forgotten','ev_friend_birthday_forgot','ev_friend_birthday_party',
   'ev_friend_new_restaurant','ev_friend_football_match','ev_friend_join_gym','ev_life_subscription_renewal','ad_gold_hedge',
   'ev_friend_business_invest','ev_friend_asks_loan','ev_family_sib_money_never_back_l2','ev_family_parents_anniversary',
-  'ev_career_side_business','ev_career_language_course','ev_school_music_lesson','ev_friend_apologises_row_l2','ev_friend_loan_repaid_l2','ev_family_sib_wedding_l2'
+  'ev_career_side_business','ev_career_language_course','ev_school_music_lesson','ev_friend_apologises_row_l2','ev_friend_loan_repaid_l2','ev_family_sib_wedding_l2','ev_life_stray_cat','ev_life_gym_offer','ev_life_charity_door','ev_family_coast_trip','ev_friend_holiday_invite','ev_family_dad_birthday_gift','ev_family_uncle_investment','ev_family_mom_new_phone','ev_friend_dream_job','ev_friend_moves_abroad','ev_family_sib_baby_born','ev_family_sib_baby_born_l1','ev_family_sib_engaged','ev_family_sib_borrows_money','ev_money_spouse_sofa','ev_money_child_phone'
 ]);
 export function isDiscretionaryScene(sc) {
   return !!sc && (DISCRETIONARY_SCENES.has(sc.baseId) || DISCRETIONARY_SCENES.has(sc.key) || /Asks for Financial Backing$/.test(sc.title || ''));
