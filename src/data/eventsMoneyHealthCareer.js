@@ -5494,7 +5494,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(8000, S.country, S.year);
+      const A = usdMonthlyPayToLocal(S.country, S.year, 8000);
       return {
         key: 'ev_career_client_win',
         category: 'career',
@@ -5743,7 +5743,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
       /* the offer quotes what "Take the new job" really does: the current gross plus the 15% the choice applies. With no job it keeps the country-scaled 9,000 USD sample. */
-      const A = S.career?.job?.monthlyGross ? Math.round(S.career.job.monthlyGross * 1.15) : eraUsdCost(9000, S.country, S.year);
+      const A = S.career?.job?.monthlyGross ? Math.round(S.career.job.monthlyGross * 1.15) : usdMonthlyPayToLocal(S.country, S.year, 9000);
       return {
         key: 'ev_career_headhunter',
         category: 'career',
@@ -5940,7 +5940,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(20000, S.country, S.year);
+      const A = usdMonthlyPayToLocal(S.country, S.year, 20000);
       return {
         key: 'ev_career_restructure',
         category: 'career',
@@ -6424,7 +6424,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(5000, S.country, S.year);
+      const A = usdMonthlyPayToLocal(S.country, S.year, 5000);
       return {
         key: 'ev_career_award',
         category: 'career',
@@ -6623,7 +6623,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(6000, S.country, S.year);
+      const A = usdMonthlyPayToLocal(S.country, S.year, 6000);
       /* v2.11 W3 — the real-business choice names its price up front:
          the cheapest launchable venture's startup capital. */
       const venture = cheapestLaunchableVenture(S);
@@ -6663,7 +6663,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
                  moment the choice is made, not a journal line. */
               const v = cheapestLaunchableVenture(st);
               const cap = launchCapitalLocal(st, v);
-              const sidePay = eraUsdCost(6000, st.country, st.year);
+              const sidePay = usdMonthlyPayToLocal(st.country, st.year, 6000);
               if (!v) {
                 walletMove(st, +sidePay, 'Take the side job carefully', 'career');
                 recordJournal(st, `You tried to turn the side job into a real business, but registering a company needs reputation 58 and yours is ${Math.round(Number(st.reputation ?? 55))} — no venture would take you yet. You took the paid job instead and kept building your name.`, 'career');
@@ -6870,7 +6870,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(11000, S.country, S.year);
+      /* the offer quotes what "Accept the offer" really does: the current gross plus 12%; with no job, a country-wage sample */
+      const A = S.career?.job?.monthlyGross ? Math.round(S.career.job.monthlyGross * 1.12) : usdMonthlyPayToLocal(S.country, S.year, 11000);
       return {
         key: 'ev_career_new_job_offer',
         category: 'career',
@@ -10010,8 +10011,8 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
       const frName = ctx.friend ? ctx.friend.firstName : 'a friend';
       const childName = ctx.child ? ctx.child.firstName : 'your child';
       const bossName = ctx.boss ? ctx.boss.firstName : 'your boss';
-      const A = eraUsdCost(4000, S.country, S.year);
-      const B = eraUsdCost(2500, S.country, S.year);
+      const A = usdMonthlyPayToLocal(S.country, S.year, 4000);
+      const B = usdMonthlyPayToLocal(S.country, S.year, 2500);
       return {
         key: 'ev_uni_internship',
         category: 'school',
