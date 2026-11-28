@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+const store = new Map(); globalThis.localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
+const { createNewLifeState, ensureExtendedState } = await import('../src/core/schema.js');
+const E = await import('../src/systems/careerEducationEngine.js');
+const S = createNewLifeState({ country: 'egy', seed: 3, birthYear: 1990 }); ensureExtendedState(S);
+S.education.degrees = ['medicine']; S.career.employed = false; S.career.job = null;
+const sc = E.buildHealthcareGraduateScene(S, { country: 'egy', majorId: 'medicine', year: S.year, pay: 5000, uniName: 'Cairo University' });
+assert.ok(sc, 'offer builds while the player is free');
+S.career.employed = true; S.career.job = { employer: 'x', title: 'y', monthlyGross: 1 };
+assert.ok(sc.choices.every(c => c.available(S)), 'a stale offer still has open options, so it can be closed');
+sc.choices[0].effect(S);
+assert.ok(!S.syndicate?.registered, 'a stale offer grants nothing');
+console.log('ok v221 takleef stale answerable');

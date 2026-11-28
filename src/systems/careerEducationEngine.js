@@ -2484,6 +2484,7 @@ export function buildHealthcareGraduateScene(S,q){
           ]
         };
  scene.healthcareGraduateSnapshot=q;
- scene.choices=scene.choices.map(c=>({...c,available:valid,effect:st=>{if(!valid(st))return;st.education.healthcareGraduateReplies??={};const key=q.majorId+'_'+q.year;if(st.education.healthcareGraduateReplies[key])return;c.effect(st);st.education.healthcareGraduateReplies[key]=true;}}));return scene;
+ /* An offer that has gone stale must still be answerable: with every option unavailable the card could never be closed (found in a played hosted life). */
+ scene.choices=scene.choices.map(c=>({...c,available:()=>true,effect:st=>{if(!valid(st)){recordJournal(st,'The Ministry Takleef assignment lapsed because your circumstances changed.','career');return;}st.education.healthcareGraduateReplies??={};const key=q.majorId+'_'+q.year;if(st.education.healthcareGraduateReplies[key])return;c.effect(st);st.education.healthcareGraduateReplies[key]=true;}}));return scene;
 }
 export function restoreHealthcareGraduateScene(S,saved){return saved?.healthcareGraduateSnapshot?buildHealthcareGraduateScene(S,saved.healthcareGraduateSnapshot):null;}
