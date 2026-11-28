@@ -47,6 +47,11 @@ export function onsetWeight(cond, age) {
   }
   if (cond.id === 'heart_attack' || cond.id === 'stroke_recovery') return age < 55 ? 0.6 : 1.0;
   if (cond.id === 'dementia') return 0.3;
+  /* GAME DESIGN: the pick used to be uniform over every condition, so hepatitis B, type 1 diabetes in an adult
+     and epilepsy turned up as often as asthma or short sight, in roughly one life in six. These weights make the
+     rare ones rare. The numbers are my judgment of relative frequency, not sourced incidence figures. */
+  const RARE = { hepatitis_b: 0.1, type1_diabetes: 0.1, epilepsy: 0.3, bipolar: 0.3, head_injury: 0.5, pneumonia: 0.6 };
+  if (RARE[cond.id] !== undefined) return age < 16 && cond.id === 'type1_diabetes' ? 0.3 : RARE[cond.id];
   return 1.0;
 }
 export function mortPickWeighted(S, list, weightFn) {
@@ -113,14 +118,28 @@ function interpQx(age) {
    10.9% vs 4.32% at 80). Every other country x1.0 — JUDGMENT CALL:
    no country table was sourced for them, so no invented gap is applied. */
 export function countryMortalityMultiplier(country, age) {
-  if (country === 'gbr') return 0.85;
-  if (country === 'egy') {
-    if (age < 60) return 1.6;
-    if (age < 70) return 1.5;
-    if (age < 80) return 1.4;
-    return 1.25;
+  /* GAME DESIGN calibration (adult years 15-60), anchored on the WHO adult mortality rate (probability of dying
+     between 15 and 60, both sexes, per 1000): Egypt 114, UK 74, USA 113, Turkiye 108, Germany 64, Japan 50
+     (WHO Global Health Observatory indicator WHOSIS_000004; figures read from a mirror of the 2023 table, see
+     https://www.who.int/data/gho/data/indicators/indicator-details/GHO/adult-mortality-rate-(probability-of-dying-between-15-and-60-years-per-1000-population)
+     and https://azenha.ai/bulldozer/dataset/who-adult-mortality/). The factor is each country's figure over what the
+     US-table baseline gives for the same ages (111 per 1000, both sexes). The size of each factor is my fit, not a
+     published multiplier. From 60 to 70 it blends into the older-age factors below, which are unchanged. */
+  const ADULT = { gbr: 0.67, egy: 1.03, usa: 1.0, tur: 0.97, deu: 0.58, jpn: 0.45 };
+  const OLD = (a) => {
+    if (country === 'gbr') return 0.85;
+    if (country === 'egy') return a < 70 ? 1.5 : a < 80 ? 1.4 : 1.25;
+    return 1.0;
+  };
+  const adult = ADULT[country];
+  if (adult === undefined) {
+    if (country === 'gbr') return 0.85;
+    return OLD(age);
   }
-  return 1.0;
+  if (age < 60) return adult;
+  if (age >= 70) return OLD(age);
+  const t = (age - 60) / 10;
+  return adult + (OLD(age) - adult) * t;
 }
 /* Sex: SSA 2023 male qx runs ~1.2x the sex average, female ~0.8x
    (e.g. age 50: male 0.51% vs female 0.30%). JUDGMENT CALL simplification. */
@@ -491,7 +510,13 @@ export function diseaseAnnualDeathProb(S, cond) {
   }
   /* Everything else: keep the data file's flat rate, halved-ish when managed
      (the old 0.35 multiplier), as before. */
-  return (cond.deathRiskPerYear || 0) * (cond.managed ? 0.35 : 1.0);
+  const flat = (cond.deathRiskPerYear || 0) * (cond.managed ? 0.35 : 1.0);
+  /* GAME DESIGN: a lasting condition on the generic flat rate adds at most twice the ordinary death risk for the
+     age (about three times in total). The flat figures (1 to 2 percent a year for diabetes, epilepsy, an
+     arrhythmia) were added on top of the baseline at every age, which killed people in their 30s and 40s at
+     many times the real excess. Serious diseases with their own staged rows are unchanged. */
+  if (cond.chronic) return Math.min(flat, 2 * baselineAnnualDeathProb(S));
+  return flat;
 }
 
 /* Hypertension, left unmanaged for years, slowly becomes heart disease —
