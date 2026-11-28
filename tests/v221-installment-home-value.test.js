@@ -16,3 +16,15 @@ const down = Math.max(0.05, plan.downPct ?? 0.10) * total;
 assert.ok(Math.abs(inst.nativeInstallmentRemaining - (total - down)) / total < 0.01, 'the debt still carries the mark-up');
 assert.ok(inst.nativeMonthlyRent < cash.nativeMonthlyRent * 1.2, 'rent follows the market value, not the marked-up price');
 console.log('ok v221 instalment home value');
+/* net worth: the mark-up is not a debt today, and signing is net-worth neutral (cash becomes equity) */
+{
+  const { computeNetWorthLocal } = await import('../src/core/schema.js');
+  const mk = (planId) => { const s = createNewLifeState({ country: 'egy', seed: 5 }); ensureExtendedState(s); s.player.age = 30; s.year = 2026; s.money.cash = 1e10; const before = computeNetWorthLocal(s); const r = buyCompoundOrDistrictUnit(s, { country: 'egy', devId: 'egy_celia', unitId: unit.id, finishId: fin.id, planId, moveIn: false }); assert.ok(r.ok, r.msg); return { s, r, before, after: computeNetWorthLocal(s) }; };
+  const c = mk(plan.id);
+  assert.ok(c.r.prop.installmentMarkupShare > 0.2, 'the plan records how much of the debt is mark-up');
+  const drop = c.before - c.after;
+  assert.ok(Math.abs(drop) < c.r.prop.valueLocal * 0.01, `net worth must not fall by the whole mark-up at signing (fell ${drop} on a ${c.r.prop.valueLocal} home)`);
+  const old = structuredClone(c.s); delete old.housing.properties[0].installmentMarkupShare;
+  assert.ok(computeNetWorthLocal(old) < computeNetWorthLocal(c.s), 'a property without the field (old save) is counted as before');
+  console.log('ok v221 installment net worth');
+}

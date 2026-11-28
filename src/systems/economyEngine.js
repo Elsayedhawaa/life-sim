@@ -244,6 +244,7 @@ export function finalizePropertyPurchase(S, spec, plan, opts = {}) {
     nativeInstallmentRemaining: plan ? plan.nativeRemaining : 0,
     installmentRemaining: plan ? Math.round(convertCurrency(plan.nativeRemaining, spec.country, S.country, S.year)) : 0,
     nativeMonthlyInstallment: plan ? plan.nativeMonthlyInst : 0,
+    installmentMarkupShare: plan && plan.markupShare > 0 ? plan.markupShare : 0,
     monthsLeft: plan ? plan.months : 0,
     missedMonths: 0
   };

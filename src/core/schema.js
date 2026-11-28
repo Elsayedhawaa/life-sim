@@ -846,7 +846,8 @@ export function computeNetWorthLocal(S) {
     const a=S.legal.blockedAccount;total+=convertCurrency(Number(a.balanceLocal)||0,a.country||S.country,S.country,S.year);
   }
   for (const prop of S.housing.properties) {
-    const equity = (Number(prop.valueLocal) || 0) - Math.max(0,Number(prop.installmentRemaining)||0);
+    /* GAME DESIGN: the unaccrued mark-up of an instalment plan is a future cost paid through the instalments, not a debt today. installmentMarkupShare (set at purchase, 0 on old saves) is its share of the remaining balance. */
+    const equity = (Number(prop.valueLocal) || 0) - Math.max(0,Number(prop.installmentRemaining)||0) * (1 - Math.min(0.9, Math.max(0, Number(prop.installmentMarkupShare) || 0)));
     total += equity;
   }
   for (const land of (S.housing.lands || [])) {

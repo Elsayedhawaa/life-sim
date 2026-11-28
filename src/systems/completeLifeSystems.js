@@ -157,7 +157,7 @@ export function buyCompoundOrDistrictUnit(S, opts = {}) {
     nativeMonthlyRent: nativeRent,
     downInPlayerLocal: downInPlayer,
     happinessBoost: Math.max(2, finish.hap + 4)
-  }, months > 0 ? { months, nativeRemaining: nativeRem, nativeMonthlyInst, planKind: plan.label } : null,
+  }, months > 0 ? { months, nativeRemaining: nativeRem, nativeMonthlyInst, planKind: plan.label, markupShare: nativeRem > 0 ? Math.min(0.9, Math.max(0, (rawNativePrice - marketNative) / nativeRem)) : 0 } : null,
   { moveIn: finish.canLive && opts.moveIn !== false });
   if (!res.ok) return res;
   const prop = res.prop;
