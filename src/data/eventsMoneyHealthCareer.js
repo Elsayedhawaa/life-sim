@@ -526,7 +526,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: {"minAge": 22, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const d=S.creditCards.find(x=>x.balance>0);if(!d)return null;
-      return{key:'ev_money_card_minimum',category:'money',title:'Your Actual Card Statement',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${false?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',effect:st=>payRecordedDebt(st,'card',d.id)},{label:'Pay half the recorded balance',effect:st=>payRecordedDebt(st,'card',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
+      return{key:'ev_money_card_minimum',category:'money',title:'Your Actual Card Statement',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${false?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full balance',effect:st=>payRecordedDebt(st,'card',d.id)},{label:'Pay half the balance',effect:st=>payRecordedDebt(st,'card',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
     },
   },
   {
@@ -548,7 +548,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: {"minAge": 22, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       const d=S.money.loans.find(x=>x.inCollections&&x.balance>0);if(!d)return null;
-      return{key:'ev_money_collector_call',category:'money',title:'Your Recorded Collections Balance',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${true?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',available:st=>st.money.cash>=Math.ceil(d.balance),effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the recorded balance',available:st=>st.money.cash>=Math.ceil(d.balance*.5),effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
+      return{key:'ev_money_collector_call',category:'money',title:'Your Collections Balance',text:`${d.name||d.label}: you still owe ${formatMoney(d.balance,S.country)}. A payment goes straight against that balance. This call adds no new debt or fee, and collections are frozen, so no new interest is added.`,choices:[{label:'Pay the full balance',available:st=>st.money.cash>=Math.ceil(d.balance),effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the balance',available:st=>st.money.cash>=Math.ceil(d.balance*.5),effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
     },
   },
   {
@@ -655,7 +655,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: {"minAge": 22, "hasJob": true},
     build: (S, ctx) => {
       const tax=S.money.lastMonthSummary?.tax;if(!(tax>0))return null;
-      return{key:'ev_money_tax_refund',category:'money',title:'Review Your Recorded Payroll Tax',text:`Your last settled month's payroll tax was ${formatMoney(tax,S.country)}. The game has no recorded tax overpayment or annual filing adjustment for you. This is a statement review, not a refund. No money will be added or paid to a card.`,choices:[{label:'Keep the statement for your records',effect:st=>{st.money.taxStatementReviewed={year:st.year,month:st.month,tax};}},{label:'Review later in Finance',effect:st=>{}}]};
+      return{key:'ev_money_tax_refund',category:'money',title:'Your Payroll Tax Statement',text:`Your last settled month's payroll tax was ${formatMoney(tax,S.country)}. The game holds no record of an overpayment or a yearly adjustment for you, so this is a statement, not a refund. Nothing will be paid to you.`,choices:[{label:'Keep the statement for your records',effect:st=>{st.money.taxStatementReviewed={year:st.year,month:st.month,tax};}},{label:'Review later in Finance',effect:st=>{}}]};
     },
   },
   {
@@ -11117,7 +11117,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     build:(S,ctx)=>{
       const r=S.legal.residency;if(S.career.employed||!['grace_period','overstay'].includes(r.kind))return null;
       const fee=Math.round(convertCurrency(450,'usa',S.country,S.year));
-      return{key:'ev_gulf_job_loss_grace',category:'life',title:'Your Recorded Grace Period',text:`Status: ${r.kind}. Grace remaining: ${r.graceMonthsLeft||0} month(s). No job or sponsor is created by this scene. Returning home uses the Passport relocation route: ${formatMoney(fee,S.country)} flight if affordable, otherwise explicit game repatriation aid. Travel bans still apply.`,choices:[{label:'Return home through Passport route',effect:st=>returnToHomeCountry(st)},{label:'Stay and handle work/permit in Passport',effect:st=>{}}]};
+      return{key:'ev_gulf_job_loss_grace',category:'life',title:'Your Grace Period',text:`Status: ${r.kind}. Grace remaining: ${r.graceMonthsLeft||0} month(s). No job or sponsor is created by this scene. Returning home uses the Passport relocation route: ${formatMoney(fee,S.country)} flight if affordable, otherwise explicit game repatriation aid. Travel bans still apply.`,choices:[{label:'Return home through Passport route',effect:st=>returnToHomeCountry(st)},{label:'Stay and handle work/permit in Passport',effect:st=>{}}]};
     },
   },
   {
@@ -11229,7 +11229,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: { requiredPeople: ['friend'],"minAge": 20, "afterEvent": "ev_money_friend_loan", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const l=(S.money.personalReceivables||[]).find(x=>x.personId===ctx.friend?.id&&x.status==='open');if(!l)return null;
-      const p=S.people[l.personId];return{key:'ev_back_friend_repays',category:'money',title:p.firstName+' and the Recorded Loan',text:`Actual unpaid principal: ${formatMoney(l.balance,l.country)}. Repayment comes only from ${p.firstName}'s available savings, capped at that balance. Any unpaid remainder stays owed unless you forgive it.`,choices:[{label:'Request the full recorded balance',effect:st=>settlePersonalReceivable(st,l.id)},{label:'Request half, forgive the remainder',effect:st=>settlePersonalReceivable(st,l.id,.5,true)},{label:'Forgive the balance as a gift',effect:st=>settlePersonalReceivable(st,l.id,0,true)}]};
+      const p=S.people[l.personId];return{key:'ev_back_friend_repays',category:'money',title:p.firstName+' and the Loan',text:`Actual unpaid principal: ${formatMoney(l.balance,l.country)}. Repayment comes only from ${p.firstName}'s available savings, capped at that balance. Any unpaid remainder stays owed unless you forgive it.`,choices:[{label:'Ask for the full amount back',effect:st=>settlePersonalReceivable(st,l.id)},{label:'Request half, forgive the remainder',effect:st=>settlePersonalReceivable(st,l.id,.5,true)},{label:'Forgive the balance as a gift',effect:st=>settlePersonalReceivable(st,l.id,0,true)}]};
     },
   },
   {
@@ -11239,7 +11239,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: { requiredPeople: ['sib'],"minAge": 20, "afterEvent": "ev_money_sibling_loan", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const l=(S.money.personalReceivables||[]).find(x=>x.personId===ctx.sib?.id&&x.status==='open');if(!l)return null;
-      const p=S.people[l.personId];return{key:'ev_back_sibling_repays',category:'money',title:p.firstName+' and the Recorded Loan',text:`Actual unpaid principal: ${formatMoney(l.balance,l.country)}. Repayment comes only from ${p.firstName}'s available savings, capped at that balance. Any unpaid remainder stays owed unless you forgive it.`,choices:[{label:'Request the full recorded balance',effect:st=>settlePersonalReceivable(st,l.id)},{label:'Request half, forgive the remainder',effect:st=>settlePersonalReceivable(st,l.id,.5,true)},{label:'Forgive the balance as a gift',effect:st=>settlePersonalReceivable(st,l.id,0,true)}]};
+      const p=S.people[l.personId];return{key:'ev_back_sibling_repays',category:'money',title:p.firstName+' and the Loan',text:`Actual unpaid principal: ${formatMoney(l.balance,l.country)}. Repayment comes only from ${p.firstName}'s available savings, capped at that balance. Any unpaid remainder stays owed unless you forgive it.`,choices:[{label:'Ask for the full amount back',effect:st=>settlePersonalReceivable(st,l.id)},{label:'Request half, forgive the remainder',effect:st=>settlePersonalReceivable(st,l.id,.5,true)},{label:'Forgive the balance as a gift',effect:st=>settlePersonalReceivable(st,l.id,0,true)}]};
     },
   },
   {
@@ -11249,7 +11249,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: {"minAge": 22, "afterEvent": "ev_money_collector_call", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const d=S.money.loans.find(x=>x.inCollections&&x.balance>0);if(!d)return null;
-      return{key:'ev_back_collector_returns',category:'money',title:'Your Recorded Collections Balance',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${true?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',available:st=>st.money.cash>=Math.ceil(d.balance),effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the recorded balance',available:st=>st.money.cash>=Math.ceil(d.balance*.5),effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
+      return{key:'ev_back_collector_returns',category:'money',title:'Your Collections Balance',text:`${d.name||d.label}: you still owe ${formatMoney(d.balance,S.country)}. A payment goes straight against that balance. This call adds no new debt or fee, and collections are frozen, so no new interest is added.`,choices:[{label:'Pay the full balance',available:st=>st.money.cash>=Math.ceil(d.balance),effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the balance',available:st=>st.money.cash>=Math.ceil(d.balance*.5),effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
     },
   },
   {
@@ -11826,7 +11826,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: {"minAge": 22, "afterEvent": "ev_back_collector_returns", "afterEventMinTurns": 6},
     build: (S, ctx) => {
       const d=S.money.loans.find(x=>x.inCollections&&x.balance>0);if(!d)return null;
-      return{key:'ev_back_collector_returns_l2',category:'money',title:'Your Recorded Collections Balance',text:`${d.name||d.label}: actual remaining balance ${formatMoney(d.balance,S.country)}. A payment here reduces this same balance. No new debt or fee is created by the scene. ${true?'Collections are frozen, with no new interest.':'Unpaid card balances follow the card APR and monthly minimum-payment rules.'}`,choices:[{label:'Pay the full recorded balance',available:st=>st.money.cash>=Math.ceil(d.balance),effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the recorded balance',available:st=>st.money.cash>=Math.ceil(d.balance*.5),effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
+      return{key:'ev_back_collector_returns_l2',category:'money',title:'Your Collections Balance',text:`${d.name||d.label}: you still owe ${formatMoney(d.balance,S.country)}. A payment goes straight against that balance. This call adds no new debt or fee, and collections are frozen, so no new interest is added.`,choices:[{label:'Pay the full balance',available:st=>st.money.cash>=Math.ceil(d.balance),effect:st=>payRecordedDebt(st,'loan',d.id)},{label:'Pay half the balance',available:st=>st.money.cash>=Math.ceil(d.balance*.5),effect:st=>payRecordedDebt(st,'loan',d.id,.5)},{label:'Keep current payment schedule',effect:st=>{}}]};
     },
   },
   {
