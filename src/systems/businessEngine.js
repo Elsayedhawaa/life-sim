@@ -497,6 +497,23 @@ export function evaluateBusinessLaunch(S, bp, mode = null) {
    salary. Returns '' when the takings cover the wage bill.
    ------------------------------------------------------------------ */
 export function ventureViabilityWarningHtml(S, bp, ev = null) {
+  return ventureViabilityNotesHtml(S, bp, ev) + ventureLowCashNoteHtml(S, bp, ev);
+}
+/* v2.21 GAME DESIGN: a business's loss is paid from the owner's own cash and savings, and a loss they cannot cover becomes a missed bill (three of them close it). So the launch screen compares what the owner would have left after the startup capital with three months of a bad month. A bad month is the game's own severe-month rule: sales at half of expected, costs as usual. Costs are the manager-run scenario's, the dearer of the two. The three-month buffer is mine, not sourced. */
+export function ventureLowCashNoteHtml(S, bp, ev = null) {
+  if (!S || !bp || bp.id.startsWith('enterprise_') || bp.id === 'tech_founder') return '';
+  const e = ev || evaluateBusinessLaunch(S, bp);
+  if (!e) return '';
+  const cost = Math.max(Number(e.monthlyCostManagerRunHome) || 0, Number(e.monthlyCostFullTimeHomeSelf) || 0);
+  const sales = Number(e.expectedRevFullTimeHome) || 0;
+  const worst = cost - 0.5 * sales;
+  if (!(worst > 0)) return '';
+  const left = Math.max(0, (Number(S.money?.cash) || 0) - (Number(e.capitalLocal) || 0)) + Math.max(0, Number(S.money?.savings) || 0);
+  if (left >= 3 * worst) return '';
+  const fmt = (n) => formatMoney(Math.round(n), S.country);
+  return `<div class="muted" style="margin:6px 0"><strong style="color:var(--brand-crimson)">Low cash buffer</strong> · After the ${fmt(e.capitalLocal || 0)} startup capital you would have about ${fmt(left)} of cash and savings. A bad month (sales at half of expected) would cost about ${fmt(worst)}, so that covers ${worst > 0 ? Math.floor(left / worst * 10) / 10 : 0} such months. A loss you cannot cover becomes a missed bill, and three missed bills close the business.</div>`;
+}
+function ventureViabilityNotesHtml(S, bp, ev = null) {
   const base = ventureViabilityBaseHtml(S, bp, ev);
   if (!S || (bp && (bp.id.startsWith('enterprise_') || bp.id === 'tech_founder'))) return base;
   const e = ev || (bp ? evaluateBusinessLaunch(S, bp) : null);
