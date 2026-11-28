@@ -261,6 +261,21 @@ function computeBusinessMonthOperating(S, biz, opts = {}) {
     pl.reinvestBoost = boost;
   }
 
+  /* v2.21 GAME DESIGN — volume costs. Revenue above the business's
+     own base row (brand, growth, decisions, boosts) needs stock,
+     materials, consumables and supplies, so 85% of the base other
+     costs scale with it. Without this a grown business kept its old
+     flat bill and ran 44% net. Reference is the larger of the row and the base other bill (a collapsed row cannot blow the cost up); growth counts up to 4x. Upside only: a bad month still leaves
+     the fixed bill in place. Tuned, not source-verified. */
+  {
+    const rowRev = Math.max(Number(biz.monthlyRev) || 0, otherBase);
+    const sold = pl.revenue - (Number(pl.franchise) || 0);
+    if (rowRev > 0 && otherBase > 0 && sold > rowRev) {
+      const vol = Math.round(otherBase * 0.85 * Math.min(3, sold / rowRev - 1));
+      if (vol > 0) { pl.other += vol; pl.costs += vol; pl.volumeCost = vol; }
+    }
+  }
+
   /* 9. Harvest cash-out comes out of the business's capital. */
   if (mfx.harvestCashOut > 0 && !alreadyFoldedThisMonth) {
     const paid = Math.min(mfx.harvestCashOut, Math.max(0, Math.round(Number(biz.capitalInvested) || 0)));
