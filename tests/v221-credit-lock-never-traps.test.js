@@ -11,3 +11,6 @@ assert.ok(locks.some(l => l === null), 'at least one option is open when every o
 assert.ok(locks.some(l => l), 'the dearer option stays locked');
 assert.equal(discretionaryLock(S, sc, sc.choices[0]), null, 'the cheapest is the one left open');
 console.log('ok v221 credit lock never traps');
+{ const { isDiscretionaryScene } = await import('../src/core/discretionary.js');
+  assert.ok(isDiscretionaryScene({ key: 'ev_family_sib_wedding_l2', baseId: 'ev_family_sib_wedding_l2', title: 'x' }), 'a sibling flat deposit is optional spending at the credit limit');
+  console.log('ok v221 sibling deposit locked at limit'); }

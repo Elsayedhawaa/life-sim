@@ -5,7 +5,7 @@ export const DISCRETIONARY_SCENES = new Set([
   'ev_life_street_festival','ev_life_new_cafe','ev_life_birthday_forgotten','ev_friend_birthday_forgot','ev_friend_birthday_party',
   'ev_friend_new_restaurant','ev_friend_football_match','ev_friend_join_gym','ev_life_subscription_renewal','ad_gold_hedge',
   'ev_friend_business_invest','ev_friend_asks_loan','ev_family_sib_money_never_back_l2','ev_family_parents_anniversary',
-  'ev_career_side_business','ev_career_language_course','ev_school_music_lesson','ev_friend_apologises_row_l2','ev_friend_loan_repaid_l2'
+  'ev_career_side_business','ev_career_language_course','ev_school_music_lesson','ev_friend_apologises_row_l2','ev_friend_loan_repaid_l2','ev_family_sib_wedding_l2'
 ]);
 export function isDiscretionaryScene(sc) {
   return !!sc && (DISCRETIONARY_SCENES.has(sc.baseId) || DISCRETIONARY_SCENES.has(sc.key) || /Asks for Financial Backing$/.test(sc.title || ''));
