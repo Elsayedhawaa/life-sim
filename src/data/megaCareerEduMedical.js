@@ -20971,8 +20971,7 @@ export const EXTRA_MODERN_TRACKS = [
     "label": "Commercial Airline Pilot & Captaincy",
     "reqDegrees": [
       "engineering",
-      "cs",
-      "business"
+      "cs"
     ],
     "payMult": 1.88,
     "visaDemand": 0.92,

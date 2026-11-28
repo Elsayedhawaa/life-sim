@@ -2067,6 +2067,8 @@ function recruitFit(S, job) {
 export function presentGraduateOrJobSearchOffers(S, customTitle = null, snapshot=null) {
   const eligible = snapshot?.offers || listAvailableJobs(S)
     .filter(j => j.qualifiedByDegree && !j.missingBoard && checkJobApplication(S,j).ok)
+    /* GAME DESIGN: a pilot cadetship is only recruited to graduates whose own degree opens the pilot track (engineering, cs), not offered to every graduate by pay. */
+    .filter(j => !/^aviation/.test(j.track || '') || (S.education?.degrees || []).some(d => ['engineering', 'cs', 'computer_science'].includes(d)))
     /* A recruiter leads with the roles your own degree opens, then the open-entry roles, each by pay. Pay alone put a pilot cadetship above a medical or law graduate's own field. */
     .sort((a, b) => (recruitFit(S, b) - recruitFit(S, a)) || (b.monthlyGross - a.monthlyGross));
   /* A wealthy family's graduate is not offered the bottom of the market: roles that pay under 60% of the best offer, and no 'also-ran' third pick, are dropped. Only the offer list is shaped here; an existing job is never touched. */
@@ -2078,7 +2080,7 @@ export function presentGraduateOrJobSearchOffers(S, customTitle = null, snapshot
   if (!eligible.length) return;
 
   const topOffer = eligible[0];
-  const altOffer = snapshot ? eligible[1] : eligible[richTier ? Math.min(1, eligible.length - 1) : Math.min(2, eligible.length - 1)];
+  const altOffer = snapshot ? eligible[1] : (richTier ? eligible.slice(1).sort((x, y) => y.monthlyGross - x.monthlyGross)[0] || eligible[0] : eligible[Math.min(2, eligible.length - 1)]);
   const quotedOffer = (st, offer, auth) => ({
     gross: auth.partTimeOnly ? Math.round(offer.monthlyGross * 0.45) : offer.monthlyGross,
     title: auth.partTimeOnly ? `Part-Time ${offer.title}` : offer.title

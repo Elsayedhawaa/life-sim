@@ -11,7 +11,7 @@ import { MONTH_NAMES } from '../core/schema.js';
 import { formatMoney, getCountry } from '../data/countries.js';
 import { convertCurrency } from '../data/economy.js';
 import { entryDelta, entryCurrencyIsCurrent } from '../core/ledgerCurrency.js';
-import { esc } from './views.js';
+import { esc, countryLevelNarrative } from './views.js';
 
 function num(v) {
   const n = Number(v);
@@ -191,7 +191,7 @@ export function renderTurnResultCardHtml(S, uiState) {
     ? `<details class="trc-details" ${r.kind === 'choice' ? 'open' : ''}><summary>Skills & relationships (${extraChanges.length})</summary><div class="trc-vitals">${extraChanges.map(item => `<span class="trc-chip ${item.delta > 0 ? 'text-good' : 'text-bad'}">${esc(item.label)} ${item.delta > 0 ? '+' : '−'}${Math.abs(item.delta)}</span>`).join('')}</div></details>`
     : '';
   const storyBit = r.storyLines.length
-    ? `<div class="trc-story">${r.storyLines.map(t => `<div class="trc-story-line">${esc(t)}</div>`).join('')}</div>`
+    ? `<div class="trc-story">${r.storyLines.map(t => `<div class="trc-story-line">${esc(countryLevelNarrative(t, S))}</div>`).join('')}</div>`
     : '';
 
   const quiet = r.cashDelta === 0 && !r.vitalDeltas.length && !r.storyLines.length && !extraChanges.length && !r.sceneWaiting && !r.gameOver;

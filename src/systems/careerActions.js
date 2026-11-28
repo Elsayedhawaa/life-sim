@@ -1074,13 +1074,16 @@ export function tickCareerActionsMonthly(S) {
      three warnings earn dismissal — never a random firing. */
   if (job.performance < 45) st.lowPerfMonths += 1;
   else st.lowPerfMonths = 0;
+  let justWarned = false;
   if (st.lowPerfMonths >= 3 && st.warnings < 3) {
+    justWarned = true;
     st.warnings += 1;
     st.lowPerfMonths = 0;
     st.performancePlan = st.warnings >= 2;
     queueWarningScene(S);
   }
-  if (st.warnings >= 3) {
+  /* Played defect: the third warning and the dismissal landed in the same month, so the player met two warning scenes and the journal said three. The third is now delivered, and dismissal follows on the next monthly tick. */
+  if (st.warnings >= 3 && !justWarned) {
     dismissForCause(S);
     return;
   }
@@ -1150,6 +1153,7 @@ export function buildCareerReviewScene(S,snapshot){
   return {
     key: `review_${year}`,
     baseId: 'annual_review',
+    recurring: true, /* the review is yearly for the whole career; the anti-spam caps dropped every one after the third */
     title: `Your annual review with ${boss.firstName}`,
     category: 'career',
     text: `${employer} · ${year}. ${bossName} rates you ${perf}% (${band}). Team contributions: ${steppedUp}. Ask for feedback, check current promotion requirements, or contest the rating.`,
@@ -1203,9 +1207,10 @@ export function buildCareerWarningScene(S,snapshot){
   return {
     key: `warning_${st.warnings}_${year}${snapshot.seq?'_'+snapshot.seq:''}`,
     baseId: 'formal_warning',
+    recurring: true, /* played defect: the anti-spam caps silently dropped the third warning, and later warnings in any later job */
     title: `A formal warning from ${boss.firstName}`,
     category: 'career',
-    text: `${boss.firstName} calls you in. “Your performance has been under 45% for three months now. This is formal warning ${st.warnings} of 3. ${st.warnings >= 2 ? 'You are now on a performance plan — improve, or the next step is dismissal.' : 'Two more warnings and you are on a performance plan. After that, dismissal.'}” What do you do?`,
+    text: `${boss.firstName} calls you in. “Your performance has been under 45% for three months now. This is formal warning ${st.warnings} of 3. ${st.warnings >= 3 ? 'That is the last warning. The next step is dismissal.' : st.warnings >= 2 ? 'You are now on a performance plan — improve, or the next step is dismissal.' : 'Two more warnings and you are on a performance plan. After that, dismissal.'}” What do you do?`,
     careerWarningSnapshot:snapshot,
     choices: [
       {

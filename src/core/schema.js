@@ -1458,7 +1458,9 @@ export function queueScene(S, scene, urgent = false) {
   if (!S.titleCounts) S.titleCounts = {}; // v2.6: title -> times queued (D3 anti-spam)
   /* scene.navigation: a pure browse/back/re-entry menu with no reward, charge or journal line of its own. It is exempt from the per-life and per-title caps so the way forward can never be capped away; the active/queue duplicate guard below still applies. */
   const navigation = scene.navigation === true;
-  if (!navigation && (S.sceneCounts[baseSig] || 0) >= maxPerLife) return false;
+  /* scene.recurring: a scene that the career process itself schedules (the yearly review, a formal warning), keyed per year. The per-life and per-title anti-spam caps do not apply: played defect, the cap dropped every review after the third and the third warning. */
+  const recurring = scene.recurring === true;
+  if (!navigation && !recurring && (S.sceneCounts[baseSig] || 0) >= maxPerLife) return false;
 
   /* v2.6 anti-spam invariant (the coherence suite's D3 rule): no single
      TITLE may be queued 4+ times in one life, however many repeatable
@@ -1467,7 +1469,7 @@ export function queueScene(S, scene, urgent = false) {
      Cold", "A Festival in Your Street", "Headhunter & Network Job Leads")
      can legitimately repeat past the defect threshold once lives routinely
      survive to 52+. Urgent life/death milestones are exempt. */
-  if (!urgent && !navigation) {
+  if (!urgent && !navigation && !recurring) {
     if (!S.titleCounts) S.titleCounts = {};
     if ((S.titleCounts[scene.title] || 0) >= 3) return false;
   }
