@@ -16740,7 +16740,7 @@ export const V1_BUSINESS_TYPES = [
     "id": "logistics",
     "label": "Logistics company",
     "startupEGP": 3000000,
-    "monthlyOverheadEGP": 395000,
+    "monthlyOverheadEGP": 464761,
     "baseRevenueEGP": 600000,
     "maxLevel": 5,
     "staffRoles": [
@@ -21609,7 +21609,7 @@ export const EXTRA_BUSINESSES = [
     "label": "Refrigerated Pharma & Food Transport",
     "capitalUsd2026": 68000,
     "monthlyRevUsd2026": 18200,
-    "monthlyCostUsd2026": 12400,
+    "monthlyCostUsd2026": 14609,
     "reqMajor": null,
     "from": 1960,
     "volatility": 0.30,
