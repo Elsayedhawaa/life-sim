@@ -1,3 +1,4 @@
+import {ramadanBeginsNow} from './ramadanDates.js';
 import{ALL_VACATIONS}from'./megaCareerEduMedical.js';
 import{childSchoolQuote,enrollChildSchoolYear}from'../systems/educationFunding.js';
 import{permitRenewalQuote,renewCurrentPermit,returnToHomeCountry,premiumResidencyQuote,applyPremiumOrGoldenResidency}from'../systems/visaMigrationEngine.js';
@@ -852,6 +853,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     gates: { requiredPeople: ['mom'],"minAge": 22, "wealth": ["poor", "middle"]},
     build: (S, ctx) => {
       if (String(S.player?.religion || '').toLowerCase() !== 'muslim') return null; /* Ramadan food shopping is a Muslim household's event */
+      if (!ramadanBeginsNow(S)) return null;
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
       const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';
@@ -4013,7 +4015,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
         key: 'ev_health_yoga_class',
         category: 'health',
         title: "A Yoga Class at the Community Centre",
-        text: `The community centre offers a yoga class for ${formatMoney(A, S.country)} a month. The teacher is patient, the room is quiet, and your back — which has ached for years — is the reason you are considering it.`,
+        text: `The community centre offers a yoga class for ${formatMoney(A, S.country)} a month. The teacher is patient, the room is quiet, and you have been wondering whether it would ease a stiff back and some of the stress.`,
         choices: [
           {
             label: "Join the class",
@@ -10929,6 +10931,7 @@ export const EVENTS_MONEY_HEALTH_CAREER = [
     repeatable: false,
     gates: { requiredPeople: ['boss'],"minAge": 22, "hasJob": true, "abroad": true, "countries": ["sau", "uae"]},
     build: (S, ctx) => {
+      if (!ramadanBeginsNow(S)) return null;
       const momName = ctx.mom ? ctx.mom.firstName : 'your mother';
       const dadName = ctx.dad ? ctx.dad.firstName : 'your father';
       const spName = ctx.spouse ? ctx.spouse.firstName : 'your partner';

@@ -1,3 +1,4 @@
+import {ramadanBeginsNow} from './ramadanDates.js';
 import {loanFromOutcome,settleLoan} from '../systems/familyLoans.js';
 import {checkSocialEnergy,spendSocialEnergy,noteSocialContact} from '../systems/socialEnergy.js';
 /* ============================================================================
@@ -1819,11 +1820,12 @@ export const EVENTS_EVERYDAY_FAMILY = [
     repeatable: true, cooldownYears: 2,
     build: (S, ctx) => {
       if (String(S.player?.religion || '').toLowerCase() !== 'muslim') return null; /* the scene has the mother planning the first iftar */
+      if (!ramadanBeginsNow(S)) return null; /* only in the month Ramadan really starts */
       const p = live(S, ctx);
       return {
         key: 'ev_life_ramadan_prep', category: 'life',
         title: 'Lanterns Before Ramadan',
-        text: `Ramadan is days away in your city, and the streets are filling with lanterns and lights. Your mother is already planning the first iftar, and the shops are packed with dates, drinks, and decorations.`,
+        text: `Ramadan begins this month in your city, and the streets are filling with lanterns and lights. Your mother is already planning the first iftar, and the shops are packed with dates, drinks, and decorations.`,
         choices: [
           { label: 'Help your mother prepare the first iftar', effect: (st) => {
               walletMove(st, -cost(st, 200), 'Food for the first iftar', 'money');

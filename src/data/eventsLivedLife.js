@@ -189,7 +189,7 @@ export const EVENTS_LIVED_LIFE = [
       ['Fix the crooked button. Do not add a feature.', 'You saved a working version and fixed the button. The six new features stayed on paper.', { 'skills.creativity': 4 }],
       ['Show it to someone before polishing it', 'You showed the unfinished project to someone and watched where they got stuck. It was not the button.', { 'skills.charisma': 2, 'skills.creativity': 3 }],
     ]),
-  story('ev_lived_project_followup', 'One Detail Someone Noticed',
+  story('ev_lived_project_followup', 'One Detail Got Better',
     { minAge: 16, minYear: 2005, afterEvent: 'ev_lived_small_project', afterEventMinTurns: 2 },
     'Looking at your small project again, you notice one detail that is much better than the first version. It is not fame or income. It is evidence that you can improve something by staying with it.', [
       ['Finish a modest version before adding more', 'You gave the project a modest finish line and reached it. The finished version was smaller than the dream, and real.', { 'vitals.happiness': 4 }],
