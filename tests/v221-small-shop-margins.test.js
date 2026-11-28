@@ -33,6 +33,6 @@ console.log('ok v221 small shop margins');
   const S = createNewLifeState({ country: 'usa', seed: 5 }); ensureExtendedState(S); S.year = 2026;
   const html = (id) => B.ventureViabilityWarningHtml(S, B.listAllBusinessVentures(S).find(b => b.id === id));
   assert.ok(/Thin margin with a manager/.test(html('bookstore')), 'bookstore warns');
-  assert.ok(!/Thin margin/.test(html('bakery')), 'bakery does not');
+  assert.ok(!/Thin margin with a manager/.test(html('bakery')), 'bakery does not (its manager wage share is under 20%; it gets the separate manager-run note instead)');
   console.log('ok v221 bookstore warning');
 }

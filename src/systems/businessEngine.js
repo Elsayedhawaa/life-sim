@@ -505,6 +505,9 @@ export function ventureViabilityWarningHtml(S, bp, ev = null) {
   const fmt = (n) => formatMoney(Math.round(n), S.country);
   /* v2.21 GAME DESIGN: when the manager's wage alone takes over a fifth of expected full-time sales, a slow stretch turns the business into a loss. The 20% threshold is mine, not sourced. */
   if (mw > 0 && eft > 0 && mw / eft > 0.2) return base + `<div class="muted" style="margin:6px 0"><strong style="color:var(--brand-crimson)">Thin margin with a manager</strong> · A manager would take about ${Math.round(100 * mw / eft)}% of expected monthly sales (${fmt(mw)} of ${fmt(eft)}). Run it yourself, or expect a loss in any slow stretch.</div>`;
+  /* v2.21 GAME DESIGN: the manager-run scenario itself. When expected full-time sales leave under 10% after every cost with a manager (wages, other costs, the manager's wage), a slow month is a loss, so the launch screen says so plainly before the player commits. The 10% threshold is mine, not sourced. */
+  const mrc = Number(e.monthlyCostManagerRunHome) || 0;
+  if (mrc > 0 && eft > 0 && (eft - mrc) / eft < 0.1) return base + `<div class="muted" style="margin:6px 0"><strong style="color:var(--brand-crimson)">Thin margin if a manager runs it</strong> · With a manager, expected full-time sales of ${fmt(eft)}/mo leave ${(eft - mrc) >= 0 ? `only ${fmt(eft - mrc)}` : `a gap of ${fmt(mrc - eft)}`} after about ${fmt(mrc)}/mo of costs. Run it yourself for a real profit, or expect little from a manager in a good month and a loss in a slow one.</div>`;
   return base;
 }
 function ventureViabilityBaseHtml(S, bp, ev = null) {
