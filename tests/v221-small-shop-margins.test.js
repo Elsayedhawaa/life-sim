@@ -28,3 +28,11 @@ assert.ok(bk > 0.04 && bk < 0.16, 'bakery year-1 net ' + bk.toFixed(3));
 assert.ok(rt > 0.03 && rt < 0.13, 'retail shop year-1 net ' + rt.toFixed(3));
 assert.ok(bs > 0.01 && bs < 0.12, 'bookstore year-1 net ' + bs.toFixed(3));
 console.log('ok v221 small shop margins');
+// Bookstore: a manager's wage takes over a fifth of expected sales, so the launch card warns.
+{
+  const S = createNewLifeState({ country: 'usa', seed: 5 }); ensureExtendedState(S); S.year = 2026;
+  const html = (id) => B.ventureViabilityWarningHtml(S, B.listAllBusinessVentures(S).find(b => b.id === id));
+  assert.ok(/Thin margin with a manager/.test(html('bookstore')), 'bookstore warns');
+  assert.ok(!/Thin margin/.test(html('bakery')), 'bakery does not');
+  console.log('ok v221 bookstore warning');
+}

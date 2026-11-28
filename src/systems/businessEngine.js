@@ -495,6 +495,17 @@ export function evaluateBusinessLaunch(S, bp, mode = null) {
    salary. Returns '' when the takings cover the wage bill.
    ------------------------------------------------------------------ */
 export function ventureViabilityWarningHtml(S, bp, ev = null) {
+  const base = ventureViabilityBaseHtml(S, bp, ev);
+  if (!S || (bp && (bp.id.startsWith('enterprise_') || bp.id === 'tech_founder'))) return base;
+  const e = ev || (bp ? evaluateBusinessLaunch(S, bp) : null);
+  if (!e) return base;
+  const mw = Number(e.managerWageEstimateLocal) || 0, eft = Number(e.expectedRevFullTimeHome) || 0;
+  const fmt = (n) => formatMoney(Math.round(n), S.country);
+  /* v2.21 GAME DESIGN: when the manager's wage alone takes over a fifth of expected full-time sales, a slow stretch turns the business into a loss. The 20% threshold is mine, not sourced. */
+  if (mw > 0 && eft > 0 && mw / eft > 0.2) return base + `<div class="muted" style="margin:6px 0"><strong style="color:var(--brand-crimson)">Thin margin with a manager</strong> · A manager would take about ${Math.round(100 * mw / eft)}% of expected monthly sales (${fmt(mw)} of ${fmt(eft)}). Run it yourself, or expect a loss in any slow stretch.</div>`;
+  return base;
+}
+function ventureViabilityBaseHtml(S, bp, ev = null) {
   if (!S) return '';
   const e = ev || (bp ? evaluateBusinessLaunch(S, bp) : null);
   if (!e) return '';

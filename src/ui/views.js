@@ -5202,9 +5202,10 @@ function renderGlobalMigrationSubtabHtml(S,uiState={}) {
   `;
 }
 
-export function renderBottomDockHtml(S) {
+export function renderBottomDockHtml(S, activeTab = 'life') {
   if (S.gameOver) return '';
   const blocked = !!S.activeScene;
+  const jump = blocked && activeTab !== 'life';
   const mainLabel = S.pacing === 'yearly'
     ? `Advance +1 Year (Age ${S.player.age + 1})`
     : `Next Month (${MONTH_NAMES[S.month % 12].slice(0, 3)})`;
@@ -5212,9 +5213,9 @@ export function renderBottomDockHtml(S) {
   return `
     <div class="bottom-dock">
       <div class="bottom-dock-inner">
-        <button type="button" class="advance-main-btn" data-action="advance-one" ${blocked ? 'disabled' : ''}>
+        <button type="button" class="advance-main-btn" ${jump ? 'data-action="switch-tab" data-tab="life" data-jump="1"' : `data-action="advance-one" ${blocked ? 'disabled' : ''}`}>
           ${icon('plus', 18)}
-          <span>${blocked ? 'Answer Open Decision Above First' : mainLabel}</span>
+          <span>${jump ? 'A decision is waiting. Tap to answer it' : blocked ? 'Answer Open Decision Above First' : mainLabel}</span>
         </button>
         ${(S.pacing === 'monthly' && !blocked) ? `
           <button type="button" class="btn btn-navy" style="padding:13px 14px" data-action="fast-forward-year" title="Runs up to 12 months, one at a time, and stops at the first event that needs you">

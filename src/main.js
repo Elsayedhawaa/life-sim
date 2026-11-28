@@ -480,7 +480,7 @@ export function renderApp(preserveFilterKey = null, caretPos = null) {
       ${renderNavTabsHtml(S, uiState.activeTab)}
       <main id="main-content">${renderTurnResultCardHtml(S, uiState)}${tabContent}</main>
     </div>
-    ${renderBottomDockHtml(S)}
+    ${renderBottomDockHtml(S, uiState.activeTab)}
     ${uiState.showNewLifeModal ? renderNewLifeModalHtml({ country: S.homeCountry, birthYear: 1998, gender: S.player.gender, ...uiState.newLifeDraft }) : ''}
   `;
 
@@ -577,6 +577,7 @@ if (typeof document !== 'undefined') {
     if (action === 'switch-tab') {
       uiState.activeTab = btn.dataset.tab || 'life';
       renderApp();
+      if (btn.dataset.jump) window.scrollTo(0, 0);
       return;
     }
 
