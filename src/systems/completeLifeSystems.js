@@ -129,7 +129,9 @@ export function buyCompoundOrDistrictUnit(S, opts = {}) {
   const months = (plan.years || 0) * 12;
   const nativeRem = months > 0 ? (rawNativePrice - nativeDown) : 0;
   const nativeMonthlyInst = months > 0 ? Math.round(nativeRem / months) : 0;
-  const nativeRent = Math.round((rawNativePrice * (dev.rentalYieldPct || 0.065) * finish.rentMult) / 12);
+  /* GAME DESIGN: an instalment plan's mark-up is the cost of credit, not a bigger house. The home is worth its cash price (the plan's mark-up removed); only the debt carries the mark-up. Cash discounts are unchanged. buyProperty already works this way. */
+  const marketNative = (plan.totalMarkup || 1) > 1 ? Math.round(rawNativePrice / plan.totalMarkup) : rawNativePrice;
+  const nativeRent = Math.round((marketNative * (dev.rentalYieldPct || 0.065) * finish.rentMult) / 12);
 
   // Pricing and state grants stay here; the purchase itself goes through the
   // ONE property-buy core (D1) — same ledger, same instalment chain, same
@@ -151,7 +153,7 @@ export function buyCompoundOrDistrictUnit(S, opts = {}) {
     outdoorAnnualNative:outdoorAnnualBudget(unit,basePpmLocal),
     shape: unit.shape || 'apartment',
     finishing: finish.id,
-    nativeValue: rawNativePrice,
+    nativeValue: marketNative,
     nativeMonthlyRent: nativeRent,
     downInPlayerLocal: downInPlayer,
     happinessBoost: Math.max(2, finish.hap + 4)
